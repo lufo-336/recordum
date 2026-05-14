@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Recordum.Core\Recordum.Core.csproj" />
+    <ProjectReference Include="..\Recordum.Data\Recordum.Data.csproj" />
+    <ProjectReference Include="..\Recordum.Plugins\Recordum.Plugins.csproj" />
+    <ProjectReference Include="..\Recordum.Plugins.Contracts\Recordum.Plugins.Contracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

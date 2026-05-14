@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Recordum.Core/Recordum.Core.csproj" />
+    <Project Path="src/Recordum.Data/Recordum.Data.csproj" />
+    <Project Path="src/Recordum.Plugins.Contracts/Recordum.Plugins.Contracts.csproj" />
+    <Project Path="src/Recordum.Plugins/Recordum.Plugins.csproj" />
+    <Project Path="src/Recordum.WPF/Recordum.WPF.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Recordum.Core.Tests/Recordum.Core.Tests.csproj" />
+    <Project Path="tests/Recordum.Data.Tests/Recordum.Data.Tests.csproj" />
+    <Project Path="tests/Recordum.Plugins.Tests/Recordum.Plugins.Tests.csproj" />
+  </Folder>
+</Solution>
