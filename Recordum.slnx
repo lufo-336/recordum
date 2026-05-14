@@ -10,5 +10,6 @@
     <Project Path="tests/Recordum.Core.Tests/Recordum.Core.Tests.csproj" />
     <Project Path="tests/Recordum.Data.Tests/Recordum.Data.Tests.csproj" />
     <Project Path="tests/Recordum.Plugins.Tests/Recordum.Plugins.Tests.csproj" />
+    <Project Path="tests/Recordum.WPF.Tests/Recordum.WPF.Tests.csproj" />
   </Folder>
 </Solution>

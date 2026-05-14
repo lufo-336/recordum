@@ -47,9 +47,6 @@ public static class ServiceRegistrar
         // Bootstrap.
         services.AddSingleton<ApplicationInitializer>();
 
-        // UI.
-        services.AddSingleton<MainWindow>();
-
         return services;
     }
 }
