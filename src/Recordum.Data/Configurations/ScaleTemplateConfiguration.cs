@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Recordum.Core.Models;
+using Recordum.Data.SeedData;
 
 namespace Recordum.Data.Configurations;
 
@@ -14,5 +15,7 @@ public sealed class ScaleTemplateConfiguration : IEntityTypeConfiguration<ScaleT
         builder.Property(s => s.LabelsJson).IsRequired().HasMaxLength(2000);
 
         builder.HasIndex(s => s.Code).IsUnique();
+
+        builder.HasData(ScaleTemplateSeed.All);
     }
 }
