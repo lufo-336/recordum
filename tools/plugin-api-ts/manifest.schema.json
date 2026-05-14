@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://recordum.dev/schemas/plugin-manifest-1.json",
+  "title": "Recordum plugin manifest",
+  "description": "Canonical schema for the manifest.json shipped inside a .rmpk plugin package. See docs/plugin-api.md and docs/superpowers/specs/2026-05-13-plugin-system-design.md §2.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "version",
+    "publisher",
+    "min_recordum_version",
+    "entry"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "description": "Version of this manifest schema. Currently only \"1\" is recognized.",
+      "type": "string",
+      "enum": ["1"]
+    },
+    "id": {
+      "description": "Reverse-DNS identifier of the plugin (e.g. io.recordum.chart-engine).",
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$",
+      "minLength": 3,
+      "maxLength": 128
+    },
+    "name": {
+      "description": "Human-readable plugin name in the marketplace and settings.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "version": {
+      "description": "Semantic version of the plugin (semver 2.0).",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "type": {
+      "description": "Package type. Defaults to \"Plugin\". Phase 7+ may surface \"Template\" / \"Theme\".",
+      "type": "string",
+      "enum": ["Plugin", "Template", "Theme"],
+      "default": "Plugin"
+    },
+    "publisher": {
+      "description": "Publisher identity. Verified by the marketplace via the publisher's GitHub identity claim.",
+      "type": "object",
+      "required": ["id", "display_name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
+          "maxLength": 64
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "min_recordum_version": {
+      "description": "Minimum Recordum app version required to load this plugin (semver).",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "description_key": {
+      "description": "Resource key in locales/<lang>.json for the plugin's marketplace description.",
+      "type": "string"
+    },
+    "icon": {
+      "description": "Path within the package to the plugin icon (PNG or SVG). Relative to the package root.",
+      "type": "string"
+    },
+    "entry": {
+      "description": "Path within the package to the JavaScript entry point. Relative to the package root.",
+      "type": "string",
+      "minLength": 1
+    },
+    "permissions": {
+      "description": "Static (install-time) capabilities declared by the plugin. Sandbox enforces these; the user is shown them in the install dialog.",
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "data": {
+          "description": "Data capabilities the plugin requires (e.g. \"read:habit-nodes\", \"write:completions\", \"read:settings:public\").",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "read:habit-nodes",
+              "write:habit-nodes",
+              "read:completions",
+              "write:completions",
+              "read:notes",
+              "write:notes",
+              "read:goals",
+              "write:goals",
+              "read:attachments",
+              "read:tags",
+              "write:tags",
+              "read:templates",
+              "read:settings:public"
+            ]
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "network": {
+          "description": "Host whitelist for outbound HTTPS via recordum.network.fetch(). Use \"*\" to request unrestricted access (triggers a red-flag warning). localhost and private IPs are always denied.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "notifications": {
+          "description": "Whether the plugin may post local notifications via recordum.ui.notify().",
+          "type": "boolean",
+          "default": false
+        },
+        "filesystem": {
+          "description": "Filesystem access level. \"PluginStorage\" is implicit (10 MB cap); \"AttachmentsRead\" allows reading user attachments; \"UserPick\" requires a user-initiated picker each time.",
+          "type": "string",
+          "enum": ["None", "PluginStorage", "AttachmentsRead", "UserPick"],
+          "default": "None"
+        },
+        "ai": {
+          "description": "AI access level. \"Local\" allows local-only inference using on-device models. Plugins never bypass the global ai_data_sharing filter (see spec §4.6).",
+          "type": "string",
+          "enum": ["None", "Local"],
+          "default": "None"
+        }
+      }
+    },
+    "extension_points": {
+      "description": "Well-known extension point IDs the plugin contributes to (e.g. \"chart.renderer\", \"dashboard.widget\").",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "dashboard.widget",
+          "chart.renderer",
+          "habit.detail.tab",
+          "completion.input",
+          "settings.panel",
+          "command-palette",
+          "export.format",
+          "sync.provider",
+          "data.importer"
+        ]
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "source_url": {
+      "description": "Optional public source repository. Required to earn the Open Source badge (the marketplace CI also requires an OSI-approved LICENSE file at the URL).",
+      "type": "string",
+      "format": "uri"
+    },
+    "supported_locales": {
+      "description": "ISO 639-1 codes the plugin ships translations for under locales/<lang>.json.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+      },
+      "uniqueItems": true,
+      "default": []
+    }
+  }
+}
