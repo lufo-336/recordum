@@ -1,0 +1,25 @@
+{
+  "name": "@recordum/plugin-api",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "description": "TypeScript ambient types for the Recordum plugin runtime. Phase 3 ships type declarations only; the runtime lands in Phase 7 alongside the WebView2 host.",
+  "license": "MIT",
+  "type": "module",
+  "types": "./src/index.d.ts",
+  "files": [
+    "src",
+    "manifest.schema.json"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "homepage": "https://github.com/recordum/recordum",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/recordum/recordum.git",
+    "directory": "tools/plugin-api-ts"
+  }
+}
