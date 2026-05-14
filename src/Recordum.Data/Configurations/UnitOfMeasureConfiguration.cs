@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Recordum.Core.Models;
+using Recordum.Data.SeedData;
 
 namespace Recordum.Data.Configurations;
 
@@ -14,5 +15,7 @@ public sealed class UnitOfMeasureConfiguration : IEntityTypeConfiguration<UnitOf
         builder.Property(u => u.Symbol).HasMaxLength(16);
 
         builder.HasIndex(u => u.Code).IsUnique();
+
+        builder.HasData(UnitOfMeasureSeed.All);
     }
 }
