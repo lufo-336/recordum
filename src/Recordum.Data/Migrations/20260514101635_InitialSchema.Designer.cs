@@ -11,7 +11,7 @@ using Recordum.Data;
 namespace Recordum.Data.Migrations
 {
     [DbContext(typeof(RecordumDbContext))]
-    [Migration("20260514101021_InitialSchema")]
+    [Migration("20260514101635_InitialSchema")]
     partial class InitialSchema
     {
         /// <inheritdoc />
@@ -1996,7 +1996,7 @@ namespace Recordum.Data.Migrations
                     b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
                         .WithMany("Tags")
                         .HasForeignKey("HabitNodeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_habit_node_tags_habit_nodes_habit_node_id");
 

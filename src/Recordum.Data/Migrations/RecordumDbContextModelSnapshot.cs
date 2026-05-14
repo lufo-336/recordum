@@ -1993,7 +1993,7 @@ namespace Recordum.Data.Migrations
                     b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
                         .WithMany("Tags")
                         .HasForeignKey("HabitNodeId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_habit_node_tags_habit_nodes_habit_node_id");
 

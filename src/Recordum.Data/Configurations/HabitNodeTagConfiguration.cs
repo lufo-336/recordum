@@ -13,7 +13,7 @@ public sealed class HabitNodeTagConfiguration : IEntityTypeConfiguration<HabitNo
         builder.HasOne(ht => ht.HabitNode)
             .WithMany(n => n.Tags)
             .HasForeignKey(ht => ht.HabitNodeId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(ht => ht.Tag)
             .WithMany(t => t.HabitNodeTags)

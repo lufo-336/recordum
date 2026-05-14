@@ -443,7 +443,7 @@ namespace Recordum.Data.Migrations
                         column: x => x.habit_node_id,
                         principalTable: "habit_nodes",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "fk_habit_node_tags_tags_tag_id",
                         column: x => x.tag_id,
