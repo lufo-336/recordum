@@ -8,8 +8,4 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
-  </PropertyGroup>
 </Project>

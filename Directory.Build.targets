@@ -1,0 +1,7 @@
+<Project>
+  <!-- Applied after the project file is evaluated, so IsTestProject is already set. -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
+  </PropertyGroup>
+</Project>
