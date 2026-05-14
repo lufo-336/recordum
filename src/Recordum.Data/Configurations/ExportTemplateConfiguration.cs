@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Recordum.Core.Models;
+using Recordum.Data.SeedData;
 
 namespace Recordum.Data.Configurations;
 
@@ -15,5 +16,7 @@ public sealed class ExportTemplateConfiguration : IEntityTypeConfiguration<Expor
         // LayoutJson has no max length (TEXT column)
 
         builder.HasIndex(t => t.CreatedByPluginId);
+
+        builder.HasData(ExportTemplateSeed.All);
     }
 }
