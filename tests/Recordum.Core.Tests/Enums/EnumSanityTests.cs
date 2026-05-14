@@ -16,6 +16,7 @@ public class EnumSanityTests
     [InlineData(typeof(GoalPeriodType), 3)]
     [InlineData(typeof(NotifyType), 3)]
     [InlineData(typeof(AiDataSharing), 3)]
+    [InlineData(typeof(AttachmentParentKind), 2)]
     public void Enum_has_expected_value_count(Type enumType, int expected)
     {
         Assert.Equal(expected, Enum.GetValues(enumType).Length);
