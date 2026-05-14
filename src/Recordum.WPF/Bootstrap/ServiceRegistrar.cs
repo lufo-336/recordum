@@ -44,6 +44,9 @@ public static class ServiceRegistrar
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
 
+        // Bootstrap.
+        services.AddSingleton<ApplicationInitializer>();
+
         // UI.
         services.AddSingleton<MainWindow>();
 

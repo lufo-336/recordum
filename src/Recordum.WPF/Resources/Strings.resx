@@ -66,4 +66,14 @@
     <value>Recordum is starting…</value>
     <comment>Placeholder text shown in the empty main window before the home screen ships (Milestone 3.3).</comment>
   </data>
+  <data name="StartupErrorTitle" xml:space="preserve">
+    <value>Recordum failed to start</value>
+    <comment>Title of the fatal startup error dialog.</comment>
+  </data>
+  <data name="StartupErrorMessage" xml:space="preserve">
+    <value>Recordum could not initialize. The application will exit.
+
+Details: {0}</value>
+    <comment>Body of the fatal startup error dialog. {0} is the exception message.</comment>
+  </data>
 </root>
