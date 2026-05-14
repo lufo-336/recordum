@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Recordum.Core.Models;
+using Recordum.Data.SeedData;
 
 namespace Recordum.Data.Configurations;
 
@@ -16,5 +17,7 @@ public sealed class HabitTemplateConfiguration : IEntityTypeConfiguration<HabitT
         // PayloadJson has no max length (TEXT column)
 
         builder.HasIndex(t => t.CreatedByPluginId);
+
+        builder.HasData(HabitTemplateSeed.All);
     }
 }
