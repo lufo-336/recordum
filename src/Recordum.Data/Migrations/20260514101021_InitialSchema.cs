@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 #nullable disable
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+#pragma warning disable CA1861 // Prefer static readonly fields
+#pragma warning disable CA1825 // Avoid zero-length array allocations
 
 namespace Recordum.Data.Migrations
 {
