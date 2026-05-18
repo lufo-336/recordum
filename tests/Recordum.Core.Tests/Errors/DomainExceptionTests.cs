@@ -31,4 +31,14 @@ public class DomainExceptionTests
         Assert.Equal("dpapi", ex.ProviderId);
         Assert.Equal("key file missing", ex.Reason);
     }
+
+    [Fact]
+    public void KeyTransitionFailed_preserves_providers_and_inner_exception()
+    {
+        var inner = new InvalidOperationException("rekey aborted");
+        var ex = new KeyTransitionFailedException("dpapi", "passphrase", inner);
+        Assert.Equal("dpapi", ex.FromProvider);
+        Assert.Equal("passphrase", ex.ToProvider);
+        Assert.Same(inner, ex.InnerException);
+    }
 }
