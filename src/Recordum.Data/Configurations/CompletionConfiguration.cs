@@ -17,5 +17,6 @@ public sealed class CompletionConfiguration : IEntityTypeConfiguration<Completio
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(c => new { c.HabitNodeId, c.CompletedAt });
+        builder.HasIndex(c => new { c.HabitNodeId, c.CompletedAtMs });
     }
 }
