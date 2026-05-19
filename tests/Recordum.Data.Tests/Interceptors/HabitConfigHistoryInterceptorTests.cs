@@ -108,6 +108,27 @@ public class HabitConfigHistoryInterceptorTests
     }
 
     [Fact]
+    public async Task History_ValidFrom_equals_pre_modification_UpdatedAt()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var (fx, _, configId) = await SeedAsync(clock);
+        var preUpdatedAt = clock.UtcNow.UtcDateTime;
+        clock.Advance(TimeSpan.FromMinutes(5));
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var cfg = await db.HabitConfigs.FirstAsync(c => c.Id == configId);
+            cfg.StreakMode = StreakMode.Weekly;
+            await db.SaveChangesAsync();
+        }
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var hist = await db.HabitConfigHistories.SingleAsync();
+            Assert.Equal(preUpdatedAt, hist.ValidFrom);
+        }
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Hard_delete_writes_final_snapshot()
     {
         var clock = new FakeClock();
