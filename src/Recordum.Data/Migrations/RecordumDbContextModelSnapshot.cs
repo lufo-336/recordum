@@ -169,7 +169,7 @@ namespace Recordum.Data.Migrations
                         {
                             Key = "schema_version",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.3"
+                            Value = "2.4"
                         });
                 });
 
@@ -984,10 +984,6 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_locked");
 
-                    b.Property<bool>("IsPinned")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("is_pinned");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1003,6 +999,14 @@ namespace Recordum.Data.Migrations
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("TEXT")
                         .HasColumnName("parent_id");
+
+                    b.Property<string>("PinScope")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("None")
+                        .HasColumnName("pin_scope");
 
                     b.Property<int>("Priority")
                         .HasColumnType("INTEGER")
@@ -1039,6 +1043,9 @@ namespace Recordum.Data.Migrations
                     b.HasIndex("ParentId")
                         .HasDatabaseName("ix_habit_nodes_parent_id");
 
+                    b.HasIndex("PinScope")
+                        .HasDatabaseName("ix_habit_nodes_pin_scope");
+
                     b.ToTable("habit_nodes", null, t =>
                         {
                             t.HasCheckConstraint("ck_habit_node_ai_data_sharing", "ai_data_sharing IN ('None','LocalOnly','ApiAllowed')");
@@ -1048,6 +1055,8 @@ namespace Recordum.Data.Migrations
                             t.HasCheckConstraint("ck_habit_node_habit_type", "habit_type IS NULL OR habit_type IN ('Action','Counter','Resistance','Journal','State')");
 
                             t.HasCheckConstraint("ck_habit_node_node_type", "node_type IN ('Habit','Group')");
+
+                            t.HasCheckConstraint("ck_habit_node_pin_scope", "pin_scope IN ('None','Local','Global')");
                         });
                 });
 

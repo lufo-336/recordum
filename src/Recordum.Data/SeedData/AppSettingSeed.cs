@@ -26,6 +26,6 @@ public static class AppSettingSeed
         new AppSetting { Key = "inactivity_timeout_minutes",  Value = "5",        UpdatedAt = SeedDate },
         new AppSetting { Key = "monthly_summary_day",         Value = "1",        UpdatedAt = SeedDate },
         new AppSetting { Key = "monthly_summary_time",        Value = "09:00",    UpdatedAt = SeedDate },
-        new AppSetting { Key = "schema_version",              Value = "2.3",      UpdatedAt = SeedDate },
+        new AppSetting { Key = "schema_version",              Value = "2.4",      UpdatedAt = SeedDate },
     ];
 }
