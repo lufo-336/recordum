@@ -22,7 +22,7 @@ public sealed class HabitNodeConfiguration : IEntityTypeConfiguration<HabitNode>
 
         builder.Property(n => n.PinScope)
             .HasConversion<string>()
-            .HasMaxLength(8)
+            .HasMaxLength(16)
             .HasDefaultValue(PinScope.None)
             .IsRequired();
 

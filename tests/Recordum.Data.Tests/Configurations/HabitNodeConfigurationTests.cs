@@ -49,8 +49,9 @@ public sealed class HabitNodeConfigurationTests
         // The provider (database) side must be string/TEXT.
         Assert.Equal(typeof(string), prop.GetProviderClrType());
 
-        // MaxLength must be 8 (longest value: "Global" = 6, headroom for safety).
-        Assert.Equal(8, prop.GetMaxLength());
+        // MaxLength is 16 to match the convention used by other enum columns
+        // (NodeType / HabitType / AiDataSharing). The CHECK constraint enforces the value set.
+        Assert.Equal(16, prop.GetMaxLength());
 
         // Default value must be PinScope.None.
         Assert.Equal(PinScope.None, prop.GetDefaultValue());
