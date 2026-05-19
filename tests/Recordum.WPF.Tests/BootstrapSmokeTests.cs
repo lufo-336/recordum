@@ -3,6 +3,9 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
+using Recordum.Core.Models;
 using Recordum.Data;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
@@ -94,5 +97,34 @@ public sealed class BootstrapSmokeTests : IDisposable
     {
         var manager = _services.GetRequiredService<IPluginManager>();
         Assert.Empty(manager.ListEnabled());
+    }
+
+    [Fact]
+    public async Task End_to_end_bootstrap_creates_encrypted_db_and_serves_home_tree()
+    {
+        var initializer = _services.GetRequiredService<ApplicationInitializer>();
+        await initializer.InitializeAsync();
+
+        Assert.True(File.Exists(_dbPath));
+        Assert.True(File.Exists(_keyPath));
+
+        using var scope = _services.CreateScope();
+        var habits = scope.ServiceProvider.GetRequiredService<IHabitNodeService>();
+        var query = scope.ServiceProvider.GetRequiredService<IHabitTreeQueryService>();
+        await habits.CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Habit,
+            HabitType = HabitType.Action,
+            Name = "ping",
+        });
+        Assert.Single(await query.GetHomeTreeAsync());
+
+        // Plaintext open against the encrypted file must fail on first read.
+        SqliteConnection.ClearAllPools();
+        await using var plain = new SqliteConnection($"Data Source={_dbPath}");
+        await plain.OpenAsync();
+        using var cmd = plain.CreateCommand();
+        cmd.CommandText = "SELECT name FROM sqlite_master";
+        await Assert.ThrowsAsync<SqliteException>(() => cmd.ExecuteReaderAsync());
     }
 }
