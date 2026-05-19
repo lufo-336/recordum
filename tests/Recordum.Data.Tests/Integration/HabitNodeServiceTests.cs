@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
@@ -12,8 +11,8 @@ namespace Recordum.Data.Tests.Integration;
 
 public class HabitNodeServiceTests
 {
-    private static IHabitNodeService Svc(DbFixture fx) =>
-        new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+    private static HabitNodeService Svc(DbFixture fx) =>
+        new(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
 
     [Fact]
     public async Task Create_returns_id_and_persists_with_user_provenance()

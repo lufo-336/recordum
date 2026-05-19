@@ -23,6 +23,12 @@ public sealed partial class HabitNodeService(
     [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "HabitNode {Id} moved to {NewParent}")]
     private partial void LogMoved(Guid id, Guid? newParent);
 
+    [LoggerMessage(EventId = 4, Level = LogLevel.Information, Message = "HabitNode {Id} soft-deleted (subtree size {Count})")]
+    private partial void LogSoftDeleted(Guid id, int count);
+
+    [LoggerMessage(EventId = 5, Level = LogLevel.Information, Message = "HabitNode {Id} restored")]
+    private partial void LogRestored(Guid id);
+
     public async ValueTask<Guid> CreateAsync(HabitNode draft, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
@@ -31,7 +37,6 @@ public sealed partial class HabitNodeService(
         db.HabitNodes.Add(draft);
         await db.SaveChangesAsync(ct);
         LogCreated(draft.Id, pluginContext.PluginId);
-        _ = clock;
         return draft.Id;
     }
 
@@ -72,11 +77,48 @@ public sealed partial class HabitNodeService(
         return await db.HabitNodes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id, ct);
     }
 
-    public ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default)
-        => throw new NotImplementedException("Task 10");
+    public async ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var node = await db.HabitNodes.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.Id == id, ct)
+            ?? throw new HabitNodeNotFoundException(id);
+        if (node.DeletedAt is not null) return;
+        var deletedAt = clock.UtcNow.UtcDateTime;
+        var descendants = await DescendantIdsAsync(db, id, ct);
+        descendants.Add(id);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.HabitNodes.IgnoreQueryFilters()
+            .Where(n => descendants.Contains(n.Id) && n.DeletedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(n => n.DeletedAt, deletedAt), ct);
+        await tx.CommitAsync(ct);
+        LogSoftDeleted(id, descendants.Count);
+    }
 
-    public ValueTask RestoreAsync(Guid id, CancellationToken ct = default)
-        => throw new NotImplementedException("Task 10");
+    public async ValueTask RestoreAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var node = await db.HabitNodes.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.Id == id, ct)
+            ?? throw new HabitNodeNotFoundException(id);
+        if (node.DeletedAt is null) return;
+        if (node.ParentId is { } parentId)
+        {
+            var parent = await db.HabitNodes.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(n => n.Id == parentId, ct);
+            if (parent is not null && parent.DeletedAt is not null)
+                throw new CannotRestoreOrphanException(id, parentId);
+        }
+        var tagDeletedAt = node.DeletedAt;
+        var descendants = await DescendantIdsAsync(db, id, ct);
+        descendants.Add(id);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.HabitNodes.IgnoreQueryFilters()
+            .Where(n => descendants.Contains(n.Id) && n.DeletedAt == tagDeletedAt)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(n => (DateTime?)n.DeletedAt, (DateTime?)null), ct);
+        await tx.CommitAsync(ct);
+        LogRestored(id);
+    }
 
     internal static async Task<HashSet<Guid>> DescendantIdsAsync(
         RecordumDbContext db, Guid rootId, CancellationToken ct)
