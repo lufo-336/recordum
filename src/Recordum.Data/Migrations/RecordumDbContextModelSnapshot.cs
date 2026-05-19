@@ -381,6 +381,9 @@ namespace Recordum.Data.Migrations
                     b.HasIndex("HabitNodeId", "CompletedAt")
                         .HasDatabaseName("ix_completions_habit_node_id_completed_at");
 
+                    b.HasIndex("HabitNodeId", "CompletedAtMs")
+                        .HasDatabaseName("ix_completions_habit_node_id_completed_at_ms");
+
                     b.ToTable("completions", (string)null);
                 });
 
