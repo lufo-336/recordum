@@ -69,7 +69,7 @@ public static class ServiceRegistrar
         services.AddScoped<IStreakPauseService, StreakPauseService>();
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
-        // IKeyTransitionService registered in Task 32.
+        services.AddScoped<IKeyTransitionService, KeyTransitionService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
