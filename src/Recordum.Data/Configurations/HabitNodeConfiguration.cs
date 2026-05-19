@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 
 namespace Recordum.Data.Configurations;
@@ -19,6 +20,12 @@ public sealed class HabitNodeConfiguration : IEntityTypeConfiguration<HabitNode>
         builder.Property(n => n.HabitType).HasConversion<string>().HasMaxLength(16);
         builder.Property(n => n.AiDataSharing).HasConversion<string>().HasMaxLength(16);
 
+        builder.Property(n => n.PinScope)
+            .HasConversion<string>()
+            .HasMaxLength(8)
+            .HasDefaultValue(PinScope.None)
+            .IsRequired();
+
         builder.HasOne(n => n.Parent)
             .WithMany(p => p.Children)
             .HasForeignKey(n => n.ParentId)
@@ -28,6 +35,7 @@ public sealed class HabitNodeConfiguration : IEntityTypeConfiguration<HabitNode>
         builder.HasIndex(n => n.NodeType);
         builder.HasIndex(n => n.DeletedAt);
         builder.HasIndex(n => n.CreatedByPluginId);
+        builder.HasIndex(n => n.PinScope);
 
         builder.ToTable(t =>
         {
@@ -39,6 +47,8 @@ public sealed class HabitNodeConfiguration : IEntityTypeConfiguration<HabitNode>
                 "ai_data_sharing IN ('None','LocalOnly','ApiAllowed')");
             t.HasCheckConstraint("ck_habit_node_group_has_no_habit_type",
                 "(node_type = 'Habit' AND habit_type IS NOT NULL) OR (node_type = 'Group' AND habit_type IS NULL)");
+            t.HasCheckConstraint("ck_habit_node_pin_scope",
+                "pin_scope IN ('None','Local','Global')");
         });
 
         builder.HasQueryFilter(n => n.DeletedAt == null);
