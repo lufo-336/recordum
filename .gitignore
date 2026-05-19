@@ -440,3 +440,6 @@ FodyWeavers.xsd
 *.db-wal
 node_modules/
 tools/plugin-api-ts/dist/
+
+# Visual Companion (brainstorming mockups)
+.superpowers/
