@@ -14,12 +14,24 @@ public sealed class BootstrapSmokeTests : IDisposable
     private readonly string _dbPath;
     private readonly ServiceProvider _services;
 
+    private readonly string _keyPath;
+    private readonly string _saltPath;
+
     public BootstrapSmokeTests()
     {
-        _dbPath = Path.Combine(Path.GetTempPath(), $"recordum-smoke-{Guid.NewGuid():N}.db");
+        var dir = Path.Combine(Path.GetTempPath(), $"recordum-smoke-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        _dbPath = Path.Combine(dir, "recordum.db");
+        _keyPath = Path.Combine(dir, "db.key");
+        _saltPath = Path.Combine(dir, "db.salt");
 
         var collection = new ServiceCollection();
-        collection.AddRecordumServices(new RecordumOptions { DatabasePath = _dbPath });
+        collection.AddRecordumServices(new RecordumOptions
+        {
+            DatabasePath = _dbPath,
+            KeyFilePath = _keyPath,
+            SaltFilePath = _saltPath,
+        });
         _services = collection.BuildServiceProvider();
     }
 
@@ -27,7 +39,9 @@ public sealed class BootstrapSmokeTests : IDisposable
     {
         _services.Dispose();
         SqliteConnection.ClearAllPools();
-        if (File.Exists(_dbPath)) File.Delete(_dbPath);
+        var dir = Path.GetDirectoryName(_dbPath)!;
+        try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
+        catch (IOException) { /* file lock — best-effort cleanup */ }
     }
 
     [Fact]
