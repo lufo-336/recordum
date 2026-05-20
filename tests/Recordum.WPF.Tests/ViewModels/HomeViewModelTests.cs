@@ -100,6 +100,62 @@ public class HomeViewModelTests
         _query.HomeCallCount.Should().Be(firstCallCount);
     }
 
+    [Fact]
+    public async Task TypeFilter_excludes_other_types()
+    {
+        _query.HomeRows.Add(SampleRow(name: "a", type: HabitType.Action));
+        _query.HomeRows.Add(SampleRow(name: "c", type: HabitType.Counter));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.ToggleTypeFilterCommand.Execute(HabitType.Action);
+
+        sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("a");
+    }
+
+    [Fact]
+    public async Task SearchText_filters_by_name_case_insensitive_contains()
+    {
+        _query.HomeRows.Add(SampleRow(name: "Morning yoga"));
+        _query.HomeRows.Add(SampleRow(name: "Read book"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.SearchText = "YOGA";
+
+        sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("Morning yoga");
+    }
+
+    [Fact]
+    public async Task HideCompletedToday_filters_completed_rows()
+    {
+        var done = SampleRow(name: "done") with { IsCompletedToday = true };
+        var pending = SampleRow(name: "pending");
+        _query.HomeRows.Add(done);
+        _query.HomeRows.Add(pending);
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.HideCompletedToday = true;
+
+        sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("pending");
+    }
+
+    [Fact]
+    public async Task TabSwitch_resets_all_filters()
+    {
+        _query.HomeRows.Add(SampleRow(name: "a"));
+        _query.HomeRows.Add(SampleRow(name: "b", archived: true));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.SearchText = "a";
+        await sut.SwitchTabCommand.ExecuteAsync(HomeTab.Archived);
+
+        sut.SearchText.Should().BeNullOrEmpty();
+        sut.Rows.Should().ContainSingle().Which.Name.Should().Be("b");
+    }
+
     private static HomeTreeRow SampleRow(string name = "x", bool archived = false, HabitType? type = HabitType.Action, Guid? id = null, Guid? parent = null) =>
         new(id ?? Guid.NewGuid(), parent, name, "#000000", type, null, 0, false, PinScope.None, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0));
 }
