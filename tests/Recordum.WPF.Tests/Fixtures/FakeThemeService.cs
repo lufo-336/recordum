@@ -7,14 +7,15 @@ public sealed class FakeThemeService : IThemeService
 {
     public ThemeMode CurrentMode { get; set; } = ThemeMode.System;
     public ThemeMode EffectiveTheme { get; set; } = ThemeMode.Light;
-    public List<ThemeMode> SetModeCalls { get; } = new();
+    private readonly List<ThemeMode> _setModeCalls = new();
+    public IReadOnlyList<ThemeMode> SetModeCalls => _setModeCalls;
     public event EventHandler<ThemeMode>? EffectiveThemeChanged;
 
     public ValueTask InitializeAsync(CancellationToken ct = default) => ValueTask.CompletedTask;
 
     public ValueTask SetModeAsync(ThemeMode mode, CancellationToken ct = default)
     {
-        SetModeCalls.Add(mode);
+        _setModeCalls.Add(mode);
         CurrentMode = mode;
         if (mode is ThemeMode.Light or ThemeMode.Dark)
         {

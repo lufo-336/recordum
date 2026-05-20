@@ -6,11 +6,21 @@ namespace Recordum.WPF.Tests.Fixtures;
 
 public sealed class FakeHabitNodeService : IHabitNodeService
 {
-    public List<(Guid Id, PinScope Scope)> PinScopeCalls { get; } = new();
-    public List<(Guid Id, bool Archived)> ArchivedCalls { get; } = new();
-    public List<Guid> SoftDeleteCalls { get; } = new();
-    public List<Guid> RestoreCalls { get; } = new();
-    public List<(Guid Id, Guid? NewParent)> MoveCalls { get; } = new();
+    private readonly List<(Guid Id, PinScope Scope)> _pinScopeCalls = new();
+    public IReadOnlyList<(Guid Id, PinScope Scope)> PinScopeCalls => _pinScopeCalls;
+
+    private readonly List<(Guid Id, bool Archived)> _archivedCalls = new();
+    public IReadOnlyList<(Guid Id, bool Archived)> ArchivedCalls => _archivedCalls;
+
+    private readonly List<Guid> _softDeleteCalls = new();
+    public IReadOnlyList<Guid> SoftDeleteCalls => _softDeleteCalls;
+
+    private readonly List<Guid> _restoreCalls = new();
+    public IReadOnlyList<Guid> RestoreCalls => _restoreCalls;
+
+    private readonly List<(Guid Id, Guid? NewParent)> _moveCalls = new();
+    public IReadOnlyList<(Guid Id, Guid? NewParent)> MoveCalls => _moveCalls;
+
     public Dictionary<Guid, HabitNode> Store { get; } = new();
     public Exception? NextException { get; set; }
 
@@ -32,7 +42,7 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     public ValueTask MoveAsync(Guid id, Guid? newParentId, CancellationToken ct = default)
     {
         Throw();
-        MoveCalls.Add((id, newParentId));
+        _moveCalls.Add((id, newParentId));
         Store[id].ParentId = newParentId;
         return ValueTask.CompletedTask;
     }
@@ -40,14 +50,14 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     public ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default)
     {
         Throw();
-        SoftDeleteCalls.Add(id);
+        _softDeleteCalls.Add(id);
         return ValueTask.CompletedTask;
     }
 
     public ValueTask RestoreAsync(Guid id, CancellationToken ct = default)
     {
         Throw();
-        RestoreCalls.Add(id);
+        _restoreCalls.Add(id);
         return ValueTask.CompletedTask;
     }
 
@@ -60,7 +70,7 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     public ValueTask SetPinScopeAsync(Guid id, PinScope scope, CancellationToken ct = default)
     {
         Throw();
-        PinScopeCalls.Add((id, scope));
+        _pinScopeCalls.Add((id, scope));
         if (Store.TryGetValue(id, out var n)) n.PinScope = scope;
         return ValueTask.CompletedTask;
     }
@@ -68,7 +78,7 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     public ValueTask SetArchivedAsync(Guid id, bool archived, CancellationToken ct = default)
     {
         Throw();
-        ArchivedCalls.Add((id, archived));
+        _archivedCalls.Add((id, archived));
         if (Store.TryGetValue(id, out var n)) n.IsArchived = archived;
         return ValueTask.CompletedTask;
     }
