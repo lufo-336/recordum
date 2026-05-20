@@ -3,6 +3,7 @@
                     xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
                     xmlns:v="clr-namespace:Recordum.WPF.Views"
                     xmlns:res="clr-namespace:Recordum.WPF.Resources"
+                    xmlns:b="clr-namespace:Recordum.WPF.Behaviors"
                     xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
     <DataTemplate x:Key="HabitRowTemplate" DataType="{x:Type vm:HomeRowViewModel}">
         <Grid Height="{StaticResource Layout.RowHeight}">
@@ -17,12 +18,16 @@
                        Width="{StaticResource Layout.AccentBarWidth}"
                        Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}" />
 
-            <TextBlock Grid.Column="1"
-                       Margin="8,0,0,0"
-                       VerticalAlignment="Center"
-                       FontSize="{StaticResource FontSize.Body}"
-                       Foreground="{DynamicResource Brush.Text}"
-                       Text="{Binding Name}" />
+            <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Name}"
+                           FontSize="{StaticResource FontSize.Body}"
+                           Foreground="{DynamicResource Brush.Text}"
+                           Visibility="{Binding IsRenaming, Converter={StaticResource BoolToHidden}}" />
+                <TextBox Text="{Binding PendingName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                         FontSize="{StaticResource FontSize.Body}"
+                         b:InlineRenameBehavior.Attach="True"
+                         Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisible}}" />
+            </Grid>
 
             <TextBlock Grid.Column="2"
                        Margin="8,0,8,0"
