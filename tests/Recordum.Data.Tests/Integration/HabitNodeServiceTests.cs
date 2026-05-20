@@ -104,4 +104,39 @@ public class HabitNodeServiceTests
         var act = async () => await svc.SetPinScopeAsync(id, PinScope.Local);
         await act.Should().ThrowAsync<HabitNodeAlreadySoftDeletedException>();
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SetArchivedAsync_persists(bool target)
+    {
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var id = await svc.CreateAsync(new HabitNode { Name = "x", NodeType = NodeType.Habit, HabitType = HabitType.Action, IsArchived = !target });
+
+        await svc.SetArchivedAsync(id, target);
+
+        var node = await svc.GetAsync(id);
+        node!.IsArchived.Should().Be(target);
+    }
+
+    [Fact]
+    public async Task SetArchivedAsync_throws_on_unknown_id()
+    {
+        await using var fx = new DbFixture();
+        var act = async () => await Svc(fx).SetArchivedAsync(Guid.NewGuid(), archived: true);
+        await act.Should().ThrowAsync<HabitNodeNotFoundException>();
+    }
+
+    [Fact]
+    public async Task SetArchivedAsync_throws_on_soft_deleted_node()
+    {
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var id = await svc.CreateAsync(new HabitNode { Name = "x", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+        await svc.SoftDeleteAsync(id);
+
+        var act = async () => await svc.SetArchivedAsync(id, archived: true);
+        await act.Should().ThrowAsync<HabitNodeAlreadySoftDeletedException>();
+    }
 }

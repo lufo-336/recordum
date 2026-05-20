@@ -12,4 +12,5 @@ public interface IHabitNodeService
     ValueTask RestoreAsync(Guid id, CancellationToken ct = default);
     ValueTask<HabitNode?> GetAsync(Guid id, CancellationToken ct = default);
     ValueTask SetPinScopeAsync(Guid id, PinScope scope, CancellationToken ct = default);
+    ValueTask SetArchivedAsync(Guid id, bool archived, CancellationToken ct = default);
 }

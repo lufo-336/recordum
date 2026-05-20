@@ -33,6 +33,9 @@ public sealed partial class HabitNodeService(
     [LoggerMessage(EventId = 6, Level = LogLevel.Information, Message = "HabitNode {Id} pin scope set to {Scope}")]
     private partial void LogPinScopeChanged(Guid id, PinScope scope);
 
+    [LoggerMessage(EventId = 7, Level = LogLevel.Information, Message = "HabitNode {Id} archived={Archived}")]
+    private partial void LogArchivedChanged(Guid id, bool archived);
+
     public async ValueTask<Guid> CreateAsync(HabitNode draft, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
@@ -92,6 +95,19 @@ public sealed partial class HabitNodeService(
         node.PinScope = scope;
         await db.SaveChangesAsync(ct);
         LogPinScopeChanged(id, scope);
+    }
+
+    public async ValueTask SetArchivedAsync(Guid id, bool archived, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var node = await db.HabitNodes.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.Id == id, ct)
+            ?? throw new HabitNodeNotFoundException(id);
+        if (node.DeletedAt is not null) throw new HabitNodeAlreadySoftDeletedException(id);
+        if (node.IsArchived == archived) return;
+        node.IsArchived = archived;
+        await db.SaveChangesAsync(ct);
+        LogArchivedChanged(id, archived);
     }
 
     public async ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default)
