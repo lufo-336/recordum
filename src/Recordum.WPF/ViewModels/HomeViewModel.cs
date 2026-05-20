@@ -120,8 +120,41 @@ public sealed partial class HomeViewModel : ObservableObject
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
     }
 
-    private static IEnumerable<(HomeTreeRow Row, int Level)> OrderHierarchically(IReadOnlyList<HomeTreeRow> rows)
+    private IEnumerable<(HomeTreeRow Row, int Level)> OrderHierarchically(IReadOnlyList<HomeTreeRow> rows)
     {
-        foreach (var r in rows) yield return (r, 0);
+        if (ActiveTab != HomeTab.Active)
+        {
+            foreach (var r in ApplySort(rows)) yield return (r, 0);
+            yield break;
+        }
+
+        var byParent = rows.ToLookup(r => r.ParentId);
+        var roots = ApplySort(byParent[null].ToList())
+            .OrderByDescending(r => r.PinScope == PinScope.Global)
+            .ThenByDescending(r => r.PinScope == PinScope.Local)
+            .ToList();
+
+        foreach (var root in roots)
+            foreach (var pair in WalkSubtree(root, 0, byParent))
+                yield return pair;
     }
+
+    private IEnumerable<(HomeTreeRow Row, int Level)> WalkSubtree(HomeTreeRow node, int level, ILookup<Guid?, HomeTreeRow> byParent)
+    {
+        yield return (node, level);
+        var children = byParent[node.HabitNodeId].ToList();
+        var sortedChildren = ApplySort(children)
+            .OrderByDescending(c => c.PinScope == PinScope.Local)
+            .ToList();
+        foreach (var c in sortedChildren)
+            foreach (var pair in WalkSubtree(c, level + 1, byParent))
+                yield return pair;
+    }
+
+    private IEnumerable<HomeTreeRow> ApplySort(IReadOnlyList<HomeTreeRow> rows) => SortOption switch
+    {
+        HomeSort.Name => rows.OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase),
+        HomeSort.LastCompletion => rows.OrderByDescending(r => r.LastCompletionAt ?? DateTime.MinValue),
+        _ => rows,
+    };
 }

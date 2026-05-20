@@ -170,6 +170,63 @@ public class HomeViewModelTests
         sut.Rows.Should().ContainSingle().Which.Name.Should().Be("b");
     }
 
+    [Fact]
+    public async Task PinScope_Global_appears_first_then_Local_then_others()
+    {
+        _query.HomeRows.Add(SampleRow(name: "n", id: NewId("n")));
+        _query.HomeRows.Add(SampleRow(name: "l", id: NewId("l")) with { PinScope = PinScope.Local });
+        _query.HomeRows.Add(SampleRow(name: "g", id: NewId("g")) with { PinScope = PinScope.Global });
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.Rows.Select(r => r.Name).Should().Equal("g", "l", "n");
+    }
+
+    [Fact]
+    public async Task Sort_by_Name_orders_alphabetically_within_pin_layer()
+    {
+        _query.HomeRows.Add(SampleRow(name: "Charlie"));
+        _query.HomeRows.Add(SampleRow(name: "alpha"));
+        _query.HomeRows.Add(SampleRow(name: "bravo"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SortOption = HomeSort.Name;
+        sut.Rows.Select(r => r.Name).Should().Equal("alpha", "bravo", "Charlie");
+    }
+
+    [Fact]
+    public async Task Hierarchy_nests_children_under_parent_in_Active_tab()
+    {
+        var groupId = NewId("group");
+        _query.HomeRows.Add(SampleRow(name: "G", id: groupId, type: null));
+        _query.HomeRows.Add(SampleRow(name: "child1", parent: groupId));
+        _query.HomeRows.Add(SampleRow(name: "child2", parent: groupId));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.Rows.Select(r => (r.Name, r.IndentLevel)).Should().Equal(
+            ("G", 0), ("child1", 1), ("child2", 1));
+    }
+
+    [Fact]
+    public async Task Hierarchy_is_flat_in_Archived_and_Trash()
+    {
+        var groupId = NewId("g");
+        _query.HomeRows.Add(SampleRow(name: "G", id: groupId, type: null, archived: true));
+        _query.HomeRows.Add(SampleRow(name: "c", parent: groupId, archived: true));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        await sut.SwitchTabCommand.ExecuteAsync(HomeTab.Archived);
+
+        sut.Rows.All(r => r.IndentLevel == 0).Should().BeTrue();
+    }
+
     private static HomeTreeRow SampleRow(string name = "x", bool archived = false, HabitType? type = HabitType.Action, Guid? id = null, Guid? parent = null) =>
         new(id ?? Guid.NewGuid(), parent, name, "#000000", type, null, 0, false, PinScope.None, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
+
+    private static Guid NewId(string seed)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(seed.PadRight(16)[..16]);
+        return new Guid(bytes);
+    }
 }
