@@ -15,6 +15,62 @@ public static class Strings
     public static string StartupErrorTitle => Get(nameof(StartupErrorTitle));
     public static string StartupErrorMessage => Get(nameof(StartupErrorMessage));
 
+    // Home screen tabs
+    public static string Home_Tab_Active => Get("Home.Tab.Active");
+    public static string Home_Tab_Archived => Get("Home.Tab.Archived");
+    public static string Home_Tab_Trash => Get("Home.Tab.Trash");
+
+    // Home screen filter / sort
+    public static string Home_Filter_SortLabel => Get("Home.Filter.SortLabel");
+    public static string Home_Filter_Sort_Manual => Get("Home.Filter.Sort.Manual");
+    public static string Home_Filter_Sort_Name => Get("Home.Filter.Sort.Name");
+    public static string Home_Filter_Sort_LastCompletion => Get("Home.Filter.Sort.LastCompletion");
+    public static string Home_Filter_TypeLabel => Get("Home.Filter.TypeLabel");
+    public static string Home_Filter_TagLabel => Get("Home.Filter.TagLabel");
+    public static string Home_Filter_HideCompleted => Get("Home.Filter.HideCompleted");
+    public static string Home_Filter_SearchPlaceholder => Get("Home.Filter.SearchPlaceholder");
+
+    // Habit type labels
+    public static string Home_HabitType_Action => Get("Home.HabitType.Action");
+    public static string Home_HabitType_Counter => Get("Home.HabitType.Counter");
+    public static string Home_HabitType_Resistance => Get("Home.HabitType.Resistance");
+    public static string Home_HabitType_Journal => Get("Home.HabitType.Journal");
+    public static string Home_HabitType_State => Get("Home.HabitType.State");
+
+    // Context menu
+    public static string Home_ContextMenu_Rename => Get("Home.ContextMenu.Rename");
+    public static string Home_ContextMenu_Pin => Get("Home.ContextMenu.Pin");
+    public static string Home_ContextMenu_Pin_None => Get("Home.ContextMenu.Pin.None");
+    public static string Home_ContextMenu_Pin_Local => Get("Home.ContextMenu.Pin.Local");
+    public static string Home_ContextMenu_Pin_Global => Get("Home.ContextMenu.Pin.Global");
+    public static string Home_ContextMenu_Archive => Get("Home.ContextMenu.Archive");
+    public static string Home_ContextMenu_Unarchive => Get("Home.ContextMenu.Unarchive");
+    public static string Home_ContextMenu_SoftDelete => Get("Home.ContextMenu.SoftDelete");
+    public static string Home_ContextMenu_Restore => Get("Home.ContextMenu.Restore");
+    public static string Home_ContextMenu_Purge => Get("Home.ContextMenu.Purge");
+
+    // Confirmation dialogs
+    public static string Home_Confirm_PurgeTitle => Get("Home.Confirm.PurgeTitle");
+    public static string Home_Confirm_PurgeMessage => Get("Home.Confirm.PurgeMessage");
+
+    // Loading / empty / error states
+    public static string Home_Loading => Get("Home.Loading");
+    public static string Home_Empty_Active => Get("Home.Empty.Active");
+    public static string Home_Empty_Archived => Get("Home.Empty.Archived");
+    public static string Home_Empty_Trash => Get("Home.Empty.Trash");
+    public static string Home_Error_Generic => Get("Home.Error.Generic");
+    public static string Home_Error_Retry => Get("Home.Error.Retry");
+    public static string Home_GroupChildCount_Format => Get("Home.GroupChildCount.Format");
+
+    // Settings
+    public static string Settings_Title => Get("Settings.Title");
+    public static string Settings_Theme => Get("Settings.Theme");
+    public static string Settings_Theme_System => Get("Settings.Theme.System");
+    public static string Settings_Theme_Light => Get("Settings.Theme.Light");
+    public static string Settings_Theme_Dark => Get("Settings.Theme.Dark");
+    public static string Settings_About => Get("Settings.About");
+    public static string Settings_Quit => Get("Settings.Quit");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Home.Tab.Active" xml:space="preserve">
+    <value>Attive</value>
+  </data>
+  <data name="Home.Tab.Archived" xml:space="preserve">
+    <value>Archiviate</value>
+  </data>
+  <data name="Home.Tab.Trash" xml:space="preserve">
+    <value>Cestino</value>
+  </data>
+  <data name="Home.Filter.SortLabel" xml:space="preserve">
+    <value>Ordina</value>
+  </data>
+  <data name="Home.Filter.Sort.Manual" xml:space="preserve">
+    <value>Manuale</value>
+  </data>
+  <data name="Home.Filter.Sort.Name" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Home.Filter.Sort.LastCompletion" xml:space="preserve">
+    <value>Ultimo completamento</value>
+  </data>
+  <data name="Home.Filter.TypeLabel" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Home.Filter.TagLabel" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Home.Filter.HideCompleted" xml:space="preserve">
+    <value>Nascondi completate oggi</value>
+  </data>
+  <data name="Home.Filter.SearchPlaceholder" xml:space="preserve">
+    <value>Cerca…</value>
+  </data>
+  <data name="Home.HabitType.Action" xml:space="preserve">
+    <value>azione</value>
+  </data>
+  <data name="Home.HabitType.Counter" xml:space="preserve">
+    <value>contatore</value>
+  </data>
+  <data name="Home.HabitType.Resistance" xml:space="preserve">
+    <value>resistenza</value>
+  </data>
+  <data name="Home.HabitType.Journal" xml:space="preserve">
+    <value>journal</value>
+  </data>
+  <data name="Home.HabitType.State" xml:space="preserve">
+    <value>stato</value>
+  </data>
+  <data name="Home.ContextMenu.Rename" xml:space="preserve">
+    <value>Rinomina</value>
+  </data>
+  <data name="Home.ContextMenu.Pin" xml:space="preserve">
+    <value>Fissa</value>
+  </data>
+  <data name="Home.ContextMenu.Pin.None" xml:space="preserve">
+    <value>Non fissare</value>
+  </data>
+  <data name="Home.ContextMenu.Pin.Local" xml:space="preserve">
+    <value>Fissa nel gruppo</value>
+  </data>
+  <data name="Home.ContextMenu.Pin.Global" xml:space="preserve">
+    <value>Fissa in alto</value>
+  </data>
+  <data name="Home.ContextMenu.Archive" xml:space="preserve">
+    <value>Archivia</value>
+  </data>
+  <data name="Home.ContextMenu.Unarchive" xml:space="preserve">
+    <value>Ripristina dall&#x2019;archivio</value>
+  </data>
+  <data name="Home.ContextMenu.SoftDelete" xml:space="preserve">
+    <value>Sposta nel cestino</value>
+  </data>
+  <data name="Home.ContextMenu.Restore" xml:space="preserve">
+    <value>Ripristina</value>
+  </data>
+  <data name="Home.ContextMenu.Purge" xml:space="preserve">
+    <value>Elimina definitivamente</value>
+  </data>
+  <data name="Home.Confirm.PurgeTitle" xml:space="preserve">
+    <value>Eliminare definitivamente?</value>
+  </data>
+  <data name="Home.Confirm.PurgeMessage" xml:space="preserve">
+    <value>&#xAB;{0}&#xBB; e il suo contenuto verranno rimossi e non potranno essere recuperati.</value>
+  </data>
+  <data name="Home.Loading" xml:space="preserve">
+    <value>Caricamento…</value>
+  </data>
+  <data name="Home.Empty.Active" xml:space="preserve">
+    <value>Nessuna abitudine. La creazione arriva nella milestone 3.4.</value>
+  </data>
+  <data name="Home.Empty.Archived" xml:space="preserve">
+    <value>Niente in archivio.</value>
+  </data>
+  <data name="Home.Empty.Trash" xml:space="preserve">
+    <value>Cestino vuoto.</value>
+  </data>
+  <data name="Home.Error.Generic" xml:space="preserve">
+    <value>Si è verificato un errore.</value>
+  </data>
+  <data name="Home.Error.Retry" xml:space="preserve">
+    <value>Riprova</value>
+  </data>
+  <data name="Home.GroupChildCount.Format" xml:space="preserve">
+    <value>{0} abitudini</value>
+  </data>
+  <data name="Settings.Title" xml:space="preserve">
+    <value>Impostazioni</value>
+  </data>
+  <data name="Settings.Theme" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="Settings.Theme.System" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="Settings.Theme.Light" xml:space="preserve">
+    <value>Chiaro</value>
+  </data>
+  <data name="Settings.Theme.Dark" xml:space="preserve">
+    <value>Scuro</value>
+  </data>
+  <data name="Settings.About" xml:space="preserve">
+    <value>Informazioni su Recordum</value>
+  </data>
+  <data name="Settings.Quit" xml:space="preserve">
+    <value>Esci</value>
+  </data>
+</root>

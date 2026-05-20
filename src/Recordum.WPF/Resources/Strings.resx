@@ -76,4 +76,130 @@
 Details: {0}</value>
     <comment>Body of the fatal startup error dialog. {0} is the exception message.</comment>
   </data>
+  <data name="Home.Tab.Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Home.Tab.Archived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="Home.Tab.Trash" xml:space="preserve">
+    <value>Trash</value>
+  </data>
+  <data name="Home.Filter.SortLabel" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Home.Filter.Sort.Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="Home.Filter.Sort.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Home.Filter.Sort.LastCompletion" xml:space="preserve">
+    <value>Last completion</value>
+  </data>
+  <data name="Home.Filter.TypeLabel" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Home.Filter.TagLabel" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Home.Filter.HideCompleted" xml:space="preserve">
+    <value>Hide completed today</value>
+  </data>
+  <data name="Home.Filter.SearchPlaceholder" xml:space="preserve">
+    <value>Search…</value>
+  </data>
+  <data name="Home.HabitType.Action" xml:space="preserve">
+    <value>action</value>
+  </data>
+  <data name="Home.HabitType.Counter" xml:space="preserve">
+    <value>counter</value>
+  </data>
+  <data name="Home.HabitType.Resistance" xml:space="preserve">
+    <value>resistance</value>
+  </data>
+  <data name="Home.HabitType.Journal" xml:space="preserve">
+    <value>journal</value>
+  </data>
+  <data name="Home.HabitType.State" xml:space="preserve">
+    <value>state</value>
+  </data>
+  <data name="Home.ContextMenu.Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Home.ContextMenu.Pin" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="Home.ContextMenu.Pin.None" xml:space="preserve">
+    <value>Don&#x2019;t pin</value>
+  </data>
+  <data name="Home.ContextMenu.Pin.Local" xml:space="preserve">
+    <value>Pin to parent</value>
+  </data>
+  <data name="Home.ContextMenu.Pin.Global" xml:space="preserve">
+    <value>Pin globally</value>
+  </data>
+  <data name="Home.ContextMenu.Archive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="Home.ContextMenu.Unarchive" xml:space="preserve">
+    <value>Unarchive</value>
+  </data>
+  <data name="Home.ContextMenu.SoftDelete" xml:space="preserve">
+    <value>Move to Trash</value>
+  </data>
+  <data name="Home.ContextMenu.Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Home.ContextMenu.Purge" xml:space="preserve">
+    <value>Delete permanently</value>
+  </data>
+  <data name="Home.Confirm.PurgeTitle" xml:space="preserve">
+    <value>Delete permanently?</value>
+  </data>
+  <data name="Home.Confirm.PurgeMessage" xml:space="preserve">
+    <value>&#x201C;{0}&#x201D; and its contents will be removed and cannot be recovered.</value>
+  </data>
+  <data name="Home.Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="Home.Empty.Active" xml:space="preserve">
+    <value>No habits yet. Habit creation arrives in milestone 3.4.</value>
+  </data>
+  <data name="Home.Empty.Archived" xml:space="preserve">
+    <value>Nothing archived.</value>
+  </data>
+  <data name="Home.Empty.Trash" xml:space="preserve">
+    <value>Trash is empty.</value>
+  </data>
+  <data name="Home.Error.Generic" xml:space="preserve">
+    <value>Something went wrong.</value>
+  </data>
+  <data name="Home.Error.Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Home.GroupChildCount.Format" xml:space="preserve">
+    <value>{0} habits</value>
+  </data>
+  <data name="Settings.Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings.Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Settings.Theme.System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Settings.Theme.Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings.Theme.Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings.About" xml:space="preserve">
+    <value>About Recordum</value>
+  </data>
+  <data name="Settings.Quit" xml:space="preserve">
+    <value>Quit</value>
+  </data>
 </root>
