@@ -14,6 +14,7 @@ public sealed class ThemeService : IThemeService, IDisposable
     private readonly Func<bool> _systemIsLight;
     private ThemeMode _mode;
     private ThemeMode _effective;
+    private bool _initialized;
     private bool _disposed;
 
     public ThemeMode CurrentMode => _mode;
@@ -33,6 +34,8 @@ public sealed class ThemeService : IThemeService, IDisposable
 
     public async ValueTask InitializeAsync(CancellationToken ct = default)
     {
+        if (_initialized) return;
+        _initialized = true;
         _mode = (await _settings.GetEnumAsync<ThemeMode>(PersistenceKey, ct)) ?? ThemeMode.System;
         RecomputeEffective(raiseEvent: false);
         SystemEvents.UserPreferenceChanged += OnUserPrefChanged;
@@ -50,6 +53,7 @@ public sealed class ThemeService : IThemeService, IDisposable
 
     private void OnUserPrefChanged(object? sender, UserPreferenceChangedEventArgs e)
     {
+        if (_disposed) return;
         if (e.Category == UserPreferenceCategory.General) RecomputeEffective(raiseEvent: true);
     }
 
