@@ -28,6 +28,9 @@ public sealed partial class HomeViewModel : ObservableObject
 
     public ObservableCollection<HomeRowViewModel> Rows { get; } = new();
 
+    public IReadOnlyList<HomeSort> AvailableSorts { get; } =
+        new[] { HomeSort.Manual, HomeSort.Name, HomeSort.LastCompletion };
+
     public HomeViewModel(IHabitTreeQueryService query, IHabitNodeService nodes, IPurgeService purge)
     {
         _query = query;

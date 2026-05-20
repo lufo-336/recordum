@@ -1,0 +1,11 @@
+<UserControl x:Class="Recordum.WPF.Views.EmptyState"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources">
+    <TextBlock x:Name="Message"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Opacity="0.6"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               Text="{x:Static res:Strings.Home_Empty_Active}" />
+</UserControl>

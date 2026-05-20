@@ -13,6 +13,9 @@
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
+            <conv:EnumToBoolConverter x:Key="EnumToBool"/>
+            <conv:StateToVisibleConverter x:Key="StateToVisible"/>
+            <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
