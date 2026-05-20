@@ -3,16 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
+        xmlns:v="clr-namespace:Recordum.WPF.Views"
         xmlns:res="clr-namespace:Recordum.WPF.Resources"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:MainWindowViewModel, IsDesignTimeCreatable=False}"
         Title="{x:Static res:Strings.AppTitle}"
-        Height="600" Width="900"
-        WindowStartupLocation="CenterScreen">
+        MinWidth="880" MinHeight="620"
+        Width="1120" Height="760"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Brush.Background}">
     <Grid>
-        <TextBlock Text="{x:Static res:Strings.MainWindowPlaceholder}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   FontSize="16"
-                   Opacity="0.6" />
+        <v:HomeView DataContext="{Binding Home}"/>
+        <Popup x:Name="SettingsPopupHost" StaysOpen="False" Placement="MousePoint" AllowsTransparency="True">
+            <v:SettingsPopup DataContext="{Binding Settings}"/>
+        </Popup>
     </Grid>
 </Window>

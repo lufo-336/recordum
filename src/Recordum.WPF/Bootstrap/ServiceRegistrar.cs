@@ -89,6 +89,9 @@ public static class ServiceRegistrar
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<MainWindowViewModel>();
 
+        // Main window.
+        services.AddTransient<MainWindow>();
+
         // Bootstrap.
         services.AddSingleton<ApplicationInitializer>();
 

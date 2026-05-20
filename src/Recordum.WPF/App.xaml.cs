@@ -22,7 +22,6 @@ public partial class App : Application
 
         var collection = new ServiceCollection();
         collection.AddRecordumServices(RecordumOptions.Default());
-        collection.AddSingleton<MainWindow>();
         _services = collection.BuildServiceProvider();
 
         try
