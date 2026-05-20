@@ -142,6 +142,20 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task TagFilter_keeps_only_rows_with_matching_tag()
+    {
+        var tagA = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "tagged") with { TagIds = ImmutableArray.Create(tagA) });
+        _query.HomeRows.Add(SampleRow(name: "untagged"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.TagFilter = ImmutableHashSet.Create(tagA);
+
+        sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("tagged");
+    }
+
+    [Fact]
     public async Task TabSwitch_resets_all_filters()
     {
         _query.HomeRows.Add(SampleRow(name: "a"));
@@ -157,5 +171,5 @@ public class HomeViewModelTests
     }
 
     private static HomeTreeRow SampleRow(string name = "x", bool archived = false, HabitType? type = HabitType.Action, Guid? id = null, Guid? parent = null) =>
-        new(id ?? Guid.NewGuid(), parent, name, "#000000", type, null, 0, false, PinScope.None, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0));
+        new(id ?? Guid.NewGuid(), parent, name, "#000000", type, null, 0, false, PinScope.None, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
 }

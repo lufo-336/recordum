@@ -106,6 +106,8 @@ public sealed partial class HomeViewModel : ObservableObject
         };
         if (!TypeFilter.IsEmpty)
             q = q.Where(r => r.HabitType.HasValue && TypeFilter.Contains(r.HabitType.Value));
+        if (!TagFilter.IsEmpty)
+            q = q.Where(r => r.TagIds.Any(TagFilter.Contains));
         if (HideCompletedToday && ActiveTab == HomeTab.Active)
             q = q.Where(r => !r.IsCompletedToday);
         if (!string.IsNullOrWhiteSpace(SearchText))

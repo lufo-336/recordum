@@ -12,7 +12,7 @@ namespace Recordum.WPF.Tests.ViewModels;
 public class HomeRowViewModelTests
 {
     private static HomeTreeRow Sample(Guid id, string name = "x", PinScope scope = PinScope.None, bool archived = false, HabitType? type = HabitType.Action) =>
-        new(id, null, name, "#000000", type, null, 0, false, scope, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0));
+        new(id, null, name, "#000000", type, null, 0, false, scope, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
 
     [Fact]
     public void IsGroup_true_when_HabitType_is_null()

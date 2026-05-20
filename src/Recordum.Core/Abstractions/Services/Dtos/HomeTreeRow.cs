@@ -15,4 +15,5 @@ public sealed record HomeTreeRow(
     PinScope PinScope,
     int ChildCount,
     bool IsArchived,
-    ImmutableArray<int> CompletionsLast7Days);
+    ImmutableArray<int> CompletionsLast7Days,
+    ImmutableArray<Guid> TagIds);

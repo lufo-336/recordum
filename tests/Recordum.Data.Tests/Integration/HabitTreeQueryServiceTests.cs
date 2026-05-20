@@ -152,4 +152,44 @@ public class HabitTreeQueryServiceTests
         var rows = await q.GetTrashTreeAsync();
         rows.Should().ContainSingle().Which.HabitNodeId.Should().Be(trashed);
     }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_TagIds_for_each_node()
+    {
+        await using var fx = new DbFixture();
+        var habitId = Guid.NewGuid();
+        var tagA = Guid.NewGuid();
+        var tagB = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "x", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            db.Tags.AddRange(
+                new Tag { Id = tagA, Name = "a" },
+                new Tag { Id = tagB, Name = "b" });
+            db.HabitNodeTags.AddRange(
+                new HabitNodeTag { HabitNodeId = habitId, TagId = tagA },
+                new HabitNodeTag { HabitNodeId = habitId, TagId = tagB });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TagIds.Should().BeEquivalentTo(new[] { tagA, tagB });
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_empty_TagIds_when_no_tags()
+    {
+        await using var fx = new DbFixture();
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "x", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TagIds.Should().BeEmpty();
+    }
 }

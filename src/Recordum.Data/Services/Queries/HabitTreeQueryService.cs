@@ -53,6 +53,14 @@ public sealed class HabitTreeQueryService(
 
         var emptyHeatmap = ImmutableArray.Create(new int[7]);
 
+        var tagLinks = await db.HabitNodeTags
+            .AsNoTracking()
+            .Select(t => new { t.HabitNodeId, t.TagId })
+            .ToListAsync(ct);
+        var tagsByHabit = tagLinks
+            .GroupBy(t => t.HabitNodeId)
+            .ToDictionary(g => g.Key, g => ImmutableArray.CreateRange(g.Select(x => x.TagId)));
+
         var raw = await db.HabitNodes
             .IgnoreQueryFilters()
             .AsNoTracking()
@@ -88,7 +96,8 @@ public sealed class HabitTreeQueryService(
                 PinScope: r.PinScope,
                 ChildCount: r.ChildCount,
                 IsArchived: r.IsArchived,
-                CompletionsLast7Days: bucketsByHabit.TryGetValue(r.Id, out var arr) ? arr : emptyHeatmap))
+                CompletionsLast7Days: bucketsByHabit.TryGetValue(r.Id, out var arr) ? arr : emptyHeatmap,
+                TagIds: tagsByHabit.TryGetValue(r.Id, out var tids) ? tids : ImmutableArray<Guid>.Empty))
             .ToList();
     }
 }
