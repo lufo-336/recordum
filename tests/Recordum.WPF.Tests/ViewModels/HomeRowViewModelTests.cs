@@ -65,6 +65,62 @@ public class HomeRowViewModelTests
     }
 
     [Fact]
+    public void ContextMenu_visibility_for_Active_habit()
+    {
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid(), type: HabitType.Action), 0, new FakeHabitNodeService(), new FakePurgeService());
+        sut.CurrentTab = HomeTab.Active;
+
+        sut.ShowRenameMenu.Should().BeTrue();
+        sut.ShowPinMenu.Should().BeTrue();
+        sut.ShowArchive.Should().BeTrue();
+        sut.ShowUnarchive.Should().BeFalse();
+        sut.ShowSoftDelete.Should().BeTrue();
+        sut.ShowRestore.Should().BeFalse();
+        sut.ShowPurge.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContextMenu_visibility_for_Active_group_hides_Pin()
+    {
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid(), type: null), 0, new FakeHabitNodeService(), new FakePurgeService());
+        sut.CurrentTab = HomeTab.Active;
+
+        sut.ShowPinMenu.Should().BeFalse();
+        sut.ShowArchive.Should().BeTrue();
+        sut.ShowSoftDelete.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContextMenu_visibility_for_Archived()
+    {
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid(), archived: true), 0, new FakeHabitNodeService(), new FakePurgeService());
+        sut.CurrentTab = HomeTab.Archived;
+
+        sut.ShowRenameMenu.Should().BeTrue();
+        sut.ShowPinMenu.Should().BeFalse();
+        sut.ShowArchive.Should().BeFalse();
+        sut.ShowUnarchive.Should().BeTrue();
+        sut.ShowSoftDelete.Should().BeTrue();
+        sut.ShowRestore.Should().BeFalse();
+        sut.ShowPurge.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContextMenu_visibility_for_Trash()
+    {
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid()), 0, new FakeHabitNodeService(), new FakePurgeService());
+        sut.CurrentTab = HomeTab.Trash;
+
+        sut.ShowRenameMenu.Should().BeFalse();
+        sut.ShowPinMenu.Should().BeFalse();
+        sut.ShowArchive.Should().BeFalse();
+        sut.ShowUnarchive.Should().BeFalse();
+        sut.ShowSoftDelete.Should().BeFalse();
+        sut.ShowRestore.Should().BeTrue();
+        sut.ShowPurge.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task CommitRename_persists_via_UpdateAsync_on_success()
     {
         var fakeService = new FakeHabitNodeService();

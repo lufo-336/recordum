@@ -171,6 +171,19 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task Rebuild_sets_CurrentTab_on_each_row()
+    {
+        _query.HomeRows.Add(SampleRow(name: "a"));
+        _query.HomeRows.Add(SampleRow(name: "b", archived: true));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.Rows.Should().OnlyContain(r => r.CurrentTab == HomeTab.Active);
+
+        await sut.SwitchTabCommand.ExecuteAsync(HomeTab.Archived);
+        sut.Rows.Should().OnlyContain(r => r.CurrentTab == HomeTab.Archived);
+    }
+
+    [Fact]
     public async Task PinScope_Global_appears_first_then_Local_then_others()
     {
         _query.HomeRows.Add(SampleRow(name: "n", id: NewId("n")));

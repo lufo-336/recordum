@@ -31,6 +31,24 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [ObservableProperty] private bool _isRenaming;
     [ObservableProperty] private string _pendingName = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowRenameMenu))]
+    [NotifyPropertyChangedFor(nameof(ShowPinMenu))]
+    [NotifyPropertyChangedFor(nameof(ShowArchive))]
+    [NotifyPropertyChangedFor(nameof(ShowUnarchive))]
+    [NotifyPropertyChangedFor(nameof(ShowSoftDelete))]
+    [NotifyPropertyChangedFor(nameof(ShowRestore))]
+    [NotifyPropertyChangedFor(nameof(ShowPurge))]
+    private HomeTab _currentTab = HomeTab.Active;
+
+    public bool ShowRenameMenu => CurrentTab != HomeTab.Trash;
+    public bool ShowPinMenu    => CurrentTab == HomeTab.Active && !IsGroup;
+    public bool ShowArchive    => CurrentTab == HomeTab.Active;
+    public bool ShowUnarchive  => CurrentTab == HomeTab.Archived;
+    public bool ShowSoftDelete => CurrentTab is HomeTab.Active or HomeTab.Archived;
+    public bool ShowRestore    => CurrentTab == HomeTab.Trash;
+    public bool ShowPurge      => CurrentTab == HomeTab.Trash;
+
     public HomeRowViewModel(HomeTreeRow row, int indentLevel, IHabitNodeService nodes, IPurgeService purge)
     {
         _nodes = nodes;

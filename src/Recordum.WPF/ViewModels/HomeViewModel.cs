@@ -116,7 +116,7 @@ public sealed partial class HomeViewModel : ObservableObject
             q = q.Where(r => r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
         foreach (var (row, level) in OrderHierarchically(q.ToList()))
-            Rows.Add(new HomeRowViewModel(row, level, _nodes, _purge));
+            Rows.Add(new HomeRowViewModel(row, level, _nodes, _purge) { CurrentTab = ActiveTab });
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
     }
 
