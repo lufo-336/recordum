@@ -2,7 +2,9 @@ using System.Globalization;
 using System.Text;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Recordum.Core.Abstractions.Theming;
 using Recordum.WPF.Bootstrap;
+using CoreThemeMode = Recordum.Core.Enums.ThemeMode;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF;
@@ -38,8 +40,21 @@ public partial class App : Application
             return;
         }
 
+        var theme = _services.GetRequiredService<IThemeService>();
+        await theme.InitializeAsync().ConfigureAwait(true);
+        ApplyTheme(theme.EffectiveTheme);
+        theme.EffectiveThemeChanged += (_, mode) => Dispatcher.Invoke(() => ApplyTheme(mode));
+
         var window = _services.GetRequiredService<MainWindow>();
         window.Show();
+    }
+
+    private void ApplyTheme(CoreThemeMode effective)
+    {
+        var path = effective == CoreThemeMode.Dark ? "Resources/Dark.xaml" : "Resources/Light.xaml";
+        var dict = new ResourceDictionary { Source = new Uri(path, UriKind.Relative) };
+        // Index 0 = Tokens.xaml (static). Index 1 = active theme (swappable).
+        Resources.MergedDictionaries[1] = dict;
     }
 
     protected override void OnExit(ExitEventArgs e)
