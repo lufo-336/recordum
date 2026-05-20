@@ -1,0 +1,64 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
+                    xmlns:res="clr-namespace:Recordum.WPF.Resources">
+    <DataTemplate x:Key="GroupRowTemplate" DataType="{x:Type vm:HomeRowViewModel}">
+        <Grid Height="{StaticResource Layout.RowHeight}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ToggleButton Grid.Column="0"
+                          IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                          Width="20"
+                          Height="20" />
+
+            <Rectangle Grid.Column="1"
+                       Width="{StaticResource Layout.AccentBarWidth}"
+                       Opacity="0.6"
+                       Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}" />
+
+            <TextBlock Grid.Column="2"
+                       Margin="8,0,0,0"
+                       VerticalAlignment="Center"
+                       FontSize="{StaticResource FontSize.Body}"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource Brush.Text}"
+                       Text="{Binding Name}" />
+
+            <TextBlock Grid.Column="3"
+                       Margin="0,0,12,0"
+                       VerticalAlignment="Center"
+                       FontSize="{StaticResource FontSize.Small}"
+                       Opacity="0.5"
+                       Foreground="{DynamicResource Brush.TextMuted}"
+                       Text="{Binding ChildCount, StringFormat={x:Static res:Strings.Home_GroupChildCount_Format}}" />
+
+            <Grid.ContextMenu>
+                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                    <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Rename}"
+                              Command="{Binding BeginRenameCommand}"
+                              Visibility="{Binding ShowRenameMenu, Converter={StaticResource BoolToVisible}}" />
+                    <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Archive}"
+                              Command="{Binding ArchiveCommand}"
+                              Visibility="{Binding ShowArchive, Converter={StaticResource BoolToVisible}}" />
+                    <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Unarchive}"
+                              Command="{Binding UnarchiveCommand}"
+                              Visibility="{Binding ShowUnarchive, Converter={StaticResource BoolToVisible}}" />
+                    <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_SoftDelete}"
+                              Command="{Binding SoftDeleteCommand}"
+                              Visibility="{Binding ShowSoftDelete, Converter={StaticResource BoolToVisible}}" />
+                    <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Restore}"
+                              Command="{Binding RestoreCommand}"
+                              Visibility="{Binding ShowRestore, Converter={StaticResource BoolToVisible}}" />
+                    <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Purge}"
+                              Command="{Binding PurgeCommand}"
+                              Visibility="{Binding ShowPurge, Converter={StaticResource BoolToVisible}}" />
+                </ContextMenu>
+            </Grid.ContextMenu>
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>

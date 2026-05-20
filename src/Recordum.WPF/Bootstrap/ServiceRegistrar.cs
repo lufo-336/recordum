@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Theming;
 using Recordum.Data;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
@@ -16,6 +17,8 @@ using Recordum.Plugins.Hosting;
 using Recordum.Plugins.Management;
 using Recordum.Plugins.Permissions;
 using Recordum.Plugins.Routing;
+using Recordum.WPF.Theming;
+using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -32,6 +35,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPluginContext, AmbientPluginContext>();
         services.AddLogging();
+        services.AddSingleton<IThemeService, ThemeService>();
 
         // Security: DPAPI by default. Passphrase opt-in via IKeyTransitionService.
 #pragma warning disable CA1416 // Windows-only target for Fase 3 WPF.
@@ -70,6 +74,7 @@ public static class ServiceRegistrar
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
+        services.AddScoped<IAppSettingService, AppSettingService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
@@ -78,6 +83,14 @@ public static class ServiceRegistrar
         services.AddSingleton<IApiRouter, ApiRouter>();
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
+
+        // ViewModels.
+        services.AddTransient<HomeViewModel>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<MainWindowViewModel>();
+
+        // Main window.
+        services.AddTransient<MainWindow>();
 
         // Bootstrap.
         services.AddSingleton<ApplicationInitializer>();

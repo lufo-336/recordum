@@ -1,0 +1,25 @@
+<UserControl x:Class="Recordum.WPF.Views.EmptyState"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:vm="clr-namespace:Recordum.WPF.ViewModels">
+    <TextBlock HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Opacity="0.6"
+               FontSize="{StaticResource FontSize.Body}"
+               Foreground="{DynamicResource Brush.TextMuted}">
+        <TextBlock.Style>
+            <Style TargetType="TextBlock">
+                <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Active}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Archived}">
+                        <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Archived}"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Trash}">
+                        <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Trash}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </TextBlock.Style>
+    </TextBlock>
+</UserControl>

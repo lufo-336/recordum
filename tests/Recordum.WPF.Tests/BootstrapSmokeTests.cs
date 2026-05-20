@@ -9,6 +9,8 @@ using Recordum.Core.Models;
 using Recordum.Data;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.ViewModels;
+using FluentAssertions;
 
 namespace Recordum.WPF.Tests;
 
@@ -126,5 +128,18 @@ public sealed class BootstrapSmokeTests : IDisposable
         using var cmd = plain.CreateCommand();
         cmd.CommandText = "SELECT name FROM sqlite_master";
         await Assert.ThrowsAsync<SqliteException>(() => cmd.ExecuteReaderAsync());
+    }
+
+    [Fact]
+    public async Task End_to_end_bootstrap_resolves_main_window_view_model_and_loads_tree()
+    {
+        await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+
+        var vm = _services.GetRequiredService<MainWindowViewModel>();
+        await vm.InitializeAsync();
+
+        vm.Home.State.Should().BeOneOf(HomeState.Empty, HomeState.Loaded);
+        vm.Home.Rows.Should().BeEmpty();
+        vm.Settings.Should().NotBeNull();
     }
 }

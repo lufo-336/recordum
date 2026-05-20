@@ -1,0 +1,36 @@
+<UserControl x:Class="Recordum.WPF.Views.SettingsPopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:SettingsViewModel, IsDesignTimeCreatable=False}"
+             Width="280"
+             Background="{DynamicResource Brush.SurfaceElevated}">
+    <StackPanel Margin="12">
+        <TextBlock Text="{x:Static res:Strings.Settings_Title}"
+                   FontWeight="SemiBold"
+                   FontSize="{StaticResource FontSize.Heading}"
+                   Foreground="{DynamicResource Brush.Text}"
+                   Margin="0,0,0,12"/>
+
+        <TextBlock Text="{x:Static res:Strings.Settings_Theme}"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Text}"
+                   Margin="0,0,0,8"/>
+        <RadioButton GroupName="Theme"
+                     Content="{x:Static res:Strings.Settings_Theme_System}"
+                     IsChecked="{Binding ThemeMode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:ThemeMode.System}}"
+                     Margin="0,0,0,4"/>
+        <RadioButton GroupName="Theme"
+                     Content="{x:Static res:Strings.Settings_Theme_Light}"
+                     IsChecked="{Binding ThemeMode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:ThemeMode.Light}}"
+                     Margin="0,0,0,4"/>
+        <RadioButton GroupName="Theme"
+                     Content="{x:Static res:Strings.Settings_Theme_Dark}"
+                     IsChecked="{Binding ThemeMode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:ThemeMode.Dark}}"/>
+    </StackPanel>
+</UserControl>

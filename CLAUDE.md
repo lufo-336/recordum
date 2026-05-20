@@ -96,6 +96,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 **Provenance v2.3**: `created_by_plugin_id TEXT NULL` (FK soft, no constraint) su `habit_node`, `habit_template`, `export_template`, `chart`. NULL = creato da utente/core. Child events (Completion, Note, Goal) NON hanno la colonna — ereditano dal parent.
 
+**PinScope v2.4**: `habit_node.pin_scope TEXT NOT NULL DEFAULT 'None'` con check `IN ('None','Local','Global')` + indice. Sostituisce il vecchio bool `is_pinned`. Migration `PinScopeV24` converte `is_pinned=1` → `'Local'`. AppSetting `schema_version` bumpato a `2.4`.
+
 **Soft delete**: solo su `HabitNode`. Cascade in transazione singola ai discendenti. Restore ripristina solo i discendenti chiusi nella stessa operazione. Purge permanente è job background per nodi >30 giorni (ordine: file → tabelle figlie → HabitNode).
 
 **Naming**: tabelle e colonne snake_case (via `EFCore.NamingConventions`). Classi/proprietà C# PascalCase. Tutte le cascade rules e tutti gli indici **dichiarati esplicitamente** in Fluent API — mai default EF Core.
@@ -122,8 +124,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 |---|---|---|
 | **3.1** | Scaffold soluzione + schema completo + InitialSchema migration + plugin foundation (contracts + in-process host + manifest schema + plugin-api-ts skeleton + docs/plugin-api.md) | ✓ **completata 2026-05-14** |
 | 3.2 | Core Data Layer: CRUD HabitNode/Config/Completion, soft delete + restore, HabitConfigHistory snapshot. SQLCipher via `IDbKeyProvider` (DPAPI baseline + opt-in passphrase Argon2id). Perf budget home <500ms | ✓ **completata 2026-05-19** |
-| 3.3 | Home Screen: tab nav, albero habit, sort/filter, hide-completed, context menu | **→ next** |
-| 3.4 | Habit Editor: progressive disclosure 3 livelli |  |
+| 3.3 | Home Screen: tab nav, albero habit, sort/filter, hide-completed, context menu | ✓ **completata 2026-05-20** |
+| 3.4 | Habit Editor: progressive disclosure 3 livelli | **→ next** |
 | 3.5 | Completion Recording: 5 tipi + session mode + multi-serie + timer recovery + retroactive |  |
 | 3.6 | Journal Editor + Notes (WebView2 + Toast UI/Milkdown) |  |
 | 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress |  |
@@ -138,6 +140,10 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 ### Stato Milestone 3.2
 
 36 task del plan `docs/superpowers/plans/2026-05-18-milestone-3.2-core-data-layer.md` completati. 167 test verdi (Core 24, Plugins 41, Data 97, WPF 5 smoke incl. E2E encrypted bootstrap). Build pulito, zero warning. Data layer + SQLCipher consegnati: 14 service aggregate + query + 1 key transition (Recordum.Data.Services / .Queries), `HabitConfigHistoryInterceptor` registrato prima del `TimestampInterceptor`, `IHabitTreeQueryService.GetHomeTreeAsync` con perf budget p95 < 300 ms su dataset seedato (200 habit × 50k completion). SQLCipher attivo via `SQLitePCLRaw.bundle_e_sqlcipher`; `DpapiKeyProvider` di default + `PassphraseKeyProvider` (Argon2id 64 MiB / 4 iter / p=2) opt-in; `IKeyTransitionService` headless DPAPI↔passphrase con backup-and-rollback. Nuovo indice composito `(habit_node_id, completed_at_ms)` su `completions` (migration `20260519131117_CompletionCompletedAtMsIndex`). SQLCipher overhead empirico ~4× plain su workload SELECT 50k (assoluto < 30 ms/call): target 30% del plan irrealistico per AES-CBC su read-heavy; soglia di regressione fissata a 5×. `RecordumOptions` ora implementa `IDbStoragePaths` e ospita `DatabasePath` + `KeyFilePath` + `SaltFilePath`. Nessuna UI Settings per la transition: arriva in 3.3+.
+
+### Stato Milestone 3.3
+
+33 task del plan `docs/superpowers/plans/2026-05-19-milestone-3.3-home-screen.md` completati. 243 test verdi (Core 30, Plugins 41, Data 126 incl. perf budget, WPF 46 incl. E2E `MainWindowViewModel` smoke). Build pulito, zero warning. Home Screen consegnato: 4 ViewModel (`HomeViewModel`, `HomeRowViewModel`, `SettingsViewModel`, `MainWindowViewModel`) con commands tab-aware e filtri client-side (type/tag/hide-completed/search/sort + pin layering Global > Local > None); 6 View XAML (`MainWindow`, `HomeView`, `HabitRowTemplate`, `GroupRowTemplate`, `HeatmapStrip`, `EmptyState`, `SettingsPopup`); 3 Behavior (`InlineRenameBehavior`, `TreeDragDropBehavior` con 3-band drop zone + `CyclicHabitNodeMoveException` guard, `ThemeService` registry watcher singleton); 7 converter (`HexToBrush`, `HabitTypeLabel`, `BoolToVisible`, `BoolToHidden`, `EnumToBool`, `StateToVisible`, `ActiveTabVisible`). Schema delta v2.4 (`PinScope` enum + migration). `HomeTreeRow` esteso a `PinScope`/`ChildCount`/`IsArchived`/`CompletionsLast7Days[7]`/`TagIds`. `HabitTreeQueryService.GetTrashTreeAsync` separato. Theming System/Light/Dark con switch live via `Resources/MergedDictionaries[1]` swap. Localization en + it tramite `Strings.resx` + designer auto-generato. Scorciatoie tastiera: Ctrl+1/2/3 tab, Ctrl+F focus search, F2 rename, Del soft-delete, Ctrl+E toggle archive, Ctrl+R restore. **Known limits**: drag-drop persiste solo `ParentId` (no `SortOrder` reorder in 3.3); heatmap intensity step binario (proporzionale a `TargetValue` → M3.7).
 
 ---
 

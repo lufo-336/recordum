@@ -14,7 +14,7 @@ public sealed class HabitNode
     public string? Icon { get; set; }
     public int SortOrder { get; set; }
     public bool IsArchived { get; set; }
-    public bool IsPinned { get; set; }
+    public PinScope PinScope { get; set; }
     public int Priority { get; set; }
     public bool IsLocked { get; set; }
     public AiDataSharing AiDataSharing { get; set; } = AiDataSharing.None;
