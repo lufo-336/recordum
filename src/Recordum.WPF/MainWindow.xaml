@@ -13,6 +13,17 @@
         Width="1120" Height="760"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Brush.Background}">
+    <Window.InputBindings>
+        <KeyBinding Key="D1" Modifiers="Control"
+                    Command="{Binding Home.SwitchTabCommand}"
+                    CommandParameter="{x:Static vm:HomeTab.Active}"/>
+        <KeyBinding Key="D2" Modifiers="Control"
+                    Command="{Binding Home.SwitchTabCommand}"
+                    CommandParameter="{x:Static vm:HomeTab.Archived}"/>
+        <KeyBinding Key="D3" Modifiers="Control"
+                    Command="{Binding Home.SwitchTabCommand}"
+                    CommandParameter="{x:Static vm:HomeTab.Trash}"/>
+    </Window.InputBindings>
     <Grid>
         <v:HomeView DataContext="{Binding Home}"/>
         <Popup x:Name="SettingsPopupHost" StaysOpen="False" Placement="MousePoint" AllowsTransparency="True">

@@ -9,7 +9,8 @@
              xmlns:b="clr-namespace:Recordum.WPF.Behaviors"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HomeViewModel, IsDesignTimeCreatable=False}"
-             Background="{DynamicResource Brush.Background}">
+             Background="{DynamicResource Brush.Background}"
+             PreviewKeyDown="OnPreviewKeyDown">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -73,7 +74,8 @@
                           Visibility="{Binding ActiveTab, Converter={StaticResource ActiveTabVisible}}"
                           VerticalAlignment="Center"
                           Margin="0,0,16,0"/>
-                <TextBox Width="200"
+                <TextBox x:Name="SearchBox"
+                         Width="200"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          Tag="{x:Static res:Strings.Home_Filter_SearchPlaceholder}"/>
             </StackPanel>
@@ -127,7 +129,8 @@
                                 <Setter.Value>
                                     <DataTemplate>
                                         <ItemsControl ItemsSource="{Binding Rows}"
-                                                      b:TreeDragDropBehavior.Enabled="True">
+                                                      b:TreeDragDropBehavior.Enabled="True"
+                                                      KeyboardNavigation.TabNavigation="Continue">
                                             <ItemsControl.ItemTemplateSelector>
                                                 <v:RowTemplateSelector
                                                     HabitTemplate="{StaticResource HabitRowTemplate}"
