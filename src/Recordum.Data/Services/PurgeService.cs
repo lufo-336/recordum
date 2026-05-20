@@ -17,6 +17,54 @@ public sealed partial class PurgeService(
     [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "Purge failed for {Root}")]
     private partial void LogPurgeFailed(Exception exception, Guid root);
 
+    [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "PurgeSubtree rooted at {Root} ({SubtreeCount} nodes)")]
+    private partial void LogPurgedSubtree(Guid root, int subtreeCount);
+
+    public async ValueTask PurgeSubtreeAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var exists = await db.HabitNodes.IgnoreQueryFilters()
+            .AnyAsync(n => n.Id == id, ct);
+        if (!exists) return;
+
+        var subtree = await HabitNodeService.DescendantIdsAsync(db, id, ct);
+        subtree.Add(id);
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        // Defer FK checks to end-of-transaction so self-referential habit_nodes tree
+        // can be deleted in a single bulk statement without ordering by depth.
+        await db.Database.ExecuteSqlRawAsync("PRAGMA defer_foreign_keys = ON;", ct);
+
+        await db.Attachments
+            .Where(a => a.NoteId != null && db.Notes.Any(n => n.Id == a.NoteId && subtree.Contains(n.HabitNodeId)))
+            .ExecuteDeleteAsync(ct);
+        await db.Attachments
+            .Where(a => a.CompletionId != null && db.Completions.Any(c => c.Id == a.CompletionId && subtree.Contains(c.HabitNodeId)))
+            .ExecuteDeleteAsync(ct);
+        await db.Notes.Where(n => subtree.Contains(n.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.CompletionValues
+            .Where(v => db.Completions.Any(c => c.Id == v.CompletionId && subtree.Contains(c.HabitNodeId)))
+            .ExecuteDeleteAsync(ct);
+        await db.CompletionSegments
+            .Where(s => db.Completions.Any(c => c.Id == s.CompletionId && subtree.Contains(c.HabitNodeId)))
+            .ExecuteDeleteAsync(ct);
+        await db.Completions.Where(c => subtree.Contains(c.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.Goals.Where(g => subtree.Contains(g.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.MetricDefinitions.Where(m => subtree.Contains(m.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.Notifications.Where(n => subtree.Contains(n.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.StreakPauses.Where(p => subtree.Contains(p.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.HabitNodeTags.Where(t => subtree.Contains(t.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.HabitConfigHistories.Where(h => subtree.Contains(h.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.HabitConfigs.Where(c => subtree.Contains(c.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.SegmentDefinitions.Where(s => subtree.Contains(s.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.HabitNodes.IgnoreQueryFilters()
+            .Where(n => subtree.Contains(n.Id))
+            .ExecuteDeleteAsync(ct);
+
+        await tx.CommitAsync(ct);
+        LogPurgedSubtree(id, subtree.Count);
+    }
+
     public async ValueTask<PurgeReport> PurgeExpiredAsync(TimeSpan olderThan, CancellationToken ct = default)
     {
         var cutoff = clock.UtcNow.UtcDateTime - olderThan;

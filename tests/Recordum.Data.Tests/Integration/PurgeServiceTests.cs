@@ -52,4 +52,39 @@ public class PurgeServiceTests
         var report = await purge.PurgeExpiredAsync(TimeSpan.FromDays(30));
         Assert.Equal(0, report.Purged);
     }
+
+    [Fact]
+    public async Task PurgeSubtreeAsync_hard_deletes_node_and_children()
+    {
+        var clock = new FakeClock();
+        await using var fx = new DbFixture(clock);
+        var parent = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Group, Name = "parent" };
+        var child = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "child", ParentId = parent.Id };
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = child.Id, BodyMd = "n" };
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(parent);
+            db.HabitNodes.Add(child);
+            db.Notes.Add(note);
+            await db.SaveChangesAsync();
+        }
+
+        var purge = new PurgeService(fx.Factory, clock, NullLogger<PurgeService>.Instance);
+        await purge.PurgeSubtreeAsync(parent.Id);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        Assert.Empty(await db2.HabitNodes.IgnoreQueryFilters().ToListAsync());
+        Assert.Empty(await db2.Notes.ToListAsync());
+    }
+
+    [Fact]
+    public async Task PurgeSubtreeAsync_is_noop_for_nonexistent_id()
+    {
+        var clock = new FakeClock();
+        await using var fx = new DbFixture(clock);
+        var purge = new PurgeService(fx.Factory, clock, NullLogger<PurgeService>.Instance);
+
+        // Should not throw.
+        await purge.PurgeSubtreeAsync(Guid.NewGuid());
+    }
 }
