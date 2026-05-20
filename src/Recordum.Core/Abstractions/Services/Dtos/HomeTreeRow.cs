@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Recordum.Core.Enums;
 
 namespace Recordum.Core.Abstractions.Services.Dtos;
@@ -10,4 +11,8 @@ public sealed record HomeTreeRow(
     HabitType? HabitType,
     DateTime? LastCompletionAt,
     int CurrentStreakCount,
-    bool IsCompletedToday);
+    bool IsCompletedToday,
+    PinScope PinScope,
+    int ChildCount,
+    bool IsArchived,
+    ImmutableArray<int> CompletionsLast7Days);
