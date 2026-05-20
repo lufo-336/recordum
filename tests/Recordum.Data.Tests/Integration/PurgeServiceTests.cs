@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
@@ -86,5 +87,28 @@ public class PurgeServiceTests
 
         // Should not throw.
         await purge.PurgeSubtreeAsync(Guid.NewGuid());
+    }
+
+    [Fact]
+    public async Task PurgeSubtreeAsync_also_removes_chart_series_references()
+    {
+        var clock = new FakeClock();
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var chartId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "h", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            db.Charts.Add(new Chart { Id = chartId, Name = "c" });
+            db.ChartSeries.Add(new ChartSeries { Id = Guid.NewGuid(), ChartId = chartId, HabitNodeId = habitId });
+            await db.SaveChangesAsync();
+        }
+
+        var purge = new PurgeService(fx.Factory, clock, NullLogger<PurgeService>.Instance);
+        await purge.PurgeSubtreeAsync(habitId);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        (await db2.HabitNodes.IgnoreQueryFilters().AnyAsync(n => n.Id == habitId)).Should().BeFalse();
+        (await db2.ChartSeries.AnyAsync(s => s.HabitNodeId == habitId)).Should().BeFalse();
     }
 }

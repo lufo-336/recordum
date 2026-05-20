@@ -57,6 +57,9 @@ public sealed partial class PurgeService(
         await db.HabitConfigHistories.Where(h => subtree.Contains(h.HabitNodeId)).ExecuteDeleteAsync(ct);
         await db.HabitConfigs.Where(c => subtree.Contains(c.HabitNodeId)).ExecuteDeleteAsync(ct);
         await db.SegmentDefinitions.Where(s => subtree.Contains(s.HabitNodeId)).ExecuteDeleteAsync(ct);
+        await db.ChartSeries.IgnoreQueryFilters()
+            .Where(s => subtree.Contains(s.HabitNodeId))
+            .ExecuteDeleteAsync(ct);
         await db.HabitNodes.IgnoreQueryFilters()
             .Where(n => subtree.Contains(n.Id))
             .ExecuteDeleteAsync(ct);
