@@ -18,6 +18,7 @@ using Recordum.Plugins.Management;
 using Recordum.Plugins.Permissions;
 using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
+using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -82,6 +83,11 @@ public static class ServiceRegistrar
         services.AddSingleton<IApiRouter, ApiRouter>();
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
+
+        // ViewModels.
+        services.AddTransient<HomeViewModel>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<MainWindowViewModel>();
 
         // Bootstrap.
         services.AddSingleton<ApplicationInitializer>();
