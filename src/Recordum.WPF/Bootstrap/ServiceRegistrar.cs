@@ -70,6 +70,7 @@ public static class ServiceRegistrar
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
+        services.AddScoped<IAppSettingService, AppSettingService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
