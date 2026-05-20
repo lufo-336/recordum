@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.Services.Queries;
@@ -8,6 +9,8 @@ namespace Recordum.Data.Tests.Integration;
 
 public class HabitTreeQueryServiceTests
 {
+    private static readonly int[] ExpectedSevenDayBuckets = [1, 0, 0, 0, 0, 0, 2];
+
     [Fact]
     public async Task Empty_db_returns_empty_list()
     {
@@ -49,5 +52,86 @@ public class HabitTreeQueryServiceTests
         var q = new HabitTreeQueryService(fx.Factory, clock);
         var rows = await q.GetHomeTreeAsync();
         Assert.True(rows.Single().IsCompletedToday);
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_PinScope_from_db()
+    {
+        await using var fx = new DbFixture();
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode
+            {
+                Id = habitId,
+                Name = "Pinned",
+                NodeType = NodeType.Habit,
+                HabitType = HabitType.Action,
+                PinScope = PinScope.Global,
+                Color = "#ff0000",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var rows = await q.GetHomeTreeAsync();
+        rows.Single(r => r.HabitNodeId == habitId).PinScope.Should().Be(PinScope.Global);
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_ChildCount_for_groups()
+    {
+        await using var fx = new DbFixture();
+        var groupId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = groupId, Name = "G", NodeType = NodeType.Group });
+            db.HabitNodes.Add(new HabitNode { Id = Guid.NewGuid(), Name = "Child1", NodeType = NodeType.Habit, HabitType = HabitType.Action, ParentId = groupId });
+            db.HabitNodes.Add(new HabitNode { Id = Guid.NewGuid(), Name = "Child2", NodeType = NodeType.Habit, HabitType = HabitType.Action, ParentId = groupId });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var rows = await q.GetHomeTreeAsync();
+        rows.Single(r => r.HabitNodeId == groupId).ChildCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_IsArchived_flag()
+    {
+        await using var fx = new DbFixture();
+        var id = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = id, Name = "A", NodeType = NodeType.Habit, HabitType = HabitType.Action, IsArchived = true });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var rows = await q.GetHomeTreeAsync();
+        rows.Single(r => r.HabitNodeId == id).IsArchived.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_7day_completion_counts_oldest_to_today()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var today = clock.UtcNow.UtcDateTime.Date;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "H", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            db.Completions.AddRange(
+                new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = today.AddDays(-6), CompletedAtMs = new DateTimeOffset(today.AddDays(-6), TimeSpan.Zero).ToUnixTimeMilliseconds() },
+                new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = today, CompletedAtMs = new DateTimeOffset(today, TimeSpan.Zero).ToUnixTimeMilliseconds() },
+                new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = today, CompletedAtMs = new DateTimeOffset(today, TimeSpan.Zero).ToUnixTimeMilliseconds() + 1 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var rows = await q.GetHomeTreeAsync();
+        rows.Single(r => r.HabitNodeId == habitId).CompletionsLast7Days
+            .Should().BeEquivalentTo(ExpectedSevenDayBuckets);
     }
 }

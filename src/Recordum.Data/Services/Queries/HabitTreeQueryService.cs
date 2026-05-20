@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
@@ -12,26 +13,70 @@ public sealed class HabitTreeQueryService(
     public async ValueTask<IReadOnlyList<HomeTreeRow>> GetHomeTreeAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var todayStartMs = new DateTimeOffset(clock.UtcNow.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var today = clock.UtcNow.UtcDateTime.Date;
+        var startMs = new DateTimeOffset(today.AddDays(-6), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var endMs = new DateTimeOffset(today.AddDays(1), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var todayMs = new DateTimeOffset(today, TimeSpan.Zero).ToUnixTimeMilliseconds();
 
-        var rows = await db.HabitNodes
+        var dayBuckets = await db.Completions
             .AsNoTracking()
-            .Select(n => new HomeTreeRow(
+            .Where(c => c.CompletedAtMs >= startMs && c.CompletedAtMs < endMs)
+            .GroupBy(c => new
+            {
+                c.HabitNodeId,
+                DayOffset = (int)((c.CompletedAtMs - startMs) / 86_400_000),
+            })
+            .Select(g => new { g.Key.HabitNodeId, g.Key.DayOffset, Count = g.Count() })
+            .ToListAsync(ct);
+
+        var bucketsByHabit = dayBuckets
+            .GroupBy(b => b.HabitNodeId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var arr = new int[7];
+                foreach (var b in g)
+                {
+                    if (b.DayOffset is >= 0 and < 7) arr[b.DayOffset] = b.Count;
+                }
+                return ImmutableArray.Create(arr);
+            });
+
+        var emptyHeatmap = ImmutableArray.Create(new int[7]);
+
+        var raw = await db.HabitNodes
+            .AsNoTracking()
+            .Select(n => new
+            {
                 n.Id,
                 n.ParentId,
                 n.Name,
                 n.Color,
                 n.HabitType,
-                db.Completions
+                n.PinScope,
+                n.IsArchived,
+                LastCompletionAt = db.Completions
                     .Where(c => c.HabitNodeId == n.Id)
                     .OrderByDescending(c => c.CompletedAtMs)
                     .Select(c => (DateTime?)c.CompletedAt)
                     .FirstOrDefault(),
-                0, // CurrentStreakCount — populated by 3.8 StreakEngine; project 0 here.
-                db.Completions.Any(c => c.HabitNodeId == n.Id && c.CompletedAtMs >= todayStartMs)
-            ))
+                IsCompletedToday = db.Completions.Any(c => c.HabitNodeId == n.Id && c.CompletedAtMs >= todayMs),
+                ChildCount = db.HabitNodes.Count(child => child.ParentId == n.Id),
+            })
             .ToListAsync(ct);
 
-        return rows;
+        return raw.Select(r => new HomeTreeRow(
+                HabitNodeId: r.Id,
+                ParentId: r.ParentId,
+                Name: r.Name,
+                ColorHex: r.Color,
+                HabitType: r.HabitType,
+                LastCompletionAt: r.LastCompletionAt,
+                CurrentStreakCount: 0,
+                IsCompletedToday: r.IsCompletedToday,
+                PinScope: r.PinScope,
+                ChildCount: r.ChildCount,
+                IsArchived: r.IsArchived,
+                CompletionsLast7Days: bucketsByHabit.TryGetValue(r.Id, out var arr) ? arr : emptyHeatmap))
+            .ToList();
     }
 }
