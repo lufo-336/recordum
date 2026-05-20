@@ -5,4 +5,6 @@ namespace Recordum.Core.Abstractions.Services;
 public interface IHabitTreeQueryService
 {
     ValueTask<IReadOnlyList<HomeTreeRow>> GetHomeTreeAsync(CancellationToken ct = default);
+
+    ValueTask<IReadOnlyList<HomeTreeRow>> GetTrashTreeAsync(CancellationToken ct = default);
 }

@@ -134,4 +134,22 @@ public class HabitTreeQueryServiceTests
         rows.Single(r => r.HabitNodeId == habitId).CompletionsLast7Days
             .Should().BeEquivalentTo(ExpectedSevenDayBuckets);
     }
+
+    [Fact]
+    public async Task GetTrashTreeAsync_returns_only_soft_deleted_rows_flat()
+    {
+        await using var fx = new DbFixture();
+        var live = Guid.NewGuid();
+        var trashed = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = live, Name = "Live", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            db.HabitNodes.Add(new HabitNode { Id = trashed, Name = "Trashed", NodeType = NodeType.Habit, HabitType = HabitType.Action, DeletedAt = fx.Clock.UtcNow.UtcDateTime });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var rows = await q.GetTrashTreeAsync();
+        rows.Should().ContainSingle().Which.HabitNodeId.Should().Be(trashed);
+    }
 }
