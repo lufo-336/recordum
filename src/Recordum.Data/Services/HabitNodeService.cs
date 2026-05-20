@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
 
@@ -28,6 +29,9 @@ public sealed partial class HabitNodeService(
 
     [LoggerMessage(EventId = 5, Level = LogLevel.Information, Message = "HabitNode {Id} restored")]
     private partial void LogRestored(Guid id);
+
+    [LoggerMessage(EventId = 6, Level = LogLevel.Information, Message = "HabitNode {Id} pin scope set to {Scope}")]
+    private partial void LogPinScopeChanged(Guid id, PinScope scope);
 
     public async ValueTask<Guid> CreateAsync(HabitNode draft, CancellationToken ct = default)
     {
@@ -75,6 +79,19 @@ public sealed partial class HabitNodeService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.HabitNodes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id, ct);
+    }
+
+    public async ValueTask SetPinScopeAsync(Guid id, PinScope scope, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var node = await db.HabitNodes.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(n => n.Id == id, ct)
+            ?? throw new HabitNodeNotFoundException(id);
+        if (node.DeletedAt is not null) throw new HabitNodeAlreadySoftDeletedException(id);
+        if (node.PinScope == scope) return;
+        node.PinScope = scope;
+        await db.SaveChangesAsync(ct);
+        LogPinScopeChanged(id, scope);
     }
 
     public async ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default)

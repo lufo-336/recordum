@@ -1,3 +1,4 @@
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 
 namespace Recordum.Core.Abstractions.Services;
@@ -10,4 +11,5 @@ public interface IHabitNodeService
     ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default);
     ValueTask RestoreAsync(Guid id, CancellationToken ct = default);
     ValueTask<HabitNode?> GetAsync(Guid id, CancellationToken ct = default);
+    ValueTask SetPinScopeAsync(Guid id, PinScope scope, CancellationToken ct = default);
 }
