@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
@@ -78,7 +79,72 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
         ResetTime = new ResetTimeSectionViewModel(nodes);
+
+        foreach (var section in EnumerateSections())
+            section.PropertyChanged += OnSectionPropertyChanged;
     }
+
+    private IEnumerable<SectionViewModelBase> EnumerateSections()
+    {
+        yield return Scheduling;
+        yield return Streak;
+        yield return Timer;
+        yield return Metrics;
+        yield return Scales;
+        yield return Goal;
+        yield return Notifications;
+        yield return Tags;
+        yield return AiSharing;
+        yield return DataSource;
+        yield return ResetTime;
+    }
+
+    private void OnSectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SectionViewModelBase.Status) or nameof(SectionViewModelBase.ErrorMessage))
+            OnPropertyChanged(nameof(StatusText));
+    }
+
+    /// <summary>
+    /// Footer status text: severity-max across header + every section.
+    /// Order: Error &gt; Saving &gt; Saved &gt; Idle. On Error, includes the first error message after the localized prefix.
+    /// </summary>
+    public string StatusText
+    {
+        get
+        {
+            var (status, error) = AggregateStatus();
+            return status switch
+            {
+                EditorStatus.Error => string.IsNullOrEmpty(error)
+                    ? Strings.Editor_Status_Error
+                    : $"{Strings.Editor_Status_Error}: {error}",
+                EditorStatus.Saving => Strings.Editor_Status_Saving,
+                EditorStatus.Saved => Strings.Editor_Status_Saved,
+                _ => string.Empty,
+            };
+        }
+    }
+
+    private (EditorStatus Status, string? Error) AggregateStatus()
+    {
+        if (HeaderStatus == EditorStatus.Error) return (EditorStatus.Error, HeaderError);
+        foreach (var s in EnumerateSections())
+            if (s.Status == EditorStatus.Error) return (EditorStatus.Error, s.ErrorMessage);
+
+        if (HeaderStatus == EditorStatus.Saving) return (EditorStatus.Saving, null);
+        foreach (var s in EnumerateSections())
+            if (s.Status == EditorStatus.Saving) return (EditorStatus.Saving, null);
+
+        if (HeaderStatus == EditorStatus.Saved) return (EditorStatus.Saved, null);
+        foreach (var s in EnumerateSections())
+            if (s.Status == EditorStatus.Saved) return (EditorStatus.Saved, null);
+
+        return (EditorStatus.Idle, null);
+    }
+
+    partial void OnHeaderStatusChanged(EditorStatus value) => OnPropertyChanged(nameof(StatusText));
+    partial void OnHeaderErrorChanged(string? value) => OnPropertyChanged(nameof(StatusText));
 
     public async Task LoadAsync(Guid? habitNodeId, CancellationToken ct = default)
     {

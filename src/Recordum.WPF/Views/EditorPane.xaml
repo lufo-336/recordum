@@ -85,7 +85,7 @@
                 BorderThickness="0,1,0,0"
                 BorderBrush="{DynamicResource Brush.Border}">
             <TextBlock x:Name="StatusText"
-                       Text="{Binding HeaderError, FallbackValue=''}"
+                       Text="{Binding StatusText, FallbackValue=''}"
                        FontSize="{StaticResource FontSize.Small}"
                        Foreground="{DynamicResource Brush.TextMuted}"/>
         </Border>

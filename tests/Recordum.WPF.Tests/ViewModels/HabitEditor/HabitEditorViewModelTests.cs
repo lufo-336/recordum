@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Xunit;
@@ -106,6 +107,55 @@ public class HabitEditorViewModelTests
 
         sut.HeaderStatus.Should().Be(EditorStatus.Error);
         _nodes.Store[id].Name.Should().Be("ok");
+    }
+
+    [Fact]
+    public void StatusText_is_empty_when_idle()
+    {
+        var sut = CreateSut();
+        sut.StatusText.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void StatusText_reflects_section_Error_with_message_appended()
+    {
+        var sut = CreateSut();
+        sut.Streak.ErrorMessage = "boom";
+        sut.Streak.Status = EditorStatus.Error;
+
+        sut.StatusText.Should().Be($"{Strings.Editor_Status_Error}: boom");
+    }
+
+    [Fact]
+    public void Error_wins_over_Saving_in_aggregate()
+    {
+        var sut = CreateSut();
+        sut.Scheduling.Status = EditorStatus.Saving;
+        sut.Streak.ErrorMessage = "boom";
+        sut.Streak.Status = EditorStatus.Error;
+
+        sut.StatusText.Should().StartWith(Strings.Editor_Status_Error);
+    }
+
+    [Fact]
+    public void Saved_shown_when_no_error_and_no_saving()
+    {
+        var sut = CreateSut();
+        sut.Goal.Status = EditorStatus.Saved;
+
+        sut.StatusText.Should().Be(Strings.Editor_Status_Saved);
+    }
+
+    [Fact]
+    public void StatusText_change_raises_PropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.Tags.Status = EditorStatus.Saving;
+
+        raised.Should().Contain(nameof(HabitEditorViewModel.StatusText));
     }
 
     [Fact]
