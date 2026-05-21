@@ -284,4 +284,10 @@ Details: {0}</value>
   <data name="Editor.Default.NewMetric" xml:space="preserve">
     <value>New metric</value>
   </data>
+  <data name="HabitScreen.Configure" xml:space="preserve">
+    <value>Configure</value>
+  </data>
+  <data name="HabitScreen.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
 </root>

@@ -266,4 +266,10 @@
   <data name="Editor.Default.NewMetric" xml:space="preserve">
     <value>Nuova metrica</value>
   </data>
+  <data name="HabitScreen.Configure" xml:space="preserve">
+    <value>Configura</value>
+  </data>
+  <data name="HabitScreen.Close" xml:space="preserve">
+    <value>Chiudi</value>
+  </data>
 </root>

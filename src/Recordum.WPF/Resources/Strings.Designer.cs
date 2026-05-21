@@ -10,6 +10,10 @@ public static class Strings
 
     public static CultureInfo? Culture { get; set; }
 
+    // HabitScreen
+    public static string HabitScreen_Configure => Get("HabitScreen.Configure");
+    public static string HabitScreen_Close => Get("HabitScreen.Close");
+
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));
     public static string StartupErrorTitle => Get(nameof(StartupErrorTitle));

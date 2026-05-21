@@ -22,6 +22,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject
     public HeatmapViewModel Heatmap { get; }
     public CompletionListViewModel CompletionList { get; }
 
+    // Filled in Phase D / Phase G. Exposed now so XAML bindings have a target.
+    [ObservableProperty] private object? _quickAdd;
+    [ObservableProperty] private object? _timerControl;
+
     public event EventHandler? ConfigureRequested;
 
     public HabitScreenViewModel(
