@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
@@ -159,5 +160,53 @@ public class ActiveTimerServiceTests
         var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
 
         (await sut.ListActiveAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task StopAsync_running_timer_creates_completion_and_deletes_row()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx, HabitType.Action);
+        var completions = NewCompletions(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, completions);
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(60));
+
+        var c = await sut.StopAsync(habitId);
+
+        c.HabitNodeId.Should().Be(habitId);
+        c.DurationSeconds.Should().Be(60);
+        (await sut.GetActiveAsync(habitId)).Should().BeNull();
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var persisted = await db.Completions.Where(x => x.HabitNodeId == habitId).SingleAsync();
+        persisted.DurationSeconds.Should().Be(60);
+    }
+
+    [Fact]
+    public async Task StopAsync_throws_when_no_active_timer()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx, HabitType.Action);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+
+        var act = async () => await sut.StopAsync(habitId);
+        await act.Should().ThrowAsync<ActiveTimerNotFoundException>();
+    }
+
+    [Fact]
+    public async Task StopAsync_paused_timer_uses_paused_at_as_end_and_subtracts_accumulated_pause()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx, HabitType.Action);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(30));
+        await sut.PauseAsync(habitId);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(100));
+
+        var c = await sut.StopAsync(habitId);
+
+        c.DurationSeconds.Should().Be(30);
     }
 }

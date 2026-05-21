@@ -52,10 +52,33 @@ public sealed class ActiveTimerService(
         await db.SaveChangesAsync(ct);
     }
 
-    public ValueTask<Completion> StopAsync(Guid habitNodeId, CancellationToken ct = default)
+    public async ValueTask<Completion> StopAsync(Guid habitNodeId, CancellationToken ct = default)
     {
-        _ = completions; // used after Task 7
-        throw new NotImplementedException();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct)
+            ?? throw new ActiveTimerNotFoundException(habitNodeId);
+
+        var nowMs = clock.UtcNow.ToUnixTimeMilliseconds();
+        var endMs = t.PausedAtMs ?? nowMs;
+        var elapsedActiveMs = endMs - t.StartedAtMs - t.AccumulatedPausedMs;
+        if (elapsedActiveMs < 0) elapsedActiveMs = 0;
+
+        var draft = new Completion
+        {
+            HabitNodeId = habitNodeId,
+            CompletedAt = DateTimeOffset.FromUnixTimeMilliseconds(endMs).UtcDateTime,
+            CompletedAtMs = endMs,
+            StartedAt = DateTimeOffset.FromUnixTimeMilliseconds(t.StartedAtMs).UtcDateTime,
+            StartedAtMs = t.StartedAtMs,
+            EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(endMs).UtcDateTime,
+            EndedAtMs = endMs,
+            DurationSeconds = (int)(elapsedActiveMs / 1000),
+        };
+
+        db.ActiveTimers.Remove(t);
+        await db.SaveChangesAsync(ct);
+        await completions.RecordAsync(draft, values: null, segments: null, ct);
+        return draft;
     }
 
     public ValueTask NextSegmentAsync(Guid habitNodeId, CancellationToken ct = default) => throw new NotImplementedException();
