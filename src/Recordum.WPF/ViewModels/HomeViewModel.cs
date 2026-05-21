@@ -26,6 +26,8 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private HomeSort _sortOption = HomeSort.Manual;
 
+    [ObservableProperty] private HomeRowViewModel? _selectedRow;
+
     public ObservableCollection<HomeRowViewModel> Rows { get; } = new();
 
     public IReadOnlyList<HomeSort> AvailableSorts { get; } =
@@ -64,8 +66,12 @@ public sealed partial class HomeViewModel : ObservableObject
         if (ActiveTab == tab) return;
         ActiveTab = tab;
         ResetFilters();
+        SelectedRow = null;
         await LoadAsync();
     }
+
+    [RelayCommand]
+    private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
 
     [RelayCommand]
     private Task RetryAsync() => LoadAsync();
