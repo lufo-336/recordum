@@ -65,6 +65,7 @@ public static class ServiceRegistrar
         services.AddScoped<IHabitConfigService, HabitConfigService>();
         services.AddScoped<IHabitTemplateService, HabitTemplateService>();
         services.AddScoped<ICompletionService, CompletionService>();
+        services.AddScoped<IActiveTimerService, ActiveTimerService>();
         services.AddScoped<INoteService, NoteService>();
         services.AddScoped<IGoalService, GoalService>();
         services.AddScoped<IMetricDefinitionService, MetricDefinitionService>();
