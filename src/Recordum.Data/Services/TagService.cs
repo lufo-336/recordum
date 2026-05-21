@@ -63,4 +63,26 @@ public sealed class TagService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Tags.AsNoTracking().OrderBy(t => t.Name).ToListAsync(ct);
     }
+
+    public async ValueTask<IReadOnlyList<Tag>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.HabitNodeTags.AsNoTracking()
+            .Where(l => l.HabitNodeId == habitNodeId)
+            .Select(l => l.Tag)
+            .OrderBy(t => t.Name)
+            .ToListAsync(ct);
+    }
+
+    public async ValueTask SetTagsAsync(Guid habitNodeId, IReadOnlyCollection<Guid> tagIds, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(tagIds);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.HabitNodeTags.Where(l => l.HabitNodeId == habitNodeId).ExecuteDeleteAsync(ct);
+        foreach (var id in tagIds.Distinct())
+            db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = habitNodeId, TagId = id });
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+    }
 }

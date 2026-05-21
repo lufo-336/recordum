@@ -10,4 +10,6 @@ public interface ITagService
     ValueTask AttachAsync(Guid habitNodeId, Guid tagId, CancellationToken ct = default);
     ValueTask DetachAsync(Guid habitNodeId, Guid tagId, CancellationToken ct = default);
     ValueTask<IReadOnlyList<Tag>> ListAsync(CancellationToken ct = default);
+    ValueTask<IReadOnlyList<Tag>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default);
+    ValueTask SetTagsAsync(Guid habitNodeId, IReadOnlyCollection<Guid> tagIds, CancellationToken ct = default);
 }
