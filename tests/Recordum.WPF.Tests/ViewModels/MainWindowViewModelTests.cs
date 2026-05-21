@@ -35,7 +35,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task Selecting_a_row_loads_the_Editor_with_that_habit_node()
+    public async Task Selecting_a_row_loads_the_HabitScreen_not_the_Editor()
     {
         var (sut, parts) = CreateSut();
         var id = Guid.NewGuid();
@@ -49,8 +49,55 @@ public class MainWindowViewModelTests
         sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
         await Task.Delay(30);
 
+        sut.HabitScreen.HasNode.Should().BeTrue();
+        sut.HabitScreen.Name.Should().Be("yoga");
+        sut.Editor.HasNode.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HabitScreen_OpenConfigure_loads_the_Editor()
+    {
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "yoga", Color = "#000000" };
+        parts.Query.HomeRows.Add(new HomeTreeRow(
+            id, null, "yoga", "#000000", HabitType.Action, null, 0, false,
+            PinScope.None, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty));
+        await sut.InitializeAsync();
+        sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
+        await Task.Delay(30);
+
+        sut.HabitScreen.OpenConfigureCommand.Execute(null);
+        await Task.Delay(30);
+
         sut.Editor.HasNode.Should().BeTrue();
         sut.Editor.Name.Should().Be("yoga");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_loads_HabitScreenWidth_from_AppSetting()
+    {
+        var (sut, parts) = CreateSut();
+        parts.AppSettings.Store[MainWindowViewModel.HabitScreenWidthSettingKey] = "600";
+
+        await sut.InitializeAsync();
+
+        sut.HabitScreenWidth.Should().Be(600d);
+    }
+
+    [Fact]
+    public async Task CommitHabitScreenWidthAsync_clamps_and_persists()
+    {
+        var (sut, parts) = CreateSut();
+        await sut.InitializeAsync();
+
+        sut.HabitScreenWidth = 50d;
+        await sut.CommitHabitScreenWidthAsync();
+
+        sut.HabitScreenWidth.Should().Be(MainWindowViewModel.MinHabitScreenWidth);
+        parts.AppSettings.Store[MainWindowViewModel.HabitScreenWidthSettingKey]
+            .Should().Be(MainWindowViewModel.MinHabitScreenWidth.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
     }
 
     [Fact]
@@ -101,7 +148,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task Clearing_selection_unloads_the_Editor()
+    public async Task Clearing_selection_unloads_HabitScreen_and_Editor()
     {
         var (sut, parts) = CreateSut();
         var id = Guid.NewGuid();
@@ -113,11 +160,15 @@ public class MainWindowViewModelTests
         await sut.InitializeAsync();
         sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
         await Task.Delay(30);
+        sut.HabitScreen.OpenConfigureCommand.Execute(null);
+        await Task.Delay(30);
+        sut.HabitScreen.HasNode.Should().BeTrue();
         sut.Editor.HasNode.Should().BeTrue();
 
         sut.Home.SelectRowCommand.Execute(null);
         await Task.Delay(30);
 
+        sut.HabitScreen.HasNode.Should().BeFalse();
         sut.Editor.HasNode.Should().BeFalse();
     }
 
@@ -136,9 +187,13 @@ public class MainWindowViewModelTests
         var home = new HomeViewModel(query, nodes, purge);
         var settingsVm = new SettingsViewModel(theme);
         var editor = new HabitEditorViewModel(nodes, configs, goals, metrics, notif, tags, settings);
-        var timerStatusBar = new Recordum.WPF.ViewModels.Timer.TimerStatusBarViewModel(
-            new FakeActiveTimerService(), new FakeClock(), nodes);
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar);
+        var clock = new FakeClock();
+        var ats = new FakeActiveTimerService();
+        var completions = new FakeCompletionService();
+        var timerStatusBar = new Recordum.WPF.ViewModels.Timer.TimerStatusBarViewModel(ats, clock, nodes);
+        var habitScreen = new Recordum.WPF.ViewModels.HabitScreen.HabitScreenViewModel(
+            nodes, completions, ats, metrics, clock);
+        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen);
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings));
     }
 

@@ -21,6 +21,7 @@ using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Timer;
 using Recordum.WPF.Views;
 
@@ -97,6 +98,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IHabitTemplatePickerLauncher, WpfHabitTemplatePickerLauncher>();
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();
+        services.AddTransient<HabitScreenViewModel>();
         services.AddTransient<MainWindowViewModel>();
 
         // Main window.
