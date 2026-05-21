@@ -10,7 +10,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 
 - **Autore**: ITS Web Solutions Architect · Torino
 - **Product spec**: v2.0 (aprile 2026)
-- **DB schema**: v2.3 (maggio 2026) — delta provenance plugin v2.3 > v2.2 > v2.1.
+- **DB schema**: v2.5 (maggio 2026) — delta `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
 - **Namespace**: `Recordum`
 
 ---
@@ -98,6 +98,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 **PinScope v2.4**: `habit_node.pin_scope TEXT NOT NULL DEFAULT 'None'` con check `IN ('None','Local','Global')` + indice. Sostituisce il vecchio bool `is_pinned`. Migration `PinScopeV24` converte `is_pinned=1` → `'Local'`. AppSetting `schema_version` bumpato a `2.4`.
 
+**ActiveTimer v2.5**: tabella `active_timer` con UNIQUE su `habit_node_id` (un solo timer attivo per habit), CASCADE on delete dal nodo, CHECK `timer_mode IN ('Stopwatch','Countdown','Primary','Session')`. Colonne `started_at_ms INTEGER`, `paused_at_ms INTEGER NULL`, `accumulated_paused_ms INTEGER DEFAULT 0`, `segment_index INTEGER NULL` (solo Session). Migration `ActiveTimerV25` bumpa `schema_version` a `2.5`. La tabella è il pivot del **timer recovery** post-crash: `TimerStatusBarViewModel.LoadAsync` carica `IActiveTimerService.ListActiveAsync` allo startup e ricostruisce le righe della status bar.
+
 **Soft delete**: solo su `HabitNode`. Cascade in transazione singola ai discendenti. Restore ripristina solo i discendenti chiusi nella stessa operazione. Purge permanente è job background per nodi >30 giorni (ordine: file → tabelle figlie → HabitNode).
 
 **Naming**: tabelle e colonne snake_case (via `EFCore.NamingConventions`). Classi/proprietà C# PascalCase. Tutte le cascade rules e tutti gli indici **dichiarati esplicitamente** in Fluent API — mai default EF Core.
@@ -126,8 +128,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.2 | Core Data Layer: CRUD HabitNode/Config/Completion, soft delete + restore, HabitConfigHistory snapshot. SQLCipher via `IDbKeyProvider` (DPAPI baseline + opt-in passphrase Argon2id). Perf budget home <500ms | ✓ **completata 2026-05-19** |
 | 3.3 | Home Screen: tab nav, albero habit, sort/filter, hide-completed, context menu | ✓ **completata 2026-05-20** |
 | 3.4 | Habit Editor: progressive disclosure 3 livelli | ✓ **completata 2026-05-21** |
-| 3.5 | Completion Recording: 5 tipi + session mode + multi-serie + timer recovery + retroactive | **→ next** |
-| 3.6 | Journal Editor + Notes (WebView2 + Toast UI/Milkdown) |  |
+| 3.5 | Completion Recording: 5 tipi + session mode + multi-serie + timer recovery + retroactive | ✓ **completata 2026-05-21** |
+| 3.6 | Journal Editor + Notes (WebView2 + Toast UI/Milkdown) | **→ next** |
 | 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress |  |
 | 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory |  |
 | 3.9 | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` |  |
@@ -144,6 +146,32 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 ### Stato Milestone 3.3
 
 33 task del plan `docs/superpowers/plans/2026-05-19-milestone-3.3-home-screen.md` completati. 243 test verdi (Core 30, Plugins 41, Data 126 incl. perf budget, WPF 46 incl. E2E `MainWindowViewModel` smoke). Build pulito, zero warning. Home Screen consegnato: 4 ViewModel (`HomeViewModel`, `HomeRowViewModel`, `SettingsViewModel`, `MainWindowViewModel`) con commands tab-aware e filtri client-side (type/tag/hide-completed/search/sort + pin layering Global > Local > None); 6 View XAML (`MainWindow`, `HomeView`, `HabitRowTemplate`, `GroupRowTemplate`, `HeatmapStrip`, `EmptyState`, `SettingsPopup`); 3 Behavior (`InlineRenameBehavior`, `TreeDragDropBehavior` con 3-band drop zone + `CyclicHabitNodeMoveException` guard, `ThemeService` registry watcher singleton); 7 converter (`HexToBrush`, `HabitTypeLabel`, `BoolToVisible`, `BoolToHidden`, `EnumToBool`, `StateToVisible`, `ActiveTabVisible`). Schema delta v2.4 (`PinScope` enum + migration). `HomeTreeRow` esteso a `PinScope`/`ChildCount`/`IsArchived`/`CompletionsLast7Days[7]`/`TagIds`. `HabitTreeQueryService.GetTrashTreeAsync` separato. Theming System/Light/Dark con switch live via `Resources/MergedDictionaries[1]` swap. Localization en + it tramite `Strings.resx` + designer auto-generato. Scorciatoie tastiera: Ctrl+1/2/3 tab, Ctrl+F focus search, F2 rename, Del soft-delete, Ctrl+E toggle archive, Ctrl+R restore. **Known limits**: drag-drop persiste solo `ParentId` (no `SortOrder` reorder in 3.3); heatmap intensity step binario (proporzionale a `TargetValue` → M3.7).
+
+### Stato Milestone 3.5
+
+40 task del plan `docs/superpowers/plans/2026-05-21-milestone-3.5-completion-recording.md` completati. 452 test verdi (Core 31, Plugins 41, Data 167, WPF 213 incl. E2E smoke quick-action + timer recovery). Build pulito, zero warning. Completion Recording consegnato.
+
+**Schema delta v2.5**: `active_timer` (UNIQUE habit, CASCADE, CHECK mode) + migration `ActiveTimerV25` (bump schema_version 2.4→2.5). `Recordum.Data.csproj` ora referenzia `Recordum.Plugins.Contracts` per i payload `CompletionRecorded/Updated/DeletedPayload` (collocati in `Plugins.Contracts/Events/` invece che `Plugins/Events/` — deviazione dal plan: `Data` deve dipendere solo dal contratto, non dall'host runtime).
+
+**Core/Data**:
+- `ActiveTimer` model + `IActiveTimerService` (Start/Pause/Resume/Stop/NextSegment/Get/List). Pause idempotente, accumulated_paused subtratto in Stop. StartAsync con TimerMode.Session inizializza `SegmentIndex=0`. NextSegment vincolato a Session.
+- `ICompletionService` fleshed-out: `ListByHabitAsync(habitNodeId, fromUtc, toUtc, take)`, `GetHeatmapAsync(habitNodeId, fromDate, toDate) → HeatmapCell[]`. Tutte le 3 ops mutanti (Record/Update/Delete) pubblicano via `IEventBus`. Update emette solo se la riga esisteva.
+- `HabitConfigInterceptor` registration order invariato.
+
+**WPF — Layout 5 colonne**: `MainWindow.xaml` ora `Home (*) | splitter | HabitScreen (user-width) | splitter | EditorPane (user-width)`. Code-behind toggla `GridLength` 0 / saved-width in base a `Home.SelectedRow` ed `Editor.HasNode`. Width persistite in AppSetting `ui.habit_screen_width` (default 520, clamp 360..800) e `ui.editor_pane_width`. **Rewire row-click**: `Home.SelectedRow` → `HabitScreen.LoadAsync` (NON più Editor). Editor si apre solo via `HabitScreen.OpenConfigure` (button "Configure" nell'header).
+
+**WPF — HabitScreen**: VM host `HabitScreenViewModel` composta da `HeatmapViewModel` + `QuickAddViewModelBase` (polimorfica via DataTemplateSelector) + `TimerControlViewModel` + `CompletionListViewModel`. `IDisposable` per cleanup IEventBus subscriptions.
+
+- **Heatmap**: 91 celle (7 rows × 13 cols) ending today, gap-filled con 0. 5-step ramp `0, 1, 2-3, 4-7, ≥8` → brushes `Brush.Heatmap.Level0..4` (Light+Dark). `ClickCell` emette `DateClicked` → `QuickAdd.CompletionDate` per backdate inline.
+- **5 Quick-add VM**: Action (one-click), Counter (value + primary metric by SortOrder + notes), Resistance (multi-series `SeriesRowViewModel` + cells per metric, `SeriesIndex` 0..N), Journal (notes-only validate non-empty), State (`LabelsJson` → ScaleLabels combo, integer index salvato come ValueInteger). Tutte estendono `QuickAddViewModelBase` con `ResolveCompletionTimestamp()` (today = clock.UtcNow, retro = midnight UTC + IsRetroactive=true).
+- **TimerControl**: Start/Pause/Resume/Stop/NextSegment. `SetContextAsync` carica HabitConfig + segments + active timer per pre-seed di IsActive/IsPaused/SegmentIndex (timer recovery). NextSegment auto-stop dopo l'ultimo. Visible solo se `HabitConfig.HasIntegratedTimer`.
+- **CompletionList**: top 20 desc, inline edit (`BeginEdit/SaveEdit/CancelEdit`) e Delete con event emit. `IEventBus` sub re-fetch heatmap+list automatico su qualsiasi evento per il `Node.Id` corrente.
+
+**WPF — TimerStatusBar**: barra always-visible al bottom di MainWindow. `TimerStatusBarViewModel` (Transient) + `ActiveTimerRowViewModel` per riga (Elapsed mm:ss / hh:mm:ss, Pause/Resume/Stop, clamp ≥0). `TimerRecoveryService.RecoverAsync` chiama `LoadAsync` allo startup → recupera timer post-crash. 1Hz `DispatcherTimer` in code-behind del view per refresh display.
+
+**WPF — Home quick-action icon**: `IQuickActionHandler` + 5 implementazioni (Action/Counter recording inline; Resistance/Journal/State no-op che lasciano il click apertura della screen). `QuickActionHandlerSelector` lookup by HabitType. `HomeRowViewModel.QuickActionCommand` (CanExecute=!IsGroup && selector attached) + event `QuickActionExecuted`. Icona `+` 26×26 in `HabitRowTemplate.xaml` nuova colonna.
+
+**Known quirks** — vedi memory `recordum-milestone-3-5-spec`.
 
 ### Stato Milestone 3.4
 
