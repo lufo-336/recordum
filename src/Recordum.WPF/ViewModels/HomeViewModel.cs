@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.WPF.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.ViewModels;
 
@@ -13,6 +14,7 @@ public sealed partial class HomeViewModel : ObservableObject
     private readonly IHabitTreeQueryService _query;
     private readonly IHabitNodeService _nodes;
     private readonly IPurgeService _purge;
+    private readonly IHabitTemplatePickerLauncher? _launcher;
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
 
@@ -33,11 +35,16 @@ public sealed partial class HomeViewModel : ObservableObject
     public IReadOnlyList<HomeSort> AvailableSorts { get; } =
         new[] { HomeSort.Manual, HomeSort.Name, HomeSort.LastCompletion };
 
-    public HomeViewModel(IHabitTreeQueryService query, IHabitNodeService nodes, IPurgeService purge)
+    public HomeViewModel(
+        IHabitTreeQueryService query,
+        IHabitNodeService nodes,
+        IPurgeService purge,
+        IHabitTemplatePickerLauncher? launcher = null)
     {
         _query = query;
         _nodes = nodes;
         _purge = purge;
+        _launcher = launcher;
     }
 
     [RelayCommand]
@@ -72,6 +79,16 @@ public sealed partial class HomeViewModel : ObservableObject
 
     [RelayCommand]
     private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
+
+    [RelayCommand]
+    private async Task OpenNewHabitAsync()
+    {
+        if (_launcher is null) return;
+        var newId = await _launcher.PickAsync();
+        if (newId is null) return;
+        await LoadAsync();
+        SelectedRow = Rows.FirstOrDefault(r => r.HabitNodeId == newId);
+    }
 
     [RelayCommand]
     private Task RetryAsync() => LoadAsync();

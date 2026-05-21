@@ -261,6 +261,31 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task OpenNewHabit_launches_picker_and_selects_created_row()
+    {
+        var launcher = new FakeHabitTemplatePickerLauncher();
+        var newId = Guid.NewGuid();
+        launcher.NextResult = newId;
+        _query.HomeRows.Add(SampleRow(name: "fresh", id: newId));
+        var sut = new HomeViewModel(_query, _nodes, _purge, launcher);
+
+        await sut.LoadCommand.ExecuteAsync(null);
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+
+        launcher.PickCallCount.Should().Be(1);
+        sut.SelectedRow.Should().NotBeNull();
+        sut.SelectedRow!.HabitNodeId.Should().Be(newId);
+    }
+
+    [Fact]
+    public async Task OpenNewHabit_with_no_launcher_is_a_noop()
+    {
+        var sut = CreateSut();
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+        sut.SelectedRow.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Hierarchy_is_flat_in_Archived_and_Trash()
     {
         var groupId = NewId("g");

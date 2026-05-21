@@ -77,6 +77,8 @@ public static class Strings
     public static string Editor_Status_Saving => Get("Editor.Status.Saving");
     public static string Editor_Status_Saved => Get("Editor.Status.Saved");
     public static string Editor_Status_Error => Get("Editor.Status.Error");
+    public static string Home_NewHabit_Button => Get("Home.NewHabit.Button");
+    public static string HabitTemplatePicker_Title => Get("HabitTemplatePicker.Title");
 
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
