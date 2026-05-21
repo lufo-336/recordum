@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
@@ -55,6 +56,51 @@ public class GoalServiceTests
         await svc.DeleteAsync(id);
         await using var db = await fx.Factory.CreateDbContextAsync();
         Assert.False(await db.Goals.AnyAsync(x => x.Id == id));
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task GetActiveAsync_returns_null_when_no_open_goal()
+    {
+        var (fx, hid) = await SeedAsync();
+        var svc = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        (await svc.GetActiveAsync(hid)).Should().BeNull();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task GetActiveAsync_ignores_closed_goals()
+    {
+        var (fx, hid) = await SeedAsync();
+        var svc = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        var id = await svc.CreateAsync(new Goal { HabitNodeId = hid, Name = "g", TargetValue = 100, PeriodType = GoalPeriodType.Open });
+        await svc.CloseAsync(id);
+        (await svc.GetActiveAsync(hid)).Should().BeNull();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpsertActiveAsync_creates_when_none_active()
+    {
+        var (fx, hid) = await SeedAsync();
+        var svc = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        await svc.UpsertActiveAsync(hid, g => { g.Name = "drink water"; g.TargetValue = 2; g.PeriodType = GoalPeriodType.Open; });
+        var active = await svc.GetActiveAsync(hid);
+        active.Should().NotBeNull();
+        active!.TargetValue.Should().Be(2);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpsertActiveAsync_mutates_existing_active_goal()
+    {
+        var (fx, hid) = await SeedAsync();
+        var svc = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        var firstId = await svc.CreateAsync(new Goal { HabitNodeId = hid, Name = "g", TargetValue = 5, PeriodType = GoalPeriodType.Open });
+        await svc.UpsertActiveAsync(hid, g => g.TargetValue = 99);
+        var active = await svc.GetActiveAsync(hid);
+        active!.Id.Should().Be(firstId);
+        active.TargetValue.Should().Be(99);
         await fx.DisposeAsync();
     }
 }
