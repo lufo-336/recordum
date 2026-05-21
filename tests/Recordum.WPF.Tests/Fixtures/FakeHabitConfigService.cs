@@ -1,0 +1,69 @@
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Errors;
+using Recordum.Core.Models;
+
+namespace Recordum.WPF.Tests.Fixtures;
+
+public sealed class FakeHabitConfigService : IHabitConfigService
+{
+    public Dictionary<Guid, HabitConfig> Store { get; } = new();
+    public List<SegmentDefinition> Segments { get; } = new();
+    public Exception? NextException { get; set; }
+
+    public ValueTask<HabitConfig?> GetAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        Throw();
+        return new(Store.TryGetValue(habitNodeId, out var c) ? c : null);
+    }
+
+    public ValueTask UpsertAsync(Guid habitNodeId, Action<HabitConfig> mutate, CancellationToken ct = default)
+    {
+        Throw();
+        if (!Store.TryGetValue(habitNodeId, out var cfg))
+        {
+            cfg = new HabitConfig { Id = Guid.NewGuid(), HabitNodeId = habitNodeId };
+            Store[habitNodeId] = cfg;
+        }
+        mutate(cfg);
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask AddSegmentAsync(Guid habitNodeId, SegmentDefinition segment, CancellationToken ct = default)
+    {
+        Throw();
+        if (segment.Id == Guid.Empty) segment.Id = Guid.NewGuid();
+        segment.HabitNodeId = habitNodeId;
+        Segments.Add(segment);
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask RemoveSegmentAsync(Guid segmentId, CancellationToken ct = default)
+    {
+        Throw();
+        Segments.RemoveAll(s => s.Id == segmentId);
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask<IReadOnlyList<SegmentDefinition>> ListSegmentsAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        Throw();
+        return new(Segments
+            .Where(s => s.HabitNodeId == habitNodeId)
+            .OrderBy(s => s.SortOrder)
+            .ToList());
+    }
+
+    public ValueTask UpdateSegmentAsync(Guid segmentId, Action<SegmentDefinition> mutate, CancellationToken ct = default)
+    {
+        Throw();
+        var seg = Segments.FirstOrDefault(s => s.Id == segmentId)
+            ?? throw new SegmentDefinitionNotFoundException(segmentId);
+        mutate(seg);
+        return ValueTask.CompletedTask;
+    }
+
+    private void Throw()
+    {
+        if (NextException is { } e) { NextException = null; throw e; }
+    }
+}

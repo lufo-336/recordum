@@ -19,6 +19,7 @@ using Recordum.Plugins.Permissions;
 using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -87,6 +88,7 @@ public static class ServiceRegistrar
         // ViewModels.
         services.AddTransient<HomeViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<MainWindowViewModel>();
 
         // Main window.
