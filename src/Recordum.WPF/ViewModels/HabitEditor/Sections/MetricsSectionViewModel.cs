@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -33,7 +34,7 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
         {
             Id = Guid.NewGuid(),
             HabitNodeId = NodeId,
-            Name = "New metric",
+            Name = Strings.Editor_Default_NewMetric,
             Type = MetricType.Integer,
             SortOrder = Metrics.Count,
         };

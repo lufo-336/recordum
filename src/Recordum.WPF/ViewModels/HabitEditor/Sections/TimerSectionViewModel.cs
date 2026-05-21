@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -58,7 +59,7 @@ public sealed partial class TimerSectionViewModel(IHabitConfigService configs) :
         if (_loading || NodeId == Guid.Empty) return;
         if (value == Recordum.Core.Enums.TimerMode.Session && Segments.Count == 0)
         {
-            ErrorMessage = "Session mode requires at least one segment";
+            ErrorMessage = Strings.Editor_Error_SessionRequiresSegment;
             Status = EditorStatus.Error;
             return;
         }
@@ -108,7 +109,7 @@ public sealed partial class TimerSectionViewModel(IHabitConfigService configs) :
         {
             Id = Guid.NewGuid(),
             HabitNodeId = NodeId,
-            Name = "New segment",
+            Name = Strings.Editor_Default_NewSegment,
             SortOrder = Segments.Count,
         };
         await ApplyAsync(() => _configs.AddSegmentAsync(NodeId, seg).AsTask());

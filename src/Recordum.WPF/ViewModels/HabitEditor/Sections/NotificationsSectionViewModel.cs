@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -55,10 +56,10 @@ public sealed partial class NotificationsSectionViewModel(INotificationService n
             .Any(g => g.Count() > 1);
         if (duplicate)
         {
-            ErrorMessage = "A notification with this kind and time already exists";
+            ErrorMessage = Strings.Editor_Error_NotificationDuplicate;
             Status = EditorStatus.Error;
         }
-        else if (Status == EditorStatus.Error && ErrorMessage?.Contains("kind and time") == true)
+        else if (Status == EditorStatus.Error && ErrorMessage == Strings.Editor_Error_NotificationDuplicate)
         {
             ErrorMessage = null;
             Status = EditorStatus.Saved;

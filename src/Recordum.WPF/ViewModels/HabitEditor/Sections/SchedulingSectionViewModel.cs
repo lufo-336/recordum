@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -52,7 +53,7 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
         if (_loading || NodeId == Guid.Empty) return;
         if (ScheduleType == ScheduleType.WeeklyX && (value is null or <= 0))
         {
-            ErrorMessage = "Weekly target must be > 0";
+            ErrorMessage = Strings.Editor_Error_WeeklyTargetPositive;
             Status = EditorStatus.Error;
             return;
         }
@@ -64,7 +65,7 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
         if (_loading || NodeId == Guid.Empty) return;
         if (ScheduleType == ScheduleType.EveryXDays && (value is null or <= 0))
         {
-            ErrorMessage = "Every X days must be > 0";
+            ErrorMessage = Strings.Editor_Error_EveryXDaysPositive;
             Status = EditorStatus.Error;
             return;
         }

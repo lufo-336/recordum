@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -46,7 +47,7 @@ public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionVi
         if (_loading || NodeId == Guid.Empty) return;
         if (value < 0)
         {
-            ErrorMessage = "Target must be ≥ 0";
+            ErrorMessage = Strings.Editor_Error_TargetNonNegative;
             Status = EditorStatus.Error;
             return;
         }
@@ -76,7 +77,7 @@ public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionVi
         if (_loading || NodeId == Guid.Empty) return;
         if (PeriodType == GoalPeriodType.Rolling && (value is null or <= 0))
         {
-            ErrorMessage = "Rolling window must be > 0 days";
+            ErrorMessage = Strings.Editor_Error_RollingDaysPositive;
             Status = EditorStatus.Error;
             return;
         }

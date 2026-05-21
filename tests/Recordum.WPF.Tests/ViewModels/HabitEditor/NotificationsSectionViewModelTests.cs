@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitEditor.Sections;
@@ -52,7 +53,7 @@ public class NotificationsSectionViewModelTests
         sut.Notifications[1].NotifyTime = new TimeOnly(8, 0);
 
         sut.Status.Should().Be(EditorStatus.Error);
-        sut.ErrorMessage.Should().Contain("kind and time");
+        sut.ErrorMessage.Should().Be(Strings.Editor_Error_NotificationDuplicate);
     }
 
     [Fact]

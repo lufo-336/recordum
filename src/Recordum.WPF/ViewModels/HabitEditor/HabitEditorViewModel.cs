@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 namespace Recordum.WPF.ViewModels.HabitEditor;
@@ -137,13 +138,13 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         var trimmed = value?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(trimmed))
         {
-            HeaderError = "Name is required";
+            HeaderError = Strings.Editor_Error_NameRequired;
             HeaderStatus = EditorStatus.Error;
             return;
         }
         if (trimmed.Length > NameMaxLength)
         {
-            HeaderError = $"Name too long (max {NameMaxLength})";
+            HeaderError = Strings.Editor_Error_NameTooLong;
             HeaderStatus = EditorStatus.Error;
             return;
         }
@@ -155,7 +156,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         if (_loading || Node is null) return;
         if (value is { Length: > DescriptionMaxLength })
         {
-            HeaderError = $"Description too long (max {DescriptionMaxLength})";
+            HeaderError = Strings.Editor_Error_DescriptionTooLong;
             HeaderStatus = EditorStatus.Error;
             return;
         }
@@ -167,7 +168,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         if (_loading || Node is null) return;
         if (string.IsNullOrEmpty(value) || !HexColorPattern.IsMatch(value))
         {
-            HeaderError = "Color must match #RRGGBB";
+            HeaderError = Strings.Editor_Error_ColorInvalid;
             HeaderStatus = EditorStatus.Error;
             return;
         }

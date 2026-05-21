@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -50,7 +51,7 @@ public sealed partial class StreakSectionViewModel(IHabitConfigService configs) 
         if (_loading || NodeId == Guid.Empty) return;
         if (value is { } v && (v <= 0 || v > MaxToleranceMinutes))
         {
-            ErrorMessage = $"Tolerance must be 1..{MaxToleranceMinutes}";
+            ErrorMessage = Strings.Editor_Error_ToleranceRange;
             Status = EditorStatus.Error;
             return;
         }
