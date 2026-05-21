@@ -32,6 +32,12 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     [ObservableProperty] private EditorStatus _headerStatus = EditorStatus.Idle;
     [ObservableProperty] private string? _headerError;
 
+    public IReadOnlyList<NodeType> AvailableNodeTypes { get; } = new[] { NodeType.Habit, NodeType.Group };
+    public IReadOnlyList<HabitType> AvailableHabitTypes { get; } = new[]
+    {
+        HabitType.Action, HabitType.Counter, HabitType.Resistance, HabitType.Journal, HabitType.State,
+    };
+
     public SchedulingSectionViewModel Scheduling { get; }
     public StreakSectionViewModel Streak { get; }
     public TimerSectionViewModel Timer { get; }

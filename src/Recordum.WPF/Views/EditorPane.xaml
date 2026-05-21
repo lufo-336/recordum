@@ -4,6 +4,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitEditor"
+             xmlns:v="clr-namespace:Recordum.WPF.Views"
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HabitEditorViewModel, IsDesignTimeCreatable=False}"
@@ -51,6 +53,21 @@
                          Background="Transparent"
                          Foreground="{DynamicResource Brush.Text}"
                          Tag="{x:Static res:Strings.Editor_DescriptionPlaceholder}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <ComboBox Width="100"
+                              ItemsSource="{Binding AvailableNodeTypes}"
+                              SelectedItem="{Binding SelectedNodeType}"/>
+                    <ComboBox Width="120" Margin="8,0,0,0"
+                              ItemsSource="{Binding AvailableHabitTypes}"
+                              SelectedItem="{Binding SelectedHabitType}"
+                              Visibility="{Binding SelectedNodeType,
+                                           Converter={StaticResource EnumToVisibility},
+                                           ConverterParameter={x:Static enums:NodeType.Habit}}"/>
+                    <v:ColorSwatchPicker Margin="8,0,0,0"
+                                         Color="{Binding Color, Mode=TwoWay}"/>
+                    <v:IconPicker Margin="8,0,0,0"
+                                  Icon="{Binding Icon, Mode=TwoWay}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 
