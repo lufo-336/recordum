@@ -64,4 +64,100 @@ public class ActiveTimerServiceTests
         var act = async () => await sut.StartAsync(habitId, TimerMode.Stopwatch);
         await act.Should().ThrowAsync<TimerAlreadyActiveException>();
     }
+
+    [Fact]
+    public async Task PauseAsync_sets_paused_at_ms_and_is_idempotent()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(10));
+        await sut.PauseAsync(habitId);
+
+        var pausedAt = fx.Clock.UtcNow.ToUnixTimeMilliseconds();
+        (await sut.GetActiveAsync(habitId))!.PausedAtMs.Should().Be(pausedAt);
+
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(5));
+        await sut.PauseAsync(habitId);
+        (await sut.GetActiveAsync(habitId))!.PausedAtMs.Should().Be(pausedAt);
+    }
+
+    [Fact]
+    public async Task PauseAsync_no_op_when_no_active_timer()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+
+        await sut.PauseAsync(habitId);
+
+        (await sut.GetActiveAsync(habitId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ResumeAsync_clears_paused_at_ms_and_accumulates_pause_duration()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(10));
+        await sut.PauseAsync(habitId);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(7));
+        await sut.ResumeAsync(habitId);
+
+        var t = await sut.GetActiveAsync(habitId);
+        t!.PausedAtMs.Should().BeNull();
+        t.AccumulatedPausedMs.Should().Be(7_000);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_no_op_when_not_paused()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+
+        await sut.ResumeAsync(habitId);
+
+        var t = await sut.GetActiveAsync(habitId);
+        t!.PausedAtMs.Should().BeNull();
+        t.AccumulatedPausedMs.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetActiveAsync_returns_null_when_no_active_timer()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+
+        (await sut.GetActiveAsync(habitId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ListActiveAsync_returns_all_running_or_paused_timers()
+    {
+        await using var fx = new DbFixture();
+        var h1 = await SeedHabit(fx);
+        var h2 = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(h1, TimerMode.Stopwatch);
+        await sut.StartAsync(h2, TimerMode.Stopwatch);
+
+        var list = await sut.ListActiveAsync();
+        list.Select(t => t.HabitNodeId).Should().BeEquivalentTo(new[] { h1, h2 });
+    }
+
+    [Fact]
+    public async Task ListActiveAsync_returns_empty_when_no_timers()
+    {
+        await using var fx = new DbFixture();
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+
+        (await sut.ListActiveAsync()).Should().BeEmpty();
+    }
 }
