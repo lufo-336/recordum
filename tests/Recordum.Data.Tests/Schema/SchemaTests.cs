@@ -4,7 +4,7 @@ using Xunit;
 namespace Recordum.Data.Tests.Schema;
 
 /// <summary>
-/// Verifies that InitialSchema migration produces all 25 expected tables and §6.4 indexes.
+/// Verifies that all migrations produce all 26 expected tables and §6.4 indexes.
 /// </summary>
 public sealed class SchemaTests : IClassFixture<SchemaFixture>
 {
@@ -15,7 +15,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         _fixture = fixture;
     }
 
-    // 25 tables from CLAUDE.md §6.2 enumeration (snake_case, EF pluralised)
+    // 26 tables: 25 from InitialSchema + active_timer added in ActiveTimerV25 (snake_case, EF naming)
     private static readonly string[] ExpectedTables =
     [
         "habit_nodes",
@@ -43,6 +43,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         "ai_insights",
         "app_settings",
         "sync_meta",
+        "active_timer",
     ];
 
     // Indexes from CLAUDE.md §6.4 (EF Core naming: ix_{table}_{columns})
@@ -71,7 +72,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
     ];
 
     [Fact]
-    public void All_25_tables_exist_after_migration()
+    public void All_26_tables_exist_after_migration()
     {
         using var conn = _fixture.OpenRawConnection();
         using var cmd = conn.CreateCommand();
@@ -82,7 +83,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         while (reader.Read())
             actualTables.Add(reader.GetString(0));
 
-        Assert.Equal(25, actualTables.Count);
+        Assert.Equal(26, actualTables.Count);
 
         foreach (var expected in ExpectedTables)
             Assert.Contains(expected, actualTables);
