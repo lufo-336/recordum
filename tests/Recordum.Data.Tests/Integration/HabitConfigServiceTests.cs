@@ -1,6 +1,8 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
 using Recordum.Data.Services;
 using Recordum.Data.Tests.Fixtures;
@@ -79,5 +81,45 @@ public class HabitConfigServiceTests
         await using (var db = await fx.Factory.CreateDbContextAsync())
             Assert.Empty(db.SegmentDefinitions);
         await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ListSegmentsAsync_returns_segments_in_sort_order()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        await svc.AddSegmentAsync(habitId, new SegmentDefinition { Name = "Rest", SortOrder = 1, IsRest = true });
+        await svc.AddSegmentAsync(habitId, new SegmentDefinition { Name = "Work", SortOrder = 0, IsRest = false });
+
+        var segments = await svc.ListSegmentsAsync(habitId);
+
+        segments.Select(s => s.Name).Should().Equal("Work", "Rest");
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpdateSegmentAsync_mutates_existing_row()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var seg = new SegmentDefinition { Id = Guid.NewGuid(), Name = "Work", SortOrder = 0 };
+        await svc.AddSegmentAsync(habitId, seg);
+
+        await svc.UpdateSegmentAsync(seg.Id, s => { s.Name = "Focus"; s.Color = "#abc123"; });
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var updated = await db.SegmentDefinitions.FindAsync(seg.Id);
+        updated!.Name.Should().Be("Focus");
+        updated.Color.Should().Be("#abc123");
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpdateSegmentAsync_throws_when_segment_missing()
+    {
+        await using var fx = new DbFixture();
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var act = async () => await svc.UpdateSegmentAsync(Guid.NewGuid(), _ => { });
+        await act.Should().ThrowAsync<SegmentDefinitionNotFoundException>();
     }
 }
