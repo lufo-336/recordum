@@ -56,4 +56,30 @@ public sealed class GoalService(
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync(ct);
     }
+
+    public async ValueTask<Goal?> GetActiveAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Goals.AsNoTracking()
+            .Where(g => g.HabitNodeId == habitNodeId && !g.IsClosed)
+            .OrderByDescending(g => g.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async ValueTask UpsertActiveAsync(Guid habitNodeId, Action<Goal> mutate, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(mutate);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var goal = await db.Goals
+            .Where(g => g.HabitNodeId == habitNodeId && !g.IsClosed)
+            .OrderByDescending(g => g.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (goal is null)
+        {
+            goal = new Goal { Id = Guid.NewGuid(), HabitNodeId = habitNodeId };
+            db.Goals.Add(goal);
+        }
+        mutate(goal);
+        await db.SaveChangesAsync(ct);
+    }
 }

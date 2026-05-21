@@ -10,6 +10,7 @@ using Recordum.Data;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.HabitEditor;
 using FluentAssertions;
 
 namespace Recordum.WPF.Tests;
@@ -128,6 +129,27 @@ public sealed class BootstrapSmokeTests : IDisposable
         using var cmd = plain.CreateCommand();
         cmd.CommandText = "SELECT name FROM sqlite_master";
         await Assert.ThrowsAsync<SqliteException>(() => cmd.ExecuteReaderAsync());
+    }
+
+    [Fact]
+    public async Task End_to_end_create_via_template_then_edit_persists_to_db()
+    {
+        await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+
+        var templates = _services.GetRequiredService<IHabitTemplateService>();
+        var seed = (await templates.ListAsync())[0];
+
+        var newId = await templates.InstantiateAsync(seed.Id, parentId: null);
+
+        var editor = _services.GetRequiredService<HabitEditorViewModel>();
+        await editor.LoadAsync(newId);
+        editor.Name = "yoga v2";
+        await Task.Delay(50); // let the per-field autosave fire
+
+        var nodes = _services.GetRequiredService<IHabitNodeService>();
+        var node = await nodes.GetAsync(newId);
+        node.Should().NotBeNull();
+        node!.Name.Should().Be("yoga v2");
     }
 
     [Fact]

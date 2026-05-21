@@ -222,6 +222,70 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task SelectRow_sets_SelectedRow()
+    {
+        _query.HomeRows.Add(SampleRow(name: "a"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var row = sut.Rows.First();
+
+        sut.SelectRowCommand.Execute(row);
+
+        sut.SelectedRow.Should().BeSameAs(row);
+    }
+
+    [Fact]
+    public async Task SelectRow_with_null_clears_selection()
+    {
+        _query.HomeRows.Add(SampleRow(name: "a"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectRowCommand.Execute(sut.Rows.First());
+
+        sut.SelectRowCommand.Execute(null);
+
+        sut.SelectedRow.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SwitchTab_clears_SelectedRow()
+    {
+        _query.HomeRows.Add(SampleRow(name: "a"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectRowCommand.Execute(sut.Rows.First());
+
+        await sut.SwitchTabCommand.ExecuteAsync(HomeTab.Archived);
+
+        sut.SelectedRow.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OpenNewHabit_launches_picker_and_selects_created_row()
+    {
+        var launcher = new FakeHabitTemplatePickerLauncher();
+        var newId = Guid.NewGuid();
+        launcher.NextResult = newId;
+        _query.HomeRows.Add(SampleRow(name: "fresh", id: newId));
+        var sut = new HomeViewModel(_query, _nodes, _purge, launcher);
+
+        await sut.LoadCommand.ExecuteAsync(null);
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+
+        launcher.PickCallCount.Should().Be(1);
+        sut.SelectedRow.Should().NotBeNull();
+        sut.SelectedRow!.HabitNodeId.Should().Be(newId);
+    }
+
+    [Fact]
+    public async Task OpenNewHabit_with_no_launcher_is_a_noop()
+    {
+        var sut = CreateSut();
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+        sut.SelectedRow.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Hierarchy_is_flat_in_Archived_and_Trash()
     {
         var groupId = NewId("g");

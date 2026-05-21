@@ -25,8 +25,34 @@
                     CommandParameter="{x:Static vm:HomeTab.Trash}"/>
     </Window.InputBindings>
     <Grid>
-        <v:HomeView DataContext="{Binding Home}"/>
-        <Popup x:Name="SettingsPopupHost" StaysOpen="False" Placement="MousePoint" AllowsTransparency="True">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition x:Name="EditorPaneColumn" Width="480" MinWidth="320"/>
+        </Grid.ColumnDefinitions>
+        <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
+        <GridSplitter x:Name="EditorPaneSplitter"
+                      Grid.Column="1"
+                      Width="4"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      ResizeBehavior="PreviousAndNext"
+                      Background="{DynamicResource Brush.Border}"
+                      ShowsPreview="False"
+                      Visibility="{Binding Home.SelectedRow,
+                                   RelativeSource={RelativeSource AncestorType=Window},
+                                   Converter={StaticResource NullToVisibility}}"
+                      DragCompleted="OnEditorPaneSplitterDragCompleted"/>
+        <v:EditorPane Grid.Column="2"
+                      DataContext="{Binding Editor}"
+                      Visibility="{Binding Home.SelectedRow,
+                                   RelativeSource={RelativeSource AncestorType=Window},
+                                   Converter={StaticResource NullToVisibility}}"/>
+        <Popup x:Name="SettingsPopupHost"
+               Grid.Column="0" Grid.ColumnSpan="3"
+               StaysOpen="False"
+               Placement="MousePoint"
+               AllowsTransparency="True">
             <v:SettingsPopup DataContext="{Binding Settings}"/>
         </Popup>
     </Grid>

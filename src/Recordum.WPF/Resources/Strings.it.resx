@@ -184,4 +184,86 @@
   <data name="Settings.Quit" xml:space="preserve">
     <value>Esci</value>
   </data>
+  <!-- Habit Editor (Milestone 3.4) -->
+  <data name="Editor.Close" xml:space="preserve">
+    <value>Chiudi editor</value>
+  </data>
+  <data name="Editor.DescriptionPlaceholder" xml:space="preserve">
+    <value>Descrivi questa abitudine (facoltativo)</value>
+  </data>
+  <data name="Editor.Status.Saving" xml:space="preserve">
+    <value>Salvataggio…</value>
+  </data>
+  <data name="Editor.Status.Saved" xml:space="preserve">
+    <value>Salvato</value>
+  </data>
+  <data name="Editor.Status.Error" xml:space="preserve">
+    <value>Salvataggio fallito</value>
+  </data>
+  <data name="Home.NewHabit.Button" xml:space="preserve">
+    <value>+ Nuova</value>
+  </data>
+  <data name="HabitTemplatePicker.Title" xml:space="preserve">
+    <value>Nuova abitudine da modello</value>
+  </data>
+  <data name="HabitTemplatePicker.BlankHabit" xml:space="preserve">
+    <value>Abitudine vuota</value>
+  </data>
+  <data name="HabitTemplatePicker.BlankHabit.Description" xml:space="preserve">
+    <value>Inizia senza modello — un'abitudine azione.</value>
+  </data>
+  <data name="HabitTemplatePicker.BlankGroup" xml:space="preserve">
+    <value>Gruppo vuoto</value>
+  </data>
+  <data name="HabitTemplatePicker.BlankGroup.Description" xml:space="preserve">
+    <value>Crea un gruppo vuoto per organizzare le abitudini.</value>
+  </data>
+  <data name="Editor.Error.NameRequired" xml:space="preserve">
+    <value>Il nome è obbligatorio</value>
+  </data>
+  <data name="Editor.Error.NameTooLong" xml:space="preserve">
+    <value>Nome troppo lungo (max 200)</value>
+  </data>
+  <data name="Editor.Error.DescriptionTooLong" xml:space="preserve">
+    <value>Descrizione troppo lunga (max 2000)</value>
+  </data>
+  <data name="Editor.Error.ColorInvalid" xml:space="preserve">
+    <value>Il colore deve essere nel formato #RRGGBB</value>
+  </data>
+  <data name="Editor.Error.WeeklyTargetPositive" xml:space="preserve">
+    <value>Il target settimanale deve essere maggiore di 0</value>
+  </data>
+  <data name="Editor.Error.EveryXDaysPositive" xml:space="preserve">
+    <value>Ogni X giorni deve essere maggiore di 0</value>
+  </data>
+  <data name="Editor.Error.ToleranceRange" xml:space="preserve">
+    <value>La tolleranza deve essere tra 1 e 1440 minuti</value>
+  </data>
+  <data name="Editor.Error.SessionRequiresSegment" xml:space="preserve">
+    <value>La modalità sessione richiede almeno un segmento</value>
+  </data>
+  <data name="Editor.Error.TargetNonNegative" xml:space="preserve">
+    <value>Il target deve essere maggiore o uguale a 0</value>
+  </data>
+  <data name="Editor.Error.RollingDaysPositive" xml:space="preserve">
+    <value>La finestra mobile deve essere maggiore di 0 giorni</value>
+  </data>
+  <data name="Editor.Error.NotificationDuplicate" xml:space="preserve">
+    <value>Esiste già una notifica con questo tipo e orario</value>
+  </data>
+  <data name="Editor.Error.ResetTimeFormat" xml:space="preserve">
+    <value>L'orario di reset deve essere HH:mm (24 ore)</value>
+  </data>
+  <data name="Editor.Default.NewHabit" xml:space="preserve">
+    <value>Nuova abitudine</value>
+  </data>
+  <data name="Editor.Default.NewGroup" xml:space="preserve">
+    <value>Nuovo gruppo</value>
+  </data>
+  <data name="Editor.Default.NewSegment" xml:space="preserve">
+    <value>Nuovo segmento</value>
+  </data>
+  <data name="Editor.Default.NewMetric" xml:space="preserve">
+    <value>Nuova metrica</value>
+  </data>
 </root>

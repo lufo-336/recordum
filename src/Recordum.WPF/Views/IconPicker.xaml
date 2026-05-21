@@ -1,0 +1,27 @@
+<UserControl x:Class="Recordum.WPF.Views.IconPicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:Recordum.WPF.Views"
+             mc:Ignorable="d">
+    <StackPanel Orientation="Horizontal">
+        <Border Width="28" Height="28"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                CornerRadius="3"
+                Background="Transparent"
+                Padding="4">
+            <Path Stretch="Uniform"
+                  Stroke="{DynamicResource Brush.Text}"
+                  StrokeThickness="1.5"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round"
+                  Data="{Binding SelectedIconGeometry, RelativeSource={RelativeSource AncestorType={x:Type local:IconPicker}}}"/>
+        </Border>
+        <TextBox Width="110" Margin="8,0,0,0"
+                 VerticalContentAlignment="Center"
+                 Text="{Binding Icon, RelativeSource={RelativeSource AncestorType={x:Type local:IconPicker}}, UpdateSourceTrigger=LostFocus}"/>
+    </StackPanel>
+</UserControl>

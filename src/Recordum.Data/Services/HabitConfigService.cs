@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
 
 namespace Recordum.Data.Services;
@@ -54,6 +55,25 @@ public sealed partial class HabitConfigService(
         var seg = await db.SegmentDefinitions.FirstOrDefaultAsync(s => s.Id == segmentId, ct);
         if (seg is null) return;
         db.SegmentDefinitions.Remove(seg);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async ValueTask<IReadOnlyList<SegmentDefinition>> ListSegmentsAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.SegmentDefinitions.AsNoTracking()
+            .Where(s => s.HabitNodeId == habitNodeId)
+            .OrderBy(s => s.SortOrder)
+            .ToListAsync(ct);
+    }
+
+    public async ValueTask UpdateSegmentAsync(Guid segmentId, Action<SegmentDefinition> mutate, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(mutate);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var seg = await db.SegmentDefinitions.FirstOrDefaultAsync(s => s.Id == segmentId, ct)
+            ?? throw new SegmentDefinitionNotFoundException(segmentId);
+        mutate(seg);
         await db.SaveChangesAsync(ct);
     }
 

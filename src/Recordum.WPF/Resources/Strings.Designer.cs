@@ -71,6 +71,35 @@ public static class Strings
     public static string Settings_About => Get("Settings.About");
     public static string Settings_Quit => Get("Settings.Quit");
 
+    // Habit Editor (Milestone 3.4)
+    public static string Editor_Close => Get("Editor.Close");
+    public static string Editor_DescriptionPlaceholder => Get("Editor.DescriptionPlaceholder");
+    public static string Editor_Status_Saving => Get("Editor.Status.Saving");
+    public static string Editor_Status_Saved => Get("Editor.Status.Saved");
+    public static string Editor_Status_Error => Get("Editor.Status.Error");
+    public static string Home_NewHabit_Button => Get("Home.NewHabit.Button");
+    public static string HabitTemplatePicker_Title => Get("HabitTemplatePicker.Title");
+    public static string HabitTemplatePicker_BlankHabit => Get("HabitTemplatePicker.BlankHabit");
+    public static string HabitTemplatePicker_BlankHabit_Description => Get("HabitTemplatePicker.BlankHabit.Description");
+    public static string HabitTemplatePicker_BlankGroup => Get("HabitTemplatePicker.BlankGroup");
+    public static string HabitTemplatePicker_BlankGroup_Description => Get("HabitTemplatePicker.BlankGroup.Description");
+    public static string Editor_Error_NameRequired => Get("Editor.Error.NameRequired");
+    public static string Editor_Error_NameTooLong => Get("Editor.Error.NameTooLong");
+    public static string Editor_Error_DescriptionTooLong => Get("Editor.Error.DescriptionTooLong");
+    public static string Editor_Error_ColorInvalid => Get("Editor.Error.ColorInvalid");
+    public static string Editor_Error_WeeklyTargetPositive => Get("Editor.Error.WeeklyTargetPositive");
+    public static string Editor_Error_EveryXDaysPositive => Get("Editor.Error.EveryXDaysPositive");
+    public static string Editor_Error_ToleranceRange => Get("Editor.Error.ToleranceRange");
+    public static string Editor_Error_SessionRequiresSegment => Get("Editor.Error.SessionRequiresSegment");
+    public static string Editor_Error_TargetNonNegative => Get("Editor.Error.TargetNonNegative");
+    public static string Editor_Error_RollingDaysPositive => Get("Editor.Error.RollingDaysPositive");
+    public static string Editor_Error_NotificationDuplicate => Get("Editor.Error.NotificationDuplicate");
+    public static string Editor_Error_ResetTimeFormat => Get("Editor.Error.ResetTimeFormat");
+    public static string Editor_Default_NewHabit => Get("Editor.Default.NewHabit");
+    public static string Editor_Default_NewGroup => Get("Editor.Default.NewGroup");
+    public static string Editor_Default_NewSegment => Get("Editor.Default.NewSegment");
+    public static string Editor_Default_NewMetric => Get("Editor.Default.NewMetric");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
