@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Recordum.Core\Recordum.Core.csproj" />
+    <ProjectReference Include="..\Recordum.Plugins.Contracts\Recordum.Plugins.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

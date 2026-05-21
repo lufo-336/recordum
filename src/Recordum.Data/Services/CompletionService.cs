@@ -2,16 +2,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
 public sealed partial class CompletionService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
-    ILogger<CompletionService> logger) : ICompletionService
+    ILogger<CompletionService> logger,
+    IEventBus eventBus) : ICompletionService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Completion {Id} recorded for habit {HabitId}")]
     private partial void LogRecorded(Guid id, Guid habitId);
@@ -51,6 +55,7 @@ public sealed partial class CompletionService(
         }
         await db.SaveChangesAsync(ct);
         LogRecorded(draft.Id, draft.HabitNodeId);
+        eventBus.Publish(new CompletionRecordedPayload(draft.Id, draft.HabitNodeId, draft.CompletedAt));
         _ = clock;
         return draft.Id;
     }
@@ -63,12 +68,16 @@ public sealed partial class CompletionService(
         if (c is null) return;
         mutate(c);
         await db.SaveChangesAsync(ct);
+        eventBus.Publish(new CompletionUpdatedPayload(c.Id, c.HabitNodeId, c.CompletedAt));
     }
 
     public async ValueTask DeleteAsync(Guid id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var c = await db.Completions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (c is null) return;
         await db.Completions.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
+        eventBus.Publish(new CompletionDeletedPayload(c.Id, c.HabitNodeId, c.CompletedAt));
     }
 
     public async ValueTask<Completion?> GetAsync(Guid id, CancellationToken ct = default)
@@ -79,6 +88,51 @@ public sealed partial class CompletionService(
             .Include(c => c.Segments)
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id, ct);
+    }
+
+    public async ValueTask<IReadOnlyList<Completion>> ListByHabitAsync(
+        Guid habitNodeId,
+        DateTimeOffset? fromUtc = null,
+        DateTimeOffset? toUtc = null,
+        int? take = null,
+        CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var q = db.Completions.AsNoTracking().Where(c => c.HabitNodeId == habitNodeId);
+        if (fromUtc is { } f)
+        {
+            var fMs = f.ToUnixTimeMilliseconds();
+            q = q.Where(c => c.CompletedAtMs >= fMs);
+        }
+        if (toUtc is { } t)
+        {
+            var tMs = t.ToUnixTimeMilliseconds();
+            q = q.Where(c => c.CompletedAtMs <= tMs);
+        }
+        var ordered = q.OrderByDescending(c => c.CompletedAtMs);
+        return take is { } n
+            ? await ordered.Take(n).ToListAsync(ct)
+            : await ordered.ToListAsync(ct);
+    }
+
+    public async ValueTask<IReadOnlyList<HeatmapCell>> GetHeatmapAsync(
+        Guid habitNodeId,
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken ct = default)
+    {
+        var fromMs = new DateTimeOffset(fromDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var toMs = new DateTimeOffset(toDate.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.Completions.AsNoTracking()
+            .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs <= toMs)
+            .Select(c => c.CompletedAt)
+            .ToListAsync(ct);
+        return rows
+            .GroupBy(t => DateOnly.FromDateTime(t))
+            .Select(g => new HeatmapCell(g.Key, g.Count()))
+            .OrderBy(c => c.Date)
+            .ToList();
     }
 
     private static void ValidatePerType(
