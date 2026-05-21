@@ -10,7 +10,8 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HomeViewModel, IsDesignTimeCreatable=False}"
              Background="{DynamicResource Brush.Background}"
-             PreviewKeyDown="OnPreviewKeyDown">
+             PreviewKeyDown="OnPreviewKeyDown"
+             PreviewMouseLeftButtonUp="OnPreviewMouseLeftButtonUp">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

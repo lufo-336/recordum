@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Views;
@@ -10,6 +12,27 @@ public partial class HomeView : UserControl
     public HomeView()
     {
         InitializeComponent();
+    }
+
+    private void OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is not HomeViewModel home) return;
+        // Skip clicks on interactive controls (rename TextBox, context-menu triggers, etc.).
+        if (e.OriginalSource is TextBox or ButtonBase or System.Windows.Documents.Run) return;
+
+        var row = FindAncestorDataContext<HomeRowViewModel>(e.OriginalSource as DependencyObject);
+        if (row is null) return;
+        home.SelectRowCommand.Execute(row);
+    }
+
+    private static T? FindAncestorDataContext<T>(DependencyObject? source) where T : class
+    {
+        while (source is not null)
+        {
+            if (source is FrameworkElement fe && fe.DataContext is T match) return match;
+            source = VisualTreeHelper.GetParent(source);
+        }
+        return null;
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

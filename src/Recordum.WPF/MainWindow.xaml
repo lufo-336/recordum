@@ -25,8 +25,21 @@
                     CommandParameter="{x:Static vm:HomeTab.Trash}"/>
     </Window.InputBindings>
     <Grid>
-        <v:HomeView DataContext="{Binding Home}"/>
-        <Popup x:Name="SettingsPopupHost" StaysOpen="False" Placement="MousePoint" AllowsTransparency="True">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
+        <v:EditorPane Grid.Column="1"
+                      DataContext="{Binding Editor}"
+                      Visibility="{Binding Home.SelectedRow,
+                                   RelativeSource={RelativeSource AncestorType=Window},
+                                   Converter={StaticResource NullToVisibility}}"/>
+        <Popup x:Name="SettingsPopupHost"
+               Grid.Column="0" Grid.ColumnSpan="2"
+               StaysOpen="False"
+               Placement="MousePoint"
+               AllowsTransparency="True">
             <v:SettingsPopup DataContext="{Binding Settings}"/>
         </Popup>
     </Grid>

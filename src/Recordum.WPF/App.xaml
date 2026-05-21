@@ -17,6 +17,7 @@
             <conv:EnumToBoolConverter x:Key="EnumToBool"/>
             <conv:StateToVisibleConverter x:Key="StateToVisible"/>
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
+            <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

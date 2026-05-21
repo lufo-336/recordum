@@ -202,4 +202,20 @@ Details: {0}</value>
   <data name="Settings.Quit" xml:space="preserve">
     <value>Quit</value>
   </data>
+  <!-- Habit Editor (Milestone 3.4) -->
+  <data name="Editor.Close" xml:space="preserve">
+    <value>Close editor</value>
+  </data>
+  <data name="Editor.DescriptionPlaceholder" xml:space="preserve">
+    <value>Describe this habit (optional)</value>
+  </data>
+  <data name="Editor.Status.Saving" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="Editor.Status.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Editor.Status.Error" xml:space="preserve">
+    <value>Couldn't save</value>
+  </data>
 </root>

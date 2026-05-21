@@ -184,4 +184,20 @@
   <data name="Settings.Quit" xml:space="preserve">
     <value>Esci</value>
   </data>
+  <!-- Habit Editor (Milestone 3.4) -->
+  <data name="Editor.Close" xml:space="preserve">
+    <value>Chiudi editor</value>
+  </data>
+  <data name="Editor.DescriptionPlaceholder" xml:space="preserve">
+    <value>Descrivi questa abitudine (facoltativo)</value>
+  </data>
+  <data name="Editor.Status.Saving" xml:space="preserve">
+    <value>Salvataggio…</value>
+  </data>
+  <data name="Editor.Status.Saved" xml:space="preserve">
+    <value>Salvato</value>
+  </data>
+  <data name="Editor.Status.Error" xml:space="preserve">
+    <value>Salvataggio fallito</value>
+  </data>
 </root>
