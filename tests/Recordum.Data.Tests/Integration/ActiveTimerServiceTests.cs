@@ -209,4 +209,43 @@ public class ActiveTimerServiceTests
 
         c.DurationSeconds.Should().Be(30);
     }
+
+    [Fact]
+    public async Task NextSegmentAsync_increments_segment_index_for_session_mode()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Session);
+
+        await sut.NextSegmentAsync(habitId);
+
+        (await sut.GetActiveAsync(habitId))!.SegmentIndex.Should().Be(1);
+
+        await sut.NextSegmentAsync(habitId);
+        (await sut.GetActiveAsync(habitId))!.SegmentIndex.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task NextSegmentAsync_throws_when_not_in_session_mode()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+
+        var act = async () => await sut.NextSegmentAsync(habitId);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task NextSegmentAsync_throws_when_no_active_timer()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+
+        var act = async () => await sut.NextSegmentAsync(habitId);
+        await act.Should().ThrowAsync<ActiveTimerNotFoundException>();
+    }
 }

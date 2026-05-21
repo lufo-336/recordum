@@ -81,7 +81,17 @@ public sealed class ActiveTimerService(
         return draft;
     }
 
-    public ValueTask NextSegmentAsync(Guid habitNodeId, CancellationToken ct = default) => throw new NotImplementedException();
+    public async ValueTask NextSegmentAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct)
+            ?? throw new ActiveTimerNotFoundException(habitNodeId);
+        if (t.TimerMode != TimerMode.Session)
+            throw new InvalidOperationException(
+                $"NextSegment is only valid in Session mode (timer is {t.TimerMode}).");
+        t.SegmentIndex = (t.SegmentIndex ?? 0) + 1;
+        await db.SaveChangesAsync(ct);
+    }
 
     public async ValueTask<ActiveTimer?> GetActiveAsync(Guid habitNodeId, CancellationToken ct = default)
     {
