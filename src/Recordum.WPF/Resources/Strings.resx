@@ -320,4 +320,7 @@ Details: {0}</value>
   <data name="HabitScreen.QuickAdd.State.Select" xml:space="preserve">
     <value>Select level</value>
   </data>
+  <data name="Home.QuickAction" xml:space="preserve">
+    <value>Quick log</value>
+  </data>
 </root>

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.WPF.ViewModels.Quick;
 
 namespace Recordum.WPF.ViewModels;
 
@@ -11,7 +12,17 @@ public sealed partial class HomeRowViewModel : ObservableObject
 {
     private readonly IHabitNodeService _nodes;
     private readonly IPurgeService _purge;
+    private QuickActionHandlerSelector? _quickActionSelector;
     private string _originalName = string.Empty;
+
+    public bool CanQuickAction => !IsGroup && HabitType is not null && _quickActionSelector is not null;
+
+    public void AttachQuickActionSelector(QuickActionHandlerSelector selector)
+    {
+        _quickActionSelector = selector;
+        OnPropertyChanged(nameof(CanQuickAction));
+        QuickActionCommand.NotifyCanExecuteChanged();
+    }
 
     public Guid HabitNodeId { get; }
     public Guid? ParentId { get; }
@@ -139,5 +150,23 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [RelayCommand]
     private Task PurgeAsync() => _purge.PurgeSubtreeAsync(HabitNodeId).AsTask();
 
+    public event EventHandler<QuickActionExecutedEventArgs>? QuickActionExecuted;
+
+    [RelayCommand(CanExecute = nameof(CanQuickAction))]
+    private async Task QuickActionAsync(CancellationToken ct)
+    {
+        if (_quickActionSelector is null || HabitType is null) return;
+        var handler = _quickActionSelector.For(HabitType.Value);
+        if (handler is null) return;
+        var recorded = await handler.ExecuteAsync(HabitNodeId, ct).ConfigureAwait(true);
+        QuickActionExecuted?.Invoke(this, new QuickActionExecutedEventArgs(HabitNodeId, recorded));
+    }
+
     public Task MoveToAsync(Guid? newParent) => _nodes.MoveAsync(HabitNodeId, newParent).AsTask();
+}
+
+public sealed class QuickActionExecutedEventArgs(Guid habitNodeId, bool recorded) : EventArgs
+{
+    public Guid HabitNodeId { get; } = habitNodeId;
+    public bool Recorded { get; } = recorded;
 }

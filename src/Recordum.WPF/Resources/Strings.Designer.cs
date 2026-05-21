@@ -23,6 +23,7 @@ public static class Strings
     public static string HabitScreen_QuickAdd_RemoveSeries => Get("HabitScreen.QuickAdd.RemoveSeries");
     public static string HabitScreen_QuickAdd_SeriesIndex => Get("HabitScreen.QuickAdd.SeriesIndex");
     public static string HabitScreen_QuickAdd_State_Select => Get("HabitScreen.QuickAdd.State.Select");
+    public static string Home_QuickAction => Get("Home.QuickAction");
 
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));

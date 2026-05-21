@@ -22,6 +22,7 @@ using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.WPF.ViewModels.Quick;
 using Recordum.WPF.ViewModels.Timer;
 using Recordum.WPF.Views;
 
@@ -99,6 +100,14 @@ public static class ServiceRegistrar
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();
         services.AddTransient<HabitScreenViewModel>();
+
+        services.AddScoped<IQuickActionHandler, ActionQuickActionHandler>();
+        services.AddScoped<IQuickActionHandler, CounterQuickActionHandler>();
+        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Resistance));
+        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Journal));
+        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.State));
+        services.AddScoped<QuickActionHandlerSelector>();
+
         services.AddTransient<MainWindowViewModel>();
 
         // Main window.
