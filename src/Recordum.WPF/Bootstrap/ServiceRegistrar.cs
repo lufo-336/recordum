@@ -18,8 +18,10 @@ using Recordum.Plugins.Management;
 using Recordum.Plugins.Permissions;
 using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
+using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.Timer;
 using Recordum.WPF.Views;
 
 namespace Recordum.WPF.Bootstrap;
@@ -93,6 +95,8 @@ public static class ServiceRegistrar
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();
         services.AddSingleton<IHabitTemplatePickerLauncher, WpfHabitTemplatePickerLauncher>();
+        services.AddTransient<TimerStatusBarViewModel>();
+        services.AddTransient<TimerRecoveryService>();
         services.AddTransient<MainWindowViewModel>();
 
         // Main window.

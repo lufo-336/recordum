@@ -13,6 +13,7 @@
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
+            <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>
             <conv:BoolToHiddenConverter x:Key="BoolToHidden"/>
             <conv:EnumToBoolConverter x:Key="EnumToBool"/>
             <conv:StateToVisibleConverter x:Key="StateToVisible"/>

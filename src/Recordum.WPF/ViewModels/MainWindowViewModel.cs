@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.Timer;
 
 namespace Recordum.WPF.ViewModels;
 
@@ -18,6 +19,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public HomeViewModel Home { get; }
     public SettingsViewModel Settings { get; }
     public HabitEditorViewModel Editor { get; }
+    public TimerStatusBarViewModel TimerStatusBar { get; }
 
     [ObservableProperty] private double _editorPaneWidth = DefaultEditorPaneWidth;
 
@@ -25,16 +27,19 @@ public sealed partial class MainWindowViewModel : ObservableObject
         HomeViewModel home,
         SettingsViewModel settings,
         HabitEditorViewModel editor,
-        IAppSettingService appSettings)
+        IAppSettingService appSettings,
+        TimerStatusBarViewModel timerStatusBar)
     {
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(appSettings);
+        ArgumentNullException.ThrowIfNull(timerStatusBar);
         Home = home;
         Settings = settings;
         Editor = editor;
         _appSettings = appSettings;
+        TimerStatusBar = timerStatusBar;
         Home.PropertyChanged += OnHomePropertyChanged;
     }
 
@@ -43,6 +48,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         await LoadEditorPaneWidthAsync(ct).ConfigureAwait(true);
         await Settings.InitializeAsync(ct);
         await Home.LoadCommand.ExecuteAsync(null);
+        await TimerStatusBar.LoadAsync(ct).ConfigureAwait(true);
     }
 
     [RelayCommand]

@@ -136,7 +136,9 @@ public class MainWindowViewModelTests
         var home = new HomeViewModel(query, nodes, purge);
         var settingsVm = new SettingsViewModel(theme);
         var editor = new HabitEditorViewModel(nodes, configs, goals, metrics, notif, tags, settings);
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings);
+        var timerStatusBar = new Recordum.WPF.ViewModels.Timer.TimerStatusBarViewModel(
+            new FakeActiveTimerService(), new FakeClock(), nodes);
+        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar);
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings));
     }
 
