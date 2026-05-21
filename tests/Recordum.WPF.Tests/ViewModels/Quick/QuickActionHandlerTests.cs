@@ -85,8 +85,8 @@ public class QuickActionHandlerSelectorTests
         var open = new OpenScreenQuickActionHandler(HabitType.Journal);
         var sut = new QuickActionHandlerSelector(new IQuickActionHandler[] { action, open });
 
-        sut.For(HabitType.Action).Should().BeSameAs(action);
-        sut.For(HabitType.Journal).Should().BeSameAs(open);
+        sut.For(HabitType.Action)!.Should().BeSameAs(action);
+        sut.For(HabitType.Journal)!.Should().BeSameAs(open);
         sut.For(HabitType.Counter).Should().BeNull();
     }
 }

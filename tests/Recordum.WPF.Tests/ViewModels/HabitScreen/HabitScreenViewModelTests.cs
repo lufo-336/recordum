@@ -25,7 +25,7 @@ public class HabitScreenViewModelTests
         metrics = new FakeMetricDefinitionService();
         clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
         bus = new FakeEventBus();
-        return new HabitScreenViewModel(nodes, completions, timers, metrics, clock, bus);
+        return new HabitScreenViewModel(nodes, completions, timers, metrics, new FakeHabitConfigService(), clock, bus);
     }
 
     private static HabitScreenViewModel CreateSut(

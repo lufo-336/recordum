@@ -40,6 +40,50 @@
             </Border>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vm:TimerControlViewModel}">
+            <Border Padding="12,8"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    Visibility="{Binding IsApplicable, Converter={StaticResource BoolToVisible}}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding ElapsedDisplay}"
+                                   FontFamily="Consolas"
+                                   FontSize="{StaticResource FontSize.Heading}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Start}"
+                                Command="{Binding StartCommand}" Padding="10,4" Margin="0,0,6,0"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Pause}"
+                                Command="{Binding PauseCommand}" Padding="10,4" Margin="0,0,6,0"
+                                Visibility="{Binding IsPaused, Converter={StaticResource InvBoolToVisible}}"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Resume}"
+                                Command="{Binding ResumeCommand}" Padding="10,4" Margin="0,0,6,0"
+                                Visibility="{Binding IsPaused, Converter={StaticResource BoolToVisible}}"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Stop}"
+                                Command="{Binding StopCommand}" Padding="10,4" Margin="0,0,6,0"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_NextSegment}"
+                                Command="{Binding NextSegmentCommand}" Padding="10,4"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Segments}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="6,2" Margin="0,0,6,0"
+                                        BorderThickness="1"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        CornerRadius="3">
+                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vm:CompletionListViewModel}">
             <Border Padding="12">
                 <ItemsControl ItemsSource="{Binding Rows}">

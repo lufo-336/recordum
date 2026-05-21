@@ -16,6 +16,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly ICompletionService _completions;
     private readonly IActiveTimerService _timers;
     private readonly IMetricDefinitionService _metrics;
+    private readonly IHabitConfigService _configs;
     private readonly IClock _clock;
     private readonly IEventBus _events;
     private readonly List<IDisposable> _subscriptions = [];
@@ -29,7 +30,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public CompletionListViewModel CompletionList { get; }
 
     [ObservableProperty] private QuickAddViewModelBase? _quickAdd;
-    [ObservableProperty] private object? _timerControl;
+    public TimerControlViewModel TimerControl { get; }
 
     public event EventHandler? ConfigureRequested;
 
@@ -38,6 +39,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ICompletionService completions,
         IActiveTimerService timers,
         IMetricDefinitionService metrics,
+        IHabitConfigService configs,
         IClock clock,
         IEventBus events)
     {
@@ -45,16 +47,19 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
         ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(configs);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(events);
         _nodes = nodes;
         _completions = completions;
         _timers = timers;
         _metrics = metrics;
+        _configs = configs;
         _clock = clock;
         _events = events;
         Heatmap = new HeatmapViewModel(completions, clock);
         CompletionList = new CompletionListViewModel(completions, metrics);
+        TimerControl = new TimerControlViewModel(timers, configs, clock);
         Heatmap.DateClicked += OnHeatmapDateClicked;
         SubscribeEvents();
     }
@@ -112,7 +117,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         await Heatmap.LoadAsync(Node.Id, ct).ConfigureAwait(true);
         await CompletionList.LoadAsync(Node.Id, ct).ConfigureAwait(true);
         await BuildQuickAddAsync(Node, ct).ConfigureAwait(true);
-        _ = _timers;
+        var config = await _configs.GetAsync(Node.Id, ct).ConfigureAwait(true);
+        await TimerControl.SetContextAsync(Node, config, ct).ConfigureAwait(true);
     }
 
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)

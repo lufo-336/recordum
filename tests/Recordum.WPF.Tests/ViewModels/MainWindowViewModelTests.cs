@@ -192,7 +192,7 @@ public class MainWindowViewModelTests
         var completions = new FakeCompletionService();
         var timerStatusBar = new Recordum.WPF.ViewModels.Timer.TimerStatusBarViewModel(ats, clock, nodes);
         var habitScreen = new Recordum.WPF.ViewModels.HabitScreen.HabitScreenViewModel(
-            nodes, completions, ats, metrics, clock, new FakeEventBus());
+            nodes, completions, ats, metrics, configs, clock, new FakeEventBus());
         var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen);
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings));
     }
