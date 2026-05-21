@@ -4,14 +4,14 @@ namespace Recordum.WPF.Tests.Fixtures;
 
 public sealed class FakeAppSettingService : IAppSettingService
 {
-    private readonly Dictionary<string, string> _store = new();
+    public Dictionary<string, string> Store { get; } = new();
 
     public ValueTask<string?> GetAsync(string key, CancellationToken ct = default) =>
-        new ValueTask<string?>(_store.TryGetValue(key, out var v) ? v : null);
+        new ValueTask<string?>(Store.TryGetValue(key, out var v) ? v : null);
 
     public ValueTask SetAsync(string key, string value, CancellationToken ct = default)
     {
-        _store[key] = value;
+        Store[key] = value;
         return ValueTask.CompletedTask;
     }
 
