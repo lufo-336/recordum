@@ -20,6 +20,7 @@
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
             <conv:EnumToVisibilityConverter x:Key="EnumToVisibility"/>
+            <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

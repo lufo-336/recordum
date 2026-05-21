@@ -16,15 +16,25 @@ public class HabitScreenViewModelTests
         out FakeCompletionService completions,
         out FakeActiveTimerService timers,
         out FakeMetricDefinitionService metrics,
-        out FakeClock clock)
+        out FakeClock clock,
+        out FakeEventBus bus)
     {
         nodes = new FakeHabitNodeService();
         completions = new FakeCompletionService();
         timers = new FakeActiveTimerService();
         metrics = new FakeMetricDefinitionService();
         clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
-        return new HabitScreenViewModel(nodes, completions, timers, metrics, clock);
+        bus = new FakeEventBus();
+        return new HabitScreenViewModel(nodes, completions, timers, metrics, clock, bus);
     }
+
+    private static HabitScreenViewModel CreateSut(
+        out FakeHabitNodeService nodes,
+        out FakeCompletionService completions,
+        out FakeActiveTimerService timers,
+        out FakeMetricDefinitionService metrics,
+        out FakeClock clock)
+        => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out _);
 
     [Fact]
     public async Task LoadAsync_null_id_clears_state()
@@ -124,6 +134,37 @@ public class HabitScreenViewModelTests
         await sut.LoadAsync(null);
 
         sut.QuickAdd.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task EventBus_CompletionRecorded_for_my_habit_triggers_Heatmap_and_List_reload()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out var bus);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+        completions.HeatmapByHabit[id] = [new HeatmapCell(new DateOnly(2026, 5, 21), 3)];
+
+        bus.Publish(new Recordum.Plugins.Contracts.Events.CompletionRecordedPayload(Guid.NewGuid(), id, DateTime.UtcNow));
+        await Task.Delay(20);
+
+        sut.Heatmap.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 5, 21) && c.Count == 3);
+    }
+
+    [Fact]
+    public async Task EventBus_CompletionEvent_for_other_habit_is_ignored()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out var bus);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+        var heatmapCallsBefore = completions.HeatmapByHabit.Count;
+
+        bus.Publish(new Recordum.Plugins.Contracts.Events.CompletionRecordedPayload(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow));
+        await Task.Delay(20);
+
+        // No new heatmap cache populated (sut didn't query for any other habit).
+        completions.HeatmapByHabit.Count.Should().Be(heatmapCallsBefore);
     }
 
     [Fact]

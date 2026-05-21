@@ -4,17 +4,21 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
-public sealed partial class HabitScreenViewModel : ObservableObject
+public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 {
     private readonly IHabitNodeService _nodes;
     private readonly ICompletionService _completions;
     private readonly IActiveTimerService _timers;
     private readonly IMetricDefinitionService _metrics;
     private readonly IClock _clock;
+    private readonly IEventBus _events;
+    private readonly List<IDisposable> _subscriptions = [];
 
     [ObservableProperty] private HabitNode? _node;
 
@@ -34,21 +38,53 @@ public sealed partial class HabitScreenViewModel : ObservableObject
         ICompletionService completions,
         IActiveTimerService timers,
         IMetricDefinitionService metrics,
-        IClock clock)
+        IClock clock,
+        IEventBus events)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(events);
         _nodes = nodes;
         _completions = completions;
         _timers = timers;
         _metrics = metrics;
         _clock = clock;
+        _events = events;
         Heatmap = new HeatmapViewModel(completions, clock);
         CompletionList = new CompletionListViewModel(completions, metrics);
         Heatmap.DateClicked += OnHeatmapDateClicked;
+        SubscribeEvents();
+    }
+
+    private void SubscribeEvents()
+    {
+        _subscriptions.Add(_events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
+        _subscriptions.Add(_events.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
+        _subscriptions.Add(_events.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
+    }
+
+    private async void OnCompletionEvent(EventEnvelope envelope)
+    {
+        if (Node is null) return;
+        var habitId = envelope.Payload switch
+        {
+            CompletionRecordedPayload r => r.HabitNodeId,
+            CompletionUpdatedPayload u => u.HabitNodeId,
+            CompletionDeletedPayload d => d.HabitNodeId,
+            _ => Guid.Empty,
+        };
+        if (habitId != Node.Id) return;
+        await Heatmap.LoadAsync(Node.Id).ConfigureAwait(true);
+        await CompletionList.LoadAsync(Node.Id).ConfigureAwait(true);
+    }
+
+    public void Dispose()
+    {
+        foreach (var s in _subscriptions) s.Dispose();
+        _subscriptions.Clear();
     }
 
     public async Task LoadAsync(Guid? habitNodeId, CancellationToken ct = default)

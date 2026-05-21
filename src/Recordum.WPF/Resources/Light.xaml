@@ -8,4 +8,9 @@
     <SolidColorBrush x:Key="Brush.TextMuted"         Color="#FF71717A"/>
     <SolidColorBrush x:Key="Brush.Accent"            Color="#FF3B82F6"/>
     <SolidColorBrush x:Key="Brush.HeatmapEmpty"      Color="#FFEFEFF1"/>
+    <SolidColorBrush x:Key="Brush.Heatmap.Level0"    Color="#FFEFEFF1"/>
+    <SolidColorBrush x:Key="Brush.Heatmap.Level1"    Color="#FF9BE9A8"/>
+    <SolidColorBrush x:Key="Brush.Heatmap.Level2"    Color="#FF40C463"/>
+    <SolidColorBrush x:Key="Brush.Heatmap.Level3"    Color="#FF30A14E"/>
+    <SolidColorBrush x:Key="Brush.Heatmap.Level4"    Color="#FF216E39"/>
 </ResourceDictionary>

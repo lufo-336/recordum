@@ -12,6 +12,73 @@
              Background="{DynamicResource Brush.Surface}">
     <UserControl.Resources>
 
+        <DataTemplate DataType="{x:Type vm:HeatmapViewModel}">
+            <Border Padding="12"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource Brush.Border}">
+                <ItemsControl ItemsSource="{Binding Cells}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="7" FlowDirection="LeftToRight"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Width="{StaticResource Layout.HeatmapCell}"
+                                    Height="{StaticResource Layout.HeatmapCell}"
+                                    Margin="1"
+                                    Padding="0"
+                                    BorderThickness="0"
+                                    ToolTip="{Binding Date}"
+                                    Background="{Binding IntensityStep, Converter={StaticResource IntensityStepToBrush}}"
+                                    Command="{Binding DataContext.ClickCellCommand,
+                                              RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:CompletionListViewModel}">
+            <Border Padding="12">
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CompletionRowViewModel}">
+                            <Border BorderThickness="0,0,0,1"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    Padding="0,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Display}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Notes}"
+                                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="{Binding Notes, Converter={StaticResource NullToVisibility}}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Content="✎"
+                                            Command="{Binding BeginEditCommand}"
+                                            Width="28" Height="28"
+                                            Background="Transparent" BorderThickness="0"/>
+                                    <Button Grid.Column="2"
+                                            Content="✕"
+                                            Command="{Binding DeleteCommand}"
+                                            Width="28" Height="28"
+                                            Background="Transparent" BorderThickness="0"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </DataTemplate>
+
         <DataTemplate x:Key="ActionQuickAddTemplate" DataType="{x:Type qa:ActionQuickAddViewModel}">
             <StackPanel Margin="12" Orientation="Vertical">
                 <Grid Margin="0,0,0,8">
