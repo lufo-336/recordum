@@ -4,6 +4,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
@@ -91,5 +92,51 @@ public class HabitScreenViewModelTests
         await sut.LoadAsync(id);
 
         sut.CompletionList.Rows.Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(HabitType.Action, typeof(ActionQuickAddViewModel))]
+    [InlineData(HabitType.Counter, typeof(CounterQuickAddViewModel))]
+    [InlineData(HabitType.Resistance, typeof(ResistanceQuickAddViewModel))]
+    [InlineData(HabitType.Journal, typeof(JournalQuickAddViewModel))]
+    [InlineData(HabitType.State, typeof(StateQuickAddViewModel))]
+    public async Task LoadAsync_picks_correct_QuickAdd_VM_for_HabitType(HabitType type, Type expectedVmType)
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = type, Name = "x" };
+
+        await sut.LoadAsync(id);
+
+        sut.QuickAdd.Should().NotBeNull();
+        sut.QuickAdd!.GetType().Should().Be(expectedVmType);
+    }
+
+    [Fact]
+    public async Task LoadAsync_null_id_clears_QuickAdd()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+        sut.QuickAdd.Should().NotBeNull();
+
+        await sut.LoadAsync(null);
+
+        sut.QuickAdd.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task QuickAdd_SaveAsync_triggers_Heatmap_and_CompletionList_reload()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+        completions.HeatmapByHabit[id] = [new HeatmapCell(new DateOnly(2026, 5, 21), 1)];
+
+        await sut.QuickAdd!.SaveAsync();
+
+        sut.Heatmap.Cells.Should().NotBeEmpty();
     }
 }

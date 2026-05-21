@@ -13,6 +13,16 @@ public static class Strings
     // HabitScreen
     public static string HabitScreen_Configure => Get("HabitScreen.Configure");
     public static string HabitScreen_Close => Get("HabitScreen.Close");
+    public static string HabitScreen_QuickAdd_Save => Get("HabitScreen.QuickAdd.Save");
+    public static string HabitScreen_QuickAdd_Action_Mark => Get("HabitScreen.QuickAdd.Action.Mark");
+    public static string HabitScreen_QuickAdd_Date => Get("HabitScreen.QuickAdd.Date");
+    public static string HabitScreen_QuickAdd_Value => Get("HabitScreen.QuickAdd.Value");
+    public static string HabitScreen_QuickAdd_Notes => Get("HabitScreen.QuickAdd.Notes");
+    public static string HabitScreen_QuickAdd_NotesPlaceholder => Get("HabitScreen.QuickAdd.NotesPlaceholder");
+    public static string HabitScreen_QuickAdd_AddSeries => Get("HabitScreen.QuickAdd.AddSeries");
+    public static string HabitScreen_QuickAdd_RemoveSeries => Get("HabitScreen.QuickAdd.RemoveSeries");
+    public static string HabitScreen_QuickAdd_SeriesIndex => Get("HabitScreen.QuickAdd.SeriesIndex");
+    public static string HabitScreen_QuickAdd_State_Select => Get("HabitScreen.QuickAdd.State.Select");
 
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));
