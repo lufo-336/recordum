@@ -144,6 +144,24 @@ public class NoteServiceTests
     }
 
     [Fact]
+    public async Task Notes_are_hard_deleted_when_habit_subtree_is_purged()
+    {
+        // NoteConfiguration uses OnDelete(Restrict) — Notes are NOT FK-cascaded on a
+        // raw HabitNode delete (that would fail with SQLite FK error 19). Instead the
+        // contract is: PurgeService removes Notes alongside the habit subtree in a
+        // single transaction. This test pins that down.
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var noteId = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "x" });
+
+        var purge = new PurgeService(fx.Factory, fx.Clock, NullLogger<PurgeService>.Instance);
+        await purge.PurgeSubtreeAsync(habitId);
+
+        (await sut.GetAsync(noteId)).Should().BeNull();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task CreateAsync_with_attachments_persists_both()
     {
         var (fx, habitId) = await SeedHabitAsync();
