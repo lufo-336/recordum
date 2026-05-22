@@ -86,4 +86,51 @@ public class NotesViewModelTests
         sut.SelectedNote = sut.Notes[1];
         sut.EditorMarkdown.Should().Be("AAA");
     }
+
+    [Fact]
+    public void IsDirty_is_true_when_editor_differs_from_selected_body()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "orig" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+
+        sut.IsDirty.Should().BeFalse();
+
+        sut.EditorMarkdown = "edited";
+        sut.IsDirty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveAsync_persists_EditorMarkdown_and_clears_dirty()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "orig", UpdatedAtMs = 1 };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        sut.EditorMarkdown = "edited";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        svc.UpdateCalls.Should().ContainSingle().Which.Id.Should().Be(n.Id);
+        svc.Store[n.Id].BodyMd.Should().Be("edited");
+        sut.IsDirty.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SaveCommand_CanExecute_only_when_dirty()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+
+        sut.SaveCommand.CanExecute(null).Should().BeFalse();
+
+        sut.EditorMarkdown = "y";
+        sut.SaveCommand.CanExecute(null).Should().BeTrue();
+    }
 }

@@ -45,6 +45,8 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         EditorMarkdown = string.Empty;
     }
 
+    public bool IsDirty => SelectedNote is { } row && EditorMarkdown != row.Note.BodyMd;
+
     [RelayCommand]
     private async Task New(CancellationToken ct)
     {
@@ -55,9 +57,32 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         SelectedNote = row;
     }
 
+    private bool CanSave() => IsDirty;
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private async Task Save(CancellationToken ct)
+    {
+        if (SelectedNote is not { } row) return;
+        var newBody = EditorMarkdown;
+        await _notes.UpdateAsync(row.Id, n => n.BodyMd = newBody, ct).ConfigureAwait(true);
+        row.Note.BodyMd = newBody;
+        row.Note.UpdatedAtMs = _clock.UtcNowMs;
+        row.Refresh();
+        OnPropertyChanged(nameof(IsDirty));
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
     partial void OnSelectedNoteChanged(NoteRowViewModel? value)
     {
         EditorMarkdown = value?.Note.BodyMd ?? string.Empty;
+        OnPropertyChanged(nameof(IsDirty));
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditorMarkdownChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsDirty));
+        SaveCommand.NotifyCanExecuteChanged();
     }
 
     public void Dispose()
