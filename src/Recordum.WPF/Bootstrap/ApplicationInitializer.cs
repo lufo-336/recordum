@@ -10,7 +10,8 @@ public sealed class ApplicationInitializer(
     RecordumOptions options,
     IDbKeyProvider keyProvider,
     IDbContextFactory<RecordumDbContext> dbFactory,
-    IPluginManager pluginManager)
+    IPluginManager pluginManager,
+    IWebView2Availability webView2)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -27,5 +28,8 @@ public sealed class ApplicationInitializer(
         await db.Database.MigrateAsync(ct).ConfigureAwait(false);
 
         _ = pluginManager.ListEnabled();
+
+        // Non-fatal probe — Win10 boxes without WebView2 Runtime fall back to TextBox.
+        await webView2.ProbeAsync().ConfigureAwait(false);
     }
 }

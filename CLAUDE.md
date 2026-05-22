@@ -34,7 +34,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 | Linguaggio | C# / .NET 10 |
 | UI Windows (Fase 3) | WPF + CommunityToolkit.Mvvm |
 | Persistenza | EF Core + SQLite + SQLCipher (`SQLitePCLRaw.bundle_e_sqlcipher`) |
-| Editor Markdown | WebView2 + Toast UI / Milkdown |
+| Editor Markdown | WebView2 + Toast UI Editor (vendored) |
 | Backend web (Fase 4) | ASP.NET Core + React/Svelte PWA |
 | Export PDF | QuestPDF |
 | Mobile (Fase 6) | .NET MAUI |
@@ -129,8 +129,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.3 | Home Screen: tab nav, albero habit, sort/filter, hide-completed, context menu | ✓ **completata 2026-05-20** |
 | 3.4 | Habit Editor: progressive disclosure 3 livelli | ✓ **completata 2026-05-21** |
 | 3.5 | Completion Recording: 5 tipi + session mode + multi-serie + timer recovery + retroactive | ✓ **completata 2026-05-21** |
-| 3.6 | Journal Editor + Notes (WebView2 + Toast UI/Milkdown) | **→ next** |
-| 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress |  |
+| 3.6 | Journal Editor + Notes (WebView2 + Toast UI) | ✓ **completata 2026-05-22** |
+| 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress | **→ next** |
 | 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory |  |
 | 3.9 | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` |  |
 | 3.10 | Export System (PDF/HTML/Markdown/JSON/CSV) + Backup/restore con lista plugin + permission state |  |
@@ -172,6 +172,37 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 **WPF — Home quick-action icon**: `IQuickActionHandler` + 5 implementazioni (Action/Counter recording inline; Resistance/Journal/State no-op che lasciano il click apertura della screen). `QuickActionHandlerSelector` lookup by HabitType. `HomeRowViewModel.QuickActionCommand` (CanExecute=!IsGroup && selector attached) + event `QuickActionExecuted`. Icona `+` 26×26 in `HabitRowTemplate.xaml` nuova colonna.
 
 **Known quirks** — vedi memory `recordum-milestone-3-5-spec`.
+
+### Stato Milestone 3.6
+
+30 task del plan `docs/superpowers/plans/2026-05-22-milestone-3.6-journal-editor.md` completati. ~491 test verdi (Core 31, Plugins 45, Data 175, WPF 240 incl. E2E Note CRUD smoke). Build pulito, zero warning nuovi. Journal Editor + Notes consegnato. **Schema delta: zero** — `note` e `attachment` esistono già da `InitialSchema` (M3.1); `schema_version` resta `2.5`.
+
+**Plugin contracts**: `WellKnownEvents.NoteDeleted` + 3 record `NoteCreated/Updated/DeletedPayload` (collocati in `Plugins.Contracts/Events/`, stesso pattern dei `Completion*Payload` di M3.5).
+
+**Core/Data**:
+- `INoteService` flesh-out: `CreateAsync(Note, ct)` + overload `CreateAsync(Note, IReadOnlyList<Attachment>?, ct)` (preserva il supporto attachments di M3.2 — deviazione dal plan), `UpdateAsync` / `DeleteAsync` / `GetAsync` / `ListByHabitAsync`. `NoteService` `sealed partial` con `LoggerMessage` source-gen. Tutte le ops mutanti pubblicano via `IEventBus`; Update/Delete usano existence-check per evitare emit su id mancante.
+- `ListByHabitAsync` ordina per `UpdatedAtMs DESC` + filtro per `HabitNodeId`.
+- Cascade purge: `OnDelete(Restrict)` su FK Note→HabitNode (intenzionale, da M3.1) — il PurgeService di M3.2 rimuove le note esplicitamente dentro la transazione (deviazione dal plan, che asseriva cascade FK).
+
+**WPF — Editor control**:
+- `Microsoft.Web.WebView2` 1.0.* NuGet + vendored Toast UI Editor 3.2.2 MIT bundle (JS 534KB + CSS 165KB + `LICENSE-toast-ui.md`) sotto `Resources/EditorAssets/` (`CopyToOutputDirectory=PreserveNewest`).
+- `IWebView2Availability` singleton + `WebView2Availability` impl: `ProbeAsync()` non-fatale (try/catch su `CoreWebView2Environment.CreateAsync()`); chiamato dopo migrations in `ApplicationInitializer`. Win10 senza Runtime → `IsAvailable=false`, fallback TextBox.
+- `editor.html` + `editor.js`: init Toast UI in modalità wysiwyg con toolbar ridotta, JS bridge `window.chrome.webview.postMessage` per messaggi tipizzati `ready`/`change`/`setContent`/`setReadOnly`. Guardia `suppressNext` contro ping-pong.
+- `MarkdownEditorControl` UserControl (xaml + xaml.cs): 4 DPs (`Markdown` TwoWay, `IsReadOnly`, `Placeholder`, `Availability`). `TryInitAsync` lazy: se `Availability.IsAvailable=true` → `EnsureCoreWebView2Async` + `SetVirtualHostNameToFolderMapping("recordum.local", AppContext.BaseDirectory + "Resources/EditorAssets", Allow)` + `Navigate("https://recordum.local/editor.html")`. Se false → `ActivateFallback()` mostra TextBox bound al DP. `Xunit.StaFact` aggiunto per `[WpfFact]` (DependencyObject ctor richiede STA).
+
+**WPF — Notes tab**:
+- `NoteRowViewModel`: `Summary` (prima riga non-blank, 40-char truncation + `…`, fallback `Strings.Notes_Untitled`), `UpdatedAtDisplay` (`yyyy-MM-dd HH:mm` UTC), `Refresh()` per re-emit dopo mutazione esterna.
+- `NotesViewModel` (`sealed partial` + IDisposable): `ObservableCollection<NoteRowViewModel> Notes`, `[ObservableProperty]` per `SelectedNote`/`EditorMarkdown`/`IsConfirmingDelete`. Commands: `NewCommand` (inserisce in cima + auto-select), `SaveCommand` (CanExecute=`IsDirty`, persiste e refresh row), `RequestDelete/Confirm/CancelDelete` (idx-clamp next-row select). `OnSelectedNoteChanged` carica `BodyMd` nell'editor — eventuali edit non salvati vengono silenziosamente scartati (per spec §3.3, esplicit-Save è l'unico path). `IEventBus.Subscribe` su `NoteCreated/Updated/Deleted` — eventi cross-VM provocano `LoadAsync` con preservazione della selezione.
+- `NotesTabView` (xaml + xaml.cs): master-detail 3 colonne (`ListBox 220px | GridSplitter | MarkdownEditorControl + DockPanel Save/Delete row`). `DataTemplate` mappato in `HabitScreen.Resources`.
+
+**WPF — HabitScreen integration**:
+- `HabitScreen.xaml` rifattorizzato: header + banner WebView2-missing + `TabControl` (Completion / Notes). Heatmap/QuickAdd/TimerControl/CompletionList ora vivono dentro il Completion `TabItem`. Notes `TabItem` punta a `Binding Notes` via DataTemplate.
+- Journal QuickAdd: `TextBox` rimpiazzato da `MarkdownEditorControl` (`Height=280`, `Availability` risolto via `RelativeSource AncestorType=UserControl` → HabitScreen.DataContext).
+- `HabitScreenViewModel`: 2 nuovi ctor param (`INoteService`, `IWebView2Availability`) + 2 proprietà (`Notes`, `Availability`). `LoadAsync` include `Notes.LoadAsync` nel `Task.WhenAll`; `Dispose` chain a `Notes.Dispose`.
+
+**WPF — i18n (en + it)**: 13 nuove chiavi resx: `HabitScreen.Tab.Completion/Notes`, `Notes.New/Save/Delete/Confirm/Cancel/ConfirmDelete/Empty/EmptyHint/Untitled`, `Editor.WebView2.NotAvailable.Title/Body`. Designer field con underscore (`HabitScreen_Tab_Completion` etc.).
+
+**Known quirks** — vedi memory `recordum-milestone-3-6-spec`.
 
 ### Stato Milestone 3.4
 

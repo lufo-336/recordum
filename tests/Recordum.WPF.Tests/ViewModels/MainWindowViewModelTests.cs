@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
 using FluentAssertions;
+using Microsoft.Web.WebView2.Core;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
@@ -192,7 +194,8 @@ public class MainWindowViewModelTests
         var completions = new FakeCompletionService();
         var timerStatusBar = new Recordum.WPF.ViewModels.Timer.TimerStatusBarViewModel(ats, clock, nodes);
         var habitScreen = new Recordum.WPF.ViewModels.HabitScreen.HabitScreenViewModel(
-            nodes, completions, ats, metrics, configs, clock, new FakeEventBus());
+            nodes, completions, ats, metrics, configs, new FakeNoteService(), clock,
+            new FakeEventBus(), new MainWindowFakeWebView2Availability());
         var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen);
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings));
     }
@@ -204,4 +207,11 @@ public class MainWindowViewModelTests
         SettingsViewModel Settings,
         HabitEditorViewModel Editor,
         FakeAppSettingService AppSettings);
+
+    private sealed class MainWindowFakeWebView2Availability : IWebView2Availability
+    {
+        public bool IsAvailable => true;
+        public CoreWebView2Environment? Environment => null;
+        public Task ProbeAsync() => Task.CompletedTask;
+    }
 }

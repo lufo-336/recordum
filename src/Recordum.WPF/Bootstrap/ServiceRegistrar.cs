@@ -42,6 +42,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IPluginContext, AmbientPluginContext>();
         services.AddLogging();
         services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IWebView2Availability, WebView2Availability>();
 
         // Security: DPAPI by default. Passphrase opt-in via IKeyTransitionService.
 #pragma warning disable CA1416 // Windows-only target for Fase 3 WPF.

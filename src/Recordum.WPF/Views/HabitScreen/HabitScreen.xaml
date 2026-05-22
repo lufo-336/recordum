@@ -5,6 +5,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen"
              xmlns:qa="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.QuickAdd"
+             xmlns:vmn="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Notes"
+             xmlns:v="clr-namespace:Recordum.WPF.Views.HabitScreen"
+             xmlns:ctrl="clr-namespace:Recordum.WPF.Controls"
              xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
              mc:Ignorable="d"
@@ -244,9 +247,11 @@
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
                 </Grid>
-                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="True" TextWrapping="Wrap"
-                         MinHeight="120" Margin="0,0,0,8"/>
+                <ctrl:MarkdownEditorControl Markdown="{Binding Notes, Mode=TwoWay}"
+                                            Availability="{Binding DataContext.Availability,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                            Height="280"
+                                            Margin="0,0,0,8"/>
                 <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
                         Command="{Binding SaveCommand}"
                         HorizontalAlignment="Left" Padding="12,6"/>
@@ -279,6 +284,10 @@
             </StackPanel>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vmn:NotesViewModel}">
+            <v:NotesTabView/>
+        </DataTemplate>
+
         <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"
                                       Action="{StaticResource ActionQuickAddTemplate}"
                                       Counter="{StaticResource CounterQuickAddTemplate}"
@@ -288,8 +297,6 @@
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -314,11 +321,37 @@
                         Padding="10,4"/>
             </Grid>
         </Border>
-        <ContentControl Grid.Row="1" Content="{Binding Heatmap}"/>
-        <ContentControl Grid.Row="2"
-                        Content="{Binding QuickAdd}"
-                        ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
-        <ContentControl Grid.Row="3" Content="{Binding TimerControl}"/>
-        <ContentControl Grid.Row="4" Content="{Binding CompletionList}"/>
+        <Border Grid.Row="1"
+                Padding="8"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource Brush.Border}"
+                Visibility="{Binding Availability.IsAvailable, Converter={StaticResource InvBoolToVisible}}">
+            <TextBlock Text="{x:Static res:Strings.Editor_WebView2_NotAvailable_Body}"
+                       Foreground="{DynamicResource Brush.TextMuted}"
+                       TextWrapping="Wrap"/>
+        </Border>
+        <TabControl Grid.Row="2"
+                    Background="Transparent"
+                    BorderThickness="0">
+            <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Completion}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <ContentControl Grid.Row="0" Content="{Binding Heatmap}"/>
+                    <ContentControl Grid.Row="1"
+                                    Content="{Binding QuickAdd}"
+                                    ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
+                    <ContentControl Grid.Row="2" Content="{Binding TimerControl}"/>
+                    <ContentControl Grid.Row="3" Content="{Binding CompletionList}"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Notes}">
+                <ContentControl Content="{Binding Notes}"/>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>
