@@ -85,6 +85,9 @@ public static class ServiceRegistrar
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
         services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
+        services.AddScoped<IStreakAggregator, Data.Services.Aggregators.NaiveDailyStreakAggregator>();
+        services.AddScoped<ITrendQueryService, TrendQueryService>();
+        services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();

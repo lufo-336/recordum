@@ -49,6 +49,7 @@ public class HabitScreenViewModelTests
         return new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeHabitConfigService(),
             noteSvc, new FakeGoalService(), new IntensityRampResolver(),
+            new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             clock, bus, new FakeWebView2Availability(true));
     }
 

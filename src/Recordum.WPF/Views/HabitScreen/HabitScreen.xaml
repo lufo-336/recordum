@@ -6,6 +6,7 @@
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen"
              xmlns:qa="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.QuickAdd"
              xmlns:vmn="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Notes"
+             xmlns:vmd="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Detail"
              xmlns:v="clr-namespace:Recordum.WPF.Views.HabitScreen"
              xmlns:ctrl="clr-namespace:Recordum.WPF.Controls"
              xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
@@ -288,6 +289,105 @@
             <v:NotesTabView/>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vmd:DetailViewModel}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Padding="12"
+                            BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource Brush.Border}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Goal.Name}"
+                                       FontWeight="SemiBold"
+                                       Visibility="{Binding Goal.IsEmpty, Converter={StaticResource InvBoolToVisible}}"/>
+                            <TextBlock Text="{Binding Goal.EmptyMessage}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       Visibility="{Binding Goal.IsEmpty, Converter={StaticResource BoolToVisible}}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                                        Visibility="{Binding Goal.IsEmpty, Converter={StaticResource InvBoolToVisible}}">
+                                <TextBlock Text="{Binding Goal.Actual}" FontSize="{StaticResource FontSize.Heading}"/>
+                                <TextBlock Text=" / " VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Goal.Target}" FontSize="{StaticResource FontSize.Heading}"/>
+                                <TextBlock Text="{Binding Goal.PeriodLabel}"
+                                           Foreground="{DynamicResource Brush.TextMuted}"
+                                           Margin="12,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Padding="12"
+                            BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            Visibility="{Binding IsHabit, Converter={StaticResource BoolToVisible}}">
+                        <ctrl:YearHeatmapControl DataContext="{Binding YearHeatmap}"/>
+                    </Border>
+                    <Border Padding="12"
+                            BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            Visibility="{Binding IsHabit, Converter={StaticResource BoolToVisible}}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{x:Static res:Strings.Detail_Streak_Current}"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                    <TextBlock Text="{Binding StreakSummary.CurrentLength}"
+                                               FontSize="{StaticResource FontSize.Heading}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{x:Static res:Strings.Detail_Streak_Longest}"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                    <TextBlock Text="{Binding StreakSummary.LongestLength}"
+                                               FontSize="{StaticResource FontSize.Heading}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="{x:Static res:Strings.Detail_Streak_Runs90}"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                    <TextBlock Text="{Binding StreakSummary.RunsLast90Days}"
+                                               FontSize="{StaticResource FontSize.Heading}"/>
+                                </StackPanel>
+                            </Grid>
+                            <ctrl:StreakTimelineControl DataContext="{Binding StreakTimeline}"/>
+                            <TextBlock Text="{x:Static res:Strings.Detail_BasicStreakNotice}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       FontSize="{StaticResource FontSize.Small}"
+                                       Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Padding="12"
+                            BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            Visibility="{Binding IsHabit, Converter={StaticResource BoolToVisible}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                                <Button Content="{x:Static res:Strings.Detail_Trend_Range_30d}"
+                                        Command="{Binding Trend.SetRangeCommand}" CommandParameter="Days30"
+                                        Padding="8,4" Margin="0,0,4,0"/>
+                                <Button Content="{x:Static res:Strings.Detail_Trend_Range_90d}"
+                                        Command="{Binding Trend.SetRangeCommand}" CommandParameter="Days90"
+                                        Padding="8,4" Margin="0,0,4,0"/>
+                                <Button Content="{x:Static res:Strings.Detail_Trend_Range_1y}"
+                                        Command="{Binding Trend.SetRangeCommand}" CommandParameter="Year1"
+                                        Padding="8,4"/>
+                            </StackPanel>
+                            <ctrl:TrendChartControl DataContext="{Binding Trend}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Padding="12"
+                            Visibility="{Binding IsHabit, Converter={StaticResource BoolToVisible}}">
+                        <StackPanel>
+                            <TextBlock Text="{x:Static res:Strings.Detail_Hourly_Title}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       Margin="0,0,0,4"/>
+                            <ctrl:HourlyHistogramControl DataContext="{Binding Hourly}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </DataTemplate>
+
         <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"
                                       Action="{StaticResource ActionQuickAddTemplate}"
                                       Counter="{StaticResource CounterQuickAddTemplate}"
@@ -348,6 +448,9 @@
                     <ContentControl Grid.Row="2" Content="{Binding TimerControl}"/>
                     <ContentControl Grid.Row="3" Content="{Binding CompletionList}"/>
                 </Grid>
+            </TabItem>
+            <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Detail}">
+                <ContentControl Content="{Binding Detail}"/>
             </TabItem>
             <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Notes}">
                 <ContentControl Content="{Binding Notes}"/>
