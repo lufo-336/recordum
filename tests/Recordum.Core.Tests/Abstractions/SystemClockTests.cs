@@ -27,4 +27,11 @@ public class SystemClockTests
 
         Assert.InRange(snapshotMs - snapshotUtc, -2, 2);
     }
+
+    [Fact]
+    public void LocalTimeZone_returns_TimeZoneInfo_Local()
+    {
+        var clock = new SystemClock();
+        Assert.Equal(TimeZoneInfo.Local.Id, clock.LocalTimeZone.Id);
+    }
 }

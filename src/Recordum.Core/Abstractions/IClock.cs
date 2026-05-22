@@ -4,4 +4,5 @@ public interface IClock
 {
     DateTimeOffset UtcNow { get; }
     long UtcNowMs { get; }
+    TimeZoneInfo LocalTimeZone { get; }
 }
