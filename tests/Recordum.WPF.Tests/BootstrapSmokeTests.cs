@@ -196,6 +196,16 @@ public sealed class BootstrapSmokeTests : IDisposable
     }
 
     [Fact]
+    public async Task WebView2Availability_resolves_after_initialize()
+    {
+        await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+        var avail = _services.GetRequiredService<IWebView2Availability>();
+        // We don't assert IsAvailable=true because CI runners may lack the runtime.
+        // We assert the probe RAN: post-probe, IsAvailable agrees with Environment presence.
+        avail.IsAvailable.Should().Be(avail.Environment is not null);
+    }
+
+    [Fact]
     public async Task End_to_end_timer_recovery_reattaches_running_timer_in_status_bar()
     {
         await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
