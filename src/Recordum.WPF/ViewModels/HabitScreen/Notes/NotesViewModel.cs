@@ -20,6 +20,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private NoteRowViewModel? _selectedNote;
     [ObservableProperty] private string _editorMarkdown = string.Empty;
+    [ObservableProperty] private bool _isConfirmingDelete;
 
     public IWebView2Availability Availability { get; }
 
@@ -83,6 +84,23 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(IsDirty));
         SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void RequestDelete() => IsConfirmingDelete = true;
+
+    [RelayCommand]
+    private void CancelDelete() => IsConfirmingDelete = false;
+
+    [RelayCommand]
+    private async Task ConfirmDelete(CancellationToken ct)
+    {
+        if (SelectedNote is not { } row) { IsConfirmingDelete = false; return; }
+        await _notes.DeleteAsync(row.Id, ct).ConfigureAwait(true);
+        var idx = Notes.IndexOf(row);
+        Notes.RemoveAt(idx);
+        SelectedNote = Notes.Count > 0 ? Notes[Math.Min(idx, Notes.Count - 1)] : null;
+        IsConfirmingDelete = false;
     }
 
     public void Dispose()

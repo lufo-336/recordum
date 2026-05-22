@@ -120,6 +120,68 @@ public class NotesViewModelTests
     }
 
     [Fact]
+    public void RequestDelete_sets_IsConfirmingDelete()
+    {
+        var sut = CreateSut(out _, out _, out _);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+
+        sut.RequestDeleteCommand.Execute(null);
+
+        sut.IsConfirmingDelete.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CancelDelete_clears_IsConfirmingDelete()
+    {
+        var sut = CreateSut(out _, out _, out _);
+        sut.IsConfirmingDelete = true;
+
+        sut.CancelDeleteCommand.Execute(null);
+
+        sut.IsConfirmingDelete.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ConfirmDeleteAsync_removes_row_calls_service_and_clears_selection()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        sut.IsConfirmingDelete = true;
+
+        await sut.ConfirmDeleteCommand.ExecuteAsync(null);
+
+        svc.DeleteCalls.Should().Contain(n.Id);
+        sut.Notes.Should().BeEmpty();
+        sut.SelectedNote.Should().BeNull();
+        sut.IsConfirmingDelete.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ConfirmDeleteAsync_selects_first_remaining_when_others_exist()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        var n1 = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "1", UpdatedAtMs = 2 };
+        var n2 = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "2", UpdatedAtMs = 1 };
+        svc.Store[n1.Id] = n1;
+        svc.Store[n2.Id] = n2;
+        sut.Notes.Add(new NoteRowViewModel(n1));
+        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.SelectedNote = sut.Notes[0];
+        sut.IsConfirmingDelete = true;
+
+        await sut.ConfirmDeleteCommand.ExecuteAsync(null);
+
+        sut.SelectedNote.Should().NotBeNull();
+        sut.SelectedNote!.Id.Should().Be(n2.Id);
+    }
+
+    [Fact]
     public void SaveCommand_CanExecute_only_when_dirty()
     {
         var sut = CreateSut(out var svc, out _, out _);
