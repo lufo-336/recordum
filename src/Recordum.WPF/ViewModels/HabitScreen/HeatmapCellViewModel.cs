@@ -2,13 +2,25 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
-public sealed partial class HeatmapCellViewModel(DateOnly date, int count) : ObservableObject
+public sealed partial class HeatmapCellViewModel : ObservableObject
 {
-    public DateOnly Date { get; } = date;
-    public int Count { get; } = count;
+    public HeatmapCellViewModel(DateOnly date, int count, int? overrideIntensityStep = null, bool isOutOfRange = false)
+    {
+        Date = date;
+        Count = count;
+        IsOutOfRange = isOutOfRange;
+        IntensityStep = isOutOfRange ? 0 : overrideIntensityStep ?? ComputeFallback(count);
+    }
 
-    /// <summary>5-step ramp 0..4 per CLAUDE.md §9: 0, 1, 2-3, 4-7, ≥8.</summary>
-    public int IntensityStep => Count switch
+    public DateOnly Date { get; }
+    public int Count { get; }
+    public bool IsOutOfRange { get; }
+
+    public int IntensityStep { get; }
+
+    public string TooltipText => $"{Date:yyyy-MM-dd} — {Count}";
+
+    private static int ComputeFallback(int count) => count switch
     {
         0 => 0,
         1 => 1,

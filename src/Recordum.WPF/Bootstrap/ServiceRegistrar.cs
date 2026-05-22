@@ -9,6 +9,7 @@ using Recordum.Data;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
 using Recordum.Data.Services;
+using Recordum.Core.Services;
 using Recordum.Data.Services.Queries;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Events;
@@ -83,6 +84,10 @@ public static class ServiceRegistrar
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
+        services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
+        services.AddScoped<IStreakAggregator, Data.Services.Aggregators.NaiveDailyStreakAggregator>();
+        services.AddScoped<ITrendQueryService, TrendQueryService>();
+        services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();

@@ -125,5 +125,6 @@ public class TimestampInterceptorTests : IDisposable
         public DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset UtcNow => Now;
         public long UtcNowMs => Now.ToUnixTimeMilliseconds();
+        public TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
     }
 }

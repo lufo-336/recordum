@@ -130,7 +130,7 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.4 | Habit Editor: progressive disclosure 3 livelli | ✓ **completata 2026-05-21** |
 | 3.5 | Completion Recording: 5 tipi + session mode + multi-serie + timer recovery + retroactive | ✓ **completata 2026-05-21** |
 | 3.6 | Journal Editor + Notes (WebView2 + Toast UI) | ✓ **completata 2026-05-22** |
-| 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress | **→ next** |
+| 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress | ✓ **completata 2026-05-22** |
 | 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory |  |
 | 3.9 | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` |  |
 | 3.10 | Export System (PDF/HTML/Markdown/JSON/CSV) + Backup/restore con lista plugin + permission state |  |
@@ -203,6 +203,44 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 **WPF — i18n (en + it)**: 13 nuove chiavi resx: `HabitScreen.Tab.Completion/Notes`, `Notes.New/Save/Delete/Confirm/Cancel/ConfirmDelete/Empty/EmptyHint/Untitled`, `Editor.WebView2.NotAvailable.Title/Body`. Designer field con underscore (`HabitScreen_Tab_Completion` etc.).
 
 **Known quirks** — vedi memory `recordum-milestone-3-6-spec`.
+
+### Stato Milestone 3.7
+
+27 task del plan `docs/superpowers/plans/2026-05-22-milestone-3.7-habit-detail-screen.md` completati. 540 test verdi (Core 38, Plugins 45, Data 191, WPF 266 incl. E2E `HabitScreenDetailSmokeTests`). Build pulito, 2 warning pre-esistenti, zero nuovi. **Schema delta: zero** — `schema_version` resta `2.5`.
+
+**Core/Data**:
+- `IClock.LocalTimeZone` aggiunta per testabilità bucketing locale (`SystemClock` ritorna `TimeZoneInfo.Local`, `FakeClock` default `TimeZoneInfo.Utc`).
+- `IIntensityRampResolver` (Core) + `IntensityRampResolver`: ramp proportionale 25/50/75/100 sul per-day target di un `Goal`; Open passa-through, Rolling divide per `RollingDays`, Fixed normalizza sull'intero periodo. Fallback `1/3/7/8` se goal assente o target ≤ 0.
+- `IStreakAggregator` (Core) + `NaiveDailyStreakAggregator` (Data): sequenze giornaliere da `ICompletionService.GetHeatmapAsync` (count-only, no schedule awareness). Sarà sostituito in M3.8 da `SchedulingAwareStreakAggregator` con stessa interfaccia.
+- `ICompletionService.GetDailySumAsync(habit, metric, from, to)` + `DailyValue` DTO: somma per-giorno di `(ValueDecimal ?? ValueInteger ?? ValueSeconds)` filtrata per metric, base per heatmap proportional di counter/resistance/state.
+- `ITrendQueryService` + `TrendQueryService`: bucketing Daily/Weekly. Action/Journal/no-primary → count; State → media `ValueInteger`; Counter/Resistance → sum `ValueDecimal??Integer??Seconds`. Weekly bucket via `((int)DayOfWeek+6)%7` (Mon=0).
+- `IHourlyDistributionQueryService` + `HourlyDistributionQueryService`: 24-bucket per-ora locale via `IClock.LocalTimeZone`. Esclude `IsRetroactive=true`.
+
+**WPF — Detail tab**: 6 ViewModel sotto `Recordum.WPF.ViewModels.HabitScreen.Detail/`:
+- `DetailViewModel` orchestrator (IDisposable, sub IEventBus `Completion*`/`Note*`). Routes per `NodeType`: Group → solo `GoalProgressCard`; Habit → tutte le sezioni.
+- `GoalProgressCardViewModel`: Open/Rolling/Fixed period; metric-aware Actual (sum su MetricDefinitionId) o fallback count.
+- `YearHeatmapViewModel`: 53×7 = 371 celle, anchor = Monday di today-week meno `52*7` giorni. `HeatmapCellViewModel.IsOutOfRange` per pad cells (giorni futuri della settimana corrente). Usa `GetDailySumAsync` per counter/resistance/state con primary metric, `GetHeatmapAsync` altrimenti.
+- `StreakSummaryViewModel`: current/longest/runs90. Current ≠ 0 solo se ultimo run termina oggi o ieri.
+- `StreakTimelineViewModel`: window 90gg.
+- `TrendChartViewModel`: 30d/90d/1y range, `TrendChartKind.Line` (Counter/Resistance/State) o `Bar` (Action/Journal). `RangeChanged` event → `DetailViewModel.OnTrendRangeChanged` → `HourlyHistogramViewModel.SetRangeAsync` (range condiviso).
+- `HourlyHistogramViewModel`: 24-bucket, range condiviso con Trend.
+
+**WPF — Controls** (4 nuovi sotto `Recordum.WPF.Controls/`, pure WPF Canvas/Shape):
+- `YearHeatmapControl` (UniformGrid 53×7 + `IntensityStepToBrush`).
+- `StreakTimelineControl` (Canvas rect bars con tooltip date range).
+- `TrendChartControl` (Polyline+Polygon area per Line, Rectangle bars per Bar; empty-state localizzato).
+- `HourlyHistogramControl` (Canvas 24 rect).
+
+**HeatmapViewModel (Completion tab)** ora consuma `IIntensityRampResolver` + `IGoalService` + `IHabitConfigService`. Quando esiste un goal applica la rampa proporzionale; senza goal mantiene il fallback step (M3.3 known-limit ripagato). `HeatmapCellViewModel` accetta `int? overrideIntensityStep` e flag `IsOutOfRange` (default false).
+
+**Wiring**:
+- `HabitScreenViewModel` ctor +5 dipendenze (`IGoalService`, `IIntensityRampResolver`, `IStreakAggregator`, `ITrendQueryService`, `IHourlyDistributionQueryService`). Espone `Detail` property, `LoadAsync` include `Detail.LoadAsync` nel `Task.WhenAll`, `Dispose` chain a `Detail.Dispose`.
+- `HabitScreen.xaml`: 3a tab "Detail" tra Completion e Notes con `DataTemplate` inline (ScrollViewer + 5 Border sections); `IsHabit` converter nasconde le sezioni habit-only per i gruppi.
+- `ServiceRegistrar`: +4 entry (`IIntensityRampResolver` singleton, `IStreakAggregator`/`ITrendQueryService`/`IHourlyDistributionQueryService` scoped).
+
+**i18n**: 21 nuove chiavi (`HabitScreen.Tab.Detail`, `Detail.GoalCard.*`, `Detail.Streak.*`, `Detail.Trend.Range.*`, `Detail.Trend.Empty`, `Detail.Hourly.*`, `Detail.BasicStreakNotice`) in `Strings.resx` + `Strings.it.resx` + designer manuale.
+
+**Known quirks** — vedi memory `recordum-milestone-3-7-spec`.
 
 ### Stato Milestone 3.4
 

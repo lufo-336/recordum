@@ -29,4 +29,11 @@ public interface ICompletionService
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken ct = default);
+
+    ValueTask<IReadOnlyList<DailyValue>> GetDailySumAsync(
+        Guid habitNodeId,
+        Guid metricDefinitionId,
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken ct = default);
 }

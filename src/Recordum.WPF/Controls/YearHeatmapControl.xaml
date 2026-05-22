@@ -1,0 +1,23 @@
+<UserControl x:Class="Recordum.WPF.Controls.YearHeatmapControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding Cells}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="7" Columns="53" FlowDirection="LeftToRight"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:HeatmapCellViewModel}">
+                    <Border Width="11" Height="11" Margin="1"
+                            CornerRadius="2"
+                            Background="{Binding IntensityStep, Converter={StaticResource IntensityStepToBrush}}"
+                            ToolTip="{Binding TooltipText}"
+                            ToolTipService.InitialShowDelay="300"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

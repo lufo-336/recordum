@@ -9,6 +9,8 @@ public sealed class FakeEventBus : IEventBus
 
     public List<IEventPayload> Published { get; } = [];
 
+    public bool HasSubscribers => _handlers.Values.Any(l => l.Count > 0);
+
     public void Publish(IEventPayload payload)
     {
         ArgumentNullException.ThrowIfNull(payload);

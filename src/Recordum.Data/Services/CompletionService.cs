@@ -138,6 +138,33 @@ public sealed partial class CompletionService(
             .ToList();
     }
 
+    public async ValueTask<IReadOnlyList<DailyValue>> GetDailySumAsync(
+        Guid habitNodeId, Guid metricDefinitionId, DateOnly fromDate, DateOnly toDate, CancellationToken ct = default)
+    {
+        var fromMs = new DateTimeOffset(fromDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var toMs = new DateTimeOffset(toDate.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.CompletionValues.AsNoTracking()
+            .Where(v => v.MetricDefinitionId == metricDefinitionId
+                && v.Completion.HabitNodeId == habitNodeId
+                && v.Completion.CompletedAtMs >= fromMs
+                && v.Completion.CompletedAtMs <= toMs)
+            .Select(v => new
+            {
+                v.Completion.CompletedAt,
+                Numeric = (decimal?)v.ValueDecimal
+                    ?? (decimal?)v.ValueInteger
+                    ?? (decimal?)v.ValueSeconds
+                    ?? 0m,
+            })
+            .ToListAsync(ct);
+        return rows
+            .GroupBy(r => DateOnly.FromDateTime(r.CompletedAt))
+            .Select(g => new DailyValue(g.Key, g.Sum(x => x.Numeric)))
+            .OrderBy(d => d.Date)
+            .ToList();
+    }
+
     private static void ValidatePerType(
         HabitType type, Completion c,
         IReadOnlyList<CompletionValue>? values,

@@ -9,6 +9,7 @@ public sealed class FakeCompletionService : ICompletionService
     public Dictionary<Guid, Completion> Store { get; } = new();
     public Dictionary<Guid, List<CompletionValue>> ValuesByCompletion { get; } = new();
     public Dictionary<Guid, IReadOnlyList<HeatmapCell>> HeatmapByHabit { get; } = new();
+    public Dictionary<(Guid HabitId, Guid MetricId), IReadOnlyList<DailyValue>> DailySumByKey { get; } = new();
     public Exception? NextException { get; set; }
 
     public Completion? LastRecord { get; private set; }
@@ -84,6 +85,20 @@ public sealed class FakeCompletionService : ICompletionService
         Throw();
         IReadOnlyList<HeatmapCell> list = HeatmapByHabit.TryGetValue(habitNodeId, out var cells)
             ? cells
+            : [];
+        return new(list);
+    }
+
+    public ValueTask<IReadOnlyList<DailyValue>> GetDailySumAsync(
+        Guid habitNodeId,
+        Guid metricDefinitionId,
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken ct = default)
+    {
+        Throw();
+        IReadOnlyList<DailyValue> list = DailySumByKey.TryGetValue((habitNodeId, metricDefinitionId), out var rows)
+            ? rows
             : [];
         return new(list);
     }
