@@ -18,6 +18,7 @@ public sealed class NaiveDailyStreakAggregatorTests
         public ValueTask DeleteAsync(Guid id, CancellationToken ct = default) => throw new NotImplementedException();
         public ValueTask<Completion?> GetAsync(Guid id, CancellationToken ct = default) => throw new NotImplementedException();
         public ValueTask<IReadOnlyList<Completion>> ListByHabitAsync(Guid habitNodeId, DateTimeOffset? fromUtc = null, DateTimeOffset? toUtc = null, int? take = null, CancellationToken ct = default) => throw new NotImplementedException();
+        public ValueTask<IReadOnlyList<DailyValue>> GetDailySumAsync(Guid habitNodeId, Guid metricDefinitionId, DateOnly fromDate, DateOnly toDate, CancellationToken ct = default) => throw new NotImplementedException();
     }
 
 #pragma warning disable CA1859 // intentional: return interface so callers depend on the contract

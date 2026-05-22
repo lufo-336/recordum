@@ -236,4 +236,73 @@ public class CompletionServiceTests
         });
         await fx.DisposeAsync();
     }
+
+    private static long MsAt(DateOnly d, int hour) =>
+        new DateTimeOffset(d.ToDateTime(new TimeOnly(hour, 0)), TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+    private static DateTime UtcAt(DateOnly d, int hour) =>
+        DateTime.SpecifyKind(d.ToDateTime(new TimeOnly(hour, 0)), DateTimeKind.Utc);
+
+    [Fact]
+    public async Task GetDailySumAsync_sums_completion_values_for_given_metric_per_day()
+    {
+        var (fx, habitId) = await SeedActionAsync(HabitType.Counter);
+        Guid metricId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "reps", Type = MetricType.Integer };
+            db.MetricDefinitions.Add(metric);
+            await db.SaveChangesAsync();
+            metricId = metric.Id;
+        }
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day1 = new DateOnly(2026, 1, 5);
+        var day2 = new DateOnly(2026, 1, 6);
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day1, 9), CompletedAtMs = MsAt(day1, 9) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueInteger = 10 } });
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day1, 12), CompletedAtMs = MsAt(day1, 12) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueInteger = 15 } });
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day2, 9), CompletedAtMs = MsAt(day2, 9) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueInteger = 7 } });
+
+        var rows = await svc.GetDailySumAsync(habitId, metricId, day1, day2);
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(25m, rows.Single(r => r.Date == day1).Sum);
+        Assert.Equal(7m, rows.Single(r => r.Date == day2).Sum);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task GetDailySumAsync_ignores_values_for_other_metrics()
+    {
+        var (fx, habitId) = await SeedActionAsync(HabitType.Counter);
+        Guid primaryMetricId, secondaryMetricId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var primary = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "reps", Type = MetricType.Integer, SortOrder = 0 };
+            var secondary = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "weight", Type = MetricType.Decimal, SortOrder = 1 };
+            db.MetricDefinitions.AddRange(primary, secondary);
+            await db.SaveChangesAsync();
+            primaryMetricId = primary.Id;
+            secondaryMetricId = secondary.Id;
+        }
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 1, 5);
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) },
+            new[]
+            {
+                new CompletionValue { MetricDefinitionId = primaryMetricId, ValueInteger = 10 },
+                new CompletionValue { MetricDefinitionId = secondaryMetricId, ValueDecimal = 100m, SeriesIndex = 0 },
+            });
+
+        var rows = await svc.GetDailySumAsync(habitId, primaryMetricId, day, day);
+
+        Assert.Equal(10m, rows.Single().Sum);
+        await fx.DisposeAsync();
+    }
 }
