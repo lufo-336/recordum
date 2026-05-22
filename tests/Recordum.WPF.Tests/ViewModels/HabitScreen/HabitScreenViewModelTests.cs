@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Web.WebView2.Core;
 using Recordum.Core.Abstractions.Services.Dtos;
+using Recordum.Core.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Bootstrap;
@@ -47,7 +48,8 @@ public class HabitScreenViewModelTests
         noteSvc = new FakeNoteService();
         return new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeHabitConfigService(),
-            noteSvc, clock, bus, new FakeWebView2Availability(true));
+            noteSvc, new FakeGoalService(), new IntensityRampResolver(),
+            clock, bus, new FakeWebView2Availability(true));
     }
 
     private static HabitScreenViewModel CreateSut(

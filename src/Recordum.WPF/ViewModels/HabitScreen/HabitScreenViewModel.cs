@@ -43,6 +43,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IMetricDefinitionService metrics,
         IHabitConfigService configs,
         INoteService noteService,
+        IGoalService goals,
+        IIntensityRampResolver ramp,
         IClock clock,
         IEventBus events,
         IWebView2Availability availability)
@@ -53,6 +55,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(configs);
         ArgumentNullException.ThrowIfNull(noteService);
+        ArgumentNullException.ThrowIfNull(goals);
+        ArgumentNullException.ThrowIfNull(ramp);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(availability);
@@ -62,7 +66,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _configs = configs;
         _clock = clock;
         Availability = availability;
-        Heatmap = new HeatmapViewModel(completions, clock);
+        Heatmap = new HeatmapViewModel(completions, clock, ramp, goals, configs);
         CompletionList = new CompletionListViewModel(completions, metrics);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
