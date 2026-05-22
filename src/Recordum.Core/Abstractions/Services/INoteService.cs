@@ -1,3 +1,12 @@
+using Recordum.Core.Models;
+
 namespace Recordum.Core.Abstractions.Services;
 
-public interface INoteService { }
+public interface INoteService
+{
+    ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default);
+    ValueTask UpdateAsync(Guid id, Action<Note> mutate, CancellationToken ct = default);
+    ValueTask DeleteAsync(Guid id, CancellationToken ct = default);
+    ValueTask<Note?> GetAsync(Guid id, CancellationToken ct = default);
+    ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default);
+}
