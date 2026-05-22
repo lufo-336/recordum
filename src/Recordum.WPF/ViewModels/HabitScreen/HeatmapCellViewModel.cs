@@ -18,6 +18,8 @@ public sealed partial class HeatmapCellViewModel : ObservableObject
 
     public int IntensityStep { get; }
 
+    public string TooltipText => $"{Date:yyyy-MM-dd} — {Count}";
+
     private static int ComputeFallback(int count) => count switch
     {
         0 => 0,
