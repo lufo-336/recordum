@@ -3,6 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:wv="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf">
     <Grid>
-        <wv:WebView2 x:Name="WebView"/>
+        <wv:WebView2 x:Name="WebView" x:FieldModifier="private"/>
+        <TextBox x:Name="FallbackBox" x:FieldModifier="private"
+                 Visibility="Collapsed"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"/>
     </Grid>
 </UserControl>

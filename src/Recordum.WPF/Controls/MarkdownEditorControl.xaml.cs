@@ -66,10 +66,14 @@ public partial class MarkdownEditorControl : UserControl
     private async Task TryInitAsync()
     {
         if (_isDisposed) return;
-        if (Availability is not { IsAvailable: true, Environment: not null } a) return;
+        if (Availability is null || !Availability.IsAvailable || Availability.Environment is null)
+        {
+            ActivateFallback();
+            return;
+        }
         if (WebView.CoreWebView2 is not null) return; // already inited
 
-        await WebView.EnsureCoreWebView2Async(a.Environment).ConfigureAwait(true);
+        await WebView.EnsureCoreWebView2Async(Availability.Environment).ConfigureAwait(true);
         var core = WebView.CoreWebView2!;
         var assetsRoot = Path.Combine(AppContext.BaseDirectory, "Resources", "EditorAssets");
         core.SetVirtualHostNameToFolderMapping(
@@ -78,6 +82,18 @@ public partial class MarkdownEditorControl : UserControl
             CoreWebView2HostResourceAccessKind.Allow);
         core.WebMessageReceived += OnWebMessageReceived;
         core.Navigate("https://recordum.local/editor.html");
+    }
+
+    private void ActivateFallback()
+    {
+        if (FallbackBox.Visibility == Visibility.Visible) return;
+        WebView.Visibility = Visibility.Collapsed;
+        FallbackBox.Visibility = Visibility.Visible;
+        FallbackBox.Text = Markdown;
+        FallbackBox.TextChanged += (_, _) =>
+        {
+            if (FallbackBox.Text != Markdown) SetCurrentValue(MarkdownProperty, FallbackBox.Text);
+        };
     }
 
     private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -109,6 +125,11 @@ public partial class MarkdownEditorControl : UserControl
 
     private void PushContentToEditor(string md)
     {
+        if (FallbackBox.Visibility == Visibility.Visible)
+        {
+            if (FallbackBox.Text != md) FallbackBox.Text = md;
+            return;
+        }
         if (!_bridgeReady || _isDisposed || WebView.CoreWebView2 is null) return;
         var payload = JsonSerializer.Serialize(new { type = "setContent", md });
         WebView.CoreWebView2.PostWebMessageAsJson(payload);
