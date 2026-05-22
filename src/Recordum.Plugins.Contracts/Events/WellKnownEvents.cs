@@ -12,6 +12,7 @@ public static class WellKnownEvents
 
     public static readonly EventName NoteCreated = new("note.created");
     public static readonly EventName NoteUpdated = new("note.updated");
+    public static readonly EventName NoteDeleted = new("note.deleted");
 
     public static readonly EventName StreakMilestone = new("streak.milestone");
     public static readonly EventName GoalCompleted = new("goal.completed");
