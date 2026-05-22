@@ -168,16 +168,21 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
-    public async Task QuickAdd_SaveAsync_triggers_Heatmap_and_CompletionList_reload()
+    public async Task EventBus_drives_reload_after_QuickAdd_Save_in_production()
     {
-        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _);
+        // In production CompletionService.RecordAsync publishes CompletionRecorded
+        // and HabitScreenViewModel subscribes to refresh. FakeCompletionService doesn't
+        // publish, so simulate the event publish path directly.
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out var bus);
         var id = Guid.NewGuid();
         nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
         await sut.LoadAsync(id);
-        completions.HeatmapByHabit[id] = [new HeatmapCell(new DateOnly(2026, 5, 21), 1)];
+        completions.HeatmapByHabit[id] = [new HeatmapCell(new DateOnly(2026, 5, 21), 7)];
 
         await sut.QuickAdd!.SaveAsync();
+        bus.Publish(new Recordum.Plugins.Contracts.Events.CompletionRecordedPayload(Guid.NewGuid(), id, DateTime.UtcNow));
+        await Task.Delay(20);
 
-        sut.Heatmap.Cells.Should().NotBeEmpty();
+        sut.Heatmap.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 5, 21) && c.Count == 7);
     }
 }

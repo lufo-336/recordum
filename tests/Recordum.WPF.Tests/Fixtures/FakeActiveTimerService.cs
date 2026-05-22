@@ -1,3 +1,4 @@
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
@@ -5,8 +6,10 @@ using Recordum.Core.Models;
 
 namespace Recordum.WPF.Tests.Fixtures;
 
-public sealed class FakeActiveTimerService : IActiveTimerService
+public sealed class FakeActiveTimerService(IClock? clock = null) : IActiveTimerService
 {
+    private readonly IClock _clock = clock ?? new FakeClock();
+
     public List<ActiveTimer> Active { get; } = [];
     public List<Guid> PauseCalls { get; } = [];
     public List<Guid> ResumeCalls { get; } = [];
@@ -50,7 +53,7 @@ public sealed class FakeActiveTimerService : IActiveTimerService
         StopCalls.Add(habitNodeId);
         Active.RemoveAll(t => t.HabitNodeId == habitNodeId);
         var c = StopFactory?.Invoke(habitNodeId)
-            ?? new Completion { Id = Guid.NewGuid(), HabitNodeId = habitNodeId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 0 };
+            ?? new Completion { Id = Guid.NewGuid(), HabitNodeId = habitNodeId, CompletedAt = _clock.UtcNow.UtcDateTime, CompletedAtMs = _clock.UtcNowMs };
         return new ValueTask<Completion>(c);
     }
 

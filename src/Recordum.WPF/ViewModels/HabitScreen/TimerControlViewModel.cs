@@ -16,6 +16,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
 
     private HabitNode? _node;
     private HabitConfig? _config;
+    private ActiveTimer? _activeSnapshot;
 
     public ObservableCollection<SegmentDefinition> Segments { get; } = [];
 
@@ -55,35 +56,28 @@ public sealed partial class TimerControlViewModel : ObservableObject
             var segs = await _configs.ListSegmentsAsync(node.Id, ct).ConfigureAwait(true);
             foreach (var s in segs) Segments.Add(s);
         }
-        var active = node is null ? null : await _timers.GetActiveAsync(node.Id, ct).ConfigureAwait(true);
-        IsActive = active is not null;
-        IsPaused = active?.PausedAtMs is not null;
-        SegmentIndex = active?.SegmentIndex;
-        UpdateElapsed(active);
-        StartCommand.NotifyCanExecuteChanged();
-        StopCommand.NotifyCanExecuteChanged();
-        PauseCommand.NotifyCanExecuteChanged();
-        ResumeCommand.NotifyCanExecuteChanged();
-        NextSegmentCommand.NotifyCanExecuteChanged();
+        _activeSnapshot = node is null ? null : await _timers.GetActiveAsync(node.Id, ct).ConfigureAwait(true);
+        IsActive = _activeSnapshot is not null;
+        IsPaused = _activeSnapshot?.PausedAtMs is not null;
+        SegmentIndex = _activeSnapshot?.SegmentIndex;
+        UpdateElapsed(_activeSnapshot);
+        UpdateCommandsCanExecute();
     }
 
+    /// <summary>
+    /// Recompute elapsed display from the cached ActiveTimer snapshot — no DB call.
+    /// State transitions (Start/Pause/Resume/Stop) refresh the snapshot in their handlers.
+    /// </summary>
     public void Tick()
     {
         if (!IsActive || _node is null) return;
-        _ = TickAsync();
-    }
-
-    private async Task TickAsync()
-    {
-        if (_node is null) return;
-        var active = await _timers.GetActiveAsync(_node.Id).ConfigureAwait(true);
-        UpdateElapsed(active);
+        UpdateElapsed(_activeSnapshot);
     }
 
     private void UpdateElapsed(ActiveTimer? active)
     {
         if (active is null) { ElapsedSeconds = 0; return; }
-        var nowMs = _clock.UtcNow.ToUnixTimeMilliseconds();
+        var nowMs = _clock.UtcNowMs;
         var endMs = active.PausedAtMs ?? nowMs;
         var ms = endMs - active.StartedAtMs - active.AccumulatedPausedMs;
         if (ms < 0) ms = 0;
@@ -101,10 +95,10 @@ public sealed partial class TimerControlViewModel : ObservableObject
     private async Task StartAsync(CancellationToken ct)
     {
         if (_node is null || Mode is null) return;
-        await _timers.StartAsync(_node.Id, Mode.Value, ct).ConfigureAwait(true);
+        _activeSnapshot = await _timers.StartAsync(_node.Id, Mode.Value, ct).ConfigureAwait(true);
         IsActive = true;
         IsPaused = false;
-        SegmentIndex = Mode == TimerMode.Session ? 0 : null;
+        SegmentIndex = _activeSnapshot.SegmentIndex;
         UpdateCommandsCanExecute();
     }
 
@@ -113,6 +107,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
     {
         if (_node is null) return;
         await _timers.StopAsync(_node.Id, ct).ConfigureAwait(true);
+        _activeSnapshot = null;
         IsActive = false;
         IsPaused = false;
         ElapsedSeconds = 0;
@@ -123,8 +118,9 @@ public sealed partial class TimerControlViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanPause))]
     private async Task PauseAsync(CancellationToken ct)
     {
-        if (_node is null) return;
+        if (_node is null || _activeSnapshot is null) return;
         await _timers.PauseAsync(_node.Id, ct).ConfigureAwait(true);
+        _activeSnapshot.PausedAtMs = _clock.UtcNowMs;
         IsPaused = true;
         UpdateCommandsCanExecute();
     }
@@ -132,8 +128,11 @@ public sealed partial class TimerControlViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanResume))]
     private async Task ResumeAsync(CancellationToken ct)
     {
-        if (_node is null) return;
+        if (_node is null || _activeSnapshot is null) return;
         await _timers.ResumeAsync(_node.Id, ct).ConfigureAwait(true);
+        if (_activeSnapshot.PausedAtMs is { } pAt)
+            _activeSnapshot.AccumulatedPausedMs += _clock.UtcNowMs - pAt;
+        _activeSnapshot.PausedAtMs = null;
         IsPaused = false;
         UpdateCommandsCanExecute();
     }
@@ -141,7 +140,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanNextSegment))]
     private async Task NextSegmentAsync(CancellationToken ct)
     {
-        if (_node is null || Segments.Count == 0) return;
+        if (_node is null || _activeSnapshot is null || Segments.Count == 0) return;
         var current = SegmentIndex ?? 0;
         if (current >= Segments.Count - 1)
         {
@@ -149,6 +148,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
             return;
         }
         await _timers.NextSegmentAsync(_node.Id, ct).ConfigureAwait(true);
+        _activeSnapshot.SegmentIndex = current + 1;
         SegmentIndex = current + 1;
         UpdateCommandsCanExecute();
     }

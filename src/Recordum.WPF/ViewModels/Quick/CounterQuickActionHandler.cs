@@ -18,12 +18,11 @@ public sealed class CounterQuickActionHandler(
         var primary = list.OrderBy(m => m.SortOrder).FirstOrDefault();
         if (primary is null) return false;
 
-        var now = clock.UtcNow;
         var draft = new Completion
         {
             HabitNodeId = habitNodeId,
-            CompletedAt = now.UtcDateTime,
-            CompletedAtMs = now.ToUnixTimeMilliseconds(),
+            CompletedAt = clock.UtcNow.UtcDateTime,
+            CompletedAtMs = clock.UtcNowMs,
         };
         var values = new[]
         {

@@ -320,4 +320,10 @@
   <data name="HabitScreen.Timer.NextSegment" xml:space="preserve">
     <value>Segmento successivo</value>
   </data>
+  <data name="QuickAdd.Error.NotesRequired" xml:space="preserve">
+    <value>È richiesta una nota.</value>
+  </data>
+  <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
+    <value>È richiesto almeno un valore.</value>
+  </data>
 </root>

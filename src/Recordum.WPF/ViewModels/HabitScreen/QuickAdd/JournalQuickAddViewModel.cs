@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
@@ -19,7 +20,7 @@ public sealed partial class JournalQuickAddViewModel(ICompletionService completi
         if (Node is null) return;
         if (string.IsNullOrWhiteSpace(Notes))
         {
-            ErrorMessage = "Notes is required.";
+            ErrorMessage = Strings.QuickAdd_Error_NotesRequired;
             return;
         }
         IsSaving = true;

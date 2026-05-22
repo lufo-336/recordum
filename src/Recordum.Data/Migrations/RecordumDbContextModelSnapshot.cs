@@ -229,7 +229,7 @@ namespace Recordum.Data.Migrations
                         {
                             Key = "schema_version",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.4"
+                            Value = "2.5"
                         });
                 });
 

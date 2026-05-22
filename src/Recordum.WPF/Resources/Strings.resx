@@ -338,4 +338,10 @@ Details: {0}</value>
   <data name="HabitScreen.Timer.NextSegment" xml:space="preserve">
     <value>Next segment</value>
   </data>
+  <data name="QuickAdd.Error.NotesRequired" xml:space="preserve">
+    <value>A note is required.</value>
+  </data>
+  <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
+    <value>At least one value is required.</value>
+  </data>
 </root>

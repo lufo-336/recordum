@@ -11,12 +11,11 @@ public sealed class ActionQuickActionHandler(ICompletionService completions, ICl
 
     public async ValueTask<bool> ExecuteAsync(Guid habitNodeId, CancellationToken ct = default)
     {
-        var now = clock.UtcNow;
         var draft = new Completion
         {
             HabitNodeId = habitNodeId,
-            CompletedAt = now.UtcDateTime,
-            CompletedAtMs = now.ToUnixTimeMilliseconds(),
+            CompletedAt = clock.UtcNow.UtcDateTime,
+            CompletedAtMs = clock.UtcNowMs,
         };
         await completions.RecordAsync(draft, ct: ct).ConfigureAwait(false);
         return true;

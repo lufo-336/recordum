@@ -42,12 +42,10 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
 
     public void Tick()
     {
-        var nowMs = _clock.UtcNow.ToUnixTimeMilliseconds();
-        var endMs = Timer.PausedAtMs ?? nowMs;
+        var endMs = Timer.PausedAtMs ?? _clock.UtcNowMs;
         var ms = endMs - Timer.StartedAtMs - Timer.AccumulatedPausedMs;
         if (ms < 0) ms = 0;
-        ElapsedSeconds = (int)(ms / 1000);
-        OnPropertyChanged(nameof(ElapsedDisplay));
+        ElapsedSeconds = (int)(ms / 1000); // partial OnElapsedSecondsChanged raises ElapsedDisplay.
     }
 
     partial void OnElapsedSecondsChanged(int value) => OnPropertyChanged(nameof(ElapsedDisplay));
@@ -56,7 +54,7 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
     private async Task PauseAsync()
     {
         await _timers.PauseAsync(HabitNodeId).ConfigureAwait(true);
-        Timer.PausedAtMs = _clock.UtcNow.ToUnixTimeMilliseconds();
+        Timer.PausedAtMs = _clock.UtcNowMs;
         IsPaused = true;
     }
 
@@ -65,7 +63,7 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
     {
         await _timers.ResumeAsync(HabitNodeId).ConfigureAwait(true);
         if (Timer.PausedAtMs is { } pAt)
-            Timer.AccumulatedPausedMs += _clock.UtcNow.ToUnixTimeMilliseconds() - pAt;
+            Timer.AccumulatedPausedMs += _clock.UtcNowMs - pAt;
         Timer.PausedAtMs = null;
         IsPaused = false;
     }

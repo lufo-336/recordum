@@ -98,7 +98,10 @@ public sealed partial class CompletionService(
         CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var q = db.Completions.AsNoTracking().Where(c => c.HabitNodeId == habitNodeId);
+        var q = db.Completions
+            .AsNoTracking()
+            .Include(c => c.Values)
+            .Where(c => c.HabitNodeId == habitNodeId);
         if (fromUtc is { } f)
         {
             var fMs = f.ToUnixTimeMilliseconds();

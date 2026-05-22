@@ -18,7 +18,7 @@ public sealed class ActiveTimerService(
         if (await db.ActiveTimers.AnyAsync(t => t.HabitNodeId == habitNodeId, ct))
             throw new TimerAlreadyActiveException(habitNodeId);
 
-        var nowMs = clock.UtcNow.ToUnixTimeMilliseconds();
+        var nowMs = clock.UtcNowMs;
         var t = new ActiveTimer
         {
             Id = Guid.NewGuid(),
@@ -37,7 +37,7 @@ public sealed class ActiveTimerService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct);
         if (t is null || t.PausedAtMs is not null) return;
-        t.PausedAtMs = clock.UtcNow.ToUnixTimeMilliseconds();
+        t.PausedAtMs = clock.UtcNowMs;
         await db.SaveChangesAsync(ct);
     }
 
@@ -46,7 +46,7 @@ public sealed class ActiveTimerService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct);
         if (t is null || t.PausedAtMs is null) return;
-        var nowMs = clock.UtcNow.ToUnixTimeMilliseconds();
+        var nowMs = clock.UtcNowMs;
         t.AccumulatedPausedMs += nowMs - t.PausedAtMs.Value;
         t.PausedAtMs = null;
         await db.SaveChangesAsync(ct);
@@ -58,7 +58,7 @@ public sealed class ActiveTimerService(
         var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct)
             ?? throw new ActiveTimerNotFoundException(habitNodeId);
 
-        var nowMs = clock.UtcNow.ToUnixTimeMilliseconds();
+        var nowMs = clock.UtcNowMs;
         var endMs = t.PausedAtMs ?? nowMs;
         var elapsedActiveMs = endMs - t.StartedAtMs - t.AccumulatedPausedMs;
         if (elapsedActiveMs < 0) elapsedActiveMs = 0;

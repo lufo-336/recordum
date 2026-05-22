@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
@@ -63,7 +64,7 @@ public sealed partial class ResistanceQuickAddViewModel(
             }
             if (values.Count == 0)
             {
-                ErrorMessage = "At least one value is required.";
+                ErrorMessage = Strings.QuickAdd_Error_ValueRequired;
                 return;
             }
 
