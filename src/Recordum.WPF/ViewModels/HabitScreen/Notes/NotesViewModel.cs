@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
 
@@ -33,7 +34,25 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         _notes = notes;
         _clock = clock;
         Availability = availability;
-        _ = events; // subscribed in Task 21
+        _subs.Add(events.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
+        _subs.Add(events.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
+        _subs.Add(events.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
+    }
+
+    private async void OnNoteEvent(EventEnvelope env)
+    {
+        var habitId = env.Payload switch
+        {
+            NoteCreatedPayload p => p.HabitNodeId,
+            NoteUpdatedPayload p => p.HabitNodeId,
+            NoteDeletedPayload p => p.HabitNodeId,
+            _ => Guid.Empty,
+        };
+        if (habitId != _habitNodeId) return;
+        var keptSelection = SelectedNote?.Id;
+        await LoadAsync(_habitNodeId).ConfigureAwait(true);
+        if (keptSelection is { } sel)
+            SelectedNote = Notes.FirstOrDefault(r => r.Id == sel);
     }
 
     public async Task LoadAsync(Guid habitNodeId, CancellationToken ct = default)

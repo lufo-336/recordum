@@ -182,6 +182,51 @@ public class NotesViewModelTests
     }
 
     [Fact]
+    public async Task NoteCreated_event_from_another_source_refreshes_list()
+    {
+        var sut = CreateSut(out var svc, out var bus, out _);
+        var habitId = Guid.NewGuid();
+        await sut.LoadAsync(habitId);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "external", UpdatedAtMs = 100 };
+        svc.Store[n.Id] = n;
+
+        bus.Publish(new Recordum.Plugins.Contracts.Events.NoteCreatedPayload(n.Id, habitId));
+        await Task.Delay(20);
+
+        sut.Notes.Should().ContainSingle().Which.Id.Should().Be(n.Id);
+    }
+
+    [Fact]
+    public async Task NoteEvent_for_other_habit_is_ignored()
+    {
+        var sut = CreateSut(out _, out var bus, out _);
+        var habitId = Guid.NewGuid();
+        await sut.LoadAsync(habitId);
+
+        bus.Publish(new Recordum.Plugins.Contracts.Events.NoteCreatedPayload(Guid.NewGuid(), Guid.NewGuid()));
+        await Task.Delay(20);
+
+        sut.Notes.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task NoteDeleted_event_removes_row_from_list()
+    {
+        var sut = CreateSut(out var svc, out var bus, out _);
+        var habitId = Guid.NewGuid();
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "x", UpdatedAtMs = 1 };
+        svc.Store[n.Id] = n;
+        await sut.LoadAsync(habitId);
+        sut.Notes.Should().ContainSingle();
+
+        svc.Store.Remove(n.Id);
+        bus.Publish(new Recordum.Plugins.Contracts.Events.NoteDeletedPayload(n.Id, habitId));
+        await Task.Delay(20);
+
+        sut.Notes.Should().BeEmpty();
+    }
+
+    [Fact]
     public void SaveCommand_CanExecute_only_when_dirty()
     {
         var sut = CreateSut(out var svc, out _, out _);
