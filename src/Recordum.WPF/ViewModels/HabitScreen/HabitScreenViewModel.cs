@@ -6,6 +6,8 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.WPF.Bootstrap;
+using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
@@ -27,6 +29,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public HeatmapViewModel Heatmap { get; }
     public CompletionListViewModel CompletionList { get; }
     public TimerControlViewModel TimerControl { get; }
+    public NotesViewModel Notes { get; }
+    public IWebView2Availability Availability { get; }
 
     [ObservableProperty] private QuickAddViewModelBase? _quickAdd;
 
@@ -38,24 +42,30 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IActiveTimerService timers,
         IMetricDefinitionService metrics,
         IHabitConfigService configs,
+        INoteService noteService,
         IClock clock,
-        IEventBus events)
+        IEventBus events,
+        IWebView2Availability availability)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(configs);
+        ArgumentNullException.ThrowIfNull(noteService);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(events);
+        ArgumentNullException.ThrowIfNull(availability);
         _nodes = nodes;
         _completions = completions;
         _metrics = metrics;
         _configs = configs;
         _clock = clock;
+        Availability = availability;
         Heatmap = new HeatmapViewModel(completions, clock);
         CompletionList = new CompletionListViewModel(completions, metrics);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
+        Notes = new NotesViewModel(noteService, events, clock, availability);
         Heatmap.DateClicked += OnHeatmapDateClicked;
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
@@ -64,6 +74,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        Notes.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
         _subscriptions.Clear();
     }
@@ -89,7 +100,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var heatmapTask = Heatmap.LoadAsync(Node.Id, ct);
         var listTask = CompletionList.LoadAsync(Node.Id, ct);
         var quickAddTask = BuildQuickAddAsync(Node, ct);
-        await Task.WhenAll(configTask, heatmapTask, listTask, quickAddTask).ConfigureAwait(true);
+        var notesTask = Notes.LoadAsync(Node.Id, ct);
+        await Task.WhenAll(configTask, heatmapTask, listTask, quickAddTask, notesTask).ConfigureAwait(true);
 
         await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
     }

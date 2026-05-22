@@ -1,7 +1,9 @@
 using FluentAssertions;
+using Microsoft.Web.WebView2.Core;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
@@ -11,6 +13,13 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
 public class HabitScreenViewModelTests
 {
+    private sealed class FakeWebView2Availability(bool available) : IWebView2Availability
+    {
+        public bool IsAvailable { get; } = available;
+        public CoreWebView2Environment? Environment => null;
+        public Task ProbeAsync() => Task.CompletedTask;
+    }
+
     private static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
         out FakeCompletionService completions,
@@ -18,6 +27,16 @@ public class HabitScreenViewModelTests
         out FakeMetricDefinitionService metrics,
         out FakeClock clock,
         out FakeEventBus bus)
+        => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out bus, out _);
+
+    private static HabitScreenViewModel CreateSut(
+        out FakeHabitNodeService nodes,
+        out FakeCompletionService completions,
+        out FakeActiveTimerService timers,
+        out FakeMetricDefinitionService metrics,
+        out FakeClock clock,
+        out FakeEventBus bus,
+        out FakeNoteService noteSvc)
     {
         nodes = new FakeHabitNodeService();
         completions = new FakeCompletionService();
@@ -25,7 +44,10 @@ public class HabitScreenViewModelTests
         metrics = new FakeMetricDefinitionService();
         clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
         bus = new FakeEventBus();
-        return new HabitScreenViewModel(nodes, completions, timers, metrics, new FakeHabitConfigService(), clock, bus);
+        noteSvc = new FakeNoteService();
+        return new HabitScreenViewModel(
+            nodes, completions, timers, metrics, new FakeHabitConfigService(),
+            noteSvc, clock, bus, new FakeWebView2Availability(true));
     }
 
     private static HabitScreenViewModel CreateSut(
@@ -63,6 +85,20 @@ public class HabitScreenViewModelTests
         sut.Heatmap.Cells.Should().NotBeEmpty();
         sut.Heatmap.NodeId.Should().Be(id);
         sut.CompletionList.NodeId.Should().Be(id);
+    }
+
+    [Fact]
+    public async Task LoadAsync_also_loads_NotesViewModel()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out var noteSvc);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "Diary" };
+        noteSvc.Store[Guid.NewGuid()] = new Recordum.Core.Models.Note { Id = Guid.NewGuid(), HabitNodeId = id, BodyMd = "a", UpdatedAtMs = 1 };
+        noteSvc.Store[Guid.NewGuid()] = new Recordum.Core.Models.Note { Id = Guid.NewGuid(), HabitNodeId = id, BodyMd = "b", UpdatedAtMs = 2 };
+
+        await sut.LoadAsync(id);
+
+        sut.Notes.Notes.Should().HaveCount(2);
     }
 
     [Fact]
