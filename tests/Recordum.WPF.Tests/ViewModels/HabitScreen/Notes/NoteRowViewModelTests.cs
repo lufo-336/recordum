@@ -29,7 +29,7 @@ public class NoteRowViewModelTests
     {
         var n = new Note { Id = Guid.NewGuid(), BodyMd = "" };
         var sut = new NoteRowViewModel(n);
-        sut.Summary.Should().Be("(untitled)");
+        sut.Summary.Should().Be(Recordum.WPF.Resources.Strings.Notes_Untitled);
     }
 
     [Fact]

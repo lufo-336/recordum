@@ -34,6 +34,21 @@ public static class Strings
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
     public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");
 
+    // Notes tab
+    public static string Notes_New => Get("Notes.New");
+    public static string Notes_Save => Get("Notes.Save");
+    public static string Notes_Delete => Get("Notes.Delete");
+    public static string Notes_Confirm => Get("Notes.Confirm");
+    public static string Notes_Cancel => Get("Notes.Cancel");
+    public static string Notes_ConfirmDelete => Get("Notes.ConfirmDelete");
+    public static string Notes_Empty => Get("Notes.Empty");
+    public static string Notes_EmptyHint => Get("Notes.EmptyHint");
+    public static string Notes_Untitled => Get("Notes.Untitled");
+
+    // Editor / WebView2
+    public static string Editor_WebView2_NotAvailable_Title => Get("Editor.WebView2.NotAvailable.Title");
+    public static string Editor_WebView2_NotAvailable_Body => Get("Editor.WebView2.NotAvailable.Body");
+
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));
     public static string StartupErrorTitle => Get(nameof(StartupErrorTitle));

@@ -332,4 +332,37 @@
   <data name="HabitScreen.Tab.Notes" xml:space="preserve">
     <value>Note</value>
   </data>
+  <data name="Notes.New" xml:space="preserve">
+    <value>+ Nuova nota</value>
+  </data>
+  <data name="Notes.Save" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="Notes.Delete" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="Notes.Confirm" xml:space="preserve">
+    <value>Sì</value>
+  </data>
+  <data name="Notes.Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="Notes.ConfirmDelete" xml:space="preserve">
+    <value>Eliminare questa nota?</value>
+  </data>
+  <data name="Notes.Empty" xml:space="preserve">
+    <value>Nessuna nota.</value>
+  </data>
+  <data name="Notes.EmptyHint" xml:space="preserve">
+    <value>Click + per scriverne una.</value>
+  </data>
+  <data name="Notes.Untitled" xml:space="preserve">
+    <value>(senza titolo)</value>
+  </data>
+  <data name="Editor.WebView2.NotAvailable.Title" xml:space="preserve">
+    <value>Editor non disponibile</value>
+  </data>
+  <data name="Editor.WebView2.NotAvailable.Body" xml:space="preserve">
+    <value>Il Runtime WebView2 è richiesto per l'editor markdown. Il fallback testo semplice è attivo.</value>
+  </data>
 </root>

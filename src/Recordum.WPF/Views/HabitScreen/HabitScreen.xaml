@@ -5,6 +5,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen"
              xmlns:qa="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.QuickAdd"
+             xmlns:vmn="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Notes"
+             xmlns:v="clr-namespace:Recordum.WPF.Views.HabitScreen"
              xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
              mc:Ignorable="d"
@@ -277,6 +279,10 @@
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,6,0,0"
                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
             </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vmn:NotesViewModel}">
+            <v:NotesTabView/>
         </DataTemplate>
 
         <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"

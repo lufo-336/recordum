@@ -13,10 +13,10 @@ public sealed partial class NoteRowViewModel(Note note) : ObservableObject
     {
         get
         {
-            if (string.IsNullOrWhiteSpace(Note.BodyMd)) return "(untitled)";
+            if (string.IsNullOrWhiteSpace(Note.BodyMd)) return Recordum.WPF.Resources.Strings.Notes_Untitled;
             var firstLine = Note.BodyMd.Split('\n')
                 .Select(l => l.Trim())
-                .FirstOrDefault(l => !string.IsNullOrEmpty(l)) ?? "(untitled)";
+                .FirstOrDefault(l => !string.IsNullOrEmpty(l)) ?? Recordum.WPF.Resources.Strings.Notes_Untitled;
             return firstLine.Length <= 40 ? firstLine : firstLine[..40] + "…";
         }
     }
