@@ -443,3 +443,6 @@ tools/plugin-api-ts/dist/
 
 # Visual Companion (brainstorming mockups)
 .superpowers/
+
+# Claude Code per-user local settings
+.claude/settings.local.json
