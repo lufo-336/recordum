@@ -365,4 +365,67 @@
   <data name="Editor.WebView2.NotAvailable.Body" xml:space="preserve">
     <value>Il Runtime WebView2 è richiesto per l'editor markdown. Il fallback testo semplice è attivo.</value>
   </data>
+  <data name="HabitScreen.Tab.Detail" xml:space="preserve">
+    <value>Dettaglio</value>
+  </data>
+  <data name="Detail.GoalCard.NoGoal.Title" xml:space="preserve">
+    <value>Nessun goal attivo</value>
+  </data>
+  <data name="Detail.GoalCard.NoGoal.Hint" xml:space="preserve">
+    <value>Impostane uno in Configura → Goal</value>
+  </data>
+  <data name="Detail.GoalCard.Period.ThisWeek" xml:space="preserve">
+    <value>Questa settimana</value>
+  </data>
+  <data name="Detail.GoalCard.Period.Last30Days" xml:space="preserve">
+    <value>Ultimi 30 giorni</value>
+  </data>
+  <data name="Detail.GoalCard.Period.LastNDays" xml:space="preserve">
+    <value>Ultimi {0} giorni</value>
+  </data>
+  <data name="Detail.GoalCard.Period.AllTime" xml:space="preserve">
+    <value>Da sempre</value>
+  </data>
+  <data name="Detail.GoalCard.DaysLeft" xml:space="preserve">
+    <value>{0}gg rimanenti</value>
+  </data>
+  <data name="Detail.GoalCard.Done" xml:space="preserve">
+    <value>Completato</value>
+  </data>
+  <data name="Detail.Streak.Current" xml:space="preserve">
+    <value>Streak attuale</value>
+  </data>
+  <data name="Detail.Streak.Longest" xml:space="preserve">
+    <value>Streak record</value>
+  </data>
+  <data name="Detail.Streak.Runs90" xml:space="preserve">
+    <value>Cicli (90gg)</value>
+  </data>
+  <data name="Detail.Streak.Empty" xml:space="preserve">
+    <value>Nessuno streak ancora</value>
+  </data>
+  <data name="Detail.Streak.Days" xml:space="preserve">
+    <value>{0} giorni</value>
+  </data>
+  <data name="Detail.Trend.Range.30d" xml:space="preserve">
+    <value>30g</value>
+  </data>
+  <data name="Detail.Trend.Range.90d" xml:space="preserve">
+    <value>90g</value>
+  </data>
+  <data name="Detail.Trend.Range.1y" xml:space="preserve">
+    <value>1a</value>
+  </data>
+  <data name="Detail.Trend.Empty" xml:space="preserve">
+    <value>Dati insufficienti</value>
+  </data>
+  <data name="Detail.Hourly.Title" xml:space="preserve">
+    <value>Ora del giorno</value>
+  </data>
+  <data name="Detail.Hourly.Empty" xml:space="preserve">
+    <value>Nessuna registrazione</value>
+  </data>
+  <data name="Detail.BasicStreakNotice" xml:space="preserve">
+    <value>Vista streak semplificata — engine completo in arrivo</value>
+  </data>
 </root>

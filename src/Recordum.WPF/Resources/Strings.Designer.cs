@@ -139,6 +139,29 @@ public static class Strings
     public static string Editor_Default_NewSegment => Get("Editor.Default.NewSegment");
     public static string Editor_Default_NewMetric => Get("Editor.Default.NewMetric");
 
+    // Detail tab
+    public static string HabitScreen_Tab_Detail => Get("HabitScreen.Tab.Detail");
+    public static string Detail_GoalCard_NoGoal_Title => Get("Detail.GoalCard.NoGoal.Title");
+    public static string Detail_GoalCard_NoGoal_Hint => Get("Detail.GoalCard.NoGoal.Hint");
+    public static string Detail_GoalCard_Period_ThisWeek => Get("Detail.GoalCard.Period.ThisWeek");
+    public static string Detail_GoalCard_Period_Last30Days => Get("Detail.GoalCard.Period.Last30Days");
+    public static string Detail_GoalCard_Period_LastNDays => Get("Detail.GoalCard.Period.LastNDays");
+    public static string Detail_GoalCard_Period_AllTime => Get("Detail.GoalCard.Period.AllTime");
+    public static string Detail_GoalCard_DaysLeft => Get("Detail.GoalCard.DaysLeft");
+    public static string Detail_GoalCard_Done => Get("Detail.GoalCard.Done");
+    public static string Detail_Streak_Current => Get("Detail.Streak.Current");
+    public static string Detail_Streak_Longest => Get("Detail.Streak.Longest");
+    public static string Detail_Streak_Runs90 => Get("Detail.Streak.Runs90");
+    public static string Detail_Streak_Empty => Get("Detail.Streak.Empty");
+    public static string Detail_Streak_Days => Get("Detail.Streak.Days");
+    public static string Detail_Trend_Range_30d => Get("Detail.Trend.Range.30d");
+    public static string Detail_Trend_Range_90d => Get("Detail.Trend.Range.90d");
+    public static string Detail_Trend_Range_1y => Get("Detail.Trend.Range.1y");
+    public static string Detail_Trend_Empty => Get("Detail.Trend.Empty");
+    public static string Detail_Hourly_Title => Get("Detail.Hourly.Title");
+    public static string Detail_Hourly_Empty => Get("Detail.Hourly.Empty");
+    public static string Detail_BasicStreakNotice => Get("Detail.BasicStreakNotice");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

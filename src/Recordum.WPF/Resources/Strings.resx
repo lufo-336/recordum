@@ -383,4 +383,67 @@ Details: {0}</value>
   <data name="Editor.WebView2.NotAvailable.Body" xml:space="preserve">
     <value>WebView2 Runtime is required for the markdown editor. The plain text fallback is active.</value>
   </data>
+  <data name="HabitScreen.Tab.Detail" xml:space="preserve">
+    <value>Detail</value>
+  </data>
+  <data name="Detail.GoalCard.NoGoal.Title" xml:space="preserve">
+    <value>No active goal</value>
+  </data>
+  <data name="Detail.GoalCard.NoGoal.Hint" xml:space="preserve">
+    <value>Set one in Configure → Goal</value>
+  </data>
+  <data name="Detail.GoalCard.Period.ThisWeek" xml:space="preserve">
+    <value>This week</value>
+  </data>
+  <data name="Detail.GoalCard.Period.Last30Days" xml:space="preserve">
+    <value>Last 30 days</value>
+  </data>
+  <data name="Detail.GoalCard.Period.LastNDays" xml:space="preserve">
+    <value>Last {0} days</value>
+  </data>
+  <data name="Detail.GoalCard.Period.AllTime" xml:space="preserve">
+    <value>All-time</value>
+  </data>
+  <data name="Detail.GoalCard.DaysLeft" xml:space="preserve">
+    <value>{0}d left</value>
+  </data>
+  <data name="Detail.GoalCard.Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Detail.Streak.Current" xml:space="preserve">
+    <value>Current streak</value>
+  </data>
+  <data name="Detail.Streak.Longest" xml:space="preserve">
+    <value>Longest streak</value>
+  </data>
+  <data name="Detail.Streak.Runs90" xml:space="preserve">
+    <value>Runs (90d)</value>
+  </data>
+  <data name="Detail.Streak.Empty" xml:space="preserve">
+    <value>No streaks yet</value>
+  </data>
+  <data name="Detail.Streak.Days" xml:space="preserve">
+    <value>{0} days</value>
+  </data>
+  <data name="Detail.Trend.Range.30d" xml:space="preserve">
+    <value>30d</value>
+  </data>
+  <data name="Detail.Trend.Range.90d" xml:space="preserve">
+    <value>90d</value>
+  </data>
+  <data name="Detail.Trend.Range.1y" xml:space="preserve">
+    <value>1y</value>
+  </data>
+  <data name="Detail.Trend.Empty" xml:space="preserve">
+    <value>Not enough data</value>
+  </data>
+  <data name="Detail.Hourly.Title" xml:space="preserve">
+    <value>Hour of day</value>
+  </data>
+  <data name="Detail.Hourly.Empty" xml:space="preserve">
+    <value>No recordings</value>
+  </data>
+  <data name="Detail.BasicStreakNotice" xml:space="preserve">
+    <value>Basic streak view — full engine arrives next milestone</value>
+  </data>
 </root>
