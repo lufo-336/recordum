@@ -50,6 +50,60 @@ public class NoteServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_mutates_body_and_publishes_NoteUpdated()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out var bus);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "orig" });
+        bus.Published.Clear();
+
+        await sut.UpdateAsync(id, n => n.BodyMd = "new");
+
+        bus.Published.Should().ContainSingle().Which.Should().BeOfType<NoteUpdatedPayload>();
+        (await sut.GetAsync(id))!.BodyMd.Should().Be("new");
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_no_publish_when_id_missing()
+    {
+        var (fx, _) = await SeedHabitAsync();
+        var sut = NewService(fx, out var bus);
+
+        await sut.UpdateAsync(Guid.NewGuid(), n => n.BodyMd = "x");
+
+        bus.Published.Should().BeEmpty();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_removes_row_and_publishes_NoteDeleted()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out var bus);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "x" });
+        bus.Published.Clear();
+
+        await sut.DeleteAsync(id);
+
+        bus.Published.Should().ContainSingle().Which.Should().BeOfType<NoteDeletedPayload>();
+        (await sut.GetAsync(id)).Should().BeNull();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_no_publish_when_id_missing()
+    {
+        var (fx, _) = await SeedHabitAsync();
+        var sut = NewService(fx, out var bus);
+
+        await sut.DeleteAsync(Guid.NewGuid());
+
+        bus.Published.Should().BeEmpty();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task CreateAsync_with_attachments_persists_both()
     {
         var (fx, habitId) = await SeedHabitAsync();
