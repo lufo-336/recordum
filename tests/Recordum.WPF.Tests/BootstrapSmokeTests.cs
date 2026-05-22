@@ -206,6 +206,41 @@ public sealed class BootstrapSmokeTests : IDisposable
     }
 
     [Fact]
+    public async Task End_to_end_note_create_list_update_delete()
+    {
+        await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+
+        Guid habitId;
+        using (var scope = _services.CreateScope())
+        {
+            var habits = scope.ServiceProvider.GetRequiredService<IHabitNodeService>();
+            habitId = await habits.CreateAsync(new HabitNode
+            {
+                NodeType = NodeType.Habit,
+                HabitType = HabitType.Journal,
+                Name = "notes-host",
+            });
+        }
+
+        Guid noteId;
+        using (var scope = _services.CreateScope())
+        {
+            var notes = scope.ServiceProvider.GetRequiredService<INoteService>();
+            noteId = await notes.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "first" });
+            await notes.UpdateAsync(noteId, n => n.BodyMd = "second");
+            var listed = await notes.ListByHabitAsync(habitId);
+            listed.Should().ContainSingle().Which.BodyMd.Should().Be("second");
+            await notes.DeleteAsync(noteId);
+        }
+
+        using (var scope = _services.CreateScope())
+        {
+            var notes = scope.ServiceProvider.GetRequiredService<INoteService>();
+            (await notes.ListByHabitAsync(habitId)).Should().BeEmpty();
+        }
+    }
+
+    [Fact]
     public async Task End_to_end_timer_recovery_reattaches_running_timer_in_status_bar()
     {
         await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
