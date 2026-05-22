@@ -1,33 +1,70 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.Services;
 using Recordum.Data.Tests.Fixtures;
+using Recordum.Plugins.Contracts.Events;
 using Xunit;
 
 namespace Recordum.Data.Tests.Integration;
 
 public class NoteServiceTests
 {
-    [Fact]
-    public async Task Create_persists_note_and_attachments_only_UpdatedAtMs()
+    private static async Task<(DbFixture fx, Guid habitId)> SeedHabitAsync(FakeClock? clock = null)
     {
-        await using var fx = new DbFixture();
-        var hid = Guid.NewGuid();
-        await using (var db = await fx.Factory.CreateDbContextAsync())
-        {
-            db.HabitNodes.Add(new HabitNode { Id = hid, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "j" });
-            await db.SaveChangesAsync();
-        }
-        var svc = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance);
-        var id = await svc.CreateAsync(
-            new Note { HabitNodeId = hid, BodyMd = "hi" },
+        var fx = new DbFixture(clock: clock);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var h = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "h" };
+        db.HabitNodes.Add(h);
+        await db.SaveChangesAsync();
+        return (fx, h.Id);
+    }
+
+    private static NoteService NewService(DbFixture fx, out RecordingEventBus bus)
+    {
+        bus = new RecordingEventBus();
+        return new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
+    }
+
+    [Fact]
+    public async Task CreateAsync_persists_row_and_publishes_NoteCreated()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out var bus);
+
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "hello" });
+
+        id.Should().NotBe(Guid.Empty);
+        bus.Published.Should().ContainSingle()
+            .Which.Should().BeOfType<NoteCreatedPayload>()
+            .Which.NoteId.Should().Be(id);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var persisted = await db.Notes.Where(n => n.Id == id).SingleAsync();
+        persisted.BodyMd.Should().Be("hello");
+        persisted.HabitNodeId.Should().Be(habitId);
+
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task CreateAsync_with_attachments_persists_both()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+
+        var id = await sut.CreateAsync(
+            new Note { HabitNodeId = habitId, BodyMd = "hi" },
             new[] { new Attachment { Id = Guid.NewGuid(), FilePath = "/tmp/a.png", MimeType = "image/png" } });
-        await using var db2 = await fx.Factory.CreateDbContextAsync();
-        var note = await db2.Notes.Include(n => n.Attachments).SingleAsync();
-        Assert.Equal(id, note.Id);
-        Assert.Single(note.Attachments);
-        Assert.True(note.UpdatedAtMs > 0);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var note = await db.Notes.Include(n => n.Attachments).SingleAsync();
+        note.Id.Should().Be(id);
+        note.Attachments.Should().ContainSingle();
+        note.UpdatedAtMs.Should().BeGreaterThan(0);
+
+        await fx.DisposeAsync();
     }
 }
