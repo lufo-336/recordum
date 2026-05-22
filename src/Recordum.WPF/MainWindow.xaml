@@ -5,12 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
         xmlns:v="clr-namespace:Recordum.WPF.Views"
+        xmlns:vt="clr-namespace:Recordum.WPF.Views.Timer"
+        xmlns:vhs="clr-namespace:Recordum.WPF.Views.HabitScreen"
         xmlns:res="clr-namespace:Recordum.WPF.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainWindowViewModel, IsDesignTimeCreatable=False}"
         Title="{x:Static res:Strings.AppTitle}"
         MinWidth="880" MinHeight="620"
-        Width="1120" Height="760"
+        Width="1280" Height="760"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Brush.Background}">
     <Window.InputBindings>
@@ -25,35 +27,57 @@
                     CommandParameter="{x:Static vm:HomeTab.Trash}"/>
     </Window.InputBindings>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition x:Name="EditorPaneColumn" Width="480" MinWidth="320"/>
-        </Grid.ColumnDefinitions>
-        <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
-        <GridSplitter x:Name="EditorPaneSplitter"
-                      Grid.Column="1"
-                      Width="4"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Stretch"
-                      ResizeBehavior="PreviousAndNext"
-                      Background="{DynamicResource Brush.Border}"
-                      ShowsPreview="False"
-                      Visibility="{Binding Home.SelectedRow,
-                                   RelativeSource={RelativeSource AncestorType=Window},
-                                   Converter={StaticResource NullToVisibility}}"
-                      DragCompleted="OnEditorPaneSplitterDragCompleted"/>
-        <v:EditorPane Grid.Column="2"
-                      DataContext="{Binding Editor}"
-                      Visibility="{Binding Home.SelectedRow,
-                                   RelativeSource={RelativeSource AncestorType=Window},
-                                   Converter={StaticResource NullToVisibility}}"/>
-        <Popup x:Name="SettingsPopupHost"
-               Grid.Column="0" Grid.ColumnSpan="3"
-               StaysOpen="False"
-               Placement="MousePoint"
-               AllowsTransparency="True">
-            <v:SettingsPopup DataContext="{Binding Settings}"/>
-        </Popup>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition x:Name="EditorPaneColumn" Width="0" MinWidth="0"/>
+            </Grid.ColumnDefinitions>
+            <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
+            <GridSplitter x:Name="HabitScreenSplitter"
+                          Grid.Column="1"
+                          Width="4"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext"
+                          Background="{DynamicResource Brush.Border}"
+                          ShowsPreview="False"
+                          Visibility="{Binding Home.SelectedRow,
+                                       RelativeSource={RelativeSource AncestorType=Window},
+                                       Converter={StaticResource NullToVisibility}}"
+                          DragCompleted="OnHabitScreenSplitterDragCompleted"/>
+            <vhs:HabitScreen Grid.Column="2"
+                             DataContext="{Binding HabitScreen}"
+                             Visibility="{Binding Home.SelectedRow,
+                                          RelativeSource={RelativeSource AncestorType=Window},
+                                          Converter={StaticResource NullToVisibility}}"/>
+            <GridSplitter x:Name="EditorPaneSplitter"
+                          Grid.Column="3"
+                          Width="4"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeBehavior="PreviousAndNext"
+                          Background="{DynamicResource Brush.Border}"
+                          ShowsPreview="False"
+                          Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"
+                          DragCompleted="OnEditorPaneSplitterDragCompleted"/>
+            <v:EditorPane Grid.Column="4"
+                          DataContext="{Binding Editor}"
+                          Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"/>
+            <Popup x:Name="SettingsPopupHost"
+                   Grid.Column="0" Grid.ColumnSpan="5"
+                   StaysOpen="False"
+                   Placement="MousePoint"
+                   AllowsTransparency="True">
+                <v:SettingsPopup DataContext="{Binding Settings}"/>
+            </Popup>
+        </Grid>
+        <vt:TimerStatusBar Grid.Row="1" DataContext="{Binding TimerStatusBar}"/>
     </Grid>
 </Window>

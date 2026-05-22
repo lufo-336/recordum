@@ -4,8 +4,8 @@ namespace Recordum.Data.SeedData;
 
 /// <summary>
 /// Official seed data for AppSetting. Keys are PK — values must be stable string literals.
-/// Matches the registry defined in CLAUDE.md §6.7 with schema_version bumped to 2.3
-/// per the provenance delta in the plugin system spec §2.4.
+/// Matches the registry defined in CLAUDE.md §6.7 with schema_version 2.5
+/// (active_timer delta v2.5 > PinScope v2.4 > provenance plugin v2.3).
 /// Timestamps are literal constants — TimestampInterceptor does not run during HasData INSERT generation.
 /// </summary>
 public static class AppSettingSeed
@@ -26,6 +26,6 @@ public static class AppSettingSeed
         new AppSetting { Key = "inactivity_timeout_minutes",  Value = "5",        UpdatedAt = SeedDate },
         new AppSetting { Key = "monthly_summary_day",         Value = "1",        UpdatedAt = SeedDate },
         new AppSetting { Key = "monthly_summary_time",        Value = "09:00",    UpdatedAt = SeedDate },
-        new AppSetting { Key = "schema_version",              Value = "2.4",      UpdatedAt = SeedDate },
+        new AppSetting { Key = "schema_version",              Value = "2.5",      UpdatedAt = SeedDate },
     ];
 }

@@ -11,6 +11,8 @@ using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.Quick;
+using Recordum.WPF.ViewModels.Timer;
 using FluentAssertions;
 
 namespace Recordum.WPF.Tests;
@@ -163,5 +165,53 @@ public sealed class BootstrapSmokeTests : IDisposable
         vm.Home.State.Should().BeOneOf(HomeState.Empty, HomeState.Loaded);
         vm.Home.Rows.Should().BeEmpty();
         vm.Settings.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task End_to_end_quick_action_for_action_habit_records_completion_and_emits_event()
+    {
+        await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+
+        Guid habitId;
+        using (var scope = _services.CreateScope())
+        {
+            var habits = scope.ServiceProvider.GetRequiredService<IHabitNodeService>();
+            habitId = await habits.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "ping" });
+        }
+
+        using (var scope = _services.CreateScope())
+        {
+            var selector = scope.ServiceProvider.GetRequiredService<QuickActionHandlerSelector>();
+            var handler = selector.For(HabitType.Action);
+            handler.Should().NotBeNull();
+            (await handler!.ExecuteAsync(habitId)).Should().BeTrue();
+        }
+
+        using (var scope = _services.CreateScope())
+        {
+            var completions = scope.ServiceProvider.GetRequiredService<ICompletionService>();
+            var list = await completions.ListByHabitAsync(habitId);
+            list.Should().ContainSingle();
+        }
+    }
+
+    [Fact]
+    public async Task End_to_end_timer_recovery_reattaches_running_timer_in_status_bar()
+    {
+        await _services.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+
+        Guid habitId;
+        using (var scope = _services.CreateScope())
+        {
+            var habits = scope.ServiceProvider.GetRequiredService<IHabitNodeService>();
+            habitId = await habits.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "yoga" });
+            var ats = scope.ServiceProvider.GetRequiredService<IActiveTimerService>();
+            await ats.StartAsync(habitId, TimerMode.Stopwatch);
+        }
+
+        var status = _services.GetRequiredService<TimerStatusBarViewModel>();
+        await status.LoadAsync();
+
+        status.Rows.Should().ContainSingle().Which.HabitNodeId.Should().Be(habitId);
     }
 }

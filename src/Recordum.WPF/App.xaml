@@ -13,12 +13,14 @@
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
+            <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>
             <conv:BoolToHiddenConverter x:Key="BoolToHidden"/>
             <conv:EnumToBoolConverter x:Key="EnumToBool"/>
             <conv:StateToVisibleConverter x:Key="StateToVisible"/>
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
             <conv:EnumToVisibilityConverter x:Key="EnumToVisibility"/>
+            <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

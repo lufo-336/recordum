@@ -10,6 +10,28 @@ public static class Strings
 
     public static CultureInfo? Culture { get; set; }
 
+    // HabitScreen
+    public static string HabitScreen_Configure => Get("HabitScreen.Configure");
+    public static string HabitScreen_Close => Get("HabitScreen.Close");
+    public static string HabitScreen_QuickAdd_Save => Get("HabitScreen.QuickAdd.Save");
+    public static string HabitScreen_QuickAdd_Action_Mark => Get("HabitScreen.QuickAdd.Action.Mark");
+    public static string HabitScreen_QuickAdd_Date => Get("HabitScreen.QuickAdd.Date");
+    public static string HabitScreen_QuickAdd_Value => Get("HabitScreen.QuickAdd.Value");
+    public static string HabitScreen_QuickAdd_Notes => Get("HabitScreen.QuickAdd.Notes");
+    public static string HabitScreen_QuickAdd_NotesPlaceholder => Get("HabitScreen.QuickAdd.NotesPlaceholder");
+    public static string HabitScreen_QuickAdd_AddSeries => Get("HabitScreen.QuickAdd.AddSeries");
+    public static string HabitScreen_QuickAdd_RemoveSeries => Get("HabitScreen.QuickAdd.RemoveSeries");
+    public static string HabitScreen_QuickAdd_SeriesIndex => Get("HabitScreen.QuickAdd.SeriesIndex");
+    public static string HabitScreen_QuickAdd_State_Select => Get("HabitScreen.QuickAdd.State.Select");
+    public static string Home_QuickAction => Get("Home.QuickAction");
+    public static string HabitScreen_Timer_Start => Get("HabitScreen.Timer.Start");
+    public static string HabitScreen_Timer_Pause => Get("HabitScreen.Timer.Pause");
+    public static string HabitScreen_Timer_Resume => Get("HabitScreen.Timer.Resume");
+    public static string HabitScreen_Timer_Stop => Get("HabitScreen.Timer.Stop");
+    public static string HabitScreen_Timer_NextSegment => Get("HabitScreen.Timer.NextSegment");
+    public static string QuickAdd_Error_NotesRequired => Get("QuickAdd.Error.NotesRequired");
+    public static string QuickAdd_Error_ValueRequired => Get("QuickAdd.Error.ValueRequired");
+
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));
     public static string StartupErrorTitle => Get(nameof(StartupErrorTitle));

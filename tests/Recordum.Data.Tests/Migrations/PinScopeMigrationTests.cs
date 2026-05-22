@@ -68,17 +68,17 @@ public sealed class PinScopeMigrationTests
     }
 
     /// <summary>
-    /// After all migrations run, the app_settings row for schema_version must be "2.4".
+    /// After all migrations run up to and including PinScopeV24 (but not ActiveTimerV25),
+    /// the app_settings row for schema_version must be "2.4".
     /// The PinScopeV24 migration issues an UPDATE to bump the value from "2.3" to "2.4".
     /// </summary>
     [Fact]
-    public async Task Schema_version_AppSetting_is_2_4_after_full_migration()
+    public async Task Schema_version_AppSetting_is_2_4_after_PinScopeV24_migration()
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync();
 
-        await using var db = TestDbHelper.CreateFull(connection);
-        await db.Database.MigrateAsync();
+        await using var db = TestDbHelper.CreateAtMigration(connection, "PinScopeV24");
 
         var setting = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
         Assert.Equal("2.4", setting.Value);

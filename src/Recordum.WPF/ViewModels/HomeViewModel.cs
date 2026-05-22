@@ -6,6 +6,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.Quick;
 
 namespace Recordum.WPF.ViewModels;
 
@@ -15,6 +16,7 @@ public sealed partial class HomeViewModel : ObservableObject
     private readonly IHabitNodeService _nodes;
     private readonly IPurgeService _purge;
     private readonly IHabitTemplatePickerLauncher? _launcher;
+    private readonly QuickActionHandlerSelector? _quickActions;
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
 
@@ -39,12 +41,14 @@ public sealed partial class HomeViewModel : ObservableObject
         IHabitTreeQueryService query,
         IHabitNodeService nodes,
         IPurgeService purge,
-        IHabitTemplatePickerLauncher? launcher = null)
+        IHabitTemplatePickerLauncher? launcher = null,
+        QuickActionHandlerSelector? quickActions = null)
     {
         _query = query;
         _nodes = nodes;
         _purge = purge;
         _launcher = launcher;
+        _quickActions = quickActions;
     }
 
     [RelayCommand]
@@ -142,7 +146,11 @@ public sealed partial class HomeViewModel : ObservableObject
             q = q.Where(r => r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
         foreach (var (row, level) in OrderHierarchically(q.ToList()))
-            Rows.Add(new HomeRowViewModel(row, level, _nodes, _purge) { CurrentTab = ActiveTab });
+        {
+            var vm = new HomeRowViewModel(row, level, _nodes, _purge) { CurrentTab = ActiveTab };
+            if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
+            Rows.Add(vm);
+        }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
     }
 

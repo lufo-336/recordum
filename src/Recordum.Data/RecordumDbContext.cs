@@ -29,6 +29,7 @@ public sealed class RecordumDbContext(DbContextOptions<RecordumDbContext> option
     public DbSet<Chart> Charts => Set<Chart>();
     public DbSet<ChartSeries> ChartSeries => Set<ChartSeries>();
     public DbSet<AIInsight> AIInsights => Set<AIInsight>();
+    public DbSet<ActiveTimer> ActiveTimers => Set<ActiveTimer>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<SyncMeta> SyncMeta => Set<SyncMeta>();
 

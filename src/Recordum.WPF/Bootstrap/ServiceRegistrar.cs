@@ -18,8 +18,12 @@ using Recordum.Plugins.Management;
 using Recordum.Plugins.Permissions;
 using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
+using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.WPF.ViewModels.Quick;
+using Recordum.WPF.ViewModels.Timer;
 using Recordum.WPF.Views;
 
 namespace Recordum.WPF.Bootstrap;
@@ -65,6 +69,7 @@ public static class ServiceRegistrar
         services.AddScoped<IHabitConfigService, HabitConfigService>();
         services.AddScoped<IHabitTemplateService, HabitTemplateService>();
         services.AddScoped<ICompletionService, CompletionService>();
+        services.AddScoped<IActiveTimerService, ActiveTimerService>();
         services.AddScoped<INoteService, NoteService>();
         services.AddScoped<IGoalService, GoalService>();
         services.AddScoped<IMetricDefinitionService, MetricDefinitionService>();
@@ -92,6 +97,17 @@ public static class ServiceRegistrar
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();
         services.AddSingleton<IHabitTemplatePickerLauncher, WpfHabitTemplatePickerLauncher>();
+        services.AddTransient<TimerStatusBarViewModel>();
+        services.AddTransient<TimerRecoveryService>();
+        services.AddTransient<HabitScreenViewModel>();
+
+        services.AddScoped<IQuickActionHandler, ActionQuickActionHandler>();
+        services.AddScoped<IQuickActionHandler, CounterQuickActionHandler>();
+        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Resistance));
+        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Journal));
+        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.State));
+        services.AddScoped<QuickActionHandlerSelector>();
+
         services.AddTransient<MainWindowViewModel>();
 
         // Main window.

@@ -1,0 +1,324 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitScreen.HabitScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen"
+             xmlns:qa="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.QuickAdd"
+             xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:HabitScreenViewModel, IsDesignTimeCreatable=False}"
+             Background="{DynamicResource Brush.Surface}">
+    <UserControl.Resources>
+
+        <DataTemplate DataType="{x:Type vm:HeatmapViewModel}">
+            <Border Padding="12"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource Brush.Border}">
+                <ItemsControl ItemsSource="{Binding Cells}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="7" FlowDirection="LeftToRight"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Width="{StaticResource Layout.HeatmapCell}"
+                                    Height="{StaticResource Layout.HeatmapCell}"
+                                    Margin="1"
+                                    Padding="0"
+                                    BorderThickness="0"
+                                    ToolTip="{Binding Date}"
+                                    Background="{Binding IntensityStep, Converter={StaticResource IntensityStepToBrush}}"
+                                    Command="{Binding DataContext.ClickCellCommand,
+                                              RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:TimerControlViewModel}">
+            <Border Padding="12,8"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    Visibility="{Binding IsApplicable, Converter={StaticResource BoolToVisible}}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding ElapsedDisplay}"
+                                   FontFamily="Consolas"
+                                   FontSize="{StaticResource FontSize.Heading}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Start}"
+                                Command="{Binding StartCommand}" Padding="10,4" Margin="0,0,6,0"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Pause}"
+                                Command="{Binding PauseCommand}" Padding="10,4" Margin="0,0,6,0"
+                                Visibility="{Binding IsPaused, Converter={StaticResource InvBoolToVisible}}"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Resume}"
+                                Command="{Binding ResumeCommand}" Padding="10,4" Margin="0,0,6,0"
+                                Visibility="{Binding IsPaused, Converter={StaticResource BoolToVisible}}"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_Stop}"
+                                Command="{Binding StopCommand}" Padding="10,4" Margin="0,0,6,0"/>
+                        <Button Content="{x:Static res:Strings.HabitScreen_Timer_NextSegment}"
+                                Command="{Binding NextSegmentCommand}" Padding="10,4"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Segments}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="6,2" Margin="0,0,6,0"
+                                        BorderThickness="1"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        CornerRadius="3">
+                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:CompletionListViewModel}">
+            <Border Padding="12">
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CompletionRowViewModel}">
+                            <Border BorderThickness="0,0,0,1"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    Padding="0,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Display}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Notes}"
+                                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="{Binding Notes, Converter={StaticResource NullToVisibility}}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Content="✎"
+                                            Command="{Binding BeginEditCommand}"
+                                            Width="28" Height="28"
+                                            Background="Transparent" BorderThickness="0"/>
+                                    <Button Grid.Column="2"
+                                            Content="✕"
+                                            Command="{Binding DeleteCommand}"
+                                            Width="28" Height="28"
+                                            Background="Transparent" BorderThickness="0"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ActionQuickAddTemplate" DataType="{x:Type qa:ActionQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Vertical">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                </Grid>
+                <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Action_Mark}"
+                        Command="{Binding SaveCommand}"
+                        HorizontalAlignment="Left"
+                        Padding="12,6"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="Red"
+                           Margin="0,6,0,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="CounterQuickAddTemplate" DataType="{x:Type qa:CounterQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Vertical">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                </Grid>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding PrimaryMetric.Name, FallbackValue={x:Static res:Strings.HabitScreen_QuickAdd_Value}}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+                <TextBlock Text="{x:Static res:Strings.HabitScreen_QuickAdd_Notes}"
+                           Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" MinHeight="48" Margin="0,0,0,8"/>
+                <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                        Command="{Binding SaveCommand}"
+                        HorizontalAlignment="Left" Padding="12,6"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="Red" Margin="0,6,0,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ResistanceQuickAddTemplate" DataType="{x:Type qa:ResistanceQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Vertical">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Series}" Margin="0,0,0,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6" CornerRadius="3">
+                                <ItemsControl ItemsSource="{Binding Cells}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Name}" FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                                                <TextBox Width="80" Text="{Binding IntegerValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_AddSeries}"
+                            Command="{Binding AddSeriesCommand}" Padding="8,4" Margin="0,0,8,0"/>
+                    <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                            Command="{Binding SaveCommand}" Padding="12,4"/>
+                </StackPanel>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="JournalQuickAddTemplate" DataType="{x:Type qa:JournalQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Vertical">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                </Grid>
+                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         MinHeight="120" Margin="0,0,0,8"/>
+                <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                        Command="{Binding SaveCommand}"
+                        HorizontalAlignment="Left" Padding="12,6"/>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,6,0,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="StateQuickAddTemplate" DataType="{x:Type qa:StateQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Vertical">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                </Grid>
+                <ComboBox ItemsSource="{Binding ScaleLabels}"
+                          SelectedIndex="{Binding SelectedScaleIndex}"
+                          Margin="0,0,0,8"/>
+                <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                        Command="{Binding SaveCommand}"
+                        HorizontalAlignment="Left" Padding="12,6"/>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,6,0,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"
+                                      Action="{StaticResource ActionQuickAddTemplate}"
+                                      Counter="{StaticResource CounterQuickAddTemplate}"
+                                      Resistance="{StaticResource ResistanceQuickAddTemplate}"
+                                      Journal="{StaticResource JournalQuickAddTemplate}"
+                                      State="{StaticResource StateQuickAddTemplate}"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0"
+                Padding="12"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource Brush.Border}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Name}"
+                           FontSize="{StaticResource FontSize.Heading}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <Button Grid.Column="1"
+                        Content="{x:Static res:Strings.HabitScreen_Configure}"
+                        Command="{Binding OpenConfigureCommand}"
+                        Padding="10,4"/>
+            </Grid>
+        </Border>
+        <ContentControl Grid.Row="1" Content="{Binding Heatmap}"/>
+        <ContentControl Grid.Row="2"
+                        Content="{Binding QuickAdd}"
+                        ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
+        <ContentControl Grid.Row="3" Content="{Binding TimerControl}"/>
+        <ContentControl Grid.Row="4" Content="{Binding CompletionList}"/>
+    </Grid>
+</UserControl>

@@ -71,6 +71,66 @@ namespace Recordum.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.ActiveTimer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<long>("AccumulatedPausedMs")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0L)
+                        .HasColumnName("accumulated_paused_ms");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("HabitNodeId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("habit_node_id");
+
+                    b.Property<long?>("PausedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("paused_at_ms");
+
+                    b.Property<int?>("SegmentIndex")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("segment_index");
+
+                    b.Property<long>("StartedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("started_at_ms");
+
+                    b.Property<string>("TimerMode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timer_mode");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
+                    b.HasKey("Id")
+                        .HasName("pk_active_timer");
+
+                    b.HasIndex("HabitNodeId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_active_timer_habit_node_id");
+
+                    b.ToTable("active_timer", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_active_timer_mode", "timer_mode IN ('Stopwatch','Countdown','Primary','Session')");
+                        });
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.AppSetting", b =>
                 {
                     b.Property<string>("Key")
@@ -169,7 +229,7 @@ namespace Recordum.Data.Migrations
                         {
                             Key = "schema_version",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.4"
+                            Value = "2.5"
                         });
                 });
 
@@ -1820,6 +1880,18 @@ namespace Recordum.Data.Migrations
                         .HasForeignKey("HabitNodeId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_ai_insights_habit_nodes_habit_node_id");
+
+                    b.Navigation("HabitNode");
+                });
+
+            modelBuilder.Entity("Recordum.Core.Models.ActiveTimer", b =>
+                {
+                    b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
+                        .WithMany()
+                        .HasForeignKey("HabitNodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_active_timer_habit_nodes_habit_node_id");
 
                     b.Navigation("HabitNode");
                 });

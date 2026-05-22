@@ -108,7 +108,7 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
     }
 
     [Fact]
-    public void AppSetting_schema_version_is_2_4()
+    public void AppSetting_schema_version_is_2_5()
     {
         using var ctx = _fixture.CreateContext();
         var schemaVersion = ctx.AppSettings
@@ -116,7 +116,7 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
             .Select(s => s.Value)
             .Single();
 
-        Assert.Equal("2.4", schemaVersion);
+        Assert.Equal("2.5", schemaVersion);
     }
 
     [Fact]

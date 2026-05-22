@@ -284,4 +284,64 @@ Details: {0}</value>
   <data name="Editor.Default.NewMetric" xml:space="preserve">
     <value>New metric</value>
   </data>
+  <data name="HabitScreen.Configure" xml:space="preserve">
+    <value>Configure</value>
+  </data>
+  <data name="HabitScreen.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.Action.Mark" xml:space="preserve">
+    <value>Mark completed</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.NotesPlaceholder" xml:space="preserve">
+    <value>What happened?</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.AddSeries" xml:space="preserve">
+    <value>Add series</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.RemoveSeries" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.SeriesIndex" xml:space="preserve">
+    <value>#</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.State.Select" xml:space="preserve">
+    <value>Select level</value>
+  </data>
+  <data name="Home.QuickAction" xml:space="preserve">
+    <value>Quick log</value>
+  </data>
+  <data name="HabitScreen.Timer.Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="HabitScreen.Timer.Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="HabitScreen.Timer.Resume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="HabitScreen.Timer.Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="HabitScreen.Timer.NextSegment" xml:space="preserve">
+    <value>Next segment</value>
+  </data>
+  <data name="QuickAdd.Error.NotesRequired" xml:space="preserve">
+    <value>A note is required.</value>
+  </data>
+  <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
+    <value>At least one value is required.</value>
+  </data>
 </root>
