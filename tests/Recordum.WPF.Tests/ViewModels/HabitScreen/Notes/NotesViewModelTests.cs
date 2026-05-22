@@ -52,4 +52,38 @@ public class NotesViewModelTests
         sut.SelectedNote.Should().BeNull();
         sut.EditorMarkdown.Should().Be(string.Empty);
     }
+
+    [Fact]
+    public async Task NewAsync_creates_note_and_selects_it()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        await sut.LoadAsync(Guid.NewGuid());
+
+        await sut.NewCommand.ExecuteAsync(null);
+
+        svc.Store.Should().HaveCount(1);
+        sut.Notes.Should().ContainSingle();
+        sut.SelectedNote.Should().NotBeNull();
+        sut.EditorMarkdown.Should().Be(string.Empty);
+    }
+
+    [Fact]
+    public void Setting_SelectedNote_loads_BodyMd_into_EditorMarkdown_and_discards_unsaved_edits()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        var a = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "AAA", UpdatedAtMs = 1 };
+        var b = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "BBB", UpdatedAtMs = 2 };
+        svc.Store[a.Id] = a;
+        svc.Store[b.Id] = b;
+        sut.Notes.Add(new NoteRowViewModel(b));
+        sut.Notes.Add(new NoteRowViewModel(a));
+
+        sut.SelectedNote = sut.Notes[0];
+        sut.EditorMarkdown.Should().Be("BBB");
+        sut.EditorMarkdown = "dirty";
+
+        sut.SelectedNote = sut.Notes[1];
+        sut.EditorMarkdown.Should().Be("AAA");
+    }
 }

@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
 
@@ -41,6 +43,21 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         foreach (var n in list) Notes.Add(new NoteRowViewModel(n));
         SelectedNote = null;
         EditorMarkdown = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task New(CancellationToken ct)
+    {
+        var draft = new Note { HabitNodeId = _habitNodeId, BodyMd = string.Empty, UpdatedAtMs = _clock.UtcNowMs };
+        await _notes.CreateAsync(draft, ct).ConfigureAwait(true);
+        var row = new NoteRowViewModel(draft);
+        Notes.Insert(0, row);
+        SelectedNote = row;
+    }
+
+    partial void OnSelectedNoteChanged(NoteRowViewModel? value)
+    {
+        EditorMarkdown = value?.Note.BodyMd ?? string.Empty;
     }
 
     public void Dispose()
