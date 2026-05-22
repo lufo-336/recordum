@@ -104,6 +104,46 @@ public class NoteServiceTests
     }
 
     [Fact]
+    public async Task ListByHabitAsync_returns_notes_ordered_by_updated_desc()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var (fx, habitId) = await SeedHabitAsync(clock);
+        var sut = NewService(fx, out _);
+
+        var a = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "a" });
+        clock.Advance(TimeSpan.FromMinutes(2));
+        var b = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "b" });
+        clock.Advance(TimeSpan.FromMinutes(-1)); // c is between a and b
+        var c = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "c" });
+
+        var list = await sut.ListByHabitAsync(habitId);
+
+        list.Select(n => n.Id).Should().Equal(b, c, a);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ListByHabitAsync_filters_to_habit_scope()
+    {
+        await using var fx = new DbFixture();
+        var h1 = Guid.NewGuid();
+        var h2 = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = h1, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "h1" });
+            db.HabitNodes.Add(new HabitNode { Id = h2, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "h2" });
+            await db.SaveChangesAsync();
+        }
+        var sut = NewService(fx, out _);
+        await sut.CreateAsync(new Note { HabitNodeId = h1, BodyMd = "a" });
+        await sut.CreateAsync(new Note { HabitNodeId = h2, BodyMd = "b" });
+
+        var list = await sut.ListByHabitAsync(h1);
+
+        list.Should().ContainSingle().Which.HabitNodeId.Should().Be(h1);
+    }
+
+    [Fact]
     public async Task CreateAsync_with_attachments_persists_both()
     {
         var (fx, habitId) = await SeedHabitAsync();
