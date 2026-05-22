@@ -31,6 +31,8 @@ public static class Strings
     public static string HabitScreen_Timer_NextSegment => Get("HabitScreen.Timer.NextSegment");
     public static string QuickAdd_Error_NotesRequired => Get("QuickAdd.Error.NotesRequired");
     public static string QuickAdd_Error_ValueRequired => Get("QuickAdd.Error.ValueRequired");
+    public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
+    public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");
 
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));
