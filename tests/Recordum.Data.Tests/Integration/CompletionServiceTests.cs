@@ -277,6 +277,42 @@ public class CompletionServiceTests
     }
 
     [Fact]
+    public async Task GetHeatmapAsync_breaks_down_retroactive_count()
+    {
+        var (fx, habitId) = await SeedActionAsync();
+        var day = new DateOnly(2026, 5, 10);
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.Completions.AddRange(
+                new Completion
+                {
+                    Id = Guid.NewGuid(),
+                    HabitNodeId = habitId,
+                    CompletedAt = UtcAt(day, 9),
+                    CompletedAtMs = MsAt(day, 9),
+                    IsRetroactive = false,
+                },
+                new Completion
+                {
+                    Id = Guid.NewGuid(),
+                    HabitNodeId = habitId,
+                    CompletedAt = UtcAt(day, 10),
+                    CompletedAtMs = MsAt(day, 10),
+                    IsRetroactive = true,
+                });
+            await db.SaveChangesAsync();
+        }
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+
+        var cells = await svc.GetHeatmapAsync(habitId, day, day);
+
+        var cell = cells.Should().ContainSingle().Subject;
+        cell.Count.Should().Be(2);
+        cell.RetroactiveCount.Should().Be(1);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task GetDailySumAsync_ignores_values_for_other_metrics()
     {
         var (fx, habitId) = await SeedActionAsync(HabitType.Counter);
