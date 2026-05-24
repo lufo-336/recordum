@@ -1,3 +1,5 @@
+using Recordum.Core.Enums;
+
 namespace Recordum.Core.Abstractions.Services;
 
 public interface IStreakAggregator
@@ -9,4 +11,10 @@ public interface IStreakAggregator
         CancellationToken ct = default);
 }
 
-public sealed record StreakRun(DateOnly Start, DateOnly End, int Length);
+public sealed record StreakRun(
+    DateOnly Start,
+    DateOnly End,
+    int Length,
+    bool IsCurrent = false,
+    int RecoveriesUsed = 0,
+    StreakBreakReason? BreakReason = null);
