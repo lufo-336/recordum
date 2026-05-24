@@ -5,7 +5,7 @@ public static class HabitConfigHistoryColumns
     public static readonly IReadOnlyList<string> Excluded = new[]
     {
         "Id","HabitNodeId","CreatedAt","UpdatedAt","UpdatedAtMs",
-        "QuickComplete","AiDataSharing"
+        "QuickComplete","AiDataSharing","StreakBrokenAt"
     };
 
     public static readonly IReadOnlyList<string> Versioned = new[]
