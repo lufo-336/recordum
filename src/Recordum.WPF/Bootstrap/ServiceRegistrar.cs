@@ -84,6 +84,7 @@ public static class ServiceRegistrar
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
+        services.AddScoped<IResetTimeResolver, ResetTimeResolver>();
         services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
         services.AddScoped<IStreakAggregator, Data.Services.Aggregators.NaiveDailyStreakAggregator>();
         services.AddScoped<ITrendQueryService, TrendQueryService>();
