@@ -8,12 +8,22 @@ public sealed class FakeHabitConfigService : IHabitConfigService
 {
     public Dictionary<Guid, HabitConfig> Store { get; } = new();
     public List<SegmentDefinition> Segments { get; } = new();
+    public Dictionary<Guid, List<HabitConfigHistory>> History { get; } = new();
     public Exception? NextException { get; set; }
 
     public ValueTask<HabitConfig?> GetAsync(Guid habitNodeId, CancellationToken ct = default)
     {
         Throw();
         return new(Store.TryGetValue(habitNodeId, out var c) ? c : null);
+    }
+
+    public ValueTask<IReadOnlyList<HabitConfigHistory>> ListHistoryAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        Throw();
+        IReadOnlyList<HabitConfigHistory> list = History.TryGetValue(habitNodeId, out var rows)
+            ? rows.OrderBy(h => h.ValidFrom).ToList()
+            : Array.Empty<HabitConfigHistory>();
+        return new(list);
     }
 
     public ValueTask UpsertAsync(Guid habitNodeId, Action<HabitConfig> mutate, CancellationToken ct = default)
