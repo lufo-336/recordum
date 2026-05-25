@@ -1,5 +1,6 @@
 using System.IO;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -32,6 +33,7 @@ public sealed class HabitScreenDetailSmokeTests
                 await sp.GetRequiredService<ApplicationInitializer>().InitializeAsync();
 
                 var nodes = sp.GetRequiredService<IHabitNodeService>();
+                var configs = sp.GetRequiredService<IHabitConfigService>();
                 var completions = sp.GetRequiredService<ICompletionService>();
                 var habit = new HabitNode
                 {
@@ -42,6 +44,22 @@ public sealed class HabitScreenDetailSmokeTests
                     CreatedAt = DateTime.UtcNow.AddDays(-30),
                 };
                 await nodes.CreateAsync(habit);
+
+                // M3.8 SchedulingAwareStreakAggregator requires a HabitConfig and uses
+                // habit.CreatedAt as the schedule floor. The TimestampInterceptor overwrites
+                // CreatedAt on insert, so we backdate it explicitly here for the smoke seed.
+                await using (var db = await sp.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Recordum.Data.RecordumDbContext>>().CreateDbContextAsync())
+                {
+                    var tracked = await db.HabitNodes.FirstAsync(n => n.Id == habit.Id);
+                    tracked.CreatedAt = DateTime.UtcNow.AddDays(-30);
+                    await db.SaveChangesAsync();
+                }
+                await configs.UpsertAsync(habit.Id, c =>
+                {
+                    c.ScheduleType = ScheduleType.Daily;
+                    c.StreakMode = StreakMode.Daily;
+                    c.StreakRecovery = StreakRecovery.None;
+                });
                 for (int i = 0; i < 30; i++)
                 {
                     var when = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-i).Date.AddHours(9 + (i % 6)), DateTimeKind.Utc);
