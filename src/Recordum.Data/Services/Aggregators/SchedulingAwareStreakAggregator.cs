@@ -75,6 +75,14 @@ public sealed class SchedulingAwareStreakAggregator(
         for (var day = fromDate; day <= toDate; day = day.AddDays(1))
         {
             var cfgForDay = timeline.ResolveFor(day);
+
+            var isPaused = pauseList.Any(p => day >= p.PauseFrom && day <= p.PauseTo);
+            if (isPaused)
+            {
+                if (runStart is not null) runEnd = day;
+                continue;
+            }
+
             var rules = new ScheduledRules(
                 cfgForDay.ScheduleType,
                 cfgForDay.ScheduleDaysJson,
@@ -148,7 +156,6 @@ public sealed class SchedulingAwareStreakAggregator(
             runs.Add(new StreakRun(rsFinal, runEnd, length, isCurrent, recoveriesUsed, null));
         }
 
-        _ = pauseList; // wired in later tasks
         return runs;
     }
 

@@ -327,6 +327,48 @@ public sealed class SchedulingAwareStreakAggregatorTests
     }
 
     [Fact]
+    public async Task Pause_DuringRun_ExtendsButDoesNotIncrement()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.None, new DateOnly(2026, 4, 1));
+        try
+        {
+            // 5 done, 3-day gap, 5 done — total 13 days.
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXXXX...XXXXX");
+            var pauses = new StreakPauseService(
+                fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
+            await pauses.StartAsync(habitId, new DateOnly(2026, 4, 6), new DateOnly(2026, 4, 8), null);
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(10, r.Length); // 5 + 5 completion days
+            Assert.Equal(new DateOnly(2026, 4, 13), r.End);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task Pause_OverlapsMiss_DoesNotConsumeRecovery()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.GraceDay, new DateOnly(2026, 4, 1));
+        try
+        {
+            // 5 done, 1 missing but paused, 5 done — grace day NOT consumed because pause absorbed the gap.
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXXXX.XXXXX");
+            var pauses = new StreakPauseService(
+                fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
+            await pauses.StartAsync(habitId, new DateOnly(2026, 4, 6), new DateOnly(2026, 4, 6), null);
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(10, r.Length);
+            Assert.Equal(0, r.RecoveriesUsed);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task Group_returns_empty()
     {
         var fx = new DbFixture();
