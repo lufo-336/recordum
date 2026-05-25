@@ -443,7 +443,4 @@ Details: {0}</value>
   <data name="Detail.Hourly.Empty" xml:space="preserve">
     <value>No recordings</value>
   </data>
-  <data name="Detail.BasicStreakNotice" xml:space="preserve">
-    <value>Basic streak view — full engine arrives next milestone</value>
-  </data>
 </root>

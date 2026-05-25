@@ -425,7 +425,4 @@
   <data name="Detail.Hourly.Empty" xml:space="preserve">
     <value>Nessuna registrazione</value>
   </data>
-  <data name="Detail.BasicStreakNotice" xml:space="preserve">
-    <value>Vista streak semplificata — engine completo in arrivo</value>
-  </data>
 </root>

@@ -160,7 +160,6 @@ public static class Strings
     public static string Detail_Trend_Empty => Get("Detail.Trend.Empty");
     public static string Detail_Hourly_Title => Get("Detail.Hourly.Title");
     public static string Detail_Hourly_Empty => Get("Detail.Hourly.Empty");
-    public static string Detail_BasicStreakNotice => Get("Detail.BasicStreakNotice");
 
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
