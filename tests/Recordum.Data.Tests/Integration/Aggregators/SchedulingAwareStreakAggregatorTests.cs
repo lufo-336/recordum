@@ -287,6 +287,46 @@ public sealed class SchedulingAwareStreakAggregatorTests
     }
 
     [Fact]
+    public async Task Manual_StreakBrokenAt_ClosesAtCorrectDay()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.Manual, new DateOnly(2026, 4, 1));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXXXX");
+
+            // Advance clock to Apr 6 BEFORE MarkBrokenAsync so StreakBrokenAt is persisted as Apr 6.
+            ((FakeClock)fx.Clock).Set(new DateTimeOffset(new DateOnly(2026, 4, 6).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            var streaks = new StreakService(configs, fx.Clock);
+            await streaks.MarkBrokenAsync(habitId);
+
+            var aggr2 = BuildAggregator(fx, configs);
+            var runs = await aggr2.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(5, r.Length);
+            Assert.Equal(StreakBreakReason.Manual, r.BreakReason);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task Manual_WithoutBrokenAt_RunStaysOpenAcrossMisses()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.Manual, new DateOnly(2026, 4, 1));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XX..XX");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(4, r.Length);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task Group_returns_empty()
     {
         var fx = new DbFixture();

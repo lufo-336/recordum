@@ -112,6 +112,18 @@ public sealed class SchedulingAwareStreakAggregator(
             }
 
             // Misses
+            if (cfgForDay.StreakRecovery == StreakRecovery.Manual)
+            {
+                if (cfgForDay.StreakBrokenAt is { } brokenAt
+                    && DateOnly.FromDateTime(brokenAt) <= day
+                    && runStart is { } rsm)
+                {
+                    runs.Add(new StreakRun(rsm, runEnd, length, false, recoveriesUsed, StreakBreakReason.Manual));
+                    runStart = null; length = 0; recoveriesUsed = 0;
+                    missesInWindow = 0; windowAnchor = null;
+                }
+                continue;
+            }
             var policy = recoveryPolicies[cfgForDay.StreakRecovery];
             var absorbed = policy.TryAbsorb(new RecoveryContext(day, missesInWindow,
                 cfgForDay.StreakBrokenAt, runStart ?? day));
