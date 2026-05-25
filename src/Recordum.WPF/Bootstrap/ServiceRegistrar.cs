@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Theming;
+using Recordum.Core.Enums;
 using Recordum.Data;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
@@ -88,6 +89,15 @@ public static class ServiceRegistrar
         services.AddScoped<IResetTimeResolver, ResetTimeResolver>();
         services.AddScoped<IScheduleEvaluator, Data.Services.Evaluators.ScheduleEvaluator>();
         services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
+        services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.DailyStreakModeEvaluator>(StreakMode.Daily);
+        services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.WeeklyStreakModeEvaluator>(StreakMode.Weekly);
+        services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.OccurrencesStreakModeEvaluator>(StreakMode.Occurrences);
+        services.AddScoped<Data.Services.Evaluators.DailyStreakModeEvaluator>();
+        services.AddScoped<Data.Services.Evaluators.WeeklyStreakModeEvaluator>();
+        services.AddKeyedScoped<IStreakModeEvaluator>(StreakMode.Both, (sp, _) =>
+            new Data.Services.Evaluators.BothStreakModeEvaluator(
+                sp.GetRequiredService<Data.Services.Evaluators.DailyStreakModeEvaluator>(),
+                sp.GetRequiredService<Data.Services.Evaluators.WeeklyStreakModeEvaluator>()));
         services.AddScoped<IStreakAggregator, Data.Services.Aggregators.SchedulingAwareStreakAggregator>();
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();

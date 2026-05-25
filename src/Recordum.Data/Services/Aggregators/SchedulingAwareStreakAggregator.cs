@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -11,6 +12,10 @@ public sealed class SchedulingAwareStreakAggregator(
     ICompletionService completions,
     IStreakPauseService pauses,
     IScheduleEvaluator scheduler,
+    [FromKeyedServices(StreakMode.Daily)] IStreakModeEvaluator dailyEval,
+    [FromKeyedServices(StreakMode.Weekly)] IStreakModeEvaluator weeklyEval,
+    [FromKeyedServices(StreakMode.Occurrences)] IStreakModeEvaluator occurrencesEval,
+    [FromKeyedServices(StreakMode.Both)] IStreakModeEvaluator bothEval,
     IClock clock) : IStreakAggregator
 {
     public async ValueTask<IReadOnlyList<StreakRun>> GetHistoryAsync(
@@ -35,6 +40,14 @@ public sealed class SchedulingAwareStreakAggregator(
 
         var pauseList = await pauses.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(false);
 
+        var modeEvaluators = new Dictionary<StreakMode, IStreakModeEvaluator>
+        {
+            [StreakMode.Daily] = dailyEval,
+            [StreakMode.Weekly] = weeklyEval,
+            [StreakMode.Occurrences] = occurrencesEval,
+            [StreakMode.Both] = bothEval,
+        };
+
         var runs = new List<StreakRun>();
         DateOnly? runStart = null;
         var runEnd = default(DateOnly);
@@ -56,7 +69,10 @@ public sealed class SchedulingAwareStreakAggregator(
 
             var isScheduled = scheduler.IsScheduled(day, rules);
             var completedCount = dailyLive.GetValueOrDefault(day, 0);
-            var verdict = DailyVerdict(isScheduled, completedCount);
+            var weekState = BuildWeekState(day, cfgForDay, dailyLive, habitCreatedDate);
+            var ctx = new DayContext(day, isScheduled, IsPaused: false, CompletedValue: 0m,
+                                     CompletedCount: completedCount, WeekState: weekState);
+            var verdict = modeEvaluators[cfgForDay.StreakMode].Evaluate(ctx);
 
             if (verdict == DayVerdict.Neutral) continue;
 
@@ -92,9 +108,18 @@ public sealed class SchedulingAwareStreakAggregator(
         return runs;
     }
 
-    private static DayVerdict DailyVerdict(bool isScheduled, int completedCount)
+    private static WeeklyPeriodState? BuildWeekState(
+        DateOnly day, HabitConfig cfg, IReadOnlyDictionary<DateOnly, int> dailyLive, DateOnly createdDate)
     {
-        if (!isScheduled) return DayVerdict.Neutral;
-        return completedCount > 0 ? DayVerdict.Counts : DayVerdict.Misses;
+        if (cfg.StreakMode != StreakMode.Weekly && cfg.StreakMode != StreakMode.Both) return null;
+        var target = cfg.ScheduleWeeklyTarget ?? 1;
+        // ISO week boundaries: Monday..Sunday.
+        var dow = ((int)day.DayOfWeek + 6) % 7; // Mon=0
+        var weekStart = day.AddDays(-dow);
+        var weekEnd = weekStart.AddDays(6);
+        var completionsSoFar = 0;
+        for (var d = weekStart; d <= day; d = d.AddDays(1))
+            if (d >= createdDate) completionsSoFar += dailyLive.GetValueOrDefault(d, 0);
+        return new WeeklyPeriodState(target, completionsSoFar, day == weekEnd);
     }
 }

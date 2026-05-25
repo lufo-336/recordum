@@ -14,7 +14,7 @@ namespace Recordum.Data.Tests.Integration.Aggregators;
 public sealed class SchedulingAwareStreakAggregatorTests
 {
     private static async Task<(DbFixture fx, SchedulingAwareStreakAggregator aggr, Guid habitId)> SeedAsync(
-        ScheduleType st, StreakMode sm, StreakRecovery sr, DateOnly created)
+        ScheduleType st, StreakMode sm, StreakRecovery sr, DateOnly created, int? weeklyTarget = null)
     {
         var clock = new FakeClock(new DateTimeOffset(created.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
         var fx = new DbFixture(clock);
@@ -39,6 +39,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
             c.ScheduleType = st;
             c.StreakMode = sm;
             c.StreakRecovery = sr;
+            if (weeklyTarget is { } wt) c.ScheduleWeeklyTarget = wt;
         });
 
         var aggr = BuildAggregator(fx, configs);
@@ -54,7 +55,13 @@ public sealed class SchedulingAwareStreakAggregatorTests
         var pauses = new StreakPauseService(
             fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
         var scheduler = new ScheduleEvaluator();
-        return new SchedulingAwareStreakAggregator(nodes, configs, completions, pauses, scheduler, fx.Clock);
+        var dailyEval = new DailyStreakModeEvaluator();
+        var weeklyEval = new WeeklyStreakModeEvaluator();
+        var occEval = new OccurrencesStreakModeEvaluator();
+        var bothEval = new BothStreakModeEvaluator(dailyEval, weeklyEval);
+        return new SchedulingAwareStreakAggregator(
+            nodes, configs, completions, pauses, scheduler,
+            dailyEval, weeklyEval, occEval, bothEval, fx.Clock);
     }
 
     private static async Task SeedCompletionsAsync(DbFixture fx, Guid habitId, DateOnly start, string pattern)
@@ -120,6 +127,75 @@ public sealed class SchedulingAwareStreakAggregatorTests
         {
             var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
             Assert.Empty(runs);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task WeeklyMode_TargetMet_CountsOneWeek()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.WeeklyX, StreakMode.Weekly, StreakRecovery.None, new DateOnly(2026, 4, 6) /* Monday */,
+            weeklyTarget: 3);
+        try
+        {
+            // 3 completions Mon/Wed/Fri
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 6), "X.X.X..");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 6), new DateOnly(2026, 4, 12) /* Sunday */);
+            var r = Assert.Single(runs);
+            Assert.Equal(1, r.Length); // 1 week
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task WeeklyMode_TargetMissed_Breaks()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.WeeklyX, StreakMode.Weekly, StreakRecovery.None, new DateOnly(2026, 4, 6),
+            weeklyTarget: 3);
+        try
+        {
+            // only 2 completions — target unmet
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 6), "X.X....");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 6), new DateOnly(2026, 4, 12));
+            Assert.Empty(runs); // no week ever counted
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task OccurrencesMode_GapDoesNotBreak()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Occurrences, StreakRecovery.None, new DateOnly(2026, 4, 1));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "X..X.X..");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(3, r.Length);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task BothMode_DailyMissBreaksEvenIfWeeklyMet()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Both, StreakRecovery.None, new DateOnly(2026, 4, 6),
+            weeklyTarget: 3);
+        try
+        {
+            // Daily but with a Tuesday gap
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 6), "X.XXXXX");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 6), new DateOnly(2026, 4, 12));
+            Assert.Equal(2, runs.Count);
+            Assert.Equal(StreakBreakReason.Missed, runs[0].BreakReason);
         }
         finally { await fx.DisposeAsync(); }
     }
