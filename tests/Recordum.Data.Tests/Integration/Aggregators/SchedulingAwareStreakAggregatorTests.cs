@@ -369,6 +369,31 @@ public sealed class SchedulingAwareStreakAggregatorTests
     }
 
     [Fact]
+    public async Task ConfigChange_MidRun_DoesNotBreakRun()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.None, new DateOnly(2026, 4, 1));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXXXXXXXXX");
+
+            // Advance clock and switch ScheduleType mid-run.
+            ((FakeClock)fx.Clock).Set(new DateTimeOffset(
+                new DateOnly(2026, 4, 6).ToDateTime(new TimeOnly(0, 0)), TimeSpan.Zero));
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            await configs.UpsertAsync(habitId, c =>
+            {
+                c.ScheduleType = ScheduleType.WeeklyX;
+                c.ScheduleWeeklyTarget = 3;
+            });
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            Assert.NotEmpty(runs);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task Group_returns_empty()
     {
         var fx = new DbFixture();
