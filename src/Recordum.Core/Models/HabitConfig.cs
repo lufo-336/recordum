@@ -28,6 +28,8 @@ public sealed class HabitConfig
     public bool QuickComplete { get; set; }
     public AiDataSharing AiDataSharing { get; set; } = AiDataSharing.None;
 
+    public DateTime? StreakBrokenAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public long UpdatedAtMs { get; set; }

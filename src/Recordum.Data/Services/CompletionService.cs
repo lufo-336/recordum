@@ -129,11 +129,11 @@ public sealed partial class CompletionService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.Completions.AsNoTracking()
             .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs <= toMs)
-            .Select(c => c.CompletedAt)
+            .Select(c => new { c.CompletedAt, c.IsRetroactive })
             .ToListAsync(ct);
         return rows
-            .GroupBy(t => DateOnly.FromDateTime(t))
-            .Select(g => new HeatmapCell(g.Key, g.Count()))
+            .GroupBy(r => DateOnly.FromDateTime(r.CompletedAt))
+            .Select(g => new HeatmapCell(g.Key, g.Count(), g.Count(x => x.IsRetroactive)))
             .OrderBy(c => c.Date)
             .ToList();
     }

@@ -115,6 +115,27 @@ public class HabitConfigServiceTests
     }
 
     [Fact]
+    public async Task ListHistoryAsync_returns_snapshots_in_chronological_order()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var clock = (FakeClock)fx.Clock;
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+
+        clock.Advance(TimeSpan.FromMinutes(10));
+        await svc.UpsertAsync(habitId, c => c.StreakMode = StreakMode.Daily);
+        clock.Advance(TimeSpan.FromMinutes(10));
+        await svc.UpsertAsync(habitId, c => c.StreakMode = StreakMode.Weekly);
+        clock.Advance(TimeSpan.FromMinutes(10));
+        await svc.UpsertAsync(habitId, c => c.StreakMode = StreakMode.Occurrences);
+
+        var history = await svc.ListHistoryAsync(habitId);
+
+        history.Should().HaveCount(2);
+        history[0].ValidFrom.Should().BeBefore(history[1].ValidFrom);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task UpdateSegmentAsync_throws_when_segment_missing()
     {
         await using var fx = new DbFixture();

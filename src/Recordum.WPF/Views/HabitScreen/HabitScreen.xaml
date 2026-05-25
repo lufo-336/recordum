@@ -350,10 +350,6 @@
                                 </StackPanel>
                             </Grid>
                             <ctrl:StreakTimelineControl DataContext="{Binding StreakTimeline}"/>
-                            <TextBlock Text="{x:Static res:Strings.Detail_BasicStreakNotice}"
-                                       Foreground="{DynamicResource Brush.TextMuted}"
-                                       FontSize="{StaticResource FontSize.Small}"
-                                       Margin="0,6,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Padding="12"

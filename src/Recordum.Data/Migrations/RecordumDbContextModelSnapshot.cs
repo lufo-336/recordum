@@ -229,7 +229,7 @@ namespace Recordum.Data.Migrations
                         {
                             Key = "schema_version",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.5"
+                            Value = "2.6"
                         });
                 });
 
@@ -846,6 +846,10 @@ namespace Recordum.Data.Migrations
                     b.Property<int?>("SessionCountdownSeconds")
                         .HasColumnType("INTEGER")
                         .HasColumnName("session_countdown_seconds");
+
+                    b.Property<DateTime?>("StreakBrokenAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("streak_broken_at");
 
                     b.Property<string>("StreakMode")
                         .IsRequired()

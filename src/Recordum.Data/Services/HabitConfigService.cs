@@ -22,6 +22,15 @@ public sealed partial class HabitConfigService(
         return await db.HabitConfigs.AsNoTracking().FirstOrDefaultAsync(c => c.HabitNodeId == habitNodeId, ct);
     }
 
+    public async ValueTask<IReadOnlyList<HabitConfigHistory>> ListHistoryAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Set<HabitConfigHistory>().AsNoTracking()
+            .Where(h => h.HabitNodeId == habitNodeId)
+            .OrderBy(h => h.ValidFrom)
+            .ToListAsync(ct);
+    }
+
     public async ValueTask UpsertAsync(Guid habitNodeId, Action<HabitConfig> mutate, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(mutate);

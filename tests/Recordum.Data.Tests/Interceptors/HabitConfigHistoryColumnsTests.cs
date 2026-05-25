@@ -8,7 +8,7 @@ public class HabitConfigHistoryColumnsTests
     private static readonly string[] ExpectedExcluded =
     {
         "Id","HabitNodeId","CreatedAt","UpdatedAt","UpdatedAtMs",
-        "QuickComplete","AiDataSharing"
+        "QuickComplete","AiDataSharing","StreakBrokenAt"
     };
 
     [Fact]
@@ -30,5 +30,12 @@ public class HabitConfigHistoryColumnsTests
         var union = HabitConfigHistoryColumns.Versioned
             .Concat(HabitConfigHistoryColumns.Excluded).ToHashSet();
         Assert.Equal(habitConfigProps.OrderBy(s => s), union.OrderBy(s => s));
+    }
+
+    [Fact]
+    public void StreakBrokenAt_is_excluded_from_versioning()
+    {
+        Assert.Contains("StreakBrokenAt", HabitConfigHistoryColumns.Excluded);
+        Assert.DoesNotContain("StreakBrokenAt", HabitConfigHistoryColumns.Versioned);
     }
 }

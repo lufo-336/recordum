@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Theming;
+using Recordum.Core.Enums;
 using Recordum.Data;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
@@ -80,12 +81,28 @@ public static class ServiceRegistrar
         services.AddScoped<IExportTemplateService, ExportTemplateService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IStreakPauseService, StreakPauseService>();
+        services.AddScoped<IStreakService, StreakService>();
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
+        services.AddScoped<IResetTimeResolver, ResetTimeResolver>();
+        services.AddScoped<IScheduleEvaluator, Data.Services.Evaluators.ScheduleEvaluator>();
         services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
-        services.AddScoped<IStreakAggregator, Data.Services.Aggregators.NaiveDailyStreakAggregator>();
+        services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.DailyStreakModeEvaluator>(StreakMode.Daily);
+        services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.WeeklyStreakModeEvaluator>(StreakMode.Weekly);
+        services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.OccurrencesStreakModeEvaluator>(StreakMode.Occurrences);
+        services.AddScoped<Data.Services.Evaluators.DailyStreakModeEvaluator>();
+        services.AddScoped<Data.Services.Evaluators.WeeklyStreakModeEvaluator>();
+        services.AddKeyedScoped<IStreakModeEvaluator>(StreakMode.Both, (sp, _) =>
+            new Data.Services.Evaluators.BothStreakModeEvaluator(
+                sp.GetRequiredService<Data.Services.Evaluators.DailyStreakModeEvaluator>(),
+                sp.GetRequiredService<Data.Services.Evaluators.WeeklyStreakModeEvaluator>()));
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.NoneStreakRecoveryPolicy>(StreakRecovery.None);
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.GraceDayStreakRecoveryPolicy>(StreakRecovery.GraceDay);
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.ManualStreakRecoveryPolicy>(StreakRecovery.Manual);
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.RetroactiveStreakRecoveryPolicy>(StreakRecovery.Retroactive);
+        services.AddScoped<IStreakAggregator, Data.Services.Aggregators.SchedulingAwareStreakAggregator>();
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
 
