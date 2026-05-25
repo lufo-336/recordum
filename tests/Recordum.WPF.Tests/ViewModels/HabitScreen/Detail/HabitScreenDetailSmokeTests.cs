@@ -95,4 +95,82 @@ public sealed class HabitScreenDetailSmokeTests
             catch (IOException) { /* best-effort cleanup */ }
         }
     }
+
+    [Fact]
+    public async Task Detail_with_scheduling_aware_aggregator_reports_streak_length()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), $"recordum-m38-smoke-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(temp);
+        try
+        {
+            var collection = new ServiceCollection();
+            collection.AddRecordumServices(new RecordumOptions
+            {
+                DatabasePath = Path.Combine(temp, "r.db"),
+                KeyFilePath = Path.Combine(temp, "k"),
+                SaltFilePath = Path.Combine(temp, "s"),
+            });
+            var sp = collection.BuildServiceProvider();
+            try
+            {
+                await sp.GetRequiredService<ApplicationInitializer>().InitializeAsync();
+                var nodes = sp.GetRequiredService<IHabitNodeService>();
+                var configs = sp.GetRequiredService<IHabitConfigService>();
+                var completions = sp.GetRequiredService<ICompletionService>();
+
+                var habit = new HabitNode
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "smoke-m38",
+                    NodeType = NodeType.Habit,
+                    HabitType = HabitType.Action,
+                    CreatedAt = DateTime.UtcNow.AddDays(-15),
+                };
+                await nodes.CreateAsync(habit);
+                // Interceptor overwrites CreatedAt on Add; backdate it via direct EF update.
+                await using (var db = await sp.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Recordum.Data.RecordumDbContext>>().CreateDbContextAsync())
+                {
+                    var n = await db.HabitNodes.FirstAsync(x => x.Id == habit.Id);
+                    n.CreatedAt = DateTime.UtcNow.AddDays(-15);
+                    await db.SaveChangesAsync();
+                }
+                await configs.UpsertAsync(habit.Id, c =>
+                {
+                    c.ScheduleType = ScheduleType.Daily;
+                    c.StreakMode = StreakMode.Daily;
+                    c.StreakRecovery = StreakRecovery.None;
+                });
+                // 10 consecutive daily completions ending today.
+                for (var i = 0; i < 10; i++)
+                {
+                    var when = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-i).Date.AddHours(10), DateTimeKind.Utc);
+                    await completions.RecordAsync(new Completion
+                    {
+                        Id = Guid.NewGuid(),
+                        HabitNodeId = habit.Id,
+                        CompletedAt = when,
+                        CompletedAtMs = new DateTimeOffset(when, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                        IsRetroactive = false,
+                    });
+                }
+
+                var screen = sp.GetRequiredService<HabitScreenViewModel>();
+                await screen.LoadAsync(habit.Id);
+
+                Assert.True(screen.Detail.StreakSummary.CurrentLength >= 1,
+                    $"expected current streak >= 1, got {screen.Detail.StreakSummary.CurrentLength}");
+                Assert.True(screen.Detail.StreakSummary.LongestLength >= 10,
+                    $"expected longest streak >= 10, got {screen.Detail.StreakSummary.LongestLength}");
+
+                screen.Dispose();
+            }
+            finally { sp.Dispose(); }
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            try { if (Directory.Exists(temp)) Directory.Delete(temp, recursive: true); }
+            catch (IOException) { /* best-effort cleanup */ }
+        }
+    }
 }
