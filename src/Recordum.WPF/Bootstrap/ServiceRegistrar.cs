@@ -98,6 +98,10 @@ public static class ServiceRegistrar
             new Data.Services.Evaluators.BothStreakModeEvaluator(
                 sp.GetRequiredService<Data.Services.Evaluators.DailyStreakModeEvaluator>(),
                 sp.GetRequiredService<Data.Services.Evaluators.WeeklyStreakModeEvaluator>()));
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.NoneStreakRecoveryPolicy>(StreakRecovery.None);
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.GraceDayStreakRecoveryPolicy>(StreakRecovery.GraceDay);
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.ManualStreakRecoveryPolicy>(StreakRecovery.Manual);
+        services.AddKeyedScoped<IStreakRecoveryPolicy, Data.Services.Policies.RetroactiveStreakRecoveryPolicy>(StreakRecovery.Retroactive);
         services.AddScoped<IStreakAggregator, Data.Services.Aggregators.SchedulingAwareStreakAggregator>();
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();

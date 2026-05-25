@@ -6,6 +6,7 @@ using Recordum.Core.Models;
 using Recordum.Data.Services;
 using Recordum.Data.Services.Aggregators;
 using Recordum.Data.Services.Evaluators;
+using Recordum.Data.Services.Policies;
 using Recordum.Data.Tests.Fixtures;
 using Xunit;
 
@@ -59,9 +60,14 @@ public sealed class SchedulingAwareStreakAggregatorTests
         var weeklyEval = new WeeklyStreakModeEvaluator();
         var occEval = new OccurrencesStreakModeEvaluator();
         var bothEval = new BothStreakModeEvaluator(dailyEval, weeklyEval);
+        var noneRec = new NoneStreakRecoveryPolicy();
+        var graceRec = new GraceDayStreakRecoveryPolicy();
+        var manualRec = new ManualStreakRecoveryPolicy();
+        var retroRec = new RetroactiveStreakRecoveryPolicy();
         return new SchedulingAwareStreakAggregator(
             nodes, configs, completions, pauses, scheduler,
-            dailyEval, weeklyEval, occEval, bothEval, fx.Clock);
+            dailyEval, weeklyEval, occEval, bothEval,
+            noneRec, graceRec, manualRec, retroRec, fx.Clock);
     }
 
     private static async Task SeedCompletionsAsync(DbFixture fx, Guid habitId, DateOnly start, string pattern)
@@ -196,6 +202,86 @@ public sealed class SchedulingAwareStreakAggregatorTests
             var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 6), new DateOnly(2026, 4, 12));
             Assert.Equal(2, runs.Count);
             Assert.Equal(StreakBreakReason.Missed, runs[0].BreakReason);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task GraceDay_AbsorbsOneMissPerWindow()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.GraceDay, new DateOnly(2026, 4, 1));
+        try
+        {
+            // 10 days: 1 miss on day 3 should be absorbed.
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XX.XXXXXXX");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(9, r.Length); // 9 completed days
+            Assert.Equal(1, r.RecoveriesUsed);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task GraceDay_SecondMissInWindowBreaks()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.GraceDay, new DateOnly(2026, 4, 1));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "X.X.XXXX");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            Assert.True(runs.Count >= 2);
+            Assert.Equal(StreakBreakReason.Missed, runs[0].BreakReason);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task Retroactive_BackfillReopensRun()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.Retroactive, new DateOnly(2026, 4, 1));
+        try
+        {
+            // 4 completions; day 3 is retroactive backfill — counts even though it's "added later"
+            var completions = new CompletionService(
+                fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+            DateTime At(int i) => new DateOnly(2026, 4, 1).AddDays(i).ToDateTime(new TimeOnly(10, 0));
+            long Ms(DateTime t) => new DateTimeOffset(t, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(0), CompletedAtMs = Ms(At(0)), IsRetroactive = false });
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(1), CompletedAtMs = Ms(At(1)), IsRetroactive = false });
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(2), CompletedAtMs = Ms(At(2)), IsRetroactive = true });
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(3), CompletedAtMs = Ms(At(3)), IsRetroactive = false });
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(4, r.Length);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task Retroactive_BackfillIgnoredWhenRecoveryNone()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.None, new DateOnly(2026, 4, 1));
+        try
+        {
+            var completions = new CompletionService(
+                fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+            DateTime At(int i) => new DateOnly(2026, 4, 1).AddDays(i).ToDateTime(new TimeOnly(10, 0));
+            long Ms(DateTime t) => new DateTimeOffset(t, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(0), CompletedAtMs = Ms(At(0)), IsRetroactive = false });
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(1), CompletedAtMs = Ms(At(1)), IsRetroactive = false });
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(2), CompletedAtMs = Ms(At(2)), IsRetroactive = true }); // ignored
+            await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(3), CompletedAtMs = Ms(At(3)), IsRetroactive = false });
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            Assert.Equal(2, runs.Count); // broke at day 3, restarted day 4
         }
         finally { await fx.DisposeAsync(); }
     }
