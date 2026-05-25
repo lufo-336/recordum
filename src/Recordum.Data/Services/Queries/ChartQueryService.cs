@@ -10,11 +10,8 @@ public sealed class ChartQueryService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
     ITrendQueryService trends,
-    ICompletionService completions,
-    IMetricDefinitionService metrics) : IChartQueryService
+    ICompletionService completions) : IChartQueryService
 {
-    // metrics is reserved for Task 7 (metric-label resolution on series points)
-    private readonly IMetricDefinitionService _metrics = metrics;
 
     private const string DarkText = "#E6E6E6";
     private const string DarkGrid = "#333333";
@@ -43,6 +40,11 @@ public sealed class ChartQueryService(
         {
             var points = await ResolveSeriesPointsAsync(s.HabitNodeId, s.MetricDefinitionId, from, to, granularity, ct)
                 .ConfigureAwait(false);
+            if (kind == ChartKind.Pie)
+            {
+                var total = points.Sum(p => p.Y ?? 0d);
+                points = [new ChartPoint(0, total, s.Label ?? "")];
+            }
             series.Add(new ChartSeriesModel(s.Label ?? "", s.Color, points));
         }
 
