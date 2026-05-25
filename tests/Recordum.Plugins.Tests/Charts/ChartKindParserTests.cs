@@ -19,10 +19,20 @@ public sealed class ChartKindParserTests
     }
 
     [Theory]
+    [InlineData("stackedbar")]
+    [InlineData("STACKED-BAR")]
+    [InlineData("StackedBar")]
+    public void Parse_accepts_case_insensitive_stacked_bar_aliases(string token)
+        => Assert.Equal(ChartKind.StackedBar, ChartKindParser.Parse(token));
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("nonsense")]
-    [InlineData("STACKEDBAR")]
     public void Unknown_or_null_falls_back_to_Line(string? token)
-        => Assert.Equal(token == "STACKEDBAR" ? ChartKind.StackedBar : ChartKind.Line, ChartKindParser.Parse(token));
+        => Assert.Equal(ChartKind.Line, ChartKindParser.Parse(token));
+
+    [Fact]
+    public void ToToken_out_of_range_falls_back_to_line()
+        => Assert.Equal("line", ChartKindParser.ToToken((ChartKind)99));
 }
