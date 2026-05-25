@@ -80,6 +80,7 @@ public static class ServiceRegistrar
         services.AddScoped<IExportTemplateService, ExportTemplateService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IStreakPauseService, StreakPauseService>();
+        services.AddScoped<IStreakService, StreakService>();
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
