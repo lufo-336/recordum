@@ -10,7 +10,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 
 - **Autore**: ITS Web Solutions Architect · Torino
 - **Product spec**: v2.0 (aprile 2026)
-- **DB schema**: v2.5 (maggio 2026) — delta `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
+- **DB schema**: v2.6 (maggio 2026) — delta `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
 - **Namespace**: `Recordum`
 
 ---
@@ -100,6 +100,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 **ActiveTimer v2.5**: tabella `active_timer` con UNIQUE su `habit_node_id` (un solo timer attivo per habit), CASCADE on delete dal nodo, CHECK `timer_mode IN ('Stopwatch','Countdown','Primary','Session')`. Colonne `started_at_ms INTEGER`, `paused_at_ms INTEGER NULL`, `accumulated_paused_ms INTEGER DEFAULT 0`, `segment_index INTEGER NULL` (solo Session). Migration `ActiveTimerV25` bumpa `schema_version` a `2.5`. La tabella è il pivot del **timer recovery** post-crash: `TimerStatusBarViewModel.LoadAsync` carica `IActiveTimerService.ListActiveAsync` allo startup e ricostruisce le righe della status bar.
 
+**StreakBrokenAt v2.6**: `habit_config.streak_broken_at TEXT NULL` per supportare `StreakRecovery.Manual`. **Non versionata** in `HabitConfigHistory` (è uno stato puntuale, non un setting); aggiunta a `HabitConfigHistoryColumns.Excluded`. Migration `StreakBrokenAtV26` bumpa `schema_version` a `2.6`.
+
 **Soft delete**: solo su `HabitNode`. Cascade in transazione singola ai discendenti. Restore ripristina solo i discendenti chiusi nella stessa operazione. Purge permanente è job background per nodi >30 giorni (ordine: file → tabelle figlie → HabitNode).
 
 **Naming**: tabelle e colonne snake_case (via `EFCore.NamingConventions`). Classi/proprietà C# PascalCase. Tutte le cascade rules e tutti gli indici **dichiarati esplicitamente** in Fluent API — mai default EF Core.
@@ -131,7 +133,7 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.5 | Completion Recording: 5 tipi + session mode + multi-serie + timer recovery + retroactive | ✓ **completata 2026-05-21** |
 | 3.6 | Journal Editor + Notes (WebView2 + Toast UI) | ✓ **completata 2026-05-22** |
 | 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress | ✓ **completata 2026-05-22** |
-| 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory |  |
+| 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory | ✓ **completata 2026-05-25** |
 | 3.9 | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` |  |
 | 3.10 | Export System (PDF/HTML/Markdown/JSON/CSV) + Backup/restore con lista plugin + permission state |  |
 
@@ -241,6 +243,40 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 **i18n**: 21 nuove chiavi (`HabitScreen.Tab.Detail`, `Detail.GoalCard.*`, `Detail.Streak.*`, `Detail.Trend.Range.*`, `Detail.Trend.Empty`, `Detail.Hourly.*`, `Detail.BasicStreakNotice`) in `Strings.resx` + `Strings.it.resx` + designer manuale.
 
 **Known quirks** — vedi memory `recordum-milestone-3-7-spec`.
+
+### Stato Milestone 3.8
+
+26 task del plan `docs/superpowers/plans/2026-05-24-milestone-3.8-streaks-engine.md` completati. 613 test verdi (Core 40, Plugins 45, Data 261, WPF 267 incl. E2E `Detail_with_scheduling_aware_aggregator_reports_streak_length` + perf trait `OneYearHistory_completes_within_budget`). Build pulito, zero warning nuovi.
+
+**Schema delta v2.6**: `habit_config.streak_broken_at TEXT NULL` + migration `StreakBrokenAtV26` (bump `schema_version` 2.5 → 2.6). Esclusa da `HabitConfigHistory` (stato puntuale, non setting).
+
+**Engine consegnato**:
+- `SchedulingAwareStreakAggregator` sostituisce `NaiveDailyStreakAggregator` (firma `IStreakAggregator` invariata, M3.7 ViewModels intoccati).
+- Per ogni giorno: pause-check → `IScheduleEvaluator` (6 ScheduleType) → `IStreakModeEvaluator` (Daily/Weekly/Occurrences/Both, keyed) → `IStreakRecoveryPolicy` (None/GraceDay/Manual/Retroactive, keyed).
+- `IResetTimeResolver` introdotto (paga il debito di M3.3): cammina parent chain → AppSetting `daily_reset_time` → default `00:00`. Cap profondità 32.
+- `HabitConfigTimeline` interno: per-day lookup di `HabitConfig` (current + history) — la run sopravvive a cambi di config.
+- `StreakRun` esteso non-breaking con `IsCurrent`, `RecoveriesUsed`, `BreakReason?` (`Missed`/`Manual`/`Closed`).
+- `IStreakService.MarkBrokenAsync` / `ClearBrokenAsync` headless (UI rinviata).
+- Banner `Detail_BasicStreakNotice` rimosso (engine ora completo).
+
+**Recovery semantics**:
+- `None`: prima miss chiude run.
+- `GraceDay`: 1 miss/finestra 7gg rolling. Recoveries con "pendingAbsorbs" buffer (committate solo se la run sopravvive con un Counts day successivo — deviazione interna documentata vs. plan).
+- `Manual`: short-circuit prima della policy; run chiude solo se `StreakBrokenAt` settato e `≤ giorno corrente`.
+- `Retroactive`: switch dataset (`dailyAll` vs `dailyLive`) per-day in base alla policy attiva del giorno; policy stessa ritorna sempre `false` (effetto via dataset selection).
+
+**Pause handling**: una pausa estende `runEnd` ma non incrementa `length` né consuma recovery (anche se sovrappone una miss).
+
+**Mode semantics**:
+- Daily: ogni giorno scheduled deve avere completion.
+- Weekly: target settimanale (ISO Mon-Sun) — verdict `Counts/Misses` solo a fine settimana.
+- Occurrences: gap non rompe; solo Manual/Closed chiudono la run.
+- Both = Daily AND Weekly (Misses se uno dei due).
+
+**Known limits**:
+- L'engine bucketizza per `CompletedAt` calendar date; il bucketing local-by-reset (consumo di `IResetTimeResolver`) arriva in milestone successiva quando "today" sarà rivisitato.
+- `StreakPause` UI rinviata (service esiste da M3.5).
+- `MarkBroken` UI rinviata (service esiste).
 
 ### Stato Milestone 3.4
 
