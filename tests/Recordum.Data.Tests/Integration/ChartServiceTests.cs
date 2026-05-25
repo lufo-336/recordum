@@ -54,4 +54,19 @@ public class ChartServiceTests
         Assert.Equal("renamed", s.Label);
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task ListAsync_returns_all_charts_without_series_ordered_by_name()
+    {
+        var (fx, habitId) = await SeedAsync();
+        var svc = new ChartService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<ChartService>.Instance);
+        await svc.CreateAsync(new Chart { Name = "Beta", ChartType = "bar" });
+        await svc.CreateAsync(new Chart { Name = "Alpha", ChartType = "line" }, new[]
+        {
+            new ChartSeries { Id = Guid.NewGuid(), HabitNodeId = habitId, SortOrder = 0 },
+        });
+        var all = await svc.ListAsync();
+        Assert.Equal(new[] { "Alpha", "Beta" }, all.Select(c => c.Name).ToArray());
+        await fx.DisposeAsync();
+    }
 }

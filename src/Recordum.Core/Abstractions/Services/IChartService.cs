@@ -9,4 +9,5 @@ public interface IChartService
     ValueTask ReplaceSeriesAsync(Guid chartId, IReadOnlyList<ChartSeries> series, CancellationToken ct = default);
     ValueTask DeleteAsync(Guid id, CancellationToken ct = default);
     ValueTask<Chart?> GetAsync(Guid id, CancellationToken ct = default);
+    ValueTask<IReadOnlyList<Chart>> ListAsync(CancellationToken ct = default);
 }
