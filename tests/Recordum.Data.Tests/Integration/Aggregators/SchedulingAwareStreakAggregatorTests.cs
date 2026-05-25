@@ -394,6 +394,64 @@ public sealed class SchedulingAwareStreakAggregatorTests
     }
 
     [Fact]
+    public async Task IsCurrent_True_When_Run_Ends_Today()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.None, new DateOnly(2026, 4, 26));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 26), "XXXXX");
+            ((FakeClock)fx.Clock).Set(new DateTimeOffset(
+                new DateOnly(2026, 4, 30).ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero));
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 26), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.True(r.IsCurrent);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task IsCurrent_False_When_Run_Ended_Three_Days_Ago()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.None, new DateOnly(2026, 4, 1));
+        try
+        {
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXXXX....");
+            ((FakeClock)fx.Clock).Set(new DateTimeOffset(
+                new DateOnly(2026, 4, 10).ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero));
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 10));
+            Assert.False(runs[0].IsCurrent);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task ResetTimeCascade_AppliesViaHabitOverride()
+    {
+        var (fx, aggr, habitId) = await SeedAsync(
+            ScheduleType.Daily, StreakMode.Daily, StreakRecovery.None, new DateOnly(2026, 4, 1));
+        try
+        {
+            // Set the habit's reset time directly via EF (no service ctor change needed).
+            await using (var db = await fx.Factory.CreateDbContextAsync())
+            {
+                var node = await db.HabitNodes.FirstAsync(n => n.Id == habitId);
+                node.ResetTime = new TimeOnly(4, 0);
+                await db.SaveChangesAsync();
+            }
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXX");
+
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
+            var r = Assert.Single(runs);
+            Assert.Equal(3, r.Length);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task Group_returns_empty()
     {
         var fx = new DbFixture();
