@@ -23,6 +23,7 @@ using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.Charts;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Quick;
@@ -133,6 +134,9 @@ public static class ServiceRegistrar
         services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Journal));
         services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.State));
         services.AddScoped<QuickActionHandlerSelector>();
+
+        services.AddTransient<ChartBuilderViewModel>();
+        services.AddTransient<ChartsWorkspaceViewModel>();
 
         services.AddTransient<MainWindowViewModel>();
 
