@@ -1,0 +1,74 @@
+<UserControl x:Class="Recordum.WPF.Views.ChartsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.Charts"
+             xmlns:p="clr-namespace:Recordum.WPF.Resources"
+             d:DataContext="{d:DesignInstance vm:ChartsWorkspaceViewModel, IsDesignTimeCreatable=False}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             Background="{DynamicResource Brush.Background}">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="220" />
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Master: chart list -->
+    <DockPanel Grid.Column="0">
+      <DockPanel DockPanel.Dock="Top" Margin="8">
+        <Button Content="{x:Static p:Strings.Charts_New}" Command="{Binding NewCommand}" HorizontalAlignment="Left" />
+      </DockPanel>
+      <ListBox ItemsSource="{Binding Charts}" SelectedItem="{Binding Selected, Mode=OneWay}"
+               SelectionChanged="OnChartSelectionChanged">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="{x:Type vm:ChartListItemViewModel}">
+            <StackPanel Margin="4">
+              <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding ChartType}" Opacity="0.6" FontSize="11" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" />
+
+    <!-- Detail: rendered chart + builder overlay -->
+    <Grid Grid.Column="2">
+      <ContentControl Content="{Binding RenderedView}"
+                      Visibility="{Binding IsBuilderOpen, Converter={StaticResource InvBoolToVisible}}" />
+      <ContentControl Content="{Binding Builder}"
+                      Visibility="{Binding IsBuilderOpen, Converter={StaticResource BoolToVisible}}">
+        <ContentControl.ContentTemplate>
+          <DataTemplate DataType="{x:Type vm:ChartBuilderViewModel}">
+            <!-- builder fields: Name, kind combo, series editor, Save -->
+            <StackPanel Margin="12">
+              <TextBlock Text="{x:Static p:Strings.Charts_Builder_Name}" />
+              <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+              <TextBlock Text="{x:Static p:Strings.Charts_Builder_Type}" Margin="0,8,0,0" />
+              <ComboBox ItemsSource="{Binding AvailableKinds}" SelectedItem="{Binding SelectedKind}" />
+              <DockPanel Margin="0,8,0,0">
+                <Button Content="{x:Static p:Strings.Charts_Builder_AddSeries}" Command="{Binding AddSeriesCommand}" />
+              </DockPanel>
+              <ItemsControl ItemsSource="{Binding Series}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="{x:Type vm:ChartSeriesRowViewModel}">
+                    <DockPanel Margin="0,4">
+                      <Button DockPanel.Dock="Right" Content="✕"
+                              Command="{Binding DataContext.RemoveSeriesCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                              CommandParameter="{Binding}" />
+                      <TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}" />
+                    </DockPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Content="{x:Static p:Strings.Charts_Builder_Save}" Command="{Binding SaveCommand}" Margin="0,8,0,0" HorizontalAlignment="Right" />
+            </StackPanel>
+          </DataTemplate>
+        </ContentControl.ContentTemplate>
+      </ContentControl>
+    </Grid>
+  </Grid>
+</UserControl>
