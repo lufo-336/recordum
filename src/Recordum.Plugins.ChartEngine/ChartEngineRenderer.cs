@@ -1,3 +1,4 @@
+using System.Globalization;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
@@ -56,5 +57,49 @@ public sealed class ChartEngineRenderer : IChartRenderer
         return new SolidColorPaint(c.WithAlpha(alpha));
     }
 
-    public object CreateView(ChartRenderModel model) => throw new NotImplementedException("Task 10");
+    public object CreateView(ChartRenderModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var textPaint = Paint(model.Theme.TextColorHex);
+        var gridPaint = Paint(model.Theme.GridColorHex);
+        var series = MapSeries(model);
+
+        if (model.Kind == ChartKind.Pie)
+        {
+            return new LiveChartsCore.SkiaSharpView.WPF.PieChart
+            {
+                Series = series,
+                LegendPosition = LiveChartsCore.Measure.LegendPosition.Right,
+            };
+        }
+
+        return new LiveChartsCore.SkiaSharpView.WPF.CartesianChart
+        {
+            Series = series,
+            XAxes =
+            [
+                new LiveChartsCore.SkiaSharpView.Axis
+                {
+                    Name = model.XAxis?.Label,
+                    NamePaint = textPaint,
+                    LabelsPaint = textPaint,
+                    SeparatorsPaint = gridPaint,
+                    Labeler = value => DateTime.FromOADate(value).ToString("MM-dd", CultureInfo.InvariantCulture),
+                    UnitWidth = TimeSpan.FromDays(1).TotalDays,
+                    MinStep = TimeSpan.FromDays(1).TotalDays,
+                },
+            ],
+            YAxes =
+            [
+                new LiveChartsCore.SkiaSharpView.Axis
+                {
+                    Name = model.YAxis?.Label,
+                    NamePaint = textPaint,
+                    LabelsPaint = textPaint,
+                    SeparatorsPaint = gridPaint,
+                },
+            ],
+            LegendPosition = LiveChartsCore.Measure.LegendPosition.Bottom,
+        };
+    }
 }
