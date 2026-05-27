@@ -73,22 +73,26 @@ public sealed class ChartEngineRenderer : IChartRenderer
             };
         }
 
+        var xAxis = new LiveChartsCore.SkiaSharpView.Axis
+        {
+            Name = model.XAxis?.Label,
+            NamePaint = textPaint,
+            LabelsPaint = textPaint,
+            SeparatorsPaint = gridPaint,
+        };
+        if (model.XAxis?.IsTime == true)
+        {
+            // X carries OADate values → label ticks as dates. Non-time axes (e.g. hour 0–23)
+            // keep LiveCharts' default numeric labels.
+            xAxis.Labeler = value => DateTime.FromOADate(value).ToString("MM-dd", CultureInfo.InvariantCulture);
+            xAxis.UnitWidth = TimeSpan.FromDays(1).TotalDays;
+            xAxis.MinStep = TimeSpan.FromDays(1).TotalDays;
+        }
+
         return new LiveChartsCore.SkiaSharpView.WPF.CartesianChart
         {
             Series = series,
-            XAxes =
-            [
-                new LiveChartsCore.SkiaSharpView.Axis
-                {
-                    Name = model.XAxis?.Label,
-                    NamePaint = textPaint,
-                    LabelsPaint = textPaint,
-                    SeparatorsPaint = gridPaint,
-                    Labeler = value => DateTime.FromOADate(value).ToString("MM-dd", CultureInfo.InvariantCulture),
-                    UnitWidth = TimeSpan.FromDays(1).TotalDays,
-                    MinStep = TimeSpan.FromDays(1).TotalDays,
-                },
-            ],
+            XAxes = [xAxis],
             YAxes =
             [
                 new LiveChartsCore.SkiaSharpView.Axis
