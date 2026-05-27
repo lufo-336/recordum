@@ -174,6 +174,28 @@ public class MainWindowViewModelTests
         sut.Editor.HasNode.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task Default_workspace_is_Home_and_can_switch_to_Charts()
+    {
+        var (sut, _) = CreateSut();
+        Assert.Equal(AppWorkspace.Home, sut.CurrentWorkspace);
+
+        await sut.ShowChartsCommand.ExecuteAsync(null);
+
+        Assert.Equal(AppWorkspace.Charts, sut.CurrentWorkspace);
+        Assert.True(sut.IsChartsWorkspace);
+        Assert.False(sut.IsHomeWorkspace);
+    }
+
+    [Fact]
+    public void ShowHome_switches_back()
+    {
+        var (sut, _) = CreateSut();
+        sut.ShowChartsCommand.Execute(null);
+        sut.ShowHomeCommand.Execute(null);
+        Assert.Equal(AppWorkspace.Home, sut.CurrentWorkspace);
+    }
+
     private static (MainWindowViewModel sut, Parts parts) CreateSut(ThemeMode themeMode = ThemeMode.System)
     {
         var query = new FakeHabitTreeQueryService();
@@ -198,7 +220,11 @@ public class MainWindowViewModelTests
             goals, new Recordum.Core.Services.IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             clock, new FakeEventBus(), new MainWindowFakeWebView2Availability());
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen);
+        var charts = new Recordum.WPF.ViewModels.Charts.ChartsWorkspaceViewModel(
+            new FakeChartService(), new FakeChartQueryService(),
+            new Recordum.Plugins.ExtensionPoints.ExtensionPointRegistry(),
+            new Recordum.WPF.ViewModels.Charts.ChartBuilderViewModel(new FakeChartService()));
+        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts);
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings));
     }
 

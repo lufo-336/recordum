@@ -12,6 +12,7 @@ using Recordum.Data.Security;
 using Recordum.Data.Services;
 using Recordum.Core.Services;
 using Recordum.Data.Services.Queries;
+using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Events;
 using Recordum.Plugins.ExtensionPoints;
@@ -22,6 +23,7 @@ using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.Charts;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Quick;
@@ -105,6 +107,7 @@ public static class ServiceRegistrar
         services.AddScoped<IStreakAggregator, Data.Services.Aggregators.SchedulingAwareStreakAggregator>();
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
+        services.AddScoped<IChartQueryService, ChartQueryService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
@@ -113,6 +116,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IApiRouter, ApiRouter>();
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
+        services.AddSingleton<IChartEngineActivator, ChartEngineActivator>();
 
         // ViewModels.
         services.AddTransient<HomeViewModel>();
@@ -130,6 +134,9 @@ public static class ServiceRegistrar
         services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Journal));
         services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.State));
         services.AddScoped<QuickActionHandlerSelector>();
+
+        services.AddTransient<ChartBuilderViewModel>();
+        services.AddTransient<ChartsWorkspaceViewModel>();
 
         services.AddTransient<MainWindowViewModel>();
 

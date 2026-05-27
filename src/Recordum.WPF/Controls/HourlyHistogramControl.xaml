@@ -1,6 +1,6 @@
 <UserControl x:Class="Recordum.WPF.Controls.HourlyHistogramControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Height="140" SizeChanged="OnSizeChanged">
-    <Canvas x:Name="LayoutCanvas" Background="Transparent"/>
+             Height="140">
+    <ContentControl x:Name="ChartHost"/>
 </UserControl>

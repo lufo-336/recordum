@@ -72,4 +72,10 @@ public sealed class ChartService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Charts.Include(c => c.Series).AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
     }
+
+    public async ValueTask<IReadOnlyList<Chart>> ListAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Charts.AsNoTracking().OrderBy(c => c.Name).ToListAsync(ct);
+    }
 }

@@ -27,9 +27,18 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public HabitEditorViewModel Editor { get; }
     public HabitScreenViewModel HabitScreen { get; }
     public TimerStatusBarViewModel TimerStatusBar { get; }
+    public Charts.ChartsWorkspaceViewModel Charts { get; }
 
     [ObservableProperty] private double _editorPaneWidth = DefaultEditorPaneWidth;
     [ObservableProperty] private double _habitScreenWidth = DefaultHabitScreenWidth;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsHomeWorkspace))]
+    [NotifyPropertyChangedFor(nameof(IsChartsWorkspace))]
+    private AppWorkspace _currentWorkspace = AppWorkspace.Home;
+
+    public bool IsHomeWorkspace => CurrentWorkspace == AppWorkspace.Home;
+    public bool IsChartsWorkspace => CurrentWorkspace == AppWorkspace.Charts;
 
     public MainWindowViewModel(
         HomeViewModel home,
@@ -37,7 +46,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         HabitEditorViewModel editor,
         IAppSettingService appSettings,
         TimerStatusBarViewModel timerStatusBar,
-        HabitScreenViewModel habitScreen)
+        HabitScreenViewModel habitScreen,
+        Charts.ChartsWorkspaceViewModel charts)
     {
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(settings);
@@ -45,14 +55,26 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(timerStatusBar);
         ArgumentNullException.ThrowIfNull(habitScreen);
+        ArgumentNullException.ThrowIfNull(charts);
         Home = home;
         Settings = settings;
         Editor = editor;
         _appSettings = appSettings;
         TimerStatusBar = timerStatusBar;
         HabitScreen = habitScreen;
+        Charts = charts;
         Home.PropertyChanged += OnHomePropertyChanged;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
+    }
+
+    [RelayCommand]
+    private void ShowHome() => CurrentWorkspace = AppWorkspace.Home;
+
+    [RelayCommand]
+    private async Task ShowChartsAsync()
+    {
+        CurrentWorkspace = AppWorkspace.Charts;
+        await Charts.LoadAsync().ConfigureAwait(true);
     }
 
     public async ValueTask InitializeAsync(CancellationToken ct = default)

@@ -134,7 +134,7 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.6 | Journal Editor + Notes (WebView2 + Toast UI) | ✓ **completata 2026-05-22** |
 | 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress | ✓ **completata 2026-05-22** |
 | 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory | ✓ **completata 2026-05-25** |
-| 3.9 | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` |  |
+| **3.9** | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` | ✓ **completata 2026-05-27** |
 | 3.10 | Export System (PDF/HTML/Markdown/JSON/CSV) + Backup/restore con lista plugin + permission state |  |
 
 ### Stato Milestone 3.1
@@ -277,6 +277,27 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 - L'engine bucketizza per `CompletedAt` calendar date; il bucketing local-by-reset (consumo di `IResetTimeResolver`) arriva in milestone successiva quando "today" sarà rivisitato.
 - `StreakPause` UI rinviata (service esiste da M3.5).
 - `MarkBroken` UI rinviata (service esiste).
+
+### Stato Milestone 3.9
+
+24 task del plan `docs/superpowers/plans/2026-05-25-milestone-3.9-custom-charts.md` completati (21–22 risolti come "no-migration" documentato — vedi sotto). 665 test verdi (Core 40, Plugins 61, **ChartEngine 18 nuovo progetto**, Data 266, WPF 280 incl. E2E `ChartsWorkspaceE2ETests`). Build pulito, zero warning. **Schema delta: zero** — `chart`/`chart_series` esistono da `InitialSchema`; `schema_version` resta `2.6`. Nessuna migration.
+
+**Nuovo assembly `Recordum.Plugins.ChartEngine`** (`net10.0-windows`, UseWPF, unica sede del codice LiveCharts2 `LiveChartsCore.SkiaSharpView.WPF` 2.0.4): è il **primo consumer reale del plugin system** sotto plugin id `io.recordum.chart-engine`. `NoWarn=NU1701` per OpenTK/SkiaSharp.Views.WPF (TFM .NET Framework, funzionali su .NET 10).
+
+**Contract (`Plugins.Contracts/Charts` + `ExtensionPoints`)**: `ChartKind` enum (Line/Bar/Area/StackedBar/Scatter/Pie) + `ChartKindParser` (token round-trip, fallback Line); `ChartRenderModel` + `ChartSeriesModel`/`ChartPoint`(struct)/`ChartAxisModel`/`ChartThemeModel` (UI-free); `IChartRenderer : IExtensionPoint` con `CreateView` che ritorna `object` (l'host fa il cast a `FrameworkElement` — Contracts resta UI-free); `ChartConfig` (de)serializza `Chart.ConfigJson` (range/from/to/bucket/show_legend/axis labels, default 90d/daily).
+
+**Data (`Recordum.Data/Services/Queries`)**: `IChartQueryService.BuildModelAsync(chartId, isDark, ct)` — **vive in `Recordum.Data`, NON in Core** (deviazione documentata: ritorna un tipo `Plugins.Contracts`, e Core ha zero dipendenze non-Core). Risolve range, granularità (daily/weekly), per-serie via `ICompletionService.GetDailySumAsync` (metric esplicita) o `ITrendQueryService.GetTrendAsync` (count/no-metric); Pie collassa ogni serie a un singolo totale. X cartesiana = `DateOnly.ToOADate()`, `Label` porta la data leggibile. `IChartService.ListAsync` per la gallery.
+
+**ChartEngine**: `ChartEngineRenderer` (`PluginId="io.recordum.chart-engine"`, `PointId=chart.renderer`). `MapSeries` (metodo pubblico d'istanza puro, testabile senza control — `#pragma CA1822`) mappa `ChartRenderModel`→`ISeries[]` LiveCharts2 (`LineSeries`/`ColumnSeries`/`StackedColumnSeries`/`ScatterSeries`/`PieSeries<double>`). `CreateView` costruisce `CartesianChart`/`PieChart` temati; il **date-labeler OADate è applicato solo quando `XAxis.IsTime == true`** (gli assi non-temporali come l'ora 0–23 restano numerici). `ChartEngineManifest` + `ChartEngineActivator` (`EnableAsync` via `PluginManager` + `registry.Register`) — **idempotente** (short-circuit se il renderer è già registrato, perché `ApplicationInitializer.InitializeAsync` può rieseguire). Attivato in `ApplicationInitializer` dopo le migration; `IChartQueryService` scoped + `IChartEngineActivator` singleton in `ServiceRegistrar`.
+
+**WPF — Charts workspace**: nav top-level Home | Charts in `MainWindow` (`AppWorkspace` enum + `ShowHome`/`ShowChartsCommand`, Ctrl+4; Ctrl+1/2/3 rientrano in Home via `PreviewKeyDown` senza consumare l'evento). `ChartsWorkspaceViewModel` (lista + builder + render): **risolve il renderer dall'`IExtensionPointRegistry`** (`GetExtensions(chart.renderer).OfType<IChartRenderer>().FirstOrDefault(CanRender)`), MAI reference diretta all'engine. `ChartBuilderViewModel` (create/edit, `Series` di `ChartSeriesRowViewModel`, `Saved` event) + `ChartListItemViewModel`. `ChartsView.xaml` master-detail (lista | chart renderizzato / builder overlay via `BoolToVisible`/`InvBoolToVisible`). 21 chiavi resx en/it (`Workspace.*`, `Charts.*`).
+
+**Migrazione 4 detail chart M3.7 (Fase E)** — DP/API pubblici invariati, ViewModels e test M3.7 intoccati:
+- `TrendChartControl` + `HourlyHistogramControl` → **migrati** a LiveCharts2 via builder (`Builders/TrendChartBuilder`, `Builders/HourlyChartBuilder`) che riusano `ChartEngineRenderer.CreateView`. Canvas/Polyline/Rectangle rimpiazzati da `ContentControl` host + `Rebuild()` su `DataContextChanged`/`Loaded`. Empty-state preservato.
+- `YearHeatmapControl` + `StreakTimelineControl` → **mantenuti su Canvas bespoke** (decisione utente, guardrail spec §7): LiveCharts2 `HeatSeries` usa un gradiente continuo + legend/assi, non la ramp GitHub discreta a 5 step richiesta dal DesignBrief ("colore = identificatore, niente axis clutter"); la timeline bespoke dà barre date-range precise con tooltip. Nessun builder dead-code creato.
+- `ThemeProbe` (helper interno `Controls/`): rileva dark/light dalla luminanza di `Brush.Background` — i control LiveCharts2 non consumano i `DynamicResource` brush; rivalutato a ogni `Rebuild`.
+
+**Known quirks** — vedi memory `recordum-milestone-3-9-spec`.
 
 ### Stato Milestone 3.4
 

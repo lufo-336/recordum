@@ -161,6 +161,29 @@ public static class Strings
     public static string Detail_Hourly_Title => Get("Detail.Hourly.Title");
     public static string Detail_Hourly_Empty => Get("Detail.Hourly.Empty");
 
+    // Charts workspace
+    public static string Workspace_Home => Get("Workspace.Home");
+    public static string Workspace_Charts => Get("Workspace.Charts");
+    public static string Charts_New => Get("Charts.New");
+    public static string Charts_Delete => Get("Charts.Delete");
+    public static string Charts_Empty => Get("Charts.Empty");
+    public static string Charts_Builder_Name => Get("Charts.Builder.Name");
+    public static string Charts_Builder_Type => Get("Charts.Builder.Type");
+    public static string Charts_Builder_Range => Get("Charts.Builder.Range");
+    public static string Charts_Builder_Bucket => Get("Charts.Builder.Bucket");
+    public static string Charts_Builder_Series => Get("Charts.Builder.Series");
+    public static string Charts_Builder_AddSeries => Get("Charts.Builder.AddSeries");
+    public static string Charts_Builder_Habit => Get("Charts.Builder.Habit");
+    public static string Charts_Builder_Metric => Get("Charts.Builder.Metric");
+    public static string Charts_Builder_Color => Get("Charts.Builder.Color");
+    public static string Charts_Builder_Save => Get("Charts.Builder.Save");
+    public static string Charts_Kind_Line => Get("Charts.Kind.Line");
+    public static string Charts_Kind_Bar => Get("Charts.Kind.Bar");
+    public static string Charts_Kind_Area => Get("Charts.Kind.Area");
+    public static string Charts_Kind_StackedBar => Get("Charts.Kind.StackedBar");
+    public static string Charts_Kind_Scatter => Get("Charts.Kind.Scatter");
+    public static string Charts_Kind_Pie => Get("Charts.Kind.Pie");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

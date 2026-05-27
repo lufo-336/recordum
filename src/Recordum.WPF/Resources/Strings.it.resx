@@ -425,4 +425,67 @@
   <data name="Detail.Hourly.Empty" xml:space="preserve">
     <value>Nessuna registrazione</value>
   </data>
+  <data name="Workspace.Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Workspace.Charts" xml:space="preserve">
+    <value>Grafici</value>
+  </data>
+  <data name="Charts.New" xml:space="preserve">
+    <value>Nuovo grafico</value>
+  </data>
+  <data name="Charts.Delete" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="Charts.Empty" xml:space="preserve">
+    <value>Nessun grafico</value>
+  </data>
+  <data name="Charts.Builder.Name" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="Charts.Builder.Type" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Charts.Builder.Range" xml:space="preserve">
+    <value>Intervallo</value>
+  </data>
+  <data name="Charts.Builder.Bucket" xml:space="preserve">
+    <value>Raggruppamento</value>
+  </data>
+  <data name="Charts.Builder.Series" xml:space="preserve">
+    <value>Serie</value>
+  </data>
+  <data name="Charts.Builder.AddSeries" xml:space="preserve">
+    <value>Aggiungi serie</value>
+  </data>
+  <data name="Charts.Builder.Habit" xml:space="preserve">
+    <value>Abitudine</value>
+  </data>
+  <data name="Charts.Builder.Metric" xml:space="preserve">
+    <value>Metrica</value>
+  </data>
+  <data name="Charts.Builder.Color" xml:space="preserve">
+    <value>Colore</value>
+  </data>
+  <data name="Charts.Builder.Save" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="Charts.Kind.Line" xml:space="preserve">
+    <value>Linea</value>
+  </data>
+  <data name="Charts.Kind.Bar" xml:space="preserve">
+    <value>Barre</value>
+  </data>
+  <data name="Charts.Kind.Area" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="Charts.Kind.StackedBar" xml:space="preserve">
+    <value>Barre impilate</value>
+  </data>
+  <data name="Charts.Kind.Scatter" xml:space="preserve">
+    <value>Dispersione</value>
+  </data>
+  <data name="Charts.Kind.Pie" xml:space="preserve">
+    <value>Torta</value>
+  </data>
 </root>
