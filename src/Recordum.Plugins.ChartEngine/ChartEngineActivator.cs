@@ -7,6 +7,13 @@ public sealed class ChartEngineActivator(IPluginManager manager, IExtensionPoint
 {
     public async Task ActivateAsync(CancellationToken ct = default)
     {
+        // Idempotent: ApplicationInitializer.InitializeAsync may run more than once.
+        var already = registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer);
+        foreach (var e in already)
+        {
+            if (e.PluginId == ChartEngineManifest.PluginId) return;
+        }
+
         var manifest = ChartEngineManifest.Create();
         await manager.EnableAsync(manifest, ct).ConfigureAwait(false);
         var renderer = new ChartEngineRenderer();

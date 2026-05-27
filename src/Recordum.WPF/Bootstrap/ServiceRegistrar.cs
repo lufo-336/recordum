@@ -12,6 +12,7 @@ using Recordum.Data.Security;
 using Recordum.Data.Services;
 using Recordum.Core.Services;
 using Recordum.Data.Services.Queries;
+using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Events;
 using Recordum.Plugins.ExtensionPoints;
@@ -105,6 +106,7 @@ public static class ServiceRegistrar
         services.AddScoped<IStreakAggregator, Data.Services.Aggregators.SchedulingAwareStreakAggregator>();
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
+        services.AddScoped<IChartQueryService, ChartQueryService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
@@ -113,6 +115,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IApiRouter, ApiRouter>();
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
+        services.AddSingleton<IChartEngineActivator, ChartEngineActivator>();
 
         // ViewModels.
         services.AddTransient<HomeViewModel>();

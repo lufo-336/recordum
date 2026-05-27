@@ -23,4 +23,17 @@ public sealed class ChartEngineActivatorTests
         Assert.IsType<ChartEngineRenderer>(renderer);
         Assert.Equal("io.recordum.chart-engine", renderer.PluginId);
     }
+
+    [Fact]
+    public async Task ActivateAsync_is_idempotent_on_repeated_calls()
+    {
+        var registry = new ExtensionPointRegistry();
+        var manager = new PluginManager(new InProcessPluginHost(), new AlwaysAllowPermissionBroker(), registry);
+        var activator = new ChartEngineActivator(manager, registry);
+
+        await activator.ActivateAsync();
+        await activator.ActivateAsync(); // must not throw "already loaded" nor double-register.
+
+        Assert.Single(registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer));
+    }
 }
