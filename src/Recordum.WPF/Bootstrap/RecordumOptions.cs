@@ -3,7 +3,7 @@ using Recordum.Core.Abstractions.Security;
 
 namespace Recordum.WPF.Bootstrap;
 
-public sealed class RecordumOptions : IDbStoragePaths
+public sealed class RecordumOptions : IBackupStoragePaths
 {
     public required string DatabasePath { get; init; }
     public required string KeyFilePath { get; init; }

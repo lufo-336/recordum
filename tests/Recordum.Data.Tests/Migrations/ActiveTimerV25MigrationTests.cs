@@ -15,11 +15,11 @@ namespace Recordum.Data.Tests.Migrations;
 public sealed class ActiveTimerV25MigrationTests
 {
     /// <summary>
-    /// After all migrations run, the app_settings row for schema_version must be "2.6"
-    /// (latest: StreakBrokenAtV26 — ActiveTimerV25 bumped to "2.5" intermediately).
+    /// After all migrations run, the app_settings row for schema_version must be "2.7"
+    /// (latest: BackupLogV27 — previous milestones bumped to 2.5 and 2.6 intermediately).
     /// </summary>
     [Fact]
-    public async Task Schema_version_AppSetting_is_2_6_after_full_migration()
+    public async Task Schema_version_AppSetting_is_2_7_after_full_migration()
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync();
@@ -28,7 +28,7 @@ public sealed class ActiveTimerV25MigrationTests
         await db.Database.MigrateAsync();
 
         var setting = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.6", setting.Value);
+        Assert.Equal("2.7", setting.Value);
     }
 
     /// <summary>
