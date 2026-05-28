@@ -135,7 +135,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.7 | Habit Detail Screen: heatmap, streak history, chart, distribuzione oraria, goal progress | ✓ **completata 2026-05-22** |
 | 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory | ✓ **completata 2026-05-25** |
 | **3.9** | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` | ✓ **completata 2026-05-27** |
-| 3.10 | Export System (PDF/HTML/Markdown/JSON/CSV) + Backup/restore con lista plugin + permission state |  |
+| **3.10a** | Export System (PDF/HTML/Markdown/JSON/CSV). **Export Engine come secondo core plugin** consumer di `export.format` | ✓ **completata 2026-05-28** |
+| 3.10b | Backup/restore con lista plugin + permission state |  |
 
 ### Stato Milestone 3.1
 
@@ -302,6 +303,28 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 ### Stato Milestone 3.4
 
 30 task del plan `docs/superpowers/plans/2026-05-20-milestone-3.4-habit-editor.md` completati. 341 test verdi (Core 30, Plugins 41, Data 139, WPF 131 incl. E2E template→edit smoke). Build pulito, zero warning. Habit Editor consegnato: pane laterale destro `EditorPane` aperto su `Home.SelectedRow` (`MainWindowViewModel` routing); `HabitEditorViewModel` ospita L1 header (Name/Description/Color/Icon + Node/Habit type combos) + 11 sezioni VM (`Scheduling`, `Streak`, `Timer`, `Metrics`, `Scales`, `Goal`, `Notifications`, `Tags`, `AiSharing`, `DataSource`, `ResetTime`) — ciascuna estende `SectionViewModelBase` con autosave per-campo (`ApplyAsync` → Saving→Saved|Error). Visibilità per tipo via `IsApplicable(NodeType, HabitType?)`, coperta dal matrix test (spec §6). Service extensions: `IHabitTemplateService.InstantiateAsync` (clona seed in nuovo habit + config), `ITagService.SetTagsAsync` (replace idempotente), `IHabitConfigService.ListSegmentsAsync/UpdateSegmentAsync`, `IGoalService.GetActiveAsync/UpsertActiveAsync`. Create flow: `HabitTemplatePicker` modal (8 seed templates + Blank habit/group) lanciato da `+ New` button su Home via `IHabitTemplatePickerLauncher` (DI-injectable per test). Footer pane aggrega status (Error > Saving > Saved > Idle). Pane width persistito in `AppSetting "ui.editor_pane_width"` (default 480, clamp 320..900) — push back via `GridSplitter.DragCompleted` → `MainWindowViewModel.CommitEditorPaneWidthAsync`. Tutte le stringhe utente in `Strings.resx` + `Strings.it.resx` (en/it). **Known limits**: `DataSourceSection` backed by `AppSetting` placeholder (revisit a M3.6 dopo decisione schema); reorder segmenti/metrics non implementato (drag-drop intra-section deferred).
+
+### Stato Milestone 3.10a
+
+22 task del plan `docs/superpowers/plans/2026-05-27-milestone-3.10a-export-system.md` completati. 697 test verdi (Core 40, Plugins 64, **ExportEngine 17 nuovo progetto**, ChartEngine 18, Data 272, WPF 286 incl. E2E launch tests). Build pulito, zero warning nuovi. **Schema delta: zero** — `export_job`/`export_template` esistono da `InitialSchema`; `schema_version` resta `2.6`. Nessuna migration.
+
+**Nuovo assembly `Recordum.Plugins.ExportEngine`** (`net10.0`, NO WPF — riutilizzabile in Fase 4 web): **secondo consumer reale** del plugin system sotto plugin id `io.recordum.export-engine`, registra 5 formatter sotto `export.format`. NoWarn=NU1701 per SkiaSharp native assets.
+
+**Contract (`Plugins.Contracts/Export` + `ExtensionPoints`)**: `ExportSubject` enum (Core: SingleHabit/Library); `ExportLayout` (sezioni metadata/summary/heatmap/completions/notes + range; `Parse(json)` con default fallback su null/empty/malformato; `ToJson()` round-trip); `ExportModel` + `ExportHabitModel`/`ExportSummary`/`ExportCompletionRow`/`ExportNoteRow`/`ExportHeatmapCell` (struct) UI-free; `IExportFormatter : IExtensionPoint` con `Format`, `CanFormat`, `Write(model) → byte[]` (host owns IO — Contracts resta IO-free).
+
+**Data (`Recordum.Data/Services/Queries`)**: `IExportQueryService.BuildAsync(ExportRequest, ct)` — **vive in `Recordum.Data`** (deviazione documentata, stessa rationale di `IChartQueryService` M3.9: ritorna tipo `Plugins.Contracts`, Core ha zero dipendenze non-Core). `ExportRequest(Subject, HabitNodeId?, From, To, Layout)`. Single habit assemblea metadata + summary (current/longest streak via `IStreakAggregator`, total completions, goal actual/target) + completions filtered by From/To + notes (UpdatedAtMs desc) + heatmap. Library branch enumera tutti `HabitNode` con `NodeType == Habit` (global soft-delete filter esclude trashed). **Heatmap sempre il 371-cell year ending today** (anchor = Monday del corrente -52*7gg), indipendente da From/To — From/To filtrano solo completions/notes/summary. Solo celle con `Step > 0` emesse (sparse). Ramp via `IIntensityRampResolver`. `IExportJobService.{RecordAsync,ListAsync}` (history newest-first).
+
+**Note di shape**: `Completion` non ha `ValueDecimal/Integer/Seconds` diretti (deviazione dal plan): la value scalare per `ExportCompletionRow` viene risolta da `c.Values.FirstOrDefault()` con coalesce `ValueDecimal ?? (decimal?)ValueInteger ?? (decimal?)ValueSeconds`.
+
+**Engine — 5 formatter**: `ExportFormatterBase` (PluginId const = `io.recordum.export-engine`); `JsonExportFormatter` (snake_case JsonNamingPolicy, indented); `CsvExportFormatter` (RFC 4180 quoting, `\r\n`, InvariantCulture); `MarkdownExportFormatter` (H1 + summary list + pipe table + Notes section; `ReplaceLineEndings(" ")` su note body); `HtmlExportFormatter` (self-contained, `WebUtility.HtmlEncode` ovunque + heatmap PNG embed via base64 data URI); `PdfExportFormatter` (QuestPDF Fluent, A4, Community license, heatmap image `.FitWidth()`, page numbers). `HeatmapImageRenderer.RenderPng(cells)` headless SkiaSharp 53×7 con 5-step GitHub light ramp (Pad6 / Cell11 / Gap2 → PNG ~750×100).
+
+**Manifest + Activator**: `ExportEngineManifest` (`ExtensionPoints=["export.format"]`, `MinRecordumVersion=3.10.0`); `ExportEngineActivator` (`EnableAsync` via `IPluginManager` + register 5 formatters via `IExtensionPointRegistry`). **Idempotent** (short-circuit se il PluginId è già registrato — `ApplicationInitializer.InitializeAsync` può rieseguire). Setta `QuestPDF.Settings.License = Community` prima del register.
+
+**WPF — Export dialog**: `ExportDialogViewModel` (sealed partial, ObservableObject) con AvailableFormats/section toggles/Templates preset/SelectedTemplate→applies LayoutJson. `ExportCommand` risolve formatter dall'`IExtensionPointRegistry` (`GetExtensions(export.format).OfType<IExportFormatter>().FirstOrDefault(CanFormat(selectedFormat))`), MAI ref diretta all'engine. `ISaveFileDialog` astratta (Prompt + WriteAsync) — `WpfSaveFileDialog` implementa Microsoft.Win32 `SaveFileDialog`. `IExportDialogLauncher` (`ShowForHabitAsync` + `ShowForLibraryAsync`) — `WpfExportDialogLauncher` risolve VM via ServiceProvider e mostra `ExportDialog` modal. Launch points: header `HabitScreen` "Export" button (`HabitScreenViewModel.ExportCommand` → event `ExportRequested` → `MainWindowViewModel.OnHabitScreenExportRequested`); top nav "Export library" button (`MainWindowViewModel.ExportLibraryCommand`).
+
+**i18n**: 12 nuove chiavi resx en/it (`Export.Title/Button/Library/Format/Template/Sections/Section.*/Run/Cancel`) + designer underscore props.
+
+**Known quirks** — vedi memory `recordum-milestone-3-10a-spec`.
 
 ---
 
