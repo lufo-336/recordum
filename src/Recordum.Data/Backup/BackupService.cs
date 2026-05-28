@@ -5,11 +5,12 @@ using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Backup;
 using Recordum.Core.Models;
+using Recordum.Data.Security;
 using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Backup;
 
-#pragma warning disable CS9113   // keyProvider reserved for future RestoreService symmetry
+// All constructor parameters are used: dbFactory→BuildManifestAsync/ApplyRetentionAsync; keyProvider→DumpDbAsync
 public sealed class BackupService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IDbKeyProvider keyProvider,
@@ -95,22 +96,35 @@ public sealed class BackupService(
 
     private async Task DumpDbAsync(string targetPath, CancellationToken ct)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
-        var conn = (SqliteConnection)db.Database.GetDbConnection();
-        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct).ConfigureAwait(false);
+        // Export plaintext copy using sqlcipher_export.
+        // Open the source DB directly (not via EF Core) to fully control the SQLCipher key pragma.
+        using var srcKey = await keyProvider.GetKeyAsync(ct).ConfigureAwait(false);
+        var dbPath = paths.DatabasePath;
 
         for (var attempt = 0; ; attempt++)
         {
             try
             {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "VACUUM INTO $p";
-                cmd.Parameters.AddWithValue("$p", targetPath);
-                await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                // Open the encrypted source directly
+                using var conn = Security.SqlCipherConnectionFactory.Open(dbPath, srcKey);
+
+                // ATTACH the destination as plaintext (KEY '' = no encryption)
+                using var attach = conn.CreateCommand();
+                attach.CommandText = $"ATTACH DATABASE '{targetPath.Replace("'", "''")}' AS plaintext KEY ''";
+                await attach.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+                using var export = conn.CreateCommand();
+                export.CommandText = "SELECT sqlcipher_export('plaintext')";
+                await export.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+                using var detach = conn.CreateCommand();
+                detach.CommandText = "DETACH DATABASE plaintext";
+                await detach.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
                 return;
             }
             catch (SqliteException ex) when (ex.SqliteErrorCode == 5 /* SQLITE_BUSY */ && attempt < 2)
             {
+                if (File.Exists(targetPath)) File.Delete(targetPath);
                 await Task.Delay(100, ct).ConfigureAwait(false);
             }
             catch (SqliteException ex) when (ex.SqliteErrorCode == 5)

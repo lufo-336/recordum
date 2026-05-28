@@ -201,29 +201,22 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         TimestampInterceptor timestamp,
         HabitConfigHistoryInterceptor history) : IDbContextFactory<RecordumDbContext>
     {
-        public RecordumDbContext CreateDbContext()
+        // Use connection-string based access so EF Core owns the connection pool.
+        // The key is applied via SqlCipherKeyConnectionInterceptor whenever the connection opens.
+        private RecordumDbContext BuildContext()
         {
-            var key = keyProvider.GetKeyAsync().AsTask().GetAwaiter().GetResult();
-            var conn = SqlCipherConnectionFactory.Open(dbPath, key);
             var opts = new DbContextOptionsBuilder<RecordumDbContext>()
-                .UseSqlite(conn)
+                .UseSqlite($"Data Source={dbPath}")
                 .UseSnakeCaseNamingConvention()
-                .AddInterceptors(history, timestamp)
+                .AddInterceptors(history, timestamp, new SqlCipherKeyConnectionInterceptor(keyProvider))
                 .Options;
             return new RecordumDbContext(opts);
         }
 
-        public async Task<RecordumDbContext> CreateDbContextAsync(CancellationToken ct = default)
-        {
-            var key = await keyProvider.GetKeyAsync(ct);
-            var conn = SqlCipherConnectionFactory.Open(dbPath, key);
-            var opts = new DbContextOptionsBuilder<RecordumDbContext>()
-                .UseSqlite(conn)
-                .UseSnakeCaseNamingConvention()
-                .AddInterceptors(history, timestamp)
-                .Options;
-            return new RecordumDbContext(opts);
-        }
+        public RecordumDbContext CreateDbContext() => BuildContext();
+
+        public Task<RecordumDbContext> CreateDbContextAsync(CancellationToken ct = default)
+            => Task.FromResult(BuildContext());
     }
 
     private sealed class StubPluginManager : IPluginManager
