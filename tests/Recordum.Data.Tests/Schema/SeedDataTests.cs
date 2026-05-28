@@ -100,15 +100,15 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
     }
 
     [Fact]
-    public void AppSetting_has_13_rows()
+    public void AppSetting_has_18_rows()
     {
         using var ctx = _fixture.CreateContext();
         var count = ctx.AppSettings.Count();
-        Assert.Equal(13, count);
+        Assert.Equal(18, count);
     }
 
     [Fact]
-    public void AppSetting_schema_version_is_2_6()
+    public void AppSetting_schema_version_is_2_7()
     {
         using var ctx = _fixture.CreateContext();
         var schemaVersion = ctx.AppSettings
@@ -116,7 +116,7 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
             .Select(s => s.Value)
             .Single();
 
-        Assert.Equal("2.6", schemaVersion);
+        Assert.Equal("2.7", schemaVersion);
     }
 
     [Fact]
@@ -139,6 +139,11 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
             "inactivity_timeout_minutes",
             "monthly_summary_day",
             "monthly_summary_time",
+            "backup.auto.enabled",
+            "backup.auto.frequency_days",
+            "backup.auto.retention_count",
+            "backup.auto.last_run_utc",
+            "backup.auto.path",
             "schema_version",
         };
 

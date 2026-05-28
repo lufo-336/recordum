@@ -2,15 +2,10 @@ using Recordum.Core.Models;
 
 namespace Recordum.Data.SeedData;
 
-/// <summary>
-/// Official seed data for AppSetting. Keys are PK — values must be stable string literals.
-/// Matches the registry defined in CLAUDE.md §6.7 with schema_version 2.6
-/// (streak_broken_at v2.6 > active_timer v2.5 > PinScope v2.4 > provenance plugin v2.3).
-/// Timestamps are literal constants — TimestampInterceptor does not run during HasData INSERT generation.
-/// </summary>
 public static class AppSettingSeed
 {
     private static readonly DateTime SeedDate = new(2026, 5, 14, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime SeedDateV27 = new(2026, 5, 28, 0, 0, 0, DateTimeKind.Utc);
 
     public static IReadOnlyList<AppSetting> All { get; } =
     [
@@ -26,6 +21,11 @@ public static class AppSettingSeed
         new AppSetting { Key = "inactivity_timeout_minutes",  Value = "5",        UpdatedAt = SeedDate },
         new AppSetting { Key = "monthly_summary_day",         Value = "1",        UpdatedAt = SeedDate },
         new AppSetting { Key = "monthly_summary_time",        Value = "09:00",    UpdatedAt = SeedDate },
-        new AppSetting { Key = "schema_version",              Value = "2.6",      UpdatedAt = SeedDate },
+        new AppSetting { Key = "backup.auto.enabled",         Value = "true",     UpdatedAt = SeedDateV27 },
+        new AppSetting { Key = "backup.auto.frequency_days",  Value = "7",        UpdatedAt = SeedDateV27 },
+        new AppSetting { Key = "backup.auto.retention_count", Value = "8",        UpdatedAt = SeedDateV27 },
+        new AppSetting { Key = "backup.auto.last_run_utc",    Value = "",         UpdatedAt = SeedDateV27 },
+        new AppSetting { Key = "backup.auto.path",            Value = "",         UpdatedAt = SeedDateV27 },
+        new AppSetting { Key = "schema_version",              Value = "2.7",      UpdatedAt = SeedDateV27 },
     ];
 }

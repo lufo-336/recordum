@@ -227,9 +227,39 @@ namespace Recordum.Data.Migrations
                         },
                         new
                         {
+                            Key = "backup.auto.enabled",
+                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "true"
+                        },
+                        new
+                        {
+                            Key = "backup.auto.frequency_days",
+                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "7"
+                        },
+                        new
+                        {
+                            Key = "backup.auto.retention_count",
+                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "8"
+                        },
+                        new
+                        {
+                            Key = "backup.auto.last_run_utc",
+                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = ""
+                        },
+                        new
+                        {
+                            Key = "backup.auto.path",
+                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = ""
+                        },
+                        new
+                        {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.6"
+                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.7"
                         });
                 });
 
@@ -281,6 +311,58 @@ namespace Recordum.Data.Migrations
                     b.ToTable("attachments", null, t =>
                         {
                             t.HasCheckConstraint("ck_attachment_exactly_one_parent", "(completion_id IS NOT NULL OR note_id IS NOT NULL) AND NOT (completion_id IS NOT NULL AND note_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Recordum.Core.Models.BackupLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AppVersion")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("app_version");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("path");
+
+                    b.Property<string>("SchemaVersion")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("schema_version");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("size_bytes");
+
+                    b.HasKey("Id")
+                        .HasName("pk_backup_log");
+
+                    b.HasIndex("CreatedAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_backup_log_created_at");
+
+                    b.ToTable("backup_log", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_backup_log_kind", "kind IN ('Manual','Auto','PreRestore')");
                         });
                 });
 
