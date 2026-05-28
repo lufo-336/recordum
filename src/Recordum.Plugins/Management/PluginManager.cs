@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Contracts.Manifest;
 using Recordum.Plugins.Contracts.Permissions;
@@ -9,6 +10,8 @@ public sealed class PluginManager(
     IPermissionBroker broker,
     IExtensionPointRegistry registry) : IPluginManager
 {
+    private readonly ConcurrentDictionary<string, PluginManifest> _activated = new();
+
     public async Task EnableAsync(PluginManifest manifest, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(manifest);
@@ -22,6 +25,7 @@ public sealed class PluginManager(
         }
 
         await host.LoadAsync(manifest, ct).ConfigureAwait(false);
+        _activated[manifest.Id] = manifest;
     }
 
     public async Task DisableAsync(string pluginId, CancellationToken ct = default)
@@ -29,6 +33,7 @@ public sealed class PluginManager(
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginId);
         registry.UnregisterAll(pluginId);
         await host.UnloadAsync(pluginId, ct).ConfigureAwait(false);
+        _activated.TryRemove(pluginId, out _);
     }
 
     public IReadOnlyCollection<string> ListEnabled()
@@ -40,4 +45,6 @@ public sealed class PluginManager(
         // Phase 7 concern once the manifest registry surfaces it.
         return [];
     }
+
+    public IReadOnlyList<PluginManifest> ListActivatedManifests() => _activated.Values.ToArray();
 }
