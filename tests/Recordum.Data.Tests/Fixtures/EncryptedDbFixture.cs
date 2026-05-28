@@ -137,6 +137,11 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         new AesGcmBackupCipher(), new BackupArchiveWriter(),
         LogService, PluginManager, Clock, appVersion: "3.10.0");
 
+    public RestoreService NewRestoreService() => new(
+        DbFactory, KeyProvider, Options,
+        new AesGcmBackupCipher(), new BackupArchiveReader(),
+        NewBackupService(), PluginManager, Clock);
+
     public void WriteAutoBackupKey(string passphrase)
     {
         var raw = Encoding.UTF8.GetBytes(passphrase);
