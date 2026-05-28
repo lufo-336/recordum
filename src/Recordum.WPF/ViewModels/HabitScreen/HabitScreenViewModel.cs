@@ -37,6 +37,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     [ObservableProperty] private QuickAddViewModelBase? _quickAdd;
 
     public event EventHandler? ConfigureRequested;
+    public event EventHandler? ExportRequested;
 
     public HabitScreenViewModel(
         IHabitNodeService nodes,
@@ -165,4 +166,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void OpenConfigure() => ConfigureRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void Export() => ExportRequested?.Invoke(this, EventArgs.Empty);
 }

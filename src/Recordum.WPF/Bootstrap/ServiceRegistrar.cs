@@ -14,6 +14,7 @@ using Recordum.Core.Services;
 using Recordum.Data.Services.Queries;
 using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Plugins.ExportEngine;
 using Recordum.Plugins.Events;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.Plugins.Hosting;
@@ -24,6 +25,7 @@ using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Charts;
+using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Quick;
@@ -108,6 +110,8 @@ public static class ServiceRegistrar
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
         services.AddScoped<IChartQueryService, ChartQueryService>();
+        services.AddScoped<IExportQueryService, ExportQueryService>();
+        services.AddScoped<IExportJobService, ExportJobService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
@@ -117,6 +121,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
         services.AddSingleton<IChartEngineActivator, ChartEngineActivator>();
+        services.AddSingleton<IExportEngineActivator, ExportEngineActivator>();
 
         // ViewModels.
         services.AddTransient<HomeViewModel>();
@@ -137,6 +142,10 @@ public static class ServiceRegistrar
 
         services.AddTransient<ChartBuilderViewModel>();
         services.AddTransient<ChartsWorkspaceViewModel>();
+
+        services.AddSingleton<ISaveFileDialog, WpfSaveFileDialog>();
+        services.AddSingleton<IExportDialogLauncher, WpfExportDialogLauncher>();
+        services.AddTransient<ExportDialogViewModel>();
 
         services.AddTransient<MainWindowViewModel>();
 

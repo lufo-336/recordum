@@ -188,6 +188,35 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task ExportLibrary_invokes_the_launcher()
+    {
+        var (sut, parts) = CreateSut();
+        await sut.ExportLibraryCommand.ExecuteAsync(null);
+        Assert.Equal(1, parts.ExportLauncher.LibraryCount);
+    }
+
+    [Fact]
+    public async Task HabitScreen_ExportRequested_invokes_launcher_for_current_habit()
+    {
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "yoga", Color = "#000000" };
+        parts.Query.HomeRows.Add(new HomeTreeRow(
+            id, null, "yoga", "#000000", HabitType.Action, null, 0, false,
+            PinScope.None, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty));
+        await sut.InitializeAsync();
+        sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
+        await Task.Delay(30);
+
+        sut.HabitScreen.ExportCommand.Execute(null);
+        await Task.Delay(30);
+
+        Assert.Equal(1, parts.ExportLauncher.HabitCount);
+        Assert.Equal(id, parts.ExportLauncher.LastHabitId);
+    }
+
+    [Fact]
     public void ShowHome_switches_back()
     {
         var (sut, _) = CreateSut();
@@ -224,8 +253,9 @@ public class MainWindowViewModelTests
             new FakeChartService(), new FakeChartQueryService(),
             new Recordum.Plugins.ExtensionPoints.ExtensionPointRegistry(),
             new Recordum.WPF.ViewModels.Charts.ChartBuilderViewModel(new FakeChartService()));
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts);
-        return (sut, new Parts(query, nodes, home, settingsVm, editor, settings));
+        var exportLauncher = new FakeExportDialogLauncher();
+        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher);
+        return (sut, new Parts(query, nodes, home, settingsVm, editor, settings, exportLauncher));
     }
 
     private sealed record Parts(
@@ -234,7 +264,8 @@ public class MainWindowViewModelTests
         HomeViewModel Home,
         SettingsViewModel Settings,
         HabitEditorViewModel Editor,
-        FakeAppSettingService AppSettings);
+        FakeAppSettingService AppSettings,
+        FakeExportDialogLauncher ExportLauncher);
 
     private sealed class MainWindowFakeWebView2Availability : IWebView2Availability
     {

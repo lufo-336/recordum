@@ -184,6 +184,20 @@ public static class Strings
     public static string Charts_Kind_Scatter => Get("Charts.Kind.Scatter");
     public static string Charts_Kind_Pie => Get("Charts.Kind.Pie");
 
+    // Export
+    public static string Export_Title => Get("Export.Title");
+    public static string Export_Button => Get("Export.Button");
+    public static string Export_Library => Get("Export.Library");
+    public static string Export_Format => Get("Export.Format");
+    public static string Export_Template => Get("Export.Template");
+    public static string Export_Sections => Get("Export.Sections");
+    public static string Export_Section_Summary => Get("Export.Section.Summary");
+    public static string Export_Section_Heatmap => Get("Export.Section.Heatmap");
+    public static string Export_Section_Completions => Get("Export.Section.Completions");
+    public static string Export_Section_Notes => Get("Export.Section.Notes");
+    public static string Export_Run => Get("Export.Run");
+    public static string Export_Cancel => Get("Export.Cancel");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

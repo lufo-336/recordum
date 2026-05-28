@@ -411,10 +411,15 @@
                            FontSize="{StaticResource FontSize.Heading}"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center"/>
-                <Button Grid.Column="1"
-                        Content="{x:Static res:Strings.HabitScreen_Configure}"
-                        Command="{Binding OpenConfigureCommand}"
-                        Padding="10,4"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="{x:Static res:Strings.Export_Button}"
+                            Command="{Binding ExportCommand}"
+                            Padding="10,4"
+                            Margin="0,0,8,0"/>
+                    <Button Content="{x:Static res:Strings.HabitScreen_Configure}"
+                            Command="{Binding OpenConfigureCommand}"
+                            Padding="10,4"/>
+                </StackPanel>
             </Grid>
         </Border>
         <Border Grid.Row="1"

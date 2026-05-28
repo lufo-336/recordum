@@ -4,6 +4,7 @@ using Recordum.Data;
 using Recordum.Data.Security;
 using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Plugins.ExportEngine;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -13,6 +14,7 @@ public sealed class ApplicationInitializer(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IPluginManager pluginManager,
     IChartEngineActivator chartEngine,
+    IExportEngineActivator exportEngine,
     IWebView2Availability webView2)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
@@ -33,6 +35,8 @@ public sealed class ApplicationInitializer(
 
         // First-party core plugin: enable + register the chart.renderer extension.
         await chartEngine.ActivateAsync(ct).ConfigureAwait(false);
+        // Second first-party core plugin: register the 5 export.format formatters.
+        await exportEngine.ActivateAsync(ct).ConfigureAwait(false);
 
         // Non-fatal probe — Win10 boxes without WebView2 Runtime fall back to TextBox.
         await webView2.ProbeAsync().ConfigureAwait(false);
