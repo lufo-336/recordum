@@ -31,6 +31,7 @@ public sealed class RecordumDbContext(DbContextOptions<RecordumDbContext> option
     public DbSet<AIInsight> AIInsights => Set<AIInsight>();
     public DbSet<ActiveTimer> ActiveTimers => Set<ActiveTimer>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<BackupLog> BackupLogs => Set<BackupLog>();
     public DbSet<SyncMeta> SyncMeta => Set<SyncMeta>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
