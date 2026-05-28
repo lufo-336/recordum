@@ -67,4 +67,44 @@ public sealed class ExportQueryServiceTests
         Assert.Empty(model.Habits);
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task Layout_toggles_exclude_sections()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
+            db.Completions.Add(new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds() });
+            db.Notes.Add(new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "hi", UpdatedAtMs = 1 });
+            await db.SaveChangesAsync();
+        }
+        var layout = new ExportLayout(Completions: false, Notes: false, Heatmap: false);
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), layout);
+        var habit = Assert.Single((await Build(fx).BuildAsync(request)).Habits);
+        Assert.Empty(habit.Completions);
+        Assert.Empty(habit.Notes);
+        Assert.Empty(habit.Heatmap);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Heatmap_emits_cells_for_days_with_completions()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
+            db.Completions.Add(new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 25, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = new DateTimeOffset(2026, 5, 25, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds() });
+            await db.SaveChangesAsync();
+        }
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var habit = Assert.Single((await Build(fx).BuildAsync(request)).Habits);
+        Assert.Contains(habit.Heatmap, c => c.Step >= 1);
+        Assert.All(habit.Heatmap, c => Assert.InRange(c.Week, 0, 52));
+        Assert.All(habit.Heatmap, c => Assert.InRange(c.Weekday, 0, 6));
+        await fx.DisposeAsync();
+    }
 }
