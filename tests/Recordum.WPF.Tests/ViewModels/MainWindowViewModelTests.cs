@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Xunit;
 
@@ -254,7 +255,10 @@ public class MainWindowViewModelTests
             new Recordum.Plugins.ExtensionPoints.ExtensionPointRegistry(),
             new Recordum.WPF.ViewModels.Charts.ChartBuilderViewModel(new FakeChartService()));
         var exportLauncher = new FakeExportDialogLauncher();
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher);
+        var backupLauncher = new FakeBackupDialogLauncher();
+        var backupLog = new FakeBackupLogService();
+        var backupHistory = new Recordum.WPF.ViewModels.Backup.BackupHistoryViewModel(backupLog);
+        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory);
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings, exportLauncher));
     }
 

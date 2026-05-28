@@ -7,6 +7,7 @@
         xmlns:v="clr-namespace:Recordum.WPF.Views"
         xmlns:vt="clr-namespace:Recordum.WPF.Views.Timer"
         xmlns:vhs="clr-namespace:Recordum.WPF.Views.HabitScreen"
+        xmlns:vb="clr-namespace:Recordum.WPF.Views.Backup"
         xmlns:res="clr-namespace:Recordum.WPF.Resources"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainWindowViewModel, IsDesignTimeCreatable=False}"
@@ -28,6 +29,8 @@
                     CommandParameter="{x:Static vm:HomeTab.Trash}"/>
         <KeyBinding Key="D4" Modifiers="Control"
                     Command="{Binding ShowChartsCommand}"/>
+        <KeyBinding Key="D5" Modifiers="Control"
+                    Command="{Binding ShowBackupHistoryCommand}"/>
     </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -47,6 +50,15 @@
             <Button Content="{x:Static res:Strings.Export_Library}"
                     Command="{Binding ExportLibraryCommand}"
                     Margin="16,0,0,0"/>
+            <Menu Background="Transparent" Margin="16,0,0,0">
+                <MenuItem Header="{x:Static res:Strings.Workspace_Backup}">
+                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_Create}"   Command="{Binding BackupCreateCommand}"/>
+                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_Restore}"  Command="{Binding BackupRestoreCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_History}"  Command="{Binding ShowBackupHistoryCommand}"/>
+                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_Settings}" Command="{Binding BackupSettingsCommand}"/>
+                </MenuItem>
+            </Menu>
         </StackPanel>
 
         <!-- Content area: Home panes OR Charts workspace -->
@@ -103,6 +115,10 @@
                           Visibility="{Binding DataContext.IsChartsWorkspace,
                                        RelativeSource={RelativeSource AncestorType=Window},
                                        Converter={StaticResource BoolToVisible}}"/>
+            <vb:BackupHistoryView DataContext="{Binding BackupHistory}"
+                                  Visibility="{Binding DataContext.IsBackupHistoryWorkspace,
+                                               RelativeSource={RelativeSource AncestorType=Window},
+                                               Converter={StaticResource BoolToVisible}}"/>
         </Grid>
 
         <vt:TimerStatusBar Grid.Row="2" DataContext="{Binding TimerStatusBar}"/>

@@ -2,6 +2,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
+using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
@@ -23,6 +24,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     private readonly IAppSettingService _appSettings;
     private readonly IExportDialogLauncher _exportLauncher;
+    private readonly IBackupDialogLauncher _backupLauncher;
 
     public HomeViewModel Home { get; }
     public SettingsViewModel Settings { get; }
@@ -30,6 +32,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public HabitScreenViewModel HabitScreen { get; }
     public TimerStatusBarViewModel TimerStatusBar { get; }
     public Charts.ChartsWorkspaceViewModel Charts { get; }
+    public BackupHistoryViewModel BackupHistory { get; }
 
     [ObservableProperty] private double _editorPaneWidth = DefaultEditorPaneWidth;
     [ObservableProperty] private double _habitScreenWidth = DefaultHabitScreenWidth;
@@ -37,10 +40,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsHomeWorkspace))]
     [NotifyPropertyChangedFor(nameof(IsChartsWorkspace))]
+    [NotifyPropertyChangedFor(nameof(IsBackupHistoryWorkspace))]
     private AppWorkspace _currentWorkspace = AppWorkspace.Home;
 
     public bool IsHomeWorkspace => CurrentWorkspace == AppWorkspace.Home;
     public bool IsChartsWorkspace => CurrentWorkspace == AppWorkspace.Charts;
+    public bool IsBackupHistoryWorkspace => CurrentWorkspace == AppWorkspace.BackupHistory;
 
     public MainWindowViewModel(
         HomeViewModel home,
@@ -50,7 +55,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         TimerStatusBarViewModel timerStatusBar,
         HabitScreenViewModel habitScreen,
         Charts.ChartsWorkspaceViewModel charts,
-        IExportDialogLauncher exportLauncher)
+        IExportDialogLauncher exportLauncher,
+        IBackupDialogLauncher backupLauncher,
+        BackupHistoryViewModel backupHistory)
     {
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(settings);
@@ -60,6 +67,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(habitScreen);
         ArgumentNullException.ThrowIfNull(charts);
         ArgumentNullException.ThrowIfNull(exportLauncher);
+        ArgumentNullException.ThrowIfNull(backupLauncher);
+        ArgumentNullException.ThrowIfNull(backupHistory);
         Home = home;
         Settings = settings;
         Editor = editor;
@@ -68,6 +77,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         HabitScreen = habitScreen;
         Charts = charts;
         _exportLauncher = exportLauncher;
+        _backupLauncher = backupLauncher;
+        BackupHistory = backupHistory;
         Home.PropertyChanged += OnHomePropertyChanged;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
         HabitScreen.ExportRequested += OnHabitScreenExportRequested;
@@ -82,6 +93,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
         CurrentWorkspace = AppWorkspace.Charts;
         await Charts.LoadAsync().ConfigureAwait(true);
     }
+
+    [RelayCommand]
+    private async Task ShowBackupHistoryAsync()
+    {
+        CurrentWorkspace = AppWorkspace.BackupHistory;
+        await BackupHistory.LoadAsync();
+    }
+
+    [RelayCommand] private Task BackupCreateAsync() => _backupLauncher.ShowBackupAsync();
+    [RelayCommand] private Task BackupRestoreAsync() => _backupLauncher.ShowRestoreAsync();
+    [RelayCommand] private Task BackupSettingsAsync() => _backupLauncher.ShowSettingsAsync();
 
     public async ValueTask InitializeAsync(CancellationToken ct = default)
     {
