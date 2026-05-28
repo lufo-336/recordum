@@ -1,0 +1,31 @@
+<Window x:Class="Recordum.WPF.Views.ExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.Export"
+        xmlns:res="clr-namespace:Recordum.WPF.Resources"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:ExportDialogViewModel, IsDesignTimeCreatable=False}"
+        Title="{x:Static res:Strings.Export_Title}"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource Brush.Background}">
+    <StackPanel Margin="16" MinWidth="320">
+        <TextBlock Text="{Binding SubjectLabel}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Text="{x:Static res:Strings.Export_Format}"/>
+        <ComboBox ItemsSource="{Binding AvailableFormats}" SelectedItem="{Binding SelectedFormat}" Margin="0,2,0,8"/>
+        <TextBlock Text="{x:Static res:Strings.Export_Template}"/>
+        <ComboBox ItemsSource="{Binding Templates}" SelectedItem="{Binding SelectedTemplate}" DisplayMemberPath="Name" Margin="0,2,0,8"/>
+        <TextBlock Text="{x:Static res:Strings.Export_Sections}" Margin="0,4,0,2"/>
+        <CheckBox Content="{x:Static res:Strings.Export_Section_Summary}" IsChecked="{Binding IncludeSummary}"/>
+        <CheckBox Content="{x:Static res:Strings.Export_Section_Heatmap}" IsChecked="{Binding IncludeHeatmap}"/>
+        <CheckBox Content="{x:Static res:Strings.Export_Section_Completions}" IsChecked="{Binding IncludeCompletions}"/>
+        <CheckBox Content="{x:Static res:Strings.Export_Section_Notes}" IsChecked="{Binding IncludeNotes}" Margin="0,0,0,8"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="{x:Static res:Strings.Export_Cancel}" Command="{Binding CancelCommand}" MinWidth="80" Margin="0,0,8,0"/>
+            <Button Content="{x:Static res:Strings.Export_Run}" Command="{Binding ExportCommand}" MinWidth="80"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

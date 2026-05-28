@@ -488,4 +488,40 @@
   <data name="Charts.Kind.Pie" xml:space="preserve">
     <value>Torta</value>
   </data>
+  <data name="Export.Title" xml:space="preserve">
+    <value>Esporta</value>
+  </data>
+  <data name="Export.Button" xml:space="preserve">
+    <value>Esporta</value>
+  </data>
+  <data name="Export.Library" xml:space="preserve">
+    <value>Esporta libreria</value>
+  </data>
+  <data name="Export.Format" xml:space="preserve">
+    <value>Formato</value>
+  </data>
+  <data name="Export.Template" xml:space="preserve">
+    <value>Modello</value>
+  </data>
+  <data name="Export.Sections" xml:space="preserve">
+    <value>Sezioni</value>
+  </data>
+  <data name="Export.Section.Summary" xml:space="preserve">
+    <value>Riepilogo</value>
+  </data>
+  <data name="Export.Section.Heatmap" xml:space="preserve">
+    <value>Mappa di calore</value>
+  </data>
+  <data name="Export.Section.Completions" xml:space="preserve">
+    <value>Completamenti</value>
+  </data>
+  <data name="Export.Section.Notes" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Export.Run" xml:space="preserve">
+    <value>Esporta</value>
+  </data>
+  <data name="Export.Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
 </root>

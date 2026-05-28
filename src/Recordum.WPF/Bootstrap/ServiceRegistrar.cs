@@ -25,6 +25,7 @@ using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Charts;
+using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Quick;
@@ -141,6 +142,10 @@ public static class ServiceRegistrar
 
         services.AddTransient<ChartBuilderViewModel>();
         services.AddTransient<ChartsWorkspaceViewModel>();
+
+        services.AddSingleton<ISaveFileDialog, WpfSaveFileDialog>();
+        services.AddSingleton<IExportDialogLauncher, WpfExportDialogLauncher>();
+        services.AddTransient<ExportDialogViewModel>();
 
         services.AddTransient<MainWindowViewModel>();
 
