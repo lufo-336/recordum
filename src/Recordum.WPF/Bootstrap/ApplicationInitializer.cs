@@ -15,7 +15,8 @@ public sealed class ApplicationInitializer(
     IPluginManager pluginManager,
     IChartEngineActivator chartEngine,
     IExportEngineActivator exportEngine,
-    IWebView2Availability webView2)
+    IWebView2Availability webView2,
+    BackupSchedulerHost backupHost)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -40,5 +41,8 @@ public sealed class ApplicationInitializer(
 
         // Non-fatal probe — Win10 boxes without WebView2 Runtime fall back to TextBox.
         await webView2.ProbeAsync().ConfigureAwait(false);
+
+        // Start the 60-minute auto-backup scheduler + orphan temp-dir cleanup.
+        backupHost.Initialize();
     }
 }

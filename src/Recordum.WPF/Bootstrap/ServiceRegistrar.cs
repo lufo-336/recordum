@@ -189,6 +189,8 @@ public static class ServiceRegistrar
         services.AddTransient<BackupHistoryViewModel>();
         services.AddTransient<BackupSettingsViewModel>();
         services.AddSingleton<IBackupDialogLauncher, WpfBackupDialogLauncher>();
+        services.AddSingleton<BackupSchedulerHost>();
+        services.AddScoped<IBackupSchedulerRunner, BackupSchedulerRunnerAdapter>();
 
         services.AddTransient<MainWindowViewModel>();
 
