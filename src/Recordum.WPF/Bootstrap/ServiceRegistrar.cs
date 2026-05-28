@@ -5,8 +5,10 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Theming;
+using Recordum.Core.Backup;
 using Recordum.Core.Enums;
 using Recordum.Data;
+using Recordum.Data.Backup;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
 using Recordum.Data.Services;
@@ -24,6 +26,7 @@ using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Charts;
 using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
@@ -146,6 +149,46 @@ public static class ServiceRegistrar
         services.AddSingleton<ISaveFileDialog, WpfSaveFileDialog>();
         services.AddSingleton<IExportDialogLauncher, WpfExportDialogLauncher>();
         services.AddTransient<ExportDialogViewModel>();
+
+        // Backup / Restore.
+        services.AddScoped<IBackupLogService, BackupLogService>();
+        services.AddSingleton<IBackupCipher, AesGcmBackupCipher>();
+        services.AddSingleton<BackupArchiveWriter>();
+        services.AddSingleton<BackupArchiveReader>();
+        services.AddSingleton<IBackupSaveFileDialog, WpfBackupSaveFileDialog>();
+        services.AddSingleton<IOpenFileDialog, WpfOpenFileDialog>();
+        services.AddScoped<IBackupService>(sp => new BackupService(
+            sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
+            sp.GetRequiredService<IDbKeyProvider>(),
+            sp.GetRequiredService<IBackupStoragePaths>(),
+            sp.GetRequiredService<IBackupCipher>(),
+            sp.GetRequiredService<BackupArchiveWriter>(),
+            sp.GetRequiredService<IBackupLogService>(),
+            sp.GetRequiredService<IPluginManager>(),
+            sp.GetRequiredService<IClock>(),
+            appVersion: "3.10.0"));
+        services.AddScoped<IRestoreService>(sp => new RestoreService(
+            sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
+            sp.GetRequiredService<IDbKeyProvider>(),
+            sp.GetRequiredService<IBackupStoragePaths>(),
+            sp.GetRequiredService<IBackupCipher>(),
+            sp.GetRequiredService<BackupArchiveReader>(),
+            sp.GetRequiredService<IBackupService>(),
+            sp.GetRequiredService<IPluginManager>(),
+            sp.GetRequiredService<IClock>()));
+#pragma warning disable CA1416
+        services.AddScoped<IBackupScheduler>(sp => new BackupScheduler(
+            sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
+            sp.GetRequiredService<IBackupService>(),
+            sp.GetRequiredService<IBackupStoragePaths>(),
+            sp.GetRequiredService<IClock>()));
+#pragma warning restore CA1416
+        services.AddSingleton<IAutoBackupKeyStore, WpfAutoBackupKeyStore>();
+        services.AddTransient<BackupDialogViewModel>();
+        services.AddTransient<RestoreDialogViewModel>();
+        services.AddTransient<BackupHistoryViewModel>();
+        services.AddTransient<BackupSettingsViewModel>();
+        services.AddSingleton<IBackupDialogLauncher, WpfBackupDialogLauncher>();
 
         services.AddTransient<MainWindowViewModel>();
 
