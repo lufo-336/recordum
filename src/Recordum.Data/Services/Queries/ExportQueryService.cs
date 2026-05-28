@@ -36,6 +36,16 @@ public sealed class ExportQueryService(
             if (node is { NodeType: NodeType.Habit })
                 habits.Add(await BuildHabitAsync(node, request, ct).ConfigureAwait(false));
         }
+        else
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+            var nodes = await db.HabitNodes.AsNoTracking()
+                .Where(n => n.NodeType == NodeType.Habit)
+                .OrderBy(n => n.Name)
+                .ToListAsync(ct).ConfigureAwait(false);
+            foreach (var node in nodes)
+                habits.Add(await BuildHabitAsync(node, request, ct).ConfigureAwait(false));
+        }
 
         var title = request.Subject == ExportSubject.SingleHabit
             ? habits.FirstOrDefault()?.Name ?? ""

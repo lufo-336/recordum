@@ -12,6 +12,8 @@ namespace Recordum.Data.Tests.Integration;
 
 public sealed class ExportQueryServiceTests
 {
+    private static readonly string[] ExpectedLibraryNames = ["A", "B"];
+
     private sealed class StubAggregator : IStreakAggregator
     {
         public ValueTask<IReadOnlyList<StreakRun>> GetHistoryAsync(Guid habitNodeId, DateOnly fromDate, DateOnly toDate, CancellationToken ct = default)
@@ -86,6 +88,25 @@ public sealed class ExportQueryServiceTests
         Assert.Empty(habit.Completions);
         Assert.Empty(habit.Notes);
         Assert.Empty(habit.Heatmap);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Library_includes_every_non_deleted_habit_node()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "A" });
+            db.HabitNodes.Add(new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "B" });
+            db.HabitNodes.Add(new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Group, Name = "G" });
+            await db.SaveChangesAsync();
+        }
+        var request = new ExportRequest(ExportSubject.Library, null, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+        Assert.Equal(ExportSubject.Library, model.Subject);
+        Assert.Equal("Recordum Library", model.Title);
+        Assert.Equal(ExpectedLibraryNames, model.Habits.Select(h => h.Name).OrderBy(n => n, StringComparer.Ordinal).ToArray());
         await fx.DisposeAsync();
     }
 
