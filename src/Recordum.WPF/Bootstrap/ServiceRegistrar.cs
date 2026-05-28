@@ -14,6 +14,7 @@ using Recordum.Core.Services;
 using Recordum.Data.Services.Queries;
 using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Plugins.ExportEngine;
 using Recordum.Plugins.Events;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.Plugins.Hosting;
@@ -108,6 +109,8 @@ public static class ServiceRegistrar
         services.AddScoped<ITrendQueryService, TrendQueryService>();
         services.AddScoped<IHourlyDistributionQueryService, HourlyDistributionQueryService>();
         services.AddScoped<IChartQueryService, ChartQueryService>();
+        services.AddScoped<IExportQueryService, ExportQueryService>();
+        services.AddScoped<IExportJobService, ExportJobService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();
@@ -117,6 +120,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IPluginHost, InProcessPluginHost>();
         services.AddSingleton<IPluginManager, PluginManager>();
         services.AddSingleton<IChartEngineActivator, ChartEngineActivator>();
+        services.AddSingleton<IExportEngineActivator, ExportEngineActivator>();
 
         // ViewModels.
         services.AddTransient<HomeViewModel>();
