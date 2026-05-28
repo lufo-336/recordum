@@ -26,6 +26,9 @@ public sealed class HabitScreenDetailSmokeTests
                 DatabasePath = Path.Combine(temp, "r.db"),
                 KeyFilePath = Path.Combine(temp, "k"),
                 SaltFilePath = Path.Combine(temp, "s"),
+                AttachmentsDirectory = Path.Combine(temp, "attachments"),
+                BackupsDirectory = Path.Combine(temp, "backups"),
+                AutoBackupKeyPath = Path.Combine(temp, "autobackup.key"),
             });
             var sp = collection.BuildServiceProvider();
             try
@@ -109,6 +112,9 @@ public sealed class HabitScreenDetailSmokeTests
                 DatabasePath = Path.Combine(temp, "r.db"),
                 KeyFilePath = Path.Combine(temp, "k"),
                 SaltFilePath = Path.Combine(temp, "s"),
+                AttachmentsDirectory = Path.Combine(temp, "attachments"),
+                BackupsDirectory = Path.Combine(temp, "backups"),
+                AutoBackupKeyPath = Path.Combine(temp, "autobackup.key"),
             });
             var sp = collection.BuildServiceProvider();
             try
