@@ -142,6 +142,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         new AesGcmBackupCipher(), new BackupArchiveReader(),
         NewBackupService(), PluginManager, Clock);
 
+    public BackupScheduler NewScheduler() => new(DbFactory, NewBackupService(), Options, Clock);
+
     public void WriteAutoBackupKey(string passphrase)
     {
         var raw = Encoding.UTF8.GetBytes(passphrase);
