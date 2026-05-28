@@ -4,6 +4,7 @@
     <Project Path="src/Recordum.Data/Recordum.Data.csproj" />
     <Project Path="src/Recordum.Plugins.ChartEngine/Recordum.Plugins.ChartEngine.csproj" />
     <Project Path="src/Recordum.Plugins.Contracts/Recordum.Plugins.Contracts.csproj" />
+    <Project Path="src/Recordum.Plugins.ExportEngine/Recordum.Plugins.ExportEngine.csproj" />
     <Project Path="src/Recordum.Plugins/Recordum.Plugins.csproj" />
     <Project Path="src/Recordum.WPF/Recordum.WPF.csproj" />
   </Folder>
@@ -11,6 +12,7 @@
     <Project Path="tests/Recordum.Core.Tests/Recordum.Core.Tests.csproj" />
     <Project Path="tests/Recordum.Data.Tests/Recordum.Data.Tests.csproj" />
     <Project Path="tests/Recordum.Plugins.ChartEngine.Tests/Recordum.Plugins.ChartEngine.Tests.csproj" />
+    <Project Path="tests/Recordum.Plugins.ExportEngine.Tests/Recordum.Plugins.ExportEngine.Tests.csproj" />
     <Project Path="tests/Recordum.Plugins.Tests/Recordum.Plugins.Tests.csproj" />
     <Project Path="tests/Recordum.WPF.Tests/Recordum.WPF.Tests.csproj" />
   </Folder>
