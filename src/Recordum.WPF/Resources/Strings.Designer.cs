@@ -184,6 +184,50 @@ public static class Strings
     public static string Charts_Kind_Scatter => Get("Charts.Kind.Scatter");
     public static string Charts_Kind_Pie => Get("Charts.Kind.Pie");
 
+    // Backup / Restore
+    public static string Workspace_Backup => Get("Workspace.Backup");
+    public static string Backup_Workspace => Get("Backup.Workspace");
+    public static string Backup_Menu_Create => Get("Backup.Menu.Create");
+    public static string Backup_Menu_Restore => Get("Backup.Menu.Restore");
+    public static string Backup_Menu_History => Get("Backup.Menu.History");
+    public static string Backup_Menu_Settings => Get("Backup.Menu.Settings");
+    public static string Backup_Create_Title => Get("Backup.Create.Title");
+    public static string Backup_Create_Path => Get("Backup.Create.Path");
+    public static string Backup_Create_Passphrase => Get("Backup.Create.Passphrase");
+    public static string Backup_Create_Confirm => Get("Backup.Create.Confirm");
+    public static string Backup_Create_Run => Get("Backup.Create.Run");
+    public static string Backup_Create_Cancel => Get("Backup.Create.Cancel");
+    public static string Backup_Create_Success => Get("Backup.Create.Success");
+    public static string Backup_Strength_Weak => Get("Backup.Strength.Weak");
+    public static string Backup_Strength_Ok => Get("Backup.Strength.Ok");
+    public static string Backup_Strength_Strong => Get("Backup.Strength.Strong");
+    public static string Backup_Errors_DestinationNotWritable => Get("Backup.Errors.DestinationNotWritable");
+    public static string Backup_Errors_DbBusy => Get("Backup.Errors.DbBusy");
+    public static string Backup_Errors_PassphraseMismatch => Get("Backup.Errors.PassphraseMismatch");
+    public static string Restore_Title => Get("Restore.Title");
+    public static string Restore_Preview => Get("Restore.Preview");
+    public static string Restore_Warning => Get("Restore.Warning");
+    public static string Restore_Run => Get("Restore.Run");
+    public static string Restore_Cancel => Get("Restore.Cancel");
+    public static string Restore_Errors_InvalidFormat => Get("Restore.Errors.InvalidFormat");
+    public static string Restore_Errors_InvalidPassphrase => Get("Restore.Errors.InvalidPassphrase");
+    public static string Restore_Errors_IncompatibleSchema => Get("Restore.Errors.IncompatibleSchema");
+    public static string Restore_Errors_SafetySnapshotFailed => Get("Restore.Errors.SafetySnapshotFailed");
+    public static string Backup_History_Title => Get("Backup.History.Title");
+    public static string Backup_History_Empty => Get("Backup.History.Empty");
+    public static string Backup_History_Restore => Get("Backup.History.Restore");
+    public static string Backup_History_Delete => Get("Backup.History.Delete");
+    public static string Backup_History_OpenFolder => Get("Backup.History.OpenFolder");
+    public static string Backup_Settings_Title => Get("Backup.Settings.Title");
+    public static string Backup_Settings_Enabled => Get("Backup.Settings.Enabled");
+    public static string Backup_Settings_Frequency => Get("Backup.Settings.Frequency");
+    public static string Backup_Settings_Retention => Get("Backup.Settings.Retention");
+    public static string Backup_Settings_Folder => Get("Backup.Settings.Folder");
+    public static string Backup_Settings_Test => Get("Backup.Settings.Test");
+    public static string Backup_Settings_Save => Get("Backup.Settings.Save");
+    public static string Backup_Settings_PassphraseRequired => Get("Backup.Settings.PassphraseRequired");
+    public static string Backup_Settings_InertWarning => Get("Backup.Settings.InertWarning");
+
     // Export
     public static string Export_Title => Get("Export.Title");
     public static string Export_Button => Get("Export.Button");

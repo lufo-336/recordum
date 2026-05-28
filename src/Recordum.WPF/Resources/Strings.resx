@@ -542,4 +542,130 @@ Details: {0}</value>
   <data name="Export.Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Workspace.Backup" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="Backup.Workspace" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="Backup.Menu.Create" xml:space="preserve">
+    <value>Create backup…</value>
+  </data>
+  <data name="Backup.Menu.Restore" xml:space="preserve">
+    <value>Restore backup…</value>
+  </data>
+  <data name="Backup.Menu.History" xml:space="preserve">
+    <value>Backup history</value>
+  </data>
+  <data name="Backup.Menu.Settings" xml:space="preserve">
+    <value>Auto-backup settings…</value>
+  </data>
+  <data name="Backup.Create.Title" xml:space="preserve">
+    <value>Create backup</value>
+  </data>
+  <data name="Backup.Create.Path" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="Backup.Create.Passphrase" xml:space="preserve">
+    <value>Passphrase</value>
+  </data>
+  <data name="Backup.Create.Confirm" xml:space="preserve">
+    <value>Confirm passphrase</value>
+  </data>
+  <data name="Backup.Create.Run" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Backup.Create.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Backup.Create.Success" xml:space="preserve">
+    <value>Backup saved to {0}</value>
+  </data>
+  <data name="Backup.Strength.Weak" xml:space="preserve">
+    <value>Weak</value>
+  </data>
+  <data name="Backup.Strength.Ok" xml:space="preserve">
+    <value>Ok</value>
+  </data>
+  <data name="Backup.Strength.Strong" xml:space="preserve">
+    <value>Strong</value>
+  </data>
+  <data name="Backup.Errors.DestinationNotWritable" xml:space="preserve">
+    <value>The selected destination is not writable.</value>
+  </data>
+  <data name="Backup.Errors.DbBusy" xml:space="preserve">
+    <value>Database is busy — try again in a moment.</value>
+  </data>
+  <data name="Backup.Errors.PassphraseMismatch" xml:space="preserve">
+    <value>Passphrases do not match.</value>
+  </data>
+  <data name="Restore.Title" xml:space="preserve">
+    <value>Restore backup</value>
+  </data>
+  <data name="Restore.Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Restore.Warning" xml:space="preserve">
+    <value>This will replace all your current data. A safety snapshot will be created at {0}.</value>
+  </data>
+  <data name="Restore.Run" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Restore.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Restore.Errors.InvalidFormat" xml:space="preserve">
+    <value>This is not a valid Recordum backup file.</value>
+  </data>
+  <data name="Restore.Errors.InvalidPassphrase" xml:space="preserve">
+    <value>Wrong passphrase, or the backup file is corrupted.</value>
+  </data>
+  <data name="Restore.Errors.IncompatibleSchema" xml:space="preserve">
+    <value>This backup was created by a newer Recordum. Update the app to restore it.</value>
+  </data>
+  <data name="Restore.Errors.SafetySnapshotFailed" xml:space="preserve">
+    <value>Could not create the pre-restore safety snapshot — restore aborted.</value>
+  </data>
+  <data name="Backup.History.Title" xml:space="preserve">
+    <value>Backup history</value>
+  </data>
+  <data name="Backup.History.Empty" xml:space="preserve">
+    <value>No backups yet.</value>
+  </data>
+  <data name="Backup.History.Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Backup.History.Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Backup.History.OpenFolder" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="Backup.Settings.Title" xml:space="preserve">
+    <value>Auto-backup settings</value>
+  </data>
+  <data name="Backup.Settings.Enabled" xml:space="preserve">
+    <value>Auto-backup enabled</value>
+  </data>
+  <data name="Backup.Settings.Frequency" xml:space="preserve">
+    <value>Frequency (days)</value>
+  </data>
+  <data name="Backup.Settings.Retention" xml:space="preserve">
+    <value>Keep last N backups</value>
+  </data>
+  <data name="Backup.Settings.Folder" xml:space="preserve">
+    <value>Backup folder</value>
+  </data>
+  <data name="Backup.Settings.Test" xml:space="preserve">
+    <value>Test auto-backup now</value>
+  </data>
+  <data name="Backup.Settings.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Backup.Settings.PassphraseRequired" xml:space="preserve">
+    <value>A passphrase is required to enable auto-backup.</value>
+  </data>
+  <data name="Backup.Settings.InertWarning" xml:space="preserve">
+    <value>Auto-backup is enabled but no passphrase is set — it will not run until you provide one.</value>
+  </data>
 </root>
