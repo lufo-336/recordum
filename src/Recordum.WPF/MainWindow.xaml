@@ -44,6 +44,9 @@
             <RadioButton Content="{x:Static res:Strings.Workspace_Charts}" GroupName="ws" Margin="8,0,0,0"
                          IsChecked="{Binding IsChartsWorkspace, Mode=OneWay}"
                          Command="{Binding ShowChartsCommand}"/>
+            <Button Content="{x:Static res:Strings.Export_Library}"
+                    Command="{Binding ExportLibraryCommand}"
+                    Margin="16,0,0,0"/>
         </StackPanel>
 
         <!-- Content area: Home panes OR Charts workspace -->

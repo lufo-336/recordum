@@ -2,6 +2,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
+using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Timer;
@@ -21,6 +22,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     internal const double MaxHabitScreenWidth = 800d;
 
     private readonly IAppSettingService _appSettings;
+    private readonly IExportDialogLauncher _exportLauncher;
 
     public HomeViewModel Home { get; }
     public SettingsViewModel Settings { get; }
@@ -47,7 +49,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IAppSettingService appSettings,
         TimerStatusBarViewModel timerStatusBar,
         HabitScreenViewModel habitScreen,
-        Charts.ChartsWorkspaceViewModel charts)
+        Charts.ChartsWorkspaceViewModel charts,
+        IExportDialogLauncher exportLauncher)
     {
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(settings);
@@ -56,6 +59,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(timerStatusBar);
         ArgumentNullException.ThrowIfNull(habitScreen);
         ArgumentNullException.ThrowIfNull(charts);
+        ArgumentNullException.ThrowIfNull(exportLauncher);
         Home = home;
         Settings = settings;
         Editor = editor;
@@ -63,8 +67,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         TimerStatusBar = timerStatusBar;
         HabitScreen = habitScreen;
         Charts = charts;
+        _exportLauncher = exportLauncher;
         Home.PropertyChanged += OnHomePropertyChanged;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
+        HabitScreen.ExportRequested += OnHabitScreenExportRequested;
     }
 
     [RelayCommand]
@@ -141,5 +147,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async void OnHabitScreenConfigureRequested(object? sender, EventArgs e)
     {
         await Editor.LoadAsync(Home.SelectedRow?.HabitNodeId).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task ExportLibraryAsync() => await _exportLauncher.ShowForLibraryAsync().ConfigureAwait(true);
+
+    private async void OnHabitScreenExportRequested(object? sender, EventArgs e)
+    {
+        if (HabitScreen.Node is null) return;
+        await _exportLauncher.ShowForHabitAsync(HabitScreen.Node.Id, HabitScreen.Name).ConfigureAwait(true);
     }
 }
