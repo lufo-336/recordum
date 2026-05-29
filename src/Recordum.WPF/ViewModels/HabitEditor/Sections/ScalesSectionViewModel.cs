@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -10,11 +11,12 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 /// Scales section for HabitType.State. Edits the primary metric's ScaleTemplateId + LabelsJson override.
 /// Scale-template picker dropdown deferred to a follow-up iteration.
 /// </summary>
-public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metrics) : SectionViewModelBase
+public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metrics, IReferenceDataQueryService refData) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_Scales;
 
     private readonly IMetricDefinitionService _metrics = metrics;
+    private readonly IReferenceDataQueryService _refData = refData;
     private bool _loading;
     private MetricDefinition? _primary;
     internal Guid NodeId { get; private set; }
@@ -22,8 +24,13 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     [ObservableProperty] private Guid? _selectedScaleTemplateId;
     [ObservableProperty] private string? _labelsJson;
 
+    public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
+
     public async Task LoadAsync(HabitNode node)
     {
+        AvailableScales.Clear();
+        foreach (var s in await _refData.ListScalesAsync()) AvailableScales.Add(s);
+
         _loading = true;
         try
         {

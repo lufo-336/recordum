@@ -32,7 +32,7 @@ public static class MainWindowViewModelFactory
         var settings = new FakeAppSettingService();
         var home = new HomeViewModel(query, nodes, purge);
         var settingsVm = new SettingsViewModel(theme);
-        var editor = new HabitEditorViewModel(nodes, configs, goals, metrics, notif, tags, settings);
+        var editor = new HabitEditorViewModel(nodes, configs, goals, metrics, notif, tags, settings, new FakeReferenceData());
         var clock = new FakeClock();
         var ats = new FakeActiveTimerService();
         var completions = new FakeCompletionService();

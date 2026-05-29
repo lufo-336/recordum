@@ -10,11 +10,12 @@ namespace Recordum.WPF.Tests.ViewModels.HabitEditor;
 public class MetricsSectionViewModelTests
 {
     private readonly FakeMetricDefinitionService _metrics = new();
+    private readonly FakeReferenceData _refData = new();
     private readonly HabitNode _node = new() { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Counter };
 
     private MetricsSectionViewModel CreateSut()
     {
-        var sut = new MetricsSectionViewModel(_metrics);
+        var sut = new MetricsSectionViewModel(_metrics, _refData);
         sut.LoadAsync(_node).GetAwaiter().GetResult();
         return sut;
     }
@@ -67,10 +68,18 @@ public class MetricsSectionViewModelTests
     [Fact]
     public void IsApplicable_only_for_Counter_and_Resistance()
     {
-        var sut = new MetricsSectionViewModel(_metrics);
+        var sut = new MetricsSectionViewModel(_metrics, _refData);
         sut.IsApplicable(NodeType.Habit, HabitType.Counter).Should().BeTrue();
         sut.IsApplicable(NodeType.Habit, HabitType.Resistance).Should().BeTrue();
         sut.IsApplicable(NodeType.Habit, HabitType.Action).Should().BeFalse();
         sut.IsApplicable(NodeType.Habit, HabitType.State).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Metrics_LoadAsync_populates_available_units()
+    {
+        var sut = new MetricsSectionViewModel(_metrics, _refData);
+        await sut.LoadAsync(new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+        sut.AvailableUnits.Should().ContainSingle(u => u.Code == "l");
     }
 }

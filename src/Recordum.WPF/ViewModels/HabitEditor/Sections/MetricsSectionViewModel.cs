@@ -8,17 +8,22 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
-public sealed partial class MetricsSectionViewModel(IMetricDefinitionService metrics) : SectionViewModelBase
+public sealed partial class MetricsSectionViewModel(IMetricDefinitionService metrics, IReferenceDataQueryService refData) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_Metrics;
 
     private readonly IMetricDefinitionService _metrics = metrics;
+    private readonly IReferenceDataQueryService _refData = refData;
     internal Guid NodeId { get; private set; }
 
     public ObservableCollection<MetricRowViewModel> Metrics { get; } = new();
+    public ObservableCollection<UnitOfMeasure> AvailableUnits { get; } = new();
 
     public async Task LoadAsync(HabitNode node)
     {
+        AvailableUnits.Clear();
+        foreach (var u in await _refData.ListUnitsAsync()) AvailableUnits.Add(u);
+
         NodeId = node.Id;
         Metrics.Clear();
         foreach (var m in (await _metrics.ListByHabitAsync(node.Id)).OrderBy(m => m.SortOrder))

@@ -67,7 +67,8 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IMetricDefinitionService metrics,
         INotificationService notifications,
         ITagService tags,
-        IAppSettingService appSettings)
+        IAppSettingService appSettings,
+        IReferenceDataQueryService refData)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(configs);
@@ -77,8 +78,8 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Scheduling = new SchedulingSectionViewModel(configs);
         Streak = new StreakSectionViewModel(configs);
         Timer = new TimerSectionViewModel(configs);
-        Metrics = new MetricsSectionViewModel(metrics);
-        Scales = new ScalesSectionViewModel(metrics);
+        Metrics = new MetricsSectionViewModel(metrics, refData);
+        Scales = new ScalesSectionViewModel(metrics, refData);
         Goal = new GoalSectionViewModel(goals);
         Notifications = new NotificationsSectionViewModel(notifications);
         Tags = new TagsSectionViewModel(tags);

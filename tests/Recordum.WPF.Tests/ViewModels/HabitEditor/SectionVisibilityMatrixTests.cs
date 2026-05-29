@@ -32,7 +32,8 @@ public class SectionVisibilityMatrixTests
             new FakeMetricDefinitionService(),
             new FakeNotificationService(),
             new FakeTagService(),
-            new FakeAppSettingService());
+            new FakeAppSettingService(),
+            new FakeReferenceData());
 
         var applicable = new List<string> { "L1" };
         if (sut.Scheduling.IsApplicable(node, habit)) applicable.Add("Scheduling");

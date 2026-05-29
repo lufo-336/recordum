@@ -117,6 +117,7 @@ public static class ServiceRegistrar
         services.AddScoped<IChartQueryService, ChartQueryService>();
         services.AddScoped<IExportQueryService, ExportQueryService>();
         services.AddScoped<IExportJobService, ExportJobService>();
+        services.AddScoped<IReferenceDataQueryService, ReferenceDataQueryService>();
 
         // Plugin host stack.
         services.AddSingleton<IPermissionBroker, AlwaysAllowPermissionBroker>();

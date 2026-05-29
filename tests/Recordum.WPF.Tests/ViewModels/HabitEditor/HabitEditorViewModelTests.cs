@@ -17,8 +17,9 @@ public class HabitEditorViewModelTests
     private readonly FakeNotificationService _notifications = new();
     private readonly FakeTagService _tags = new();
     private readonly FakeAppSettingService _appSettings = new();
+    private readonly FakeReferenceData _refData = new();
 
-    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings);
+    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData);
 
     [Fact]
     public async Task LoadAsync_with_null_clears_node()
