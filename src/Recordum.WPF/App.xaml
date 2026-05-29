@@ -8,6 +8,7 @@
                 <ResourceDictionary Source="Resources/Tokens.xaml"/>
                 <ResourceDictionary Source="Resources/Light.xaml"/>
                 <ResourceDictionary Source="Resources/Icons.xaml"/>
+                <ResourceDictionary Source="Resources/BaseStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
