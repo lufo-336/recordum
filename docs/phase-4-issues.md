@@ -1,0 +1,81 @@
+# Recordum — Fase 4 issue tracker
+
+> **Scopo**: lista vivente dei bug e delle rifiniture aperte in Fase 4. Sostituisce le sezioni "Bloccanti / Rifinitura" che erano in `CLAUDE.md` §7. CLAUDE.md mantiene solo il pointer.
+>
+> **Stati**: `reported` (utente lo segnala, non ancora investigato) → `verified` (riprodotto da claude / utente conferma stato attuale) → `triaged` (root cause ipotizzata + scope chiaro) → `in-progress` (fix in lavorazione su un branch) → `fixed` (commit fatto, build verde) → `verified-fixed` (utente conferma sul build).
+>
+> Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
+
+---
+
+## Aperti — bloccanti
+
+### B1. Save note non funzionante
+- **Stato**: `reported` (2026-05-29 utente)
+- **Sintomo**: dopo modifica di una nota nella tab Notes (o nel Journal QuickAdd), il bottone Save non persiste o resta disabilitato.
+- **Ipotesi root cause**:
+  - (a) Toast UI WYSIWYG non emette `'change'` → `MarkdownProperty` (TwoWay) non si aggiorna → `EditorMarkdown` resta uguale a `BodyMd` → `IsDirty` = false → Save disabilitato.
+  - (b) Save abilitato ma `INoteService.UpdateAsync` non commita (improbabile, coperto da test).
+  - (c) WebView2 non disponibile → fallback `TextBox`; il binding `TextBox.Text → Markdown` DP via `SetCurrentValue` propaga a source TwoWay? Da verificare.
+- **Info da raccogliere prima del fix**:
+  - Il bottone Save è cliccabile (Enabled) quando digiti, o resta grigio?
+  - Hai WebView2 Runtime installato? Banner "WebView2 not available" visibile sopra HabitScreen?
+  - Riavviando l'app la nota persiste o sparisce?
+
+### B2. Costumizzazione note "non funziona particolarmente bene"
+- **Stato**: `reported` (2026-05-29 utente)
+- **Sintomo**: vago — formattazione markdown nell'editor non si comporta come atteso.
+- **Info da raccogliere**: screenshot di un caso specifico (es. "scrivo `**bold**`, vedo `**bold**` invece di **bold**"). Questa è la differenza fra mode WYSIWYG e mode Markdown source.
+- **Possibili sotto-bucket**:
+  - Toolbar Toast UI ridotta non ha `table`/`task`/`image`/`source-view` toggle.
+  - Tema dell'editor: Toast UI usa il suo CSS, non rispetta il dark/light di Recordum.
+  - Preview/edit toggle nel WYSIWYG.
+
+### B3. "Tante altre cose non funzionano"
+- **Stato**: `reported` (2026-05-29 utente)
+- **Sintomo**: generico. Da triagiare dettaglio per dettaglio (2026-05-30+).
+- **Plan**: per ogni nuovo bug specifico, aprire una nuova voce B<N> qui sotto con sintomo + ipotesi + info da raccogliere.
+
+---
+
+## Aperti — rifinitura
+
+### R1. Theming Pass 2 — chrome flat per Button/TabItem/ComboBox
+- **Stato**: `triaged` (depends on B0 verified-fixed sotto)
+- **Scope**: BaseStyles Pass 1 (commit `6a15cea`) cabla solo Foreground; il `ControlTemplate` Aero di Button/TabItem/ComboBox usa un gradiente chiaro hardcoded. In dark mode il testo è leggibile ma lo sfondo bottone resta light-gradient = ugly.
+- **Approccio**: sostituire i 3 ControlTemplate con flat (Border + ContentPresenter) + Background = `Brush.SurfaceElevated` + hover state.
+
+### R2. WebView2 fallback UX
+- **Stato**: `triaged`
+- **Scope**: se WebView2 Runtime non è installato, l'editor cade su `TextBox` senza preview markdown. Aggiungere banner di guida con link diretto al Runtime download.
+
+### R3. Toast UI toolbar — opzioni mancanti
+- **Stato**: `reported`
+- **Scope**: vedi B2. Decidere se aggiungere `table`/`task`/`image`/`source-view` toggle alla toolbar.
+
+### R4. BackupSchedulerHost — start delay configurabile
+- **Stato**: `triaged`
+- **Scope**: il fix di M3.10b è "wait one tick = 60min prima del primo run". Per polish: rendere il delay configurabile (es. 5min default per esperienza utente più reattiva).
+
+### R5. Accessibility / keyboard navigation
+- **Stato**: `reported`
+- **Scope**: focus order, tab traversal, AutomationPeers, contrasto colori WCAG.
+
+### R6. CLAUDE.md ridotto — strategia di consultazione dei file companion
+- **Stato**: `fixed` (questo commit) — `CLAUDE.md` rimosso le sezioni storiche, ora pointer a `docs/MILESTONES.md`. Tracker bug in questo file.
+
+---
+
+## Risolti
+
+### B0. Testo nero su nero in tema scuro — Pass 1
+- **Stato**: `fixed` (2026-05-29, commit `6a15cea` su `fase-4-polish`)
+- **Verifica utente**: in attesa (Pass 2 chrome flat è R1).
+- **Root cause**: `App.xaml` non aveva implicit `Style` per i control type principali → Foreground default = nero anche in dark.
+- **Fix**: `Resources/BaseStyles.xaml` con ~20 implicit `Style` cablati ai brush di tema via `DynamicResource`.
+
+### B-prev. Crash tab Dettaglio al click (e poi al launch)
+- **Stato**: `verified-fixed` (2026-05-29, commit `abb9e4c` su `fase-4-polish`)
+- **Verifica utente**: ✓ confermato — "Dettagli ora va".
+- **Root cause**: `CommandParameter="Days30"` string passato a `IAsyncRelayCommand<TrendRange>`. `RelayCommand<T>` throws `InvalidCastException` durante CanExecute check al template materialization.
+- **Fix**: `CommandParameter="{x:Static vmd:TrendRange.Days30}"` (et al.) in `HabitScreen.xaml`.
