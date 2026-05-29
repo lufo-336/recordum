@@ -1,0 +1,39 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.MetricsSectionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
+    <StackPanel>
+        <ItemsControl ItemsSource="{Binding Metrics}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vms:MetricRowViewModel}">
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding Name, UpdateSourceTrigger=LostFocus}"/>
+                        <ComboBox Grid.Column="1" Margin="4,0"
+                                  ItemsSource="{Binding Source={StaticResource MetricTypeValues}}"
+                                  SelectedItem="{Binding Type}"/>
+                        <ComboBox Grid.Column="2" Margin="0,0,4,0"
+                                  ItemsSource="{Binding DataContext.AvailableUnits, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                  DisplayMemberPath="Name"
+                                  SelectedValuePath="Id"
+                                  SelectedValue="{Binding UnitOfMeasureId}"/>
+                        <Button Grid.Column="3" Content="&#x2715;" Width="28"
+                                Command="{Binding DataContext.RemoveMetricCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="+ Add metric"
+                Command="{Binding AddMetricCommand}"
+                HorizontalAlignment="Left"
+                Margin="0,6,0,0"/>
+    </StackPanel>
+</UserControl>
