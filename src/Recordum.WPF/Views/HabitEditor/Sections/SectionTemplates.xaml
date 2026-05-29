@@ -1,0 +1,5 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections">
+    <!-- One implicit DataTemplate per section VM is added by later tasks (7-16). -->
+</ResourceDictionary>
