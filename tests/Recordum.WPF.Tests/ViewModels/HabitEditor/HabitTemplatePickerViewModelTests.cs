@@ -3,6 +3,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.Resources;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitEditor;
@@ -24,8 +25,8 @@ public class HabitTemplatePickerViewModelTests
         await sut.LoadAsync();
 
         sut.Options.Should().HaveCount(10);
-        sut.Options[0].Name.Should().Be("Blank habit");
-        sut.Options[1].Name.Should().Be("Blank group");
+        sut.Options[0].Name.Should().Be(Strings.HabitTemplatePicker_BlankHabit);
+        sut.Options[1].Name.Should().Be(Strings.HabitTemplatePicker_BlankGroup);
     }
 
     [Fact]
@@ -50,7 +51,7 @@ public class HabitTemplatePickerViewModelTests
         var sut = CreateSut();
         await sut.LoadAsync();
 
-        var blank = sut.Options.Single(o => o.Name == "Blank habit");
+        var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_BlankHabit);
         await sut.PickCommand.ExecuteAsync(blank);
 
         sut.CreatedHabitNodeId.Should().NotBeNull();
@@ -64,7 +65,7 @@ public class HabitTemplatePickerViewModelTests
         var sut = CreateSut();
         await sut.LoadAsync();
 
-        var blank = sut.Options.Single(o => o.Name == "Blank group");
+        var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_BlankGroup);
         await sut.PickCommand.ExecuteAsync(blank);
 
         _nodes.Store[sut.CreatedHabitNodeId!.Value].NodeType.Should().Be(NodeType.Group);
