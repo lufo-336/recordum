@@ -14,7 +14,8 @@
                   SelectedItem="{Binding StreakRecovery}"
                   Margin="0,2,0,8"/>
 
-        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}" Margin="0,4"/>
+        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}" Margin="0,4"
+                      Style="{StaticResource Recordum.PillToggle}"/>
         <StackPanel Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisible}}">
             <TextBlock Text="Tolerance (minutes)" Foreground="{DynamicResource Brush.TextMuted}"/>
             <TextBox Text="{Binding StreakToleranceMinutes, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"/>

@@ -10,7 +10,8 @@
         <TextBox Text="{Binding TargetValue, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,8"/>
         <TextBlock Text="Period" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource GoalPeriodTypeValues}}" SelectedItem="{Binding PeriodType}" Margin="0,2,0,8"/>
-        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}"/>
+        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}"
+                      Style="{StaticResource Recordum.PillToggle}"/>
         <StackPanel Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisible}}">
             <TextBlock Text="Rolling days" Foreground="{DynamicResource Brush.TextMuted}"/>
             <TextBox Text="{Binding RollingDays, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"/>

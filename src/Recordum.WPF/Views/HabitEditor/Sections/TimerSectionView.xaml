@@ -29,7 +29,8 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
         <Button Content="+ Add segment" Command="{Binding AddSegmentCommand}" HorizontalAlignment="Left" Margin="0,6,0,0"/>
-        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}" Margin="0,6,0,0"/>
+        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}" Margin="0,6,0,0"
+                      Style="{StaticResource Recordum.PillToggle}"/>
         <StackPanel Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisible}}">
             <CheckBox Content="Auto-prompt" IsChecked="{Binding TimerAutoPrompt}" Margin="0,4,0,0"/>
             <TextBlock Text="Rest timer seconds" Foreground="{DynamicResource Brush.TextMuted}"/>
