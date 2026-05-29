@@ -268,6 +268,7 @@ public static class Strings
     public static string Editor_Field_AiDataSharing => Get("Editor.Field.AiDataSharing");
     public static string Editor_Field_ResetTime => Get("Editor.Field.ResetTime");
     public static string Editor_Action_AddNotification => Get("Editor.Action.AddNotification");
+    public static string Editor_Field_Days => Get("Editor.Field.Days");
 
     // Editor sections
     public static string Editor_Section_Scheduling => Get("Editor.Section.Scheduling");

@@ -10,6 +10,25 @@
                   SelectedItem="{Binding ScheduleType}"
                   Margin="0,2,0,8"/>
 
+        <!-- SpecificDays: day-of-week picker -->
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_Days}" Foreground="{DynamicResource Brush.TextMuted}"
+                   Visibility="{Binding ScheduleType, Converter={StaticResource EnumToVisibility},
+                                ConverterParameter={x:Static enums:ScheduleType.SpecificDays}}"/>
+        <ItemsControl ItemsSource="{Binding DayOptions}" Margin="0,2,0,8"
+                      Visibility="{Binding ScheduleType, Converter={StaticResource EnumToVisibility},
+                                   ConverterParameter={x:Static enums:ScheduleType.SpecificDays}}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vms:DayToggleViewModel}">
+                    <ToggleButton Content="{Binding Label}"
+                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Margin="0,0,4,4" MinWidth="40"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <TextBlock Text="{x:Static res:Strings.Editor_Field_TimesPerWeek}" Foreground="{DynamicResource Brush.TextMuted}"
                    Visibility="{Binding ScheduleType, Converter={StaticResource EnumToVisibility},
                                 ConverterParameter={x:Static enums:ScheduleType.WeeklyX}}"/>

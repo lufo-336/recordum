@@ -29,30 +29,76 @@ public class TagsSectionViewModelTests
     }
 
     [Fact]
+    public async Task LoadAsync_sets_IsSelected_for_already_attached_tag()
+    {
+        // Create two tags, attach one to the node before load.
+        var tagA = new Tag { Id = Guid.NewGuid(), Name = "a" };
+        var tagB = new Tag { Id = Guid.NewGuid(), Name = "b" };
+        await _tags.CreateAsync(tagA);
+        await _tags.CreateAsync(tagB);
+        await _tags.AttachAsync(_node.Id, tagA.Id);
+
+        var sut = new TagsSectionViewModel(_tags);
+        await sut.LoadAsync(_node);
+
+        var chipA = sut.AvailableTags.Single(c => c.Name == "a");
+        var chipB = sut.AvailableTags.Single(c => c.Name == "b");
+        chipA.IsSelected.Should().BeTrue();
+        chipB.IsSelected.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task LoadAsync_populates_selected_ids_from_existing_attachments()
     {
+        // Legacy-style test: verify the chip for "a" is selected after attach.
         var sut = await CreateSutAsync("a", "b");
-        var tagA = sut.AvailableTags.First(t => t.Name == "a");
-        await _tags.AttachAsync(_node.Id, tagA.Id);
+        var chipA = sut.AvailableTags.First(c => c.Name == "a");
+        await _tags.AttachAsync(_node.Id, chipA.Id);
 
         // Reload.
         await sut.LoadAsync(_node);
 
-        sut.SelectedTagIds.Should().BeEquivalentTo(new[] { tagA.Id });
+        sut.AvailableTags.Single(c => c.Name == "a").IsSelected.Should().BeTrue();
+        sut.AvailableTags.Single(c => c.Name == "b").IsSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ToggleTagCommand_selects_unselected_chip_and_calls_SetTagsAsync()
+    {
+        // Arrange: two tags, tag "a" attached, tag "b" not.
+        var tagA = new Tag { Id = Guid.NewGuid(), Name = "a" };
+        var tagB = new Tag { Id = Guid.NewGuid(), Name = "b" };
+        await _tags.CreateAsync(tagA);
+        await _tags.CreateAsync(tagB);
+        await _tags.AttachAsync(_node.Id, tagA.Id);
+
+        var sut = new TagsSectionViewModel(_tags);
+        await sut.LoadAsync(_node);
+
+        var chipB = sut.AvailableTags.Single(c => c.Name == "b");
+        chipB.IsSelected.Should().BeFalse();
+
+        // Act: toggle "b" on.
+        await sut.ToggleTagCommand.ExecuteAsync(chipB);
+
+        // Assert: chip is now selected, both ids persisted.
+        chipB.IsSelected.Should().BeTrue();
+        _tags.Attachments.Should().Contain((_node.Id, tagA.Id));
+        _tags.Attachments.Should().Contain((_node.Id, tagB.Id));
     }
 
     [Fact]
     public async Task ToggleTagCommand_adds_then_removes_via_SetTagsAsync()
     {
         var sut = await CreateSutAsync("a");
-        var tag = sut.AvailableTags.Single();
+        var chip = sut.AvailableTags.Single();
 
-        await sut.ToggleTagCommand.ExecuteAsync(tag);
-        sut.SelectedTagIds.Should().Contain(tag.Id);
-        _tags.Attachments.Should().Contain((_node.Id, tag.Id));
+        await sut.ToggleTagCommand.ExecuteAsync(chip);
+        chip.IsSelected.Should().BeTrue();
+        _tags.Attachments.Should().Contain((_node.Id, chip.Id));
 
-        await sut.ToggleTagCommand.ExecuteAsync(tag);
-        sut.SelectedTagIds.Should().NotContain(tag.Id);
-        _tags.Attachments.Should().NotContain((_node.Id, tag.Id));
+        await sut.ToggleTagCommand.ExecuteAsync(chip);
+        chip.IsSelected.Should().BeFalse();
+        _tags.Attachments.Should().NotContain((_node.Id, chip.Id));
     }
 }

@@ -801,4 +801,7 @@ Details: {0}</value>
   <data name="Editor.Action.AddNotification" xml:space="preserve">
     <value>+ Add notification</value>
   </data>
+  <data name="Editor.Field.Days" xml:space="preserve">
+    <value>Days</value>
+  </data>
 </root>
