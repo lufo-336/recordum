@@ -6,6 +6,8 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Quick;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Events;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels;
@@ -372,18 +374,31 @@ public class HomeViewModelTests
     }
 
     [Fact]
-    public async Task QuickAction_that_records_reloads_the_list_for_visual_feedback()
+    public async Task CompletionRecorded_event_reloads_the_list_for_visual_feedback()
+    {
+        var bus = new EventBus();
+        _query.HomeRows.Add(SampleRow(name: "a"));
+        var sut = new HomeViewModel(_query, _nodes, _purge, events: bus);
+        await sut.LoadCommand.ExecuteAsync(null);
+        var before = _query.HomeCallCount;
+
+        bus.Publish(new CompletionRecordedPayload(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow));
+
+        _query.HomeCallCount.Should().BeGreaterThan(before);
+    }
+
+    [Fact]
+    public async Task QuickAction_that_records_does_not_open_the_detail()
     {
         _query.HomeRows.Add(SampleRow(name: "counter", type: HabitType.Counter));
         var selector = new QuickActionHandlerSelector(
             new IQuickActionHandler[] { new StubQuickActionHandler(HabitType.Counter, recorded: true) });
         var sut = new HomeViewModel(_query, _nodes, _purge, quickActions: selector);
         await sut.LoadCommand.ExecuteAsync(null);
-        var before = _query.HomeCallCount;
 
         await sut.Rows.Single().QuickActionCommand.ExecuteAsync(null);
 
-        _query.HomeCallCount.Should().BeGreaterThan(before);
+        sut.SelectedRow.Should().BeNull();
     }
 
     [Fact]

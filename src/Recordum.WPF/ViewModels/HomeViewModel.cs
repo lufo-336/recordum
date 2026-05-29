@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.Quick;
 
@@ -42,13 +44,33 @@ public sealed partial class HomeViewModel : ObservableObject
         IHabitNodeService nodes,
         IPurgeService purge,
         IHabitTemplatePickerLauncher? launcher = null,
-        QuickActionHandlerSelector? quickActions = null)
+        QuickActionHandlerSelector? quickActions = null,
+        IEventBus? events = null)
     {
         _query = query;
         _nodes = nodes;
         _purge = purge;
         _launcher = launcher;
         _quickActions = quickActions;
+
+        // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete)
+        // must refresh the row indicators (sparkline / completed-today). The bus is the
+        // single source of that signal.
+        events?.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent);
+        events?.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent);
+        events?.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent);
+    }
+
+    private void OnCompletionEvent(EventEnvelope env)
+    {
+        // EventBus invokes handlers on the publisher's thread; quick-action handlers
+        // record with ConfigureAwait(false), so this can arrive off the UI thread.
+        // Marshal before touching Rows (an ObservableCollection bound to the view).
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.CheckAccess())
+            _ = ReloadPreservingSelectionAsync();
+        else
+            dispatcher.InvokeAsync(() => ReloadPreservingSelectionAsync());
     }
 
     [RelayCommand]
@@ -134,14 +156,13 @@ public sealed partial class HomeViewModel : ObservableObject
     // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
     private async void OnRowChanged(object? sender, EventArgs e) => await ReloadPreservingSelectionAsync();
 
-    private async void OnRowQuickActionExecuted(object? sender, QuickActionExecutedEventArgs e)
+    private void OnRowQuickActionExecuted(object? sender, QuickActionExecutedEventArgs e)
     {
-        if (e.Recorded)
-            // A completion was recorded — reload so the row's sparkline / completed-today refresh.
-            await ReloadPreservingSelectionAsync();
-        else if (sender is HomeRowViewModel row)
-            // One-click recording doesn't apply (State/Resistance/Journal): open the detail
-            // so the user can record the value via the QuickAdd panel.
+        // recorded == true: the completion fires a bus event that refreshes the list
+        // (see OnCompletionEvent) — nothing to do here.
+        // recorded == false: one-click recording doesn't apply (State/Resistance/Journal),
+        // so open the detail and let the user record the value via the QuickAdd panel.
+        if (!e.Recorded && sender is HomeRowViewModel row)
             SelectedRow = row;
     }
 
