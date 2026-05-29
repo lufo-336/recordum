@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor;
 
@@ -27,8 +28,8 @@ public sealed partial class HabitTemplatePickerViewModel(
     public async Task LoadAsync(Guid? parentId = null, CancellationToken ct = default)
     {
         Options.Clear();
-        Options.Add(new PickerOption("Blank habit", "Start with no template — an action habit.", null, NodeType.Habit, parentId));
-        Options.Add(new PickerOption("Blank group", "Create an empty group to organise habits.", null, NodeType.Group, parentId));
+        Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankHabit, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
+        Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankGroup, Strings.HabitTemplatePicker_BlankGroup_Description, null, NodeType.Group, parentId));
         foreach (var t in await _templates.ListAsync(ct))
             Options.Add(new PickerOption(t.Name, t.Description ?? "", t.Id, NodeType.Habit, parentId));
     }
@@ -47,7 +48,7 @@ public sealed partial class HabitTemplatePickerViewModel(
             ParentId = option.ParentId,
             NodeType = option.NodeType,
             HabitType = option.NodeType == NodeType.Habit ? HabitType.Action : null,
-            Name = option.NodeType == NodeType.Habit ? "New habit" : "New group",
+            Name = option.NodeType == NodeType.Habit ? Strings.Editor_Default_NewHabit : Strings.Editor_Default_NewGroup,
             Color = "#808080",
         };
         CreatedHabitNodeId = await _nodes.CreateAsync(draft);

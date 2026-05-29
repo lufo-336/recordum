@@ -2,22 +2,23 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
-             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources">
     <StackPanel>
-        <TextBlock Text="Streak mode" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_StreakMode}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource StreakModeValues}}"
                   SelectedItem="{Binding StreakMode}"
                   Margin="0,2,0,8"/>
 
-        <TextBlock Text="Recovery" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_Recovery}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource StreakRecoveryValues}}"
                   SelectedItem="{Binding StreakRecovery}"
                   Margin="0,2,0,8"/>
 
-        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}" Margin="0,4"
+        <ToggleButton Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{Binding ShowAdvanced}" Margin="0,4"
                       Style="{StaticResource Recordum.PillToggle}"/>
         <StackPanel Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisible}}">
-            <TextBlock Text="Tolerance (minutes)" Foreground="{DynamicResource Brush.TextMuted}"/>
+            <TextBlock Text="{x:Static res:Strings.Editor_Field_ToleranceMinutes}" Foreground="{DynamicResource Brush.TextMuted}"/>
             <TextBox Text="{Binding StreakToleranceMinutes, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"/>
         </StackPanel>
     </StackPanel>

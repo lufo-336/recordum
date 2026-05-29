@@ -2,18 +2,19 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
-             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources">
     <StackPanel>
-        <TextBlock Text="Goal name" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_GoalName}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <TextBox Text="{Binding GoalName, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,8"/>
-        <TextBlock Text="Target" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_Target}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <TextBox Text="{Binding TargetValue, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,8"/>
-        <TextBlock Text="Period" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_Period}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource GoalPeriodTypeValues}}" SelectedItem="{Binding PeriodType}" Margin="0,2,0,8"/>
-        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}"
+        <ToggleButton Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{Binding ShowAdvanced}"
                       Style="{StaticResource Recordum.PillToggle}"/>
         <StackPanel Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisible}}">
-            <TextBlock Text="Rolling days" Foreground="{DynamicResource Brush.TextMuted}"/>
+            <TextBlock Text="{x:Static res:Strings.Editor_Field_RollingDays}" Foreground="{DynamicResource Brush.TextMuted}"/>
             <TextBox Text="{Binding RollingDays, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"/>
         </StackPanel>
     </StackPanel>

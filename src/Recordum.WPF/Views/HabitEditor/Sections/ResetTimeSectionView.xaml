@@ -1,9 +1,10 @@
 <UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.ResetTimeSectionView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections">
+             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources">
     <StackPanel>
-        <TextBlock Text="Reset time (HH:mm, empty = inherit)" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_ResetTime}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <TextBox Text="{Binding ResetTimeText, UpdateSourceTrigger=LostFocus}" Width="80" HorizontalAlignment="Left" Margin="0,2,0,0"/>
     </StackPanel>
 </UserControl>

@@ -2,14 +2,15 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
-             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources">
     <StackPanel>
-        <TextBlock Text="Schedule type" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_ScheduleType}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource ScheduleTypeValues}}"
                   SelectedItem="{Binding ScheduleType}"
                   Margin="0,2,0,8"/>
 
-        <TextBlock Text="Times per week" Foreground="{DynamicResource Brush.TextMuted}"
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_TimesPerWeek}" Foreground="{DynamicResource Brush.TextMuted}"
                    Visibility="{Binding ScheduleType, Converter={StaticResource EnumToVisibility},
                                 ConverterParameter={x:Static enums:ScheduleType.WeeklyX}}"/>
         <TextBox Text="{Binding ScheduleWeeklyTarget, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"
@@ -17,7 +18,7 @@
                  Visibility="{Binding ScheduleType, Converter={StaticResource EnumToVisibility},
                               ConverterParameter={x:Static enums:ScheduleType.WeeklyX}}"/>
 
-        <TextBlock Text="Every X days" Foreground="{DynamicResource Brush.TextMuted}"
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_EveryXDays}" Foreground="{DynamicResource Brush.TextMuted}"
                    Visibility="{Binding ScheduleType, Converter={StaticResource EnumToVisibility},
                                 ConverterParameter={x:Static enums:ScheduleType.EveryXDays}}"/>
         <TextBox Text="{Binding ScheduleEveryXDays, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"

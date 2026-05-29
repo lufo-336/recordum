@@ -707,4 +707,80 @@
   <data name="Editor.Section.ResetTime" xml:space="preserve">
     <value>Orario di reset</value>
   </data>
+  <!-- Editor section field labels (B9) -->
+  <data name="Editor.Field.ScheduleType" xml:space="preserve">
+    <value>Tipo di pianificazione</value>
+  </data>
+  <data name="Editor.Field.TimesPerWeek" xml:space="preserve">
+    <value>Volte a settimana</value>
+  </data>
+  <data name="Editor.Field.EveryXDays" xml:space="preserve">
+    <value>Ogni X giorni</value>
+  </data>
+  <data name="Editor.Field.StreakMode" xml:space="preserve">
+    <value>Modalità streak</value>
+  </data>
+  <data name="Editor.Field.Recovery" xml:space="preserve">
+    <value>Recupero</value>
+  </data>
+  <data name="Editor.Field.Advanced" xml:space="preserve">
+    <value>Avanzate</value>
+  </data>
+  <data name="Editor.Field.ToleranceMinutes" xml:space="preserve">
+    <value>Tolleranza (minuti)</value>
+  </data>
+  <data name="Editor.Action.AddMetric" xml:space="preserve">
+    <value>+ Aggiungi metrica</value>
+  </data>
+  <data name="Editor.Field.Scale" xml:space="preserve">
+    <value>Scala</value>
+  </data>
+  <data name="Editor.Field.CustomLabels" xml:space="preserve">
+    <value>Etichette personalizzate (array JSON, sovrascrive la scala)</value>
+  </data>
+  <data name="Editor.Field.IntegratedTimer" xml:space="preserve">
+    <value>Timer integrato</value>
+  </data>
+  <data name="Editor.Field.TimerMode" xml:space="preserve">
+    <value>Modalità timer</value>
+  </data>
+  <data name="Editor.Field.TargetSeconds" xml:space="preserve">
+    <value>Secondi obiettivo</value>
+  </data>
+  <data name="Editor.Field.Segments" xml:space="preserve">
+    <value>Segmenti</value>
+  </data>
+  <data name="Editor.Action.AddSegment" xml:space="preserve">
+    <value>+ Aggiungi segmento</value>
+  </data>
+  <data name="Editor.Field.Rest" xml:space="preserve">
+    <value>Riposo</value>
+  </data>
+  <data name="Editor.Field.AutoPrompt" xml:space="preserve">
+    <value>Richiesta automatica</value>
+  </data>
+  <data name="Editor.Field.RestTimerSeconds" xml:space="preserve">
+    <value>Secondi timer di riposo</value>
+  </data>
+  <data name="Editor.Field.GoalName" xml:space="preserve">
+    <value>Nome obiettivo</value>
+  </data>
+  <data name="Editor.Field.Target" xml:space="preserve">
+    <value>Obiettivo</value>
+  </data>
+  <data name="Editor.Field.Period" xml:space="preserve">
+    <value>Periodo</value>
+  </data>
+  <data name="Editor.Field.RollingDays" xml:space="preserve">
+    <value>Giorni mobili</value>
+  </data>
+  <data name="Editor.Field.AiDataSharing" xml:space="preserve">
+    <value>Condivisione dati AI</value>
+  </data>
+  <data name="Editor.Field.ResetTime" xml:space="preserve">
+    <value>Orario di reset (HH:mm, vuoto = ereditato)</value>
+  </data>
+  <data name="Editor.Action.AddNotification" xml:space="preserve">
+    <value>+ Aggiungi notifica</value>
+  </data>
 </root>

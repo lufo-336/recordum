@@ -242,6 +242,33 @@ public static class Strings
     public static string Export_Run => Get("Export.Run");
     public static string Export_Cancel => Get("Export.Cancel");
 
+    // Editor section field labels (B9)
+    public static string Editor_Field_ScheduleType => Get("Editor.Field.ScheduleType");
+    public static string Editor_Field_TimesPerWeek => Get("Editor.Field.TimesPerWeek");
+    public static string Editor_Field_EveryXDays => Get("Editor.Field.EveryXDays");
+    public static string Editor_Field_StreakMode => Get("Editor.Field.StreakMode");
+    public static string Editor_Field_Recovery => Get("Editor.Field.Recovery");
+    public static string Editor_Field_Advanced => Get("Editor.Field.Advanced");
+    public static string Editor_Field_ToleranceMinutes => Get("Editor.Field.ToleranceMinutes");
+    public static string Editor_Action_AddMetric => Get("Editor.Action.AddMetric");
+    public static string Editor_Field_Scale => Get("Editor.Field.Scale");
+    public static string Editor_Field_CustomLabels => Get("Editor.Field.CustomLabels");
+    public static string Editor_Field_IntegratedTimer => Get("Editor.Field.IntegratedTimer");
+    public static string Editor_Field_TimerMode => Get("Editor.Field.TimerMode");
+    public static string Editor_Field_TargetSeconds => Get("Editor.Field.TargetSeconds");
+    public static string Editor_Field_Segments => Get("Editor.Field.Segments");
+    public static string Editor_Action_AddSegment => Get("Editor.Action.AddSegment");
+    public static string Editor_Field_Rest => Get("Editor.Field.Rest");
+    public static string Editor_Field_AutoPrompt => Get("Editor.Field.AutoPrompt");
+    public static string Editor_Field_RestTimerSeconds => Get("Editor.Field.RestTimerSeconds");
+    public static string Editor_Field_GoalName => Get("Editor.Field.GoalName");
+    public static string Editor_Field_Target => Get("Editor.Field.Target");
+    public static string Editor_Field_Period => Get("Editor.Field.Period");
+    public static string Editor_Field_RollingDays => Get("Editor.Field.RollingDays");
+    public static string Editor_Field_AiDataSharing => Get("Editor.Field.AiDataSharing");
+    public static string Editor_Field_ResetTime => Get("Editor.Field.ResetTime");
+    public static string Editor_Action_AddNotification => Get("Editor.Action.AddNotification");
+
     // Editor sections
     public static string Editor_Section_Scheduling => Get("Editor.Section.Scheduling");
     public static string Editor_Section_Streak => Get("Editor.Section.Streak");

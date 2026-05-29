@@ -1,9 +1,10 @@
 <UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.AiSharingSectionView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections">
+             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources">
     <StackPanel>
-        <TextBlock Text="AI data sharing" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBlock Text="{x:Static res:Strings.Editor_Field_AiDataSharing}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource AiDataSharingValues}}" SelectedItem="{Binding AiDataSharing}" Margin="0,2,0,0"/>
     </StackPanel>
 </UserControl>
