@@ -1,0 +1,28 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.NotificationsSectionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections">
+    <StackPanel>
+        <ItemsControl ItemsSource="{Binding Notifications}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vms:NotificationRowViewModel}">
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0" ItemsSource="{Binding Source={StaticResource NotifyTypeValues}}" SelectedItem="{Binding NotifyType}"/>
+                        <TextBox Grid.Column="1" Margin="4,0" Text="{Binding NotifyTime, UpdateSourceTrigger=LostFocus, StringFormat=HH\\:mm, TargetNullValue=''}"/>
+                        <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <Button Grid.Column="3" Content="✕" Width="28"
+                                Command="{Binding DataContext.RemoveNotificationCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="+ Add notification" Command="{Binding AddNotificationCommand}" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+    </StackPanel>
+</UserControl>

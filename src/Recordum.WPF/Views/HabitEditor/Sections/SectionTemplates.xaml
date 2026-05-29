@@ -24,6 +24,12 @@
     <ObjectDataProvider x:Key="GoalPeriodTypeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
         <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:GoalPeriodType"/></ObjectDataProvider.MethodParameters>
     </ObjectDataProvider>
+    <ObjectDataProvider x:Key="NotifyTypeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+        <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:NotifyType"/></ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
+    <ObjectDataProvider x:Key="AiDataSharingValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+        <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:AiDataSharing"/></ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
 
     <!-- Implicit DataTemplates — one per section VM (tasks 7-16) -->
     <DataTemplate DataType="{x:Type vms:SchedulingSectionViewModel}"><vs:SchedulingSectionView/></DataTemplate>
@@ -32,5 +38,9 @@
     <DataTemplate DataType="{x:Type vms:ScalesSectionViewModel}"><vs:ScalesSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:TimerSectionViewModel}"><vs:TimerSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:GoalSectionViewModel}"><vs:GoalSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:NotificationsSectionViewModel}"><vs:NotificationsSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:TagsSectionViewModel}"><vs:TagsSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:AiSharingSectionViewModel}"><vs:AiSharingSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:ResetTimeSectionViewModel}"><vs:ResetTimeSectionView/></DataTemplate>
 
 </ResourceDictionary>
