@@ -5,6 +5,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
+using Recordum.WPF.ViewModels.Quick;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels;
@@ -368,6 +369,42 @@ public class HomeViewModelTests
         await filed.ArchiveCommand.ExecuteAsync(null);
 
         sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("keep");
+    }
+
+    [Fact]
+    public async Task QuickAction_that_records_reloads_the_list_for_visual_feedback()
+    {
+        _query.HomeRows.Add(SampleRow(name: "counter", type: HabitType.Counter));
+        var selector = new QuickActionHandlerSelector(
+            new IQuickActionHandler[] { new StubQuickActionHandler(HabitType.Counter, recorded: true) });
+        var sut = new HomeViewModel(_query, _nodes, _purge, quickActions: selector);
+        await sut.LoadCommand.ExecuteAsync(null);
+        var before = _query.HomeCallCount;
+
+        await sut.Rows.Single().QuickActionCommand.ExecuteAsync(null);
+
+        _query.HomeCallCount.Should().BeGreaterThan(before);
+    }
+
+    [Fact]
+    public async Task QuickAction_that_only_requests_focus_selects_the_row()
+    {
+        _query.HomeRows.Add(SampleRow(name: "mood", type: HabitType.State));
+        var selector = new QuickActionHandlerSelector(
+            new IQuickActionHandler[] { new StubQuickActionHandler(HabitType.State, recorded: false) });
+        var sut = new HomeViewModel(_query, _nodes, _purge, quickActions: selector);
+        await sut.LoadCommand.ExecuteAsync(null);
+        var row = sut.Rows.Single();
+
+        await row.QuickActionCommand.ExecuteAsync(null);
+
+        sut.SelectedRow.Should().BeSameAs(row);
+    }
+
+    private sealed class StubQuickActionHandler(HabitType type, bool recorded) : IQuickActionHandler
+    {
+        public HabitType HabitType { get; } = type;
+        public ValueTask<bool> ExecuteAsync(Guid habitNodeId, CancellationToken ct = default) => new(recorded);
     }
 
     private static HomeTreeRow SampleRow(string name = "x", bool archived = false, HabitType? type = HabitType.Action, Guid? id = null, Guid? parent = null) =>

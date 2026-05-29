@@ -124,18 +124,34 @@ public sealed partial class HomeViewModel : ObservableObject
         }
     }
 
-    private async void OnRowChanged(object? sender, EventArgs e)
+    private async Task ReloadPreservingSelectionAsync()
     {
-        // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
-        // Reload the tree so the list reflects it, preserving the selection by id.
         var keep = SelectedRow?.HabitNodeId;
         await LoadAsync();
         SelectedRow = keep is { } id ? Rows.FirstOrDefault(r => r.HabitNodeId == id) : null;
     }
 
+    // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
+    private async void OnRowChanged(object? sender, EventArgs e) => await ReloadPreservingSelectionAsync();
+
+    private async void OnRowQuickActionExecuted(object? sender, QuickActionExecutedEventArgs e)
+    {
+        if (e.Recorded)
+            // A completion was recorded — reload so the row's sparkline / completed-today refresh.
+            await ReloadPreservingSelectionAsync();
+        else if (sender is HomeRowViewModel row)
+            // One-click recording doesn't apply (State/Resistance/Journal): open the detail
+            // so the user can record the value via the QuickAdd panel.
+            SelectedRow = row;
+    }
+
     private void Rebuild()
     {
-        foreach (var old in Rows) old.Changed -= OnRowChanged;
+        foreach (var old in Rows)
+        {
+            old.Changed -= OnRowChanged;
+            old.QuickActionExecuted -= OnRowQuickActionExecuted;
+        }
         Rows.Clear();
         IEnumerable<HomeTreeRow> q = _lastFetched;
         q = ActiveTab switch
@@ -160,6 +176,7 @@ public sealed partial class HomeViewModel : ObservableObject
             var vm = new HomeRowViewModel(row, level, _nodes, _purge) { CurrentTab = ActiveTab };
             if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
             vm.Changed += OnRowChanged;
+            vm.QuickActionExecuted += OnRowQuickActionExecuted;
             Rows.Add(vm);
         }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
