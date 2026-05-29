@@ -13,6 +13,7 @@ public sealed class BackupSchedulerHost(IServiceScopeFactory scopes, ILogger<Bac
 
     public void Initialize()
     {
+        if (_loop is not null) return; // idempotent — already started
         CleanupOrphanTempDirs();
         _cts = new CancellationTokenSource();
         _timer = new PeriodicTimer(TimeSpan.FromMinutes(60));

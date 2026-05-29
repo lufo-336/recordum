@@ -47,6 +47,7 @@ public static class ServiceRegistrar
         // Core abstractions + storage paths.
         services.AddSingleton(options);
         services.AddSingleton<IDbStoragePaths>(options);
+        services.AddSingleton<IBackupStoragePaths>(options);
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPluginContext, AmbientPluginContext>();
         services.AddLogging();
