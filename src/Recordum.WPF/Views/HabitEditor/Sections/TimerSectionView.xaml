@@ -1,0 +1,39 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.TimerSectionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
+             xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
+    <StackPanel>
+        <CheckBox Content="Integrated timer" IsChecked="{Binding HasIntegratedTimer}" Margin="0,0,0,6"/>
+        <TextBlock Text="Timer mode" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <ComboBox ItemsSource="{Binding Source={StaticResource TimerModeValues}}" SelectedItem="{Binding TimerMode}" Margin="0,2,0,8"/>
+        <TextBlock Text="Target seconds" Foreground="{DynamicResource Brush.TextMuted}"/>
+        <TextBox Text="{Binding TimerTargetSeconds, UpdateSourceTrigger=LostFocus, TargetNullValue=''}" Margin="0,2,0,8"/>
+        <TextBlock Text="Segments" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,2"/>
+        <ItemsControl ItemsSource="{Binding Segments}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vms:SegmentRowViewModel}">
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding Name, UpdateSourceTrigger=LostFocus}"/>
+                        <CheckBox Grid.Column="1" Content="Rest" IsChecked="{Binding IsRest}" Margin="6,0" VerticalAlignment="Center"/>
+                        <Button Grid.Column="2" Content="&#x2715;" Width="28"
+                                Command="{Binding DataContext.RemoveSegmentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="+ Add segment" Command="{Binding AddSegmentCommand}" HorizontalAlignment="Left" Margin="0,6,0,0"/>
+        <ToggleButton Content="Advanced" IsChecked="{Binding ShowAdvanced}" Margin="0,6,0,0"/>
+        <StackPanel Visibility="{Binding ShowAdvanced, Converter={StaticResource BoolToVisible}}">
+            <CheckBox Content="Auto-prompt" IsChecked="{Binding TimerAutoPrompt}" Margin="0,4,0,0"/>
+            <TextBlock Text="Rest timer seconds" Foreground="{DynamicResource Brush.TextMuted}"/>
+            <TextBox Text="{Binding RestTimerSeconds, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -18,10 +18,19 @@
     <ObjectDataProvider x:Key="MetricTypeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
         <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:MetricType"/></ObjectDataProvider.MethodParameters>
     </ObjectDataProvider>
+    <ObjectDataProvider x:Key="TimerModeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+        <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:TimerMode"/></ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
+    <ObjectDataProvider x:Key="GoalPeriodTypeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+        <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:GoalPeriodType"/></ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
 
     <!-- Implicit DataTemplates — one per section VM (tasks 7-16) -->
     <DataTemplate DataType="{x:Type vms:SchedulingSectionViewModel}"><vs:SchedulingSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:StreakSectionViewModel}"><vs:StreakSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:MetricsSectionViewModel}"><vs:MetricsSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:ScalesSectionViewModel}"><vs:ScalesSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:TimerSectionViewModel}"><vs:TimerSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:GoalSectionViewModel}"><vs:GoalSectionView/></DataTemplate>
 
 </ResourceDictionary>
