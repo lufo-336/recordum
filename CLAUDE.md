@@ -10,7 +10,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 
 - **Autore**: ITS Web Solutions Architect · Torino
 - **Product spec**: v2.0 (aprile 2026)
-- **DB schema**: v2.6 (maggio 2026) — delta `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
+- **DB schema**: v2.7 (maggio 2026) — delta `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
 - **Namespace**: `Recordum`
 
 ---
@@ -37,9 +37,9 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 | Editor Markdown | WebView2 + Toast UI Editor (vendored) |
 | Backend web (Fase 4) | ASP.NET Core + React/Svelte PWA |
 | Export PDF | QuestPDF |
-| Mobile (Fase 6) | .NET MAUI |
-| Health (Fase 6) | CoreMotion (iOS) / Health Connect (Android) |
-| Statistica (Fase 8) | Math.NET Numerics |
+| Mobile (Fase 7) | .NET MAUI |
+| Health (Fase 7) | CoreMotion (iOS) / Health Connect (Android) |
+| Statistica (Fase 9) | Math.NET Numerics |
 
 ---
 
@@ -53,7 +53,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 | **Recordum.Plugins** | `PluginManager`, `InProcessPluginHost`, `AlwaysAllowPermissionBroker`, `ExtensionPointRegistry`, `EventBus`, `ApiRouter`. In Fase 3 host in-process per first-party fidati. WebView2 host in Fase 7. |
 | **Recordum.WPF** | App + Views + ViewModels + `Bootstrap/` (ServiceRegistrar, ApplicationInitializer, RecordumOptions). |
 
-Core/Data/Plugins.Contracts/Plugins riutilizzati senza modifiche in Fase 4 (web) e Fase 6 (MAUI).
+Core/Data/Plugins.Contracts/Plugins riutilizzati senza modifiche in Fase 5 (web) e Fase 7 (MAUI).
 
 ### Convenzioni di startup
 
@@ -102,6 +102,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 **StreakBrokenAt v2.6**: `habit_config.streak_broken_at TEXT NULL` per supportare `StreakRecovery.Manual`. **Non versionata** in `HabitConfigHistory` (è uno stato puntuale, non un setting); aggiunta a `HabitConfigHistoryColumns.Excluded`. Migration `StreakBrokenAtV26` bumpa `schema_version` a `2.6`.
 
+**BackupLog v2.7**: tabella `backup_log` (`id` GUID PK, `created_at` TEXT, `kind` TEXT con CHECK `IN ('Manual','Auto','PreRestore')`, `path` TEXT, `size_bytes` INTEGER, `schema_version` TEXT, `app_version` TEXT, `notes` TEXT NULL) + indice `ix_backup_log_created_at` discendente. **Singola migration additiva** `BackupLogV27`: crea la tabella + bumpa `schema_version` a `2.7` + inserisce 5 nuovi AppSetting (`backup.auto.enabled`=true, `backup.auto.frequency_days`=7, `backup.auto.retention_count`=8, `backup.auto.last_run_utc`="", `backup.auto.path`=""). Conta totale AppSetting: 18.
+
 **Soft delete**: solo su `HabitNode`. Cascade in transazione singola ai discendenti. Restore ripristina solo i discendenti chiusi nella stessa operazione. Purge permanente è job background per nodi >30 giorni (ordine: file → tabelle figlie → HabitNode).
 
 **Naming**: tabelle e colonne snake_case (via `EFCore.NamingConventions`). Classi/proprietà C# PascalCase. Tutte le cascade rules e tutti gli indici **dichiarati esplicitamente** in Fluent API — mai default EF Core.
@@ -113,12 +115,13 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | Fase | Scope | Stato |
 |---|---|---|
 | 0–2 | Console + WPF prototyping | ✓ formativo (non importare codice in Fase 3) |
-| **3** | WPF production: schema + UI + plugin foundation | **→ corrente** |
-| 4 | Web/PWA | Pianificata |
-| 5 | Cloud sync via provider terzi | Pianificata |
-| 6 | MAUI mobile | Pianificata |
-| 7 | Plugin runtime WebView2 + marketplace + widget + accessibilità | Pianificata |
-| 8 | AI insight + correlazioni | Pianificata |
+| 3 | WPF production: schema + UI + plugin foundation | ✓ **completata 2026-05-29** |
+| **4** | **Polish/UX — bugfix produzione + theming completo + DX rifinita prima di estendere piattaforma** | **→ corrente** |
+| 5 | Web/PWA | Pianificata |
+| 6 | Cloud sync via provider terzi | Pianificata |
+| 7 | MAUI mobile | Pianificata |
+| 8 | Plugin runtime WebView2 + marketplace + widget + accessibilità | Pianificata |
+| 9 | AI insight + correlazioni | Pianificata |
 
 **Principi roadmap**: piattaforma completa prima di espandere. Schema finale dalla Fase 3 — nessuna migrazione invasiva successiva. Ogni fase = prodotto funzionante. Nessuna UI placeholder.
 
@@ -136,7 +139,24 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | 3.8 | Streaks Engine: tutte le combinazioni schedule_type × streak_mode × streak_recovery × pause + HabitConfigHistory | ✓ **completata 2026-05-25** |
 | **3.9** | Custom Charts (LiveCharts2). **Chart Engine come core plugin pilota** consumer di `chart.renderer` | ✓ **completata 2026-05-27** |
 | **3.10a** | Export System (PDF/HTML/Markdown/JSON/CSV). **Export Engine come secondo core plugin** consumer di `export.format` | ✓ **completata 2026-05-28** |
-| 3.10b | Backup/restore con lista plugin + permission state |  |
+| **3.10b** | Backup/restore `.recbak` (Argon2id + AES-256-GCM) + auto-backup scheduler + backup history | ✓ **completata 2026-05-29** |
+
+### Fase 4 — Polish/UX (corrente)
+
+Decisione: prima di estendere la piattaforma a web/MAUI (Fase 5+), chiudere i bug di produzione emersi dal test della build WPF M3.10b e portare l'app a "perfettamente funzionante e gradevole alla vista". Bucket:
+
+**Bloccanti** (regression Fase 3 verificate sul branch corrente):
+1. **Testo nero su nero in tema scuro** — `Light.xaml`/`Dark.xaml` definiscono `Brush.Text` come `DynamicResource`, ma `App.xaml` non ha `Style` globale per `TextBlock`/`Control`/`TabItem`/`ListBox`/`Button` che cabli `Foreground="{DynamicResource Brush.Text}"`. Default WPF foreground = `SystemColors.ControlTextBrush` = nero → illeggibile su `Brush.Background` dark `#FF09090B`. Servono style globali in `App.xaml` per ogni control type + override `TabItem` (default Aero non rispetta theme).
+2. **Crash tab "Dettaglio"** — root cause ancora da confermare (serve stack trace dall'Event Viewer). Ipotesi: (a) `CommandParameter="Days30"` string → `TrendRange` enum cast fallisce in `Trend.SetRangeCommand`; (b) LiveCharts2/SkiaSharp native init crasha al primo paint di `TrendChartControl`/`HourlyHistogramControl`; (c) `StreakTimelineControl.Redraw` non si chiama in `Loaded` (solo `DataContextChanged` + `SizeChanged`), può dare nullref se la sequenza è anomala.
+3. **Save note non funzionante** — verificare flusso `Toast UI 'change' → postMessage → MarkdownProperty (TwoWay) → EditorMarkdown → IsDirty → SaveCommand abilitato`. Se Toast UI WYSIWYG non emette `change`, `IsDirty` resta false e Save resta disabilitato.
+
+**Rifinitura**:
+- WebView2 fallback `TextBox` perde funzionalità markdown — banner di guida all'installazione del Runtime + link diretto.
+- Toolbar Toast UI ridotta (`heading/bold/italic/strike/ul/ol/hr/quote/code/link`) → eventualmente aggiungere `table`, `task`, `image`, source-view toggle se utente lo chiede.
+- `BackupSchedulerHost` deve evitare race con startup DB activity — risolto via "wait one tick before first run", ma rivedere durante UX pass.
+- Accessibility/keyboard nav: passaggio completo focus order, tab traversal, ARIA-equivalent annotations WPF.
+
+**Principio**: niente nuove feature in Fase 4. Solo fix, theming completo, UX rifinitura. La Fase 5 (Web/PWA) parte solo quando l'app WPF è production-grade.
 
 ### Stato Milestone 3.1
 
@@ -308,7 +328,7 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 22 task del plan `docs/superpowers/plans/2026-05-27-milestone-3.10a-export-system.md` completati. 697 test verdi (Core 40, Plugins 64, **ExportEngine 17 nuovo progetto**, ChartEngine 18, Data 272, WPF 286 incl. E2E launch tests). Build pulito, zero warning nuovi. **Schema delta: zero** — `export_job`/`export_template` esistono da `InitialSchema`; `schema_version` resta `2.6`. Nessuna migration.
 
-**Nuovo assembly `Recordum.Plugins.ExportEngine`** (`net10.0`, NO WPF — riutilizzabile in Fase 4 web): **secondo consumer reale** del plugin system sotto plugin id `io.recordum.export-engine`, registra 5 formatter sotto `export.format`. NoWarn=NU1701 per SkiaSharp native assets.
+**Nuovo assembly `Recordum.Plugins.ExportEngine`** (`net10.0`, NO WPF — riutilizzabile in Fase 5 web): **secondo consumer reale** del plugin system sotto plugin id `io.recordum.export-engine`, registra 5 formatter sotto `export.format`. NoWarn=NU1701 per SkiaSharp native assets.
 
 **Contract (`Plugins.Contracts/Export` + `ExtensionPoints`)**: `ExportSubject` enum (Core: SingleHabit/Library); `ExportLayout` (sezioni metadata/summary/heatmap/completions/notes + range; `Parse(json)` con default fallback su null/empty/malformato; `ToJson()` round-trip); `ExportModel` + `ExportHabitModel`/`ExportSummary`/`ExportCompletionRow`/`ExportNoteRow`/`ExportHeatmapCell` (struct) UI-free; `IExportFormatter : IExtensionPoint` con `Format`, `CanFormat`, `Write(model) → byte[]` (host owns IO — Contracts resta IO-free).
 
@@ -325,6 +345,38 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 **i18n**: 12 nuove chiavi resx en/it (`Export.Title/Button/Library/Format/Template/Sections/Section.*/Run/Cancel`) + designer underscore props.
 
 **Known quirks** — vedi memory `recordum-milestone-3-10a-spec`.
+
+### Stato Milestone 3.10b
+
+25 task del plan `docs/superpowers/plans/2026-05-28-milestone-3.10b-backup-restore.md` completati. **740 test verdi** (Core 41, Plugins 66, ChartEngine 18, ExportEngine 17, Data 292, WPF 306 incl. E2E `BackupRoundTripE2ETests`). Build pulito, zero warning nuovi. **Schema delta v2.7**: tabella `backup_log` + 5 AppSetting `backup.auto.*` + bump `schema_version` 2.6→2.7. Migration `BackupLogV27` additiva.
+
+**Architettura `.recbak`**: header `RCBK` (4B magic + 1B versione + 3B reserved + 1B KDF id + 2B Argon2 mem MiB + 1B iter + 1B parallel + 16B salt + 12B nonce) + AES-256-GCM ciphertext + 16B tag. Inner payload = ZIP (`manifest.json` JSON snake_case + `db/recordum.db` plaintext dump via `sqlcipher_export` + `attachments/*`). KDF: Argon2id 64 MiB / 4 iter / p=2. Auto-backup usa passphrase fissa wrappata DPAPI in `RecordumOptions.AutoBackupKeyPath` (Windows-only); backup manuali usano passphrase utente. Wrong-passphrase = `RestoreException("invalid_passphrase")` indistinguibile da ciphertext tamper.
+
+**Core (`Recordum.Core/Backup/`)**: 15 record/interfaces — `BackupKind`, `BackupOptions`, `BackupResult`, `BackupCounts`, `PluginManifestSnapshot`, `PermissionState`, `BackupManifest`, `RestoreOptions`, `RestorePreview`, `RestoreResult`, `IBackupService`, `IRestoreService`, `IBackupScheduler`, `BackupException`, `RestoreException`. `IBackupCipher` in `Abstractions/Security/`. `IBackupStoragePaths : IDbStoragePaths` (aggiunge `AttachmentsDirectory`, `BackupsDirectory`, `AutoBackupKeyPath`) — implementato da `RecordumOptions`, evita che Data dipenda da WPF.
+
+**Data (`Recordum.Data/Backup/` + `Services/`)**: `AesGcmBackupCipher` (cifrario completo), `BackupArchiveWriter`/`BackupArchiveReader` (ZIP I/O), `BackupService.CreateAsync` (pipeline: count → snapshot plugin manifests + permission state → `ATTACH ... KEY '' + sqlcipher_export('plaintext')` → copy attachments → archive → encrypt → write `.recbak` → log a `backup_log`), `RestoreService.PreviewAsync` (decrypt+read manifest+warnings) e `RestoreAsync` (safety pre-restore snapshot opzionale → close pool → extract DB+attachments → swap files atomico → unavailable-plugins list), `BackupScheduler.RunDueAsync` (controlla `backup.auto.enabled` + `backup.auto.frequency_days` + `backup.auto.last_run_utc`, self-disable se chiave DPAPI mancante), `BackupLogService` (history CRUD).
+
+**Plugin manager**: `IPluginManager` esteso con `IReadOnlyList<PluginManifest> ListActivatedManifests()` — `BackupService` lo legge per popolare lo snapshot manifest nel backup, `RestoreService` lo confronta col manifest del file per emettere warning "plugin X non più presente".
+
+**WPF — 4 ViewModel + 4 View**: `BackupDialogViewModel` (passphrase strength: <8 Weak, <16 Ok, ≥16 Strong; `CanRun` richiede ≥12), `RestoreDialogViewModel` (preview→confirm→restore, safety snapshot opt-out), `BackupHistoryViewModel` (rows da `backup_log`, delete/open-folder), `BackupSettingsViewModel` (`backup.auto.*` via `IAppSettingService` + `IAutoBackupKeyStore` per DPAPI wrap). Views: `BackupDialog.xaml`, `RestoreDialog.xaml`, `BackupHistoryView.xaml`, `BackupSettingsDialog.xaml`. **Astrazioni file dialog dedicate** (`IBackupSaveFileDialog`, `IOpenFileDialog`) per non coupling backup all'`ISaveFileDialog` di export.
+
+**Integration**: `BackupSchedulerHost` (`PeriodicTimer` 60min, fire-and-forget loop con `IServiceScopeFactory`) start da `ApplicationInitializer.InitializeAsync` dopo WebView2 probe. **Wait one tick prima del primo run** (deviation post-impl: il fire-immediato race-conditionava startup DB activity nei test `BootstrapSmokeTests`). `MainWindow` top-nav: menu "Backup" con `Create backup…`, `Restore from backup…`, `Backup history`, `Auto-backup settings…`. `AppWorkspace` esteso con `BackupHistory`. `BackupDialogLauncher` (`IBackupDialogLauncher` + `WpfBackupDialogLauncher`) registra tutti i service backup in `ServiceRegistrar` (singleton + scoped + transient consistenti).
+
+**i18n**: ~25 chiavi resx en/it (`Backup.*`, `Restore.*`, `BackupHistory.*`, `BackupSettings.*`, `Workspace.BackupHistory`) + designer underscore props.
+
+**Deviazioni dal plan** (documentate sui singoli commit):
+- `IBackupStoragePaths` introdotto per evitare cast `(RecordumOptions)paths` in Data layer.
+- `BackupService.DumpDbAsync` usa `ATTACH ... KEY '' + sqlcipher_export()` (non `VACUUM INTO` come da plan): solo il primo produce un file SQLite davvero plaintext fuori da SQLCipher.
+- `Pipe` extension del cipher (Task 7) sostituito con `_ = ex; throw ...` perché il pattern del plan aveva type error.
+- Passphrase strength thresholds del `BackupDialogViewModel` calibrati `<8`/`<16` per matchare i test inline del plan.
+- `IBackupSaveFileDialog` separato da `ISaveFileDialog` (export-specific signature).
+- `BackupSchedulerHost.LoopAsync` non fa più tick immediato — wait one interval prima.
+
+**Known limits**:
+- Auto-backup è Windows-only (DPAPI). Su altre piattaforme servirà alternativa (Fase 5/6).
+- `BackupRoundTripE2ETests` usa `ExecuteDeleteAsync` con `IgnoreQueryFilters()` per evitare il global filter soft-delete su DB con solo seed.
+- Nessuna compressione differenziale / incremental backup (full snapshot ogni volta).
+- Nessun cloud upload integrato — l'utente sceglie dove salvare `.recbak`; provider terzi via Fase 6.
 
 ---
 
