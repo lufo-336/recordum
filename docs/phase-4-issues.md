@@ -47,16 +47,18 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 - **B6a** instanziazione template scartava metriche/scala/goal/segmenti → fixed (test verdi); scala 1-5 ora registra (`verified` utente).
 - **B6c** UI sezioni editor (Scheduling/Streak/Metrics/Scales/Timer/Goal/Notifications/Tags/AI/ResetTime) costruita → `verified` funzionale (utente). Spec `docs/superpowers/specs/2026-05-29-editor-sections-ui-design.md`, piano `docs/superpowers/plans/2026-05-29-editor-sections-ui.md`.
 
-**Rifiniture aperte (da riprendere)**:
-- **RB6c-1** day-picker per schedule SpecificDays/mensile (oggi i JSON non editabili a mano).
-- **RB6c-2** stato "selezionato" delle chip Tag.
-- **RB6c-3** chrome flat per `ToggleButton` (Advanced) e `CheckBox` — ancora Aero chiaro.
-- **RB6c-4** rifinitura picker scala / labels.
+**Risolti nel blocco "limatura" (2026-05-29 sera)** — `verified` da fare dall'utente al prossimo giro:
+- **Theming Pass 3** (commit `4c6bac5`): CheckBox flat (implicito), toggle "Advanced" a pillola (stile keyed `Recordum.PillToggle`), DatePicker/Calendar tematizzati (template flat per CalendarDayButton/CalendarButton). Chiude **B7** (calendario chiaro-su-chiaro). NB minore: il navigatore mese del Calendar non persiste l'highlight selezione (usa IsPressed; `CalendarButton.IsSelected` non è trigger valido).
+- **B9 i18n** (commit `3b42d2f`): 25 stringhe del'editor + picker localizzate (EN+IT). Restano in inglese solo i **nomi display dei template seed** (dati DB, non stringhe — localizzazione separata da decidere).
+- **RB6c-1 day-picker** + **RB6c-2 chip Tag selezionate** (commit `50ef22d`): row di toggle giorni per schedule `SpecificDays` (convenzione `["Mon".."Sun"]` da `ScheduleEvaluator`); chip Tag ora mostrano stato selezionato (accent).
+- Fix test culture-independent picker (commit `c0c515b`). Suite: WPF 335, Data 296 verdi.
+
+**Ancora aperte**:
+- **B6b** template personalizzato — **feature, richiede design** (brainstorming) prima di implementare. NON fatto di proposito.
+- **RB6c-4** picker scala: il dropdown scala c'è, ma rifinitura labels/anteprima da fare.
 - **R-scaleUI** layout scala State sgradevole (Cronologia).
-- **R-statePlus** "+" su State non fa nulla se l'habit è già selezionata (ripensare l'azione).
-- **B6b** creazione template personalizzato (feature).
-- **B7** DatePicker/Calendar chiaro-su-chiaro (theming).
-- **B9** finestra template picker in inglese (i18n).
+- **R-statePlus** "+" su State non fa nulla se l'habit è già selezionata.
+- **Theming**: `ToggleButton` generico resta Foreground-only (solo l'Advanced ha il pill keyed) — ok per ora.
 - **Nav model** spec `2026-05-29-navigation-model-design.md` parcheggiato (colonne toggle) — dopo le basi.
 
 ---
