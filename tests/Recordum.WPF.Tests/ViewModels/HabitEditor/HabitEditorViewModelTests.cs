@@ -172,4 +172,43 @@ public class HabitEditorViewModelTests
         sut.HeaderStatus.Should().Be(EditorStatus.Error);
         _nodes.Store[id].Color.Should().Be("#000000");
     }
+
+    [Fact]
+    public async Task Sections_exposes_ordered_render_list_excluding_DataSource()
+    {
+        var sut = CreateSut();
+
+        // Sections property must not contain DataSource
+        sut.Sections.Should().NotContain(s => ReferenceEquals(s, sut.DataSource));
+    }
+
+    [Fact]
+    public async Task LoadAsync_Action_habit_sets_visibility_correctly_via_IsApplicable()
+    {
+        var id = Guid.NewGuid();
+        _nodes.Store[id] = new HabitNode
+        {
+            Id = id,
+            NodeType = NodeType.Habit,
+            HabitType = HabitType.Action,
+            Name = "run",
+            Color = "#000000",
+        };
+        _configs.Store[id] = new HabitConfig
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = id,
+            ScheduleType = ScheduleType.Daily,
+            StreakMode = StreakMode.Daily,
+            StreakRecovery = StreakRecovery.None,
+        };
+
+        var sut = CreateSut();
+        await sut.LoadAsync(id);
+
+        sut.Scheduling.IsVisible.Should().BeTrue();   // Habit → applicable
+        sut.Metrics.IsVisible.Should().BeFalse();      // Counter/Resistance only
+        sut.Scales.IsVisible.Should().BeFalse();       // State only
+        sut.Sections.Should().NotContain(s => ReferenceEquals(s, sut.DataSource));
+    }
 }

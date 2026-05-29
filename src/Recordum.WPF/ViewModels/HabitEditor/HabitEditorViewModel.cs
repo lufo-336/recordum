@@ -54,6 +54,12 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     public bool HasNode => Node is not null;
 
+    /// <summary>
+    /// Ordered list of sections to render in the editor pane. DataSource is intentionally excluded
+    /// (it is an internal/config-level section handled separately).
+    /// </summary>
+    public IReadOnlyList<SectionViewModelBase> Sections { get; }
+
     public HabitEditorViewModel(
         IHabitNodeService nodes,
         IHabitConfigService configs,
@@ -79,6 +85,11 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
         ResetTime = new ResetTimeSectionViewModel(nodes);
+
+        Sections = new SectionViewModelBase[]
+        {
+            Scheduling, Streak, Timer, Metrics, Scales, Goal, Notifications, Tags, AiSharing, ResetTime,
+        };
 
         foreach (var section in EnumerateSections())
             section.PropertyChanged += OnSectionPropertyChanged;
@@ -185,6 +196,9 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             await AiSharing.LoadAsync(node);
             await DataSource.LoadAsync(node, cfg);
             await ResetTime.LoadAsync(node);
+
+            foreach (var s in Sections)
+                s.IsVisible = s.IsApplicable(node.NodeType, node.HabitType);
 
             HeaderStatus = EditorStatus.Idle;
             HeaderError = null;
