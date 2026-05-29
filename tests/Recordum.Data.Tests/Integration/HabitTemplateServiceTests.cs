@@ -16,11 +16,7 @@ public class HabitTemplateServiceTests
     public async Task Create_records_plugin_provenance()
     {
         await using var fx = new DbFixture();
-        var svc = new HabitTemplateService(
-            fx.Factory, fx.Clock, fx.PluginContext,
-            new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),
-            new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
-            NullLogger<HabitTemplateService>.Instance);
+        var svc = CreateSut(fx);
         Guid id;
         using (fx.PluginContext.BeginScope("plug"))
             id = await svc.CreateAsync(new HabitTemplate { Name = "t" });
@@ -113,9 +109,95 @@ public class HabitTemplateServiceTests
         await act.Should().ThrowAsync<HabitTemplateNotFoundException>();
     }
 
+    [Fact]
+    public async Task InstantiateAsync_materializes_metric_with_scale_and_snapshots_labels()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        Guid scaleId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            // mood-5 ships in the ScaleTemplate seed — reference it, don't re-insert.
+            scaleId = (await db.ScaleTemplates.SingleAsync(s => s.Code == "mood-5")).Id;
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Mood tracker", IsOfficial = true,
+                PayloadJson = "{\"node\":{\"name\":\"Mood tracker\",\"node_type\":\"Habit\",\"habit_type\":\"State\",\"color\":\"#f39c12\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[{\"name\":\"Mood\",\"type\":\"Integer\",\"scale_code\":\"mood-5\"}],\"segments\":[]}",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var svc = CreateSut(fx);
+        var newId = await svc.InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var metric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId);
+        metric.Name.Should().Be("Mood");
+        metric.Type.Should().Be(MetricType.Integer);
+        metric.ScaleTemplateId.Should().Be(scaleId);
+        metric.LabelsJson.Should().Contain("Very good");
+    }
+
+    [Fact]
+    public async Task InstantiateAsync_materializes_metric_unit_and_goal()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        Guid unitId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            // "l" ships in the UnitOfMeasure seed — reference it, don't re-insert.
+            unitId = (await db.UnitsOfMeasure.SingleAsync(u => u.Code == "l")).Id;
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Water intake", IsOfficial = true,
+                PayloadJson = "{\"node\":{\"name\":\"Water intake\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#5bc8f5\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[{\"name\":\"Amount\",\"type\":\"Decimal\",\"unit\":\"l\"}],\"goal\":{\"target\":2,\"unit\":\"l\",\"period_type\":\"Open\"}}",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var svc = CreateSut(fx);
+        var newId = await svc.InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var metric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId);
+        metric.UnitOfMeasureId.Should().Be(unitId);
+
+        var goal = await db2.Goals.SingleAsync(g => g.HabitNodeId == newId);
+        goal.TargetValue.Should().Be(2);
+        goal.PeriodType.Should().Be(GoalPeriodType.Open);
+    }
+
+    [Fact]
+    public async Task InstantiateAsync_materializes_segments()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Workout log", IsOfficial = true,
+                PayloadJson = "{\"node\":{\"name\":\"Workout log\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#e85d4a\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"None\",\"timer_mode\":\"Session\"},\"metrics\":[],\"segments\":[{\"name\":\"Work\",\"is_rest\":false,\"sort_order\":0},{\"name\":\"Rest\",\"is_rest\":true,\"sort_order\":1}]}",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var svc = CreateSut(fx);
+        var newId = await svc.InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var segments = await db2.SegmentDefinitions.Where(s => s.HabitNodeId == newId).OrderBy(s => s.SortOrder).ToListAsync();
+        segments.Select(s => s.Name).Should().Equal("Work", "Rest");
+        segments[0].IsRest.Should().BeFalse();
+        segments[1].IsRest.Should().BeTrue();
+    }
+
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),
         new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
+        new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance),
+        new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance),
         NullLogger<HabitTemplateService>.Instance);
 }

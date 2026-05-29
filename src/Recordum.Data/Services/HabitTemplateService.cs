@@ -15,6 +15,8 @@ public sealed class HabitTemplateService(
     IPluginContext pluginContext,
     IHabitNodeService nodes,
     IHabitConfigService configs,
+    IMetricDefinitionService metrics,
+    IGoalService goals,
     ILogger<HabitTemplateService> logger) : IHabitTemplateService
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
@@ -103,9 +105,89 @@ public sealed class HabitTemplateService(
                 c.TimerTargetSeconds = payload.Config.TimerTargetSeconds;
                 if (c.TimerMode == Recordum.Core.Enums.TimerMode.Session) c.SessionBaseTimer = true;
             }, ct);
+
+            await MaterializeMetricsSegmentsGoalAsync(newId, payload, ct);
         }
 
         return newId;
+    }
+
+    // Materializes the rich parts of a template payload that node + config alone drop:
+    // metrics (with unit / scale resolved by code, and the scale's labels snapshotted
+    // onto the metric so the State quick-add shows them), segments, and the goal.
+    private async Task MaterializeMetricsSegmentsGoalAsync(Guid habitId, TemplatePayload payload, CancellationToken ct)
+    {
+        Dictionary<string, Guid> unitsByCode;
+        Dictionary<string, (Guid Id, string? Labels)> scalesByCode;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            unitsByCode = await db.UnitsOfMeasure.AsNoTracking()
+                .ToDictionaryAsync(u => u.Code, u => u.Id, StringComparer.OrdinalIgnoreCase, ct);
+            scalesByCode = await db.ScaleTemplates.AsNoTracking()
+                .ToDictionaryAsync(s => s.Code, s => (s.Id, (string?)s.LabelsJson), StringComparer.OrdinalIgnoreCase, ct);
+        }
+
+        Guid? firstMetricId = null;
+        if (payload.Metrics is { Count: > 0 })
+        {
+            for (var i = 0; i < payload.Metrics.Count; i++)
+            {
+                var m = payload.Metrics[i];
+                if (string.IsNullOrWhiteSpace(m.Name)) continue;
+
+                Guid? scaleId = null;
+                string? labels = null;
+                if (m.ScaleCode is { } sc && scalesByCode.TryGetValue(sc, out var scale))
+                {
+                    scaleId = scale.Id;
+                    labels = scale.Labels;
+                }
+                Guid? unitId = m.Unit is { } uc && unitsByCode.TryGetValue(uc, out var u) ? u : null;
+
+                var metricId = await metrics.CreateAsync(new MetricDefinition
+                {
+                    HabitNodeId = habitId,
+                    Name = m.Name!,
+                    Type = ParseEnum(m.Type, MetricType.Integer),
+                    SortOrder = i,
+                    UnitOfMeasureId = unitId,
+                    ScaleTemplateId = scaleId,
+                    LabelsJson = labels,
+                }, ct);
+                firstMetricId ??= metricId;
+            }
+        }
+
+        if (payload.Segments is { Count: > 0 })
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(ct);
+            foreach (var s in payload.Segments)
+            {
+                if (string.IsNullOrWhiteSpace(s.Name)) continue;
+                db.SegmentDefinitions.Add(new SegmentDefinition
+                {
+                    Id = Guid.NewGuid(),
+                    HabitNodeId = habitId,
+                    Name = s.Name!,
+                    IsRest = s.IsRest,
+                    SortOrder = s.SortOrder,
+                    Color = s.Color,
+                });
+            }
+            await db.SaveChangesAsync(ct);
+        }
+
+        if (payload.Goal is { } g)
+        {
+            await goals.CreateAsync(new Goal
+            {
+                HabitNodeId = habitId,
+                Name = payload.Node?.Name ?? "Goal",
+                MetricDefinitionId = firstMetricId,
+                TargetValue = g.Target,
+                PeriodType = ParseEnum(g.PeriodType, GoalPeriodType.Open),
+            }, ct);
+        }
     }
 
     private static TemplatePayload ParsePayload(string json)
@@ -128,6 +210,32 @@ public sealed class HabitTemplateService(
     {
         public NodePayload? Node { get; set; }
         public ConfigPayload? Config { get; set; }
+        public List<MetricPayload>? Metrics { get; set; }
+        public List<SegmentPayload>? Segments { get; set; }
+        public GoalPayload? Goal { get; set; }
+    }
+
+    private sealed class MetricPayload
+    {
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+        public string? Unit { get; set; }
+        public string? ScaleCode { get; set; }
+    }
+
+    private sealed class SegmentPayload
+    {
+        public string? Name { get; set; }
+        public bool IsRest { get; set; }
+        public int SortOrder { get; set; }
+        public string? Color { get; set; }
+    }
+
+    private sealed class GoalPayload
+    {
+        public decimal Target { get; set; }
+        public string? Unit { get; set; }
+        public string? PeriodType { get; set; }
     }
 
     private sealed class NodePayload
