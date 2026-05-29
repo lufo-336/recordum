@@ -359,13 +359,16 @@
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
                                 <Button Content="{x:Static res:Strings.Detail_Trend_Range_30d}"
-                                        Command="{Binding Trend.SetRangeCommand}" CommandParameter="Days30"
+                                        Command="{Binding Trend.SetRangeCommand}"
+                                        CommandParameter="{x:Static vmd:TrendRange.Days30}"
                                         Padding="8,4" Margin="0,0,4,0"/>
                                 <Button Content="{x:Static res:Strings.Detail_Trend_Range_90d}"
-                                        Command="{Binding Trend.SetRangeCommand}" CommandParameter="Days90"
+                                        Command="{Binding Trend.SetRangeCommand}"
+                                        CommandParameter="{x:Static vmd:TrendRange.Days90}"
                                         Padding="8,4" Margin="0,0,4,0"/>
                                 <Button Content="{x:Static res:Strings.Detail_Trend_Range_1y}"
-                                        Command="{Binding Trend.SetRangeCommand}" CommandParameter="Year1"
+                                        Command="{Binding Trend.SetRangeCommand}"
+                                        CommandParameter="{x:Static vmd:TrendRange.Year1}"
                                         Padding="8,4"/>
                             </StackPanel>
                             <ctrl:TrendChartControl DataContext="{Binding Trend}"/>
