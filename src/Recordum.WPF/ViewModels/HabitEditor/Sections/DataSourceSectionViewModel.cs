@@ -11,6 +11,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 /// </summary>
 public sealed partial class DataSourceSectionViewModel(IAppSettingService settings) : SectionViewModelBase
 {
+    public override string Title => string.Empty;
+
     private readonly IAppSettingService _settings = settings;
     private bool _loading;
     internal Guid NodeId { get; private set; }

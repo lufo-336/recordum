@@ -695,4 +695,34 @@ Details: {0}</value>
   <data name="Diagnostic.NotGitCheckout" xml:space="preserve">
     <value>(not a git checkout)</value>
   </data>
+  <data name="Editor.Section.Scheduling" xml:space="preserve">
+    <value>Scheduling</value>
+  </data>
+  <data name="Editor.Section.Streak" xml:space="preserve">
+    <value>Streak</value>
+  </data>
+  <data name="Editor.Section.Metrics" xml:space="preserve">
+    <value>Metrics</value>
+  </data>
+  <data name="Editor.Section.Scales" xml:space="preserve">
+    <value>Scales</value>
+  </data>
+  <data name="Editor.Section.Timer" xml:space="preserve">
+    <value>Timer</value>
+  </data>
+  <data name="Editor.Section.Goal" xml:space="preserve">
+    <value>Goal</value>
+  </data>
+  <data name="Editor.Section.Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Editor.Section.Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Editor.Section.AiSharing" xml:space="preserve">
+    <value>AI sharing</value>
+  </data>
+  <data name="Editor.Section.ResetTime" xml:space="preserve">
+    <value>Reset time</value>
+  </data>
 </root>

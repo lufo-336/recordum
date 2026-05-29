@@ -8,6 +8,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Goal;
+
     private readonly IGoalService _goals = goals;
     private bool _loading;
     internal Guid NodeId { get; private set; }

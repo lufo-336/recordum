@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -11,6 +12,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 /// </summary>
 public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metrics) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Scales;
+
     private readonly IMetricDefinitionService _metrics = metrics;
     private bool _loading;
     private MetricDefinition? _primary;

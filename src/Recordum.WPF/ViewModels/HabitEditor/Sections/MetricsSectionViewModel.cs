@@ -10,6 +10,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class MetricsSectionViewModel(IMetricDefinitionService metrics) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Metrics;
+
     private readonly IMetricDefinitionService _metrics = metrics;
     internal Guid NodeId { get; private set; }
 

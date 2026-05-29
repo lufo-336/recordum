@@ -4,11 +4,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class TagsSectionViewModel(ITagService tags) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Tags;
+
     private readonly ITagService _tags = tags;
     internal Guid NodeId { get; private set; }
 

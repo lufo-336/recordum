@@ -2,11 +2,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class AiSharingSectionViewModel(IHabitNodeService nodes) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_AiSharing;
+
     private readonly IHabitNodeService _nodes = nodes;
     private bool _loading;
     internal Guid NodeId { get; private set; }

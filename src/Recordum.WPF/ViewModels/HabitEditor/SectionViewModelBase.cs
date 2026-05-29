@@ -10,6 +10,15 @@ namespace Recordum.WPF.ViewModels.HabitEditor;
 /// </summary>
 public abstract partial class SectionViewModelBase : ObservableObject
 {
+    /// <summary>Localized section header shown on the Expander.</summary>
+    public abstract string Title { get; }
+
+    /// <summary>Whether this section applies to the loaded node (set in HabitEditorViewModel.LoadAsync).</summary>
+    [ObservableProperty] private bool _isVisible;
+
+    /// <summary>L2 progressive disclosure: collapsed by default.</summary>
+    [ObservableProperty] private bool _isExpanded;
+
     [ObservableProperty] private EditorStatus _status = EditorStatus.Idle;
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private bool _showAdvanced;

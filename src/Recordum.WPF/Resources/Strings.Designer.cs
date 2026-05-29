@@ -242,6 +242,18 @@ public static class Strings
     public static string Export_Run => Get("Export.Run");
     public static string Export_Cancel => Get("Export.Cancel");
 
+    // Editor sections
+    public static string Editor_Section_Scheduling => Get("Editor.Section.Scheduling");
+    public static string Editor_Section_Streak => Get("Editor.Section.Streak");
+    public static string Editor_Section_Metrics => Get("Editor.Section.Metrics");
+    public static string Editor_Section_Scales => Get("Editor.Section.Scales");
+    public static string Editor_Section_Timer => Get("Editor.Section.Timer");
+    public static string Editor_Section_Goal => Get("Editor.Section.Goal");
+    public static string Editor_Section_Notifications => Get("Editor.Section.Notifications");
+    public static string Editor_Section_Tags => Get("Editor.Section.Tags");
+    public static string Editor_Section_AiSharing => Get("Editor.Section.AiSharing");
+    public static string Editor_Section_ResetTime => Get("Editor.Section.ResetTime");
+
     // Help menu + Diagnostic dialog
     public static string Workspace_Help => Get("Workspace.Help");
     public static string Diagnostic_Menu_Open => Get("Diagnostic.Menu.Open");

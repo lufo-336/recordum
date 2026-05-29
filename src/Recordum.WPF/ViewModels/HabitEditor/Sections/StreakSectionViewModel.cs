@@ -8,6 +8,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class StreakSectionViewModel(IHabitConfigService configs) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Streak;
+
     private const int MaxToleranceMinutes = 1440;
 
     private readonly IHabitConfigService _configs = configs;

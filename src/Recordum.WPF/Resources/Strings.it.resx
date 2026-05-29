@@ -677,4 +677,34 @@
   <data name="Diagnostic.NotGitCheckout" xml:space="preserve">
     <value>(non un checkout git)</value>
   </data>
+  <data name="Editor.Section.Scheduling" xml:space="preserve">
+    <value>Pianificazione</value>
+  </data>
+  <data name="Editor.Section.Streak" xml:space="preserve">
+    <value>Streak</value>
+  </data>
+  <data name="Editor.Section.Metrics" xml:space="preserve">
+    <value>Metriche</value>
+  </data>
+  <data name="Editor.Section.Scales" xml:space="preserve">
+    <value>Scale</value>
+  </data>
+  <data name="Editor.Section.Timer" xml:space="preserve">
+    <value>Timer</value>
+  </data>
+  <data name="Editor.Section.Goal" xml:space="preserve">
+    <value>Obiettivo</value>
+  </data>
+  <data name="Editor.Section.Notifications" xml:space="preserve">
+    <value>Notifiche</value>
+  </data>
+  <data name="Editor.Section.Tags" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Editor.Section.AiSharing" xml:space="preserve">
+    <value>Condivisione AI</value>
+  </data>
+  <data name="Editor.Section.ResetTime" xml:space="preserve">
+    <value>Orario di reset</value>
+  </data>
 </root>

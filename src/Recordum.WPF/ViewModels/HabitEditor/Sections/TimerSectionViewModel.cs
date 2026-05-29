@@ -10,6 +10,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class TimerSectionViewModel(IHabitConfigService configs) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Timer;
+
     private readonly IHabitConfigService _configs = configs;
     private bool _loading;
     internal Guid NodeId { get; private set; }

@@ -10,6 +10,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class NotificationsSectionViewModel(INotificationService notifications) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Notifications;
+
     private readonly INotificationService _notifications = notifications;
     internal Guid NodeId { get; private set; }
 

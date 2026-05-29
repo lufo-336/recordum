@@ -8,6 +8,8 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class SchedulingSectionViewModel(IHabitConfigService configs) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_Scheduling;
+
     private readonly IHabitConfigService _configs = configs;
     private bool _loading;
     internal Guid NodeId { get; private set; }

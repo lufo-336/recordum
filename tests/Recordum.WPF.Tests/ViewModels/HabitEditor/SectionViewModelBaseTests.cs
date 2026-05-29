@@ -9,7 +9,17 @@ public class SectionViewModelBaseTests
 {
     private sealed class TestSection : SectionViewModelBase
     {
+        public override string Title => "Stub";
         public Task RunAsync(Func<Task> persist) => ApplyAsync(persist);
+    }
+
+    [Fact]
+    public void Defaults_visible_false_collapsed()
+    {
+        var s = new TestSection();
+        s.Title.Should().Be("Stub");
+        s.IsVisible.Should().BeFalse();
+        s.IsExpanded.Should().BeFalse();
     }
 
     [Fact]

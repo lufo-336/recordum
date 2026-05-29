@@ -2,11 +2,14 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 public sealed partial class ResetTimeSectionViewModel(IHabitNodeService nodes) : SectionViewModelBase
 {
+    public override string Title => Strings.Editor_Section_ResetTime;
+
     private readonly IHabitNodeService _nodes = nodes;
     private bool _loading;
     internal Guid NodeId { get; private set; }
