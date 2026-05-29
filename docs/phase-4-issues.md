@@ -8,6 +8,34 @@
 
 ---
 
+## Come segnalare un nuovo bug
+
+Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bloccante) o `R<N>` (rifinitura) sopra. Più dettagli = meno round-trip di domande.
+
+```markdown
+### B<N>. <Titolo breve, < 60 caratteri>
+- **Stato**: `reported`
+- **Quando**: 2026-MM-DD
+- **Steps**:
+  1. <ogni passaggio per riprodurre, dall'avvio dell'app>
+  2. ...
+- **Atteso**: <cosa dovrebbe succedere>
+- **Osservato**: <cosa succede davvero — sintomo visibile>
+- **Screenshot**: <path o "incolla in chat"> (opzionale ma molto utile per bug visuali)
+- **Ambiente**:
+  - Theme: <System | Light | Dark>
+  - WebView2 Runtime installato: <yes/no, vedi Help → Diagnostic info>
+  - Schema version: <da Diagnostic info>
+  - Branch + SHA: <da Diagnostic info>
+- **Note**: <qualsiasi info collaterale: prima funzionava? è successo dopo un'azione specifica? log/stack trace allegata?>
+```
+
+**Diagnostic info** (Help → Diagnostic info, dialog modale): copia-incolla l'output e hai l'intera sezione "Ambiente" già compilata.
+
+**Log di crash**: se l'app cracha, `%LocalAppData%\Recordum\logs\recordum.log` ha lo stack trace appeso. Incollalo nella sezione "Note".
+
+---
+
 ## Aperti — bloccanti
 
 ### B1. Save note non funzionante
