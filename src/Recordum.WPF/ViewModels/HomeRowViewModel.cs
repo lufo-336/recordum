@@ -15,6 +15,13 @@ public sealed partial class HomeRowViewModel : ObservableObject
     private QuickActionHandlerSelector? _quickActionSelector;
     private string _originalName = string.Empty;
 
+    /// <summary>
+    /// Raised after an operation that changes this row's membership or position
+    /// in the tree (soft-delete, archive, restore, purge, move, pin). The Home
+    /// list listens and reloads so the change is reflected without a tab switch.
+    /// </summary>
+    public event EventHandler? Changed;
+
     public bool CanQuickAction => !IsGroup && HabitType is not null && _quickActionSelector is not null;
 
     public void AttachQuickActionSelector(QuickActionHandlerSelector selector)
@@ -125,6 +132,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (PinScope == scope) return;
         await _nodes.SetPinScopeAsync(HabitNodeId, scope);
         PinScope = scope;
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
@@ -132,6 +140,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     {
         await _nodes.SetArchivedAsync(HabitNodeId, true);
         IsArchived = true;
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
@@ -139,16 +148,29 @@ public sealed partial class HomeRowViewModel : ObservableObject
     {
         await _nodes.SetArchivedAsync(HabitNodeId, false);
         IsArchived = false;
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
-    private Task SoftDeleteAsync() => _nodes.SoftDeleteAsync(HabitNodeId).AsTask();
+    private async Task SoftDeleteAsync()
+    {
+        await _nodes.SoftDeleteAsync(HabitNodeId);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     [RelayCommand]
-    private Task RestoreAsync() => _nodes.RestoreAsync(HabitNodeId).AsTask();
+    private async Task RestoreAsync()
+    {
+        await _nodes.RestoreAsync(HabitNodeId);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     [RelayCommand]
-    private Task PurgeAsync() => _purge.PurgeSubtreeAsync(HabitNodeId).AsTask();
+    private async Task PurgeAsync()
+    {
+        await _purge.PurgeSubtreeAsync(HabitNodeId);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     public event EventHandler<QuickActionExecutedEventArgs>? QuickActionExecuted;
 
@@ -162,7 +184,11 @@ public sealed partial class HomeRowViewModel : ObservableObject
         QuickActionExecuted?.Invoke(this, new QuickActionExecutedEventArgs(HabitNodeId, recorded));
     }
 
-    public Task MoveToAsync(Guid? newParent) => _nodes.MoveAsync(HabitNodeId, newParent).AsTask();
+    public async Task MoveToAsync(Guid? newParent)
+    {
+        await _nodes.MoveAsync(HabitNodeId, newParent);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 }
 
 public sealed class QuickActionExecutedEventArgs(Guid habitNodeId, bool recorded) : EventArgs

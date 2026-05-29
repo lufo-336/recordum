@@ -24,6 +24,11 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     public Dictionary<Guid, HabitNode> Store { get; } = new();
     public Exception? NextException { get; set; }
 
+    // Test hooks: let a test mirror the backend side effect (e.g. remove the
+    // soft-deleted/moved row from the tree-query fake) so a reload reflects it.
+    public Action<Guid>? OnSoftDelete { get; set; }
+    public Action<Guid, bool>? OnSetArchived { get; set; }
+
     public ValueTask<Guid> CreateAsync(HabitNode draft, CancellationToken ct = default)
     {
         Throw();
@@ -51,6 +56,7 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     {
         Throw();
         _softDeleteCalls.Add(id);
+        OnSoftDelete?.Invoke(id);
         return ValueTask.CompletedTask;
     }
 
@@ -80,6 +86,7 @@ public sealed class FakeHabitNodeService : IHabitNodeService
         Throw();
         _archivedCalls.Add((id, archived));
         if (Store.TryGetValue(id, out var n)) n.IsArchived = archived;
+        OnSetArchived?.Invoke(id, archived);
         return ValueTask.CompletedTask;
     }
 

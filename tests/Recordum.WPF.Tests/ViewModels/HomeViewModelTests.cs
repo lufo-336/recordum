@@ -298,6 +298,78 @@ public class HomeViewModelTests
         sut.Rows.All(r => r.IndentLevel == 0).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task SoftDelete_removes_row_from_active_list_without_tab_switch()
+    {
+        _query.HomeRows.Add(SampleRow(name: "keep"));
+        _query.HomeRows.Add(SampleRow(name: "doomed"));
+        // Mirror the backend: a soft-deleted node is no longer returned by the tree query.
+        _nodes.OnSoftDelete = id => _query.HomeRows.RemoveAll(r => r.HabitNodeId == id);
+
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var doomed = sut.Rows.Single(r => r.Name == "doomed");
+
+        await doomed.SoftDeleteCommand.ExecuteAsync(null);
+
+        sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("keep");
+    }
+
+    [Fact]
+    public async Task SoftDelete_of_selected_row_clears_selection()
+    {
+        _query.HomeRows.Add(SampleRow(name: "doomed"));
+        _nodes.OnSoftDelete = id => _query.HomeRows.RemoveAll(r => r.HabitNodeId == id);
+
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var doomed = sut.Rows.Single();
+        sut.SelectRowCommand.Execute(doomed);
+
+        await doomed.SoftDeleteCommand.ExecuteAsync(null);
+
+        sut.SelectedRow.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SoftDelete_preserves_selection_of_a_different_row()
+    {
+        _query.HomeRows.Add(SampleRow(name: "keep", id: NewId("keep")));
+        _query.HomeRows.Add(SampleRow(name: "doomed", id: NewId("doom")));
+        _nodes.OnSoftDelete = id => _query.HomeRows.RemoveAll(r => r.HabitNodeId == id);
+
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var keep = sut.Rows.Single(r => r.Name == "keep");
+        var doomed = sut.Rows.Single(r => r.Name == "doomed");
+        sut.SelectRowCommand.Execute(keep);
+
+        await doomed.SoftDeleteCommand.ExecuteAsync(null);
+
+        sut.SelectedRow.Should().NotBeNull();
+        sut.SelectedRow!.Name.Should().Be("keep");
+    }
+
+    [Fact]
+    public async Task Archive_from_Active_tab_removes_row_without_tab_switch()
+    {
+        _query.HomeRows.Add(SampleRow(name: "keep"));
+        _query.HomeRows.Add(SampleRow(name: "filed"));
+        _nodes.OnSetArchived = (id, arch) =>
+        {
+            var i = _query.HomeRows.FindIndex(r => r.HabitNodeId == id);
+            if (i >= 0) _query.HomeRows[i] = _query.HomeRows[i] with { IsArchived = arch };
+        };
+
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var filed = sut.Rows.Single(r => r.Name == "filed");
+
+        await filed.ArchiveCommand.ExecuteAsync(null);
+
+        sut.Rows.Select(r => r.Name).Should().ContainSingle().Which.Should().Be("keep");
+    }
+
     private static HomeTreeRow SampleRow(string name = "x", bool archived = false, HabitType? type = HabitType.Action, Guid? id = null, Guid? parent = null) =>
         new(id ?? Guid.NewGuid(), parent, name, "#000000", type, null, 0, false, PinScope.None, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
 

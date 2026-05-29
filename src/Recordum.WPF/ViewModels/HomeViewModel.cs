@@ -124,8 +124,18 @@ public sealed partial class HomeViewModel : ObservableObject
         }
     }
 
+    private async void OnRowChanged(object? sender, EventArgs e)
+    {
+        // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
+        // Reload the tree so the list reflects it, preserving the selection by id.
+        var keep = SelectedRow?.HabitNodeId;
+        await LoadAsync();
+        SelectedRow = keep is { } id ? Rows.FirstOrDefault(r => r.HabitNodeId == id) : null;
+    }
+
     private void Rebuild()
     {
+        foreach (var old in Rows) old.Changed -= OnRowChanged;
         Rows.Clear();
         IEnumerable<HomeTreeRow> q = _lastFetched;
         q = ActiveTab switch
@@ -149,6 +159,7 @@ public sealed partial class HomeViewModel : ObservableObject
         {
             var vm = new HomeRowViewModel(row, level, _nodes, _purge) { CurrentTab = ActiveTab };
             if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
+            vm.Changed += OnRowChanged;
             Rows.Add(vm);
         }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
