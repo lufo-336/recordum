@@ -58,6 +58,9 @@
                     <MenuItem Header="{x:Static res:Strings.Backup_Menu_History}"  Command="{Binding ShowBackupHistoryCommand}"/>
                     <MenuItem Header="{x:Static res:Strings.Backup_Menu_Settings}" Command="{Binding BackupSettingsCommand}"/>
                 </MenuItem>
+                <MenuItem Header="{x:Static res:Strings.Workspace_Help}">
+                    <MenuItem Header="{x:Static res:Strings.Diagnostic_Menu_Open}" Command="{Binding ShowDiagnosticInfoCommand}"/>
+                </MenuItem>
             </Menu>
         </StackPanel>
 

@@ -28,6 +28,7 @@ using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Charts;
+using Recordum.WPF.ViewModels.DiagnosticInfo;
 using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
@@ -150,6 +151,9 @@ public static class ServiceRegistrar
         services.AddSingleton<ISaveFileDialog, WpfSaveFileDialog>();
         services.AddSingleton<IExportDialogLauncher, WpfExportDialogLauncher>();
         services.AddTransient<ExportDialogViewModel>();
+        services.AddSingleton<IClipboard, WpfClipboard>();
+        services.AddTransient<DiagnosticInfoViewModel>();
+        services.AddSingleton<IDiagnosticInfoLauncher, WpfDiagnosticInfoLauncher>();
 
         // Backup / Restore.
         services.AddScoped<IBackupLogService, BackupLogService>();

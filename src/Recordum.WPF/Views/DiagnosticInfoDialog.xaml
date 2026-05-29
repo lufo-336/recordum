@@ -1,0 +1,97 @@
+<Window x:Class="Recordum.WPF.Views.DiagnosticInfoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.DiagnosticInfo"
+        xmlns:res="clr-namespace:Recordum.WPF.Resources"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:DiagnosticInfoViewModel, IsDesignTimeCreatable=False}"
+        Title="{x:Static res:Strings.Diagnostic_Title}"
+        Width="560" Height="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource Brush.Background}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Rows list -->
+        <ScrollViewer Grid.Row="0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Margin="0,0,0,12">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:DiagnosticRow}">
+                        <Grid Margin="0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Label column -->
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding Label, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     Foreground="{DynamicResource Brush.TextMuted}"
+                                     FontFamily="Consolas"
+                                     FontSize="12"
+                                     Padding="0"
+                                     VerticalAlignment="Top"/>
+                            <!-- Value column -->
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Value, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     Foreground="{DynamicResource Brush.Text}"
+                                     FontFamily="Consolas"
+                                     FontWeight="SemiBold"
+                                     FontSize="12"
+                                     Padding="0"
+                                     TextWrapping="Wrap"
+                                     VerticalAlignment="Top"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Bottom action row -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Command="{Binding CopyToClipboardCommand}"
+                        MinWidth="140"
+                        Content="{x:Static res:Strings.Diagnostic_Copy}"/>
+                <TextBlock Text="{x:Static res:Strings.Diagnostic_Copied}"
+                           Margin="8,0,0,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.Text}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CopyConfirmed}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+            <Button Grid.Column="1"
+                    Content="{x:Static res:Strings.Diagnostic_Close}"
+                    MinWidth="80"
+                    IsCancel="True"
+                    Click="OnCloseClick"/>
+        </Grid>
+    </Grid>
+</Window>

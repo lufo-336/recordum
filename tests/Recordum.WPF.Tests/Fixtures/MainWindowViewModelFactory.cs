@@ -3,6 +3,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Services;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Charts;
@@ -50,7 +51,7 @@ public static class MainWindowViewModelFactory
         var backupLog = log ?? new FakeBackupLogService();
         var backupHistory = new BackupHistoryViewModel(backupLog);
 
-        return new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory);
+        return new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeDiagnosticInfoLauncher());
     }
 
     private sealed class FakeWebView2Availability : IWebView2Availability
@@ -58,5 +59,10 @@ public static class MainWindowViewModelFactory
         public bool IsAvailable => true;
         public CoreWebView2Environment? Environment => null;
         public Task ProbeAsync() => Task.CompletedTask;
+    }
+
+    private sealed class FakeDiagnosticInfoLauncher : IDiagnosticInfoLauncher
+    {
+        public Task ShowAsync() => Task.CompletedTask;
     }
 }

@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Backup;
@@ -258,7 +259,7 @@ public class MainWindowViewModelTests
         var backupLauncher = new FakeBackupDialogLauncher();
         var backupLog = new FakeBackupLogService();
         var backupHistory = new Recordum.WPF.ViewModels.Backup.BackupHistoryViewModel(backupLog);
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory);
+        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeDiagnosticInfoLauncher());
         return (sut, new Parts(query, nodes, home, settingsVm, editor, settings, exportLauncher));
     }
 
@@ -276,5 +277,10 @@ public class MainWindowViewModelTests
         public bool IsAvailable => true;
         public CoreWebView2Environment? Environment => null;
         public Task ProbeAsync() => Task.CompletedTask;
+    }
+
+    private sealed class FakeDiagnosticInfoLauncher : IDiagnosticInfoLauncher
+    {
+        public Task ShowAsync() => Task.CompletedTask;
     }
 }

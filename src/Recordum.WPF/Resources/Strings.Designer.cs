@@ -242,6 +242,17 @@ public static class Strings
     public static string Export_Run => Get("Export.Run");
     public static string Export_Cancel => Get("Export.Cancel");
 
+    // Help menu + Diagnostic dialog
+    public static string Workspace_Help => Get("Workspace.Help");
+    public static string Diagnostic_Menu_Open => Get("Diagnostic.Menu.Open");
+    public static string Diagnostic_Title => Get("Diagnostic.Title");
+    public static string Diagnostic_Copy => Get("Diagnostic.Copy");
+    public static string Diagnostic_Copied => Get("Diagnostic.Copied");
+    public static string Diagnostic_Close => Get("Diagnostic.Close");
+    public static string Diagnostic_NoBackups => Get("Diagnostic.NoBackups");
+    public static string Diagnostic_NotAvailable => Get("Diagnostic.NotAvailable");
+    public static string Diagnostic_NotGitCheckout => Get("Diagnostic.NotGitCheckout");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

@@ -668,4 +668,31 @@ Details: {0}</value>
   <data name="Backup.Settings.InertWarning" xml:space="preserve">
     <value>Auto-backup is enabled but no passphrase is set — it will not run until you provide one.</value>
   </data>
+  <data name="Workspace.Help" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Diagnostic.Menu.Open" xml:space="preserve">
+    <value>Diagnostic info…</value>
+  </data>
+  <data name="Diagnostic.Title" xml:space="preserve">
+    <value>Diagnostic info</value>
+  </data>
+  <data name="Diagnostic.Copy" xml:space="preserve">
+    <value>Copy to clipboard</value>
+  </data>
+  <data name="Diagnostic.Copied" xml:space="preserve">
+    <value>Copied!</value>
+  </data>
+  <data name="Diagnostic.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Diagnostic.NoBackups" xml:space="preserve">
+    <value>(no backups yet)</value>
+  </data>
+  <data name="Diagnostic.NotAvailable" xml:space="preserve">
+    <value>(not available)</value>
+  </data>
+  <data name="Diagnostic.NotGitCheckout" xml:space="preserve">
+    <value>(not a git checkout)</value>
+  </data>
 </root>

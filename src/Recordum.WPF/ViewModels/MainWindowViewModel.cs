@@ -2,6 +2,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
+using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
@@ -25,6 +26,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IAppSettingService _appSettings;
     private readonly IExportDialogLauncher _exportLauncher;
     private readonly IBackupDialogLauncher _backupLauncher;
+    private readonly IDiagnosticInfoLauncher _diagnosticLauncher;
 
     public HomeViewModel Home { get; }
     public SettingsViewModel Settings { get; }
@@ -57,7 +59,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Charts.ChartsWorkspaceViewModel charts,
         IExportDialogLauncher exportLauncher,
         IBackupDialogLauncher backupLauncher,
-        BackupHistoryViewModel backupHistory)
+        BackupHistoryViewModel backupHistory,
+        IDiagnosticInfoLauncher diagnosticLauncher)
     {
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(settings);
@@ -69,6 +72,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(exportLauncher);
         ArgumentNullException.ThrowIfNull(backupLauncher);
         ArgumentNullException.ThrowIfNull(backupHistory);
+        ArgumentNullException.ThrowIfNull(diagnosticLauncher);
         Home = home;
         Settings = settings;
         Editor = editor;
@@ -79,6 +83,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _exportLauncher = exportLauncher;
         _backupLauncher = backupLauncher;
         BackupHistory = backupHistory;
+        _diagnosticLauncher = diagnosticLauncher;
         Home.PropertyChanged += OnHomePropertyChanged;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
         HabitScreen.ExportRequested += OnHabitScreenExportRequested;
@@ -179,4 +184,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (HabitScreen.Node is null) return;
         await _exportLauncher.ShowForHabitAsync(HabitScreen.Node.Id, HabitScreen.Name).ConfigureAwait(true);
     }
+
+    [RelayCommand]
+    private async Task ShowDiagnosticInfoAsync() => await _diagnosticLauncher.ShowAsync().ConfigureAwait(true);
 }
