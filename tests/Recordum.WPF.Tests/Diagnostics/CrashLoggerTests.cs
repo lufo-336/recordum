@@ -25,7 +25,10 @@ public sealed class CrashLoggerTests
         CrashLogger.ResetForTests();
         CrashLogger.WireUp();
         var path = CrashLogger.LogPath!;
-        var sizeBefore = new FileInfo(path).Length;
+        // Char count, not FileInfo.Length (bytes): the shared log may already contain
+        // multi-byte UTF-8 (e.g. an em-dash), which would desync a byte offset from the
+        // char index used by Substring below.
+        var sizeBefore = File.ReadAllText(path).Length;
 
         Exception captured;
         try { throw new InvalidOperationException("smoke marker xyz"); }
@@ -46,7 +49,10 @@ public sealed class CrashLoggerTests
         CrashLogger.ResetForTests();
         CrashLogger.WireUp();
         var path = CrashLogger.LogPath!;
-        var sizeBefore = new FileInfo(path).Length;
+        // Char count, not FileInfo.Length (bytes): the shared log may already contain
+        // multi-byte UTF-8 (e.g. an em-dash), which would desync a byte offset from the
+        // char index used by Substring below.
+        var sizeBefore = File.ReadAllText(path).Length;
 
         var aggregate = new AggregateException(
             "outer agg",
@@ -68,7 +74,10 @@ public sealed class CrashLoggerTests
         CrashLogger.ResetForTests();
         CrashLogger.WireUp();
         var path = CrashLogger.LogPath!;
-        var sizeBefore = new FileInfo(path).Length;
+        // Char count, not FileInfo.Length (bytes): the shared log may already contain
+        // multi-byte UTF-8 (e.g. an em-dash), which would desync a byte offset from the
+        // char index used by Substring below.
+        var sizeBefore = File.ReadAllText(path).Length;
 
         CrashLogger.Log("null exception source", ex: null);
 
