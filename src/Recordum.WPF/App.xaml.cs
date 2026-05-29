@@ -4,6 +4,7 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Theming;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.Diagnostics;
 using CoreThemeMode = Recordum.Core.Enums.ThemeMode;
 using Recordum.WPF.Resources;
 
@@ -20,6 +21,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Must be first: any later failure needs the global log to capture it.
+        CrashLogger.WireUp();
+
         var collection = new ServiceCollection();
         collection.AddRecordumServices(RecordumOptions.Default());
         _services = collection.BuildServiceProvider();
@@ -30,6 +34,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            CrashLogger.Log("ApplicationInitializer.InitializeAsync (fatal)", ex);
             MessageBox.Show(
                 string.Format(CultureInfo.CurrentCulture, StartupErrorMessageFormat, ex.Message),
                 Strings.StartupErrorTitle,
