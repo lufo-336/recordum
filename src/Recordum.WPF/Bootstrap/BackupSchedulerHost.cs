@@ -22,8 +22,10 @@ public sealed class BackupSchedulerHost(IServiceScopeFactory scopes, ILogger<Bac
 
     private async Task LoopAsync(CancellationToken ct)
     {
-        // Fire once at startup, then every tick.
-        await TickAsync(ct).ConfigureAwait(false);
+        // Wait one interval before the first tick so we don't race with app startup
+        // DB activity (e.g. seeded plugin activators, first-run home tree). The
+        // scheduler is a "set and forget" feature; missing the first 60-min window
+        // post-launch is fine.
         while (await _timer!.WaitForNextTickAsync(ct).ConfigureAwait(false))
             await TickAsync(ct).ConfigureAwait(false);
     }
