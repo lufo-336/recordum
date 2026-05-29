@@ -149,7 +149,7 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 **Bug + rifinitura aperti** — tracker triagato in [`docs/phase-4-issues.md`](docs/phase-4-issues.md). Stati: `reported / verified / triaged / in-progress / fixed / verified-fixed`.
 
-**Progresso fino a 2026-05-29**: Theming Pass 1 (BaseStyles.xaml, ~20 implicit style) → commit `6a15cea`; crash tab Dettaglio risolto (CommandParameter string→TrendRange enum) → commit `abb9e4c`. Dettaglio per milestone in [`docs/MILESTONES.md`](docs/MILESTONES.md) §"Fase 4".
+**Progresso 2026-05-29**: Theming Pass 1→3 (BaseStyles implicit style + chrome flat Button/TabItem/ComboBox + CheckBox flat + DatePicker/Calendar tematizzati); crash tab Dettaglio risolto; WebView2 probe sul Dispatcher UI (editor markdown ripristinato); refresh Home dopo mutazioni riga (B4) e dopo ogni completamento (B5); instanziazione template materializza metriche/scala/goal/segmenti (B6a); **costruita l'intera UI di personalizzazione dell'editor** — 10 section view + host Expander (B6c); i18n editor+picker (B9); day-picker schedule + chip Tag selezionate. Suite WPF 335 / Data 296 verdi. **Aperti**: B6b template custom (richiede design), rifiniture minori (picker scala, scala State, "+" State), nav-model a colonne toggle (spec parcheggiato). Tracker autoritativo `docs/phase-4-issues.md`; spec/piani in `docs/superpowers/`.
 
 ### Storico stati milestone
 

@@ -250,6 +250,27 @@ Branch dedicato: `fase-4-polish` (creato 2026-05-29 da `milestone-3.10b-backup-r
 - App si avvia, tab Dettaglio funziona (✓ confermato utente).
 - Lista altri bug ancora aperta — triage giorno per giorno in `docs/phase-4-issues.md`.
 
+### Avanzamento 2026-05-29 (sessione estesa)
+
+Diagnosi e fix di produzione (commit su `fase-4-polish`):
+
+- **B1 "Save note" reinquadrato** — non un bug di Save: (a) chrome chiaro-su-chiaro (R1) rendeva il bottone invisibile; (b) WebView2 in fallback. Diagnosi via screenshot utente.
+- **WebView2 falso negativo (`dc332cb`)** — `CoreWebView2Environment.CreateAsync` richiede STA + message-pump; `ApplicationInitializer` lo awaita dentro catena `ConfigureAwait(false)` (thread MTA) → lanciava → fallback silenzioso nonostante runtime installato. Fix: marshal su `Application.Current.Dispatcher` in `WebView2Availability.ProbeAsync` + logging nel catch (prima inghiottito → da qui in poi i crash XAML appaiono in `recordum.log`).
+- **Theming Pass 2 (`2935091`)** — flat `ControlTemplate` per `Button`/`TabItem`/`ComboBox`. `RepeatButton`/`ToggleButton` lasciati Foreground-only (un template bottone romperebbe ScrollBar/Expander).
+- **Theming Pass 3 (`4c6bac5`)** — `CheckBox` flat (implicito), toggle "Advanced" pill (stile keyed `Recordum.PillToggle`, NON implicito), `DatePicker`/`Calendar` tematizzati (flat `CalendarDayButton`/`CalendarButton`). Chiude B7. Quirk: `CalendarButton.IsSelected` non è trigger valido (usato `IsPressed`) → highlight mese non persiste.
+- **B4 (`fd0cddb`)** — `HomeRowViewModel` alza `Changed` dopo soft-delete/archive/unarchive/restore/purge/move/pin; `HomeViewModel` ricarica preservando selezione per id.
+- **B5 (`fd3f69a`, `93d3323`)** — `QuickActionExecuted` gestito (recorded→refresh via bus, !recorded→apre dettaglio); `HomeViewModel` sottoscrive `Completion*` del bus e ricarica (marshallato su Dispatcher — il bus NON marshalla, e i quick-action handler usano `ConfigureAwait(false)`). Quirk `CrashLoggerTests`: usavano `FileInfo.Length` (byte) come indice `Substring` (char), rotti dall'em-dash nel messaggio WebView2 → fix offset char-based (`e211c18`).
+- **B6a (`05f61c9`)** — `HabitTemplateService.InstantiateAsync` scartava metrics/segments/goal (il `TemplatePayload` non aveva quei campi). Ora materializza tutto, risolve unit/scale per codice, snapshotta le label scala sulla metrica (così `StateQuickAdd` mostra la scala). `DbFixture` HA il seed (commento "no seed" fuorviante).
+- **B6c — UI sezioni editor** (spec `2026-05-29-editor-sections-ui-design.md`, plan `2026-05-29-editor-sections-ui.md`, eseguito subagent-driven). `EditorPane.SectionsHost` era vuoto ("Phase D" mai fatta): i 11 section VM (M3.4) non avevano View. Costruite 10 View + host `ItemsControl`/`Expander` + DataTemplate impliciti; `SectionViewModelBase.Title/IsVisible/IsExpanded`; `HabitEditorViewModel.Sections` + `IsApplicable`→`IsVisible`; nuovo `IReferenceDataQueryService` (liste unit/scala per i picker). Crash runtime: `{StaticResource *Values}` (ObjectDataProvider enum) in `SectionTemplates.xaml` non risolvibili dalle view istanziate via DataTemplate fuori dall'albero → spostati in `App.xaml` (`d3ad3cb`).
+- **B9 i18n (`3b42d2f`)** — 25 stringhe editor+picker localizzate EN+IT. Nomi display dei template seed lasciati (dati DB). Fix test culture-independent (`c0c515b`): asserire contro `Strings.*`, non letterali inglesi (macchina it-IT).
+- **Rifiniture B6c (`50ef22d`)** — day-picker schedule `SpecificDays` (convenzione `["Mon".."Sun"]` da `ScheduleEvaluator`); chip Tag con stato selezionato.
+
+Suite a fine sessione: **WPF 335 / Data 296 verdi**.
+
+**Deciso ma parcheggiato**: modello d'interazione "A evoluto" (colonne toggle) — spec `2026-05-29-navigation-model-design.md`, da implementare dopo le basi.
+
+**Aperti**: B6b template personalizzato (feature, richiede design); rifiniture minori (picker scala, layout scala State, "+" su State già selezionata); nav-model. In attesa del report visivo dell'utente.
+
 ### Bug e rifinitura aperti
 
 Vedi `docs/phase-4-issues.md` per il tracker triagato (`reported / verified / triaged / in-progress / fixed / verified-fixed`).
