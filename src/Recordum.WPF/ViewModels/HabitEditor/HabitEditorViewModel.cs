@@ -198,8 +198,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             await DataSource.LoadAsync(node, cfg);
             await ResetTime.LoadAsync(node);
 
-            foreach (var s in Sections)
-                s.IsVisible = s.IsApplicable(node.NodeType, node.HabitType);
+            RefreshSectionVisibility();
 
             HeaderStatus = EditorStatus.Idle;
             HeaderError = null;
@@ -265,13 +264,26 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     partial void OnSelectedNodeTypeChanged(NodeType value)
     {
         if (_loading || Node is null) return;
+        RefreshSectionVisibility();
         _ = ApplyHeaderAsync(() => _nodes.UpdateAsync(Node.Id, n => n.NodeType = value).AsTask());
     }
 
     partial void OnSelectedHabitTypeChanged(HabitType? value)
     {
         if (_loading || Node is null) return;
+        RefreshSectionVisibility();
         _ = ApplyHeaderAsync(() => _nodes.UpdateAsync(Node.Id, n => n.HabitType = value).AsTask());
+    }
+
+    /// <summary>
+    /// Recomputes each section's <see cref="SectionViewModelBase.IsVisible"/> from the current
+    /// node/habit type. Called at load and whenever the type changes in the editor, so type-specific
+    /// sections (Metrics/Scales/Timer) appear/disappear immediately without reopening the editor.
+    /// </summary>
+    private void RefreshSectionVisibility()
+    {
+        foreach (var s in Sections)
+            s.IsVisible = s.IsApplicable(SelectedNodeType, SelectedHabitType);
     }
 
     private async Task ApplyHeaderAsync(Func<Task> persist)

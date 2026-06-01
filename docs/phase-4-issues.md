@@ -123,6 +123,13 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 ## Risolti
 
+### B10. Configura — le sezioni type-specific non compaiono al cambio tipo
+- **Stato**: `fixed` (2026-06-01, su `fase-4-polish`)
+- **Sintomo (report "Recordum problemi 2")**: creata un'abitudine vuota e aperta Configura, "nulla si inserisce affinché l'abitudine possa essere personalizzata" — niente unità/quantità/cronometro.
+- **Root cause**: un'abitudine vuota nasce `Action`; le sezioni Metrics/Scales/Timer sono type-gated (Counter/Resistance/State). La visibilità (`IsVisible = IsApplicable(...)`) era calcolata **solo in `HabitEditorViewModel.LoadAsync`**. `OnSelectedNodeTypeChanged`/`OnSelectedHabitTypeChanged` persistevano il tipo ma **non ricalcolavano** la visibilità → cambiando il tipo a Counter le sezioni non comparivano mai senza riaprire l'editor.
+- **Fix**: estratto `RefreshSectionVisibility()`, chiamato in `LoadAsync` + nei due handler di cambio tipo. Test rosso→verde `SectionVisibilityReactivityTests` (Action→Counter rivela Metrics/Timer; Habit→Group nasconde le sezioni habit-only). Suite WPF 337 verdi.
+- **NB**: il persist delle sezioni era già corretto (`ApplyAsync`→`IHabitConfigService.UpsertAsync`); il difetto era solo la reattività della visibilità. Restano separati: creazione habit vuota senza prompt + apertura automatica della Cronologia (vedi B3/nuove voci).
+
 ### B0. Testo nero su nero in tema scuro — Pass 1
 - **Stato**: `fixed` (2026-05-29, commit `6a15cea` su `fase-4-polish`)
 - **Verifica utente**: in attesa (Pass 2 chrome flat è R1).
