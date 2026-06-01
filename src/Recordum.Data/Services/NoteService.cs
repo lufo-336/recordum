@@ -76,4 +76,26 @@ public sealed partial class NoteService(
             .OrderByDescending(n => n.UpdatedAtMs)
             .ToListAsync(ct);
     }
+
+    public async ValueTask<IReadOnlyList<Note>> ListByHabitAndDateAsync(Guid habitNodeId, DateOnly targetDate, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Notes.AsNoTracking()
+            .Where(n => n.HabitNodeId == habitNodeId && n.TargetDate == targetDate)
+            .OrderByDescending(n => n.UpdatedAtMs)
+            .ToListAsync(ct);
+    }
+
+    public async ValueTask<IReadOnlyList<DateOnly>> ListNoteDaysInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default)
+    {
+        var first = new DateOnly(year, month, 1);
+        var next = first.AddMonths(1);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Notes.AsNoTracking()
+            .Where(n => n.HabitNodeId == habitNodeId && n.TargetDate != null
+                        && n.TargetDate >= first && n.TargetDate < next)
+            .Select(n => n.TargetDate!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+    }
 }

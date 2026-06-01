@@ -179,4 +179,36 @@ public class NoteServiceTests
 
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task ListByHabitAndDateAsync_returns_only_notes_for_that_day()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var d = new DateOnly(2026, 6, 1);
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "today", TargetDate = d });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "next", TargetDate = d.AddDays(1) });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "free", TargetDate = null });
+
+        var result = await sut.ListByHabitAndDateAsync(habitId, d);
+
+        result.Should().ContainSingle().Which.BodyMd.Should().Be("today");
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ListNoteDaysInMonthAsync_returns_distinct_days_with_notes()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "a", TargetDate = new DateOnly(2026, 6, 1) });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "b", TargetDate = new DateOnly(2026, 6, 1) });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "c", TargetDate = new DateOnly(2026, 6, 9) });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "d", TargetDate = new DateOnly(2026, 7, 1) });
+
+        var days = await sut.ListNoteDaysInMonthAsync(habitId, 2026, 6);
+
+        days.Should().BeEquivalentTo(new[] { new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 9) });
+        await fx.DisposeAsync();
+    }
 }

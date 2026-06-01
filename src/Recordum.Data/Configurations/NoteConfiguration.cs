@@ -17,5 +17,6 @@ public sealed class NoteConfiguration : IEntityTypeConfiguration<Note>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(n => new { n.HabitNodeId, n.CreatedAt });
+        builder.HasIndex(n => new { n.HabitNodeId, n.TargetDate });
     }
 }
