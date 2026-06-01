@@ -5,7 +5,7 @@ public static class HabitConfigHistoryColumns
     public static readonly IReadOnlyList<string> Excluded = new[]
     {
         "Id","HabitNodeId","CreatedAt","UpdatedAt","UpdatedAtMs",
-        "QuickComplete","AiDataSharing","StreakBrokenAt"
+        "QuickComplete","AiDataSharing","StreakBrokenAt","NoteMarkerColor"
     };
 
     public static readonly IReadOnlyList<string> Versioned = new[]
@@ -13,6 +13,6 @@ public static class HabitConfigHistoryColumns
         "ScheduleType","ScheduleDaysJson","ScheduleWeeklyTarget","ScheduleEveryXDays","ScheduleMonthlyDaysJson",
         "StreakMode","StreakRecovery","StreakToleranceMinutes",
         "HasIntegratedTimer","TimerMode","TimerTargetSeconds","TimerAutoPrompt",
-        "RestTimerSeconds","SessionBaseTimer","SessionCountdownSeconds"
+        "RestTimerSeconds","SessionBaseTimer","SessionCountdownSeconds","SessionRepeatCount"
     };
 }

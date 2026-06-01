@@ -8,7 +8,7 @@ public class HabitConfigHistoryColumnsTests
     private static readonly string[] ExpectedExcluded =
     {
         "Id","HabitNodeId","CreatedAt","UpdatedAt","UpdatedAtMs",
-        "QuickComplete","AiDataSharing","StreakBrokenAt"
+        "QuickComplete","AiDataSharing","StreakBrokenAt","NoteMarkerColor"
     };
 
     [Fact]

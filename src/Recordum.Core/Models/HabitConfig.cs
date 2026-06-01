@@ -24,6 +24,8 @@ public sealed class HabitConfig
     public int? RestTimerSeconds { get; set; }
     public bool SessionBaseTimer { get; set; }
     public int? SessionCountdownSeconds { get; set; }
+    public int? SessionRepeatCount { get; set; }
+    public string? NoteMarkerColor { get; set; }
 
     public bool QuickComplete { get; set; }
     public AiDataSharing AiDataSharing { get; set; } = AiDataSharing.None;
