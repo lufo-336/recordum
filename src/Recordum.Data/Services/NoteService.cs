@@ -96,6 +96,7 @@ public sealed partial class NoteService(
                         && n.TargetDate >= first && n.TargetDate < next)
             .Select(n => n.TargetDate!.Value)
             .Distinct()
+            .OrderBy(d => d)
             .ToListAsync(ct);
     }
 }

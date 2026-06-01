@@ -55,7 +55,7 @@ public sealed class FakeNoteService : INoteService
     public ValueTask<IReadOnlyList<Note>> ListByHabitAndDateAsync(Guid habitNodeId, DateOnly targetDate, CancellationToken ct = default)
     {
         Throw();
-        IReadOnlyList<Note> r = Store.Values.Where(n => n.HabitNodeId == habitNodeId && n.TargetDate == targetDate).ToList();
+        IReadOnlyList<Note> r = Store.Values.Where(n => n.HabitNodeId == habitNodeId && n.TargetDate == targetDate).OrderByDescending(n => n.UpdatedAtMs).ToList();
         return new(r);
     }
 
@@ -64,7 +64,7 @@ public sealed class FakeNoteService : INoteService
         Throw();
         IReadOnlyList<DateOnly> r = Store.Values
             .Where(n => n.HabitNodeId == habitNodeId && n.TargetDate is { } t && t.Year == year && t.Month == month)
-            .Select(n => n.TargetDate!.Value).Distinct().ToList();
+            .Select(n => n.TargetDate!.Value).Distinct().OrderBy(d => d).ToList();
         return new(r);
     }
 

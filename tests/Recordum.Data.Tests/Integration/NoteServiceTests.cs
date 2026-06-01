@@ -205,10 +205,11 @@ public class NoteServiceTests
         await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "b", TargetDate = new DateOnly(2026, 6, 1) });
         await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "c", TargetDate = new DateOnly(2026, 6, 9) });
         await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "d", TargetDate = new DateOnly(2026, 7, 1) });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "free", TargetDate = null });
 
         var days = await sut.ListNoteDaysInMonthAsync(habitId, 2026, 6);
 
-        days.Should().BeEquivalentTo(new[] { new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 9) });
+        days.Should().Equal(new[] { new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 9) });
         await fx.DisposeAsync();
     }
 }
