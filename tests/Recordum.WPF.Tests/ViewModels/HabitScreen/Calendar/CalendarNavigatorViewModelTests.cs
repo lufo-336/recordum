@@ -100,4 +100,18 @@ public class CalendarNavigatorViewModelTests
         sut.SelectedDate.Should().BeNull();
         future.IsSelected.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task JumpAsync_preserves_selection_on_rebuilt_cells()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: null);
+        sut.SelectDateCommand.Execute(sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10)));
+
+        await sut.JumpAsync();
+
+        // Cells are rebuilt by JumpAsync; the new cell for the selected date must be marked selected.
+        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10)).IsSelected.Should().BeTrue();
+        sut.SelectedDate.Should().Be(new DateOnly(2026, 6, 10));
+    }
 }

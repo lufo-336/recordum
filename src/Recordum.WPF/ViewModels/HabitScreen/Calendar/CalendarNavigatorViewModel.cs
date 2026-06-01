@@ -19,6 +19,8 @@ public delegate Task<CalendarMonthMarkers> CalendarMarkerProvider(int year, int 
 /// </summary>
 public sealed partial class CalendarNavigatorViewModel : ObservableObject
 {
+    /// <summary>Snapped once at construction (per-screen lifetime); a calendar left open past midnight
+    /// keeps the construction-time "today" until the screen is reloaded. Intentional for day-granularity.</summary>
     private readonly DateOnly _today;
 
     public CalendarNavigatorViewModel(IClock clock)
