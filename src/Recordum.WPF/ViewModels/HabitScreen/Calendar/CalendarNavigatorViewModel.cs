@@ -22,6 +22,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     /// <summary>Snapped once at construction (per-screen lifetime); a calendar left open past midnight
     /// keeps the construction-time "today" until the screen is reloaded. Intentional for day-granularity.</summary>
     private readonly DateOnly _today;
+    private bool _isLoading;
 
     public CalendarNavigatorViewModel(IClock clock)
     {
@@ -50,14 +51,22 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 
     public async Task LoadAsync(int year, int month, DateOnly? selected, CancellationToken ct = default)
     {
-        DisplayYear = year;
-        DisplayMonth = month;
-        SelectedDate = selected;
-        MonthLabel = new DateOnly(year, month, 1).ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+        _isLoading = true;
+        try
+        {
+            DisplayYear = year;
+            DisplayMonth = month;
+            SelectedDate = selected;
+            MonthLabel = new DateOnly(year, month, 1).ToString("MMMM yyyy", CultureInfo.CurrentCulture);
 
-        BuildGrid(year, month);
-        await ApplyMarkersAsync(year, month, ct).ConfigureAwait(true);
-        RefreshSelection();
+            BuildGrid(year, month);
+            await ApplyMarkersAsync(year, month, ct).ConfigureAwait(true);
+            RefreshSelection();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     private void BuildGrid(int year, int month)
@@ -109,7 +118,10 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         return LoadAsync(next.Year, next.Month, SelectedDate, ct);
     }
 
-    public Task JumpAsync(CancellationToken ct = default) => LoadAsync(DisplayYear, DisplayMonth, SelectedDate, ct);
+    /// <summary>Reloads the current month (bound to the jump dropdowns). No-op while a load is already in flight,
+    /// which prevents a reentrant loop when LoadAsync mutates DisplayMonth/DisplayYear (TwoWay-bound to the ComboBoxes).</summary>
+    public Task JumpAsync(CancellationToken ct = default)
+        => _isLoading ? Task.CompletedTask : LoadAsync(DisplayYear, DisplayMonth, SelectedDate, ct);
 
     [RelayCommand]
     private void SelectDate(CalendarDayCellViewModel? cell)
