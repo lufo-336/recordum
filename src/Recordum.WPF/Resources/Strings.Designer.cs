@@ -32,6 +32,7 @@ public static class Strings
     public static string QuickAdd_Error_NotesRequired => Get("QuickAdd.Error.NotesRequired");
     public static string QuickAdd_Error_ValueRequired => Get("QuickAdd.Error.ValueRequired");
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
+    public static string HabitScreen_Tab_Abitudine => Get("HabitScreen.Tab.Abitudine");
     public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");
 
     // Notes tab

@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.ViewModels.HabitScreen.Calendar;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
@@ -17,6 +18,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 {
     private readonly IHabitNodeService _nodes;
     private readonly ICompletionService _completions;
+    private readonly INoteService _noteService;
     private readonly IMetricDefinitionService _metrics;
     private readonly IHabitConfigService _configs;
     private readonly IClock _clock;
@@ -32,6 +34,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public TimerControlViewModel TimerControl { get; }
     public NotesViewModel Notes { get; }
     public DetailViewModel Detail { get; }
+    public CalendarNavigatorViewModel Calendar { get; }
     public IWebView2Availability Availability { get; }
 
     [ObservableProperty] private QuickAddViewModelBase? _quickAdd;
@@ -68,6 +71,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(availability);
         _nodes = nodes;
         _completions = completions;
+        _noteService = noteService;
         _metrics = metrics;
         _configs = configs;
         _clock = clock;
@@ -77,6 +81,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
+        Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMonthMarkersAsync };
+        Calendar.SelectedDateChanged += OnCalendarDateSelected;
         Heatmap.DateClicked += OnHeatmapDateClicked;
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
@@ -116,6 +122,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var detailTask = Detail.LoadAsync(Node, ct);
         await Task.WhenAll(configTask, heatmapTask, listTask, quickAddTask, notesTask, detailTask).ConfigureAwait(true);
 
+        Calendar.CompletedColorHex = Node.Color;
+        Calendar.NoteColorHex = configTask.Result?.NoteMarkerColor ?? "#e0b341";
+        var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone);
+        await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), ct).ConfigureAwait(true);
+
         await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
     }
 
@@ -154,7 +165,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (habitId != Node.Id) return;
         await Task.WhenAll(
             Heatmap.LoadAsync(Node.Id),
-            CompletionList.LoadAsync(Node.Id))
+            CompletionList.LoadAsync(Node.Id),
+            Calendar.JumpAsync())
             .ConfigureAwait(true);
     }
 
@@ -162,6 +174,27 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         if (QuickAdd is null) return;
         QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
+    }
+
+    private async Task<CalendarMonthMarkers> LoadMonthMarkersAsync(int year, int month, CancellationToken ct)
+    {
+        if (Node is null)
+            return new CalendarMonthMarkers(new HashSet<DateOnly>(), new HashSet<DateOnly>());
+
+        var from = new DateOnly(year, month, 1);
+        var to = from.AddMonths(1).AddDays(-1);
+
+        var heatmap = await _completions.GetHeatmapAsync(Node.Id, from, to, ct).ConfigureAwait(true);
+        var completed = heatmap.Where(c => c.Count > 0).Select(c => c.Date).ToHashSet();
+
+        var noteDays = await _noteService.ListNoteDaysInMonthAsync(Node.Id, year, month, ct).ConfigureAwait(true);
+        return new CalendarMonthMarkers(completed, noteDays.ToHashSet());
+    }
+
+    private void OnCalendarDateSelected(object? sender, DateOnly date)
+    {
+        if (QuickAdd is not null)
+            QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
     }
 
     [RelayCommand]

@@ -8,6 +8,7 @@
              xmlns:vmn="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Notes"
              xmlns:vmd="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Detail"
              xmlns:v="clr-namespace:Recordum.WPF.Views.HabitScreen"
+             xmlns:cal="clr-namespace:Recordum.WPF.Views.HabitScreen.Calendar"
              xmlns:ctrl="clr-namespace:Recordum.WPF.Controls"
              xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
@@ -437,7 +438,7 @@
         <TabControl Grid.Row="2"
                     Background="Transparent"
                     BorderThickness="0">
-            <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Completion}">
+            <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Abitudine}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -445,7 +446,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <ContentControl Grid.Row="0" Content="{Binding Heatmap}"/>
+                    <cal:CalendarNavigator Grid.Row="0" DataContext="{Binding Calendar}"/>
                     <ContentControl Grid.Row="1"
                                     Content="{Binding QuickAdd}"
                                     ContentTemplateSelector="{StaticResource QuickAddSelector}"/>

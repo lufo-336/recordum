@@ -329,6 +329,9 @@
   <data name="HabitScreen.Tab.Completion" xml:space="preserve">
     <value>Cronologia</value>
   </data>
+  <data name="HabitScreen.Tab.Abitudine" xml:space="preserve">
+    <value>Abitudine</value>
+  </data>
   <data name="HabitScreen.Tab.Notes" xml:space="preserve">
     <value>Note</value>
   </data>
