@@ -63,6 +63,16 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 ---
 
+## Stato al 2026-06-01
+
+**Brainstorm "Recordum problemi 2" → spec + esecuzione**:
+- **Spec** `docs/superpowers/specs/2026-06-01-abitudine-column-calendar-design.md` (commit `2519edb`): 4 pilastri — colonna Abitudine + `CalendarNavigator` riusabile, note unificate (`Note.TargetDate`), timer Session ibrido, modello a colonne (Abitudine rimpiazza Cronologia nei tab attuali; refactor colonne-chip rimandato).
+- **B10** (Configura non personalizza) → `fixed` `3f4dce6` (vedi Risolti).
+- **Piano 1 — fondamenta dati schema v2.8** (`docs/superpowers/plans/2026-06-01-schema-v28-data-foundation.md`, commit `3555f45`): **eseguito** subagent-driven, 5 task TDD. Schema **v2.8** additivo: `note.target_date` (+indice), `habit_config.note_marker_color` (excluded) + `session_repeat_count` (versioned+mirror), `segment_definition.duration_seconds`; migration `AbitudineCalendarV28`. Query `INoteService` note-per-giorno/mese. Suite **Data 301 / WPF 337** verdi.
+- **Prossimo**: Piano 2 (`CalendarNavigator` + colonna Abitudine + note unificate nella UI, dentro i tab attuali) → poi Piano 3 (timer ibrido + picker colore-nota).
+
+---
+
 ## Aperti — bloccanti
 
 ### B1. Save note non funzionante
