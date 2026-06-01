@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAssertions;
 using Recordum.Core.Models;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
@@ -58,5 +59,20 @@ public class NoteRowViewModelTests
 
         changes.Should().Contain(["Summary", "UpdatedAtDisplay"]);
         sut.Summary.Should().Be("after");
+    }
+
+    [Fact]
+    public void DateBadge_shows_general_label_when_no_target_date()
+    {
+        var row = new NoteRowViewModel(new Note { BodyMd = "x", TargetDate = null });
+        row.DateBadge.Should().Be(Recordum.WPF.Resources.Strings.Notes_Badge_General);
+    }
+
+    [Fact]
+    public void DateBadge_shows_the_day_when_target_date_set()
+    {
+        var date = new DateOnly(2026, 6, 1);
+        var row = new NoteRowViewModel(new Note { BodyMd = "x", TargetDate = date });
+        row.DateBadge.Should().Be(date.ToString("d MMM", CultureInfo.CurrentCulture));
     }
 }

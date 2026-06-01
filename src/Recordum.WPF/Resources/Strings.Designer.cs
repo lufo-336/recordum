@@ -48,6 +48,7 @@ public static class Strings
     public static string Notes_Empty => Get("Notes.Empty");
     public static string Notes_EmptyHint => Get("Notes.EmptyHint");
     public static string Notes_Untitled => Get("Notes.Untitled");
+    public static string Notes_Badge_General => Get("Notes.Badge.General");
 
     // Editor / WebView2
     public static string Editor_WebView2_NotAvailable_Title => Get("Editor.WebView2.NotAvailable.Title");
