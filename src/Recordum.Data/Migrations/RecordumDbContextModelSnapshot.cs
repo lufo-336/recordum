@@ -258,8 +258,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.7"
+                            UpdatedAt = new DateTime(2026, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.8"
                         });
                 });
 
@@ -889,6 +889,11 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("has_integrated_timer");
 
+                    b.Property<string>("NoteMarkerColor")
+                        .HasMaxLength(7)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note_marker_color");
+
                     b.Property<bool>("QuickComplete")
                         .HasColumnType("INTEGER")
                         .HasColumnName("quick_complete");
@@ -928,6 +933,10 @@ namespace Recordum.Data.Migrations
                     b.Property<int?>("SessionCountdownSeconds")
                         .HasColumnType("INTEGER")
                         .HasColumnName("session_countdown_seconds");
+
+                    b.Property<int?>("SessionRepeatCount")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("session_repeat_count");
 
                     b.Property<DateTime?>("StreakBrokenAt")
                         .HasColumnType("TEXT")
@@ -1028,6 +1037,10 @@ namespace Recordum.Data.Migrations
                     b.Property<int?>("SessionCountdownSeconds")
                         .HasColumnType("INTEGER")
                         .HasColumnName("session_countdown_seconds");
+
+                    b.Property<int?>("SessionRepeatCount")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("session_repeat_count");
 
                     b.Property<string>("StreakMode")
                         .IsRequired()
@@ -1464,6 +1477,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_sensitive");
 
+                    b.Property<DateOnly?>("TargetDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("target_date");
+
                     b.Property<long>("UpdatedAtMs")
                         .HasColumnType("INTEGER")
                         .HasColumnName("updated_at_ms");
@@ -1473,6 +1490,9 @@ namespace Recordum.Data.Migrations
 
                     b.HasIndex("HabitNodeId", "CreatedAt")
                         .HasDatabaseName("ix_notes_habit_node_id_created_at");
+
+                    b.HasIndex("HabitNodeId", "TargetDate")
+                        .HasDatabaseName("ix_notes_habit_node_id_target_date");
 
                     b.ToTable("notes", (string)null);
                 });
@@ -1656,6 +1676,10 @@ namespace Recordum.Data.Migrations
                         .HasMaxLength(7)
                         .HasColumnType("TEXT")
                         .HasColumnName("color");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("duration_seconds");
 
                     b.Property<Guid>("HabitNodeId")
                         .HasColumnType("TEXT")
