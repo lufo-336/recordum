@@ -91,6 +91,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        Calendar.SelectedDateChanged -= OnCalendarDateSelected;
+        Heatmap.DateClicked -= OnHeatmapDateClicked;
         Notes.Dispose();
         Detail.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
@@ -126,6 +128,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Calendar.NoteColorHex = configTask.Result?.NoteMarkerColor ?? "#e0b341";
         var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone);
         await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), ct).ConfigureAwait(true);
+
+        // Mirror the calendar's pre-selected day into QuickAdd so both controls agree before the first click.
+        if (QuickAdd is not null && Calendar.SelectedDate is { } preSelected)
+            QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
         await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
     }
@@ -178,16 +184,17 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private async Task<CalendarMonthMarkers> LoadMonthMarkersAsync(int year, int month, CancellationToken ct)
     {
-        if (Node is null)
+        var node = Node;
+        if (node is null)
             return new CalendarMonthMarkers(new HashSet<DateOnly>(), new HashSet<DateOnly>());
 
         var from = new DateOnly(year, month, 1);
         var to = from.AddMonths(1).AddDays(-1);
 
-        var heatmap = await _completions.GetHeatmapAsync(Node.Id, from, to, ct).ConfigureAwait(true);
+        var heatmap = await _completions.GetHeatmapAsync(node.Id, from, to, ct).ConfigureAwait(true);
         var completed = heatmap.Where(c => c.Count > 0).Select(c => c.Date).ToHashSet();
 
-        var noteDays = await _noteService.ListNoteDaysInMonthAsync(Node.Id, year, month, ct).ConfigureAwait(true);
+        var noteDays = await _noteService.ListNoteDaysInMonthAsync(node.Id, year, month, ct).ConfigureAwait(true);
         return new CalendarMonthMarkers(completed, noteDays.ToHashSet());
     }
 
