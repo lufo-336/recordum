@@ -33,7 +33,8 @@ public class HabitConfigHistoryVersioningV28Tests
         }
         await using (var db = await fx.Factory.CreateDbContextAsync())
         {
-            (await db.Set<HabitConfigHistory>().CountAsync(x => x.HabitNodeId == habitId)).Should().Be(1);
+            var snap = await db.Set<HabitConfigHistory>().SingleAsync(x => x.HabitNodeId == habitId);
+            snap.SessionRepeatCount.Should().Be(1); // snapshot captures the ORIGINAL value, not the new 8
         }
         await fx.DisposeAsync();
     }

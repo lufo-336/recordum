@@ -11,6 +11,7 @@ public sealed class HabitConfigConfiguration : IEntityTypeConfiguration<HabitCon
         builder.HasKey(c => c.Id);
         builder.Property(c => c.ScheduleDaysJson).HasMaxLength(200);
         builder.Property(c => c.ScheduleMonthlyDaysJson).HasMaxLength(200);
+        builder.Property(c => c.NoteMarkerColor).HasMaxLength(7);
 
         builder.Property(c => c.ScheduleType).HasConversion<string>().HasMaxLength(16);
         builder.Property(c => c.StreakMode).HasConversion<string>().HasMaxLength(16);
