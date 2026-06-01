@@ -8,6 +8,8 @@ public sealed class SegmentDefinition
     public string? Color { get; set; }
     public int SortOrder { get; set; }
     public bool IsRest { get; set; }
+    /// <summary>Optional countdown length for the segment. Null = manual/lap (user advances). Set = auto-advancing interval.</summary>
+    public int? DurationSeconds { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
 }
