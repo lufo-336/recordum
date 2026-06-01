@@ -335,6 +335,15 @@
   <data name="HabitScreen.Tab.Notes" xml:space="preserve">
     <value>Note</value>
   </data>
+  <data name="HabitScreen.DayNote.Title" xml:space="preserve">
+    <value>Nota del giorno</value>
+  </data>
+  <data name="HabitScreen.DayNote.Save" xml:space="preserve">
+    <value>Salva nota</value>
+  </data>
+  <data name="HabitScreen.DayNote.Placeholder" xml:space="preserve">
+    <value>Scegli un giorno sul calendario per aggiungere una nota.</value>
+  </data>
   <data name="Notes.New" xml:space="preserve">
     <value>+ Nuova nota</value>
   </data>

@@ -444,6 +444,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <cal:CalendarNavigator Grid.Row="0" DataContext="{Binding Calendar}"/>
@@ -451,7 +452,8 @@
                                     Content="{Binding QuickAdd}"
                                     ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
                     <ContentControl Grid.Row="2" Content="{Binding TimerControl}"/>
-                    <ContentControl Grid.Row="3" Content="{Binding CompletionList}"/>
+                    <v:DayNoteView Grid.Row="3" DataContext="{Binding DayNote}"/>
+                    <ContentControl Grid.Row="4" Content="{Binding CompletionList}"/>
                 </Grid>
             </TabItem>
             <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Detail}">

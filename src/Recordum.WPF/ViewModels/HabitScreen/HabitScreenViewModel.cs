@@ -35,6 +35,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public NotesViewModel Notes { get; }
     public DetailViewModel Detail { get; }
     public CalendarNavigatorViewModel Calendar { get; }
+    public DayNoteViewModel DayNote { get; }
     public IWebView2Availability Availability { get; }
 
     [ObservableProperty] private QuickAddViewModelBase? _quickAdd;
@@ -83,10 +84,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMonthMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
+        DayNote = new DayNoteViewModel(noteService, clock);
         Heatmap.DateClicked += OnHeatmapDateClicked;
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
+        _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
+        _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
+        _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
     }
 
     public void Dispose()
@@ -133,6 +138,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (QuickAdd is not null && Calendar.SelectedDate is { } preSelected)
             QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
+        DayNote.SetContext(Node.Id);
+        if (Calendar.SelectedDate is { } sel)
+            await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);
+
         await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
     }
 
@@ -176,6 +185,20 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             .ConfigureAwait(true);
     }
 
+    private async void OnNoteEvent(EventEnvelope envelope)
+    {
+        if (Node is null) return;
+        var habitId = envelope.Payload switch
+        {
+            NoteCreatedPayload c => c.HabitNodeId,
+            NoteUpdatedPayload u => u.HabitNodeId,
+            NoteDeletedPayload d => d.HabitNodeId,
+            _ => Guid.Empty,
+        };
+        if (habitId != Node.Id) return;
+        await Calendar.JumpAsync().ConfigureAwait(true);
+    }
+
     private void OnHeatmapDateClicked(object? sender, DateOnly date)
     {
         if (QuickAdd is null) return;
@@ -198,10 +221,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         return new CalendarMonthMarkers(completed, noteDays.ToHashSet());
     }
 
-    private void OnCalendarDateSelected(object? sender, DateOnly date)
+    private async void OnCalendarDateSelected(object? sender, DateOnly date)
     {
         if (QuickAdd is not null)
             QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
+        await DayNote.LoadDayAsync(date).ConfigureAwait(true);
     }
 
     [RelayCommand]

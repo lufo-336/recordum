@@ -34,6 +34,9 @@ public static class Strings
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
     public static string HabitScreen_Tab_Abitudine => Get("HabitScreen.Tab.Abitudine");
     public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");
+    public static string HabitScreen_DayNote_Title => Get("HabitScreen.DayNote.Title");
+    public static string HabitScreen_DayNote_Save => Get("HabitScreen.DayNote.Save");
+    public static string HabitScreen_DayNote_Placeholder => Get("HabitScreen.DayNote.Placeholder");
 
     // Notes tab
     public static string Notes_New => Get("Notes.New");

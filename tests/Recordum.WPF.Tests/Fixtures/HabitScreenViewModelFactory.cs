@@ -16,6 +16,12 @@ public static class HabitScreenViewModelFactory
 
     public static (HabitScreenViewModel Vm, FakeHabitNodeService Nodes) Create()
     {
+        var result = Create(out _);
+        return result;
+    }
+
+    public static (HabitScreenViewModel Vm, FakeHabitNodeService Nodes) Create(out FakeNoteService notes)
+    {
         var nodes = new FakeHabitNodeService();
         var completions = new FakeCompletionService();
         var timers = new FakeActiveTimerService();
@@ -32,6 +38,7 @@ public static class HabitScreenViewModelFactory
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             clock, bus, new FakeWebView2Availability());
 
+        notes = noteService;
         return (vm, nodes);
     }
 }
