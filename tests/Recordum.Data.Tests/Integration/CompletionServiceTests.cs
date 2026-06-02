@@ -344,9 +344,6 @@ public class CompletionServiceTests
 
     // ── GetDailyMagnitudeAsync tests ─────────────────────────────────────────
 
-    private static long Ms(int y, int m, int d) =>
-        new DateTimeOffset(new DateTime(y, m, d, 0, 0, 0, DateTimeKind.Utc), TimeSpan.Zero).ToUnixTimeMilliseconds();
-
     private static async Task<(DbFixture fx, Guid habitId, Guid? metricId)> SeedHabitWithMetricAsync(HabitType type)
     {
         var fx = new DbFixture();

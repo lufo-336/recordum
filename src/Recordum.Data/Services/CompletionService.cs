@@ -171,7 +171,7 @@ public sealed partial class CompletionService(
         var first = new DateOnly(year, month, 1);
         var next = first.AddMonths(1);
         var fromMs = new DateTimeOffset(first.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var toMs = new DateTimeOffset(next.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var toMs = new DateTimeOffset(next.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds(); // exclusive: [fromMs, toMs) covers the whole month
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var node = await db.HabitNodes.AsNoTracking()
