@@ -1,4 +1,5 @@
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 
 namespace Recordum.WPF.Tests.Fixtures;
@@ -65,6 +66,17 @@ public sealed class FakeNoteService : INoteService
         IReadOnlyList<DateOnly> r = Store.Values
             .Where(n => n.HabitNodeId == habitNodeId && n.TargetDate is { } t && t.Year == year && t.Month == month)
             .Select(n => n.TargetDate!.Value).Distinct().OrderBy(d => d).ToList();
+        return new(r);
+    }
+
+    public ValueTask<IReadOnlyList<DayNoteCount>> ListNoteCountsInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default)
+    {
+        Throw();
+        IReadOnlyList<DayNoteCount> r = Store.Values
+            .Where(n => n.HabitNodeId == habitNodeId && n.TargetDate is { } t && t.Year == year && t.Month == month)
+            .GroupBy(n => n.TargetDate!.Value)
+            .Select(g => new DayNoteCount(g.Key, g.Count()))
+            .OrderBy(d => d.Date).ToList();
         return new(r);
     }
 
