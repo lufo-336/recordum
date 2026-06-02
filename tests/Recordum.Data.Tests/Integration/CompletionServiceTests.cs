@@ -341,4 +341,119 @@ public class CompletionServiceTests
         Assert.Equal(10m, rows.Single().Sum);
         await fx.DisposeAsync();
     }
+
+    // ── GetDailyMagnitudeAsync tests ─────────────────────────────────────────
+
+    private static long Ms(int y, int m, int d) =>
+        new DateTimeOffset(new DateTime(y, m, d, 0, 0, 0, DateTimeKind.Utc), TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+    private static async Task<(DbFixture fx, Guid habitId, Guid? metricId)> SeedHabitWithMetricAsync(HabitType type)
+    {
+        var fx = new DbFixture();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var h = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = type, Name = "h" };
+        db.HabitNodes.Add(h);
+        Guid? metricId = null;
+        if (type is HabitType.Counter or HabitType.Resistance or HabitType.State)
+        {
+            var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = h.Id, Name = "primary", Type = MetricType.Integer, SortOrder = 0 };
+            db.MetricDefinitions.Add(metric);
+            metricId = metric.Id;
+        }
+        await db.SaveChangesAsync();
+        return (fx, h.Id, metricId);
+    }
+
+    [Fact]
+    public async Task Magnitude_resistance_counts_distinct_series_within_one_completion()
+    {
+        var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Resistance);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 6, 2);
+        // One completion with 3 series (SeriesIndex 0, 1, 2)
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 10), CompletedAtMs = MsAt(day, 10) },
+            new[]
+            {
+                new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 10 },
+                new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 1, ValueInteger = 10 },
+                new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 2, ValueInteger = 10 },
+            });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Equal(3m, mags.Single(d => d.Date == day).Magnitude);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Magnitude_counter_sums_primary_metric()
+    {
+        var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Counter);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 6, 3);
+        // Two completions same day with ValueInteger 60 and 40
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 60 } });
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 12), CompletedAtMs = MsAt(day, 12) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 40 } });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Equal(100m, mags.Single(d => d.Date == day).Magnitude);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Magnitude_action_counts_completions()
+    {
+        var (fx, habitId, _) = await SeedHabitWithMetricAsync(HabitType.Action);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 6, 4);
+        // Two completions same day
+        await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) });
+        await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Equal(2m, mags.Single(d => d.Date == day).Magnitude);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Magnitude_state_takes_latest_value()
+    {
+        var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.State);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 6, 5);
+        // Two completions same day: value 2 (hour 8) and value 4 (hour 21, larger CompletedAtMs)
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 2 } });
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 21), CompletedAtMs = MsAt(day, 21) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 4 } });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Equal(4m, mags.Single(d => d.Date == day).Magnitude);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Magnitude_excludes_other_months_and_empty_days()
+    {
+        var (fx, habitId, _) = await SeedHabitWithMetricAsync(HabitType.Action);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var dayJuly = new DateOnly(2026, 7, 1);
+        // Completion in July, query for June → empty
+        await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(dayJuly, 9), CompletedAtMs = MsAt(dayJuly, 9) });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Empty(mags);
+        await fx.DisposeAsync();
+    }
 }

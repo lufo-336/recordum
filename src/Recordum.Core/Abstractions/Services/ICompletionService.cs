@@ -36,4 +36,7 @@ public interface ICompletionService
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken ct = default);
+
+    ValueTask<IReadOnlyList<DailyMagnitude>> GetDailyMagnitudeAsync(
+        Guid habitNodeId, int year, int month, CancellationToken ct = default);
 }

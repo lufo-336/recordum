@@ -165,6 +165,65 @@ public sealed partial class CompletionService(
             .ToList();
     }
 
+    public async ValueTask<IReadOnlyList<DailyMagnitude>> GetDailyMagnitudeAsync(
+        Guid habitNodeId, int year, int month, CancellationToken ct = default)
+    {
+        var first = new DateOnly(year, month, 1);
+        var next = first.AddMonths(1);
+        var fromMs = new DateTimeOffset(first.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var toMs = new DateTimeOffset(next.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var node = await db.HabitNodes.AsNoTracking()
+            .Where(n => n.Id == habitNodeId)
+            .Select(n => new { n.HabitType })
+            .FirstOrDefaultAsync(ct);
+        if (node is null) return [];
+
+        Guid? primaryMetricId = await db.MetricDefinitions.AsNoTracking()
+            .Where(m => m.HabitNodeId == habitNodeId)
+            .OrderBy(m => m.SortOrder)
+            .Select(m => (Guid?)m.Id)
+            .FirstOrDefaultAsync(ct);
+
+        var comps = await db.Completions.AsNoTracking()
+            .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs < toMs)
+            .Select(c => new
+            {
+                c.CompletedAt,
+                c.CompletedAtMs,
+                Values = c.Values.Select(v => new
+                {
+                    v.SeriesIndex,
+                    v.MetricDefinitionId,
+                    Numeric = (decimal?)v.ValueDecimal ?? (decimal?)v.ValueInteger ?? (decimal?)v.ValueSeconds ?? 0m,
+                }).ToList(),
+            })
+            .ToListAsync(ct);
+
+        var result = new List<DailyMagnitude>();
+        foreach (var g in comps.GroupBy(c => DateOnly.FromDateTime(c.CompletedAt)))
+        {
+            decimal mag = node.HabitType switch
+            {
+                HabitType.Resistance => g.Sum(c => c.Values.Select(v => v.SeriesIndex).Distinct().Count()),
+                HabitType.Counter => g.SelectMany(c => c.Values)
+                    .Where(v => primaryMetricId == null || v.MetricDefinitionId == primaryMetricId.Value)
+                    .Sum(v => v.Numeric),
+                HabitType.State => g.OrderByDescending(c => c.CompletedAtMs)
+                    .SelectMany(c => c.Values)
+                    .Where(v => primaryMetricId == null || v.MetricDefinitionId == primaryMetricId.Value)
+                    .Select(v => v.Numeric)
+                    .DefaultIfEmpty(0m)
+                    .First(),
+                // Action, Journal, null → count completions
+                _ => g.Count(),
+            };
+            if (mag > 0) result.Add(new DailyMagnitude(g.Key, mag));
+        }
+        return result.OrderBy(d => d.Date).ToList();
+    }
+
     private static void ValidatePerType(
         HabitType type, Completion c,
         IReadOnlyList<CompletionValue>? values,
