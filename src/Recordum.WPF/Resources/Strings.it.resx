@@ -218,6 +218,36 @@
   <data name="HabitTemplatePicker.BlankGroup.Description" xml:space="preserve">
     <value>Crea un gruppo vuoto per organizzare le abitudini.</value>
   </data>
+  <data name="HabitTemplatePicker.FromScratch" xml:space="preserve">
+    <value>Costruisci da zero</value>
+  </data>
+  <data name="HabitTemplatePicker.YourTemplates" xml:space="preserve">
+    <value>I tuoi template</value>
+  </data>
+  <data name="HabitTemplatePicker.Rename" xml:space="preserve">
+    <value>Rinomina</value>
+  </data>
+  <data name="HabitTemplatePicker.Delete" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="HabitBuilder.Title" xml:space="preserve">
+    <value>Nuova abitudine</value>
+  </data>
+  <data name="HabitBuilder.SaveAsTemplate" xml:space="preserve">
+    <value>Salva come template</value>
+  </data>
+  <data name="HabitBuilder.Launch" xml:space="preserve">
+    <value>Lancia</value>
+  </data>
+  <data name="HabitBuilder.Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="HabitBuilder.AddBlock" xml:space="preserve">
+    <value>Aggiungi mattone</value>
+  </data>
+  <data name="HabitBuilder.DerivedType" xml:space="preserve">
+    <value>Si comporta come: {0}</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Il nome è obbligatorio</value>
   </data>

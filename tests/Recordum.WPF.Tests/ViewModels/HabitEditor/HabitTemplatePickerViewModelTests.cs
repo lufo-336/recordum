@@ -25,15 +25,57 @@ public class HabitTemplatePickerViewModelTests
         await sut.LoadAsync();
 
         sut.Options.Should().HaveCount(10);
-        sut.Options[0].Name.Should().Be(Strings.HabitTemplatePicker_BlankHabit);
+        sut.Options[0].Name.Should().Be(Strings.HabitTemplatePicker_FromScratch);
         sut.Options[1].Name.Should().Be(Strings.HabitTemplatePicker_BlankGroup);
+        sut.CustomOptions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LoadAsync_splits_custom_templates_into_their_own_section()
+    {
+        await _templates.CreateAsync(new HabitTemplate { Name = "official", IsOfficial = true });
+        await _templates.CreateAsync(new HabitTemplate { Name = "mine", IsOfficial = false });
+        var sut = CreateSut();
+
+        await sut.LoadAsync();
+
+        sut.Options.Select(o => o.Name).Should().Contain("official").And.NotContain("mine");
+        sut.CustomOptions.Should().ContainSingle(o => o.Name == "mine" && o.IsCustom);
+    }
+
+    [Fact]
+    public async Task RenameCustom_renames_template_and_reloads()
+    {
+        var id = await _templates.CreateAsync(new HabitTemplate { Name = "old", IsOfficial = false });
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var option = sut.CustomOptions.Single();
+
+        await sut.RenameCustomCommand.ExecuteAsync((option, "new"));
+
+        _templates.Store[id].Name.Should().Be("new");
+        sut.CustomOptions.Should().ContainSingle(o => o.Name == "new");
+    }
+
+    [Fact]
+    public async Task DeleteCustom_deletes_template_and_reloads()
+    {
+        var id = await _templates.CreateAsync(new HabitTemplate { Name = "doomed", IsOfficial = false });
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var option = sut.CustomOptions.Single();
+
+        await sut.DeleteCustomCommand.ExecuteAsync(option);
+
+        _templates.Store.Should().NotContainKey(id);
+        sut.CustomOptions.Should().BeEmpty();
     }
 
     [Fact]
     public async Task PickCommand_for_template_calls_InstantiateAsync_with_parentId()
     {
         var parentId = Guid.NewGuid();
-        var tId = await _templates.CreateAsync(new HabitTemplate { Name = "x" });
+        var tId = await _templates.CreateAsync(new HabitTemplate { Name = "x", IsOfficial = true });
         var sut = CreateSut();
         await sut.LoadAsync(parentId: parentId);
 
@@ -52,7 +94,7 @@ public class HabitTemplatePickerViewModelTests
         var sut = CreateSut();
         await sut.LoadAsync(parentId: parentId);
 
-        var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_BlankHabit);
+        var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_FromScratch);
         await sut.PickCommand.ExecuteAsync(blank);
 
         // "Build from scratch" no longer creates a node directly; it signals the host to open the builder.

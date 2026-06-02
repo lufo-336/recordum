@@ -19,16 +19,16 @@
             <DockPanel LastChildFill="False">
                 <Button x:Name="CancelButton"
                         DockPanel.Dock="Left"
-                        Content="Annulla"
+                        Content="{x:Static res:Strings.HabitBuilder_Cancel}"
                         Padding="14,6"/>
                 <Button DockPanel.Dock="Right"
-                        Content="Lancia"
+                        Content="{x:Static res:Strings.HabitBuilder_Launch}"
                         Padding="18,6"
                         Margin="8,0,0,0"
                         FontWeight="SemiBold"
                         Command="{Binding LaunchCommand}"/>
                 <Button DockPanel.Dock="Right"
-                        Content="Salva come template"
+                        Content="{x:Static res:Strings.HabitBuilder_SaveAsTemplate}"
                         Padding="14,6"
                         Command="{Binding SaveAsTemplateCommand}"/>
             </DockPanel>
@@ -38,7 +38,7 @@
             <StackPanel Margin="20">
 
                 <!-- ===== Zone 1: Testata ===== -->
-                <TextBlock Text="Nuova abitudine"
+                <TextBlock Text="{x:Static res:Strings.HabitBuilder_Title}"
                            FontSize="{StaticResource FontSize.Heading}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource Brush.Text}"
@@ -68,10 +68,10 @@
                             BorderThickness="1"
                             BorderBrush="{DynamicResource Brush.Border}"
                             Background="{DynamicResource Brush.SurfaceElevated}">
-                        <TextBlock Text="{Binding DerivedType}"
-                                   FontSize="{StaticResource FontSize.Small}"
+                        <TextBlock FontSize="{StaticResource FontSize.Small}"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource Brush.Text}"/>
+                                   Foreground="{DynamicResource Brush.Text}"
+                                   Text="{Binding DerivedType, StringFormat={x:Static res:Strings.HabitBuilder_DerivedType}}"/>
                     </Border>
                 </Grid>
 
@@ -148,6 +148,7 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <CheckBox Content="Serie"
                               VerticalAlignment="Center"
+                              IsEnabled="{Binding CanEnableSeries}"
                               IsChecked="{Binding SeriesEnabled, Mode=TwoWay}"/>
                     <TextBlock Text="ripetizioni:"
                                VerticalAlignment="Center"

@@ -132,6 +132,18 @@ public static class Strings
     public static string HabitTemplatePicker_BlankHabit_Description => Get("HabitTemplatePicker.BlankHabit.Description");
     public static string HabitTemplatePicker_BlankGroup => Get("HabitTemplatePicker.BlankGroup");
     public static string HabitTemplatePicker_BlankGroup_Description => Get("HabitTemplatePicker.BlankGroup.Description");
+    public static string HabitTemplatePicker_FromScratch => Get("HabitTemplatePicker.FromScratch");
+    public static string HabitTemplatePicker_YourTemplates => Get("HabitTemplatePicker.YourTemplates");
+    public static string HabitTemplatePicker_Rename => Get("HabitTemplatePicker.Rename");
+    public static string HabitTemplatePicker_Delete => Get("HabitTemplatePicker.Delete");
+
+    // Habit Builder (block-first composer)
+    public static string HabitBuilder_Title => Get("HabitBuilder.Title");
+    public static string HabitBuilder_SaveAsTemplate => Get("HabitBuilder.SaveAsTemplate");
+    public static string HabitBuilder_Launch => Get("HabitBuilder.Launch");
+    public static string HabitBuilder_Cancel => Get("HabitBuilder.Cancel");
+    public static string HabitBuilder_AddBlock => Get("HabitBuilder.AddBlock");
+    public static string HabitBuilder_DerivedType => Get("HabitBuilder.DerivedType");
     public static string Editor_Error_NameRequired => Get("Editor.Error.NameRequired");
     public static string Editor_Error_NameTooLong => Get("Editor.Error.NameTooLong");
     public static string Editor_Error_DescriptionTooLong => Get("Editor.Error.DescriptionTooLong");

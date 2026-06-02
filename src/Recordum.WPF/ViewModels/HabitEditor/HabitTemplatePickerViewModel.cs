@@ -23,6 +23,11 @@ public sealed partial class HabitTemplatePickerViewModel(
     private readonly IHabitNodeService _nodes = nodes;
 
     public ObservableCollection<PickerOption> Options { get; } = new();
+
+    /// <summary>User-saved templates (<see cref="HabitTemplate.IsOfficial"/> == false), shown in a
+    /// separate "Your templates" section with rename/delete affordances.</summary>
+    public ObservableCollection<PickerOption> CustomOptions { get; } = new();
+
     [ObservableProperty] private Guid? _createdHabitNodeId;
 
     /// <summary>Set when the "build from scratch" option is picked: the host closes the picker
@@ -36,10 +41,37 @@ public sealed partial class HabitTemplatePickerViewModel(
     {
         ParentForBuilder = parentId;
         Options.Clear();
-        Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankHabit, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
+        CustomOptions.Clear();
+        Options.Add(new PickerOption(Strings.HabitTemplatePicker_FromScratch, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
         Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankGroup, Strings.HabitTemplatePicker_BlankGroup_Description, null, NodeType.Group, parentId));
         foreach (var t in await _templates.ListAsync(ct))
-            Options.Add(new PickerOption(t.Name, t.Description ?? "", t.Id, NodeType.Habit, parentId));
+        {
+            var option = new PickerOption(t.Name, t.Description ?? "", t.Id, NodeType.Habit, parentId, !t.IsOfficial);
+            if (t.IsOfficial)
+                Options.Add(option);
+            else
+                CustomOptions.Add(option);
+        }
+    }
+
+    /// <summary>Renames a custom template, then reloads so both sections reflect the change.</summary>
+    [RelayCommand]
+    private async Task RenameCustomAsync((PickerOption Option, string NewName) args)
+    {
+        if (args.Option?.TemplateId is not { } id || !args.Option.IsCustom) return;
+        if (string.IsNullOrWhiteSpace(args.NewName)) return;
+        var name = args.NewName.Trim();
+        await _templates.UpdateAsync(id, t => t.Name = name);
+        await LoadAsync(ParentForBuilder);
+    }
+
+    /// <summary>Deletes a custom template, then reloads the "Your templates" section.</summary>
+    [RelayCommand]
+    private async Task DeleteCustomAsync(PickerOption option)
+    {
+        if (option?.TemplateId is not { } id || !option.IsCustom) return;
+        await _templates.DeleteAsync(id);
+        await LoadAsync(ParentForBuilder);
     }
 
     [RelayCommand]
@@ -70,4 +102,4 @@ public sealed partial class HabitTemplatePickerViewModel(
     }
 }
 
-public sealed record PickerOption(string Name, string Description, Guid? TemplateId, NodeType NodeType, Guid? ParentId);
+public sealed record PickerOption(string Name, string Description, Guid? TemplateId, NodeType NodeType, Guid? ParentId, bool IsCustom = false);
