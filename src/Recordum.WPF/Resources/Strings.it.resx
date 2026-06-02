@@ -278,9 +278,6 @@
   <data name="HabitScreen.QuickAdd.Action.Mark" xml:space="preserve">
     <value>Segna come fatto</value>
   </data>
-  <data name="HabitScreen.QuickAdd.Date" xml:space="preserve">
-    <value>Data</value>
-  </data>
   <data name="HabitScreen.QuickAdd.Value" xml:space="preserve">
     <value>Valore</value>
   </data>

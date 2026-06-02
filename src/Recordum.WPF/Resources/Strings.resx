@@ -296,9 +296,6 @@ Details: {0}</value>
   <data name="HabitScreen.QuickAdd.Action.Mark" xml:space="preserve">
     <value>Mark completed</value>
   </data>
-  <data name="HabitScreen.QuickAdd.Date" xml:space="preserve">
-    <value>Date</value>
-  </data>
   <data name="HabitScreen.QuickAdd.Value" xml:space="preserve">
     <value>Value</value>
   </data>

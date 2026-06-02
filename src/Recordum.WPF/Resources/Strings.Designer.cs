@@ -15,7 +15,6 @@ public static class Strings
     public static string HabitScreen_Close => Get("HabitScreen.Close");
     public static string HabitScreen_QuickAdd_Save => Get("HabitScreen.QuickAdd.Save");
     public static string HabitScreen_QuickAdd_Action_Mark => Get("HabitScreen.QuickAdd.Action.Mark");
-    public static string HabitScreen_QuickAdd_Date => Get("HabitScreen.QuickAdd.Date");
     public static string HabitScreen_QuickAdd_Value => Get("HabitScreen.QuickAdd.Value");
     public static string HabitScreen_QuickAdd_Notes => Get("HabitScreen.QuickAdd.Notes");
     public static string HabitScreen_QuickAdd_NotesPlaceholder => Get("HabitScreen.QuickAdd.NotesPlaceholder");
