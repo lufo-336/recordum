@@ -55,7 +55,8 @@ Affianca l'esistente `ListNoteDaysInMonthAsync` (che resta per altri usi); il VM
 | **resistance** | n° **serie** = somma su tutti i completamenti del giorno del conteggio di `SeriesIndex` distinti | se > 1 (il "3" richiesto) |
 | **state** | **valore** sulla scala del giorno (se più voci, l'ultima per `CompletedAtMs`) | sempre, il valore (`4`) |
 | **journal** | n° voci (di solito 1) | nascosto; "n×" solo se > 1 |
-| **session** | n° **sessioni** completate (completamenti con segmenti) | se > 1 |
+
+> **Session non è un `HabitType`**: è un counter con `timer_mode='session'`. In questa iterazione un counter-sessione è trattato come **counter** (somma metrica primaria). Il conteggio di sessioni/segmenti come magnitudine è un refinement futuro (richiederebbe leggere `timer_mode` nella query).
 
 Note (separate dalla magnitudine): angolino sempre presente se ≥ 1 nota; numero dentro l'angolino solo se > 1.
 
@@ -82,9 +83,8 @@ record CalendarMonthMarkers(IReadOnlyList<CalendarDayMarker> Days);
 
 1. Fetch `GetDailyMagnitudeAsync` + `ListNoteCountsInMonthAsync`.
 2. **TintStep** (4 step):
-   - `state`: `step = bucket(value / scaleMax)` (assoluto; `scaleMax` = n° label della scala, dalla config).
    - `action`/`journal`: `Magnitude > 0 → step 4` (binario: fatto = pieno).
-   - `counter`/`resistance`/`session`: `monthMax = max(Magnitude)` sul mese; `step = ceil(Magnitude / monthMax * 4)`, con `Magnitude > 0 → step ≥ 1`.
+   - `counter`/`resistance`/`state`: `monthMax = max(Magnitude)` sul mese; `step = ceil(Magnitude / monthMax * 4)`, con `Magnitude > 0 → step ≥ 1`. (Per `state` il tint assoluto su `scaleMax` è un refinement futuro: richiederebbe risolvere la scala nel VM; il relativo è consistente e non necessita fetch aggiuntivi.)
 3. **Number** (cultura corrente, vedi §4): nascosto per action/journal salvo `> 1` (allora `"{n}×"`); per resistance/session solo se `> 1`; per counter sempre la quantità; per state sempre il valore.
 4. **NoteCount**: dal conteggio note.
 
