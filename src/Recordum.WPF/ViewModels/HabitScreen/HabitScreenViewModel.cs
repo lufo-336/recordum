@@ -271,16 +271,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (node is null) return;
         var mags = await _completions.GetDailyMagnitudeAsync(node.Id, date.Year, date.Month, ct).ConfigureAwait(true);
         var mag = mags.FirstOrDefault(m => m.Date == date)?.Magnitude ?? 0m;
-        var label = mag > 0 ? DayMagnitudeLabel(node.HabitType ?? HabitType.Action, mag) : null;
+        // Reuse the calendar's per-type number rule so the strip and the cell agree
+        // (Action/Journal show no redundant "1" next to the done check).
+        var label = NumberFor(node.HabitType ?? HabitType.Action, mag);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
         DayNote.SetDaySummary(mag > 0, label, notes.Count);
     }
-
-    private static string DayMagnitudeLabel(HabitType type, decimal mag) => type switch
-    {
-        HabitType.Resistance => $"{FormatMag(mag)}×",
-        _ => FormatMag(mag),
-    };
 
     [RelayCommand]
     private void OpenConfigure() => ConfigureRequested?.Invoke(this, EventArgs.Empty);
