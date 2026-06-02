@@ -78,6 +78,7 @@ public static class ServiceRegistrar
 
         // 14 aggregate/query services + 1 key transition (Task 32). Scoped — per-operation IPluginContext capture.
         services.AddScoped<IHabitNodeService, HabitNodeService>();
+        services.AddScoped<IComposedHabitService, ComposedHabitService>();
         services.AddScoped<IHabitConfigService, HabitConfigService>();
         services.AddScoped<IHabitTemplateService, HabitTemplateService>();
         services.AddScoped<ICompletionService, CompletionService>();
