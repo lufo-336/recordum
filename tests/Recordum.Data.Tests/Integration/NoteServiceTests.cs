@@ -214,7 +214,7 @@ public class NoteServiceTests
     }
 
     [Fact]
-    public async Task ListNoteCountsInMonth_groups_by_target_date()
+    public async Task ListNoteCountsInMonthAsync_groups_counts_by_target_date()
     {
         var (fx, habitId) = await SeedHabitAsync();
         var sut = NewService(fx, out _);
@@ -223,6 +223,7 @@ public class NoteServiceTests
         await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "b", TargetDate = d, UpdatedAtMs = 2 });
         await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "c", TargetDate = new DateOnly(2026, 6, 5), UpdatedAtMs = 3 });
         await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "d", TargetDate = new DateOnly(2026, 7, 1), UpdatedAtMs = 4 });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "free", TargetDate = null, UpdatedAtMs = 5 });
 
         var counts = await sut.ListNoteCountsInMonthAsync(habitId, 2026, 6);
 
