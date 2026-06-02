@@ -212,4 +212,23 @@ public class NoteServiceTests
         days.Should().Equal(new[] { new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 9) });
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task ListNoteCountsInMonth_groups_by_target_date()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var d = new DateOnly(2026, 6, 2);
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "a", TargetDate = d, UpdatedAtMs = 1 });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "b", TargetDate = d, UpdatedAtMs = 2 });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "c", TargetDate = new DateOnly(2026, 6, 5), UpdatedAtMs = 3 });
+        await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "d", TargetDate = new DateOnly(2026, 7, 1), UpdatedAtMs = 4 });
+
+        var counts = await sut.ListNoteCountsInMonthAsync(habitId, 2026, 6);
+
+        counts.Should().HaveCount(2);
+        counts.Single(c => c.Date == d).Count.Should().Be(2);
+        counts.Single(c => c.Date == new DateOnly(2026, 6, 5)).Count.Should().Be(1);
+        await fx.DisposeAsync();
+    }
 }

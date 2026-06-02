@@ -1,3 +1,4 @@
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 
 namespace Recordum.Core.Abstractions.Services;
@@ -11,4 +12,5 @@ public interface INoteService
     ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default);
     ValueTask<IReadOnlyList<Note>> ListByHabitAndDateAsync(Guid habitNodeId, DateOnly targetDate, CancellationToken ct = default);
     ValueTask<IReadOnlyList<DateOnly>> ListNoteDaysInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default);
+    ValueTask<IReadOnlyList<DayNoteCount>> ListNoteCountsInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default);
 }

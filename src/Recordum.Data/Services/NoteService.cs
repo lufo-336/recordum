@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
@@ -98,5 +99,22 @@ public sealed partial class NoteService(
             .Distinct()
             .OrderBy(d => d)
             .ToListAsync(ct);
+    }
+
+    public async ValueTask<IReadOnlyList<DayNoteCount>> ListNoteCountsInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default)
+    {
+        var first = new DateOnly(year, month, 1);
+        var next = first.AddMonths(1);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.Notes.AsNoTracking()
+            .Where(n => n.HabitNodeId == habitNodeId && n.TargetDate != null
+                        && n.TargetDate >= first && n.TargetDate < next)
+            .Select(n => n.TargetDate!.Value)
+            .ToListAsync(ct);
+        return rows
+            .GroupBy(d => d)
+            .Select(g => new DayNoteCount(g.Key, g.Count()))
+            .OrderBy(c => c.Date)
+            .ToList();
     }
 }
