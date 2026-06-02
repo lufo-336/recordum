@@ -43,18 +43,62 @@ public class CalendarNavigatorViewModelTests
     public async Task LoadAsync_applies_markers_from_provider()
     {
         CalendarMarkerProvider provider = (y, m, ct) => Task.FromResult(
-            new CalendarMonthMarkers(
-                Completed: new HashSet<DateOnly> { new(2026, 6, 1), new(2026, 6, 2) },
-                Notes: new HashSet<DateOnly> { new(2026, 6, 1), new(2026, 6, 9) }));
+            new CalendarMonthMarkers(new[]
+            {
+                new CalendarDayMarker(new DateOnly(2026, 6, 1), TintStep: 4, Number: null, NoteCount: 1),
+                new CalendarDayMarker(new DateOnly(2026, 6, 2), TintStep: 4, Number: "2×", NoteCount: 0),
+                new CalendarDayMarker(new DateOnly(2026, 6, 9), TintStep: 0, Number: null, NoteCount: 3),
+            }));
         var sut = NewSut(out _, provider);
 
         await sut.LoadAsync(2026, 6, selected: null);
 
-        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 1)).Completed.Should().BeTrue();
-        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 1)).HasNote.Should().BeTrue();
-        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 2)).Completed.Should().BeTrue();
-        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 2)).HasNote.Should().BeFalse();
-        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 9)).HasNote.Should().BeTrue();
+        var c1 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 1));
+        c1.TintStep.Should().Be(4);
+        c1.HasNote.Should().BeTrue();
+        c1.ShowNoteCount.Should().BeFalse();
+
+        var c2 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 2));
+        c2.TintStep.Should().Be(4);
+        c2.Number.Should().Be("2×");
+        c2.HasNumber.Should().BeTrue();
+        c2.HasNote.Should().BeFalse();
+
+        var c9 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 9));
+        c9.TintStep.Should().Be(0);
+        c9.NoteCount.Should().Be(3);
+        c9.HasNote.Should().BeTrue();
+        c9.ShowNoteCount.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ApplyMarkers_sets_tint_number_and_notecount()
+    {
+        CalendarMarkerProvider provider = (y, m, ct) => Task.FromResult(
+            new CalendarMonthMarkers(new[]
+            {
+                new CalendarDayMarker(new DateOnly(2026, 6, 2), TintStep: 3, Number: "3", NoteCount: 0),
+                new CalendarDayMarker(new DateOnly(2026, 6, 4), TintStep: 0, Number: null, NoteCount: 2),
+            }));
+        var sut = NewSut(out _, provider);
+
+        await sut.LoadAsync(2026, 6, selected: null);
+
+        var c2 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 2));
+        c2.TintStep.Should().Be(3);
+        c2.Number.Should().Be("3");
+        c2.NoteCount.Should().Be(0);
+        var c4 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 4));
+        c4.TintStep.Should().Be(0);
+        c4.NoteCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void SelectableYears_span_at_least_15_years_back()
+    {
+        var sut = NewSut(out _);
+        sut.SelectableYears.Should().Contain(2011);
+        sut.SelectableYears.Should().Contain(2026);
     }
 
     [Fact]

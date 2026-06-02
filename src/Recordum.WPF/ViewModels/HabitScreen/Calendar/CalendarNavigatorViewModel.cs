@@ -6,8 +6,11 @@ using Recordum.Core.Abstractions;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Calendar;
 
-/// <summary>Completed/note day-markers for one month, supplied by the host.</summary>
-public sealed record CalendarMonthMarkers(IReadOnlySet<DateOnly> Completed, IReadOnlySet<DateOnly> Notes);
+/// <summary>Presentation-ready marker per un giorno (il host calcola tint/numero/note).</summary>
+public sealed record CalendarDayMarker(DateOnly Date, int TintStep, string? Number, int NoteCount);
+
+/// <summary>Day-markers for one month, supplied by the host.</summary>
+public sealed record CalendarMonthMarkers(IReadOnlyList<CalendarDayMarker> Days);
 
 /// <summary>Host-supplied source of month markers (decouples the calendar from the domain).</summary>
 public delegate Task<CalendarMonthMarkers> CalendarMarkerProvider(int year, int month, CancellationToken ct);
@@ -30,7 +33,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone);
         _today = DateOnly.FromDateTime(localNow);
         WeekdayHeaders = BuildWeekdayHeaders();
-        SelectableYears = Enumerable.Range(_today.Year - 5, 8).ToList();
+        SelectableYears = Enumerable.Range(_today.Year - 15, 17).ToList(); // 15 back, current, 1 forward
     }
 
     public CalendarMarkerProvider? MarkerProvider { get; set; }
@@ -91,10 +94,22 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     {
         if (MarkerProvider is null) return;
         var markers = await MarkerProvider(year, month, ct).ConfigureAwait(true);
+        var byDate = markers.Days.ToDictionary(d => d.Date);
         foreach (var cell in Cells)
         {
-            cell.Completed = markers.Completed.Contains(cell.Date);
-            cell.HasNote = markers.Notes.Contains(cell.Date);
+            cell.TintColorHex = CompletedColorHex;
+            if (byDate.TryGetValue(cell.Date, out var m))
+            {
+                cell.TintStep = m.TintStep;
+                cell.Number = m.Number;
+                cell.NoteCount = m.NoteCount;
+            }
+            else
+            {
+                cell.TintStep = 0;
+                cell.Number = null;
+                cell.NoteCount = 0;
+            }
         }
     }
 
