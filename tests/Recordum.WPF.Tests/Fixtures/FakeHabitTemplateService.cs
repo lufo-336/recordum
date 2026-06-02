@@ -6,6 +6,9 @@ namespace Recordum.WPF.Tests.Fixtures;
 public sealed class FakeHabitTemplateService : IHabitTemplateService
 {
     public Dictionary<Guid, HabitTemplate> Store { get; } = new();
+
+    /// <summary>Drafts passed to <see cref="CreateAsync"/>, in call order.</summary>
+    public List<HabitTemplate> Created { get; } = new();
     public List<(Guid TemplateId, Guid? ParentId, Guid NewNodeId)> InstantiateCalls { get; } = new();
     public Exception? NextException { get; set; }
 
@@ -14,6 +17,7 @@ public sealed class FakeHabitTemplateService : IHabitTemplateService
         Throw();
         if (draft.Id == Guid.Empty) draft.Id = Guid.NewGuid();
         Store[draft.Id] = draft;
+        Created.Add(draft);
         return new(draft.Id);
     }
 

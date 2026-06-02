@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
@@ -44,6 +46,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     public bool CanAddField(FieldNature nature) => HabitCompositionRules.CanAddField(Snapshot(), nature);
 
+    /// <summary>True when the current composition allows the Series toggle (no Scale/Text field).
+    /// Bound to the Series CheckBox <c>IsEnabled</c> so it can't be flipped into an invalid state.</summary>
+    public bool CanEnableSeries => HabitCompositionRules.CanEnableSeries(Snapshot());
+
     [RelayCommand]
     private void AddField(FieldNature nature)
     {
@@ -76,6 +82,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         DerivedType = HabitCompositionRules.ResolveType(Snapshot());
         Preview.Rebuild(Fields, SeriesEnabled, SeriesCount);
+        OnPropertyChanged(nameof(CanEnableSeries));
         LaunchCommand.NotifyCanExecuteChanged();
     }
 
@@ -139,11 +146,68 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     // per questo dispatch la config è di default (null) — rifinita nell'editor post-lancio.
 #pragma warning disable CA1822 // diventerà istanza con il mapping timer-mode
     private HabitConfig? BuildConfig(Guid nodeId) => null;
-
-    // TODO Task 12: serializza la composizione corrente nella forma reale di TemplatePayload
-    // (round-trip con HabitTemplateService.InstantiateAsync). Placeholder minimale per questo dispatch.
-    private string BuildTemplatePayloadJson() => "{}";
 #pragma warning restore CA1822
+
+    private static readonly JsonSerializerOptions s_templateJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    /// <summary>Serializes the current composition into the same payload shape that
+    /// <c>HabitTemplateService.InstantiateAsync</c> reads (snake_case keys), so a saved custom
+    /// template re-instantiates the same node + metrics. Series default → <see cref="SeriesCount"/>.</summary>
+    private string BuildTemplatePayloadJson()
+    {
+        var payload = new TemplatePayload
+        {
+            Node = new NodePayload
+            {
+                Name = Name.Trim(),
+                NodeType = NodeType.Habit.ToString(),
+                HabitType = DerivedType.ToString(),
+                Color = Color,
+                Icon = Icon,
+            },
+            Metrics = Fields
+                .Where(f => f.Nature != FieldNature.Text)
+                .Select((f, i) => new MetricPayload
+                {
+                    Name = f.Name,
+                    Type = f.MetricType.ToString(),
+                    SortOrder = i,
+                })
+                .ToList(),
+            SeriesCount = SeriesEnabled ? SeriesCount : null,
+            Mode = Mode.ToString(),
+        };
+        return JsonSerializer.Serialize(payload, s_templateJsonOptions);
+    }
+
+    // Mirror of the payload shape consumed by HabitTemplateService.InstantiateAsync (snake_case via options).
+    private sealed class TemplatePayload
+    {
+        public NodePayload? Node { get; set; }
+        public List<MetricPayload>? Metrics { get; set; }
+        public int? SeriesCount { get; set; }
+        public string? Mode { get; set; }
+    }
+
+    private sealed class NodePayload
+    {
+        public string? Name { get; set; }
+        public string? NodeType { get; set; }
+        public string? HabitType { get; set; }
+        public string? Color { get; set; }
+        public string? Icon { get; set; }
+    }
+
+    private sealed class MetricPayload
+    {
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+        public int SortOrder { get; set; }
+    }
 
     private static string DefaultName(FieldNature n) => n switch
     {
