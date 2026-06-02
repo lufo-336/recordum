@@ -85,25 +85,39 @@
                                 </Style>
                             </Button.Style>
                             <Grid>
-                                <!-- Day number, top-right -->
+                                <!-- Heat tint background: habit colour (VM) × per-cell step -->
+                                <Border CornerRadius="6">
+                                    <Border.Background>
+                                        <MultiBinding Converter="{StaticResource HabitColorTint}">
+                                            <Binding Path="TintColorHex"/>
+                                            <Binding Path="TintStep"/>
+                                        </MultiBinding>
+                                    </Border.Background>
+                                </Border>
+                                <!-- Day number, top-left, discreet -->
                                 <TextBlock Text="{Binding DayNumber}"
-                                           HorizontalAlignment="Right" VerticalAlignment="Top"
-                                           Margin="0,2,4,0"
+                                           HorizontalAlignment="Left" VerticalAlignment="Top"
+                                           Margin="5,3,0,0"
                                            FontSize="{StaticResource FontSize.Small}"/>
-                                <!-- Marker dots: completed (habit colour) + note (amber) -->
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left"
-                                            VerticalAlignment="Bottom" Margin="4,0,0,3">
-                                    <Ellipse Width="5" Height="5" Margin="0,0,2,0"
-                                             Visibility="{Binding Completed, Converter={StaticResource BoolToVisible}}"
-                                             Fill="{Binding DataContext.CompletedColorHex,
-                                                    RelativeSource={RelativeSource AncestorType=ItemsControl},
-                                                    Converter={StaticResource HexToBrush}}"/>
-                                    <Ellipse Width="5" Height="5"
-                                             Visibility="{Binding HasNote, Converter={StaticResource BoolToVisible}}"
-                                             Fill="{Binding DataContext.NoteColorHex,
-                                                    RelativeSource={RelativeSource AncestorType=ItemsControl},
-                                                    Converter={StaticResource HexToBrush}}"/>
-                                </StackPanel>
+                                <!-- Count / quantity, single slot, centre-bottom -->
+                                <TextBlock Text="{Binding Number}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                           Margin="0,0,0,4" FontWeight="SemiBold"
+                                           FontSize="{StaticResource FontSize.Small}"
+                                           Visibility="{Binding HasNumber, Converter={StaticResource BoolToVisible}}"/>
+                                <!-- Note corner: per-habit colour (parent VM) -->
+                                <Path HorizontalAlignment="Right" VerticalAlignment="Top"
+                                      Data="M 0,0 L 13,0 L 13,13 Z"
+                                      Visibility="{Binding HasNote, Converter={StaticResource BoolToVisible}}"
+                                      Fill="{Binding DataContext.NoteColorHex,
+                                             RelativeSource={RelativeSource AncestorType=ItemsControl},
+                                             Converter={StaticResource HexToBrush}}"/>
+                                <!-- Note count (>1), overlaid on the corner -->
+                                <TextBlock Text="{Binding NoteCount}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Top"
+                                           Margin="0,0,1,0" FontSize="8" FontWeight="Bold"
+                                           Foreground="#1c1d22"
+                                           Visibility="{Binding ShowNoteCount, Converter={StaticResource BoolToVisible}}"/>
                             </Grid>
                         </Button>
                     </DataTemplate>
