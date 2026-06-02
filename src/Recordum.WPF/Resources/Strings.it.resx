@@ -344,6 +344,18 @@
   <data name="HabitScreen.DayNote.Placeholder" xml:space="preserve">
     <value>Scegli un giorno sul calendario per aggiungere una nota.</value>
   </data>
+  <data name="Abitudine.DaySummary.Done" xml:space="preserve">
+    <value>✓ Fatto</value>
+  </data>
+  <data name="Abitudine.DaySummary.NotDone" xml:space="preserve">
+    <value>— Non ancora fatto</value>
+  </data>
+  <data name="Abitudine.DaySummary.Notes" xml:space="preserve">
+    <value>{0} note</value>
+  </data>
+  <data name="Abitudine.QuickAdd.RecordingFor" xml:space="preserve">
+    <value>Registrando per:</value>
+  </data>
   <data name="Notes.New" xml:space="preserve">
     <value>+ Nuova nota</value>
   </data>

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
 
@@ -28,6 +29,7 @@ public sealed partial class DayNoteViewModel : ObservableObject
     [ObservableProperty] private DateOnly? _date;
     [ObservableProperty] private bool _hasDate;
     [ObservableProperty] private string _text = string.Empty;
+    [ObservableProperty] private string _summaryText = string.Empty;
 
     public void SetContext(Guid habitNodeId)
     {
@@ -36,6 +38,23 @@ public sealed partial class DayNoteViewModel : ObservableObject
         Date = null;
         HasDate = false;
         Text = string.Empty;
+        SummaryText = string.Empty;
+    }
+
+    /// <summary>The host supplies the day's summary (done-state + magnitude + note count) pre-formatted in the domain layer.</summary>
+    public void SetDaySummary(bool done, string? magnitudeLabel, int noteCount)
+    {
+        if (!done)
+        {
+            SummaryText = Strings.Abitudine_DaySummary_NotDone;
+            return;
+        }
+        var parts = new List<string> { Strings.Abitudine_DaySummary_Done };
+        if (!string.IsNullOrEmpty(magnitudeLabel)) parts.Add(magnitudeLabel);
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+        if (noteCount > 0) parts.Add(string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Abitudine_DaySummary_Notes, noteCount));
+#pragma warning restore CA1863
+        SummaryText = string.Join(" · ", parts);
     }
 
     /// <summary>Loads the (most recent) note anchored to <paramref name="date"/> into the editor, or an empty editor.</summary>

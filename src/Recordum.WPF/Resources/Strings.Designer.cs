@@ -38,6 +38,12 @@ public static class Strings
     public static string HabitScreen_DayNote_Save => Get("HabitScreen.DayNote.Save");
     public static string HabitScreen_DayNote_Placeholder => Get("HabitScreen.DayNote.Placeholder");
 
+    // Abitudine tab — selected-day summary strip + QuickAdd label
+    public static string Abitudine_DaySummary_Done => Get("Abitudine.DaySummary.Done");
+    public static string Abitudine_DaySummary_NotDone => Get("Abitudine.DaySummary.NotDone");
+    public static string Abitudine_DaySummary_Notes => Get("Abitudine.DaySummary.Notes");
+    public static string Abitudine_QuickAdd_RecordingFor => Get("Abitudine.QuickAdd.RecordingFor");
+
     // Notes tab
     public static string Notes_New => Get("Notes.New");
     public static string Notes_Save => Get("Notes.Save");

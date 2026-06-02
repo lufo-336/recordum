@@ -18,6 +18,10 @@
                            FontSize="{StaticResource FontSize.Small}"
                            Visibility="{Binding HasDate, Converter={StaticResource BoolToVisible}}"/>
             </StackPanel>
+            <TextBlock Text="{Binding SummaryText}"
+                       Foreground="{DynamicResource Brush.TextMuted}"
+                       Margin="0,0,0,6"
+                       Visibility="{Binding HasDate, Converter={StaticResource BoolToVisible}}"/>
             <TextBlock Text="{x:Static res:Strings.HabitScreen_DayNote_Placeholder}"
                        Foreground="{DynamicResource Brush.TextMuted}"
                        TextWrapping="Wrap"

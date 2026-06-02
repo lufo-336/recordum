@@ -140,7 +140,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         DayNote.SetContext(Node.Id);
         if (Calendar.SelectedDate is { } sel)
+        {
             await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);
+            await PushDaySummaryAsync(sel, ct).ConfigureAwait(true);
+        }
 
         await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
     }
@@ -259,7 +262,25 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (QuickAdd is not null)
             QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
         await DayNote.LoadDayAsync(date).ConfigureAwait(true);
+        await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
     }
+
+    private async Task PushDaySummaryAsync(DateOnly date, CancellationToken ct)
+    {
+        var node = Node;
+        if (node is null) return;
+        var mags = await _completions.GetDailyMagnitudeAsync(node.Id, date.Year, date.Month, ct).ConfigureAwait(true);
+        var mag = mags.FirstOrDefault(m => m.Date == date)?.Magnitude ?? 0m;
+        var label = mag > 0 ? DayMagnitudeLabel(node.HabitType ?? HabitType.Action, mag) : null;
+        var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
+        DayNote.SetDaySummary(mag > 0, label, notes.Count);
+    }
+
+    private static string DayMagnitudeLabel(HabitType type, decimal mag) => type switch
+    {
+        HabitType.Resistance => $"{FormatMag(mag)}×",
+        _ => FormatMag(mag),
+    };
 
     [RelayCommand]
     private void OpenConfigure() => ConfigureRequested?.Invoke(this, EventArgs.Empty);

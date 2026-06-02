@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Xunit;
@@ -62,5 +63,20 @@ public class DayNoteViewModelTests
         var persisted = await notes.ListByHabitAndDateAsync(habitId, new DateOnly(2026, 6, 10));
         persisted.Should().ContainSingle();
         persisted[0].BodyMd.Should().Be("edited");
+    }
+
+    [Fact]
+    public async Task SummaryText_reflects_done_state()
+    {
+        var sut = NewSut(new FakeNoteService());
+        sut.SetContext(Guid.NewGuid());
+        await sut.LoadDayAsync(new DateOnly(2026, 6, 2));
+
+        sut.SetDaySummary(done: true, magnitudeLabel: "3 serie", noteCount: 1);
+        sut.SummaryText.Should().Contain("3 serie");
+        sut.SummaryText.Should().Contain("1");
+
+        sut.SetDaySummary(done: false, magnitudeLabel: null, noteCount: 0);
+        sut.SummaryText.Should().Be(Strings.Abitudine_DaySummary_NotDone);
     }
 }
