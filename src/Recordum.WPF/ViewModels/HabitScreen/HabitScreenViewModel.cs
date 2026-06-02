@@ -212,16 +212,17 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         var mags = await _completions.GetDailyMagnitudeAsync(node.Id, year, month, ct).ConfigureAwait(true);
         var notes = await _noteService.ListNoteCountsInMonthAsync(node.Id, year, month, ct).ConfigureAwait(true);
+        var magByDate = mags.ToDictionary(m => m.Date, m => m.Magnitude);
         var noteByDate = notes.ToDictionary(n => n.Date, n => n.Count);
 
         var monthMax = mags.Count > 0 ? mags.Max(m => m.Magnitude) : 0m;
         var type = node.HabitType ?? HabitType.Action;
 
         var days = new List<CalendarDayMarker>();
-        var allDates = mags.Select(m => m.Date).Union(noteByDate.Keys).Distinct();
+        var allDates = magByDate.Keys.Union(noteByDate.Keys).Distinct();
         foreach (var date in allDates)
         {
-            var mag = mags.FirstOrDefault(m => m.Date == date)?.Magnitude ?? 0m;
+            var mag = magByDate.TryGetValue(date, out var mv) ? mv : 0m;
             var noteCount = noteByDate.TryGetValue(date, out var nc) ? nc : 0;
             days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, monthMax), NumberFor(type, mag), noteCount));
         }
