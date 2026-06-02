@@ -54,6 +54,8 @@
                     <DataTemplate DataType="{x:Type vm:CalendarDayCellViewModel}">
                         <Button Margin="2" Padding="0" Height="34"
                                 BorderThickness="1"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch"
                                 Command="{Binding DataContext.SelectDateCommand,
                                           RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                 CommandParameter="{Binding}">

@@ -16,8 +16,10 @@ public sealed partial class CalendarDayCellViewModel : ObservableObject
     [ObservableProperty] private string? _number;
     [ObservableProperty] private int _noteCount;
 
-    /// <summary>Habit color used as the tint source for this cell (set by the calendar from the host color).</summary>
-    public string TintColorHex { get; set; } = "#808080";
+    /// <summary>Habit color used as the tint source for this cell (set by the calendar from the host color).
+    /// Observable so the tint MultiBinding re-reads it: the navigator assigns it after the cell is bound,
+    /// and a non-notifying property would leave the MultiBinding holding the stale default.</summary>
+    [ObservableProperty] private string _tintColorHex = "#808080";
 
     public bool HasNote => NoteCount > 0;
     public bool ShowNoteCount => NoteCount > 1;
