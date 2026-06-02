@@ -743,6 +743,12 @@ Details: {0}</value>
   <data name="Editor.Section.Notifications" xml:space="preserve">
     <value>Notifications</value>
   </data>
+  <data name="Editor.Section.Notes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="Editor.Config.NoteColor" xml:space="preserve">
+    <value>Note marker color</value>
+  </data>
   <data name="Editor.Section.Tags" xml:space="preserve">
     <value>Tags</value>
   </data>

@@ -728,6 +728,12 @@
   <data name="Editor.Section.Tags" xml:space="preserve">
     <value>Tag</value>
   </data>
+  <data name="Editor.Section.Notes" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Editor.Config.NoteColor" xml:space="preserve">
+    <value>Colore marcatore note</value>
+  </data>
   <data name="Editor.Section.AiSharing" xml:space="preserve">
     <value>Condivisione AI</value>
   </data>

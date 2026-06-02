@@ -289,6 +289,8 @@ public static class Strings
     public static string Editor_Section_Timer => Get("Editor.Section.Timer");
     public static string Editor_Section_Goal => Get("Editor.Section.Goal");
     public static string Editor_Section_Notifications => Get("Editor.Section.Notifications");
+    public static string Editor_Section_Notes => Get("Editor.Section.Notes");
+    public static string Editor_Config_NoteColor => Get("Editor.Config.NoteColor");
     public static string Editor_Section_Tags => Get("Editor.Section.Tags");
     public static string Editor_Section_AiSharing => Get("Editor.Section.AiSharing");
     public static string Editor_Section_ResetTime => Get("Editor.Section.ResetTime");
