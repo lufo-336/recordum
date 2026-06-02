@@ -25,8 +25,16 @@ public sealed partial class HabitTemplatePickerViewModel(
     public ObservableCollection<PickerOption> Options { get; } = new();
     [ObservableProperty] private Guid? _createdHabitNodeId;
 
+    /// <summary>Set when the "build from scratch" option is picked: the host closes the picker
+    /// and opens the block-first builder instead of creating a node directly.</summary>
+    [ObservableProperty] private bool _openBuilderRequested;
+
+    /// <summary>Parent for the node the builder will create (carried from <see cref="LoadAsync"/>).</summary>
+    public Guid? ParentForBuilder { get; private set; }
+
     public async Task LoadAsync(Guid? parentId = null, CancellationToken ct = default)
     {
+        ParentForBuilder = parentId;
         Options.Clear();
         Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankHabit, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
         Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankGroup, Strings.HabitTemplatePicker_BlankGroup_Description, null, NodeType.Group, parentId));
@@ -41,6 +49,13 @@ public sealed partial class HabitTemplatePickerViewModel(
         if (option.TemplateId is { } tid)
         {
             CreatedHabitNodeId = await _templates.InstantiateAsync(tid, option.ParentId);
+            return;
+        }
+        if (option.NodeType == NodeType.Habit)
+        {
+            // "Build from scratch": don't create a node here — signal the host to open the builder.
+            ParentForBuilder = option.ParentId;
+            OpenBuilderRequested = true;
             return;
         }
         var draft = new HabitNode

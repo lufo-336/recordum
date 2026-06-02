@@ -30,6 +30,7 @@ using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Charts;
 using Recordum.WPF.ViewModels.DiagnosticInfo;
 using Recordum.WPF.ViewModels.Export;
+using Recordum.WPF.ViewModels.HabitBuilder;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Quick;
@@ -136,6 +137,8 @@ public static class ServiceRegistrar
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();
         services.AddSingleton<IHabitTemplatePickerLauncher, WpfHabitTemplatePickerLauncher>();
+        services.AddTransient<HabitBuilderViewModel>();
+        services.AddSingleton<IHabitBuilderLauncher, WpfHabitBuilderLauncher>();
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();
         services.AddTransient<HabitScreenViewModel>();

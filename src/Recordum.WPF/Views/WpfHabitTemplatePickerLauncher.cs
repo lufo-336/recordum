@@ -1,5 +1,6 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Recordum.WPF.ViewModels.HabitBuilder;
 using Recordum.WPF.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.Views;
@@ -11,6 +12,14 @@ public sealed class WpfHabitTemplatePickerLauncher(IServiceProvider services) : 
         var vm = services.GetRequiredService<HabitTemplatePickerViewModel>();
         await vm.LoadAsync(parentId, ct);
         var window = new HabitTemplatePicker(vm) { Owner = Application.Current?.MainWindow };
-        return window.ShowDialog() == true ? window.CreatedHabitNodeId : null;
+        var ok = window.ShowDialog() == true;
+
+        if (vm.OpenBuilderRequested)
+        {
+            var builder = services.GetRequiredService<IHabitBuilderLauncher>();
+            return await builder.LaunchAsync(vm.ParentForBuilder, ct);
+        }
+
+        return ok ? window.CreatedHabitNodeId : null;
     }
 }

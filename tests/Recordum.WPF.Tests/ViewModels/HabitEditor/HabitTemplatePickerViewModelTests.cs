@@ -46,17 +46,20 @@ public class HabitTemplatePickerViewModelTests
     }
 
     [Fact]
-    public async Task PickCommand_for_blank_habit_creates_node_via_HabitNodeService()
+    public async Task PickCommand_for_blank_habit_requests_builder_instead_of_creating_node()
     {
+        var parentId = Guid.NewGuid();
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.LoadAsync(parentId: parentId);
 
         var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_BlankHabit);
         await sut.PickCommand.ExecuteAsync(blank);
 
-        sut.CreatedHabitNodeId.Should().NotBeNull();
-        _nodes.Store[sut.CreatedHabitNodeId!.Value].NodeType.Should().Be(NodeType.Habit);
-        _nodes.Store[sut.CreatedHabitNodeId.Value].HabitType.Should().Be(HabitType.Action);
+        // "Build from scratch" no longer creates a node directly; it signals the host to open the builder.
+        sut.OpenBuilderRequested.Should().BeTrue();
+        sut.ParentForBuilder.Should().Be(parentId);
+        sut.CreatedHabitNodeId.Should().BeNull();
+        _nodes.Store.Should().BeEmpty();
     }
 
     [Fact]
