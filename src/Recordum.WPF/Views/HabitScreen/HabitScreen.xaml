@@ -136,11 +136,13 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
                                Foreground="{DynamicResource Brush.TextMuted}"
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"/>
-                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
                 <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Action_Mark}"
                         Command="{Binding SaveCommand}"
@@ -161,10 +163,12 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
                                Foreground="{DynamicResource Brush.TextMuted}"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -199,10 +203,12 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
                                Foreground="{DynamicResource Brush.TextMuted}"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
                 <ItemsControl ItemsSource="{Binding Series}" Margin="0,0,0,8">
                     <ItemsControl.ItemTemplate>
@@ -244,10 +250,12 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
                                Foreground="{DynamicResource Brush.TextMuted}"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
                 <ctrl:MarkdownEditorControl Markdown="{Binding Notes, Mode=TwoWay}"
                                             Availability="{Binding DataContext.Availability,
@@ -270,10 +278,12 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="{x:Static res:Strings.HabitScreen_QuickAdd_Date}"
+                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
                                Foreground="{DynamicResource Brush.TextMuted}"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <DatePicker Grid.Column="1" SelectedDate="{Binding CompletionDate}"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
                 <ComboBox ItemsSource="{Binding ScaleLabels}"
                           SelectedIndex="{Binding SelectedScaleIndex}"
