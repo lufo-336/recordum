@@ -208,18 +208,50 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private async Task<CalendarMonthMarkers> LoadMonthMarkersAsync(int year, int month, CancellationToken ct)
     {
         var node = Node;
-        if (node is null)
-            return new CalendarMonthMarkers(new HashSet<DateOnly>(), new HashSet<DateOnly>());
+        if (node is null) return new CalendarMonthMarkers([]);
 
-        var from = new DateOnly(year, month, 1);
-        var to = from.AddMonths(1).AddDays(-1);
+        var mags = await _completions.GetDailyMagnitudeAsync(node.Id, year, month, ct).ConfigureAwait(true);
+        var notes = await _noteService.ListNoteCountsInMonthAsync(node.Id, year, month, ct).ConfigureAwait(true);
+        var noteByDate = notes.ToDictionary(n => n.Date, n => n.Count);
 
-        var heatmap = await _completions.GetHeatmapAsync(node.Id, from, to, ct).ConfigureAwait(true);
-        var completed = heatmap.Where(c => c.Count > 0).Select(c => c.Date).ToHashSet();
+        var monthMax = mags.Count > 0 ? mags.Max(m => m.Magnitude) : 0m;
+        var type = node.HabitType ?? HabitType.Action;
 
-        var noteDays = await _noteService.ListNoteDaysInMonthAsync(node.Id, year, month, ct).ConfigureAwait(true);
-        return new CalendarMonthMarkers(completed, noteDays.ToHashSet());
+        var days = new List<CalendarDayMarker>();
+        var allDates = mags.Select(m => m.Date).Union(noteByDate.Keys).Distinct();
+        foreach (var date in allDates)
+        {
+            var mag = mags.FirstOrDefault(m => m.Date == date)?.Magnitude ?? 0m;
+            var noteCount = noteByDate.TryGetValue(date, out var nc) ? nc : 0;
+            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, monthMax), NumberFor(type, mag), noteCount));
+        }
+        return new CalendarMonthMarkers(days);
     }
+
+    private static int TintStepFor(HabitType type, decimal mag, decimal monthMax)
+    {
+        if (mag <= 0) return 0;
+        if (type is HabitType.Action or HabitType.Journal) return 4; // binario: fatto = pieno
+        if (monthMax <= 0) return 1;
+        var step = (int)Math.Ceiling((double)(mag / monthMax) * 4);
+        return Math.Clamp(step, 1, 4);
+    }
+
+    private static string? NumberFor(HabitType type, decimal mag)
+    {
+        if (mag <= 0) return null;
+        return type switch
+        {
+            HabitType.Counter or HabitType.State => FormatMag(mag),
+            HabitType.Resistance => mag > 1 ? FormatMag(mag) : null,
+            _ => mag > 1 ? $"{FormatMag(mag)}×" : null, // Action/Journal: hidden unless multiple
+        };
+    }
+
+    private static string FormatMag(decimal mag) =>
+        mag == Math.Truncate(mag)
+            ? ((long)mag).ToString(System.Globalization.CultureInfo.CurrentCulture)
+            : mag.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture);
 
     private async void OnCalendarDateSelected(object? sender, DateOnly date)
     {

@@ -176,6 +176,37 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
+    public async Task Markers_resistance_number_hidden_when_one_series()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out _, out var noteSvc);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "NoSmoke", Color = "#3366cc" };
+
+        // Clock is 2026-05-21 → calendar loads May 2026.
+        var dayA = new DateOnly(2026, 5, 10);
+        var dayB = new DateOnly(2026, 5, 12);
+        completions.MagnitudeByHabit[id] = new[]
+        {
+            new DailyMagnitude(dayA, 3m),
+            new DailyMagnitude(dayB, 1m),
+        };
+        noteSvc.Store[Guid.NewGuid()] = new Note { Id = Guid.NewGuid(), HabitNodeId = id, BodyMd = "a", UpdatedAtMs = 1, TargetDate = dayB };
+        noteSvc.Store[Guid.NewGuid()] = new Note { Id = Guid.NewGuid(), HabitNodeId = id, BodyMd = "b", UpdatedAtMs = 2, TargetDate = dayB };
+
+        await sut.LoadAsync(id);
+
+        var cellA = sut.Calendar.Cells.Single(c => c.Date == dayA);
+        cellA.Number.Should().Be("3");
+        cellA.TintStep.Should().BeGreaterThanOrEqualTo(1);
+
+        var cellB = sut.Calendar.Cells.Single(c => c.Date == dayB);
+        cellB.Number.Should().BeNull(); // resistance magnitude == 1 → number hidden
+        cellB.NoteCount.Should().Be(2);
+        cellB.HasNote.Should().BeTrue();
+        cellB.ShowNoteCount.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task EventBus_CompletionRecorded_for_my_habit_triggers_Heatmap_and_List_reload()
     {
         var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out var bus);
