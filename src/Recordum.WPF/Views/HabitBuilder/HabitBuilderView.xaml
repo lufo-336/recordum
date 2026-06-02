@@ -52,7 +52,7 @@
 
                     <!-- Name -->
                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                        <TextBlock Text="Nome"
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Name}"
                                    FontSize="{StaticResource FontSize.Small}"
                                    Foreground="{DynamicResource Brush.TextMuted}"
                                    Margin="0,0,0,2"/>
@@ -84,7 +84,7 @@
 
                     <!-- Color -->
                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                        <TextBlock Text="Colore (hex)"
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Color}"
                                    FontSize="{StaticResource FontSize.Small}"
                                    Foreground="{DynamicResource Brush.TextMuted}"
                                    Margin="0,0,0,2"/>
@@ -104,7 +104,7 @@
 
                     <!-- Icon (optional) -->
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Icona (opzionale)"
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Icon}"
                                    FontSize="{StaticResource FontSize.Small}"
                                    Foreground="{DynamicResource Brush.TextMuted}"
                                    Margin="0,0,0,2"/>
@@ -114,7 +114,7 @@
                 </Grid>
 
                 <!-- ===== Zone 2: Composizione ===== -->
-                <TextBlock Text="Mattoni"
+                <TextBlock Text="{x:Static res:Strings.HabitBuilder_Blocks}"
                            FontSize="{StaticResource FontSize.Body}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource Brush.Text}"
@@ -122,23 +122,23 @@
 
                 <!-- Palette -->
                 <WrapPanel Margin="0,0,0,10">
-                    <Button Content="+ Conteggio"
+                    <Button Content="{x:Static res:Strings.HabitBuilder_AddCount}"
                             Padding="10,5" Margin="0,0,6,6"
                             Command="{Binding AddFieldCommand}"
                             CommandParameter="{x:Static enums:FieldNature.Count}"/>
-                    <Button Content="+ Quantità"
+                    <Button Content="{x:Static res:Strings.HabitBuilder_AddQuantity}"
                             Padding="10,5" Margin="0,0,6,6"
                             Command="{Binding AddFieldCommand}"
                             CommandParameter="{x:Static enums:FieldNature.Quantity}"/>
-                    <Button Content="+ Tempo"
+                    <Button Content="{x:Static res:Strings.HabitBuilder_AddTime}"
                             Padding="10,5" Margin="0,0,6,6"
                             Command="{Binding AddFieldCommand}"
                             CommandParameter="{x:Static enums:FieldNature.Time}"/>
-                    <Button Content="+ Scala"
+                    <Button Content="{x:Static res:Strings.HabitBuilder_AddScale}"
                             Padding="10,5" Margin="0,0,6,6"
                             Command="{Binding AddFieldCommand}"
                             CommandParameter="{x:Static enums:FieldNature.Scale}"/>
-                    <Button Content="+ Testo libero"
+                    <Button Content="{x:Static res:Strings.HabitBuilder_AddText}"
                             Padding="10,5" Margin="0,0,6,6"
                             Command="{Binding AddFieldCommand}"
                             CommandParameter="{x:Static enums:FieldNature.Text}"/>
@@ -146,11 +146,11 @@
 
                 <!-- Series -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <CheckBox Content="Serie"
+                    <CheckBox Content="{x:Static res:Strings.HabitBuilder_Series}"
                               VerticalAlignment="Center"
                               IsEnabled="{Binding CanEnableSeries}"
                               IsChecked="{Binding SeriesEnabled, Mode=TwoWay}"/>
-                    <TextBlock Text="ripetizioni:"
+                    <TextBlock Text="{x:Static res:Strings.HabitBuilder_SeriesCount}"
                                VerticalAlignment="Center"
                                Margin="14,0,6,0"
                                Foreground="{DynamicResource Brush.TextMuted}"
@@ -206,7 +206,7 @@
                 </ItemsControl>
 
                 <!-- ===== Zone 3: Anteprima ===== -->
-                <TextBlock Text="Anteprima"
+                <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview}"
                            FontSize="{StaticResource FontSize.Body}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource Brush.Text}"
@@ -249,7 +249,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <TextBlock Text="+ casella di testo libero"
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_TextFieldNote}"
                                    Margin="0,8,0,0"
                                    FontSize="{StaticResource FontSize.Small}"
                                    Foreground="{DynamicResource Brush.TextMuted}"

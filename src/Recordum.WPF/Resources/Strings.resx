@@ -266,6 +266,63 @@ Details: {0}</value>
   <data name="HabitBuilder.DerivedType" xml:space="preserve">
     <value>Behaves as: {0}</value>
   </data>
+  <data name="HabitBuilder.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="HabitBuilder.Color" xml:space="preserve">
+    <value>Color (hex)</value>
+  </data>
+  <data name="HabitBuilder.Icon" xml:space="preserve">
+    <value>Icon (optional)</value>
+  </data>
+  <data name="HabitBuilder.Blocks" xml:space="preserve">
+    <value>Blocks</value>
+  </data>
+  <data name="HabitBuilder.AddCount" xml:space="preserve">
+    <value>+ Count</value>
+  </data>
+  <data name="HabitBuilder.AddQuantity" xml:space="preserve">
+    <value>+ Quantity</value>
+  </data>
+  <data name="HabitBuilder.AddTime" xml:space="preserve">
+    <value>+ Time</value>
+  </data>
+  <data name="HabitBuilder.AddScale" xml:space="preserve">
+    <value>+ Scale</value>
+  </data>
+  <data name="HabitBuilder.AddText" xml:space="preserve">
+    <value>+ Free text</value>
+  </data>
+  <data name="HabitBuilder.Series" xml:space="preserve">
+    <value>Series</value>
+  </data>
+  <data name="HabitBuilder.SeriesCount" xml:space="preserve">
+    <value>reps:</value>
+  </data>
+  <data name="HabitBuilder.Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="HabitBuilder.TextFieldNote" xml:space="preserve">
+    <value>+ free-text box</value>
+  </data>
+  <data name="HabitBuilder.SeriesRow" xml:space="preserve">
+    <value>Series {0}</value>
+  </data>
+  <data name="HabitBuilder.DefaultField.Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="HabitBuilder.DefaultField.Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="HabitBuilder.DefaultField.Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="HabitBuilder.DefaultField.Scale" xml:space="preserve">
+    <value>Scale</value>
+  </data>
+  <data name="HabitBuilder.DefaultField.Text" xml:space="preserve">
+    <value>Note</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Name is required</value>
   </data>

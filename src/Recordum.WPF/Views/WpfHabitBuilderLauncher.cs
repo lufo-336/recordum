@@ -21,7 +21,7 @@ public sealed class WpfHabitBuilderLauncher(IServiceProvider services) : IHabitB
         var view = new HabitBuilderView { DataContext = vm };
         var window = new Window
         {
-            Title = "Nuova abitudine",
+            Title = Recordum.WPF.Resources.Strings.HabitBuilder_Title,
             Width = 720,
             Height = 640,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,

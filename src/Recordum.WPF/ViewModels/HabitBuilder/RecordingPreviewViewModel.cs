@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
@@ -18,7 +20,13 @@ public sealed partial class RecordingPreviewViewModel : ObservableObject
         HasTextField = fields.Any(f => f.Nature == Core.Enums.FieldNature.Text);
         int rows = seriesEnabled ? Math.Max(1, seriesCount) : 1;
         for (int i = 0; i < rows; i++)
-            Rows.Add(new PreviewRow(seriesEnabled ? $"Serie {i + 1}" : string.Empty, cellNames));
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+            Rows.Add(new PreviewRow(
+                seriesEnabled
+                    ? string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_SeriesRow, i + 1)
+                    : string.Empty,
+                cellNames));
+#pragma warning restore CA1863
     }
 }
 

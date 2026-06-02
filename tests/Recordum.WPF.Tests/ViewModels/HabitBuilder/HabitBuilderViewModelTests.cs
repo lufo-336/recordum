@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitBuilder;
 using Xunit;
@@ -71,7 +72,7 @@ public class HabitBuilderViewModelTests
         var saved = fakeTemplates.Created.Single();
         saved.IsOfficial.Should().BeFalse();
         saved.Name.Should().Be("Flessioni");
-        saved.PayloadJson.Should().NotBe("{}").And.Contain("Conteggio"); // default Count field name
+        saved.PayloadJson.Should().NotBe("{}").And.Contain(Strings.HabitBuilder_DefaultField_Count); // default Count field name
 
         // Round-trip: the payload must match the shape HabitTemplateService.InstantiateAsync reads
         // (snake_case keys: node.habit_type + metrics[].name/type). Series → Resistance.
@@ -80,7 +81,7 @@ public class HabitBuilderViewModelTests
         root.GetProperty("node").GetProperty("habit_type").GetString().Should().Be("Resistance");
         var metrics = root.GetProperty("metrics");
         metrics.GetArrayLength().Should().Be(1);
-        metrics[0].GetProperty("name").GetString().Should().Be("Conteggio");
+        metrics[0].GetProperty("name").GetString().Should().Be(Strings.HabitBuilder_DefaultField_Count);
         metrics[0].GetProperty("type").GetString().Should().Be("Integer");
     }
 

@@ -8,6 +8,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Composition;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
@@ -211,11 +212,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     private static string DefaultName(FieldNature n) => n switch
     {
-        FieldNature.Count => "Conteggio",
-        FieldNature.Quantity => "Quantità",
-        FieldNature.Time => "Tempo",
-        FieldNature.Scale => "Scala",
-        FieldNature.Text => "Note",
-        _ => "Campo",
+        FieldNature.Count => Strings.HabitBuilder_DefaultField_Count,
+        FieldNature.Quantity => Strings.HabitBuilder_DefaultField_Quantity,
+        FieldNature.Time => Strings.HabitBuilder_DefaultField_Time,
+        FieldNature.Scale => Strings.HabitBuilder_DefaultField_Scale,
+        FieldNature.Text => Strings.HabitBuilder_DefaultField_Text,
+        _ => Strings.HabitBuilder_Blocks,
     };
 }
