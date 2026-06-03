@@ -18,18 +18,35 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 {
     private readonly IComposedHabitService _composed;
     private readonly IHabitTemplateService _templates;
+    private readonly IReferenceDataQueryService _refData;
     private readonly IClock _clock;
     private Guid? _parentId;
 
-    public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates, IClock clock)
+    public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates,
+        IReferenceDataQueryService refData, IClock clock)
     {
         _composed = composed;
         _templates = templates;
+        _refData = refData;
         _clock = clock;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
     public RecordingPreviewViewModel Preview { get; } = new();
+
+    /// <summary>Units and scales available to the Quantity / Scale field pickers, loaded by
+    /// <see cref="InitializeAsync"/>. Without a pick, those fields keep <see cref="CanLaunch"/> false.</summary>
+    public ObservableCollection<UnitOfMeasure> AvailableUnits { get; } = new();
+    public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
+
+    /// <summary>Loads reference data for the field pickers. Called by the launcher before the dialog opens.</summary>
+    public async Task InitializeAsync(CancellationToken ct = default)
+    {
+        AvailableUnits.Clear();
+        foreach (var u in await _refData.ListUnitsAsync(ct).ConfigureAwait(true)) AvailableUnits.Add(u);
+        AvailableScales.Clear();
+        foreach (var s in await _refData.ListScalesAsync(ct).ConfigureAwait(true)) AvailableScales.Add(s);
+    }
 
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _color = "#808080";
@@ -160,6 +177,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// template re-instantiates the same node + metrics. Series default → <see cref="SeriesCount"/>.</summary>
     private string BuildTemplatePayloadJson()
     {
+        var unitCodeById = AvailableUnits.ToDictionary(u => u.Id, u => u.Code);
+        var scaleCodeById = AvailableScales.ToDictionary(s => s.Id, s => s.Code);
+
         var payload = new TemplatePayload
         {
             Node = new NodePayload
@@ -177,6 +197,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                     Name = f.Name,
                     Type = f.MetricType.ToString(),
                     SortOrder = i,
+                    // Write codes (not GUIDs) so HabitTemplateService.InstantiateAsync, which resolves
+                    // unit / scale by Code, can round-trip the picked unit/scale on re-instantiate.
+                    Unit = f.UnitOfMeasureId is { } uid && unitCodeById.TryGetValue(uid, out var uc) ? uc : null,
+                    ScaleCode = f.ScaleTemplateId is { } sid && scaleCodeById.TryGetValue(sid, out var sc) ? sc : null,
                 })
                 .ToList(),
             SeriesCount = SeriesEnabled ? SeriesCount : null,
@@ -208,6 +232,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         public string? Name { get; set; }
         public string? Type { get; set; }
         public int SortOrder { get; set; }
+        public string? Unit { get; set; }       // unit code (Quantity) → reader resolves to UnitOfMeasureId
+        public string? ScaleCode { get; set; }  // scale code (Scale)  → reader resolves to ScaleTemplateId
     }
 
     private static string DefaultName(FieldNature n) => n switch

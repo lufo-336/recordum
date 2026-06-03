@@ -177,6 +177,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
                                             Padding="6,2"
@@ -192,7 +193,52 @@
                                              VerticalAlignment="Center"
                                              Padding="6,3"
                                              Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
-                                    <Button Grid.Column="2"
+
+                                    <!-- Unit picker (Quantity) — sets UnitOfMeasureId so Launch can enable -->
+                                    <ComboBox Grid.Column="2"
+                                              MinWidth="120"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Center"
+                                              ItemsSource="{Binding DataContext.AvailableUnits, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              SelectedValue="{Binding UnitOfMeasureId, Mode=TwoWay}"
+                                              ToolTip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}">
+                                        <ComboBox.Style>
+                                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Nature}" Value="{x:Static enums:FieldNature.Quantity}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.Style>
+                                    </ComboBox>
+
+                                    <!-- Scale picker (Scale) — sets ScaleTemplateId so Launch can enable -->
+                                    <ComboBox Grid.Column="2"
+                                              MinWidth="120"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Center"
+                                              ItemsSource="{Binding DataContext.AvailableScales, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              SelectedValue="{Binding ScaleTemplateId, Mode=TwoWay}"
+                                              ToolTip="{x:Static res:Strings.HabitBuilder_ScalePickerPrompt}">
+                                        <ComboBox.Style>
+                                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Nature}" Value="{x:Static enums:FieldNature.Scale}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.Style>
+                                    </ComboBox>
+
+                                    <Button Grid.Column="3"
                                             Content="✕"
                                             Margin="8,0,0,0"
                                             Padding="8,2"

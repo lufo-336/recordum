@@ -305,6 +305,12 @@
   <data name="HabitBuilder.DefaultField.Text" xml:space="preserve">
     <value>Note</value>
   </data>
+  <data name="HabitBuilder.UnitPickerPrompt" xml:space="preserve">
+    <value>Scegli un'unità di misura</value>
+  </data>
+  <data name="HabitBuilder.ScalePickerPrompt" xml:space="preserve">
+    <value>Scegli una scala</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Il nome è obbligatorio</value>
   </data>

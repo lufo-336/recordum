@@ -163,6 +163,8 @@ public static class Strings
     public static string HabitBuilder_DefaultField_Time => Get("HabitBuilder.DefaultField.Time");
     public static string HabitBuilder_DefaultField_Scale => Get("HabitBuilder.DefaultField.Scale");
     public static string HabitBuilder_DefaultField_Text => Get("HabitBuilder.DefaultField.Text");
+    public static string HabitBuilder_UnitPickerPrompt => Get("HabitBuilder.UnitPickerPrompt");
+    public static string HabitBuilder_ScalePickerPrompt => Get("HabitBuilder.ScalePickerPrompt");
     public static string Editor_Error_NameRequired => Get("Editor.Error.NameRequired");
     public static string Editor_Error_NameTooLong => Get("Editor.Error.NameTooLong");
     public static string Editor_Error_DescriptionTooLong => Get("Editor.Error.DescriptionTooLong");

@@ -13,8 +13,10 @@ public class HabitBuilderViewModelTests
 {
     private static HabitBuilderViewModel NewSut(
         IComposedHabitService? composed = null,
-        IHabitTemplateService? templates = null)
-        => new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(), new FakeClock());
+        IHabitTemplateService? templates = null,
+        IReferenceDataQueryService? refData = null)
+        => new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
+               refData ?? new FakeReferenceData(), new FakeClock());
 
     [WpfFact]
     public void Adding_count_then_time_then_series_yields_resistance_and_preview()
@@ -92,5 +94,55 @@ public class HabitBuilderViewModelTests
         sut.AddFieldCommand.Execute(FieldNature.Scale);
 
         sut.CanEnableSeries.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task InitializeAsync_loads_units_and_scales_for_pickers()
+    {
+        var refData = new FakeReferenceData();
+        var sut = NewSut(refData: refData);
+
+        await sut.InitializeAsync();
+
+        sut.AvailableUnits.Should().BeEquivalentTo(refData.Units);
+        sut.AvailableScales.Should().BeEquivalentTo(refData.Scales);
+    }
+
+    [WpfFact]
+    public async Task Template_payload_writes_unit_code_for_quantity_field()
+    {
+        var refData = new FakeReferenceData();
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates, refData: refData);
+        await sut.InitializeAsync();
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Fields[0].UnitOfMeasureId = refData.Units[0].Id;
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+
+        var saved = fakeTemplates.Created.Single();
+        using var doc = JsonDocument.Parse(saved.PayloadJson);
+        var metric = doc.RootElement.GetProperty("metrics")[0];
+        metric.GetProperty("unit").GetString().Should().Be(refData.Units[0].Code);
+    }
+
+    [WpfFact]
+    public async Task Template_payload_writes_scale_code_for_scale_field()
+    {
+        var refData = new FakeReferenceData();
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates, refData: refData);
+        await sut.InitializeAsync();
+        sut.Name = "Umore";
+        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.Fields[0].ScaleTemplateId = refData.Scales[0].Id;
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+
+        var saved = fakeTemplates.Created.Single();
+        using var doc = JsonDocument.Parse(saved.PayloadJson);
+        var metric = doc.RootElement.GetProperty("metrics")[0];
+        metric.GetProperty("scale_code").GetString().Should().Be(refData.Scales[0].Code);
     }
 }
