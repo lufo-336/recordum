@@ -115,7 +115,33 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 ---
 
+## Stato al 2026-06-03
+
+**Fix R-builderFieldPickers + R-templateFidelity (commit `8a7efad`)** — vedi sezione 2026-06-02 (follow-up Spec 1 aggiornati). Poi **verifica visiva utente del builder** (app lanciata via skill `run`) → feedback ricco, triagiato qui sotto. Un bloccante (B11) + 5 rifiniture/feature builder.
+
+**Feedback verifica (2026-06-03)**:
+- **B11 (bloccante)**: l'abitudine costruita **non riflette la configurazione** nell'abitudine "funzionale" — vedi voce dedicata sotto. È il nodo critico: il builder produce composizioni multi-metrica che lo strato di registrazione (M3.5, mono-metrica per tipo) non renderizza.
+- **R-builderColorPicker**: il color picker è solo esadecimale, il quadrante colore **non è cliccabile**. L'utente non sa gli hex. Richiesta: ruota/palette colori con **colori recenti** + hex affiancato. **Da portare anche in Configura** (stesso bisogno). → feature, richiede design.
+- **R-builderIconPicker**: campo Icona accetta testo ma **non c'è un picker** per selezionare un'icona. Stesso bisogno in Configura. → feature (icone Lucide per design brief), forse rimandabile.
+- **R-builderCustomUnit**: il picker Quantità elenca solo le unità seed, manca l'inserimento di un'**unità personalizzata** inline. → feature.
+- **R-builderCustomScale**: idem per la Scala (scala personalizzata inline). → feature.
+- **R-builderSaveFeedback**: "salva come template" non dà **alcun feedback** visivo (il template viene creato ma sembra non succedere nulla). Aggiungere un "salvato ✓" accanto al pulsante. → fix UX piccolo.
+- **Nota su "non posso lanciare"**: con Count+Quantity+Time il Lancia restava disabilitato perché la Quantità non aveva unità scelta (gating ora **visibile** ma non spiegato). Con Scala+Quantità (unità+scala scelte) il Lancia funziona. Legato a R-builderCustomUnit + chiarezza del gating.
+
+---
+
 ## Aperti — bloccanti
+
+### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
+- **Stato**: `triaged` (2026-06-03, root cause confermata)
+- **Sintomo**: si costruisce un'abitudine col builder (es. Quantità + Scala, oppure Conteggio + serie), si Lancia, l'abitudine appare in Home ma **la registrazione mostra solo una parte** della configurazione: con Quantità+Scala compare solo "quantità" (senza l'unità scelta), la scala sparisce; in una prova precedente compariva solo "Serie".
+- **Root cause**: lo strato di **registrazione (QuickAdd, M3.5) è mono-metrica per tipo canonico**. `CounterQuickAddViewModel.LoadMetricsAsync` prende `metrics.OrderBy(SortOrder).FirstOrDefault()` (la prima metrica) e salva un singolo `ValueInteger` senza mostrare l'unità. State mostra una sola scala, ecc. Il **builder (Spec 1) è più espressivo**: produce Counter multi-metrica (Quantità + Scala risolve a Counter con 2 `MetricDefinition`), che la `CounterQuickAddViewModel` scarta oltre la prima. I dati SONO persistiti correttamente (`ComposedHabitService` aggiunge tutte le metriche) — è la UI di registrazione a non renderizzarle.
+- **Tensione di design**: i guardrail della grammatica (`HabitCompositionRules`) impediscono combinazioni *illegali* ma permettono combinazioni *semanticamente fuse* (Quantità+Scala→Counter) che nessuna QuickAdd canonica sa mostrare. Inoltre nessuna QuickAdd mostra l'**unità** della metrica.
+- **Opzioni (da decidere in brainstorming)**:
+  - (i) Rendere le QuickAdd **multi-metrica** (Counter mostra N righe input, una per metrica, con la propria unità; ecc.) — modifica significativa allo strato M3.5.
+  - (ii) **Restringere la grammatica** del builder così da produrre solo composizioni che una QuickAdd canonica sa rendere (es. un solo campo misurato + serie opzionale) — più piccolo, ma limita l'espressività del builder (contraddice la visione "componi liberamente").
+  - (iii) Ibrido: la QuickAdd del Counter mostra l'unità della metrica primaria (fix minimo per il caso 1-metrica) + guardrail che impediscono i mix problematici.
+- **Priorità**: alta — un builder che genera abitudini non pienamente registrabili è peggio di nessun builder. Bloccante per dichiarare Spec 1 "verified".
 
 ### B1. Save note non funzionante
 - **Stato**: `reported` (2026-05-29 utente)
