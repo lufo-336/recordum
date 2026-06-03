@@ -155,18 +155,13 @@
             </StackPanel>
         </DataTemplate>
 
-        <!-- Kind-aware input cell for one metric: measured (numeric + unit), scale (labelled selector or slider), or text. -->
+        <!-- Kind-aware input cell for one metric: measured (numeric + unit), scale (labelled selector or slider), or text.
+             Horizontal: [Name] [input] [unit]. Stacked vertically in Measured, side-by-side in Resistance series rows. -->
         <DataTemplate x:Key="MetricCellTemplate" DataType="{x:Type qa:SeriesCellViewModel}">
-            <StackPanel Margin="0,0,12,6" MinWidth="90">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Name}" FontSize="{StaticResource FontSize.Small}"
-                               Foreground="{DynamicResource Brush.TextMuted}"/>
-                    <TextBlock Text="{Binding UnitLabel}" Margin="4,0,0,0"
-                               FontSize="{StaticResource FontSize.Small}"
-                               Foreground="{DynamicResource Brush.TextMuted}"
-                               Visibility="{Binding UnitLabel, Converter={StaticResource NullToVisibility}}"/>
-                </StackPanel>
-                <Grid>
+            <StackPanel Orientation="Horizontal" Margin="0,3,12,3" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Name}" MinWidth="110" VerticalAlignment="Center" Margin="0,0,8,0"
+                           Foreground="{DynamicResource Brush.TextMuted}"/>
+                <Grid VerticalAlignment="Center">
                     <!-- Measured: Integer/Seconds -->
                     <TextBox Width="90"
                              Text="{Binding IntegerValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}">
@@ -265,6 +260,9 @@
                                    Text="{Binding SelectedScaleIndex}"/>
                     </StackPanel>
                 </Grid>
+                <TextBlock Text="{Binding UnitLabel}" Margin="6,0,0,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           Visibility="{Binding UnitLabel, Converter={StaticResource NullToVisibility}}"/>
             </StackPanel>
         </DataTemplate>
 
@@ -285,15 +283,7 @@
                 </Grid>
                 <ItemsControl ItemsSource="{Binding Row.Cells}"
                               ItemTemplate="{StaticResource MetricCellTemplate}"
-                              Margin="0,0,0,8">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-                <TextBlock Text="{x:Static res:Strings.HabitScreen_QuickAdd_Notes}"
-                           Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,4"/>
-                <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="True" MinHeight="48" Margin="0,0,0,8"/>
+                              Margin="0,0,0,8"/>
                 <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
                         Command="{Binding SaveCommand}"
                         HorizontalAlignment="Left" Padding="12,6"/>
