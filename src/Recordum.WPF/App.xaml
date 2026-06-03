@@ -22,6 +22,7 @@
             <conv:StateToVisibleConverter x:Key="StateToVisible"/>
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
+            <conv:ZeroToVisibilityConverter x:Key="ZeroToVisible"/>
             <conv:EnumToVisibilityConverter x:Key="EnumToVisibility"/>
             <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
             <conv:HabitColorTintConverter x:Key="HabitColorTint"/>

@@ -105,6 +105,14 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{Binding Display}" FontWeight="SemiBold"/>
+                                        <ItemsControl ItemsSource="{Binding FieldDisplays}"
+                                                      Visibility="{Binding HasFieldDisplays, Converter={StaticResource BoolToVisible}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" Foreground="{DynamicResource Brush.Text}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
                                         <TextBlock Text="{Binding Notes}"
                                                    Foreground="{DynamicResource Brush.TextMuted}"
                                                    TextWrapping="Wrap"
@@ -527,7 +535,17 @@
                                     ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
                     <ContentControl Grid.Row="2" Content="{Binding TimerControl}"/>
                     <v:DayNoteView Grid.Row="3" DataContext="{Binding DayNote}"/>
-                    <ContentControl Grid.Row="4" Content="{Binding CompletionList}"/>
+                    <StackPanel Grid.Row="4" Margin="12,4,12,0">
+                        <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Text}"
+                                   Margin="0,0,0,2"/>
+                        <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Visibility="{Binding DayCompletions.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
+                        <ContentControl Content="{Binding DayCompletions}"/>
+                    </StackPanel>
                 </Grid>
             </TabItem>
             <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Detail}">

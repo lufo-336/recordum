@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
@@ -24,7 +25,7 @@ public class CompletionListViewModelTests
                 CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds(),
             };
         }
-        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService());
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
 
         await sut.LoadAsync(habitId);
 
@@ -39,13 +40,73 @@ public class CompletionListViewModelTests
         var habitId = Guid.NewGuid();
         var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 };
         cs.Store[c.Id] = c;
-        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService());
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
         await sut.LoadAsync(habitId);
 
         await sut.Rows[0].DeleteCommand.ExecuteAsync(null);
 
         cs.DeleteCalls.Should().Contain(c.Id);
         sut.Rows.Should().BeEmpty();
+    }
+
+    [WpfFact]
+    public async Task LoadDayAsync_lists_only_that_day_with_readable_field_values()
+    {
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var unitId = rd.Units[0].Id; // "l" / Litre
+        var waterId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = waterId, HabitNodeId = habit, Name = "Water", Type = MetricType.Decimal, UnitOfMeasureId = unitId, SortOrder = 0 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        var onDayCompletion = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue> { new() { MetricDefinitionId = waterId, SeriesIndex = 0, ValueDecimal = 1.5m } },
+        };
+        cs.Store[onDayCompletion.Id] = onDayCompletion;
+        var otherDay = new DateTime(2026, 5, 30, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion { Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = otherDay, CompletedAtMs = new DateTimeOffset(otherDay).ToUnixTimeMilliseconds() };
+
+        var sut = new CompletionListViewModel(cs, ms, rd);
+        await sut.LoadDayAsync(habit, day);
+
+        sut.Rows.Should().ContainSingle();
+        var num = 1.5m.ToString(System.Globalization.CultureInfo.CurrentCulture);
+        sut.Rows[0].FieldDisplays.Should().ContainSingle()
+            .Which.Should().Be($"Water: {num} {rd.Units[0].Code}");
+    }
+
+    [WpfFact]
+    public async Task LoadDayAsync_shows_scale_label_not_raw_index()
+    {
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        rd.Scales.Clear();
+        var scaleId = Guid.NewGuid();
+        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood", Name = "Mood", MinValue = 1, MaxValue = 3, LabelsJson = "[\"Low\",\"Neutral\",\"High\"]" });
+        var habit = Guid.NewGuid();
+        var moodId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = moodId, HabitNodeId = habit, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scaleId, SortOrder = 0 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue> { new() { MetricDefinitionId = moodId, SeriesIndex = 0, ValueInteger = 1 } }, // index 1 = Neutral
+        };
+
+        var sut = new CompletionListViewModel(cs, ms, rd);
+        await sut.LoadDayAsync(habit, day);
+
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Mood: Neutral");
     }
 }
 

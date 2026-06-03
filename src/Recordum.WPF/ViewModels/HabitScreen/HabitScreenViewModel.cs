@@ -32,6 +32,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     public HeatmapViewModel Heatmap { get; }
     public CompletionListViewModel CompletionList { get; }
+
+    /// <summary>Completions recorded on the calendar-selected day, with readable field values (B12).
+    /// Shown in the Abitudine tab; reloaded on day change and on completion events.</summary>
+    public CompletionListViewModel DayCompletions { get; }
     public TimerControlViewModel TimerControl { get; }
     public NotesViewModel Notes { get; }
     public DetailViewModel Detail { get; }
@@ -82,7 +86,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _clock = clock;
         Availability = availability;
         Heatmap = new HeatmapViewModel(completions, clock, ramp, goals, configs);
-        CompletionList = new CompletionListViewModel(completions, metrics);
+        CompletionList = new CompletionListViewModel(completions, metrics, refData);
+        DayCompletions = new CompletionListViewModel(completions, metrics, refData);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
@@ -147,6 +152,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);
             await PushDaySummaryAsync(sel, ct).ConfigureAwait(true);
+            await DayCompletions.LoadDayAsync(Node.Id, sel, ct).ConfigureAwait(true);
         }
 
         await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
@@ -184,9 +190,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             _ => Guid.Empty,
         };
         if (habitId != Node.Id) return;
+        var dayReload = Calendar.SelectedDate is { } sel
+            ? DayCompletions.LoadDayAsync(Node.Id, sel)
+            : Task.CompletedTask;
         await Task.WhenAll(
             Heatmap.LoadAsync(Node.Id),
             CompletionList.LoadAsync(Node.Id),
+            dayReload,
             Calendar.JumpAsync())
             .ConfigureAwait(true);
     }
@@ -266,6 +276,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
         await DayNote.LoadDayAsync(date).ConfigureAwait(true);
         await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
+        if (Node is { } n) await DayCompletions.LoadDayAsync(n.Id, date).ConfigureAwait(true);
     }
 
     private async Task PushDaySummaryAsync(DateOnly date, CancellationToken ct)

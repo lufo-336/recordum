@@ -443,6 +443,12 @@ Details: {0}</value>
   <data name="HabitScreen.Tab.Abitudine" xml:space="preserve">
     <value>Habit</value>
   </data>
+  <data name="HabitScreen.DayRecords" xml:space="preserve">
+    <value>Records for this day</value>
+  </data>
+  <data name="HabitScreen.DayRecords.Empty" xml:space="preserve">
+    <value>Nothing recorded on this day.</value>
+  </data>
   <data name="HabitScreen.Tab.Notes" xml:space="preserve">
     <value>Notes</value>
   </data>

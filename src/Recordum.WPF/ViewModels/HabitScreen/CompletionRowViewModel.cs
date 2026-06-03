@@ -13,6 +13,10 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     public Completion Completion { get; }
     public IReadOnlyList<CompletionValue> Values { get; }
 
+    /// <summary>Pre-formatted "metric: value unit" / "metric: scale-label" lines for this completion's fields.</summary>
+    public IReadOnlyList<string> FieldDisplays { get; }
+    public bool HasFieldDisplays => FieldDisplays.Count > 0;
+
     public Guid Id => Completion.Id;
     public DateTime CompletedAt => Completion.CompletedAt;
     public bool IsRetroactive => Completion.IsRetroactive;
@@ -29,7 +33,8 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         Completion completion,
         ICompletionService completions,
         IReadOnlyList<CompletionValue>? values = null,
-        Action<CompletionRowViewModel>? onDeleted = null)
+        Action<CompletionRowViewModel>? onDeleted = null,
+        IReadOnlyList<string>? fieldDisplays = null)
     {
         ArgumentNullException.ThrowIfNull(completion);
         ArgumentNullException.ThrowIfNull(completions);
@@ -37,6 +42,7 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         _completions = completions;
         _onDeleted = onDeleted;
         Values = values ?? [];
+        FieldDisplays = fieldDisplays ?? [];
         EditedNotes = completion.Notes;
         EditedDate = completion.CompletedAt;
     }
