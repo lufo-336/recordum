@@ -31,6 +31,13 @@
                         Content="{x:Static res:Strings.HabitBuilder_SaveAsTemplate}"
                         Padding="14,6"
                         Command="{Binding SaveAsTemplateCommand}"/>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="{x:Static res:Strings.HabitBuilder_LaunchHint}"
+                           TextWrapping="Wrap" MaxWidth="280"
+                           VerticalAlignment="Center" Margin="12,0"
+                           FontSize="{StaticResource FontSize.Small}"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           Visibility="{Binding LaunchBlocked, Converter={StaticResource BoolToVisible}}"/>
             </DockPanel>
         </Border>
 

@@ -72,7 +72,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private void AddField(FieldNature nature)
     {
         if (!CanAddField(nature)) return;
-        Fields.Add(new FieldBlockViewModel(nature, DefaultName(nature)));
+        var field = new FieldBlockViewModel(nature, DefaultName(nature));
+        field.PropertyChanged += OnFieldChanged;
+        Fields.Add(field);
         Recompute();
     }
 
@@ -80,8 +82,18 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private void RemoveField(FieldBlockViewModel field)
     {
         if (field is null) return;
+        field.PropertyChanged -= OnFieldChanged;
         Fields.Remove(field);
         Recompute();
+    }
+
+    // Picking a unit/scale on a field flips CanLaunch — re-query the Launch button (it watches CanExecuteChanged).
+    private void OnFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(FieldBlockViewModel.UnitOfMeasureId) or nameof(FieldBlockViewModel.ScaleTemplateId))
+        {
+            RaiseLaunchState();
+        }
     }
 
     [RelayCommand]
@@ -94,13 +106,20 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     partial void OnSeriesCountChanged(int value) => Recompute();
     partial void OnModeChanged(RecordingMode value) => Recompute();
-    partial void OnNameChanged(string value) => LaunchCommand.NotifyCanExecuteChanged();
+    partial void OnNameChanged(string value) => RaiseLaunchState();
 
     private void Recompute()
     {
         DerivedType = HabitCompositionRules.ResolveType(Snapshot());
         Preview.Rebuild(Fields, SeriesEnabled, SeriesCount);
         OnPropertyChanged(nameof(CanEnableSeries));
+        RaiseLaunchState();
+    }
+
+    private void RaiseLaunchState()
+    {
+        OnPropertyChanged(nameof(CanLaunch));
+        OnPropertyChanged(nameof(LaunchBlocked));
         LaunchCommand.NotifyCanExecuteChanged();
     }
 
@@ -111,6 +130,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         && Fields.All(f =>
             (f.Nature != FieldNature.Quantity || f.UnitOfMeasureId is not null) &&
             (f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null));
+
+    /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
+    public bool LaunchBlocked => !CanLaunch;
 
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync(CancellationToken ct)

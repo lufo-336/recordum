@@ -88,6 +88,37 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public void Picking_a_unit_re_enables_the_launch_command()
+    {
+        var sut = NewSut();
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.CanLaunch.Should().BeFalse(); // unit not yet picked
+        var fired = false;
+        sut.LaunchCommand.CanExecuteChanged += (_, _) => fired = true;
+
+        sut.Fields[0].UnitOfMeasureId = Guid.NewGuid();
+
+        fired.Should().BeTrue(); // button must be told to re-query
+        sut.LaunchCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [WpfFact]
+    public void Picking_a_scale_re_enables_the_launch_command()
+    {
+        var sut = NewSut();
+        sut.Name = "Umore";
+        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        var fired = false;
+        sut.LaunchCommand.CanExecuteChanged += (_, _) => fired = true;
+
+        sut.Fields[0].ScaleTemplateId = Guid.NewGuid();
+
+        fired.Should().BeTrue();
+        sut.LaunchCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [WpfFact]
     public void CanEnableSeries_is_false_when_scale_field_present()
     {
         var sut = NewSut();
