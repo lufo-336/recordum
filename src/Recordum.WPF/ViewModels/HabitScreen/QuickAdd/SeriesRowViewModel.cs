@@ -13,4 +13,10 @@ public sealed partial class SeriesRowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(metrics);
         foreach (var m in metrics) Cells.Add(new SeriesCellViewModel(m));
     }
+
+    public SeriesRowViewModel(IEnumerable<SeriesCellViewModel> cells)
+    {
+        ArgumentNullException.ThrowIfNull(cells);
+        foreach (var c in cells) Cells.Add(c);
+    }
 }
