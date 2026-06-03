@@ -47,7 +47,7 @@ public class HabitScreenViewModelTests
         bus = new FakeEventBus();
         noteSvc = new FakeNoteService();
         return new HabitScreenViewModel(
-            nodes, completions, timers, metrics, new FakeHabitConfigService(),
+            nodes, completions, timers, metrics, new FakeReferenceData(), new FakeHabitConfigService(),
             noteSvc, new FakeGoalService(), new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             clock, bus, new FakeWebView2Availability(true));
@@ -145,10 +145,10 @@ public class HabitScreenViewModelTests
 
     [Theory]
     [InlineData(HabitType.Action, typeof(ActionQuickAddViewModel))]
-    [InlineData(HabitType.Counter, typeof(CounterQuickAddViewModel))]
+    [InlineData(HabitType.Counter, typeof(MeasuredQuickAddViewModel))]
     [InlineData(HabitType.Resistance, typeof(ResistanceQuickAddViewModel))]
     [InlineData(HabitType.Journal, typeof(JournalQuickAddViewModel))]
-    [InlineData(HabitType.State, typeof(StateQuickAddViewModel))]
+    [InlineData(HabitType.State, typeof(MeasuredQuickAddViewModel))]
     public async Task LoadAsync_picks_correct_QuickAdd_VM_for_HabitType(HabitType type, Type expectedVmType)
     {
         var sut = CreateSut(out var nodes, out _, out _, out _, out _);

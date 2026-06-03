@@ -98,66 +98,6 @@ public class ActionQuickAddViewModelTests
     }
 }
 
-public class CounterQuickAddViewModelTests
-{
-    [Fact]
-    public async Task LoadMetricsAsync_selects_first_metric_by_SortOrder()
-    {
-        var cs = new FakeCompletionService();
-        var metrics = new FakeMetricDefinitionService();
-        var habitId = Guid.NewGuid();
-        var m0 = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "count", Type = MetricType.Integer, SortOrder = 0 };
-        var m1 = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "second", Type = MetricType.Integer, SortOrder = 1 };
-        metrics.Store[m0.Id] = m0;
-        metrics.Store[m1.Id] = m1;
-        var sut = new CounterQuickAddViewModel(cs, metrics, new FakeClock())
-        {
-            Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
-        };
-
-        await sut.LoadMetricsAsync();
-
-        sut.PrimaryMetric.Should().BeSameAs(m0);
-    }
-
-    [Fact]
-    public async Task SaveAsync_records_completion_with_one_value_using_primary_metric()
-    {
-        var cs = new FakeCompletionService();
-        var metrics = new FakeMetricDefinitionService();
-        var habitId = Guid.NewGuid();
-        var m = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "count", Type = MetricType.Integer, SortOrder = 0 };
-        metrics.Store[m.Id] = m;
-        var sut = new CounterQuickAddViewModel(cs, metrics, new FakeClock())
-        {
-            Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
-        };
-        await sut.LoadMetricsAsync();
-        sut.Value = 5;
-
-        await sut.SaveAsync();
-
-        cs.LastValues.Should().ContainSingle();
-        cs.LastValues![0].MetricDefinitionId.Should().Be(m.Id);
-        cs.LastValues[0].ValueInteger.Should().Be(5);
-        cs.LastValues[0].SeriesIndex.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task SaveAsync_without_primary_metric_is_noop()
-    {
-        var cs = new FakeCompletionService();
-        var sut = new CounterQuickAddViewModel(cs, new FakeMetricDefinitionService(), new FakeClock())
-        {
-            Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter },
-        };
-
-        await sut.SaveAsync();
-
-        cs.LastRecord.Should().BeNull();
-    }
-}
-
 public class JournalQuickAddViewModelTests
 {
     [Fact]
@@ -192,65 +132,6 @@ public class JournalQuickAddViewModelTests
     }
 }
 
-public class StateQuickAddViewModelTests
-{
-    [Fact]
-    public async Task LoadMetricsAsync_parses_LabelsJson_into_ScaleLabels()
-    {
-        var cs = new FakeCompletionService();
-        var metrics = new FakeMetricDefinitionService();
-        var habitId = Guid.NewGuid();
-        var m = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Type = MetricType.Integer, LabelsJson = "[\"Low\",\"Mid\",\"High\"]", SortOrder = 0 };
-        metrics.Store[m.Id] = m;
-        var sut = new StateQuickAddViewModel(cs, metrics, new FakeClock())
-        {
-            Node = new HabitNode { Id = habitId, HabitType = HabitType.State },
-        };
-
-        await sut.LoadMetricsAsync();
-
-        sut.ScaleLabels.Should().Equal("Low", "Mid", "High");
-    }
-
-    [Fact]
-    public async Task SaveAsync_records_CompletionValue_with_selected_scale_index_as_integer()
-    {
-        var cs = new FakeCompletionService();
-        var metrics = new FakeMetricDefinitionService();
-        var habitId = Guid.NewGuid();
-        var m = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Type = MetricType.Integer, LabelsJson = "[\"Low\",\"Mid\",\"High\"]", SortOrder = 0 };
-        metrics.Store[m.Id] = m;
-        var sut = new StateQuickAddViewModel(cs, metrics, new FakeClock())
-        {
-            Node = new HabitNode { Id = habitId, HabitType = HabitType.State },
-        };
-        await sut.LoadMetricsAsync();
-        sut.SelectedScaleIndex = 2;
-
-        await sut.SaveAsync();
-
-        cs.LastValues!.Single().ValueInteger.Should().Be(2);
-    }
-
-    [Fact]
-    public async Task SaveAsync_without_selected_index_is_noop()
-    {
-        var cs = new FakeCompletionService();
-        var metrics = new FakeMetricDefinitionService();
-        var habitId = Guid.NewGuid();
-        metrics.Store[Guid.NewGuid()] = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Type = MetricType.Integer, SortOrder = 0 };
-        var sut = new StateQuickAddViewModel(cs, metrics, new FakeClock())
-        {
-            Node = new HabitNode { Id = habitId, HabitType = HabitType.State },
-        };
-        await sut.LoadMetricsAsync();
-
-        await sut.SaveAsync();
-
-        cs.LastRecord.Should().BeNull();
-    }
-}
-
 public class ResistanceQuickAddViewModelTests
 {
     private static readonly int[] ExpectedSeriesIndices = [0, 0, 1, 1];
@@ -266,11 +147,31 @@ public class ResistanceQuickAddViewModelTests
         var load = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "load", Type = MetricType.Decimal, SortOrder = 1 };
         metrics.Store[reps.Id] = reps;
         metrics.Store[load.Id] = load;
-        var sut = new ResistanceQuickAddViewModel(cs, metrics, new FakeClock())
+        var sut = new ResistanceQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Resistance },
         };
         return (cs, metrics, sut, habitId, reps, load);
+    }
+
+    [WpfFact]
+    public async Task Cells_carry_unit_label()
+    {
+        var cs = new FakeCompletionService();
+        var metrics = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habitId = Guid.NewGuid();
+        var unitId = rd.Units[0].Id;
+        await metrics.CreateAsync(new MetricDefinition { HabitNodeId = habitId, Name = "Distance", Type = MetricType.Decimal, UnitOfMeasureId = unitId, SortOrder = 0 });
+        var sut = new ResistanceQuickAddViewModel(cs, metrics, rd, new FakeClock())
+        {
+            Node = new HabitNode { Id = habitId, HabitType = HabitType.Resistance },
+        };
+
+        await sut.LoadMetricsAsync();
+
+        sut.Series.Should().ContainSingle();
+        sut.Series[0].Cells[0].UnitLabel.Should().Be(rd.Units[0].Code);
     }
 
     [Fact]

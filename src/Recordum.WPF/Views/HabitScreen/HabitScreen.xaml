@@ -155,7 +155,120 @@
             </StackPanel>
         </DataTemplate>
 
-        <DataTemplate x:Key="CounterQuickAddTemplate" DataType="{x:Type qa:CounterQuickAddViewModel}">
+        <!-- Kind-aware input cell for one metric: measured (numeric + unit), scale (labelled selector or slider), or text. -->
+        <DataTemplate x:Key="MetricCellTemplate" DataType="{x:Type qa:SeriesCellViewModel}">
+            <StackPanel Margin="0,0,12,6" MinWidth="90">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Name}" FontSize="{StaticResource FontSize.Small}"
+                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                    <TextBlock Text="{Binding UnitLabel}" Margin="4,0,0,0"
+                               FontSize="{StaticResource FontSize.Small}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               Visibility="{Binding UnitLabel, Converter={StaticResource NullToVisibility}}"/>
+                </StackPanel>
+                <Grid>
+                    <!-- Measured: Integer/Seconds -->
+                    <TextBox Width="90"
+                             Text="{Binding IntegerValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Kind}" Value="Measured"/>
+                                            <Condition Binding="{Binding Type}" Value="Integer"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Kind}" Value="Measured"/>
+                                            <Condition Binding="{Binding Type}" Value="Seconds"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                    <!-- Measured: Decimal -->
+                    <TextBox Width="90"
+                             Text="{Binding DecimalValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Kind}" Value="Measured"/>
+                                            <Condition Binding="{Binding Type}" Value="Decimal"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                    <!-- Text -->
+                    <TextBox Width="140" Text="{Binding TextValue, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Text">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                    <!-- Scale: labelled selector (<=10 steps) -->
+                    <ComboBox MinWidth="120" ItemsSource="{Binding ScaleLabels}"
+                              SelectedIndex="{Binding SelectedScaleIndex}">
+                        <ComboBox.Style>
+                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Kind}" Value="Scale"/>
+                                            <Condition Binding="{Binding UseSlider}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                    </ComboBox>
+                    <!-- Scale: slider (>10 steps) -->
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Kind}" Value="Scale"/>
+                                            <Condition Binding="{Binding UseSlider}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <Slider Width="140" Minimum="0" Maximum="{Binding SliderMax}"
+                                Value="{Binding SelectedScaleIndex, TargetNullValue=0}"
+                                IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
+                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Brush.Text}"
+                                   Text="{Binding SelectedScaleIndex}"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="MeasuredQuickAddTemplate" DataType="{x:Type qa:MeasuredQuickAddViewModel}">
             <StackPanel Margin="12" Orientation="Vertical">
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -170,18 +283,13 @@
                                Foreground="{DynamicResource Brush.Text}"
                                Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding PrimaryMetric.Name, FallbackValue={x:Static res:Strings.HabitScreen_QuickAdd_Value}}"
-                               Foreground="{DynamicResource Brush.TextMuted}"
-                               VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBox Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
+                <ItemsControl ItemsSource="{Binding Row.Cells}"
+                              ItemTemplate="{StaticResource MetricCellTemplate}"
+                              Margin="0,0,0,8">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
                 <TextBlock Text="{x:Static res:Strings.HabitScreen_QuickAdd_Notes}"
                            Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,4"/>
                 <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
@@ -214,18 +322,11 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6" CornerRadius="3">
-                                <ItemsControl ItemsSource="{Binding Cells}">
+                                <ItemsControl ItemsSource="{Binding Cells}"
+                                              ItemTemplate="{StaticResource MetricCellTemplate}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Margin="0,0,12,0">
-                                                <TextBlock Text="{Binding Name}" FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
-                                                <TextBox Width="80" Text="{Binding IntegerValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </Border>
                         </DataTemplate>
@@ -262,32 +363,6 @@
                                                            RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                             Height="280"
                                             Margin="0,0,0,8"/>
-                <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
-                        Command="{Binding SaveCommand}"
-                        HorizontalAlignment="Left" Padding="12,6"/>
-                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,6,0,0"
-                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
-            </StackPanel>
-        </DataTemplate>
-
-        <DataTemplate x:Key="StateQuickAddTemplate" DataType="{x:Type qa:StateQuickAddViewModel}">
-            <StackPanel Margin="12" Orientation="Vertical">
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
-                               Foreground="{DynamicResource Brush.TextMuted}"
-                               VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
-                               Foreground="{DynamicResource Brush.Text}"
-                               Text="{Binding CompletionDate, StringFormat=d}"/>
-                </Grid>
-                <ComboBox ItemsSource="{Binding ScaleLabels}"
-                          SelectedIndex="{Binding SelectedScaleIndex}"
-                          Margin="0,0,0,8"/>
                 <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
                         Command="{Binding SaveCommand}"
                         HorizontalAlignment="Left" Padding="12,6"/>
@@ -400,10 +475,9 @@
 
         <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"
                                       Action="{StaticResource ActionQuickAddTemplate}"
-                                      Counter="{StaticResource CounterQuickAddTemplate}"
+                                      Measured="{StaticResource MeasuredQuickAddTemplate}"
                                       Resistance="{StaticResource ResistanceQuickAddTemplate}"
-                                      Journal="{StaticResource JournalQuickAddTemplate}"
-                                      State="{StaticResource StateQuickAddTemplate}"/>
+                                      Journal="{StaticResource JournalQuickAddTemplate}"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>

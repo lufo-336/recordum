@@ -20,6 +20,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly ICompletionService _completions;
     private readonly INoteService _noteService;
     private readonly IMetricDefinitionService _metrics;
+    private readonly IReferenceDataQueryService _refData;
     private readonly IHabitConfigService _configs;
     private readonly IClock _clock;
     private readonly List<IDisposable> _subscriptions = [];
@@ -48,6 +49,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ICompletionService completions,
         IActiveTimerService timers,
         IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData,
         IHabitConfigService configs,
         INoteService noteService,
         IGoalService goals,
@@ -63,6 +65,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
         ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(refData);
         ArgumentNullException.ThrowIfNull(configs);
         ArgumentNullException.ThrowIfNull(noteService);
         ArgumentNullException.ThrowIfNull(goals);
@@ -74,6 +77,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _completions = completions;
         _noteService = noteService;
         _metrics = metrics;
+        _refData = refData;
         _configs = configs;
         _clock = clock;
         Availability = availability;
@@ -153,19 +157,18 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         QuickAddViewModelBase? vm = node.HabitType switch
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
-            HabitType.Counter => new CounterQuickAddViewModel(_completions, _metrics, _clock),
-            HabitType.Resistance => new ResistanceQuickAddViewModel(_completions, _metrics, _clock),
+            HabitType.Counter => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
+            HabitType.Resistance => new ResistanceQuickAddViewModel(_completions, _metrics, _refData, _clock),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock),
-            HabitType.State => new StateQuickAddViewModel(_completions, _metrics, _clock),
+            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
             _ => null,
         };
         if (vm is null) { QuickAdd = null; return; }
         vm.Node = node;
         switch (vm)
         {
-            case CounterQuickAddViewModel c: await c.LoadMetricsAsync(ct).ConfigureAwait(true); break;
+            case MeasuredQuickAddViewModel mq: await mq.LoadMetricsAsync(ct).ConfigureAwait(true); break;
             case ResistanceQuickAddViewModel r: await r.LoadMetricsAsync(ct).ConfigureAwait(true); break;
-            case StateQuickAddViewModel s: await s.LoadMetricsAsync(ct).ConfigureAwait(true); break;
         }
         QuickAdd = vm;
     }

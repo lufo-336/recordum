@@ -11,10 +11,13 @@ namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 public sealed partial class ResistanceQuickAddViewModel(
     ICompletionService completions,
     IMetricDefinitionService metrics,
+    IReferenceDataQueryService refData,
     IClock clock) : QuickAddViewModelBase(completions, clock)
 {
     private readonly IMetricDefinitionService _metrics = metrics;
+    private readonly IReferenceDataQueryService _refData = refData;
     private List<MetricDefinition> _orderedMetrics = [];
+    private MetricCellFactory _factory = new(Array.Empty<UnitOfMeasure>(), Array.Empty<ScaleTemplate>());
 
     public ObservableCollection<SeriesRowViewModel> Series { get; } = [];
 
@@ -25,16 +28,21 @@ public sealed partial class ResistanceQuickAddViewModel(
         if (Node is null) return;
         var list = await _metrics.ListByHabitAsync(Node.Id, ct).ConfigureAwait(true);
         _orderedMetrics = list.OrderBy(m => m.SortOrder).ToList();
+        var units = await _refData.ListUnitsAsync(ct).ConfigureAwait(true);
+        var scales = await _refData.ListScalesAsync(ct).ConfigureAwait(true);
+        _factory = new MetricCellFactory(units, scales);
         Series.Clear();
         if (_orderedMetrics.Count > 0)
-            Series.Add(new SeriesRowViewModel(_orderedMetrics));
+            Series.Add(NewRow());
     }
+
+    private SeriesRowViewModel NewRow() => new(_orderedMetrics.Select(_factory.Create));
 
     [RelayCommand]
     private void AddSeries()
     {
         if (_orderedMetrics.Count == 0) return;
-        Series.Add(new SeriesRowViewModel(_orderedMetrics));
+        Series.Add(NewRow());
     }
 
     [RelayCommand]

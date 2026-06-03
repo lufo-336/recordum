@@ -33,7 +33,7 @@ public static class HabitScreenViewModelFactory
         var bus = new FakeEventBus();
 
         var vm = new HabitScreenViewModel(
-            nodes, completions, timers, metrics, configs,
+            nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteService, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             clock, bus, new FakeWebView2Availability());

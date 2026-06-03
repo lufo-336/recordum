@@ -38,7 +38,7 @@ public static class MainWindowViewModelFactory
         var completions = new FakeCompletionService();
         var timerStatusBar = new TimerStatusBarViewModel(ats, clock, nodes);
         var habitScreen = new HabitScreenViewModel(
-            nodes, completions, ats, metrics, configs, new FakeNoteService(),
+            nodes, completions, ats, metrics, new FakeReferenceData(), configs, new FakeNoteService(),
             goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             clock, new FakeEventBus(), new FakeWebView2Availability());
