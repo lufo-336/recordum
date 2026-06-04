@@ -8,7 +8,9 @@ namespace Recordum.WPF.Converters;
 /// ad alpha crescente. Step 0 = trasparente (giorno non fatto).</summary>
 public sealed class HabitColorTintConverter : IMultiValueConverter
 {
-    private static readonly byte[] Alpha = { 0x00, 0x38, 0x66, 0x9e, 0xd8 }; // step 0..4
+    // Softer ramp (R-tintRamp): gentler toe + lower ceiling so a full day reads as a tint, not a
+    // heavy slab. Steps stay perceptually even without the old hard jumps. step 0..4.
+    private static readonly byte[] Alpha = { 0x00, 0x26, 0x4a, 0x78, 0xae };
 
     public object Convert(object[] values, Type targetType, object? parameter, CultureInfo culture)
     {
