@@ -332,6 +332,9 @@ Details: {0}</value>
   <data name="HabitBuilder.LaunchHint" xml:space="preserve">
     <value>Name the habit and pick a unit/scale for every Quantity/Scale field to launch.</value>
   </data>
+  <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
+    <value>Saved ✓</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Name is required</value>
   </data>

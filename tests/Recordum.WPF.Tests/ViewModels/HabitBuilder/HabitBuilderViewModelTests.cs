@@ -66,6 +66,21 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task SaveAsTemplate_sets_saved_feedback_then_clears_on_change()
+    {
+        var sut = NewSut();
+        sut.Name = "Flessioni";
+        sut.AddFieldCommand.Execute(FieldNature.Count);
+        sut.TemplateSaved.Should().BeFalse();
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+        sut.TemplateSaved.Should().BeTrue();
+
+        sut.Name = "Flessioni avanti"; // any edit invalidates the "saved" badge
+        sut.TemplateSaved.Should().BeFalse();
+    }
+
+    [WpfFact]
     public void Text_field_blocks_count_and_makes_journal()
     {
         var sut = NewSut();

@@ -57,6 +57,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [ObservableProperty] private HabitType _derivedType = HabitType.Action;
     [ObservableProperty] private Guid? _createdHabitNodeId;
 
+    /// <summary>True briefly after "Save as template" succeeds; cleared on any edit that would
+    /// change the payload, so the "Saved ✓" badge reflects the current composition. (R-builderSaveFeedback)</summary>
+    [ObservableProperty] private bool _templateSaved;
+
     public void SetParent(Guid? parentId) => _parentId = parentId;
 
     private HabitComposition Snapshot() =>
@@ -92,6 +96,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         if (e.PropertyName is nameof(FieldBlockViewModel.UnitOfMeasureId) or nameof(FieldBlockViewModel.ScaleTemplateId))
         {
+            TemplateSaved = false;
             RaiseLaunchState();
         }
     }
@@ -105,7 +110,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     partial void OnSeriesCountChanged(int value) => Recompute();
     partial void OnModeChanged(RecordingMode value) => Recompute();
-    partial void OnNameChanged(string value) => RaiseLaunchState();
+    partial void OnNameChanged(string value) { TemplateSaved = false; RaiseLaunchState(); }
+    partial void OnColorChanged(string value) => TemplateSaved = false;
+    partial void OnIconChanged(string? value) => TemplateSaved = false;
 
     // The Series CheckBox binds SeriesEnabled TwoWay (bypassing ToggleSeries), so toggling it must
     // recompute the derived type + preview here — otherwise Launch persists a stale Counter. (B13)
@@ -113,6 +120,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     private void Recompute()
     {
+        TemplateSaved = false;
         DerivedType = HabitCompositionRules.ResolveType(Snapshot());
         Preview.Rebuild(Fields, SeriesEnabled, SeriesCount);
         OnPropertyChanged(nameof(CanEnableSeries));
@@ -156,6 +164,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             UpdatedAtMs = _clock.UtcNowMs,
         };
         await _templates.CreateAsync(template, ct).ConfigureAwait(true);
+        TemplateSaved = true;
     }
 
     private ComposedHabitRequest BuildRequest()

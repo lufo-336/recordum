@@ -314,6 +314,9 @@
   <data name="HabitBuilder.LaunchHint" xml:space="preserve">
     <value>Dai un nome e scegli un'unità/scala per ogni campo Quantità/Scala per lanciare.</value>
   </data>
+  <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
+    <value>Salvato ✓</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Il nome è obbligatorio</value>
   </data>

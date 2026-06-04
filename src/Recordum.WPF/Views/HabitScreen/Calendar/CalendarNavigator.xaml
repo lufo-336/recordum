@@ -81,7 +81,7 @@
                                         <!-- Selected: filled accent background -->
                                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                             <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
-                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.OnAccent}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -118,7 +118,9 @@
                                 <TextBlock Text="{Binding NoteCount}"
                                            HorizontalAlignment="Right" VerticalAlignment="Top"
                                            Margin="0,0,1,0" FontSize="8" FontWeight="Bold"
-                                           Foreground="#1c1d22"
+                                           Foreground="{Binding DataContext.NoteColorHex,
+                                                        RelativeSource={RelativeSource AncestorType=ItemsControl},
+                                                        Converter={StaticResource ContrastForeground}}"
                                            Visibility="{Binding ShowNoteCount, Converter={StaticResource BoolToVisible}}"/>
                             </Grid>
                         </Button>

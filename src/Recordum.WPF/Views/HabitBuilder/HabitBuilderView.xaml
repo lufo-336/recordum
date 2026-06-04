@@ -27,6 +27,12 @@
                         Margin="8,0,0,0"
                         FontWeight="SemiBold"
                         Command="{Binding LaunchCommand}"/>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="{x:Static res:Strings.HabitBuilder_TemplateSaved}"
+                           VerticalAlignment="Center" Margin="8,0,0,0"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Success}"
+                           Visibility="{Binding TemplateSaved, Converter={StaticResource BoolToVisible}}"/>
                 <Button DockPanel.Dock="Right"
                         Content="{x:Static res:Strings.HabitBuilder_SaveAsTemplate}"
                         Padding="14,6"

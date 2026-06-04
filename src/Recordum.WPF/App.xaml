@@ -26,6 +26,7 @@
             <conv:EnumToVisibilityConverter x:Key="EnumToVisibility"/>
             <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
             <conv:HabitColorTintConverter x:Key="HabitColorTint"/>
+            <conv:ContrastForegroundConverter x:Key="ContrastForeground"/>
             <conv:RenameArgsConverter x:Key="RenameArgs"/>
 
             <!-- Enum value sources for editor-section ComboBoxes. Global so section

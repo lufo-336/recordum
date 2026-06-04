@@ -7,6 +7,8 @@
     <SolidColorBrush x:Key="Brush.Text"              Color="#FFFAFAFA"/>
     <SolidColorBrush x:Key="Brush.TextMuted"         Color="#FFA1A1AA"/>
     <SolidColorBrush x:Key="Brush.Accent"            Color="#FF60A5FA"/>
+    <SolidColorBrush x:Key="Brush.OnAccent"          Color="#FF09090B"/>
+    <SolidColorBrush x:Key="Brush.Success"           Color="#FF4ADE80"/>
     <SolidColorBrush x:Key="Brush.HeatmapEmpty"      Color="#FF27272A"/>
     <SolidColorBrush x:Key="Brush.Heatmap.Level0"    Color="#FF27272A"/>
     <SolidColorBrush x:Key="Brush.Heatmap.Level1"    Color="#FF0E4429"/>
