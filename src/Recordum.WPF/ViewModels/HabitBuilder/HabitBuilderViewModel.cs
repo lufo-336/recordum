@@ -100,13 +100,16 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private void ToggleSeries(bool enabled)
     {
         if (enabled && !HabitCompositionRules.CanEnableSeries(Snapshot())) return;
-        SeriesEnabled = enabled;
-        Recompute();
+        SeriesEnabled = enabled; // OnSeriesEnabledChanged recomputes
     }
 
     partial void OnSeriesCountChanged(int value) => Recompute();
     partial void OnModeChanged(RecordingMode value) => Recompute();
     partial void OnNameChanged(string value) => RaiseLaunchState();
+
+    // The Series CheckBox binds SeriesEnabled TwoWay (bypassing ToggleSeries), so toggling it must
+    // recompute the derived type + preview here — otherwise Launch persists a stale Counter. (B13)
+    partial void OnSeriesEnabledChanged(bool value) => Recompute();
 
     private void Recompute()
     {

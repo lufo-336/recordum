@@ -34,6 +34,38 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public void Checking_series_directly_updates_derived_type_and_preview()
+    {
+        // The Series CheckBox binds SeriesEnabled TwoWay (not the ToggleSeries command), so
+        // setting the property directly must still recompute the derived type + preview. (B13)
+        var sut = NewSut();
+        sut.Name = "Flessioni";
+        sut.AddFieldCommand.Execute(FieldNature.Count);
+        sut.DerivedType.Should().Be(HabitType.Counter);
+
+        sut.SeriesEnabled = true;
+
+        sut.DerivedType.Should().Be(HabitType.Resistance);
+        sut.Preview.Rows.Should().HaveCount(sut.SeriesCount);
+    }
+
+    [WpfFact]
+    public async Task Launch_after_checking_series_directly_persists_resistance()
+    {
+        // End-to-end B13: check Series via the property (the binding path), then Launch — the
+        // persisted node must be Resistance, not a stale Counter.
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Flessioni";
+        sut.AddFieldCommand.Execute(FieldNature.Count);
+        sut.SeriesEnabled = true;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest!.Node.HabitType.Should().Be(HabitType.Resistance);
+    }
+
+    [WpfFact]
     public void Text_field_blocks_count_and_makes_journal()
     {
         var sut = NewSut();
