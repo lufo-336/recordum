@@ -140,6 +140,21 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 ---
 
+## Stato al 2026-06-04
+
+**Blocco "limatura" autonomo** (utente: "applica tutte le rifiniture che ritieni opportune, poi farò un check visivo e d'esperienza"). Eseguito inline con TDD dove tocca logica. **Verifica visiva utente: da fare** su tutto il blocco.
+
+- **B13 → `fixed`** (commit `fix(wpf): B13`): root cause **non** era il round-trip template (il reader legge `habit_type` direttamente → il path template produceva già Resistance). Il bug reale: la CheckBox Series binda `SeriesEnabled` **TwoWay**, bypassando il comando `ToggleSeries` (che faceva `Recompute`). Mancando `OnSeriesEnabledChanged`, `DerivedType` restava **Counter stale** → `BuildRequest` (usa `DerivedType`) lanciava un nodo Counter → instradato a `MeasuredQuickAdd` riga singola. Fix: `partial void OnSeriesEnabledChanged => Recompute()` + rimosso `Recompute` ridondante in `ToggleSeries`. 2 test di regressione end-to-end (path proprietà diretta). I nomi metrica strani ("Serie", "Flessioni reps") erano nomi-campo scelti dall'utente, non un bug. Stessa classe di B11-launch (stato derivato che non si propaga). `series_count` round-trip resta cosmetico/deferito a Spec 2 (ResistanceQuickAdd parte comunque da 1 serie + bottone aggiungi).
+- **R-builderSaveFeedback → `fixed`**: badge "Salvato ✓" (`HabitBuilder.TemplateSaved`, EN+IT) accanto a "Salva come template", `TemplateSaved` observable settato dopo il save e azzerato su ogni edit che cambia il payload (nome/colore/icona/campi/serie/modo/unità/scala).
+- **R-onAccent → `fixed`**: nuovi token `Brush.OnAccent` (Light=bianco, Dark=`#09090B`) + `Brush.Success` in entrambi i temi. Sostituiti i `Foreground` bianchi hardcoded su sfondo accent: cella calendario selezionata (`CalendarNavigator`), `CalendarDayButton`/`CalendarButton`/pill toggle (`BaseStyles` ×3).
+- **R-noteCountContrast → `fixed`**: nuovo `ContrastForegroundConverter` (nero/bianco per luminanza BT.601 del colore-nota) rimpiazza l'hardcoded `#1c1d22` dell'overlay conteggio-note. NB: `Brush.OnAccent` NON era semanticamente giusto qui (lo sfondo è il colore-nota scelto dall'utente, non l'accent) → converter di contrasto dedicato.
+- **R-tintRamp → `fixed`** (verifica soggettiva): ramp alpha ammorbidita `{0x26,0x4a,0x78,0xae}` (era `{0x38,0x66,0x9e,0xd8}`) — toe più dolce + ceiling più basso così il giorno pieno è una tinta, non una lastra. Una riga, facile da ritarare a vista.
+- **R-daySummaryUnits → deferito** (deliberato): la striscia riepilogo deriva da una singola magnitudine type-aware che perde l'identità della metrica nei casi multi-metrica; il pannello "Registrazioni del giorno" (B12) **già** mostra i valori leggibili con unità/etichette subito sotto; farlo bene richiede una decisione di design sul riepilogo multi-metrica. Non fatto per evitare un mezzo-fix.
+- Suite **WPF 385** verdi (+3), build 0/0. Data invariata (nessuna modifica Data).
+- **Cleanup ancora aperti** (non visibili, non fatti questo giro): R-heatmapDead, R-fakeWebView2-dup, R-summaryGlyphs.
+
+---
+
 ## Aperti — bloccanti
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
