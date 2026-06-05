@@ -8,6 +8,8 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Notes;
 
 public class NoteRowViewModelTests
 {
+    private static long Ms(DateTime utc) => new DateTimeOffset(utc, TimeSpan.Zero).ToUnixTimeMilliseconds();
+
     [Fact]
     public void Summary_returns_first_nonblank_line()
     {
@@ -62,17 +64,38 @@ public class NoteRowViewModelTests
     }
 
     [Fact]
-    public void DateBadge_shows_general_label_when_no_target_date()
+    public void AnchorDateDisplay_uses_TargetDate_when_present()
     {
-        var row = new NoteRowViewModel(new Note { BodyMd = "x", TargetDate = null });
-        row.DateBadge.Should().Be(Recordum.WPF.Resources.Strings.Notes_Badge_General);
+        var created = new DateTime(2026, 6, 1, 8, 0, 0, DateTimeKind.Utc);
+        var row = new NoteRowViewModel(new Note
+        {
+            CreatedAt = created, UpdatedAtMs = Ms(created),
+            TargetDate = new DateOnly(2026, 5, 20),
+        });
+        row.AnchorDateDisplay.Should().Be(new DateOnly(2026, 5, 20).ToString("d MMM yyyy", CultureInfo.CurrentCulture));
     }
 
     [Fact]
-    public void DateBadge_shows_the_day_when_target_date_set()
+    public void AnchorDateDisplay_falls_back_to_CreatedAt_when_TargetDate_null()
     {
-        var date = new DateOnly(2026, 6, 1);
-        var row = new NoteRowViewModel(new Note { BodyMd = "x", TargetDate = date });
-        row.DateBadge.Should().Be(date.ToString("d MMM", CultureInfo.CurrentCulture));
+        var created = new DateTime(2026, 6, 1, 8, 0, 0, DateTimeKind.Utc);
+        var row = new NoteRowViewModel(new Note { CreatedAt = created, UpdatedAtMs = Ms(created), TargetDate = null });
+        row.AnchorDateDisplay.Should().Be(new DateOnly(2026, 6, 1).ToString("d MMM yyyy", CultureInfo.CurrentCulture));
+    }
+
+    [Fact]
+    public void WasModified_is_false_for_a_never_edited_note()
+    {
+        var created = new DateTime(2026, 6, 1, 8, 0, 0, DateTimeKind.Utc);
+        var row = new NoteRowViewModel(new Note { CreatedAt = created, UpdatedAtMs = Ms(created) });
+        row.WasModified.Should().BeFalse();
+    }
+
+    [Fact]
+    public void WasModified_is_true_after_an_edit()
+    {
+        var created = new DateTime(2026, 6, 1, 8, 0, 0, DateTimeKind.Utc);
+        var row = new NoteRowViewModel(new Note { CreatedAt = created, UpdatedAtMs = Ms(created.AddMinutes(5)) });
+        row.WasModified.Should().BeTrue();
     }
 }

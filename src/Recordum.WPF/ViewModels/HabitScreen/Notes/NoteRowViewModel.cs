@@ -25,16 +25,31 @@ public sealed partial class NoteRowViewModel(Note note) : ObservableObject
         DateTimeOffset.FromUnixTimeMilliseconds(Note.UpdatedAtMs)
             .UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
-    /// <summary>Day this note is anchored to (e.g. "1 Jun"), or the "General" label for un-anchored notes.</summary>
-    public string DateBadge =>
-        Note.TargetDate is { } d
-            ? d.ToString("d MMM", CultureInfo.CurrentCulture)
-            : Recordum.WPF.Resources.Strings.Notes_Badge_General;
+    private long CreatedAtMs =>
+        new DateTimeOffset(DateTime.SpecifyKind(Note.CreatedAt, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+
+    /// <summary>Stable anchor: assigned calendar day, else creation day. Never changes on edit.</summary>
+    public string AnchorDateDisplay =>
+        (Note.TargetDate ?? DateOnly.FromDateTime(Note.CreatedAt))
+            .ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+
+    /// <summary>True once the note has been edited after creation (1s tolerance for clock granularity).</summary>
+    public bool WasModified => Note.UpdatedAtMs > CreatedAtMs + 1000;
+
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+    public string ModifiedAtDisplay => string.Format(
+        CultureInfo.CurrentCulture,
+        Recordum.WPF.Resources.Strings.Notes_ModifiedAt,
+        DateTimeOffset.FromUnixTimeMilliseconds(Note.UpdatedAtMs).UtcDateTime
+            .ToString("d MMM yyyy HH:mm", CultureInfo.CurrentCulture));
+#pragma warning restore CA1863
 
     public void Refresh()
     {
         OnPropertyChanged(nameof(Summary));
+        OnPropertyChanged(nameof(AnchorDateDisplay));
+        OnPropertyChanged(nameof(WasModified));
+        OnPropertyChanged(nameof(ModifiedAtDisplay));
         OnPropertyChanged(nameof(UpdatedAtDisplay));
-        OnPropertyChanged(nameof(DateBadge));
     }
 }

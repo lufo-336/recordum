@@ -506,6 +506,9 @@ Details: {0}</value>
   <data name="Notes.Badge.General" xml:space="preserve">
     <value>General</value>
   </data>
+  <data name="Notes_ModifiedAt" xml:space="preserve">
+    <value>Modified {0}</value>
+  </data>
   <data name="Editor.WebView2.NotAvailable.Title" xml:space="preserve">
     <value>Editor not available</value>
   </data>
