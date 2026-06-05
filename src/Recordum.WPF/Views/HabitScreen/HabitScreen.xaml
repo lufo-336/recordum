@@ -521,32 +521,26 @@
                     Background="Transparent"
                     BorderThickness="0">
             <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Abitudine}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <cal:CalendarNavigator Grid.Row="0" DataContext="{Binding Calendar}"/>
-                    <ContentControl Grid.Row="1"
-                                    Content="{Binding QuickAdd}"
-                                    ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
-                    <ContentControl Grid.Row="2" Content="{Binding TimerControl}"/>
-                    <v:DayNoteView Grid.Row="3" DataContext="{Binding DayNote}"/>
-                    <StackPanel Grid.Row="4" Margin="12,4,12,0">
-                        <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords}"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource Brush.Text}"
-                                   Margin="0,0,0,2"/>
-                        <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
-                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                   FontSize="{StaticResource FontSize.Small}"
-                                   Visibility="{Binding DayCompletions.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
-                        <ContentControl Content="{Binding DayCompletions}"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <cal:CalendarNavigator DataContext="{Binding Calendar}"/>
+                        <ContentControl Content="{Binding QuickAdd}"
+                                        ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
+                        <ContentControl Content="{Binding TimerControl}"/>
+                        <v:DayNoteView DataContext="{Binding DayNote}"/>
+                        <StackPanel Margin="12,4,12,12">
+                            <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.Text}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       FontSize="{StaticResource FontSize.Small}"
+                                       Visibility="{Binding DayCompletions.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
+                            <ContentControl Content="{Binding DayCompletions}"/>
+                        </StackPanel>
                     </StackPanel>
-                </Grid>
+                </ScrollViewer>
             </TabItem>
             <TabItem Header="{x:Static res:Strings.HabitScreen_Tab_Detail}">
                 <ContentControl Content="{Binding Detail}"/>
