@@ -258,8 +258,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.8"
+                            UpdatedAt = new DateTime(2026, 6, 5, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.9"
                         });
                 });
 
@@ -1497,6 +1497,35 @@ namespace Recordum.Data.Migrations
                     b.ToTable("notes", (string)null);
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.NoteHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BodyMd")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("body_md");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_note_histories");
+
+                    b.HasIndex("NoteId", "CreatedAt")
+                        .HasDatabaseName("ix_note_histories_note_id_created_at");
+
+                    b.ToTable("note_histories", (string)null);
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2243,6 +2272,18 @@ namespace Recordum.Data.Migrations
                     b.Navigation("HabitNode");
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.NoteHistory", b =>
+                {
+                    b.HasOne("Recordum.Core.Models.Note", "Note")
+                        .WithMany("History")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_note_histories_notes_note_id");
+
+                    b.Navigation("Note");
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.Notification", b =>
                 {
                     b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
@@ -2331,6 +2372,8 @@ namespace Recordum.Data.Migrations
             modelBuilder.Entity("Recordum.Core.Models.Note", b =>
                 {
                     b.Navigation("Attachments");
+
+                    b.Navigation("History");
                 });
 
             modelBuilder.Entity("Recordum.Core.Models.ScaleTemplate", b =>

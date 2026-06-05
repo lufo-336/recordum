@@ -4,7 +4,7 @@ using Xunit;
 namespace Recordum.Data.Tests.Schema;
 
 /// <summary>
-/// Verifies that all migrations produce all 26 expected tables and §6.4 indexes.
+/// Verifies that all migrations produce all 28 expected tables and §6.4 indexes.
 /// </summary>
 public sealed class SchemaTests : IClassFixture<SchemaFixture>
 {
@@ -15,7 +15,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         _fixture = fixture;
     }
 
-    // 27 tables: 25 from InitialSchema + active_timer added in ActiveTimerV25 + backup_log added in BackupLogV27 (snake_case, EF naming)
+    // 28 tables: 25 from InitialSchema + active_timer added in ActiveTimerV25 + backup_log added in BackupLogV27 + note_histories added in NoteHistoryV29 (snake_case, EF naming)
     private static readonly string[] ExpectedTables =
     [
         "backup_log",
@@ -31,6 +31,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         "completion_segments",
         "streak_pauses",
         "notes",
+        "note_histories",
         "attachments",
         "goals",
         "notifications",
@@ -61,6 +62,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         "ix_completion_segments_completion_id_segment_index",
         "ix_streak_pause_habit_node_id_pause_from",
         "ix_notes_habit_node_id_created_at",
+        "ix_note_histories_note_id_created_at",
         "ix_attachments_completion_id",
         "ix_attachments_note_id",
         "ix_goals_habit_node_id",
@@ -74,7 +76,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
     ];
 
     [Fact]
-    public void All_27_tables_exist_after_migration()
+    public void All_28_tables_exist_after_migration()
     {
         using var conn = _fixture.OpenRawConnection();
         using var cmd = conn.CreateCommand();
@@ -85,7 +87,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         while (reader.Read())
             actualTables.Add(reader.GetString(0));
 
-        Assert.Equal(27, actualTables.Count);
+        Assert.Equal(28, actualTables.Count);
 
         foreach (var expected in ExpectedTables)
             Assert.Contains(expected, actualTables);
