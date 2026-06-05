@@ -17,12 +17,32 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(viewModel);
         _viewModel = viewModel;
         InitializeComponent();
+        FitToScreen();
         DataContext = viewModel;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         viewModel.Editor.PropertyChanged += OnEditorPropertyChanged;
         viewModel.Home.PropertyChanged += OnHomePropertyChanged;
         Loaded += OnLoaded;
     }
+
+    /// <summary>
+    /// Ensures the window never opens larger than the screen's work area. The default
+    /// 1280x760 size overflowed small/RDP displays (e.g. a 1280x672 work area), pushing
+    /// the top nav and the bottom Save buttons / status bar off-screen. We also relax the
+    /// minimums so the window stays fully on-screen even on very small displays.
+    /// </summary>
+    private void FitToScreen()
+    {
+        var wa = SystemParameters.WorkArea;
+        (Width, Height) = ClampToWorkArea(Width, Height, wa.Width, wa.Height);
+        MinWidth = Math.Min(MinWidth, wa.Width);
+        MinHeight = Math.Min(MinHeight, wa.Height);
+    }
+
+    /// <summary>Pure size-clamp: never larger than the work area. Unit-tested.</summary>
+    internal static (double Width, double Height) ClampToWorkArea(
+        double desiredWidth, double desiredHeight, double workAreaWidth, double workAreaHeight)
+        => (Math.Min(desiredWidth, workAreaWidth), Math.Min(desiredHeight, workAreaHeight));
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
