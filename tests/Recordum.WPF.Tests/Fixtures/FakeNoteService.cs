@@ -80,6 +80,19 @@ public sealed class FakeNoteService : INoteService
         return new(r);
     }
 
+    public ValueTask<IReadOnlyList<NoteVersion>> ListVersionsAsync(Guid noteId, CancellationToken ct = default)
+    {
+        Throw();
+        IReadOnlyList<NoteVersion> r = [];
+        return new(r);
+    }
+
+    public ValueTask RestoreVersionAsync(Guid noteId, Guid versionId, CancellationToken ct = default)
+    {
+        Throw();
+        return ValueTask.CompletedTask;
+    }
+
     private void Throw()
     {
         if (NextException is { } e) { NextException = null; throw e; }

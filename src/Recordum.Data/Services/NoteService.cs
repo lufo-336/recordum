@@ -6,7 +6,6 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
-
 namespace Recordum.Data.Services;
 
 public sealed partial class NoteService(
@@ -17,6 +16,15 @@ public sealed partial class NoteService(
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Note {Id} created for habit {HabitId}")]
     private partial void LogCreated(Guid id, Guid habitId);
+
+    private void AddVersion(RecordumDbContext db, Guid noteId, string bodyMd)
+        => db.NoteHistories.Add(new NoteHistory
+        {
+            Id = Guid.NewGuid(),
+            NoteId = noteId,
+            BodyMd = bodyMd,
+            CreatedAt = clock.UtcNow.UtcDateTime,
+        });
 
     public ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default)
         => CreateAsync(draft, attachments: null, ct);
@@ -36,10 +44,10 @@ public sealed partial class NoteService(
                 db.Attachments.Add(a);
             }
         }
+        if (!string.IsNullOrEmpty(draft.BodyMd)) AddVersion(db, draft.Id, draft.BodyMd);
         await db.SaveChangesAsync(ct);
         LogCreated(draft.Id, draft.HabitNodeId);
         eventBus.Publish(new NoteCreatedPayload(draft.Id, draft.HabitNodeId));
-        _ = clock;
         return draft.Id;
     }
 
@@ -49,7 +57,9 @@ public sealed partial class NoteService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var n = await db.Notes.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (n is null) return;
+        var oldBody = n.BodyMd;
         mutate(n);
+        if (n.BodyMd != oldBody) AddVersion(db, n.Id, n.BodyMd);
         await db.SaveChangesAsync(ct);
         eventBus.Publish(new NoteUpdatedPayload(n.Id, n.HabitNodeId));
     }
@@ -59,6 +69,7 @@ public sealed partial class NoteService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var n = await db.Notes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (n is null) return;
+        await db.NoteHistories.Where(h => h.NoteId == id).ExecuteDeleteAsync(ct);
         await db.Notes.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
         eventBus.Publish(new NoteDeletedPayload(n.Id, n.HabitNodeId));
     }
@@ -116,5 +127,24 @@ public sealed partial class NoteService(
             .Select(g => new DayNoteCount(g.Key, g.Count()))
             .OrderBy(c => c.Date)
             .ToList();
+    }
+
+    public async ValueTask<IReadOnlyList<NoteVersion>> ListVersionsAsync(Guid noteId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.NoteHistories.AsNoTracking()
+            .Where(h => h.NoteId == noteId)
+            .OrderByDescending(h => h.CreatedAt)
+            .Select(h => new NoteVersion(h.Id, h.BodyMd, h.CreatedAt))
+            .ToListAsync(ct);
+    }
+
+    public async ValueTask RestoreVersionAsync(Guid noteId, Guid versionId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var version = await db.NoteHistories.AsNoTracking()
+            .FirstOrDefaultAsync(h => h.Id == versionId && h.NoteId == noteId, ct);
+        if (version is null) return;
+        await UpdateAsync(noteId, n => n.BodyMd = version.BodyMd, ct);
     }
 }

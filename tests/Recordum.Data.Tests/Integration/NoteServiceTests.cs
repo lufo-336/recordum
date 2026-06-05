@@ -232,4 +232,78 @@ public class NoteServiceTests
         counts.Single(c => c.Date == new DateOnly(2026, 6, 5)).Count.Should().Be(1);
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task CreateAsync_with_body_records_first_version()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "v1" });
+
+        var versions = await sut.ListVersionsAsync(id);
+        versions.Should().ContainSingle().Which.BodyMd.Should().Be("v1");
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task CreateAsync_with_empty_body_records_no_version()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "" });
+
+        (await sut.ListVersionsAsync(id)).Should().BeEmpty();
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_records_version_only_when_body_changes()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var clock = (FakeClock)fx.Clock;
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "v1" });
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await sut.UpdateAsync(id, n => n.BodyMd = "v2");            // body changed -> +1
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await sut.UpdateAsync(id, n => n.TargetDate = new DateOnly(2026, 6, 5)); // no body change -> +0
+
+        var versions = await sut.ListVersionsAsync(id);
+        versions.Select(v => v.BodyMd).Should().Equal("v2", "v1"); // newest first
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task RestoreVersionAsync_sets_body_and_appends_new_version()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var clock = (FakeClock)fx.Clock;
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "v1" });
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await sut.UpdateAsync(id, n => n.BodyMd = "v2");
+
+        var v1 = (await sut.ListVersionsAsync(id)).Single(v => v.BodyMd == "v1");
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await sut.RestoreVersionAsync(id, v1.Id);
+
+        (await sut.GetAsync(id))!.BodyMd.Should().Be("v1");           // body reverted
+        var versions = await sut.ListVersionsAsync(id);
+        versions.Select(v => v.BodyMd).Should().Equal("v1", "v2", "v1"); // restore appended, nothing lost
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_removes_note_versions()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "v1" });
+
+        await sut.DeleteAsync(id);
+
+        (await sut.ListVersionsAsync(id)).Should().BeEmpty();
+        await fx.DisposeAsync();
+    }
 }
