@@ -234,6 +234,23 @@ public class NoteServiceTests
     }
 
     [Fact]
+    public async Task ListByHabitAsync_orders_by_anchor_not_updated_time()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var clock = (FakeClock)fx.Clock;
+        var sut = NewService(fx, out _);
+        // older anchor day, but edited most recently
+        var older = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "older", TargetDate = new DateOnly(2026, 6, 1) });
+        var newer = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "newer", TargetDate = new DateOnly(2026, 6, 3) });
+        clock.Advance(TimeSpan.FromHours(1));
+        await sut.UpdateAsync(older, n => n.BodyMd = "older-edited"); // bumps UpdatedAtMs of the older-day note
+
+        var list = await sut.ListByHabitAsync(habitId);
+        list.Select(n => n.Id).Should().Equal(newer, older); // anchored by TargetDate, not by edit time
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task CreateAsync_with_body_records_first_version()
     {
         var (fx, habitId) = await SeedHabitAsync();

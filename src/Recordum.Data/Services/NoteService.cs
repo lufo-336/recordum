@@ -83,10 +83,15 @@ public sealed partial class NoteService(
     public async ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Notes.AsNoTracking()
+        var notes = await db.Notes.AsNoTracking()
             .Where(n => n.HabitNodeId == habitNodeId)
-            .OrderByDescending(n => n.UpdatedAtMs)
             .ToListAsync(ct);
+        // Stable anchor: assigned calendar day, else creation day. Client-side to avoid
+        // translating the DateOnly null-coalesce into SQLite (note sets per habit are small).
+        return notes
+            .OrderByDescending(n => n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt))
+            .ThenByDescending(n => n.UpdatedAtMs)
+            .ToList();
     }
 
     public async ValueTask<IReadOnlyList<Note>> ListByHabitAndDateAsync(Guid habitNodeId, DateOnly targetDate, CancellationToken ct = default)
