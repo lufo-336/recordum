@@ -155,6 +155,18 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 ---
 
+## Stato al 2026-06-05
+
+**Sessione debugging B1 → fix + due bug di layout emersi dal primo uso reale dell'app, + brainstorm feature cronologia note.**
+
+- **B1 → `fixed` + verified-fixed** (commit `64dfa31`): editor markdown — feedback-loop infinito (~93k change events) modificando una nota esistente. Root cause confermata con instrumentation del bridge JS↔.NET (poi rimossa): `setMarkdown()` di Toast UI emette più change sincroni, il one-shot `suppressNext` ne soppeva uno solo, il secondo rientrava dal two-way binding e la normalizzazione markdown impediva la convergenza dei guard → loop. Fix: flag a scope sincrono `applyingRemote` (sopprime tutti i change durante `setMarkdown`) + guard double-init `WebMessageReceived`. Dettaglio nella voce B1 sotto. **Metodo**: systematic-debugging — isolato il fault confrontando DayNote (TextBox semplice, funziona) vs Notes (editor WebView2, rotto), poi instrumentation ai confini dei componenti.
+- **B-layout-window → `fixed` + verified** (commit `f265ad9`): la finestra apriva a 1280×760 (>work area 1280×672 su questo display) → nav alto e bottoni/status bar in basso fuori schermo. `FitToScreen()` clampa Width/Height alla work area + rilassa i minimi. Helper puro `ClampToWorkArea` unit-tested (3 casi). Schermo utente: 1280×720, DPI 96.
+- **B-layout-scroll → `fixed` + verified** (commit `147b2f8`): la tab **Abitudine** non era scrollabile (a differenza di Dettaglio) → calendario+quickadd+timer+nota-del-giorno+registrazioni eccedevano l'altezza, editor "Nota del giorno" e Salva tagliati sotto. Avvolta in `ScrollViewer`. (Richiesta utente: scroll verticale + più compatto — scroll fatto; compattezza calendario rimandata, cella già 34px.)
+- Suite **WPF 388** verdi (+3 layout), build 0/0. Working tree pulito.
+- **Feature richiesta in verifica B1**: "la nota resta ancorata al suo giorno + cronologia modifiche con ripristino". Brainstorm completo → spec `docs/superpowers/specs/2026-06-05-note-version-history-design.md` (commit `2a93832`). Schema **v2.9** (`note_history`, mirror `HabitConfigHistory`). **Prossimo**: piano di implementazione.
+
+---
+
 ## Aperti — bloccanti
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
@@ -171,7 +183,13 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 - **Priorità**: alta — un builder che genera abitudini non pienamente registrabili è peggio di nessun builder. Bloccante per dichiarare Spec 1 "verified".
 
 ### B1. Save note non funzionante
-- **Stato**: `reported` (2026-05-29 utente)
+- **Stato**: `fixed` (2026-06-05, commit `64dfa31`) — **verifica visiva utente: ✓** (editing nota esistente ora funziona, niente più lampeggio).
+- **Root cause (confermata via instrumentation del bridge)**: feedback-loop infinito (~93k change events) modificando una nota **esistente**. Toast UI `setMarkdown()` emette **più** change events sincroni; il flag one-shot `suppressNext` ne sopprimeva solo uno, il secondo rientrava dal two-way binding, e poiché `getMarkdown()` normalizza il markdown i guard di idempotenza non convergevano mai → loop ("lampeggia", CPU al massimo, Save inutilizzabile). NB: NON era un problema di Save/IsDirty (`canSave=True` per tutto il loop), né l'ipotesi originale (a)/(c). Le note **nuove** (testo plain) non innescavano il loop perché round-trippano senza normalizzazione.
+- **Fix**: sopprimere TUTTI i change emessi durante `setMarkdown()` con un flag a scope sincrono (`applyingRemote`) invece del one-shot. + guard su `TryInitAsync` (era doppio-sottoscritto `WebMessageReceived`: Loaded + OnAvailabilityChanged in race prima dell'init → ogni messaggio gestito due volte). Strumentazione temporanea rimossa post-conferma.
+- **Storico ipotesi (per memoria)**: il sintomo originale 2026-05-29 era conflato con R1 theming + falso negativo WebView2; il vero bug del save era latente e si manifestava solo sull'editing di note con markdown reale.
+
+<details><summary>Sintomo originale (storico)</summary>
+
 - **Sintomo**: dopo modifica di una nota nella tab Notes (o nel Journal QuickAdd), il bottone Save non persiste o resta disabilitato.
 - **Ipotesi root cause**:
   - (a) Toast UI WYSIWYG non emette `'change'` → `MarkdownProperty` (TwoWay) non si aggiorna → `EditorMarkdown` resta uguale a `BodyMd` → `IsDirty` = false → Save disabilitato.
@@ -181,6 +199,8 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
   - Il bottone Save è cliccabile (Enabled) quando digiti, o resta grigio?
   - Hai WebView2 Runtime installato? Banner "WebView2 not available" visibile sopra HabitScreen?
   - Riavviando l'app la nota persiste o sparisce?
+
+</details>
 
 ### B2. Costumizzazione note "non funziona particolarmente bene"
 - **Stato**: `reported` (2026-05-29 utente)
