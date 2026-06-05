@@ -10,6 +10,8 @@ public sealed class FakeNoteService : INoteService
     public List<Guid> DeleteCalls { get; } = [];
     public List<(Guid Id, Action<Note> Mutator)> UpdateCalls { get; } = [];
     public Exception? NextException { get; set; }
+    public Dictionary<Guid, List<NoteVersion>> Versions { get; } = new();
+    public List<(Guid NoteId, Guid VersionId)> RestoreCalls { get; } = [];
 
     public ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default)
     {
@@ -83,13 +85,22 @@ public sealed class FakeNoteService : INoteService
     public ValueTask<IReadOnlyList<NoteVersion>> ListVersionsAsync(Guid noteId, CancellationToken ct = default)
     {
         Throw();
-        IReadOnlyList<NoteVersion> r = [];
+        IReadOnlyList<NoteVersion> r = Versions.TryGetValue(noteId, out var v)
+            ? v.OrderByDescending(x => x.CreatedAt).ToList()
+            : [];
         return new(r);
     }
 
     public ValueTask RestoreVersionAsync(Guid noteId, Guid versionId, CancellationToken ct = default)
     {
         Throw();
+        RestoreCalls.Add((noteId, versionId));
+        if (Versions.TryGetValue(noteId, out var v)
+            && v.FirstOrDefault(x => x.Id == versionId) is { } ver
+            && Store.TryGetValue(noteId, out var n))
+        {
+            n.BodyMd = ver.BodyMd;
+        }
         return ValueTask.CompletedTask;
     }
 
