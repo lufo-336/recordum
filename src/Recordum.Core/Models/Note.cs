@@ -13,4 +13,5 @@ public sealed class Note
 
     public HabitNode HabitNode { get; set; } = null!;
     public List<Attachment> Attachments { get; set; } = [];
+    public List<NoteHistory> History { get; set; } = [];
 }
