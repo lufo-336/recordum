@@ -14,12 +14,18 @@
     ]
   });
 
-  let suppressNext = false;
+  // Suppress ALL change events emitted while we are applying remote content.
+  // Toast UI's setMarkdown() fires multiple change events synchronously (one with
+  // the old doc, one with the new); a one-shot flag leaked the trailing event back
+  // through the two-way binding, and because getMarkdown() normalises markdown
+  // (its output never byte-equals the input) the idempotency guards never converged
+  // -> infinite feedback loop. Scoping the flag to the setMarkdown() call swallows
+  // every event it emits, regardless of count, while leaving genuine edits to flow.
+  let applyingRemote = false;
 
   editor.on('change', () => {
-    if (suppressNext) { suppressNext = false; return; }
-    const md = editor.getMarkdown();
-    window.chrome.webview.postMessage({ type: 'change', md: md });
+    if (applyingRemote) return;
+    window.chrome.webview.postMessage({ type: 'change', md: editor.getMarkdown() });
   });
 
   window.chrome.webview.addEventListener('message', (event) => {
@@ -27,9 +33,10 @@
     if (!data || typeof data !== 'object') return;
     switch (data.type) {
       case 'setContent':
-        if (editor.getMarkdown() !== data.md) {
-          suppressNext = true;
-          editor.setMarkdown(data.md || '');
+        if (editor.getMarkdown() !== (data.md || '')) {
+          applyingRemote = true;
+          try { editor.setMarkdown(data.md || ''); }
+          finally { applyingRemote = false; }
         }
         break;
       case 'setReadOnly': {

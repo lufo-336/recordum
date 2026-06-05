@@ -11,6 +11,7 @@ public partial class MarkdownEditorControl : UserControl
 {
     private bool _bridgeReady;
     private bool _isDisposed;
+    private bool _initStarted;
 
     public static readonly DependencyProperty MarkdownProperty =
         DependencyProperty.Register(nameof(Markdown), typeof(string), typeof(MarkdownEditorControl),
@@ -71,7 +72,11 @@ public partial class MarkdownEditorControl : UserControl
             ActivateFallback();
             return;
         }
-        if (WebView.CoreWebView2 is not null) return; // already inited
+        // Both Loaded and OnAvailabilityChanged call this; the async EnsureCoreWebView2Async
+        // below means a second concurrent call would pass the CoreWebView2 null-check and
+        // double-subscribe WebMessageReceived (every bridge message handled twice). Guard once.
+        if (_initStarted || WebView.CoreWebView2 is not null) return;
+        _initStarted = true;
 
         await WebView.EnsureCoreWebView2Async(Availability.Environment).ConfigureAwait(true);
         var core = WebView.CoreWebView2!;
