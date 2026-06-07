@@ -5,7 +5,10 @@ using Recordum.Core.Backup;
 
 namespace Recordum.WPF.Bootstrap;
 
-public sealed class BackupSchedulerHost(IServiceScopeFactory scopes, ILogger<BackupSchedulerHost> log) : IDisposable
+public sealed class BackupSchedulerHost(
+    IServiceScopeFactory scopes,
+    ILogger<BackupSchedulerHost> log,
+    BackupSchedulerOptions options) : IDisposable
 {
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _cts;
@@ -16,18 +19,24 @@ public sealed class BackupSchedulerHost(IServiceScopeFactory scopes, ILogger<Bac
         if (_loop is not null) return; // idempotent — already started
         CleanupOrphanTempDirs();
         _cts = new CancellationTokenSource();
-        _timer = new PeriodicTimer(TimeSpan.FromMinutes(60));
         _loop = Task.Run(() => LoopAsync(_cts.Token));
     }
 
     private async Task LoopAsync(CancellationToken ct)
     {
-        // Wait one interval before the first tick so we don't race with app startup
-        // DB activity (e.g. seeded plugin activators, first-run home tree). The
-        // scheduler is a "set and forget" feature; missing the first 60-min window
-        // post-launch is fine.
-        while (await _timer!.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        try
+        {
+            // Short initial delay so we don't race app-startup DB activity (seeded plugin
+            // activators, first-run home tree), but a backup due at launch still runs minutes
+            // later rather than after a full poll interval.
+            await Task.Delay(options.InitialDelay, ct).ConfigureAwait(false);
             await TickAsync(ct).ConfigureAwait(false);
+
+            _timer = new PeriodicTimer(options.Interval);
+            while (await _timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+                await TickAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { } // shutdown
     }
 
     private async Task TickAsync(CancellationToken ct)
