@@ -85,6 +85,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         BackupHistory = backupHistory;
         _diagnosticLauncher = diagnosticLauncher;
         Home.PropertyChanged += OnHomePropertyChanged;
+        Home.HabitActivationRequested += OnHabitActivationRequested;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
         HabitScreen.ExportRequested += OnHabitScreenExportRequested;
     }
@@ -170,6 +171,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (Home.SelectedRow is null)
             await Editor.LoadAsync(null).ConfigureAwait(true);
     }
+
+    // "+" on a habit whose row is already selected: SelectedRow won't change, so reload
+    // the workspace explicitly to bring the QuickAdd panel forward.
+    private async void OnHabitActivationRequested(object? sender, Guid habitNodeId)
+        => await HabitScreen.LoadAsync(habitNodeId).ConfigureAwait(true);
 
     private async void OnHabitScreenConfigureRequested(object? sender, EventArgs e)
     {

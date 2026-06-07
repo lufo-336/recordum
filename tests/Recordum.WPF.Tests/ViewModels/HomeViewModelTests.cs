@@ -416,6 +416,42 @@ public class HomeViewModelTests
         sut.SelectedRow.Should().BeSameAs(row);
     }
 
+    [Fact]
+    public async Task QuickAction_on_already_selected_row_raises_activation()
+    {
+        _query.HomeRows.Add(SampleRow(name: "mood", type: HabitType.State));
+        var selector = new QuickActionHandlerSelector(
+            new IQuickActionHandler[] { new StubQuickActionHandler(HabitType.State, recorded: false) });
+        var sut = new HomeViewModel(_query, _nodes, _purge, quickActions: selector);
+        await sut.LoadCommand.ExecuteAsync(null);
+        var row = sut.Rows.Single();
+        sut.SelectedRow = row; // already viewing this habit
+        var activated = new List<Guid>();
+        sut.HabitActivationRequested += (_, id) => activated.Add(id);
+
+        await row.QuickActionCommand.ExecuteAsync(null);
+
+        activated.Should().ContainSingle().Which.Should().Be(row.HabitNodeId);
+    }
+
+    [Fact]
+    public async Task QuickAction_focus_on_unselected_row_does_not_raise_activation()
+    {
+        _query.HomeRows.Add(SampleRow(name: "mood", type: HabitType.State));
+        var selector = new QuickActionHandlerSelector(
+            new IQuickActionHandler[] { new StubQuickActionHandler(HabitType.State, recorded: false) });
+        var sut = new HomeViewModel(_query, _nodes, _purge, quickActions: selector);
+        await sut.LoadCommand.ExecuteAsync(null);
+        var row = sut.Rows.Single();
+        var activated = new List<Guid>();
+        sut.HabitActivationRequested += (_, id) => activated.Add(id);
+
+        await row.QuickActionCommand.ExecuteAsync(null);
+
+        sut.SelectedRow.Should().BeSameAs(row); // selection change drives the open
+        activated.Should().BeEmpty();
+    }
+
     private sealed class StubQuickActionHandler(HabitType type, bool recorded) : IQuickActionHandler
     {
         public HabitType HabitType { get; } = type;

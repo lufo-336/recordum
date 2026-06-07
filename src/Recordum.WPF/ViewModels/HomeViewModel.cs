@@ -156,13 +156,22 @@ public sealed partial class HomeViewModel : ObservableObject
     // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
     private async void OnRowChanged(object? sender, EventArgs e) => await ReloadPreservingSelectionAsync();
 
+    /// <summary>Raised when the user requests recording on a habit whose row is already selected.
+    /// Setting <see cref="SelectedRow"/> would be a no-op, so the host must (re)open the workspace
+    /// explicitly. Carries the habit node id to open.</summary>
+    public event EventHandler<Guid>? HabitActivationRequested;
+
     private void OnRowQuickActionExecuted(object? sender, QuickActionExecutedEventArgs e)
     {
         // recorded == true: the completion fires a bus event that refreshes the list
         // (see OnCompletionEvent) — nothing to do here.
         // recorded == false: one-click recording doesn't apply (State/Resistance/Journal),
         // so open the detail and let the user record the value via the QuickAdd panel.
-        if (!e.Recorded && sender is HomeRowViewModel row)
+        if (e.Recorded || sender is not HomeRowViewModel row) return;
+        if (SelectedRow == row)
+            // already selected → the SelectedRow setter won't notify; ask the host to (re)open.
+            HabitActivationRequested?.Invoke(this, row.HabitNodeId);
+        else
             SelectedRow = row;
     }
 
