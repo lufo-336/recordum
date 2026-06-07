@@ -30,7 +30,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public bool HasNode => Node is not null;
     public string Name => Node?.Name ?? string.Empty;
 
-    public HeatmapViewModel Heatmap { get; }
     public CompletionListViewModel CompletionList { get; }
 
     /// <summary>Completions recorded on the calendar-selected day, with readable field values (B12).
@@ -85,7 +84,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _configs = configs;
         _clock = clock;
         Availability = availability;
-        Heatmap = new HeatmapViewModel(completions, clock, ramp, goals, configs);
         CompletionList = new CompletionListViewModel(completions, metrics, refData);
         DayCompletions = new CompletionListViewModel(completions, metrics, refData);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
@@ -94,7 +92,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMonthMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
-        Heatmap.DateClicked += OnHeatmapDateClicked;
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
@@ -106,7 +103,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Calendar.SelectedDateChanged -= OnCalendarDateSelected;
-        Heatmap.DateClicked -= OnHeatmapDateClicked;
         Notes.Dispose();
         Detail.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
@@ -131,12 +127,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         // Config is needed for both QuickAdd and TimerControl; fetch once, share.
         var configTask = _configs.GetAsync(Node.Id, ct).AsTask();
-        var heatmapTask = Heatmap.LoadAsync(Node.Id, ct);
         var listTask = CompletionList.LoadAsync(Node.Id, ct);
         var quickAddTask = BuildQuickAddAsync(Node, ct);
         var notesTask = Notes.LoadAsync(Node.Id, ct);
         var detailTask = Detail.LoadAsync(Node, ct);
-        await Task.WhenAll(configTask, heatmapTask, listTask, quickAddTask, notesTask, detailTask).ConfigureAwait(true);
+        await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask).ConfigureAwait(true);
 
         Calendar.CompletedColorHex = Node.Color;
         Calendar.NoteColorHex = configTask.Result?.NoteMarkerColor ?? "#e0b341";
@@ -194,7 +189,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             ? DayCompletions.LoadDayAsync(Node.Id, sel)
             : Task.CompletedTask;
         await Task.WhenAll(
-            Heatmap.LoadAsync(Node.Id),
             CompletionList.LoadAsync(Node.Id),
             dayReload,
             Calendar.JumpAsync())
@@ -213,12 +207,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         };
         if (habitId != Node.Id) return;
         await Calendar.JumpAsync().ConfigureAwait(true);
-    }
-
-    private void OnHeatmapDateClicked(object? sender, DateOnly date)
-    {
-        if (QuickAdd is null) return;
-        QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
     }
 
     private async Task<CalendarMonthMarkers> LoadMonthMarkersAsync(int year, int month, CancellationToken ct)
