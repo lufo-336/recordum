@@ -527,6 +527,9 @@ Details: {0}</value>
   <data name="Editor.WebView2.NotAvailable.Body" xml:space="preserve">
     <value>WebView2 Runtime is required for the markdown editor. The plain text fallback is active.</value>
   </data>
+  <data name="Editor.WebView2.NotAvailable.Download" xml:space="preserve">
+    <value>Download the WebView2 Runtime</value>
+  </data>
   <data name="HabitScreen.Tab.Detail" xml:space="preserve">
     <value>Detail</value>
   </data>

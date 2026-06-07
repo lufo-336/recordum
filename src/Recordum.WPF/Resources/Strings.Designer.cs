@@ -65,6 +65,7 @@ public static class Strings
     // Editor / WebView2
     public static string Editor_WebView2_NotAvailable_Title => Get("Editor.WebView2.NotAvailable.Title");
     public static string Editor_WebView2_NotAvailable_Body => Get("Editor.WebView2.NotAvailable.Body");
+    public static string Editor_WebView2_NotAvailable_Download => Get("Editor.WebView2.NotAvailable.Download");
 
     public static string AppTitle => Get(nameof(AppTitle));
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));

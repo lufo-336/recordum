@@ -513,9 +513,17 @@
                 BorderThickness="0,0,0,1"
                 BorderBrush="{DynamicResource Brush.Border}"
                 Visibility="{Binding Availability.IsAvailable, Converter={StaticResource InvBoolToVisible}}">
-            <TextBlock Text="{x:Static res:Strings.Editor_WebView2_NotAvailable_Body}"
-                       Foreground="{DynamicResource Brush.TextMuted}"
-                       TextWrapping="Wrap"/>
+            <StackPanel>
+                <TextBlock Text="{x:Static res:Strings.Editor_WebView2_NotAvailable_Body}"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           TextWrapping="Wrap"/>
+                <TextBlock Margin="0,4,0,0" TextWrapping="Wrap">
+                    <Hyperlink NavigateUri="https://developer.microsoft.com/microsoft-edge/webview2/"
+                               RequestNavigate="OnWebView2DownloadNavigate">
+                        <Run Text="{x:Static res:Strings.Editor_WebView2_NotAvailable_Download}"/>
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
         </Border>
         <TabControl Grid.Row="2"
                     Background="Transparent"
