@@ -509,6 +509,9 @@ Details: {0}</value>
   <data name="Notes_ModifiedAt" xml:space="preserve">
     <value>Modified {0}</value>
   </data>
+  <data name="Notes.History.Current" xml:space="preserve">
+    <value>current</value>
+  </data>
   <data name="Editor.WebView2.NotAvailable.Title" xml:space="preserve">
     <value>Editor not available</value>
   </data>

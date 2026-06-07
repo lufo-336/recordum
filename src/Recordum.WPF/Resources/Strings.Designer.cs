@@ -57,6 +57,7 @@ public static class Strings
     public static string Notes_Untitled => Get("Notes.Untitled");
     public static string Notes_Badge_General => Get("Notes.Badge.General");
     public static string Notes_ModifiedAt => Get("Notes_ModifiedAt");
+    public static string Notes_History_Current => Get("Notes.History.Current");
 
     // Editor / WebView2
     public static string Editor_WebView2_NotAvailable_Title => Get("Editor.WebView2.NotAvailable.Title");
