@@ -173,6 +173,20 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 ---
 
+## Stato al 2026-06-08
+
+**Blocco limature autorizzato** (utente: "facciamo prima le limature poi verifico"). 5 item chiusi, TDD dove tocca logica. Suite **WPF 388** verdi, build 0/0. Data/Core invariati.
+
+- **R-statePlus → `fixed`** (commit `fix(wpf): R-statePlus`): il "+" su un'abitudine State/Resistance/Journal **già selezionata** non faceva nulla. Root cause: l'handler `OnRowQuickActionExecuted` fa solo `SelectedRow = row`; se la riga è già quella selezionata il setter `[ObservableProperty]` è un no-op → nessun `PropertyChanged` → `MainWindowViewModel` non ricarica la workspace. Fix: nuovo evento `HomeViewModel.HabitActivationRequested` alzato quando la riga è già selezionata; `MainWindowViewModel` lo gestisce ricaricando `HabitScreen.LoadAsync`. 2 test (già-selezionata→evento; non-selezionata→cambio selezione, niente evento). **Stessa classe** di B11-launch/B13: stato non propagato perché il "lavoro" è legato a un cambiamento che non avviene. **Verifica visiva: da fare.**
+- **R2 → `fixed`** (commit `feat(wpf): R2`): il banner "WebView2 non disponibile" nell'editor ora ha un **link di download** del Runtime (Hyperlink → `developer.microsoft.com/microsoft-edge/webview2/`, aperto con `Process.Start(UseShellExecute)` nel code-behind di `HabitScreen.xaml.cs`). Nuova stringa `Editor.WebView2.NotAvailable.Download` (EN+IT). **Verifica visiva: da fare** (solo su macchine senza WebView2 Runtime).
+- **R-heatmapDead → `fixed`** (commit `refactor(wpf): R-heatmapDead`): rimosso `HeatmapViewModel` (classe + test + `DataTemplate`) — era costruito/caricato/sottoscritto in `HabitScreenViewModel` ma **non più renderizzato** da quando `CalendarNavigator` (cell-markers) l'ha sostituito nella prima tab. La year-heatmap del Dettaglio è `YearHeatmapViewModel`, separata, intatta. Ctor `HabitScreenViewModel` invariato (`ramp`/`goals` ancora usati da `Detail`). 3 test che asserivano su `Heatmap.Cells` ri-mirati su `CompletionList.Rows` (stesso reload-on-event). Invisibile.
+- **R-fakeWebView2-dup → `fixed`** (commit `test(wpf): R-fakeWebView2-dup`): estratta fixture condivisa `FakeWebView2Availability(bool available = true)` in `tests/.../Fixtures/`; rimosse 6 copie locali (con varianti `MainWindowFakeWebView2Availability`, `FakeWebView2AvailabilityDiag` per il caso `false`). Lasciata `FakeAvailability` in `MarkdownEditorControlTests` (nome diverso, fuori scope dichiarato). Solo test.
+- **R4 → `fixed`** (commit `feat(wpf): R4`): `BackupSchedulerHost` aveva interval hardcoded `FromMinutes(60)` e aspettava **un intero intervallo** prima del primo tick → un backup dovuto al lancio attendeva fino a 60 min. Nuovo `BackupSchedulerOptions` (singleton, `InitialDelay`=2min default + `Interval`=30min default); il loop ora fa `Task.Delay(InitialDelay)` → primo `TickAsync` → poi `PeriodicTimer(Interval)`. Così il primo run è reattivo ma si evita ancora il race con lo startup DB. 2 test (primo tick dopo InitialDelay con timing piccolo; idempotenza). Infra, non visibile.
+
+**Limature NON fatte** (richiedono design/brainstorm, non sono limature): R-builderColorPicker, R-builderIconPicker, R-builderCustomUnit/CustomScale, R-daySummaryUnits, R-summaryGlyphs (icone Lucide), B6b template custom, Spec 2 timer Session.
+
+---
+
 ## Aperti — bloccanti
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
