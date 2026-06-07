@@ -250,7 +250,7 @@ public class MainWindowViewModelTests
             nodes, completions, ats, metrics, new FakeReferenceData(), configs, new FakeNoteService(),
             goals, new Recordum.Core.Services.IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            clock, new FakeEventBus(), new MainWindowFakeWebView2Availability());
+            clock, new FakeEventBus(), new FakeWebView2Availability());
         var charts = new Recordum.WPF.ViewModels.Charts.ChartsWorkspaceViewModel(
             new FakeChartService(), new FakeChartQueryService(),
             new Recordum.Plugins.ExtensionPoints.ExtensionPointRegistry(),
@@ -271,13 +271,6 @@ public class MainWindowViewModelTests
         HabitEditorViewModel Editor,
         FakeAppSettingService AppSettings,
         FakeExportDialogLauncher ExportLauncher);
-
-    private sealed class MainWindowFakeWebView2Availability : IWebView2Availability
-    {
-        public bool IsAvailable => true;
-        public CoreWebView2Environment? Environment => null;
-        public Task ProbeAsync() => Task.CompletedTask;
-    }
 
     private sealed class FakeDiagnosticInfoLauncher : IDiagnosticInfoLauncher
     {

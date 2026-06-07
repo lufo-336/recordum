@@ -22,7 +22,7 @@ public class DiagnosticInfoViewModelTests
     private static DiagnosticInfoViewModel BuildVm(
         FakeAppSettingService? settings = null,
         FakeThemeService? theme = null,
-        FakeWebView2AvailabilityDiag? webView2 = null,
+        FakeWebView2Availability? webView2 = null,
         FakeBackupStoragePaths? storagePaths = null,
         FakeBackupLogService? backupLog = null,
         FakePluginManagerDiag? pluginManager = null,
@@ -30,7 +30,7 @@ public class DiagnosticInfoViewModelTests
     {
         settings ??= new FakeAppSettingService();
         theme ??= new FakeThemeService();
-        webView2 ??= new FakeWebView2AvailabilityDiag();
+        webView2 ??= new FakeWebView2Availability(available: false);
         storagePaths ??= new FakeBackupStoragePaths();
         backupLog ??= new FakeBackupLogService();
         pluginManager ??= new FakePluginManagerDiag();
@@ -144,13 +144,6 @@ public class DiagnosticInfoViewModelTests
     };
 
     // ---- fakes ----
-
-    private sealed class FakeWebView2AvailabilityDiag : IWebView2Availability
-    {
-        public bool IsAvailable => false;
-        public Microsoft.Web.WebView2.Core.CoreWebView2Environment? Environment => null;
-        public Task ProbeAsync() => Task.CompletedTask;
-    }
 
     private sealed class FakeBackupStoragePaths : IBackupStoragePaths
     {

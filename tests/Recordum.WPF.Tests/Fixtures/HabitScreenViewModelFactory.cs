@@ -7,12 +7,6 @@ namespace Recordum.WPF.Tests.Fixtures;
 
 public static class HabitScreenViewModelFactory
 {
-    private sealed class FakeWebView2Availability : IWebView2Availability
-    {
-        public bool IsAvailable => true;
-        public CoreWebView2Environment? Environment => null;
-        public Task ProbeAsync() => Task.CompletedTask;
-    }
 
     public static (HabitScreenViewModel Vm, FakeHabitNodeService Nodes) Create()
     {

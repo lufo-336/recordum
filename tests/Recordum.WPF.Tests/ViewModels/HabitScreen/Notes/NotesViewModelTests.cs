@@ -10,13 +10,6 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Notes;
 
 public class NotesViewModelTests
 {
-    private sealed class FakeWebView2Availability(bool available) : IWebView2Availability
-    {
-        public bool IsAvailable { get; } = available;
-        public CoreWebView2Environment? Environment => null;
-        public Task ProbeAsync() => Task.CompletedTask;
-    }
-
     private static NotesViewModel CreateSut(out FakeNoteService notes, out FakeEventBus bus, out FakeClock clock)
     {
         notes = new FakeNoteService();

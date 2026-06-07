@@ -54,13 +54,6 @@ public static class MainWindowViewModelFactory
         return new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeDiagnosticInfoLauncher());
     }
 
-    private sealed class FakeWebView2Availability : IWebView2Availability
-    {
-        public bool IsAvailable => true;
-        public CoreWebView2Environment? Environment => null;
-        public Task ProbeAsync() => Task.CompletedTask;
-    }
-
     private sealed class FakeDiagnosticInfoLauncher : IDiagnosticInfoLauncher
     {
         public Task ShowAsync() => Task.CompletedTask;

@@ -14,12 +14,6 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
 public class HabitScreenViewModelTests
 {
-    private sealed class FakeWebView2Availability(bool available) : IWebView2Availability
-    {
-        public bool IsAvailable { get; } = available;
-        public CoreWebView2Environment? Environment => null;
-        public Task ProbeAsync() => Task.CompletedTask;
-    }
 
     private static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
