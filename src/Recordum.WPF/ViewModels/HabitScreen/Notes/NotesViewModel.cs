@@ -22,8 +22,11 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     [ObservableProperty] private NoteRowViewModel? _selectedNote;
     [ObservableProperty] private string _editorMarkdown = string.Empty;
     [ObservableProperty] private bool _isConfirmingDelete;
+    [ObservableProperty] private bool _isShowingHistory;
 
     public IWebView2Availability Availability { get; }
+
+    public NoteHistoryViewModel History { get; }
 
     public NotesViewModel(INoteService notes, IEventBus events, IClock clock, IWebView2Availability availability)
     {
@@ -34,6 +37,8 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         _notes = notes;
         _clock = clock;
         Availability = availability;
+        History = new NoteHistoryViewModel(notes);
+        History.Restored += (_, _) => IsShowingHistory = false;
         _subs.Add(events.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
         _subs.Add(events.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
         _subs.Add(events.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
@@ -104,6 +109,18 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsDirty));
         SaveCommand.NotifyCanExecuteChanged();
     }
+
+    [RelayCommand]
+    private async Task ShowHistory(NoteRowViewModel? row, CancellationToken ct)
+    {
+        if (row is null) return;
+        SelectedNote = row;
+        await History.LoadAsync(row.Id, ct).ConfigureAwait(true);
+        IsShowingHistory = true;
+    }
+
+    [RelayCommand]
+    private void HideHistory() => IsShowingHistory = false;
 
     [RelayCommand]
     private void RequestDelete() => IsConfirmingDelete = true;

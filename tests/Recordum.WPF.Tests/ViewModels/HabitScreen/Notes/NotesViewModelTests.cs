@@ -240,4 +240,58 @@ public class NotesViewModelTests
         sut.EditorMarkdown = "y";
         sut.SaveCommand.CanExecute(null).Should().BeTrue();
     }
+
+    [Fact]
+    public async Task ShowHistoryCommand_loads_versions_and_enters_history()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "v2", UpdatedAtMs = 5 };
+        svc.Store[note.Id] = note;
+        svc.Versions[note.Id] =
+        [
+            new Recordum.Core.Abstractions.Services.Dtos.NoteVersion(Guid.NewGuid(), "v2", new DateTime(2026, 6, 2, 9, 0, 0, DateTimeKind.Utc)),
+        ];
+        await sut.LoadAsync(habitId);
+        var row = sut.Notes.Single();
+
+        await sut.ShowHistoryCommand.ExecuteAsync(row);
+
+        sut.IsShowingHistory.Should().BeTrue();
+        sut.SelectedNote.Should().Be(row);
+        sut.History.Versions.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task History_restore_leaves_history_panel()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "v2", UpdatedAtMs = 5 };
+        svc.Store[note.Id] = note;
+        svc.Versions[note.Id] = [ new Recordum.Core.Abstractions.Services.Dtos.NoteVersion(Guid.NewGuid(), "v1", new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc)) ];
+        await sut.LoadAsync(habitId);
+        await sut.ShowHistoryCommand.ExecuteAsync(sut.Notes.Single());
+
+        sut.History.SelectedVersion = sut.History.Versions[0];
+        await sut.History.RestoreCommand.ExecuteAsync(null);
+
+        sut.IsShowingHistory.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HideHistoryCommand_returns_to_editor()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "x", UpdatedAtMs = 1 };
+        svc.Store[note.Id] = note;
+        svc.Versions[note.Id] = [];
+        await sut.LoadAsync(habitId);
+        await sut.ShowHistoryCommand.ExecuteAsync(sut.Notes.Single());
+
+        sut.HideHistoryCommand.Execute(null);
+
+        sut.IsShowingHistory.Should().BeFalse();
+    }
 }
