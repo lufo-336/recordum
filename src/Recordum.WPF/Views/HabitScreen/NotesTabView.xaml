@@ -21,17 +21,28 @@
                      BorderThickness="0">
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:NoteRowViewModel}">
-                        <StackPanel Margin="0,4">
+                        <StackPanel Margin="0,4"
+                                    Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                            <StackPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{x:Static res:Strings.Notes_History}"
+                                              Command="{Binding PlacementTarget.Tag.ShowHistoryCommand,
+                                                        RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                              CommandParameter="{Binding PlacementTarget.DataContext,
+                                                                 RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                </ContextMenu>
+                            </StackPanel.ContextMenu>
                             <Border HorizontalAlignment="Left" Margin="0,0,0,2"
                                     Padding="5,1" CornerRadius="3"
                                     Background="{DynamicResource Brush.SurfaceElevated}">
-                                <TextBlock Text="{Binding DateBadge}"
+                                <TextBlock Text="{Binding AnchorDateDisplay}"
                                            FontSize="{StaticResource FontSize.Small}"
                                            Foreground="{DynamicResource Brush.TextMuted}"/>
                             </Border>
-                            <TextBlock Text="{Binding UpdatedAtDisplay}"
+                            <TextBlock Text="{Binding ModifiedAtDisplay}"
                                        FontSize="{StaticResource FontSize.Small}"
-                                       Foreground="{DynamicResource Brush.TextMuted}"/>
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       Visibility="{Binding WasModified, Converter={StaticResource BoolToVisible}}"/>
                             <TextBlock Text="{Binding Summary}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </DataTemplate>
@@ -44,37 +55,82 @@
                       Background="{DynamicResource Brush.Border}"/>
 
         <Grid Grid.Column="2" Margin="8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            <!-- Editor (normal state) -->
+            <Grid Visibility="{Binding IsShowingHistory, Converter={StaticResource InvBoolToVisible}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <ctrl:MarkdownEditorControl Grid.Row="0"
-                                        Markdown="{Binding EditorMarkdown, Mode=TwoWay}"
-                                        Availability="{Binding Availability}"/>
+                <ctrl:MarkdownEditorControl Grid.Row="0"
+                                            Markdown="{Binding EditorMarkdown, Mode=TwoWay}"
+                                            Availability="{Binding Availability}"/>
 
-            <DockPanel Grid.Row="1" Margin="0,8,0,0">
-                <Button Content="{x:Static res:Strings.Notes_Save}"
-                        Command="{Binding SaveCommand}"
-                        Padding="10,4" Margin="0,0,6,0"/>
-                <StackPanel Orientation="Horizontal"
-                            Visibility="{Binding IsConfirmingDelete, Converter={StaticResource InvBoolToVisible}}">
-                    <Button Content="{x:Static res:Strings.Notes_Delete}"
-                            Command="{Binding RequestDeleteCommand}"
-                            Padding="10,4"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal"
-                            Visibility="{Binding IsConfirmingDelete, Converter={StaticResource BoolToVisible}}">
-                    <TextBlock Text="{x:Static res:Strings.Notes_ConfirmDelete}"
-                               VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <Button Content="{x:Static res:Strings.Notes_Confirm}"
-                            Command="{Binding ConfirmDeleteCommand}"
-                            Padding="10,4" Margin="0,0,4,0"/>
-                    <Button Content="{x:Static res:Strings.Notes_Cancel}"
-                            Command="{Binding CancelDeleteCommand}"
-                            Padding="10,4"/>
-                </StackPanel>
-            </DockPanel>
+                <DockPanel Grid.Row="1" Margin="0,8,0,0">
+                    <Button Content="{x:Static res:Strings.Notes_Save}"
+                            Command="{Binding SaveCommand}"
+                            Padding="10,4" Margin="0,0,6,0"/>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsConfirmingDelete, Converter={StaticResource InvBoolToVisible}}">
+                        <Button Content="{x:Static res:Strings.Notes_Delete}"
+                                Command="{Binding RequestDeleteCommand}"
+                                Padding="10,4"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsConfirmingDelete, Converter={StaticResource BoolToVisible}}">
+                        <TextBlock Text="{x:Static res:Strings.Notes_ConfirmDelete}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="{x:Static res:Strings.Notes_Confirm}"
+                                Command="{Binding ConfirmDeleteCommand}"
+                                Padding="10,4" Margin="0,0,4,0"/>
+                        <Button Content="{x:Static res:Strings.Notes_Cancel}"
+                                Command="{Binding CancelDeleteCommand}"
+                                Padding="10,4"/>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+
+            <!-- Version history (history state) -->
+            <Grid Visibility="{Binding IsShowingHistory, Converter={StaticResource BoolToVisible}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Button Grid.Row="0"
+                        Content="{x:Static res:Strings.Notes_History_Back}"
+                        Command="{Binding HideHistoryCommand}"
+                        HorizontalAlignment="Left" Padding="8,4" Margin="0,0,0,8"/>
+                <Grid Grid.Row="1" DataContext="{Binding History}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <ListBox Grid.Column="0" BorderThickness="0"
+                             ItemsSource="{Binding Versions}"
+                             SelectedItem="{Binding SelectedVersion, Mode=TwoWay}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:NoteVersionRowViewModel}">
+                                <StackPanel Margin="0,4">
+                                    <TextBlock Text="{Binding TimestampDisplay}"
+                                               FontSize="{StaticResource FontSize.Small}"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                    <TextBlock Text="{Binding Summary}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <DockPanel Grid.Column="1" Margin="8,0,0,0">
+                        <Button DockPanel.Dock="Bottom"
+                                Content="{x:Static res:Strings.Notes_History_Restore}"
+                                Command="{Binding RestoreCommand}"
+                                HorizontalAlignment="Left" Padding="10,4" Margin="0,8,0,0"/>
+                        <ctrl:MarkdownEditorControl IsReadOnly="True"
+                                                    Markdown="{Binding PreviewMarkdown, Mode=OneWay}"
+                                                    Availability="{Binding DataContext.Availability,
+                                                                   RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                    </DockPanel>
+                </Grid>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

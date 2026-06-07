@@ -494,6 +494,15 @@
   <data name="Notes.History.Current" xml:space="preserve">
     <value>corrente</value>
   </data>
+  <data name="Notes.History" xml:space="preserve">
+    <value>Cronologia</value>
+  </data>
+  <data name="Notes.History.Back" xml:space="preserve">
+    <value>‹ Indietro</value>
+  </data>
+  <data name="Notes.History.Restore" xml:space="preserve">
+    <value>Ripristina</value>
+  </data>
   <data name="Editor.WebView2.NotAvailable.Title" xml:space="preserve">
     <value>Editor non disponibile</value>
   </data>
