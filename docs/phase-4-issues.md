@@ -185,6 +185,21 @@ Quando ne incontri uno, copia il template qui sotto in una nuova voce `B<N>` (bl
 
 **Limature NON fatte** (richiedono design/brainstorm, non sono limature): R-builderColorPicker, R-builderIconPicker, R-builderCustomUnit/CustomScale, R-daySummaryUnits, R-summaryGlyphs (icone Lucide), B6b template custom, Spec 2 timer Session.
 
+### Verifica visiva 2026-06-08 (utente) — note-history + limature
+
+Lanciata l'app (skill `run`). Feedback + fix in sessione:
+- **Note version history + limature → `verified-fixed`** (utente: "sembra funzionare tutto"). Cronologia/ripristino/àncora ok, R-statePlus ok.
+- **#1 ordine note (riemerso in verifica) → `fixed`+`verified`** (commit `9f82a59`): l'ordinamento àncora usava `UpdatedAtMs` come tiebreak tra note dello **stesso giorno** → modificarne una la spostava in cima. Tiebreak cambiato a `CreatedAt` (ordine di creazione stabile): l'edit non sposta più la nota. Test `ListByHabitAsync_same_anchor_keeps_creation_order_after_edit`.
+- **#3 freeze transitorio tab Note + "ripristino non faceva niente"** — freeze **non riproducibile** (transitorio, poi recuperava; exit 0). Niente root cause certa; applicati due fix mirati a cause plausibili e comunque reali, poi `verified` dall'utente:
+  - **`bae4f61`**: l'anteprima cronologia era un **secondo `MarkdownEditorControl`** (con WebView2) sempre istanziato nella tab Note e — in fallback — perfino **editabile** (FallbackBox non read-only, scriveva su un binding OneWay). Sostituita con `TextBox` read-only → un solo editor nella tab.
+  - **`54f656e`**: `RestoreVersionAsync` teneva aperti **due context DB sovrapposti** sullo stesso file SQLCipher (possibile `SQLITE_BUSY` in produzione; il `DbFixture` in-memory `:memory:;Cache=Shared` a connessione singola lo mascherava). Ora legge il body in un context e lo dispone **prima** di aprire il context di scrittura.
+- Suite **Data 316 / WPF 388** verdi, build 0/0.
+
+### B14. Journal — editor di completamento vs colonna Note (design)
+- **Stato**: `reported` (2026-06-08) — **deferito per scelta utente** ("pensiamoci dopo al journal").
+- **Sintomo**: in un'abitudine Journal la tab Abitudine mostra sia l'editor journal (QuickAdd) sia il blocco "Nota del giorno"; scrivendo nell'editor e salvando, **niente compare nella colonna Note**.
+- **Non è un bug/regressione**: il Journal registra **`Completion`** con corpo markdown (visibili in Abitudine/Dettaglio), la colonna Note mostra entità **`Note`** — due archivi distinti. Serve una **decisione di design** (es. nascondere DayNote sulle abitudini Journal, o unificare journal-entry↔note). Da brainstorming quando si riprende.
+
 ---
 
 ## Aperti — bloccanti
