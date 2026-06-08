@@ -782,6 +782,21 @@ Details: {0}</value>
   <data name="Backup.History.Restore" xml:space="preserve">
     <value>Restore</value>
   </data>
+  <data name="Backup.History.Column.Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Backup.History.Column.Kind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Backup.History.Column.Path" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="Backup.History.Column.Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Backup.History.Column.Schema" xml:space="preserve">
+    <value>Schema</value>
+  </data>
   <data name="Backup.History.Delete" xml:space="preserve">
     <value>Delete</value>
   </data>

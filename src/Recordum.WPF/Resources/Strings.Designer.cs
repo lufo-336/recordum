@@ -271,6 +271,11 @@ public static class Strings
     public static string Backup_History_Restore => Get("Backup.History.Restore");
     public static string Backup_History_Delete => Get("Backup.History.Delete");
     public static string Backup_History_OpenFolder => Get("Backup.History.OpenFolder");
+    public static string Backup_History_Column_Date => Get("Backup.History.Column.Date");
+    public static string Backup_History_Column_Kind => Get("Backup.History.Column.Kind");
+    public static string Backup_History_Column_Path => Get("Backup.History.Column.Path");
+    public static string Backup_History_Column_Size => Get("Backup.History.Column.Size");
+    public static string Backup_History_Column_Schema => Get("Backup.History.Column.Schema");
     public static string Backup_Settings_Title => Get("Backup.Settings.Title");
     public static string Backup_Settings_Enabled => Get("Backup.Settings.Enabled");
     public static string Backup_Settings_Frequency => Get("Backup.Settings.Frequency");

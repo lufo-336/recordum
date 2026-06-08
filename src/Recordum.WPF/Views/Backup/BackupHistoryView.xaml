@@ -7,11 +7,11 @@
         <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True"
                   HeadersVisibility="Column" GridLinesVisibility="Horizontal">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Date" Binding="{Binding CreatedAtDisplay}" Width="160"/>
-                <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="100"/>
-                <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="*"/>
-                <DataGridTextColumn Header="Size" Binding="{Binding SizeDisplay}" Width="80"/>
-                <DataGridTextColumn Header="Schema" Binding="{Binding SchemaVersion}" Width="80"/>
+                <DataGridTextColumn Header="{x:Static res:Strings.Backup_History_Column_Date}" Binding="{Binding CreatedAtDisplay}" Width="160"/>
+                <DataGridTextColumn Header="{x:Static res:Strings.Backup_History_Column_Kind}" Binding="{Binding Kind}" Width="100"/>
+                <DataGridTextColumn Header="{x:Static res:Strings.Backup_History_Column_Path}" Binding="{Binding Path}" Width="*"/>
+                <DataGridTextColumn Header="{x:Static res:Strings.Backup_History_Column_Size}" Binding="{Binding SizeDisplay}" Width="80"/>
+                <DataGridTextColumn Header="{x:Static res:Strings.Backup_History_Column_Schema}" Binding="{Binding SchemaVersion}" Width="80"/>
                 <DataGridTemplateColumn Header="" Width="200">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
