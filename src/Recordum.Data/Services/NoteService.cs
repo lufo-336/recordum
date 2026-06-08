@@ -147,10 +147,17 @@ public sealed partial class NoteService(
 
     public async ValueTask RestoreVersionAsync(Guid noteId, Guid versionId, CancellationToken ct = default)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var version = await db.NoteHistories.AsNoTracking()
-            .FirstOrDefaultAsync(h => h.Id == versionId && h.NoteId == noteId, ct);
-        if (version is null) return;
-        await UpdateAsync(noteId, n => n.BodyMd = version.BodyMd, ct);
+        // Read the version body in its own context and dispose it BEFORE opening the write
+        // context in UpdateAsync. Overlapping connections on the same SQLCipher file can stall
+        // the write (SQLITE_BUSY) — the in-memory test connection masks this, the real file does not.
+        string body;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            var version = await db.NoteHistories.AsNoTracking()
+                .FirstOrDefaultAsync(h => h.Id == versionId && h.NoteId == noteId, ct);
+            if (version is null) return;
+            body = version.BodyMd;
+        }
+        await UpdateAsync(noteId, n => n.BodyMd = body, ct);
     }
 }
