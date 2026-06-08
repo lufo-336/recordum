@@ -251,6 +251,25 @@ public class NoteServiceTests
     }
 
     [Fact]
+    public async Task ListByHabitAsync_same_anchor_keeps_creation_order_after_edit()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var clock = (FakeClock)fx.Clock;
+        var sut = NewService(fx, out _);
+        var day = new DateOnly(2026, 6, 1);
+        // Same anchor day for both → the tiebreak decides order. Editing must NOT reorder them.
+        var first = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "first", TargetDate = day });
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var second = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "second", TargetDate = day });
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await sut.UpdateAsync(first, n => n.BodyMd = "first-edited"); // bumps first's UpdatedAtMs
+
+        var list = await sut.ListByHabitAsync(habitId);
+        list.Select(n => n.Id).Should().Equal(second, first); // newest-created first, stable across edits
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task CreateAsync_with_body_records_first_version()
     {
         var (fx, habitId) = await SeedHabitAsync();

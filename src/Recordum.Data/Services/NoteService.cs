@@ -86,11 +86,12 @@ public sealed partial class NoteService(
         var notes = await db.Notes.AsNoTracking()
             .Where(n => n.HabitNodeId == habitNodeId)
             .ToListAsync(ct);
-        // Stable anchor: assigned calendar day, else creation day. Client-side to avoid
-        // translating the DateOnly null-coalesce into SQLite (note sets per habit are small).
+        // Stable anchor: assigned calendar day, else creation day. The tiebreak is creation
+        // order (NOT UpdatedAtMs) so editing a note never moves it within its day. Client-side
+        // to avoid translating the DateOnly null-coalesce into SQLite (note sets per habit are small).
         return notes
             .OrderByDescending(n => n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt))
-            .ThenByDescending(n => n.UpdatedAtMs)
+            .ThenByDescending(n => n.CreatedAt)
             .ToList();
     }
 
