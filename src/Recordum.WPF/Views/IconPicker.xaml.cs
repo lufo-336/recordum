@@ -59,6 +59,15 @@ public partial class IconPicker : UserControl
         e.Handled = true;
     }
 
+    private void OnTriggerKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space)
+        {
+            PickerPopup.IsOpen = !PickerPopup.IsOpen;
+            e.Handled = true;
+        }
+    }
+
     private void OnSearchChanged(object sender, TextChangedEventArgs e)
     {
         if (sender is TextBox tb) Reset(IconCatalog.Search(tb.Text));
@@ -66,10 +75,42 @@ public partial class IconPicker : UserControl
 
     private void OnIconClick(object sender, MouseButtonEventArgs e)
     {
+        PickFrom(sender);
+        e.Handled = true;
+    }
+
+    private void OnIconKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space)
+        {
+            PickFrom(sender);
+            e.Handled = true;
+        }
+    }
+
+    private void PickFrom(object sender)
+    {
         if (sender is FrameworkElement fe && fe.DataContext is string key)
         {
             Icon = key;
             PickerPopup.IsOpen = false;
+            Trigger.Focus();
+        }
+    }
+
+    // Move keyboard focus to the search box when the popup opens, so keyboard users can type to
+    // filter then Tab into the grid (Enter/Space picks, Escape closes).
+    private void OnPopupOpened(object? sender, System.EventArgs e)
+        => Dispatcher.BeginInvoke(
+            new System.Action(() => SearchBox.Focus()),
+            System.Windows.Threading.DispatcherPriority.Input);
+
+    private void OnPopupKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            PickerPopup.IsOpen = false;
+            Trigger.Focus();
             e.Handled = true;
         }
     }

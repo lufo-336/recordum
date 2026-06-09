@@ -9,29 +9,33 @@
     <StackPanel Orientation="Horizontal">
         <!-- Trigger: current color swatch (opens the popup) -->
         <Border x:Name="Trigger" Width="28" Height="28" CornerRadius="4"
-                Cursor="Hand"
+                Cursor="Hand" Focusable="True"
+                AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_Color}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
                 Background="{Binding Color, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}, Converter={StaticResource HexToBrush}}"
-                MouseLeftButtonUp="OnTriggerClick"/>
+                MouseLeftButtonUp="OnTriggerClick" KeyDown="OnTriggerKeyDown"/>
 
         <Popup x:Name="PickerPopup" PlacementTarget="{Binding ElementName=Trigger}"
                Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
-               PopupAnimation="Fade">
-            <Border Background="{DynamicResource Brush.SurfaceElevated}"
+               PopupAnimation="Fade" Opened="OnPopupOpened">
+            <Border x:Name="PopupRoot" Focusable="True"
+                    Background="{DynamicResource Brush.SurfaceElevated}"
                     BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
-                    CornerRadius="6" Padding="10" Margin="0,2,0,0">
+                    CornerRadius="6" Padding="10" Margin="0,2,0,0"
+                    KeyDown="OnPopupKeyDown">
                 <StackPanel Width="232">
                     <!-- Palette grid: 3 swatches per hue column, 12 columns -->
-                    <ItemsControl ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
+                    <ItemsControl x:Name="PaletteItems" ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Width="20" Height="20" Margin="2" CornerRadius="3"
-                                        Cursor="Hand"
+                                        Cursor="Hand" Focusable="True"
+                                        AutomationProperties.Name="{Binding .}"
                                         Background="{Binding ., Converter={StaticResource HexToBrush}}"
-                                        MouseLeftButtonUp="OnSwatchClick"/>
+                                        MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -50,9 +54,10 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Width="20" Height="20" Margin="2" CornerRadius="3"
-                                        Cursor="Hand"
+                                        Cursor="Hand" Focusable="True"
+                                        AutomationProperties.Name="{Binding .}"
                                         Background="{Binding ., Converter={StaticResource HexToBrush}}"
-                                        MouseLeftButtonUp="OnSwatchClick"/>
+                                        MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

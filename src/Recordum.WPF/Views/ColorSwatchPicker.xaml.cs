@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Recordum.WPF.Views;
 
@@ -81,11 +82,26 @@ public partial class ColorSwatchPicker : UserControl
 
     private void OnSwatchClick(object sender, MouseButtonEventArgs e)
     {
+        PickFrom(sender);
+        e.Handled = true;
+    }
+
+    private void OnSwatchKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space)
+        {
+            PickFrom(sender);
+            e.Handled = true;
+        }
+    }
+
+    private void PickFrom(object sender)
+    {
         if (sender is FrameworkElement fe && fe.DataContext is string hex)
         {
             Color = hex;
             PickerPopup.IsOpen = false;
-            e.Handled = true;
+            Trigger.Focus();
         }
     }
 
@@ -93,5 +109,44 @@ public partial class ColorSwatchPicker : UserControl
     {
         PickerPopup.IsOpen = !PickerPopup.IsOpen;
         e.Handled = true;
+    }
+
+    private void OnTriggerKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space)
+        {
+            PickerPopup.IsOpen = !PickerPopup.IsOpen;
+            e.Handled = true;
+        }
+    }
+
+    // Move keyboard focus into the popup when it opens so keyboard users land on a swatch
+    // (Tab then cycles, Enter/Space picks, Escape closes).
+    private void OnPopupOpened(object? sender, System.EventArgs e)
+        => Dispatcher.BeginInvoke(
+            new System.Action(() => (FirstFocusable(PaletteItems) ?? (IInputElement)PopupRoot).Focus()),
+            System.Windows.Threading.DispatcherPriority.Input);
+
+    private void OnPopupKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            PickerPopup.IsOpen = false;
+            Trigger.Focus();
+            e.Handled = true;
+        }
+    }
+
+    private static IInputElement? FirstFocusable(DependencyObject root)
+    {
+        if (root is UIElement { Focusable: true, IsEnabled: true, Visibility: Visibility.Visible } ue)
+            return ue;
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var found = FirstFocusable(VisualTreeHelper.GetChild(root, i));
+            if (found is not null) return found;
+        }
+        return null;
     }
 }
