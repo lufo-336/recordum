@@ -20,9 +20,28 @@ public partial class HomeView : UserControl
         // Skip clicks on interactive controls (rename TextBox, context-menu triggers, etc.).
         if (e.OriginalSource is TextBox or ButtonBase or System.Windows.Documents.Run) return;
 
-        var row = FindAncestorDataContext<HomeRowViewModel>(e.OriginalSource as DependencyObject);
-        if (row is null) return;
-        home.SelectRowCommand.Execute(row);
+        var source = e.OriginalSource as DependencyObject;
+        var row = FindAncestorDataContext<HomeRowViewModel>(source);
+        if (row is not null)
+        {
+            home.SelectRowCommand.Execute(row);
+            return;
+        }
+
+        // Clicking empty space inside the tree region deselects, collapsing the workspace/editor
+        // columns. Scoped to the tree so clicks on the top bar / filter row don't deselect.
+        if (home.SelectedRow is not null && IsDescendantOf(source, TreeRegion))
+            home.SelectRowCommand.Execute(null);
+    }
+
+    private static bool IsDescendantOf(DependencyObject? source, DependencyObject ancestor)
+    {
+        while (source is not null)
+        {
+            if (ReferenceEquals(source, ancestor)) return true;
+            source = VisualTreeHelper.GetParent(source);
+        }
+        return false;
     }
 
     private static T? FindAncestorDataContext<T>(DependencyObject? source) where T : class

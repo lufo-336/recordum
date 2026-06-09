@@ -89,7 +89,7 @@
         </Grid>
 
         <!-- Tree / state -->
-        <ContentControl Grid.Row="2" Content="{Binding}" Margin="0,8,0,0">
+        <ContentControl x:Name="TreeRegion" Grid.Row="2" Content="{Binding}" Margin="0,8,0,0">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
                     <Style.Triggers>
