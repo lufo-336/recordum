@@ -292,10 +292,12 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6" CornerRadius="3">
+                                <!-- WrapPanel (not horizontal StackPanel) so series cells flow to the next
+                                     line instead of clipping off the right edge in a narrow column. -->
                                 <ItemsControl ItemsSource="{Binding Cells}"
                                               ItemTemplate="{StaticResource MetricCellTemplate}">
                                     <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                 </ItemsControl>
                             </Border>

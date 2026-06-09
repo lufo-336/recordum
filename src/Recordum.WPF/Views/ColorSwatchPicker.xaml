@@ -24,8 +24,11 @@
                     CornerRadius="6" Padding="10" Margin="0,2,0,0"
                     KeyDown="OnPopupKeyDown">
                 <StackPanel Width="232">
+                    <!-- Visual HSV picker (square + hue strip) so users can pick any color, not just type hex -->
+                    <local:HsvColorPicker Color="{Binding Color, Mode=TwoWay}" HorizontalAlignment="Center"/>
+
                     <!-- Palette grid: 3 swatches per hue column, 12 columns -->
-                    <ItemsControl x:Name="PaletteItems" ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
+                    <ItemsControl x:Name="PaletteItems" Margin="0,12,0,0" ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
