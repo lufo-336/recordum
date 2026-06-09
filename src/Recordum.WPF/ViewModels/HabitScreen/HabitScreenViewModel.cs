@@ -273,11 +273,45 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (node is null) return;
         var mags = await _completions.GetDailyMagnitudeAsync(node.Id, date.Year, date.Month, ct).ConfigureAwait(true);
         var mag = mags.FirstOrDefault(m => m.Date == date)?.Magnitude ?? 0m;
-        // Reuse the calendar's per-type number rule so the strip and the cell agree
-        // (Action/Journal show no redundant "1" next to the done check).
-        var label = NumberFor(node.HabitType ?? HabitType.Action, mag);
+        // Enrich the aggregate with the primary metric's unit (Counter) or scale label (State) so the
+        // strip reads "4 km" / "Good" instead of a bare number (R-daySummaryUnits).
+        var (unit, scaleLabels) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
+        var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
         DayNote.SetDaySummary(mag > 0, label, notes.Count);
+    }
+
+    /// <summary>Resolves the primary (lowest SortOrder) metric's unit code (Counter) or scale labels
+    /// (State) for the day-summary strip. Returns nulls for other types or when none apply.</summary>
+    private async Task<(string? unit, IReadOnlyList<string>? scaleLabels)> ResolvePrimaryDisplayAsync(HabitNode node, CancellationToken ct)
+    {
+        var type = node.HabitType ?? HabitType.Action;
+        if (type is not (HabitType.Counter or HabitType.State)) return (null, null);
+
+        var metrics = await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true);
+        var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
+        if (primary is null) return (null, null);
+
+        if (type == HabitType.Counter)
+        {
+            if (primary.UnitOfMeasureId is not { } uid) return (null, null);
+            var units = await _refData.ListUnitsAsync(ct).ConfigureAwait(true);
+            return (units.FirstOrDefault(u => u.Id == uid)?.Code, null);
+        }
+
+        // State
+        if (primary.ScaleTemplateId is not { } sid) return (null, null);
+        var scales = await _refData.ListScalesAsync(ct).ConfigureAwait(true);
+        var tmpl = scales.FirstOrDefault(s => s.Id == sid);
+        var labels = ParseScaleLabels(primary.LabelsJson) ?? ParseScaleLabels(tmpl?.LabelsJson);
+        return (null, labels);
+    }
+
+    private static string[]? ParseScaleLabels(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return System.Text.Json.JsonSerializer.Deserialize<string[]>(json); }
+        catch (System.Text.Json.JsonException) { return null; }
     }
 
     [RelayCommand]
