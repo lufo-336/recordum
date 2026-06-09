@@ -202,10 +202,26 @@ Lanciata l'app (skill `run`). Feedback + fix in sessione:
 
 ---
 
+## Stato al 2026-06-09
+
+**Verifica visiva utente del builder multi-metrica (B11)** → core **verified-fixed**; raccolto un batch di feedback (nuove voci sotto, da triagiare/decidere ordine).
+
+- **B11 → `verified-fixed`**: builder "da zero" → Lancia → registrazione mostra tutte le metriche con la propria unità/scala; salva e compare in "Registrazioni del giorno" con valori leggibili; Resistance con serie ha "Aggiungi serie". Spec 1 builder ora pienamente registrabile.
+
+**Nuovi punti dal giro (da decidere ordine):**
+- **R-builderColorPicker** (ri-confermato, alta priorità — "da rivedere"): il quadratino colore accanto all'hex **non è cliccabile**; si può solo digitare l'esadecimale, che l'utente non conosce. Serve ruota/palette + colori recenti + hex affiancato. **Stesso bisogno in Configura.** → feature, richiede design/brainstorm.
+- **R-builderIconPicker**: il campo Icona accetta solo testo, nessun picker. Stesso bisogno in Configura. Icone Lucide (design brief). → feature, richiede design.
+- **R-recordingsLog** (nuovo): manca un **elenco completo delle registrazioni** "a mo' di lista" (non solo "del giorno"), con **filtro per abitudine**. L'utente propende per metterlo nella tab **Abitudine** (o Dettaglio). → feature, richiede design (dove + filtro + scope cross-giorno).
+- **R-navCloseColumns** (nuovo, UX): cliccare **Home "a vuoto" non chiude la workspace aperta**; non c'è un tasto per chiuderla → per tornare alla Home pulita si è costretti a passare da "Archiviate"/"Cestinate" e tornare indietro. Collegato allo spec nav-model parcheggiato `2026-05-29-navigation-model-design.md`. → fix UX / nav model.
+- **R-builderTimeUnit** (nuovo): il mattone **Tempo** non ha unità selezionabile; aggiungere scelta (secondi/minuti/ore o nessuna) così i grafici futuri avranno senso. Analogo al picker unità della Quantità. → refinement (tocca grammatica + persistenza TimeUnit).
+- **R-seriesRecordingsFlat** (osservato negli screenshot, non flaggato dall'utente): per una Resistance multi-serie, "Registrazioni del giorno" mostra una **lista piatta concatenata** di tutti i valori di tutte le serie ("Tempo: 3 / Quantità: 10 reps / Conteggio: 3 / Conteggio: 3 / Tempo: 3 / Quantità: 12 reps") senza raggruppamento per serie → si perde quale valore appartiene a quale serie. → refinement display.
+
+---
+
 ## Aperti — bloccanti
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
-- **Stato**: `fixed` (2026-06-03, su `fase-4-polish`) — **verifica visiva utente: da fare**.
+- **Stato**: `verified-fixed` (2026-06-09) — registrazione multi-metrica confermata sul build (Quantità+Scala registra entrambe con unità; Resistance con serie mostra "Aggiungi serie"; "Registrazioni del giorno" elenca valori leggibili con unità). Vedi "Stato al 2026-06-09".
 - **Fix (spec `2026-06-03-multi-metric-recording-design.md`, plan `2026-06-03-multi-metric-recording.md`)**: registrazione generalizzata a **multi-metrica kind-aware**. `SeriesCellViewModel` ora è consapevole del tipo (misura+unità / scala bottoni-o-slider / testo); `MetricCellFactory` risolve unità/scala da `IReferenceDataQueryService`; nuovo `MeasuredQuickAddViewModel` (1 riga di celle su tutte le metriche) **sostituisce** `CounterQuickAddViewModel`+`StateQuickAddViewModel` (host instrada sia Counter sia State qui); `ResistanceQuickAddViewModel` riusa le stesse celle (mostra unità). XAML: un solo `MetricCellTemplate` kind-aware riusato. Encoding scala preservato (indice 0-based). Cella-scala range-aware: bottoni ≤10 passi, slider >10. Suite **WPF 378 / Data 309** verdi, build 0/0. Commit `4a42118`(plan)→`MeasuredQuickAdd`.
 - **Resta Opzione 2 (follow-up)**: Dettaglio/grafici/heatmap/cell-marker restano su metrica primaria (visualizzazione multi-metrica non ancora). Creazione scale custom = R-builderCustomScale.
 - **Sintomo**: si costruisce un'abitudine col builder (es. Quantità + Scala, oppure Conteggio + serie), si Lancia, l'abitudine appare in Home ma **la registrazione mostra solo una parte** della configurazione: con Quantità+Scala compare solo "quantità" (senza l'unità scelta), la scala sparisce; in una prova precedente compariva solo "Serie".
