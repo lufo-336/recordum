@@ -11,10 +11,15 @@ public sealed class FakeHabitConfigService : IHabitConfigService
     public Dictionary<Guid, List<HabitConfigHistory>> History { get; } = new();
     public Exception? NextException { get; set; }
 
-    public ValueTask<HabitConfig?> GetAsync(Guid habitNodeId, CancellationToken ct = default)
+    /// <summary>Optional gate awaited inside <see cref="GetAsync"/> — lets a test hold a load
+    /// mid-flight to exercise re-entrancy (deselect-while-loading).</summary>
+    public Func<Task>? GetGate { get; set; }
+
+    public async ValueTask<HabitConfig?> GetAsync(Guid habitNodeId, CancellationToken ct = default)
     {
         Throw();
-        return new(Store.TryGetValue(habitNodeId, out var c) ? c : null);
+        if (GetGate is { } gate) await gate().ConfigureAwait(false);
+        return Store.TryGetValue(habitNodeId, out var c) ? c : null;
     }
 
     public ValueTask<IReadOnlyList<HabitConfigHistory>> ListHistoryAsync(Guid habitNodeId, CancellationToken ct = default)

@@ -109,8 +109,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _subscriptions.Clear();
     }
 
+    // Bumped on every LoadAsync. Selecting/deselecting habits fires overlapping async loads
+    // (OnHomePropertyChanged is async void with no cancellation); a stale load that resumes after
+    // a newer one must not clobber state or dereference a Node the newer load already nulled.
+    private int _loadGeneration;
+
     public async Task LoadAsync(Guid? habitNodeId, CancellationToken ct = default)
     {
+        var generation = ++_loadGeneration;
+
         if (habitNodeId is null)
         {
             Node = null;
@@ -120,37 +127,41 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             return;
         }
 
-        Node = await _nodes.GetAsync(habitNodeId.Value, ct).ConfigureAwait(true);
+        var node = await _nodes.GetAsync(habitNodeId.Value, ct).ConfigureAwait(true);
+        if (generation != _loadGeneration) return; // superseded by a newer load/deselect
+        Node = node;
         OnPropertyChanged(nameof(HasNode));
         OnPropertyChanged(nameof(Name));
-        if (Node is null) { QuickAdd = null; return; }
+        if (node is null) { QuickAdd = null; return; }
 
         // Config is needed for both QuickAdd and TimerControl; fetch once, share.
-        var configTask = _configs.GetAsync(Node.Id, ct).AsTask();
-        var listTask = CompletionList.LoadAsync(Node.Id, ct);
-        var quickAddTask = BuildQuickAddAsync(Node, ct);
-        var notesTask = Notes.LoadAsync(Node.Id, ct);
-        var detailTask = Detail.LoadAsync(Node, ct);
+        var configTask = _configs.GetAsync(node.Id, ct).AsTask();
+        var listTask = CompletionList.LoadAsync(node.Id, ct);
+        var quickAddTask = BuildQuickAddAsync(node, ct);
+        var notesTask = Notes.LoadAsync(node.Id, ct);
+        var detailTask = Detail.LoadAsync(node, ct);
         await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask).ConfigureAwait(true);
+        if (generation != _loadGeneration) return; // a deselect/newer selection won the race
 
-        Calendar.CompletedColorHex = Node.Color;
+        Calendar.CompletedColorHex = node.Color;
         Calendar.NoteColorHex = configTask.Result?.NoteMarkerColor ?? "#e0b341";
         var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone);
         await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), ct).ConfigureAwait(true);
+        if (generation != _loadGeneration) return;
 
         // Mirror the calendar's pre-selected day into QuickAdd so both controls agree before the first click.
         if (QuickAdd is not null && Calendar.SelectedDate is { } preSelected)
             QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
-        DayNote.SetContext(Node.Id);
+        DayNote.SetContext(node.Id);
         if (Calendar.SelectedDate is { } sel)
         {
             await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);
             await PushDaySummaryAsync(sel, ct).ConfigureAwait(true);
-            await DayCompletions.LoadDayAsync(Node.Id, sel, ct).ConfigureAwait(true);
+            await DayCompletions.LoadDayAsync(node.Id, sel, ct).ConfigureAwait(true);
         }
 
-        await TimerControl.SetContextAsync(Node, configTask.Result, ct).ConfigureAwait(true);
+        await TimerControl.SetContextAsync(node, configTask.Result, ct).ConfigureAwait(true);
     }
 
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)

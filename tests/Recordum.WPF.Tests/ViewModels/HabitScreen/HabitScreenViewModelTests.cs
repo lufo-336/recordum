@@ -251,4 +251,27 @@ public class HabitScreenViewModelTests
 
         sut.CompletionList.Rows.Should().NotBeEmpty();
     }
+
+    [Fact]
+    public async Task LoadAsync_deselect_during_an_in_flight_load_does_not_throw_or_clobber()
+    {
+        // Regression: selecting then deselecting fires overlapping loads. A stale load that resumes
+        // after the deselect must not dereference the now-null Node (NRE) nor re-show the habit.
+        var (sut, nodes) = HabitScreenViewModelFactory.Create(out _, out var configs);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run", Color = "#123456" };
+
+        var gate = new TaskCompletionSource();
+        configs.GetGate = () => gate.Task; // hold the in-flight load inside Task.WhenAll
+
+        var loading = sut.LoadAsync(id); // sets Node, enters WhenAll, awaits the config gate
+        await sut.LoadAsync(null);       // deselect mid-flight: Node = null, generation bumped
+        gate.SetResult();                // release the superseded load
+        await loading;                   // resumes after WhenAll, sees it lost the race, returns
+
+        sut.Node.Should().BeNull();
+        sut.HasNode.Should().BeFalse();
+        // The superseded load must not have applied the habit's state (e.g. the calendar color).
+        sut.Calendar.CompletedColorHex.Should().NotBe("#123456");
+    }
 }
