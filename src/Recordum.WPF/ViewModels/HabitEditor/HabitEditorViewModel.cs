@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitEditor.Sections;
@@ -24,6 +26,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     private readonly IHabitNodeService _nodes;
     private readonly IHabitConfigService _configs;
     private readonly IRecentColorStore _recentColors;
+    private readonly IEventBus? _events;
     private bool _loading;
 
     [ObservableProperty] private HabitNode? _node;
@@ -77,7 +80,8 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         ITagService tags,
         IAppSettingService appSettings,
         IReferenceDataQueryService refData,
-        IRecentColorStore recentColors)
+        IRecentColorStore recentColors,
+        IEventBus? events = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(configs);
@@ -85,6 +89,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         _nodes = nodes;
         _configs = configs;
         _recentColors = recentColors;
+        _events = events;
 
         Scheduling = new SchedulingSectionViewModel(configs);
         Streak = new StreakSectionViewModel(configs);
@@ -93,7 +98,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Scales = new ScalesSectionViewModel(metrics, refData);
         Goal = new GoalSectionViewModel(goals);
         Notifications = new NotificationsSectionViewModel(notifications);
-        Notes = new NotesSectionViewModel(configs);
+        Notes = new NotesSectionViewModel(configs, recentColors);
         Tags = new TagsSectionViewModel(tags);
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
@@ -312,6 +317,9 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         {
             await persist();
             HeaderStatus = EditorStatus.Saved;
+            // Notify views holding a cached copy (Home rows, the open workspace) so name/color/icon
+            // changes reflect live instead of only after a reload.
+            if (Node is { } n) _events?.Publish(new HabitUpdatedPayload(n.Id));
         }
         catch (Exception ex)
         {

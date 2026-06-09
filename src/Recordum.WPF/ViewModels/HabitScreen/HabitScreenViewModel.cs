@@ -98,6 +98,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
         _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
+        _subscriptions.Add(events.Subscribe(WellKnownEvents.HabitUpdated, OnHabitUpdatedEvent));
     }
 
     public void Dispose()
@@ -217,6 +218,19 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             _ => Guid.Empty,
         };
         if (habitId != Node.Id) return;
+        await Calendar.JumpAsync().ConfigureAwait(true);
+    }
+
+    // A habit edit in Configura (name/color/icon) must reflect live in the open workspace:
+    // refresh the cached node and recolor the calendar markers.
+    private async void OnHabitUpdatedEvent(EventEnvelope envelope)
+    {
+        if (Node is null || envelope.Payload is not HabitUpdatedPayload p || p.HabitNodeId != Node.Id) return;
+        var refreshed = await _nodes.GetAsync(Node.Id).ConfigureAwait(true);
+        if (refreshed is null || Node is null || refreshed.Id != Node.Id) return;
+        Node = refreshed;
+        OnPropertyChanged(nameof(Name));
+        Calendar.CompletedColorHex = refreshed.Color;
         await Calendar.JumpAsync().ConfigureAwait(true);
     }
 

@@ -53,15 +53,16 @@ public sealed partial class HomeViewModel : ObservableObject
         _launcher = launcher;
         _quickActions = quickActions;
 
-        // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete)
-        // must refresh the row indicators (sparkline / completed-today). The bus is the
-        // single source of that signal.
-        events?.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent);
-        events?.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent);
-        events?.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent);
+        // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete) must
+        // refresh the row indicators (sparkline / completed-today); a habit edit (name/color/icon
+        // in Configura) must refresh the row's name and accent. The bus is the single signal source.
+        events?.Subscribe(WellKnownEvents.CompletionRecorded, OnRowsInvalidated);
+        events?.Subscribe(WellKnownEvents.CompletionUpdated, OnRowsInvalidated);
+        events?.Subscribe(WellKnownEvents.CompletionDeleted, OnRowsInvalidated);
+        events?.Subscribe(WellKnownEvents.HabitUpdated, OnRowsInvalidated);
     }
 
-    private void OnCompletionEvent(EventEnvelope env)
+    private void OnRowsInvalidated(EventEnvelope env)
     {
         // EventBus invokes handlers on the publisher's thread; quick-action handlers
         // record with ConfigureAwait(false), so this can arrive off the UI thread.

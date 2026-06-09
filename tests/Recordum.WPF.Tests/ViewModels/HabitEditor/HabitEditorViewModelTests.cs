@@ -19,8 +19,9 @@ public class HabitEditorViewModelTests
     private readonly FakeTagService _tags = new();
     private readonly FakeAppSettingService _appSettings = new();
     private readonly FakeReferenceData _refData = new();
+    private readonly FakeEventBus _events = new();
 
-    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData, new RecentColorStore(_appSettings));
+    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData, new RecentColorStore(_appSettings), _events);
 
     [Fact]
     public async Task LoadAsync_with_null_clears_node()
@@ -29,6 +30,22 @@ public class HabitEditorViewModelTests
         await sut.LoadAsync(null);
         sut.HasNode.Should().BeFalse();
         sut.Node.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Changing_color_publishes_HabitUpdated_so_views_refresh_live()
+    {
+        var id = Guid.NewGuid();
+        _nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run", Color = "#111111" };
+        var sut = CreateSut();
+        await sut.LoadAsync(id);
+
+        sut.Color = "#22aa44";
+        await Task.Delay(20); // let the fire-and-forget header autosave flush
+
+        _nodes.Store[id].Color.Should().Be("#22aa44");
+        _events.Published.OfType<Recordum.Plugins.Contracts.Events.HabitUpdatedPayload>()
+            .Should().Contain(p => p.HabitNodeId == id);
     }
 
     [Fact]
