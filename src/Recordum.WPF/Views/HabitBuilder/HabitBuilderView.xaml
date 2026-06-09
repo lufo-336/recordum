@@ -251,6 +251,28 @@
                                         </ComboBox.Style>
                                     </ComboBox>
 
+                                    <!-- Time-unit picker (Time) — optional unit (hours/minutes/seconds) so charts read sensibly -->
+                                    <ComboBox Grid.Column="2"
+                                              MinWidth="120"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Center"
+                                              ItemsSource="{Binding DataContext.AvailableTimeUnits, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              SelectedValue="{Binding UnitOfMeasureId, Mode=TwoWay}"
+                                              ToolTip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}">
+                                        <ComboBox.Style>
+                                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Nature}" Value="{x:Static enums:FieldNature.Time}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ComboBox.Style>
+                                    </ComboBox>
+
                                     <Button Grid.Column="3"
                                             Content="✕"
                                             Margin="8,0,0,0"

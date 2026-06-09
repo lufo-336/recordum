@@ -39,6 +39,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     public ObservableCollection<UnitOfMeasure> AvailableUnits { get; } = new();
     public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
 
+    /// <summary>Units offered for a Time field (hours / minutes / seconds). A Time field's unit is
+    /// optional — unlike Quantity it does not gate <see cref="CanLaunch"/> — but picking one makes
+    /// future charts and the day-records panel show "30 min" rather than a bare "30".</summary>
+    public ObservableCollection<UnitOfMeasure> AvailableTimeUnits { get; } = new();
+
+    private static readonly string[] TimeUnitCodes = { "hours", "minutes", "seconds" };
+
     /// <summary>Loads reference data for the field pickers. Called by the launcher before the dialog opens.</summary>
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -46,6 +53,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         foreach (var u in await _refData.ListUnitsAsync(ct).ConfigureAwait(true)) AvailableUnits.Add(u);
         AvailableScales.Clear();
         foreach (var s in await _refData.ListScalesAsync(ct).ConfigureAwait(true)) AvailableScales.Add(s);
+        AvailableTimeUnits.Clear();
+        foreach (var u in AvailableUnits.Where(u => TimeUnitCodes.Contains(u.Code))) AvailableTimeUnits.Add(u);
     }
 
     [ObservableProperty] private string _name = string.Empty;

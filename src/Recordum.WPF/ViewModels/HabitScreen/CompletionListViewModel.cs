@@ -4,6 +4,7 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -65,20 +66,41 @@ public sealed partial class CompletionListViewModel : ObservableObject
             IReadOnlyList<string>? labels = null;
             if (m.ScaleTemplateId is { } sid && scales.TryGetValue(sid, out var tmpl))
                 labels = ParseLabels(m.LabelsJson) ?? ParseLabels(tmpl.LabelsJson);
-            map[m.Id] = new MetricDisplay(m.Name, unit, labels);
+            map[m.Id] = new MetricDisplay(m.Name, unit, labels, m.SortOrder);
         }
         return map;
     }
 
     private static List<string> BuildFieldDisplays(IReadOnlyList<CompletionValue> values, Dictionary<Guid, MetricDisplay> lookup)
     {
+        // Group by series so a multi-series resistance reads "Series 1 — Count: 12 · Time: 30"
+        // per row instead of a flat, ambiguous list of every series' values jumbled together.
+        var groups = values.GroupBy(v => v.SeriesIndex).OrderBy(g => g.Key).ToList();
+        bool multiSeries = groups.Count > 1;
         var result = new List<string>();
-        foreach (var v in values.OrderBy(v => v.SeriesIndex))
+        foreach (var g in groups)
         {
-            if (!lookup.TryGetValue(v.MetricDefinitionId, out var m)) continue;
-            string? val = FormatValue(v, m);
-            if (val is null) continue;
-            result.Add($"{m.Name}: {val}");
+            var fields = new List<string>();
+            // Within a series, order fields by the metric's SortOrder for a stable, sensible layout.
+            foreach (var v in g.OrderBy(v => lookup.TryGetValue(v.MetricDefinitionId, out var md) ? md.SortOrder : int.MaxValue))
+            {
+                if (!lookup.TryGetValue(v.MetricDefinitionId, out var m)) continue;
+                string? val = FormatValue(v, m);
+                if (val is null) continue;
+                fields.Add($"{m.Name}: {val}");
+            }
+            if (fields.Count == 0) continue;
+            if (multiSeries)
+            {
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+                var label = string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_SeriesRow, g.Key + 1);
+#pragma warning restore CA1863
+                result.Add($"{label} — {string.Join(" · ", fields)}");
+            }
+            else
+            {
+                result.AddRange(fields);
+            }
         }
         return result;
     }
@@ -102,5 +124,5 @@ public sealed partial class CompletionListViewModel : ObservableObject
         catch (JsonException) { return null; }
     }
 
-    private sealed record MetricDisplay(string Name, string? Unit, IReadOnlyList<string>? ScaleLabels);
+    private sealed record MetricDisplay(string Name, string? Unit, IReadOnlyList<string>? ScaleLabels, int SortOrder);
 }

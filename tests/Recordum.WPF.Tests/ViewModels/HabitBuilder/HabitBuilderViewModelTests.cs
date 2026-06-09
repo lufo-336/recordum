@@ -187,6 +187,35 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task InitializeAsync_populates_time_units_subset()
+    {
+        var refData = new FakeReferenceData();
+        var sut = NewSut(refData: refData);
+
+        await sut.InitializeAsync();
+
+        sut.AvailableTimeUnits.Select(u => u.Code)
+            .Should().BeEquivalentTo(new[] { "hours", "minutes", "seconds" });
+    }
+
+    [WpfFact]
+    public async Task Launch_persists_picked_time_unit_on_the_metric()
+    {
+        var refData = new FakeReferenceData();
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake, refData: refData);
+        await sut.InitializeAsync();
+        sut.Name = "Meditazione";
+        sut.AddFieldCommand.Execute(FieldNature.Time);
+        var minutes = sut.AvailableTimeUnits.Single(u => u.Code == "minutes");
+        sut.Fields[0].UnitOfMeasureId = minutes.Id;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest!.Metrics.Single().UnitOfMeasureId.Should().Be(minutes.Id);
+    }
+
+    [WpfFact]
     public async Task Template_payload_writes_unit_code_for_quantity_field()
     {
         var refData = new FakeReferenceData();

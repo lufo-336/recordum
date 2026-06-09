@@ -59,6 +59,27 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task ShowHome_deselects_the_row_and_closes_the_workspace()
+    {
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "yoga", Color = "#000000" };
+        parts.Query.HomeRows.Add(new HomeTreeRow(
+            id, null, "yoga", "#000000", HabitType.Action, null, 0, false,
+            PinScope.None, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty));
+        await sut.InitializeAsync();
+        sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
+        await Task.Delay(30);
+        sut.Home.SelectedRow.Should().NotBeNull();
+
+        sut.ShowHomeCommand.Execute(null);
+
+        sut.Home.SelectedRow.Should().BeNull();
+        sut.IsHomeWorkspace.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task HabitScreen_OpenConfigure_loads_the_Editor()
     {
         var (sut, parts) = CreateSut();

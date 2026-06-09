@@ -82,6 +82,46 @@ public class CompletionListViewModelTests
     }
 
     [WpfFact]
+    public async Task LoadDayAsync_groups_fields_by_series_for_multi_series_completion()
+    {
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var countId = Guid.NewGuid();
+        var repsId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = countId, HabitNodeId = habit, Name = "Count", Type = MetricType.Integer, SortOrder = 0 });
+        await ms.CreateAsync(new MetricDefinition { Id = repsId, HabitNodeId = habit, Name = "Reps", Type = MetricType.Integer, SortOrder = 1 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue>
+            {
+                new() { MetricDefinitionId = countId, SeriesIndex = 0, ValueInteger = 1 },
+                new() { MetricDefinitionId = repsId,  SeriesIndex = 0, ValueInteger = 10 },
+                new() { MetricDefinitionId = countId, SeriesIndex = 1, ValueInteger = 2 },
+                new() { MetricDefinitionId = repsId,  SeriesIndex = 1, ValueInteger = 12 },
+            },
+        };
+
+        var sut = new CompletionListViewModel(cs, ms, rd);
+        await sut.LoadDayAsync(habit, day);
+
+        var displays = sut.Rows.Single().FieldDisplays;
+        displays.Should().HaveCount(2); // one line per series, not four jumbled fields
+#pragma warning disable CA1863 // test-only formatting of a localized series label
+        var series1 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.WPF.Resources.Strings.HabitBuilder_SeriesRow, 1);
+        var series2 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.WPF.Resources.Strings.HabitBuilder_SeriesRow, 2);
+#pragma warning restore CA1863
+        displays[0].Should().StartWith(series1).And.Contain("Count: 1").And.Contain("Reps: 10");
+        displays[1].Should().StartWith(series2).And.Contain("Count: 2").And.Contain("Reps: 12");
+    }
+
+    [WpfFact]
     public async Task LoadDayAsync_shows_scale_label_not_raw_index()
     {
         var cs = new FakeCompletionService();

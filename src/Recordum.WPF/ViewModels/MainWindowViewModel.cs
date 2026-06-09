@@ -91,7 +91,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ShowHome() => CurrentWorkspace = AppWorkspace.Home;
+    private void ShowHome()
+    {
+        CurrentWorkspace = AppWorkspace.Home;
+        // Clicking "Home" returns to a clean tree: deselecting closes the open habit
+        // workspace + editor columns (their visibility/width track SelectedRow). Without
+        // this, the only way to collapse them was to bounce through Archived/Trash.
+        Home.SelectedRow = null;
+    }
 
     [RelayCommand]
     private async Task ShowChartsAsync()
