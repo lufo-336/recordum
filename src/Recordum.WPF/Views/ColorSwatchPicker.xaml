@@ -15,10 +15,11 @@
                 MouseLeftButtonUp="OnTriggerClick"/>
 
         <Popup x:Name="PickerPopup" PlacementTarget="{Binding ElementName=Trigger}"
-               Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+               Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
+               PopupAnimation="Fade">
             <Border Background="{DynamicResource Brush.SurfaceElevated}"
                     BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
-                    CornerRadius="6" Padding="10">
+                    CornerRadius="6" Padding="10" Margin="0,2,0,0">
                 <StackPanel Width="232">
                     <!-- Palette grid: 3 swatches per hue column, 12 columns -->
                     <ItemsControl ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
@@ -40,9 +41,9 @@
                                Margin="0,8,0,2"
                                FontSize="{StaticResource FontSize.Small}"
                                Foreground="{DynamicResource Brush.TextMuted}"
-                               Visibility="{Binding HasRecentColors, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}, Converter={StaticResource BoolToVisible}}"/>
-                    <ItemsControl ItemsSource="{Binding RecentColors, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}}"
-                                  Visibility="{Binding HasRecentColors, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}, Converter={StaticResource BoolToVisible}}">
+                               Visibility="{Binding HasRecentColors, Converter={StaticResource BoolToVisible}}"/>
+                    <ItemsControl ItemsSource="{Binding RecentColors}"
+                                  Visibility="{Binding HasRecentColors, Converter={StaticResource BoolToVisible}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
@@ -59,10 +60,10 @@
                     <!-- Hex entry + preview -->
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <TextBox Width="100" VerticalContentAlignment="Center"
-                                 Text="{Binding Color, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}, UpdateSourceTrigger=LostFocus}"/>
+                                 Text="{Binding Color, UpdateSourceTrigger=LostFocus}"/>
                         <Border Width="24" Height="24" Margin="8,0,0,0" CornerRadius="3"
                                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
-                                Background="{Binding Color, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}, Converter={StaticResource HexToBrush}}"/>
+                                Background="{Binding Color, Converter={StaticResource HexToBrush}}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

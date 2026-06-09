@@ -45,7 +45,7 @@ public partial class ColorSwatchPicker : UserControl
         nameof(RecentColors),
         typeof(IEnumerable<string>),
         typeof(ColorSwatchPicker),
-        new PropertyMetadata(System.Array.Empty<string>()));
+        new PropertyMetadata(System.Array.Empty<string>(), OnRecentColorsChanged));
 
     public IEnumerable<string> RecentColors
     {
@@ -53,11 +53,30 @@ public partial class ColorSwatchPicker : UserControl
         set => SetValue(RecentColorsProperty, value);
     }
 
-    public bool HasRecentColors => RecentColors?.Any() == true;
+    // Computed DP (not a plain CLR property) so the recents-row Visibility binding refreshes
+    // whenever RecentColors changes — a plain getter wouldn't notify the binding engine.
+    public static readonly DependencyProperty HasRecentColorsProperty = DependencyProperty.Register(
+        nameof(HasRecentColors),
+        typeof(bool),
+        typeof(ColorSwatchPicker),
+        new PropertyMetadata(false));
+
+    public bool HasRecentColors
+    {
+        get => (bool)GetValue(HasRecentColorsProperty);
+        private set => SetValue(HasRecentColorsProperty, value);
+    }
+
+    private static void OnRecentColorsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((ColorSwatchPicker)d).HasRecentColors = e.NewValue is IEnumerable<string> s && s.Any();
 
     public ColorSwatchPicker()
     {
         InitializeComponent();
+        // The Popup content lives in a separate visual tree, so RelativeSource FindAncestor can't
+        // reach this control from inside it. Point the popup's DataContext at the control instead,
+        // and the popup-internal bindings use plain paths (Color / RecentColors / HasRecentColors).
+        PickerPopup.DataContext = this;
     }
 
     private void OnSwatchClick(object sender, MouseButtonEventArgs e)
