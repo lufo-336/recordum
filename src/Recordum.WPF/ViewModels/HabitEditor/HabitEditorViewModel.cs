@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -5,6 +6,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
+using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 namespace Recordum.WPF.ViewModels.HabitEditor;
@@ -21,6 +23,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     private readonly IHabitNodeService _nodes;
     private readonly IHabitConfigService _configs;
+    private readonly IRecentColorStore _recentColors;
     private bool _loading;
 
     [ObservableProperty] private HabitNode? _node;
@@ -55,6 +58,10 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     public bool HasNode => Node is not null;
 
+    /// <summary>Recently picked habit colors, loaded from <see cref="IRecentColorStore"/> during
+    /// <see cref="LoadAsync"/>. Bound to the <c>ColorSwatchPicker.RecentColors</c> DP.</summary>
+    public ObservableCollection<string> RecentColors { get; } = new();
+
     /// <summary>
     /// Ordered list of sections to render in the editor pane. DataSource is intentionally excluded
     /// (it is an internal/config-level section handled separately).
@@ -69,12 +76,15 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         INotificationService notifications,
         ITagService tags,
         IAppSettingService appSettings,
-        IReferenceDataQueryService refData)
+        IReferenceDataQueryService refData,
+        IRecentColorStore recentColors)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(configs);
+        ArgumentNullException.ThrowIfNull(recentColors);
         _nodes = nodes;
         _configs = configs;
+        _recentColors = recentColors;
 
         Scheduling = new SchedulingSectionViewModel(configs);
         Streak = new StreakSectionViewModel(configs);
@@ -204,6 +214,9 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
             RefreshSectionVisibility();
 
+            RecentColors.Clear();
+            foreach (var c in await _recentColors.GetAsync(ct).ConfigureAwait(true)) RecentColors.Add(c);
+
             HeaderStatus = EditorStatus.Idle;
             HeaderError = null;
             OnPropertyChanged(nameof(HasNode));
@@ -257,6 +270,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             return;
         }
         _ = ApplyHeaderAsync(() => _nodes.UpdateAsync(Node.Id, n => n.Color = value).AsTask());
+        _ = _recentColors.AddAsync(value);
     }
 
     partial void OnIconChanged(string? value)

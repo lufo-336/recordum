@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Xunit;
@@ -15,15 +16,20 @@ namespace Recordum.WPF.Tests.ViewModels.HabitEditor;
 /// </summary>
 public class SectionVisibilityReactivityTests
 {
-    private static HabitEditorViewModel CreateSut(FakeHabitNodeService nodes) => new(
-        nodes,
-        new FakeHabitConfigService(),
-        new FakeGoalService(),
-        new FakeMetricDefinitionService(),
-        new FakeNotificationService(),
-        new FakeTagService(),
-        new FakeAppSettingService(),
-        new FakeReferenceData());
+    private static HabitEditorViewModel CreateSut(FakeHabitNodeService nodes)
+    {
+        var fakeSettings = new FakeAppSettingService();
+        return new(
+            nodes,
+            new FakeHabitConfigService(),
+            new FakeGoalService(),
+            new FakeMetricDefinitionService(),
+            new FakeNotificationService(),
+            new FakeTagService(),
+            fakeSettings,
+            new FakeReferenceData(),
+            new RecentColorStore(fakeSettings));
+    }
 
     private static (HabitEditorViewModel Sut, Guid Id) Load(NodeType node, HabitType? habit)
     {

@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitBuilder"
+             xmlns:v="clr-namespace:Recordum.WPF.Views"
              xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
              mc:Ignorable="d"
@@ -101,19 +102,10 @@
                                    FontSize="{StaticResource FontSize.Small}"
                                    Foreground="{DynamicResource Brush.TextMuted}"
                                    Margin="0,0,0,2"/>
-                        <TextBox Text="{Binding Color, UpdateSourceTrigger=PropertyChanged}"
-                                 Padding="6,4"/>
+                        <v:ColorSwatchPicker Color="{Binding Color, Mode=TwoWay}"
+                                             RecentColors="{Binding RecentColors}"
+                                             HorizontalAlignment="Left"/>
                     </StackPanel>
-
-                    <!-- Color preview -->
-                    <Border Grid.Column="1"
-                            VerticalAlignment="Bottom"
-                            Width="32" Height="28"
-                            Margin="0,0,12,0"
-                            CornerRadius="4"
-                            BorderThickness="1"
-                            BorderBrush="{DynamicResource Brush.Border}"
-                            Background="{Binding Color, Converter={StaticResource HexToBrush}}"/>
 
                     <!-- Icon (optional) -->
                     <StackPanel Grid.Column="2">

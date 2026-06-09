@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
+using Recordum.WPF.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Xunit;
@@ -25,6 +26,7 @@ public class SectionVisibilityMatrixTests
     [Theory, MemberData(nameof(Cases))]
     public void Matrix_matches_spec(NodeType node, HabitType? habit, string expectedSections)
     {
+        var fakeSettings = new FakeAppSettingService();
         var sut = new HabitEditorViewModel(
             new FakeHabitNodeService(),
             new FakeHabitConfigService(),
@@ -32,8 +34,9 @@ public class SectionVisibilityMatrixTests
             new FakeMetricDefinitionService(),
             new FakeNotificationService(),
             new FakeTagService(),
-            new FakeAppSettingService(),
-            new FakeReferenceData());
+            fakeSettings,
+            new FakeReferenceData(),
+            new RecentColorStore(fakeSettings));
 
         var applicable = new List<string> { "L1" };
         if (sut.Scheduling.IsApplicable(node, habit)) applicable.Add("Scheduling");

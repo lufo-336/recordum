@@ -9,6 +9,7 @@ using Recordum.Core.Composition;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
+using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
@@ -20,15 +21,17 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private readonly IHabitTemplateService _templates;
     private readonly IReferenceDataQueryService _refData;
     private readonly IClock _clock;
+    private readonly IRecentColorStore _recentColors;
     private Guid? _parentId;
 
     public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates,
-        IReferenceDataQueryService refData, IClock clock)
+        IReferenceDataQueryService refData, IClock clock, IRecentColorStore recentColors)
     {
         _composed = composed;
         _templates = templates;
         _refData = refData;
         _clock = clock;
+        _recentColors = recentColors;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -38,6 +41,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <see cref="InitializeAsync"/>. Without a pick, those fields keep <see cref="CanLaunch"/> false.</summary>
     public ObservableCollection<UnitOfMeasure> AvailableUnits { get; } = new();
     public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
+
+    /// <summary>Recently picked habit colors, loaded from <see cref="IRecentColorStore"/> during
+    /// <see cref="InitializeAsync"/>. Bound to the <c>ColorSwatchPicker.RecentColors</c> DP.</summary>
+    public ObservableCollection<string> RecentColors { get; } = new();
 
     /// <summary>Units offered for a Time field (hours / minutes / seconds). A Time field's unit is
     /// optional — unlike Quantity it does not gate <see cref="CanLaunch"/> — but picking one makes
@@ -55,6 +62,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         foreach (var s in await _refData.ListScalesAsync(ct).ConfigureAwait(true)) AvailableScales.Add(s);
         AvailableTimeUnits.Clear();
         foreach (var u in AvailableUnits.Where(u => TimeUnitCodes.Contains(u.Code))) AvailableTimeUnits.Add(u);
+        RecentColors.Clear();
+        foreach (var c in await _recentColors.GetAsync(ct).ConfigureAwait(true)) RecentColors.Add(c);
     }
 
     [ObservableProperty] private string _name = string.Empty;
@@ -158,6 +167,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private async Task LaunchAsync(CancellationToken ct)
     {
         CreatedHabitNodeId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
+        await _recentColors.AddAsync(Color, ct).ConfigureAwait(true);
     }
 
     [RelayCommand]

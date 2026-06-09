@@ -2,6 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
+using Recordum.WPF.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Xunit;
@@ -19,7 +20,7 @@ public class HabitEditorViewModelTests
     private readonly FakeAppSettingService _appSettings = new();
     private readonly FakeReferenceData _refData = new();
 
-    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData);
+    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData, new RecentColorStore(_appSettings));
 
     [Fact]
     public async Task LoadAsync_with_null_clears_node()

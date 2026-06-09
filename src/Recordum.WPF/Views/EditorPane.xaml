@@ -71,7 +71,8 @@
                                            Converter={StaticResource EnumToVisibility},
                                            ConverterParameter={x:Static enums:NodeType.Habit}}"/>
                     <v:ColorSwatchPicker Margin="8,0,0,0"
-                                         Color="{Binding Color, Mode=TwoWay}"/>
+                                         Color="{Binding Color, Mode=TwoWay}"
+                                         RecentColors="{Binding RecentColors}"/>
                     <v:IconPicker Margin="8,0,0,0"
                                   Icon="{Binding Icon, Mode=TwoWay}"/>
                 </StackPanel>

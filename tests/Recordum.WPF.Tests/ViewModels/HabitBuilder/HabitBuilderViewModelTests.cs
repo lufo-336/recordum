@@ -3,6 +3,7 @@ using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.WPF.Resources;
+using Recordum.WPF.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitBuilder;
 using Xunit;
@@ -14,9 +15,38 @@ public class HabitBuilderViewModelTests
     private static HabitBuilderViewModel NewSut(
         IComposedHabitService? composed = null,
         IHabitTemplateService? templates = null,
-        IReferenceDataQueryService? refData = null)
+        IReferenceDataQueryService? refData = null,
+        IRecentColorStore? recentColors = null)
         => new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
-               refData ?? new FakeReferenceData(), new FakeClock());
+               refData ?? new FakeReferenceData(), new FakeClock(),
+               recentColors ?? new RecentColorStore(new FakeAppSettingService()));
+
+    [WpfFact]
+    public async Task InitializeAsync_loads_recent_colors()
+    {
+        var store = new RecentColorStore(new FakeAppSettingService());
+        await store.AddAsync("#123456");
+        var sut = NewSut(recentColors: store);
+
+        await sut.InitializeAsync();
+
+        sut.RecentColors.Should().Contain("#123456");
+    }
+
+    [WpfFact]
+    public async Task Launch_records_the_picked_color_as_recent()
+    {
+        var settings = new FakeAppSettingService();
+        var store = new RecentColorStore(settings);
+        var sut = NewSut(recentColors: store);
+        sut.Name = "Corsa";
+        sut.Color = "#abcdef";
+        sut.AddFieldCommand.Execute(FieldNature.Count);
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        (await store.GetAsync()).Should().Contain("#abcdef");
+    }
 
     [WpfFact]
     public void Adding_count_then_time_then_series_yields_resistance_and_preview()
