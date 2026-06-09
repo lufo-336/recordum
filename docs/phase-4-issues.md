@@ -237,6 +237,26 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 
 ---
 
+## Stato al 2026-06-10
+
+**Batch feedback utente (10 punti) → triage + cluster bug eseguito.** Triage: bug (2,4,6) vs feature (1,3,5,7,8,9,10). Utente ha scelto il cluster bug; #2 e #7 si sono evoluti in corso d'opera.
+
+- **#4 colore live → `fixed` + verified** (commit `3015f19`): le modifiche header in Configura (nome/colore/icona) ora pubblicano `HabitUpdated` sul bus; Home ricarica la riga (accento/nome) e il workspace aperto ricolora i marcatori calendario live. `HabitUpdatedPayload` aggiunto (il nome evento esisteva ma non era mai alzato). L'editor guadagna un `IEventBus` opzionale. Test: il cambio colore pubblica l'evento.
+- **#6 colore-nota in Configura → `fixed` + verified** (commit `3015f19`): la sezione Note di Configura usa il `ColorSwatchPicker` condiviso (palette + recenti + hex) invece della sola casella hex; recenti condivisi via `IRecentColorStore`.
+- **#7 selettore colore visuale → `fixed`** (commit `d74bd62`): nuovo controllo `HsvColorPicker` (quadrato saturazione/luminosità + striscia tonalità trascinabili) dentro il popup di `ColorSwatchPicker` → tutti e tre i picker permettono di scegliere qualsiasi colore visivamente, non solo digitare l'hex (richiesta esplicita utente: "solo l'hex non serve a molto"). Matematica `HsvColor` pura (16 unit test, round-trip RGB↔HSV). **Verifica visiva: da fare.**
+- **#2 Tempo non registrabile → NON era un bug dati** (commit `d74bd62`): l'utente ha scoperto che la cella Tempo **finisce fuori vista** in colonna stretta; allargando, compare. Le celle delle serie Resistance erano in `StackPanel` orizzontale che tagliava a destra → cambiato in `WrapPanel` (vanno a capo). **Verifica visiva: da fare.**
+
+**Richiesta trasversale nuova**: *"tutta la UI dovrebbe essere più godibile e proporzionata quando scalata"* → **R-responsiveUI** (nuovo, feature/design): layout responsivo su ridimensionamento finestra/colonne. Il fix wrap della registrazione è il primo tassello; serve un pass più ampio (proporzioni, clipping, scaling) — brainstorm.
+
+**Feature ancora aperte dal batch (richiedono brainstorm)**:
+- **#1+#3 mostrare l'icona** (prima del nome in Home + nelle colonne) — l'icona È persistita (`HabitNode.Icon`), manca solo il rendering. Si lega a #5.
+- **#5 evidenziazione abitudini** (blocco col colore selezione più scuro, riquadro interno su selezione, accenti colore nelle colonne) — identità visiva.
+- **#8 finestra "Nuova abitudine"** a fisarmonica (Configura fisso → toggle Preconfezionati → toggle Personalizzati) + bottone "Crea nuovo gruppo".
+- **#9 gruppi** (iniziare) — grande, multi-sessione.
+- **#10 colonna che entra scivolando** (motion) invece che di colpo.
+
+---
+
 ## Aperti — bloccanti
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
