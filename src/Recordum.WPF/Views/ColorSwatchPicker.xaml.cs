@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -69,7 +70,19 @@ public partial class ColorSwatchPicker : UserControl
     }
 
     private static void OnRecentColorsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        => ((ColorSwatchPicker)d).HasRecentColors = e.NewValue is IEnumerable<string> s && s.Any();
+    {
+        var picker = (ColorSwatchPicker)d;
+        // The bound collection is often populated async AFTER this binding resolves (editor LoadAsync),
+        // so track CollectionChanged too — otherwise HasRecentColors stays stuck at its bind-time value
+        // and the recents row never appears.
+        if (e.OldValue is INotifyCollectionChanged oldNcc) oldNcc.CollectionChanged -= picker.OnRecentColorsCollectionChanged;
+        if (e.NewValue is INotifyCollectionChanged newNcc) newNcc.CollectionChanged += picker.OnRecentColorsCollectionChanged;
+        picker.RefreshHasRecentColors();
+    }
+
+    private void OnRecentColorsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => RefreshHasRecentColors();
+
+    private void RefreshHasRecentColors() => HasRecentColors = RecentColors?.Any() == true;
 
     public ColorSwatchPicker()
     {
