@@ -219,8 +219,19 @@ Lanciata l'app (skill `run`). Feedback + fix in sessione:
 - **R-builderColorPicker + R-builderIconPicker → `fixed`** (2026-06-09): brainstorm → spec `docs/superpowers/specs/2026-06-09-creation-pickers-design.md` + piano `docs/superpowers/plans/2026-06-09-creation-pickers.md` (6 task TDD), **eseguito** su `fase-4-polish`. Due picker condivisi, gradevoli e VM-agnostici, adottati in **builder e Configura**:
   - **Colore**: `ColorSwatchPicker` con popup — palette curata multi-tonalità (36 swatch) + riga **recenti** (`IRecentColorStore`/`RecentColorStore` su `IAppSettingService`, cap 8, dedup, persistiti in `ui.recent_colors`) + entry hex con anteprima. I recenti si registrano al commit reale (Launch nel builder, color-change valido nell'editor). Commit `f17dd44`→`7de996c`.
   - **Icona**: `IconCatalog` (40 chiavi Lucide curate + `Search`) → `Icons.xaml` +40 geometrie (test di allineamento catalogo↔risorse); `IconPicker` con popup — griglia cliccabile + ricerca + converter `IconKeyToGeometry`. Commit `1621a99`, `82b3631`, `171a508`.
-  - Suite **WPF 406** verdi, build 0/0. **Verifica visiva utente: da fare** (skill `run`): quadratino colore cliccabile → palette/recenti/hex; box icona → griglia Lucide + ricerca; entrambi presenti anche in Configura; temi chiaro/scuro leggibili.
+  - Suite **WPF 406** verdi, build 0/0. **Verifica visiva utente parziale (2026-06-09)**: builder — color picker (palette/recenti/hex) + icon picker (griglia Lucide + ricerca) **verificati**. **Restano da verificare**: (4) gli stessi picker in Configura, (5) leggibilità popup nei temi chiaro/scuro.
 - **R-recordingsLog** (nuovo): manca un **elenco completo delle registrazioni** "a mo' di lista" (non solo "del giorno"), con **filtro per abitudine**. L'utente propende per metterlo nella tab **Abitudine** (o Dettaglio). → feature, richiede design (dove + filtro + scope cross-giorno).
+
+### Blocco limature 2026-06-09 (sera) — eseguito, verifica visiva utente: da fare
+
+Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
+
+- **R-summaryGlyphs → `fixed`** (commit `2e469f7`): i glyph testuali "✓"/"—" della striscia riepilogo del giorno sostituiti da icona Lucide. Done → `Icon.CheckCircle` reso come `Path` (colore `Brush.Success`); not-done → nessuna icona, solo testo muto. `DayNoteViewModel.SummaryIconKey` observable + resx ripulite dai glyph. Sbloccata dal catalogo icone + converter del lavoro picker. Test `SetDaySummary_exposes_a_done_icon_only_when_done`.
+- **R-daySummaryUnits → `fixed`** (commit `db741b3`): la striscia ora arricchisce l'aggregato con unità/scala della metrica primaria — Counter "4 km", State mappa il valore alla sua etichetta scala ("Buono") invece dell'indice nudo. Resistance/Action/Journal invariati (semantica di conteggio). Logica pura `DaySummaryFormatter` (8 unit test); l'host risolve la metrica primaria via `_metrics`/`_refData` (solo per Counter/State). **Non è il mezzo-fix temuto**: caso ambiguo multi-metrica gestito dal pannello "Registrazioni del giorno" (B12) sotto la striscia.
+- **R3 → `fixed`** (commit `ce155fe`): toolbar editor markdown — aggiunti `task`/`table`/`codeblock`. Source-view già disponibile via mode-switch Markdown/WYSIWYG nativo di Toast UI (non nascosto). `image` **escluso** di proposito (senza `addImageBlobHook` l'upload file inserirebbe blob URL non persistenti).
+- **Deselezione click-a-vuoto Home → `fixed`** (commit `667c623`, complemento di `R-navCloseColumns`): cliccare spazio vuoto **dentro la regione albero** (`TreeRegion`) azzera `SelectedRow` → collassa le colonne workspace/editor. Scoped all'albero così click su top-bar/filtri non deselezionano.
+- **R5 (accessibility) → `fixed` parziale** (commit `c9442e4`): chiusa la **lacuna mouse-only dei due picker** appena creati — trigger e celle ora focusabili + attivazione Invio/Spazio; all'apertura il focus entra nel popup (prima cella / search box), Escape chiude e riporta il focus al trigger; `AutomationProperties.Name` su trigger e celle. **Resta aperto l'audit a11y app-wide** (focus order su tutte le view, AutomationPeers, contrasto WCAG, nav-tastiera di tutti i controlli custom) — effort separato, candidato a milestone/brainstorm dedicato.
+- **Flaky test noto**: `HomeViewModelTests.CompletionRecorded_event_reloads_the_list_for_visual_feedback` fallisce **a intermittenza solo nella suite completa** (415 test, contesa CPU sul reload async event-driven: `HomeCallCount` resta 1 invece di >1) ma **passa sempre isolato** (verificato con e senza le modifiche di sessione). Non causato da queste limature. Da stabilizzare (es. attesa deterministica dell'handler) in un giro dedicato.
 
 ---
 
@@ -287,16 +298,14 @@ Lanciata l'app (skill `run`). Feedback + fix in sessione:
 - **Scope**: se WebView2 Runtime non è installato, l'editor cade su `TextBox` senza preview markdown. Aggiungere banner di guida con link diretto al Runtime download.
 
 ### R3. Toast UI toolbar — opzioni mancanti
-- **Stato**: `reported`
-- **Scope**: vedi B2. Decidere se aggiungere `table`/`task`/`image`/`source-view` toggle alla toolbar.
+- **Stato**: `fixed` (2026-06-09, commit `ce155fe`) — aggiunti `task`/`table`/`codeblock`; source-view già nativo (mode-switch). `image` escluso (no `addImageBlobHook`). Vedi "Blocco limature 2026-06-09 (sera)".
 
 ### R4. BackupSchedulerHost — start delay configurabile
 - **Stato**: `triaged`
 - **Scope**: il fix di M3.10b è "wait one tick = 60min prima del primo run". Per polish: rendere il delay configurabile (es. 5min default per esperienza utente più reattiva).
 
 ### R5. Accessibility / keyboard navigation
-- **Stato**: `reported`
-- **Scope**: focus order, tab traversal, AutomationPeers, contrasto colori WCAG.
+- **Stato**: `fixed` parziale (2026-06-09, commit `c9442e4`) — color/icon picker resi keyboard-accessible (focus/Invio-Spazio/Escape + AutomationProperties.Name). **Resta aperto** l'audit app-wide: focus order, tab traversal su tutte le view, AutomationPeers, contrasto colori WCAG, nav-tastiera dei controlli custom. Effort separato (candidato milestone/brainstorm dedicato).
 
 ### R6. CLAUDE.md ridotto — strategia di consultazione dei file companion
 - **Stato**: `fixed` (questo commit) — `CLAUDE.md` rimosso le sezioni storiche, ora pointer a `docs/MILESTONES.md`. Tracker bug in questo file.
