@@ -79,4 +79,20 @@ public class DayNoteViewModelTests
         sut.SetDaySummary(done: false, magnitudeLabel: null, noteCount: 0);
         sut.SummaryText.Should().Be(Strings.Abitudine_DaySummary_NotDone);
     }
+
+    [Fact]
+    public void SetDaySummary_exposes_a_done_icon_only_when_done()
+    {
+        var sut = NewSut(new FakeNoteService());
+        sut.SetContext(Guid.NewGuid());
+
+        sut.SetDaySummary(done: true, magnitudeLabel: null, noteCount: 0);
+        sut.SummaryIconKey.Should().Be("Icon.CheckCircle");
+        // The done glyph is rendered as an icon, not embedded in the text.
+        sut.SummaryText.Should().NotContain("✓");
+
+        sut.SetDaySummary(done: false, magnitudeLabel: null, noteCount: 0);
+        sut.SummaryIconKey.Should().BeNull();
+        sut.SummaryText.Should().NotContain("—");
+    }
 }

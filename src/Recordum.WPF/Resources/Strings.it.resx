@@ -447,10 +447,10 @@
     <value>Scegli un giorno sul calendario per aggiungere una nota.</value>
   </data>
   <data name="Abitudine.DaySummary.Done" xml:space="preserve">
-    <value>✓ Fatto</value>
+    <value>Fatto</value>
   </data>
   <data name="Abitudine.DaySummary.NotDone" xml:space="preserve">
-    <value>— Non ancora fatto</value>
+    <value>Non ancora fatto</value>
   </data>
   <data name="Abitudine.DaySummary.Notes" xml:space="preserve">
     <value>{0} note</value>

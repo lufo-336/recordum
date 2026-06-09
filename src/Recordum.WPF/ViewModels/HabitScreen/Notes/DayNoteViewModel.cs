@@ -31,6 +31,10 @@ public sealed partial class DayNoteViewModel : ObservableObject
     [ObservableProperty] private string _text = string.Empty;
     [ObservableProperty] private string _summaryText = string.Empty;
 
+    /// <summary>Lucide icon resource key for the done-state glyph (CheckCircle when done), or null
+    /// when not done — rendered as a line icon instead of a text glyph (design brief).</summary>
+    [ObservableProperty] private string? _summaryIconKey;
+
     public void SetContext(Guid habitNodeId)
     {
         _habitNodeId = habitNodeId;
@@ -39,6 +43,7 @@ public sealed partial class DayNoteViewModel : ObservableObject
         HasDate = false;
         Text = string.Empty;
         SummaryText = string.Empty;
+        SummaryIconKey = null;
     }
 
     /// <summary>The host supplies the day's summary (done-state + magnitude + note count) pre-formatted in the domain layer.</summary>
@@ -46,9 +51,11 @@ public sealed partial class DayNoteViewModel : ObservableObject
     {
         if (!done)
         {
+            SummaryIconKey = null;
             SummaryText = Strings.Abitudine_DaySummary_NotDone;
             return;
         }
+        SummaryIconKey = "Icon.CheckCircle";
         var parts = new List<string> { Strings.Abitudine_DaySummary_Done };
         if (!string.IsNullOrEmpty(magnitudeLabel)) parts.Add(magnitudeLabel);
 #pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string

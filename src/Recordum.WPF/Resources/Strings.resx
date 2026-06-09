@@ -465,10 +465,10 @@ Details: {0}</value>
     <value>Pick a day on the calendar to add a note.</value>
   </data>
   <data name="Abitudine.DaySummary.Done" xml:space="preserve">
-    <value>✓ Done</value>
+    <value>Done</value>
   </data>
   <data name="Abitudine.DaySummary.NotDone" xml:space="preserve">
-    <value>— Not done yet</value>
+    <value>Not done yet</value>
   </data>
   <data name="Abitudine.DaySummary.Notes" xml:space="preserve">
     <value>{0} notes</value>
