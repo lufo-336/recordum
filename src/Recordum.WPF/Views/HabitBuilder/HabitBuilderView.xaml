@@ -113,8 +113,8 @@
                                    FontSize="{StaticResource FontSize.Small}"
                                    Foreground="{DynamicResource Brush.TextMuted}"
                                    Margin="0,0,0,2"/>
-                        <TextBox Text="{Binding Icon, UpdateSourceTrigger=PropertyChanged}"
-                                 Padding="6,4"/>
+                        <v:IconPicker Icon="{Binding Icon, Mode=TwoWay}"
+                                      HorizontalAlignment="Left"/>
                     </StackPanel>
                 </Grid>
 
