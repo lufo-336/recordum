@@ -972,4 +972,7 @@ Details: {0}</value>
   <data name="Editor.Field.Days" xml:space="preserve">
     <value>Days</value>
   </data>
+  <data name="ColorPicker.Recent" xml:space="preserve">
+    <value>Recent</value>
+  </data>
 </root>

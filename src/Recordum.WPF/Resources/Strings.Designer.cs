@@ -353,6 +353,9 @@ public static class Strings
     public static string Diagnostic_NotAvailable => Get("Diagnostic.NotAvailable");
     public static string Diagnostic_NotGitCheckout => Get("Diagnostic.NotGitCheckout");
 
+    // Color picker
+    public static string ColorPicker_Recent => Get("ColorPicker.Recent");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

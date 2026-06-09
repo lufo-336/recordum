@@ -954,4 +954,7 @@
   <data name="Editor.Field.Days" xml:space="preserve">
     <value>Giorni</value>
   </data>
+  <data name="ColorPicker.Recent" xml:space="preserve">
+    <value>Recenti</value>
+  </data>
 </root>
