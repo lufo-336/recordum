@@ -208,13 +208,17 @@ Lanciata l'app (skill `run`). Feedback + fix in sessione:
 
 - **B11 → `verified-fixed`**: builder "da zero" → Lancia → registrazione mostra tutte le metriche con la propria unità/scala; salva e compare in "Registrazioni del giorno" con valori leggibili; Resistance con serie ha "Aggiungi serie". Spec 1 builder ora pienamente registrabile.
 
-**Nuovi punti dal giro (da decidere ordine):**
+**Nuovi punti dal giro:**
+
+*Limature UX chiuse (commit `f8d9238`, WPF 392 verdi) — verifica visiva utente: da fare:*
+- **R-navCloseColumns → `fixed`**: `MainWindowViewModel.ShowHome` ora azzera `Home.SelectedRow`; deselezionare collassa le colonne workspace+editor (la loro visibilità/larghezza tracciano `SelectedRow`). Cliccare "Home" riporta a una Home pulita senza passare da Archiviate/Cestinate. Test `ShowHome_deselects_the_row_and_closes_the_workspace`.
+- **R-seriesRecordingsFlat → `fixed`**: `CompletionListViewModel.BuildFieldDisplays` raggruppa per `SeriesIndex` — Resistance multi-serie legge "Serie 1 — Conteggio: 12 · Tempo: 30" (una riga per serie) invece della lista piatta; i campi dentro una serie sono ordinati per `MetricDefinition.SortOrder` (corregge anche l'ordine sballato visto a video). Mono-serie invariato (niente label "Serie 1"). Test `LoadDayAsync_groups_fields_by_series_for_multi_series_completion`.
+- **R-builderTimeUnit → `fixed`**: il mattone **Tempo** ha un picker unità opzionale (hours/minutes/seconds) — non gate sul Lancia (l'unità tempo è facoltativa) ma persistito sul `MetricDefinition` così la registrazione/grafici mostrano "30 min" invece di "30" nudo. `HabitBuilderViewModel.AvailableTimeUnits` (sottoinsieme filtrato per code) + ComboBox condizionale su `Nature==Time`. Test `InitializeAsync_populates_time_units_subset` + `Launch_persists_picked_time_unit_on_the_metric`.
+
+*Feature di design (richiedono brainstorm — prossimo fronte):*
 - **R-builderColorPicker** (ri-confermato, alta priorità — "da rivedere"): il quadratino colore accanto all'hex **non è cliccabile**; si può solo digitare l'esadecimale, che l'utente non conosce. Serve ruota/palette + colori recenti + hex affiancato. **Stesso bisogno in Configura.** → feature, richiede design/brainstorm.
 - **R-builderIconPicker**: il campo Icona accetta solo testo, nessun picker. Stesso bisogno in Configura. Icone Lucide (design brief). → feature, richiede design.
 - **R-recordingsLog** (nuovo): manca un **elenco completo delle registrazioni** "a mo' di lista" (non solo "del giorno"), con **filtro per abitudine**. L'utente propende per metterlo nella tab **Abitudine** (o Dettaglio). → feature, richiede design (dove + filtro + scope cross-giorno).
-- **R-navCloseColumns** (nuovo, UX): cliccare **Home "a vuoto" non chiude la workspace aperta**; non c'è un tasto per chiuderla → per tornare alla Home pulita si è costretti a passare da "Archiviate"/"Cestinate" e tornare indietro. Collegato allo spec nav-model parcheggiato `2026-05-29-navigation-model-design.md`. → fix UX / nav model.
-- **R-builderTimeUnit** (nuovo): il mattone **Tempo** non ha unità selezionabile; aggiungere scelta (secondi/minuti/ore o nessuna) così i grafici futuri avranno senso. Analogo al picker unità della Quantità. → refinement (tocca grammatica + persistenza TimeUnit).
-- **R-seriesRecordingsFlat** (osservato negli screenshot, non flaggato dall'utente): per una Resistance multi-serie, "Registrazioni del giorno" mostra una **lista piatta concatenata** di tutti i valori di tutte le serie ("Tempo: 3 / Quantità: 10 reps / Conteggio: 3 / Conteggio: 3 / Tempo: 3 / Quantità: 12 reps") senza raggruppamento per serie → si perde quale valore appartiene a quale serie. → refinement display.
 
 ---
 
