@@ -97,6 +97,7 @@ public static class ServiceRegistrar
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
+        services.AddScoped<IRecentColorStore, RecentColorStore>();
         services.AddScoped<IResetTimeResolver, ResetTimeResolver>();
         services.AddScoped<IScheduleEvaluator, Data.Services.Evaluators.ScheduleEvaluator>();
         services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
