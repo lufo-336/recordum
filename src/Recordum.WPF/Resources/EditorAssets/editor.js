@@ -8,8 +8,9 @@
     usageStatistics: false,
     toolbarItems: [
       ['heading', 'bold', 'italic', 'strike'],
-      ['ul', 'ol'],
-      ['hr', 'quote', 'code'],
+      ['ul', 'ol', 'task'],
+      ['hr', 'quote'],
+      ['table', 'code', 'codeblock'],
       ['link']
     ]
   });
