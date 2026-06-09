@@ -975,4 +975,7 @@ Details: {0}</value>
   <data name="ColorPicker.Recent" xml:space="preserve">
     <value>Recent</value>
   </data>
+  <data name="IconPicker.SearchPrompt" xml:space="preserve">
+    <value>Search icons</value>
+  </data>
 </root>

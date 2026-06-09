@@ -4,24 +4,51 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:Recordum.WPF.Views"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
              mc:Ignorable="d">
     <StackPanel Orientation="Horizontal">
-        <Border Width="28" Height="28"
-                BorderBrush="{DynamicResource Brush.Border}"
-                BorderThickness="1"
-                CornerRadius="3"
-                Background="Transparent"
-                Padding="4">
+        <!-- Trigger: current icon preview (opens popup) -->
+        <Border x:Name="Trigger" Width="28" Height="28" Cursor="Hand"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                CornerRadius="3" Background="Transparent" Padding="4"
+                MouseLeftButtonUp="OnTriggerClick">
             <Path Stretch="Uniform"
-                  Stroke="{DynamicResource Brush.Text}"
-                  StrokeThickness="1.5"
-                  StrokeStartLineCap="Round"
-                  StrokeEndLineCap="Round"
-                  StrokeLineJoin="Round"
+                  Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.5"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                   Data="{Binding SelectedIconGeometry, RelativeSource={RelativeSource AncestorType={x:Type local:IconPicker}}}"/>
         </Border>
-        <TextBox Width="110" Margin="8,0,0,0"
-                 VerticalContentAlignment="Center"
-                 Text="{Binding Icon, RelativeSource={RelativeSource AncestorType={x:Type local:IconPicker}}, UpdateSourceTrigger=LostFocus}"/>
+
+        <Popup x:Name="PickerPopup" PlacementTarget="{Binding ElementName=Trigger}"
+               Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+            <Border Background="{DynamicResource Brush.SurfaceElevated}"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                    CornerRadius="6" Padding="10" Width="240">
+                <StackPanel>
+                    <TextBox TextChanged="OnSearchChanged"
+                             Padding="6,4" Margin="0,0,0,8"
+                             ToolTip="{x:Static res:Strings.IconPicker_SearchPrompt}"/>
+                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Results, RelativeSource={RelativeSource AncestorType={x:Type local:IconPicker}}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="32" Height="32" Margin="3" Cursor="Hand"
+                                            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                            CornerRadius="3" Background="Transparent" Padding="5"
+                                            MouseLeftButtonUp="OnIconClick">
+                                        <Path Stretch="Uniform"
+                                              Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.5"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                              Data="{Binding ., Converter={StaticResource IconKeyToGeometry}}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Popup>
     </StackPanel>
 </UserControl>

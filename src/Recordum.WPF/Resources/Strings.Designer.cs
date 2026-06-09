@@ -356,6 +356,9 @@ public static class Strings
     // Color picker
     public static string ColorPicker_Recent => Get("ColorPicker.Recent");
 
+    // Icon picker
+    public static string IconPicker_SearchPrompt => Get("IconPicker.SearchPrompt");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

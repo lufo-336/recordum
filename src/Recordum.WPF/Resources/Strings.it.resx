@@ -957,4 +957,7 @@
   <data name="ColorPicker.Recent" xml:space="preserve">
     <value>Recenti</value>
   </data>
+  <data name="IconPicker.SearchPrompt" xml:space="preserve">
+    <value>Cerca icone</value>
+  </data>
 </root>

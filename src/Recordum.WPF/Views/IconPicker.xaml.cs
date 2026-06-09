@@ -1,13 +1,16 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using Recordum.WPF.Services;
 
 namespace Recordum.WPF.Views;
 
 /// <summary>
 /// Bound to <see cref="Icon"/> — a resource key into <c>Resources/Icons.xaml</c>.
-/// Resolves the geometry from the application resources and shows it; falls back to empty Path
-/// when the key is unknown. Full Lucide picker grid lands in a later milestone.
+/// The trigger shows the selected icon; clicking it opens a popup with a searchable grid of the
+/// curated Lucide set (<see cref="IconCatalog"/>). Picking an icon sets <see cref="Icon"/>.
 /// </summary>
 public partial class IconPicker : UserControl
 {
@@ -35,9 +38,40 @@ public partial class IconPicker : UserControl
         private set => SetValue(SelectedIconGeometryProperty, value);
     }
 
+    /// <summary>Currently displayed (search-filtered) icon resource keys.</summary>
+    public ObservableCollection<string> Results { get; } = new();
+
     public IconPicker()
     {
         InitializeComponent();
+        Reset(IconCatalog.All);
+    }
+
+    private void Reset(IReadOnlyList<string> keys)
+    {
+        Results.Clear();
+        foreach (var k in keys) Results.Add(k);
+    }
+
+    private void OnTriggerClick(object sender, MouseButtonEventArgs e)
+    {
+        PickerPopup.IsOpen = !PickerPopup.IsOpen;
+        e.Handled = true;
+    }
+
+    private void OnSearchChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb) Reset(IconCatalog.Search(tb.Text));
+    }
+
+    private void OnIconClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is string key)
+        {
+            Icon = key;
+            PickerPopup.IsOpen = false;
+            e.Handled = true;
+        }
     }
 
     private static void OnIconChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -48,9 +82,6 @@ public partial class IconPicker : UserControl
             picker.SelectedIconGeometry = null;
             return;
         }
-        if (Application.Current?.TryFindResource(key) is Geometry geometry)
-            picker.SelectedIconGeometry = geometry;
-        else
-            picker.SelectedIconGeometry = null;
+        picker.SelectedIconGeometry = Application.Current?.TryFindResource(key) as Geometry;
     }
 }
