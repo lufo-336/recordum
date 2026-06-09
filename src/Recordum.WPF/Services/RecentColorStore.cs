@@ -19,8 +19,13 @@ public sealed partial class RecentColorStore : IRecentColorStore
     public async ValueTask<IReadOnlyList<string>> GetAsync(CancellationToken ct = default)
     {
         var raw = await _settings.GetAsync(SettingKey, ct).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(raw)) return Array.Empty<string>();
-        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (string.IsNullOrWhiteSpace(raw)) return [];
+        // Filter + normalize on read too: a corrupt/externally-written row must never feed invalid
+        // hex to the picker, and lowercasing keeps the Ordinal dedup in AddAsync strictly correct.
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                  .Where(c => HexPattern().IsMatch(c))
+                  .Select(c => c.ToLowerInvariant())
+                  .ToArray();
     }
 
     public async ValueTask AddAsync(string hex, CancellationToken ct = default)
@@ -28,7 +33,8 @@ public sealed partial class RecentColorStore : IRecentColorStore
         if (hex is null || !HexPattern().IsMatch(hex)) return;
         var norm = hex.ToLowerInvariant();
         var list = new List<string>(await GetAsync(ct).ConfigureAwait(false));
-        list.RemoveAll(c => string.Equals(c, norm, StringComparison.OrdinalIgnoreCase));
+        // Both sides are normalized lowercase (write-side ToLowerInvariant + read-side filter), so Ordinal is correct.
+        list.RemoveAll(c => string.Equals(c, norm, StringComparison.Ordinal));
         list.Insert(0, norm);
         if (list.Count > Cap) list.RemoveRange(Cap, list.Count - Cap);
         await _settings.SetAsync(SettingKey, string.Join(',', list), ct).ConfigureAwait(false);
