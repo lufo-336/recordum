@@ -34,6 +34,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public Guid HabitNodeId { get; }
     public Guid? ParentId { get; }
     public string ColorHex { get; }
+    /// <summary>Lucide icon resource key (e.g. "Icon.Heart"), or null/free-text for no icon.</summary>
+    public string? Icon { get; }
     public HabitType? HabitType { get; }
     public bool IsGroup => HabitType is null;
     public int ChildCount { get; }
@@ -74,6 +76,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         HabitNodeId = row.HabitNodeId;
         ParentId = row.ParentId;
         ColorHex = row.ColorHex;
+        Icon = row.Icon;
         HabitType = row.HabitType;
         ChildCount = row.ChildCount;
         CompletionsLast7Days = row.CompletionsLast7Days;

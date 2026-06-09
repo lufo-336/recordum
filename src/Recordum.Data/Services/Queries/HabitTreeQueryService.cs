@@ -71,6 +71,7 @@ public sealed class HabitTreeQueryService(
                 n.ParentId,
                 n.Name,
                 n.Color,
+                n.Icon,
                 n.HabitType,
                 n.PinScope,
                 n.IsArchived,
@@ -97,7 +98,8 @@ public sealed class HabitTreeQueryService(
                 ChildCount: r.ChildCount,
                 IsArchived: r.IsArchived,
                 CompletionsLast7Days: bucketsByHabit.TryGetValue(r.Id, out var arr) ? arr : emptyHeatmap,
-                TagIds: tagsByHabit.TryGetValue(r.Id, out var tids) ? tids : ImmutableArray<Guid>.Empty))
+                TagIds: tagsByHabit.TryGetValue(r.Id, out var tids) ? tids : ImmutableArray<Guid>.Empty,
+                Icon: r.Icon))
             .ToList();
     }
 }

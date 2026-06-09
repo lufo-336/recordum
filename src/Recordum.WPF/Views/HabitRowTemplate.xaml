@@ -20,14 +20,27 @@
                        Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}" />
 
             <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Name}"
-                           FontSize="{StaticResource FontSize.Body}"
-                           Foreground="{DynamicResource Brush.Text}"
-                           Visibility="{Binding IsRenaming, Converter={StaticResource BoolToHidden}}" />
-                <TextBox Text="{Binding PendingName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                         FontSize="{StaticResource FontSize.Body}"
-                         b:InlineRenameBehavior.Attach="True"
-                         Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisible}}" />
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <!-- Habit icon (Lucide), tinted with the habit color; collapses when no resolvable icon. -->
+                <Path Grid.Column="0" Width="16" Height="16" Margin="0,0,6,0"
+                      Stretch="Uniform" VerticalAlignment="Center"
+                      Stroke="{Binding ColorHex, Converter={StaticResource HexToBrush}}" StrokeThickness="1.5"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Data="{Binding Icon, Converter={StaticResource IconKeyToGeometry}}"
+                      Visibility="{Binding Data, RelativeSource={RelativeSource Self}, Converter={StaticResource NullToVisibility}}" />
+                <Grid Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="{StaticResource FontSize.Body}"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Visibility="{Binding IsRenaming, Converter={StaticResource BoolToHidden}}" />
+                    <TextBox Text="{Binding PendingName, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                             FontSize="{StaticResource FontSize.Body}"
+                             b:InlineRenameBehavior.Attach="True"
+                             Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisible}}" />
+                </Grid>
             </Grid>
 
             <TextBlock Grid.Column="2"

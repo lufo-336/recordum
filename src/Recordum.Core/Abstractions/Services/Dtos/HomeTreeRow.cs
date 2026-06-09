@@ -16,4 +16,5 @@ public sealed record HomeTreeRow(
     int ChildCount,
     bool IsArchived,
     ImmutableArray<int> CompletionsLast7Days,
-    ImmutableArray<Guid> TagIds);
+    ImmutableArray<Guid> TagIds,
+    string? Icon = null);

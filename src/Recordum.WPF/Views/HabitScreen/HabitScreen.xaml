@@ -466,11 +466,18 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0"
-                           Text="{Binding Name}"
-                           FontSize="{StaticResource FontSize.Heading}"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Path Width="22" Height="22" Margin="0,0,8,0"
+                          Stretch="Uniform" VerticalAlignment="Center"
+                          Stroke="{Binding Node.Color, Converter={StaticResource HexToBrush}}" StrokeThickness="1.6"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                          Data="{Binding Node.Icon, Converter={StaticResource IconKeyToGeometry}}"
+                          Visibility="{Binding Data, RelativeSource={RelativeSource Self}, Converter={StaticResource NullToVisibility}}"/>
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="{StaticResource FontSize.Heading}"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="{x:Static res:Strings.Export_Button}"
                             Command="{Binding ExportCommand}"
