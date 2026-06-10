@@ -25,6 +25,17 @@ public sealed partial class CalendarDayCellViewModel : ObservableObject
     public bool ShowNoteCount => NoteCount > 1;
     public bool HasNumber => !string.IsNullOrEmpty(Number);
 
+    public string TooltipText
+    {
+        get
+        {
+            var date = Date.ToString("D", System.Globalization.CultureInfo.CurrentCulture);
+            if (!string.IsNullOrEmpty(Number)) return $"{date} · {Number}";
+            if (NoteCount > 0) return $"{date} · {NoteCount}";
+            return date;
+        }
+    }
+
     public CalendarDayCellViewModel(DateOnly date, bool inCurrentMonth, bool isToday, bool isFuture)
     {
         Date = date;
@@ -37,7 +48,12 @@ public sealed partial class CalendarDayCellViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasNote));
         OnPropertyChanged(nameof(ShowNoteCount));
+        OnPropertyChanged(nameof(TooltipText));
     }
 
-    partial void OnNumberChanged(string? value) => OnPropertyChanged(nameof(HasNumber));
+    partial void OnNumberChanged(string? value)
+    {
+        OnPropertyChanged(nameof(HasNumber));
+        OnPropertyChanged(nameof(TooltipText));
+    }
 }

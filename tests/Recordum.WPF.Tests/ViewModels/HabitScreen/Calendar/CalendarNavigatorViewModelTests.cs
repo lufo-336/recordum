@@ -226,4 +226,12 @@ public class CalendarNavigatorViewModelTests
         sut.Cells.Should().HaveCount(42);
         sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10)).IsSelected.Should().BeTrue();
     }
+
+    [Fact]
+    public void DayCell_TooltipText_includes_the_date()
+    {
+        var cell = new CalendarDayCellViewModel(new DateOnly(2026, 6, 10), inCurrentMonth: true, isToday: false, isFuture: false);
+        cell.TooltipText.Should().Contain("2026");
+        cell.TooltipText.Should().Contain("10");
+    }
 }
