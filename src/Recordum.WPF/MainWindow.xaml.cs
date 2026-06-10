@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Recordum.WPF.Controls;
 using Recordum.WPF.ViewModels;
@@ -75,30 +76,57 @@ public partial class MainWindow : Window
     }
 
     private void ApplyEditorPaneWidth()
-        => AnimateColumn(EditorPaneColumn, _viewModel.Editor.HasNode ? _viewModel.EditorPaneWidth : 0);
+        => AnimateColumn(EditorPaneColumn, EditorPaneContent, _viewModel.Editor.HasNode ? _viewModel.EditorPaneWidth : 0);
 
     private void ApplyHabitScreenWidth()
-        => AnimateColumn(HabitScreenColumn, _viewModel.Home.SelectedRow is not null ? _viewModel.HabitScreenWidth : 0);
+        => AnimateColumn(HabitScreenColumn, HabitScreenContent, _viewModel.Home.SelectedRow is not null ? _viewModel.HabitScreenWidth : 0);
 
-    // Slides a column open/closed instead of snapping. Sets the target as the base (local) value and
-    // plays a Stop-fill animation over it, so the GridSplitter can still resize the column afterwards
-    // (a held animation would otherwise override later direct/​splitter width changes).
-    private static void AnimateColumn(ColumnDefinition column, double target)
+    // Opens a column by sliding its content in (animated TranslateTransform — composition only, no
+    // per-frame layout), and closes it by shrinking the now-empty column with the cheap width animation.
+    // Sets the target width as the base (local) value and uses Stop-fill animations so the GridSplitter
+    // can still resize the column afterwards (a held animation would override later width changes).
+    private static void AnimateColumn(ColumnDefinition column, FrameworkElement content, double target)
     {
-        double from = column.ActualWidth;
-        column.Width = new GridLength(target);
-        if (Math.Abs(from - target) < 0.5) return;
+        double current = column.ActualWidth;
+        if (Math.Abs(current - target) < 0.5) return;
 
-        var animation = new GridLengthAnimation
+        if (target > 0.5)
         {
-            From = from,
-            To = target,
-            Duration = TimeSpan.FromMilliseconds(180),
-            FillBehavior = FillBehavior.Stop,
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        };
-        column.BeginAnimation(ColumnDefinition.WidthProperty, animation);
+            // Open: reserve the final width once (single layout pass), then slide the content in from
+            // the right. Content is ClipToBounds, so the off-screen start position is invisible.
+            column.Width = new GridLength(target);
+            var tt = EnsureTranslate(content);
+            tt.X = target; // set before BeginAnimation to avoid a one-frame flash at the final position
+            var slide = new DoubleAnimation
+            {
+                From = target,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(160),
+                FillBehavior = FillBehavior.Stop,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            slide.Completed += (_, _) => tt.X = 0; // settle the base value after Stop-fill
+            tt.BeginAnimation(TranslateTransform.XProperty, slide);
+        }
+        else
+        {
+            // Close: the content collapses via its Visibility binding; the empty column shrinks cheaply.
+            column.Width = new GridLength(0);
+            var collapse = new GridLengthAnimation
+            {
+                From = current,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(160),
+                FillBehavior = FillBehavior.Stop,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            column.BeginAnimation(ColumnDefinition.WidthProperty, collapse);
+        }
     }
+
+    private static TranslateTransform EnsureTranslate(FrameworkElement content)
+        => content.RenderTransform as TranslateTransform
+           ?? (TranslateTransform)(content.RenderTransform = new TranslateTransform());
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
