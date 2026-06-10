@@ -1,7 +1,10 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
+using Recordum.WPF.Controls;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
@@ -72,17 +75,29 @@ public partial class MainWindow : Window
     }
 
     private void ApplyEditorPaneWidth()
-    {
-        EditorPaneColumn.Width = _viewModel.Editor.HasNode
-            ? new GridLength(_viewModel.EditorPaneWidth)
-            : new GridLength(0);
-    }
+        => AnimateColumn(EditorPaneColumn, _viewModel.Editor.HasNode ? _viewModel.EditorPaneWidth : 0);
 
     private void ApplyHabitScreenWidth()
+        => AnimateColumn(HabitScreenColumn, _viewModel.Home.SelectedRow is not null ? _viewModel.HabitScreenWidth : 0);
+
+    // Slides a column open/closed instead of snapping. Sets the target as the base (local) value and
+    // plays a Stop-fill animation over it, so the GridSplitter can still resize the column afterwards
+    // (a held animation would otherwise override later direct/​splitter width changes).
+    private static void AnimateColumn(ColumnDefinition column, double target)
     {
-        HabitScreenColumn.Width = _viewModel.Home.SelectedRow is not null
-            ? new GridLength(_viewModel.HabitScreenWidth)
-            : new GridLength(0);
+        double from = column.ActualWidth;
+        column.Width = new GridLength(target);
+        if (Math.Abs(from - target) < 0.5) return;
+
+        var animation = new GridLengthAnimation
+        {
+            From = from,
+            To = target,
+            Duration = TimeSpan.FromMilliseconds(180),
+            FillBehavior = FillBehavior.Stop,
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+        };
+        column.BeginAnimation(ColumnDefinition.WidthProperty, animation);
     }
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
