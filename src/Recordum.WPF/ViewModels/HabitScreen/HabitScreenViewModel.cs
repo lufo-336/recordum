@@ -89,7 +89,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
-        Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMonthMarkersAsync };
+        Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
         _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
@@ -234,28 +234,36 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         await Calendar.JumpAsync().ConfigureAwait(true);
     }
 
-    private async Task<CalendarMonthMarkers> LoadMonthMarkersAsync(int year, int month, CancellationToken ct)
+    private async Task<CalendarMarkers> LoadMarkersAsync(DateOnly from, DateOnly to, CancellationToken ct)
     {
         var node = Node;
-        if (node is null) return new CalendarMonthMarkers([]);
+        if (node is null) return new CalendarMarkers([]);
 
-        var mags = await _completions.GetDailyMagnitudeAsync(node.Id, year, month, ct).ConfigureAwait(true);
-        var notes = await _noteService.ListNoteCountsInMonthAsync(node.Id, year, month, ct).ConfigureAwait(true);
-        var magByDate = mags.ToDictionary(m => m.Date, m => m.Magnitude);
-        var noteByDate = notes.ToDictionary(n => n.Date, n => n.Count);
+        var magByDate = new Dictionary<DateOnly, decimal>();
+        var noteByDate = new Dictionary<DateOnly, int>();
 
-        var monthMax = mags.Count > 0 ? mags.Max(m => m.Magnitude) : 0m;
+        var cursor = new DateOnly(from.Year, from.Month, 1);
+        var last = new DateOnly(to.Year, to.Month, 1);
+        while (cursor <= last)
+        {
+            var mags = await _completions.GetDailyMagnitudeAsync(node.Id, cursor.Year, cursor.Month, ct).ConfigureAwait(true);
+            var notes = await _noteService.ListNoteCountsInMonthAsync(node.Id, cursor.Year, cursor.Month, ct).ConfigureAwait(true);
+            foreach (var m in mags) magByDate[m.Date] = m.Magnitude;
+            foreach (var n in notes) noteByDate[n.Date] = n.Count;
+            cursor = cursor.AddMonths(1);
+        }
+
+        var rangeMax = magByDate.Count > 0 ? magByDate.Values.Max() : 0m;
         var type = node.HabitType ?? HabitType.Action;
 
         var days = new List<CalendarDayMarker>();
-        var allDates = magByDate.Keys.Union(noteByDate.Keys).Distinct();
-        foreach (var date in allDates)
+        foreach (var date in magByDate.Keys.Union(noteByDate.Keys).Distinct())
         {
             var mag = magByDate.TryGetValue(date, out var mv) ? mv : 0m;
             var noteCount = noteByDate.TryGetValue(date, out var nc) ? nc : 0;
-            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, monthMax), NumberFor(type, mag), noteCount));
+            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, rangeMax), NumberFor(type, mag), noteCount));
         }
-        return new CalendarMonthMarkers(days);
+        return new CalendarMarkers(days);
     }
 
     private static int TintStepFor(HabitType type, decimal mag, decimal monthMax)

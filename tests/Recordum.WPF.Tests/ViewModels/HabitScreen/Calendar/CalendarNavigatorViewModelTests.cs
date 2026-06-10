@@ -42,8 +42,8 @@ public class CalendarNavigatorViewModelTests
     [Fact]
     public async Task LoadAsync_applies_markers_from_provider()
     {
-        CalendarMarkerProvider provider = (y, m, ct) => Task.FromResult(
-            new CalendarMonthMarkers(new[]
+        CalendarMarkerProvider provider = (from, to, ct) => Task.FromResult(
+            new CalendarMarkers(new[]
             {
                 new CalendarDayMarker(new DateOnly(2026, 6, 1), TintStep: 4, Number: null, NoteCount: 1),
                 new CalendarDayMarker(new DateOnly(2026, 6, 2), TintStep: 4, Number: "2×", NoteCount: 0),
@@ -74,8 +74,8 @@ public class CalendarNavigatorViewModelTests
     [Fact]
     public async Task ApplyMarkers_sets_tint_number_and_notecount()
     {
-        CalendarMarkerProvider provider = (y, m, ct) => Task.FromResult(
-            new CalendarMonthMarkers(new[]
+        CalendarMarkerProvider provider = (from, to, ct) => Task.FromResult(
+            new CalendarMarkers(new[]
             {
                 new CalendarDayMarker(new DateOnly(2026, 6, 2), TintStep: 3, Number: "3", NoteCount: 0),
                 new CalendarDayMarker(new DateOnly(2026, 6, 4), TintStep: 0, Number: null, NoteCount: 2),
@@ -107,11 +107,11 @@ public class CalendarNavigatorViewModelTests
         var sut = NewSut(out _);
         await sut.LoadAsync(2026, 12, selected: null);
 
-        await sut.NextMonthCommand.ExecuteAsync(null);
+        await sut.NextCommand.ExecuteAsync(null);
         sut.DisplayYear.Should().Be(2027);
         sut.DisplayMonth.Should().Be(1);
 
-        await sut.PrevMonthCommand.ExecuteAsync(null);
+        await sut.PrevCommand.ExecuteAsync(null);
         sut.DisplayYear.Should().Be(2026);
         sut.DisplayMonth.Should().Be(12);
     }

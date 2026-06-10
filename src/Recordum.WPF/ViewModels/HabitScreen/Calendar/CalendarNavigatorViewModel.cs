@@ -9,11 +9,11 @@ namespace Recordum.WPF.ViewModels.HabitScreen.Calendar;
 /// <summary>Presentation-ready marker per un giorno (il host calcola tint/numero/note).</summary>
 public sealed record CalendarDayMarker(DateOnly Date, int TintStep, string? Number, int NoteCount);
 
-/// <summary>Day-markers for one month, supplied by the host.</summary>
-public sealed record CalendarMonthMarkers(IReadOnlyList<CalendarDayMarker> Days);
+/// <summary>Day-markers for a date range, supplied by the host.</summary>
+public sealed record CalendarMarkers(IReadOnlyList<CalendarDayMarker> Days);
 
-/// <summary>Host-supplied source of month markers (decouples the calendar from the domain).</summary>
-public delegate Task<CalendarMonthMarkers> CalendarMarkerProvider(int year, int month, CancellationToken ct);
+/// <summary>Host-supplied source of markers for an inclusive date range (decouples the calendar from the domain).</summary>
+public delegate Task<CalendarMarkers> CalendarMarkerProvider(DateOnly from, DateOnly to, CancellationToken ct);
 
 /// <summary>
 /// Reusable month-grid calendar: navigates months/years, renders a 6×7 grid with today/selected
@@ -42,7 +42,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     [ObservableProperty] private string _noteColorHex = "#e0b341";
     [ObservableProperty] private int _displayYear;
     [ObservableProperty] private int _displayMonth;
-    [ObservableProperty] private string _monthLabel = string.Empty;
+    [ObservableProperty] private string _headerLabel = string.Empty;
     [ObservableProperty] private DateOnly? _selectedDate;
 
     public ObservableCollection<CalendarDayCellViewModel> Cells { get; } = [];
@@ -54,16 +54,22 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 
     public async Task LoadAsync(int year, int month, DateOnly? selected, CancellationToken ct = default)
     {
+        DisplayYear = year;
+        DisplayMonth = month;
+        SelectedDate = selected;
+        await ReloadAsync(ct).ConfigureAwait(true);
+    }
+
+    /// <summary>Rebuilds the grid for the current view mode, applies markers for the visible span, and
+    /// re-resolves the selection. All navigation/jump/view-mode changes funnel through here.</summary>
+    private async Task ReloadAsync(CancellationToken ct)
+    {
         _isLoading = true;
         try
         {
-            DisplayYear = year;
-            DisplayMonth = month;
-            SelectedDate = selected;
-            MonthLabel = new DateOnly(year, month, 1).ToString("MMMM yyyy", CultureInfo.CurrentCulture);
-
-            BuildGrid(year, month);
-            await ApplyMarkersAsync(year, month, ct).ConfigureAwait(true);
+            BuildMonthGrid(DisplayYear, DisplayMonth);
+            HeaderLabel = new DateOnly(DisplayYear, DisplayMonth, 1).ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+            await ApplyMarkersAsync(ct).ConfigureAwait(true);
             RefreshSelection();
         }
         finally
@@ -72,7 +78,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         }
     }
 
-    private void BuildGrid(int year, int month)
+    private void BuildMonthGrid(int year, int month)
     {
         Cells.Clear();
         var first = new DateOnly(year, month, 1);
@@ -90,25 +96,27 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         }
     }
 
-    private async Task ApplyMarkersAsync(int year, int month, CancellationToken ct)
+    /// <summary>Fetches markers for the visible cell span and assigns tint/number/notes by date.</summary>
+    private async Task ApplyMarkersAsync(CancellationToken ct)
     {
-        if (MarkerProvider is null) return;
-        var markers = await MarkerProvider(year, month, ct).ConfigureAwait(true);
-        var byDate = markers.Days.ToDictionary(d => d.Date);
         foreach (var cell in Cells)
         {
             cell.TintColorHex = CompletedColorHex;
+            cell.TintStep = 0;
+            cell.Number = null;
+            cell.NoteCount = 0;
+        }
+        if (MarkerProvider is null || Cells.Count == 0) return;
+
+        var markers = await MarkerProvider(Cells[0].Date, Cells[^1].Date, ct).ConfigureAwait(true);
+        var byDate = markers.Days.ToDictionary(d => d.Date);
+        foreach (var cell in Cells)
+        {
             if (byDate.TryGetValue(cell.Date, out var m))
             {
                 cell.TintStep = m.TintStep;
                 cell.Number = m.Number;
                 cell.NoteCount = m.NoteCount;
-            }
-            else
-            {
-                cell.TintStep = 0;
-                cell.Number = null;
-                cell.NoteCount = 0;
             }
         }
     }
@@ -120,23 +128,27 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task PrevMonthAsync(CancellationToken ct)
+    private Task PrevAsync(CancellationToken ct)
     {
         var prev = new DateOnly(DisplayYear, DisplayMonth, 1).AddMonths(-1);
-        return LoadAsync(prev.Year, prev.Month, SelectedDate, ct);
+        DisplayYear = prev.Year;
+        DisplayMonth = prev.Month;
+        return ReloadAsync(ct);
     }
 
     [RelayCommand]
-    private Task NextMonthAsync(CancellationToken ct)
+    private Task NextAsync(CancellationToken ct)
     {
         var next = new DateOnly(DisplayYear, DisplayMonth, 1).AddMonths(1);
-        return LoadAsync(next.Year, next.Month, SelectedDate, ct);
+        DisplayYear = next.Year;
+        DisplayMonth = next.Month;
+        return ReloadAsync(ct);
     }
 
     /// <summary>Reloads the current month (bound to the jump dropdowns). No-op while a load is already in flight,
     /// which prevents a reentrant loop when LoadAsync mutates DisplayMonth/DisplayYear (TwoWay-bound to the ComboBoxes).</summary>
     public Task JumpAsync(CancellationToken ct = default)
-        => _isLoading ? Task.CompletedTask : LoadAsync(DisplayYear, DisplayMonth, SelectedDate, ct);
+        => _isLoading ? Task.CompletedTask : ReloadAsync(ct);
 
     [RelayCommand]
     private void SelectDate(CalendarDayCellViewModel? cell)

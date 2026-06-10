@@ -17,8 +17,8 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="&#x2039;" Width="28" Command="{Binding PrevMonthCommand}"/>
-                <TextBlock Grid.Column="1" Text="{Binding MonthLabel}" VerticalAlignment="Center"
+                <Button Grid.Column="0" Content="&#x2039;" Width="28" Command="{Binding PrevCommand}"/>
+                <TextBlock Grid.Column="1" Text="{Binding HeaderLabel}" VerticalAlignment="Center"
                            Margin="8,0" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
                 <ComboBox Grid.Column="2" Width="64" Margin="0,0,4,0"
                           ItemsSource="{Binding SelectableMonths}"
@@ -28,7 +28,7 @@
                           ItemsSource="{Binding SelectableYears}"
                           SelectedItem="{Binding DisplayYear}"
                           SelectionChanged="OnJumpChanged"/>
-                <Button Grid.Column="4" Content="&#x203A;" Width="28" Margin="4,0,0,0" Command="{Binding NextMonthCommand}"/>
+                <Button Grid.Column="4" Content="&#x203A;" Width="28" Margin="4,0,0,0" Command="{Binding NextCommand}"/>
             </Grid>
 
             <!-- Weekday header row -->
