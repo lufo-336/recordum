@@ -248,12 +248,16 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 
 **Richiesta trasversale nuova**: *"tutta la UI dovrebbe essere più godibile e proporzionata quando scalata"* → **R-responsiveUI** (nuovo, feature/design): layout responsivo su ridimensionamento finestra/colonne. Il fix wrap della registrazione è il primo tassello; serve un pass più ampio (proporzioni, clipping, scaling) — brainstorm.
 
+**Altri fix di sessione (2026-06-10)**:
+- **Recenti color picker → `fixed`** (commit `f1e7667`): la riga "Recenti" non appariva in Configura perché `HasRecentColors` si ricalcolava solo al cambio del *riferimento* della collezione `RecentColors`, ma in Configura la collezione si popola async **dopo** il bind. Ora il controllo si sottoscrive a `CollectionChanged`.
+- **#1+#3 icona → `fixed`** (commit `66d350e`): l'icona era persistita (`HabitNode.Icon`) ma mai mostrata. Cablata via `HomeTreeRow` → proiezione query → `HomeRowViewModel`; render `Path` Lucide (tinta col colore abitudine) prima del nome nella riga Home e nell'header del workspace. Collassa se vuota o non risolvibile (icone legacy free-text). **Verifica visiva: da fare.**
+- **#10 slide colonna → `fixed`** (commit `3897ddc`): nuova `GridLengthAnimation`; le colonne HabitScreen/EditorPane scivolano 0↔target in 180ms (CubicEase) invece di comparire di colpo. `FillBehavior.Stop` su valore base così lo splitter continua a funzionare; `ClipToBounds` per rivelare pulito. **Verifica visiva: da fare.**
+
 **Feature ancora aperte dal batch (richiedono brainstorm)**:
-- **#1+#3 mostrare l'icona** (prima del nome in Home + nelle colonne) — l'icona È persistita (`HabitNode.Icon`), manca solo il rendering. Si lega a #5.
-- **#5 evidenziazione abitudini** (blocco col colore selezione più scuro, riquadro interno su selezione, accenti colore nelle colonne) — identità visiva.
+- **#5 evidenziazione abitudini** (blocco col colore abitudine più scuro per distaccarsi dallo sfondo, riquadro interno colorato su selezione, accenti colore nelle colonne) — identità visiva; si lega all'icona appena aggiunta. Direzioni concrete dall'utente ma è un redesign visivo da iterare a vista.
 - **#8 finestra "Nuova abitudine"** a fisarmonica (Configura fisso → toggle Preconfezionati → toggle Personalizzati) + bottone "Crea nuovo gruppo".
 - **#9 gruppi** (iniziare) — grande, multi-sessione.
-- **#10 colonna che entra scivolando** (motion) invece che di colpo.
+- **R-responsiveUI** — pass layout responsivo (il wrap registrazione è il 1° tassello).
 
 ---
 
