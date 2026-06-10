@@ -78,10 +78,11 @@
                                         <DataTrigger Binding="{Binding IsToday}" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
                                         </DataTrigger>
-                                        <!-- Selected: filled accent background -->
+                                        <!-- Selected: filled accent background (= habit color via the
+                                             HabitScreen Brush.Accent override), with contrast-aware text. -->
                                         <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                             <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
-                                            <Setter Property="Foreground" Value="{DynamicResource Brush.OnAccent}"/>
+                                            <Setter Property="Foreground" Value="{Binding TintColorHex, Converter={StaticResource ContrastForeground}}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
