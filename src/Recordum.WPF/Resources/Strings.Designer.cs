@@ -10,6 +10,11 @@ public static class Strings
 
     public static CultureInfo? Culture { get; set; }
 
+    // Calendar
+    public static string Calendar_View_Week => Get("Calendar.View.Week");
+    public static string Calendar_View_Month => Get("Calendar.View.Month");
+    public static string Calendar_View_Year => Get("Calendar.View.Year");
+
     // HabitScreen
     public static string HabitScreen_Configure => Get("HabitScreen.Configure");
     public static string HabitScreen_Close => Get("HabitScreen.Close");
