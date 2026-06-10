@@ -253,8 +253,9 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 - **#1+#3 icona → `fixed`** (commit `66d350e`): l'icona era persistita (`HabitNode.Icon`) ma mai mostrata. Cablata via `HomeTreeRow` → proiezione query → `HomeRowViewModel`; render `Path` Lucide (tinta col colore abitudine) prima del nome nella riga Home e nell'header del workspace. Collassa se vuota o non risolvibile (icone legacy free-text). **Verifica visiva: da fare.**
 - **#10 slide colonna → `fixed`** (commit `3897ddc`): nuova `GridLengthAnimation`; le colonne HabitScreen/EditorPane scivolano 0↔target in 180ms (CubicEase) invece di comparire di colpo. `FillBehavior.Stop` su valore base così lo splitter continua a funzionare; `ClipToBounds` per rivelare pulito. **Verifica visiva: da fare.**
 
+- **#5 evidenziazione abitudini → `fixed`** (commit `c88a220`→`fd518dd`): identità visiva habit. `HabitTintBrushConverter` (hex + alpha → brush semitrasparente) + stile condiviso `Recordum.HabitBlock`: le righe Home (habit e gruppo) sono blocchi tinti ~10% del colore abitudine, la riga selezionata passa a ~20% + bordo interno colorato via nuovo flag `HomeRowViewModel.IsSelected` (sincronizzato da `HomeViewModel.SelectedRow` e ri-applicato a ogni `Rebuild`). Workspace: striscia 3px in alto + stile tab `Recordum.HabitTab` con sottolineatura/label del tab attivo nel colore abitudine. Spec `docs/superpowers/specs/2026-06-10-habit-visual-identity-design.md`. **Verifica visiva: da fare.**
+
 **Feature ancora aperte dal batch (richiedono brainstorm)**:
-- **#5 evidenziazione abitudini** (blocco col colore abitudine più scuro per distaccarsi dallo sfondo, riquadro interno colorato su selezione, accenti colore nelle colonne) — identità visiva; si lega all'icona appena aggiunta. Direzioni concrete dall'utente ma è un redesign visivo da iterare a vista.
 - **#8 finestra "Nuova abitudine"** a fisarmonica (Configura fisso → toggle Preconfezionati → toggle Personalizzati) + bottone "Crea nuovo gruppo".
 - **#9 gruppi** (iniziare) — grande, multi-sessione.
 - **R-responsiveUI** — pass layout responsivo (il wrap registrazione è il 1° tassello).
