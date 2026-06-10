@@ -6,6 +6,7 @@
                     xmlns:b="clr-namespace:Recordum.WPF.Behaviors"
                     xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
     <DataTemplate x:Key="HabitRowTemplate" DataType="{x:Type vm:HomeRowViewModel}">
+        <Border Style="{StaticResource Recordum.HabitBlock}">
         <Grid Height="{StaticResource Layout.RowHeight}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -108,5 +109,6 @@
                 </ContextMenu>
             </Grid.ContextMenu>
         </Grid>
+        </Border>
     </DataTemplate>
 </ResourceDictionary>

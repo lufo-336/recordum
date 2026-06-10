@@ -58,6 +58,22 @@
             <ObjectDataProvider x:Key="AiDataSharingValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
                 <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:AiDataSharing"/></ObjectDataProvider.MethodParameters>
             </ObjectDataProvider>
+
+            <!-- Tinted habit-row block: resting = ~10% of the habit color, selected = ~20% + inner border. -->
+            <Style x:Key="Recordum.HabitBlock" TargetType="Border">
+                <Setter Property="CornerRadius" Value="6"/>
+                <Setter Property="Margin" Value="0,1"/>
+                <Setter Property="ClipToBounds" Value="True"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Background" Value="{Binding ColorHex, Converter={StaticResource HabitTint}, ConverterParameter=26}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="Background" Value="{Binding ColorHex, Converter={StaticResource HabitTint}, ConverterParameter=51}"/>
+                        <Setter Property="BorderBrush" Value="{Binding ColorHex, Converter={StaticResource HexToBrush}}"/>
+                        <Setter Property="BorderThickness" Value="1.5"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -3,6 +3,7 @@
                     xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
                     xmlns:res="clr-namespace:Recordum.WPF.Resources">
     <DataTemplate x:Key="GroupRowTemplate" DataType="{x:Type vm:HomeRowViewModel}">
+        <Border Style="{StaticResource Recordum.HabitBlock}">
         <Grid Height="{StaticResource Layout.RowHeight}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -60,5 +61,6 @@
                 </ContextMenu>
             </Grid.ContextMenu>
         </Grid>
+        </Border>
     </DataTemplate>
 </ResourceDictionary>
