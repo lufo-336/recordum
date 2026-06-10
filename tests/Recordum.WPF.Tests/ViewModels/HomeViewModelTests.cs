@@ -452,6 +452,28 @@ public class HomeViewModelTests
         activated.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task SelectedRow_drives_IsSelected_and_clears_the_previous_row()
+    {
+        _query.HomeRows.Add(SampleRow(name: "First"));
+        _query.HomeRows.Add(SampleRow(name: "Second"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var first = sut.Rows.Single(r => r.Name == "First");
+        var second = sut.Rows.Single(r => r.Name == "Second");
+
+        sut.SelectedRow = first;
+        first.IsSelected.Should().BeTrue();
+        second.IsSelected.Should().BeFalse();
+
+        sut.SelectedRow = second;
+        first.IsSelected.Should().BeFalse();
+        second.IsSelected.Should().BeTrue();
+
+        sut.SelectedRow = null;
+        second.IsSelected.Should().BeFalse();
+    }
+
     private sealed class StubQuickActionHandler(HabitType type, bool recorded) : IQuickActionHandler
     {
         public HabitType HabitType { get; } = type;

@@ -50,6 +50,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [ObservableProperty] private bool _isExpanded = true;
     [ObservableProperty] private bool _isRenaming;
     [ObservableProperty] private string _pendingName = string.Empty;
+    [ObservableProperty] private bool _isSelected;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRenameMenu))]

@@ -107,6 +107,12 @@ public sealed partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
 
+    partial void OnSelectedRowChanged(HomeRowViewModel? oldValue, HomeRowViewModel? newValue)
+    {
+        if (oldValue is not null) oldValue.IsSelected = false;
+        if (newValue is not null) newValue.IsSelected = true;
+    }
+
     [RelayCommand]
     private async Task OpenNewHabitAsync()
     {
@@ -211,6 +217,7 @@ public sealed partial class HomeViewModel : ObservableObject
             Rows.Add(vm);
         }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
+        foreach (var r in Rows) r.IsSelected = ReferenceEquals(r, SelectedRow);
     }
 
     private IEnumerable<(HomeTreeRow Row, int Level)> OrderHierarchically(IReadOnlyList<HomeTreeRow> rows)
