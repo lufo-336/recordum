@@ -87,7 +87,8 @@
                                            RelativeSource={RelativeSource AncestorType=Window},
                                            Converter={StaticResource NullToVisibility}}"
                               DragCompleted="OnHabitScreenSplitterDragCompleted"/>
-                <vhs:HabitScreen Grid.Column="2"
+                <vhs:HabitScreen x:Name="HabitScreenContent"
+                                 Grid.Column="2"
                                  ClipToBounds="True"
                                  DataContext="{Binding HabitScreen}"
                                  Visibility="{Binding Home.SelectedRow,
@@ -103,7 +104,8 @@
                               ShowsPreview="False"
                               Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"
                               DragCompleted="OnEditorPaneSplitterDragCompleted"/>
-                <v:EditorPane Grid.Column="4"
+                <v:EditorPane x:Name="EditorPaneContent"
+                              Grid.Column="4"
                               ClipToBounds="True"
                               DataContext="{Binding Editor}"
                               Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"/>
