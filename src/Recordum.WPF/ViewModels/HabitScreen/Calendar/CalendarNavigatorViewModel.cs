@@ -44,6 +44,8 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     [ObservableProperty] private int _displayMonth;
     [ObservableProperty] private string _headerLabel = string.Empty;
     [ObservableProperty] private DateOnly? _selectedDate;
+    [ObservableProperty] private CalendarViewMode _viewMode = CalendarViewMode.Month;
+    private DateOnly _weekAnchor;
 
     public ObservableCollection<CalendarDayCellViewModel> Cells { get; } = [];
     public IReadOnlyList<string> WeekdayHeaders { get; }
@@ -57,6 +59,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         DisplayYear = year;
         DisplayMonth = month;
         SelectedDate = selected;
+        _weekAnchor = selected ?? _today;
         await ReloadAsync(ct).ConfigureAwait(true);
     }
 
@@ -67,8 +70,13 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         _isLoading = true;
         try
         {
-            BuildMonthGrid(DisplayYear, DisplayMonth);
-            HeaderLabel = new DateOnly(DisplayYear, DisplayMonth, 1).ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+            switch (ViewMode)
+            {
+                case CalendarViewMode.Week: BuildWeekGrid(_weekAnchor); break;
+                case CalendarViewMode.Year: BuildYearGrid(DisplayYear); break;
+                default: BuildMonthGrid(DisplayYear, DisplayMonth); break;
+            }
+            HeaderLabel = BuildHeaderLabel();
             await ApplyMarkersAsync(ct).ConfigureAwait(true);
             RefreshSelection();
         }
@@ -76,6 +84,46 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         {
             _isLoading = false;
         }
+    }
+
+    private void BuildWeekGrid(DateOnly anchor)
+    {
+        Cells.Clear();
+        int firstDow = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        int leading = ((int)anchor.DayOfWeek - firstDow + 7) % 7;
+        var start = anchor.AddDays(-leading);
+        for (int i = 0; i < 7; i++)
+        {
+            var date = start.AddDays(i);
+            Cells.Add(new CalendarDayCellViewModel(
+                date, inCurrentMonth: true, isToday: date == _today, isFuture: date > _today));
+        }
+    }
+
+    private void BuildYearGrid(int year)
+    {
+        Cells.Clear();
+        var jan1 = new DateOnly(year, 1, 1);
+        int firstDow = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        int leading = ((int)jan1.DayOfWeek - firstDow + 7) % 7;
+        var start = jan1.AddDays(-leading);
+        for (int i = 0; i < 371; i++) // 53 weeks × 7
+        {
+            var date = start.AddDays(i);
+            Cells.Add(new CalendarDayCellViewModel(
+                date, inCurrentMonth: date.Year == year, isToday: date == _today, isFuture: date > _today));
+        }
+    }
+
+    private string BuildHeaderLabel()
+    {
+        var culture = CultureInfo.CurrentCulture;
+        return ViewMode switch
+        {
+            CalendarViewMode.Week => $"{Cells[0].Date.ToString("d MMM", culture)} – {Cells[^1].Date.ToString("d MMM yyyy", culture)}",
+            CalendarViewMode.Year => DisplayYear.ToString(culture),
+            _ => new DateOnly(DisplayYear, DisplayMonth, 1).ToString("MMMM yyyy", culture),
+        };
     }
 
     private void BuildMonthGrid(int year, int month)
@@ -128,20 +176,35 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task PrevAsync(CancellationToken ct)
+    private Task PrevAsync(CancellationToken ct) => StepAsync(-1, ct);
+
+    [RelayCommand]
+    private Task NextAsync(CancellationToken ct) => StepAsync(+1, ct);
+
+    private Task StepAsync(int direction, CancellationToken ct)
     {
-        var prev = new DateOnly(DisplayYear, DisplayMonth, 1).AddMonths(-1);
-        DisplayYear = prev.Year;
-        DisplayMonth = prev.Month;
+        switch (ViewMode)
+        {
+            case CalendarViewMode.Week:
+                _weekAnchor = _weekAnchor.AddDays(7 * direction);
+                break;
+            case CalendarViewMode.Year:
+                DisplayYear += direction;
+                break;
+            default:
+                var m = new DateOnly(DisplayYear, DisplayMonth, 1).AddMonths(direction);
+                DisplayYear = m.Year;
+                DisplayMonth = m.Month;
+                break;
+        }
         return ReloadAsync(ct);
     }
 
     [RelayCommand]
-    private Task NextAsync(CancellationToken ct)
+    private Task SetViewModeAsync(CalendarViewMode mode, CancellationToken ct)
     {
-        var next = new DateOnly(DisplayYear, DisplayMonth, 1).AddMonths(1);
-        DisplayYear = next.Year;
-        DisplayMonth = next.Month;
+        ViewMode = mode;
+        if (mode == CalendarViewMode.Week) _weekAnchor = SelectedDate ?? _today;
         return ReloadAsync(ct);
     }
 

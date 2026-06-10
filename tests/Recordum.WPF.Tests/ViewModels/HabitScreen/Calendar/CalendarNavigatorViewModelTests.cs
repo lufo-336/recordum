@@ -158,4 +158,72 @@ public class CalendarNavigatorViewModelTests
         sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10)).IsSelected.Should().BeTrue();
         sut.SelectedDate.Should().Be(new DateOnly(2026, 6, 10));
     }
+
+    [Fact]
+    public async Task WeekView_builds_seven_cells_around_the_selected_date()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10));
+
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Week);
+
+        sut.Cells.Should().HaveCount(7);
+        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 6, 10));
+        sut.Cells.Select(c => c.Date).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task YearView_builds_371_cells_starting_on_a_week_boundary_on_or_before_Jan1()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: null);
+
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
+
+        sut.Cells.Should().HaveCount(371);
+        sut.Cells[0].Date.Should().BeOnOrBefore(new DateOnly(2026, 1, 1));
+        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 1, 1));
+        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 12, 31));
+        sut.Cells.Count(c => c.InCurrentMonth).Should().Be(365); // 2026 is not a leap year
+    }
+
+    [Fact]
+    public async Task Next_in_WeekView_advances_by_seven_days()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10));
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Week);
+        var firstBefore = sut.Cells[0].Date;
+
+        await sut.NextCommand.ExecuteAsync(null);
+
+        sut.Cells[0].Date.Should().Be(firstBefore.AddDays(7));
+        sut.Cells.Should().HaveCount(7);
+    }
+
+    [Fact]
+    public async Task Next_in_YearView_advances_by_one_year()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
+
+        await sut.NextCommand.ExecuteAsync(null);
+
+        sut.DisplayYear.Should().Be(2027);
+        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2027, 1, 1));
+    }
+
+    [Fact]
+    public async Task SetViewMode_back_to_Month_restores_42_cells_and_keeps_selection()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10));
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
+
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Month);
+
+        sut.Cells.Should().HaveCount(42);
+        sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10)).IsSelected.Should().BeTrue();
+    }
 }
