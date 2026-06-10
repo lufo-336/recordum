@@ -29,6 +29,7 @@
             <conv:ContrastForegroundConverter x:Key="ContrastForeground"/>
             <conv:RenameArgsConverter x:Key="RenameArgs"/>
             <conv:IconKeyToGeometryConverter x:Key="IconKeyToGeometry"/>
+            <conv:HabitTintBrushConverter x:Key="HabitTint"/>
 
             <!-- Enum value sources for editor-section ComboBoxes. Global so section
                  views (instantiated via DataTemplate, not yet in the visual tree)
