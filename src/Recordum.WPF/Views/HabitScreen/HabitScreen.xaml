@@ -12,10 +12,19 @@
              xmlns:ctrl="clr-namespace:Recordum.WPF.Controls"
              xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:helpers="clr-namespace:Recordum.WPF.Helpers"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HabitScreenViewModel, IsDesignTimeCreatable=False}"
              Background="{DynamicResource Brush.Surface}">
     <UserControl.Resources>
+
+        <!-- Habit color identity: every Brush.Accent consumer inside this screen (button hover/focus
+             borders, text selection, calendar today/selected) re-resolves to the habit color. The
+             proxy bridges Node.Color into the resource scope (resources have no DataContext). -->
+        <helpers:BindingProxy x:Key="HabitColorProxy" Data="{Binding Node.Color}"/>
+        <SolidColorBrush x:Key="Brush.Accent"
+                         Color="{Binding Data, Source={StaticResource HabitColorProxy},
+                                 Converter={StaticResource HexToColor}}"/>
 
         <DataTemplate DataType="{x:Type vm:TimerControlViewModel}">
             <Border Padding="12,8"
