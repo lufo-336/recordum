@@ -238,4 +238,19 @@ public class ResistanceQuickAddViewModelTests
 
         sut.Series.Should().ContainSingle();
     }
+
+    [Fact]
+    public async Task RemoveSeries_cannot_execute_with_a_single_series_and_re_evaluates_on_add()
+    {
+        var (_, _, sut, _, _, _) = CreateSut();
+        await sut.LoadMetricsAsync();
+
+        sut.RemoveSeriesCommand.CanExecute(sut.Series[0]).Should().BeFalse();
+
+        sut.AddSeriesCommand.Execute(null);
+        sut.RemoveSeriesCommand.CanExecute(sut.Series[0]).Should().BeTrue();
+
+        sut.RemoveSeriesCommand.Execute(sut.Series[0]);
+        sut.RemoveSeriesCommand.CanExecute(sut.Series[0]).Should().BeFalse();
+    }
 }

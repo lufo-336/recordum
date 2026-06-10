@@ -8,16 +8,24 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
-public sealed partial class ResistanceQuickAddViewModel(
-    ICompletionService completions,
-    IMetricDefinitionService metrics,
-    IReferenceDataQueryService refData,
-    IClock clock) : QuickAddViewModelBase(completions, clock)
+public sealed partial class ResistanceQuickAddViewModel : QuickAddViewModelBase
 {
-    private readonly IMetricDefinitionService _metrics = metrics;
-    private readonly IReferenceDataQueryService _refData = refData;
+    private readonly IMetricDefinitionService _metrics;
+    private readonly IReferenceDataQueryService _refData;
     private List<MetricDefinition> _orderedMetrics = [];
     private MetricCellFactory _factory = new(Array.Empty<UnitOfMeasure>(), Array.Empty<ScaleTemplate>());
+
+    public ResistanceQuickAddViewModel(
+        ICompletionService completions,
+        IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData,
+        IClock clock) : base(completions, clock)
+    {
+        _metrics = metrics;
+        _refData = refData;
+        // Keep the per-row delete button's enabled state in sync with the "at least one series" rule.
+        Series.CollectionChanged += (_, _) => RemoveSeriesCommand.NotifyCanExecuteChanged();
+    }
 
     public ObservableCollection<SeriesRowViewModel> Series { get; } = [];
 
@@ -45,11 +53,13 @@ public sealed partial class ResistanceQuickAddViewModel(
         Series.Add(NewRow());
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRemoveSeries))]
     private void RemoveSeries(SeriesRowViewModel row)
     {
         if (Series.Count > 1) Series.Remove(row);
     }
+
+    private bool CanRemoveSeries(SeriesRowViewModel row) => Series.Count > 1;
 
     [RelayCommand]
     private Task Save(CancellationToken ct) => SaveAsync(ct);
