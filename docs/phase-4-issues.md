@@ -6,6 +6,12 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Stato al 2026-06-11 (notte) — nav-model parte 1: workspace a colonne-toggle eseguito
+
+**Nav-model parte 1 — workspace a colonne** (spec `2026-05-29-navigation-model-design.md` §3–§4/§7, piano `docs/superpowers/plans/2026-06-11-column-workspace.md`, 6 task, commit `0c1304d`→`cae0ad0`): le viste habit (Cronologia/Dettaglio/Note/Configura) sono **colonne affiancate** aperte/chiuse da una **chip-bar** (stile `Recordum.SegmentCheck`, toggle indipendenti) al posto delle 3 tab + pannello editor separato. Stato in `HabitScreenViewModel` (4 flag `Is*Open` + ordine-di-apertura per Esc), persistenza CSV su AppSetting `ui.open_columns` (creata on-write, nessuna migrazione), set mantenuto al cambio habit, default Cronologia. `HabitEditorViewModel` ora di proprietà di `HabitScreenViewModel` (in `MainWindowViewModel` resta un passthrough); **eliminati** da `MainWindow` EditorPane standalone, splitter e larghezza persistita `ui.editor_pane_width`. ✕ per colonna + **Esc chiude l'ultima colonna aperta**; scroll orizzontale quando le colonne sfondano. Suite WPF **458 verdi**. **Stato: `fixed`, verifica visiva utente da fare** (chip toggle, default, ✕/Esc, persistenza riavvio, Configura/autosave, scroll, export, due temi). Parte 2 (piano successivo): gruppi-basi ＋Nuova▾ + drag-drop evidente (spec §3.2/§5).
+
+---
+
 ## Stato al 2026-06-11 (sera) — rimodernizzazione UI: Fasi A+B+C eseguite
 
 **Fase C — Passata estetica**: piano `docs/superpowers/plans/2026-06-11-aesthetics-pass.md` eseguito (4 task, commit `7251c25`→`a0d2f31`). Stile condiviso **`Recordum.Segment`** (RadioButton→pill senza pallino, checked=elevated+bordo, focus=accent) adottato da Home tabs (Attive/Archiviate/Cestino in pill-group) e calendario (Settimana/Mese/Anno + Mesi/Heatmap); **ScrollBar flat** implicita a tema (thumb arrotondato, niente frecce, page-click ok); **ricerca Home** con icona Lucide + watermark funzionante (il vecchio `Tag` era inerte). Suite 457 verdi, build 0/0. **Stato: `fixed`, verifica visiva utente da fare (A+B+C insieme).**

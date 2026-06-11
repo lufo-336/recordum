@@ -33,7 +33,7 @@
 
 **Files:** Modify `Strings.resx`, `Strings.it.resx`, `Strings.Designer.cs`
 
-- [ ] **Step 1**: EN — dopo `HabitScreen.Tab.Abitudine` (cercare la chiave esatta esistente):
+- [x] **Step 1**: EN — dopo `HabitScreen.Tab.Abitudine` (cercare la chiave esatta esistente):
 
 ```xml
   <data name="HabitScreen.Column.Cronologia" xml:space="preserve">
@@ -57,7 +57,7 @@ Designer (accanto alle property `HabitScreen_Tab_*`):
 
 Le altre colonne riusano `HabitScreen_Tab_Detail`, `HabitScreen_Tab_Notes`, `HabitScreen_Configure`.
 
-- [ ] **Step 2**: build 0/0, commit `feat(wpf): resx — Cronologia column label`.
+- [x] **Step 2**: build 0/0, commit `feat(wpf): resx — Cronologia column label`.
 
 ---
 
@@ -68,7 +68,7 @@ Le altre colonne riusano `HabitScreen_Tab_Detail`, `HabitScreen_Tab_Notes`, `Hab
 - Modify: `src/Recordum.WPF/ViewModels/HabitScreen/HabitScreenViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HabitScreen/HabitScreenColumnsTests.cs` (new)
 
-- [ ] **Step 1: enum**
+- [x] **Step 1: enum**
 
 ```csharp
 namespace Recordum.WPF.ViewModels.HabitScreen;
@@ -76,7 +76,7 @@ namespace Recordum.WPF.ViewModels.HabitScreen;
 public enum HabitColumn { Cronologia, Dettaglio, Note, Configura }
 ```
 
-- [ ] **Step 2: test (RED)** — il file di test costruisce il SUT come gli altri test di HabitScreen (cercare l'helper esistente in `HabitScreenViewModelTests` e riusarne la costruzione, aggiungendo i 2 nuovi parametri: `FakeAppSettingService` e un `HabitEditorViewModel` costruito coi fake già usati in `MainWindowViewModelTests`):
+- [x] **Step 2: test (RED)** — il file di test costruisce il SUT come gli altri test di HabitScreen (cercare l'helper esistente in `HabitScreenViewModelTests` e riusarne la costruzione, aggiungendo i 2 nuovi parametri: `FakeAppSettingService` e un `HabitEditorViewModel` costruito coi fake già usati in `MainWindowViewModelTests`):
 
 ```csharp
 using FluentAssertions;
@@ -170,9 +170,9 @@ public class HabitScreenColumnsTests
 }
 ```
 
-- [ ] **Step 3: RED** — `dotnet test ... --filter HabitScreenColumns` (errori di compilazione attesi).
+- [x] **Step 3: RED** — `dotnet test ... --filter HabitScreenColumns` (errori di compilazione attesi).
 
-- [ ] **Step 4: implementare** in `HabitScreenViewModel`:
+- [x] **Step 4: implementare** in `HabitScreenViewModel`:
 
 ```csharp
     internal const string OpenColumnsSettingKey = "ui.open_columns";
@@ -262,11 +262,11 @@ public class HabitScreenColumnsTests
 
 In `LoadAsync` (ramo `habitNodeId != null`, dopo l'assegnazione di `Node`): se nessuna colonna aperta → `IsCronologiaOpen = true;` (default spec §3.7). `OpenConfigure` (command esistente) diventa `IsConfiguraOpen = true;` (l'evento parte dal partial). Ctor: aggiungere `IAppSettingService appSettings` e `HabitEditorViewModel editor` (campo `_appSettings`).
 
-- [ ] **Step 5**: aggiornare TUTTE le costruzioni di `HabitScreenViewModel` (HabitScreenViewModelTests helper, `MainWindowViewModelTests.CreateSut`, `MainWindowViewModelFactory`, eventuali altre — `grep -rn "new HabitScreenViewModel" tests src`) coi 2 nuovi parametri.
+- [x] **Step 5**: aggiornare TUTTE le costruzioni di `HabitScreenViewModel` (HabitScreenViewModelTests helper, `MainWindowViewModelTests.CreateSut`, `MainWindowViewModelFactory`, eventuali altre — `grep -rn "new HabitScreenViewModel" tests src`) coi 2 nuovi parametri.
 
-- [ ] **Step 6: GREEN** — filtro `HabitScreenColumns` + suite HabitScreen completa.
+- [x] **Step 6: GREEN** — filtro `HabitScreenColumns` + suite HabitScreen completa.
 
-- [ ] **Step 7**: commit `feat(wpf): HabitScreenViewModel column-toggle state with persistence`.
+- [x] **Step 7**: commit `feat(wpf): HabitScreenViewModel column-toggle state with persistence`.
 
 ---
 
@@ -274,7 +274,7 @@ In `LoadAsync` (ramo `habitNodeId != null`, dopo l'assegnazione di `Node`): se n
 
 **Files:** Modify `MainWindowViewModel.cs`; Test: aggiornare `MainWindowViewModelTests`
 
-- [ ] **Step 1**: rimuovere da `MainWindowViewModel`: costanti/property/Load/Commit di `EditorPaneWidth` (`EditorPaneWidthSettingKey`, `DefaultEditorPaneWidth`, `MinEditorPaneWidth`, `MaxEditorPaneWidth`, `_editorPaneWidth`, `LoadEditorPaneWidthAsync`, `CommitEditorPaneWidthAsync` e la chiamata in `InitializeAsync`); parametro ctor `HabitEditorViewModel editor` e property `Editor` → sostituire con passthrough:
+- [x] **Step 1**: rimuovere da `MainWindowViewModel`: costanti/property/Load/Commit di `EditorPaneWidth` (`EditorPaneWidthSettingKey`, `DefaultEditorPaneWidth`, `MinEditorPaneWidth`, `MaxEditorPaneWidth`, `_editorPaneWidth`, `LoadEditorPaneWidthAsync`, `CommitEditorPaneWidthAsync` e la chiamata in `InitializeAsync`); parametro ctor `HabitEditorViewModel editor` e property `Editor` → sostituire con passthrough:
 
 ```csharp
     public HabitEditorViewModel Editor => HabitScreen.Editor;
@@ -282,9 +282,9 @@ In `LoadAsync` (ramo `habitNodeId != null`, dopo l'assegnazione di `Node`): se n
 
 (`OnHomePropertyChanged` e `OnHabitScreenConfigureRequested` continuano a funzionare sul passthrough.)
 
-- [ ] **Step 2**: test — eliminare i test su EditorPaneWidth (cercare `EditorPaneWidth` nel file) e togliere il parametro editor dalle costruzioni; RED→GREEN su filtro `MainWindowViewModel`.
+- [x] **Step 2**: test — eliminare i test su EditorPaneWidth (cercare `EditorPaneWidth` nel file) e togliere il parametro editor dalle costruzioni; RED→GREEN su filtro `MainWindowViewModel`.
 
-- [ ] **Step 3**: commit `refactor(wpf): editor owned by HabitScreen; drop editor pane width plumbing`.
+- [x] **Step 3**: commit `refactor(wpf): editor owned by HabitScreen; drop editor pane width plumbing`.
 
 ---
 
@@ -292,7 +292,7 @@ In `LoadAsync` (ramo `habitNodeId != null`, dopo l'assegnazione di `Node`): se n
 
 **Files:** Modify `src/Recordum.WPF/Views/HabitScreen/HabitScreen.xaml` (+ `.xaml.cs` se servono using)
 
-- [ ] **Step 1**: sostituire l'intero blocco `<TabControl Grid.Row="3" …>…</TabControl>` con:
+- [x] **Step 1**: sostituire l'intero blocco `<TabControl Grid.Row="3" …>…</TabControl>` con:
 
 ```xml
         <Grid Grid.Row="3">
@@ -400,7 +400,7 @@ In `LoadAsync` (ramo `habitNodeId != null`, dopo l'assegnazione di `Node`): se n
 
 Namespace: aggiungere a HabitScreen.xaml `xmlns:ve="clr-namespace:Recordum.WPF.Views"` se `EditorPane` non è già raggiungibile (è `Recordum.WPF.Views.EditorPane` — verificare il namespace esatto in `EditorPane.xaml.cs`). NB: `EditorPane.xaml` potrebbe avere larghezze/chrome da pannello standalone — verificare e neutralizzare (la colonna fornisce già header e larghezza).
 
-- [ ] **Step 2**: stili locali in `UserControl.Resources` (al posto di `Recordum.HabitTab`, che si elimina):
+- [x] **Step 2**: stili locali in `UserControl.Resources` (al posto di `Recordum.HabitTab`, che si elimina):
 
 ```xml
         <!-- Column chrome (nav-model). -->
@@ -469,7 +469,7 @@ e in `BaseStyles.xaml` la variante CheckBox del segment (le chip sono toggle ind
 
 Rimuovere anche il bottone "Configura" dall'header del soggetto (riga ~585: ora c'è la chip) lasciando Esporta.
 
-- [ ] **Step 3**: build 0/0; commit `feat(wpf): HabitScreen column workspace — chip bar + toggle columns`.
+- [x] **Step 3**: build 0/0; commit `feat(wpf): HabitScreen column workspace — chip bar + toggle columns`.
 
 ---
 
@@ -477,9 +477,9 @@ Rimuovere anche il bottone "Configura" dall'header del soggetto (riga ~585: ora 
 
 **Files:** Modify `MainWindow.xaml`, `MainWindow.xaml.cs`
 
-- [ ] **Step 1**: in `MainWindow.xaml` rimuovere `EditorPaneColumn` (ColumnDefinition), `EditorPaneSplitter`, `<v:EditorPane …>`; la griglia workspace resta `[Home * | splitter | HabitScreenColumn]`.
-- [ ] **Step 2**: in `MainWindow.xaml.cs` rimuovere: `OnEditorPropertyChanged` (e la sottoscrizione `viewModel.Editor.PropertyChanged += …` nel ctor), `ApplyEditorPaneWidth`, `OnEditorPaneSplitterDragCompleted`, ogni riferimento a `EditorPaneColumn/EditorPaneContent`. ATTENZIONE: l'apertura del workspace su selezione (`AnimateColumn(HabitScreenColumn, …)`) resta invariata.
-- [ ] **Step 3**: Esc in `OnWindowPreviewKeyDown` (prima del check Ctrl):
+- [x] **Step 1**: in `MainWindow.xaml` rimuovere `EditorPaneColumn` (ColumnDefinition), `EditorPaneSplitter`, `<v:EditorPane …>`; la griglia workspace resta `[Home * | splitter | HabitScreenColumn]`.
+- [x] **Step 2**: in `MainWindow.xaml.cs` rimuovere: `OnEditorPropertyChanged` (e la sottoscrizione `viewModel.Editor.PropertyChanged += …` nel ctor), `ApplyEditorPaneWidth`, `OnEditorPaneSplitterDragCompleted`, ogni riferimento a `EditorPaneColumn/EditorPaneContent`. ATTENZIONE: l'apertura del workspace su selezione (`AnimateColumn(HabitScreenColumn, …)`) resta invariata.
+- [x] **Step 3**: Esc in `OnWindowPreviewKeyDown` (prima del check Ctrl):
 
 ```csharp
         if (e.Key == Key.Escape && _viewModel.Home.SelectedRow is not null)
@@ -490,14 +490,14 @@ Rimuovere anche il bottone "Configura" dall'header del soggetto (riga ~585: ora 
         }
 ```
 
-- [ ] **Step 4**: build 0/0 + suite completa; commit `feat(wpf): drop the standalone editor pane; Esc closes the last open column`.
+- [x] **Step 4**: build 0/0 + suite completa; commit `feat(wpf): drop the standalone editor pane; Esc closes the last open column`.
 
 ---
 
 ### Task 6: verifica visiva + tracker
 
-- [ ] skill `run` + checklist: chip toggle aprono/chiudono colonne (ordine canonico stabile); default Cronologia; ✕ e Esc; set mantenuto cambiando habit (rebind contenuti); persistenza tra riavvii; Configura carica l'editor (progressive disclosure intatta, autosave ok); scroll orizzontale con 3+ colonne; click-a-vuoto deseleziona e chiude il workspace; export funziona; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` + memoria (nav-model parte 1 fatta; parte 2 = gruppi-basi ＋Nuova▾ + drag-drop evidente); commit docs.
+- [ ] skill `run` + checklist (verifica visiva utente pendente): chip toggle aprono/chiudono colonne (ordine canonico stabile); default Cronologia; ✕ e Esc; set mantenuto cambiando habit (rebind contenuti); persistenza tra riavvii; Configura carica l'editor (progressive disclosure intatta, autosave ok); scroll orizzontale con 3+ colonne; click-a-vuoto deseleziona e chiude il workspace; export funziona; due temi.
+- [x] aggiornare `docs/phase-4-issues.md` + memoria (nav-model parte 1 fatta; parte 2 = gruppi-basi ＋Nuova▾ + drag-drop evidente); commit docs.
 
 ---
 
