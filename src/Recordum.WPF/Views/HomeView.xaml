@@ -170,15 +170,17 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                        <ItemsControl ItemsSource="{Binding Rows}"
-                                                      b:TreeDragDropBehavior.Enabled="True"
-                                                      KeyboardNavigation.TabNavigation="Continue">
-                                            <ItemsControl.ItemTemplateSelector>
-                                                <v:RowTemplateSelector
-                                                    HabitTemplate="{StaticResource HabitRowTemplate}"
-                                                    GroupTemplate="{StaticResource GroupRowTemplate}"/>
-                                            </ItemsControl.ItemTemplateSelector>
-                                        </ItemsControl>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding Rows}"
+                                                          b:TreeDragDropBehavior.Enabled="True"
+                                                          KeyboardNavigation.TabNavigation="Continue">
+                                                <ItemsControl.ItemTemplateSelector>
+                                                    <v:RowTemplateSelector
+                                                        HabitTemplate="{StaticResource HabitRowTemplate}"
+                                                        GroupTemplate="{StaticResource GroupRowTemplate}"/>
+                                                </ItemsControl.ItemTemplateSelector>
+                                            </ItemsControl>
+                                        </ScrollViewer>
                                     </DataTemplate>
                                 </Setter.Value>
                             </Setter>
