@@ -29,7 +29,7 @@
 - Modify: `src/Recordum.WPF/ViewModels/HabitScreen/HabitScreenViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HabitScreen/HabitScreenColumnWidthsTests.cs` (new)
 
-- [ ] **Step 1: test (RED)** — nuovo file, stessa factory di `HabitScreenColumnsTests`:
+- [x] **Step 1: test (RED)** — nuovo file, stessa factory di `HabitScreenColumnsTests`:
 
 ```csharp
 using FluentAssertions;
@@ -111,9 +111,9 @@ public class HabitScreenColumnWidthsTests
 }
 ```
 
-- [ ] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter HabitScreenColumnWidths` (errori di compilazione attesi: proprietà/metodi mancanti).
+- [x] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter HabitScreenColumnWidths` (errori di compilazione attesi: proprietà/metodi mancanti).
 
-- [ ] **Step 3: implementare** in `HabitScreenViewModel`, nella regione "column workspace state (nav-model)" (dopo `CloseLastColumn`, riga ~107):
+- [x] **Step 3: implementare** in `HabitScreenViewModel`, nella regione "column workspace state (nav-model)" (dopo `CloseLastColumn`, riga ~107):
 
 ```csharp
     // ---- column widths (resizable via drag-thumb, spec 2026-06-11-column-resize) ----
@@ -197,9 +197,9 @@ e in testa a `RestoreOpenColumnsAsync` (prima della lettura di `OpenColumnsSetti
 
 NB: il restore delle larghezze deve avvenire anche quando `ui.open_columns` è vuoto — per questo va PRIMA dell'early-return esistente.
 
-- [ ] **Step 4: GREEN** — `dotnet test tests/Recordum.WPF.Tests --filter HabitScreenColumnWidths` → 5 PASS; poi filtro `HabitScreenColumns` (i 5 esistenti restano verdi).
+- [x] **Step 4: GREEN** — `dotnet test tests/Recordum.WPF.Tests --filter HabitScreenColumnWidths` → 5 PASS; poi filtro `HabitScreenColumns` (i 5 esistenti restano verdi).
 
-- [ ] **Step 5: commit**
+- [x] **Step 5: commit**
 
 ```bash
 git add src/Recordum.WPF/ViewModels/HabitScreen/HabitScreenViewModel.cs tests/Recordum.WPF.Tests/ViewModels/HabitScreen/HabitScreenColumnWidthsTests.cs
@@ -214,7 +214,7 @@ git commit -m "feat(wpf): per-column width state with clamp + persistence"
 - Modify: `src/Recordum.WPF/Views/HabitScreen/HabitScreen.xaml`
 - Modify: `src/Recordum.WPF/Views/HabitScreen/HabitScreen.xaml.cs`
 
-- [ ] **Step 1: stile Thumb** in `UserControl.Resources`, dopo `HabitScreen.ColumnClose` (riga ~542):
+- [x] **Step 1: stile Thumb** in `UserControl.Resources`, dopo `HabitScreen.ColumnClose` (riga ~542):
 
 ```xml
         <Style x:Key="HabitScreen.ColumnResizeThumb" TargetType="Thumb">
@@ -240,7 +240,7 @@ git commit -m "feat(wpf): per-column width state with clamp + persistence"
         </Style>
 ```
 
-- [ ] **Step 2: colonne** — per ognuna delle 4 colonne: `Width` fissa → binding, e il `DockPanel` figlio si avvolge in un `Grid` col Thumb come secondo figlio (sopra il contenuto, sul bordo destro). Cronologia (riga ~626):
+- [x] **Step 2: colonne** — per ognuna delle 4 colonne: `Width` fissa → binding, e il `DockPanel` figlio si avvolge in un `Grid` col Thumb come secondo figlio (sopra il contenuto, sul bordo destro). Cronologia (riga ~626):
 
 ```xml
                     <Border Width="{Binding CronologiaWidth}" Style="{StaticResource HabitScreen.Column}"
@@ -260,7 +260,7 @@ git commit -m "feat(wpf): per-column width state with clamp + persistence"
 
 Stesso pattern per Dettaglio (`Width="{Binding DettaglioWidth}"`, `Tag="{x:Static vm:HabitColumn.Dettaglio}"`), Note (`NoteWidth`/`HabitColumn.Note`), Configura (`ConfiguraWidth`/`HabitColumn.Configura`).
 
-- [ ] **Step 3: code-behind** `HabitScreen.xaml.cs` — using nuovi (`System.Windows.Controls.Primitives`, `System.Windows.Input`, `Recordum.WPF.ViewModels.HabitScreen`) + handler:
+- [x] **Step 3: code-behind** `HabitScreen.xaml.cs` — using nuovi (`System.Windows.Controls.Primitives`, `System.Windows.Input`, `Recordum.WPF.ViewModels.HabitScreen`) + handler:
 
 ```csharp
     private HabitScreenViewModel? Vm => DataContext as HabitScreenViewModel;
@@ -288,9 +288,9 @@ Stesso pattern per Dettaglio (`Width="{Binding DettaglioWidth}"`, `Tag="{x:Stati
     }
 ```
 
-- [ ] **Step 4: build + suite** — `dotnet build src/Recordum.WPF -v q` (0 errori, nessun warning nuovo) + suite WPF completa verde (flaky noto `CompletionRecorded_event_reloads…` ammesso se passa isolato).
+- [x] **Step 4: build + suite** — `dotnet build src/Recordum.WPF -v q` (0 errori, nessun warning nuovo) + suite WPF completa verde (flaky noto `CompletionRecorded_event_reloads…` ammesso se passa isolato).
 
-- [ ] **Step 5: commit**
+- [x] **Step 5: commit**
 
 ```bash
 git add src/Recordum.WPF/Views/HabitScreen/HabitScreen.xaml src/Recordum.WPF/Views/HabitScreen/HabitScreen.xaml.cs
@@ -302,7 +302,7 @@ git commit -m "feat(wpf): drag-resizable workspace columns with double-click res
 ### Task 3: verifica visiva + tracker
 
 - [ ] skill `run` + checklist: drag su ogni confine (cursore ↔, hover accent); clamp visibile a 320/1000; doppio-click reset; larghezze persistite tra riavvii; colonne chiuse/riaperte mantengono la larghezza; scroll orizzontale coerente; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` (resize colonne fatto, chiude nav-model §8 larghezze) + memoria; commit docs.
+- [x] aggiornare `docs/phase-4-issues.md` (resize colonne fatto, chiude nav-model §8 larghezze) + memoria; commit docs.
 
 ---
 
