@@ -73,6 +73,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>Restores the persisted open-column set (call once at startup, before the first load).</summary>
     public async Task RestoreOpenColumnsAsync(CancellationToken ct = default)
     {
+        // Widths restore must run even when no open-column set was ever persisted.
+        await RestoreColumnWidthsAsync(ct).ConfigureAwait(true);
+
         var raw = await _appSettings.GetAsync(OpenColumnsSettingKey, ct).ConfigureAwait(true);
         if (string.IsNullOrWhiteSpace(raw)) return;
         _restoringColumns = true;
@@ -104,6 +107,78 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         if (_openOrder.Count == 0) return;
         SetColumnFlag(_openOrder[^1], false);
+    }
+
+    // ---- column widths (resizable via drag-thumb, spec 2026-06-11-column-resize) ----
+
+    internal const string ColumnWidthsSettingKey = "ui.column_widths";
+    internal const double MinColumnWidth = 320;
+    internal const double MaxColumnWidth = 1000;
+
+    private static double DefaultWidth(HabitColumn column) => column switch
+    {
+        HabitColumn.Cronologia => 460,
+        HabitColumn.Dettaglio => 520,
+        HabitColumn.Note => 460,
+        _ => 480,
+    };
+
+    private static double ClampWidth(double value) => Math.Clamp(value, MinColumnWidth, MaxColumnWidth);
+
+    // Manual properties (not [ObservableProperty]) so the setter can clamp.
+    private double _cronologiaWidth = DefaultWidth(HabitColumn.Cronologia);
+    public double CronologiaWidth { get => _cronologiaWidth; set => SetProperty(ref _cronologiaWidth, ClampWidth(value)); }
+
+    private double _dettaglioWidth = DefaultWidth(HabitColumn.Dettaglio);
+    public double DettaglioWidth { get => _dettaglioWidth; set => SetProperty(ref _dettaglioWidth, ClampWidth(value)); }
+
+    private double _noteWidth = DefaultWidth(HabitColumn.Note);
+    public double NoteWidth { get => _noteWidth; set => SetProperty(ref _noteWidth, ClampWidth(value)); }
+
+    private double _configuraWidth = DefaultWidth(HabitColumn.Configura);
+    public double ConfiguraWidth { get => _configuraWidth; set => SetProperty(ref _configuraWidth, ClampWidth(value)); }
+
+    public double GetColumnWidth(HabitColumn column) => column switch
+    {
+        HabitColumn.Cronologia => CronologiaWidth,
+        HabitColumn.Dettaglio => DettaglioWidth,
+        HabitColumn.Note => NoteWidth,
+        _ => ConfiguraWidth,
+    };
+
+    public void SetColumnWidth(HabitColumn column, double width)
+    {
+        switch (column)
+        {
+            case HabitColumn.Cronologia: CronologiaWidth = width; break;
+            case HabitColumn.Dettaglio: DettaglioWidth = width; break;
+            case HabitColumn.Note: NoteWidth = width; break;
+            case HabitColumn.Configura: ConfiguraWidth = width; break;
+        }
+    }
+
+    public void ResetColumnWidth(HabitColumn column) => SetColumnWidth(column, DefaultWidth(column));
+
+    /// <summary>Called by the view at the end of a resize drag (not per-pixel).</summary>
+    public Task PersistColumnWidthsAsync()
+        => _appSettings.SetAsync(ColumnWidthsSettingKey,
+            string.Join(",", Enum.GetValues<HabitColumn>()
+                .Select(c => $"{c}={(int)Math.Round(GetColumnWidth(c))}"))).AsTask();
+
+    private async Task RestoreColumnWidthsAsync(CancellationToken ct)
+    {
+        var raw = await _appSettings.GetAsync(ColumnWidthsSettingKey, ct).ConfigureAwait(true);
+        if (string.IsNullOrWhiteSpace(raw)) return;
+        foreach (var token in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var parts = token.Split('=', 2);
+            if (parts.Length != 2) continue;
+            if (!Enum.TryParse<HabitColumn>(parts[0], out var column)) continue;
+            if (!double.TryParse(parts[1], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var width)) continue;
+            if (width is < MinColumnWidth or > MaxColumnWidth) continue;   // out of range → keep default
+            SetColumnWidth(column, width);
+        }
     }
 
     [ObservableProperty] private HabitNode? _node;
