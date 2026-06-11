@@ -540,6 +540,27 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="11"/>
         </Style>
+        <Style x:Key="HabitScreen.ColumnResizeThumb" TargetType="Thumb">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Width" Value="6"/>
+            <Setter Property="Cursor" Value="SizeWE"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="bd" Background="Transparent"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -623,78 +644,106 @@
                 <StackPanel Orientation="Horizontal">
 
                     <!-- Cronologia -->
-                    <Border Width="460" Style="{StaticResource HabitScreen.Column}"
+                    <Border Width="{Binding CronologiaWidth}" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding IsCronologiaOpen, Converter={StaticResource BoolToVisible}}">
-                        <DockPanel>
-                            <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
-                                <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
-                                <Button Style="{StaticResource HabitScreen.ColumnClose}"
-                                        Command="{Binding ToggleColumnCommand}"
-                                        CommandParameter="{x:Static vm:HabitColumn.Cronologia}"/>
-                            </Grid>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel>
-                                    <cal:CalendarNavigator DataContext="{Binding Calendar}"/>
-                                    <ContentControl Content="{Binding QuickAdd}"
-                                                    ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
-                                    <ContentControl Content="{Binding TimerControl}"/>
-                                    <v:DayNoteView DataContext="{Binding DayNote}"/>
-                                    <StackPanel Margin="12,4,12,12">
-                                        <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords}"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource Brush.Text}"
-                                                   Margin="0,0,0,2"/>
-                                        <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
-                                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                                   FontSize="{StaticResource FontSize.Small}"
-                                                   Visibility="{Binding DayCompletions.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
-                                        <ContentControl Content="{Binding DayCompletions}"/>
+                        <Grid>
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
+                                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnClose}"
+                                            Command="{Binding ToggleColumnCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Cronologia}"/>
+                                </Grid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <cal:CalendarNavigator DataContext="{Binding Calendar}"/>
+                                        <ContentControl Content="{Binding QuickAdd}"
+                                                        ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
+                                        <ContentControl Content="{Binding TimerControl}"/>
+                                        <v:DayNoteView DataContext="{Binding DayNote}"/>
+                                        <StackPanel Margin="12,4,12,12">
+                                            <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource Brush.Text}"
+                                                       Margin="0,0,0,2"/>
+                                            <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
+                                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                                       FontSize="{StaticResource FontSize.Small}"
+                                                       Visibility="{Binding DayCompletions.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
+                                            <ContentControl Content="{Binding DayCompletions}"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </DockPanel>
+                                </ScrollViewer>
+                            </DockPanel>
+                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
+                                   Tag="{x:Static vm:HabitColumn.Cronologia}"
+                                   DragDelta="OnColumnResizeDelta"
+                                   DragCompleted="OnColumnResizeCompleted"
+                                   MouseDoubleClick="OnColumnResizeReset"/>
+                        </Grid>
                     </Border>
 
                     <!-- Dettaglio -->
-                    <Border Width="520" Style="{StaticResource HabitScreen.Column}"
+                    <Border Width="{Binding DettaglioWidth}" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding IsDettaglioOpen, Converter={StaticResource BoolToVisible}}">
-                        <DockPanel>
-                            <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
-                                <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Detail}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
-                                <Button Style="{StaticResource HabitScreen.ColumnClose}"
-                                        Command="{Binding ToggleColumnCommand}"
-                                        CommandParameter="{x:Static vm:HabitColumn.Dettaglio}"/>
-                            </Grid>
-                            <ContentControl Content="{Binding Detail}"/>
-                        </DockPanel>
+                        <Grid>
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
+                                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Detail}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnClose}"
+                                            Command="{Binding ToggleColumnCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Dettaglio}"/>
+                                </Grid>
+                                <ContentControl Content="{Binding Detail}"/>
+                            </DockPanel>
+                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
+                                   Tag="{x:Static vm:HabitColumn.Dettaglio}"
+                                   DragDelta="OnColumnResizeDelta"
+                                   DragCompleted="OnColumnResizeCompleted"
+                                   MouseDoubleClick="OnColumnResizeReset"/>
+                        </Grid>
                     </Border>
 
                     <!-- Note -->
-                    <Border Width="460" Style="{StaticResource HabitScreen.Column}"
+                    <Border Width="{Binding NoteWidth}" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding IsNoteOpen, Converter={StaticResource BoolToVisible}}">
-                        <DockPanel>
-                            <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
-                                <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Notes}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
-                                <Button Style="{StaticResource HabitScreen.ColumnClose}"
-                                        Command="{Binding ToggleColumnCommand}"
-                                        CommandParameter="{x:Static vm:HabitColumn.Note}"/>
-                            </Grid>
-                            <ContentControl Content="{Binding Notes}"/>
-                        </DockPanel>
+                        <Grid>
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
+                                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Notes}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnClose}"
+                                            Command="{Binding ToggleColumnCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Note}"/>
+                                </Grid>
+                                <ContentControl Content="{Binding Notes}"/>
+                            </DockPanel>
+                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
+                                   Tag="{x:Static vm:HabitColumn.Note}"
+                                   DragDelta="OnColumnResizeDelta"
+                                   DragCompleted="OnColumnResizeCompleted"
+                                   MouseDoubleClick="OnColumnResizeReset"/>
+                        </Grid>
                     </Border>
 
                     <!-- Configura (the habit editor) -->
-                    <Border Width="480" Style="{StaticResource HabitScreen.Column}"
+                    <Border Width="{Binding ConfiguraWidth}" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding IsConfiguraOpen, Converter={StaticResource BoolToVisible}}">
-                        <DockPanel>
-                            <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
-                                <TextBlock Text="{x:Static res:Strings.HabitScreen_Configure}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
-                                <Button Style="{StaticResource HabitScreen.ColumnClose}"
-                                        Command="{Binding ToggleColumnCommand}"
-                                        CommandParameter="{x:Static vm:HabitColumn.Configura}"/>
-                            </Grid>
-                            <ve:EditorPane DataContext="{Binding Editor}"/>
-                        </DockPanel>
+                        <Grid>
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
+                                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Configure}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnClose}"
+                                            Command="{Binding ToggleColumnCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Configura}"/>
+                                </Grid>
+                                <ve:EditorPane DataContext="{Binding Editor}"/>
+                            </DockPanel>
+                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
+                                   Tag="{x:Static vm:HabitColumn.Configura}"
+                                   DragDelta="OnColumnResizeDelta"
+                                   DragCompleted="OnColumnResizeCompleted"
+                                   MouseDoubleClick="OnColumnResizeReset"/>
+                        </Grid>
                     </Border>
 
                 </StackPanel>
