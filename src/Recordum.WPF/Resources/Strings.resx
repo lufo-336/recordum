@@ -503,6 +503,9 @@ Details: {0}</value>
   <data name="HabitScreen.Tab.Abitudine" xml:space="preserve">
     <value>Habit</value>
   </data>
+  <data name="HabitScreen.Column.Cronologia" xml:space="preserve">
+    <value>Log</value>
+  </data>
   <data name="HabitScreen.DayRecords" xml:space="preserve">
     <value>Records for this day</value>
   </data>

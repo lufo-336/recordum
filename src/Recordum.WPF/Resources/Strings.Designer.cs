@@ -39,6 +39,7 @@ public static class Strings
     public static string QuickAdd_Error_ValueRequired => Get("QuickAdd.Error.ValueRequired");
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
     public static string HabitScreen_Tab_Abitudine => Get("HabitScreen.Tab.Abitudine");
+    public static string HabitScreen_Column_Cronologia => Get("HabitScreen.Column.Cronologia");
     public static string HabitScreen_DayRecords => Get("HabitScreen.DayRecords");
     public static string HabitScreen_DayRecords_Empty => Get("HabitScreen.DayRecords.Empty");
     public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");

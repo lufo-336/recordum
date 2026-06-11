@@ -485,6 +485,9 @@
   <data name="HabitScreen.Tab.Abitudine" xml:space="preserve">
     <value>Abitudine</value>
   </data>
+  <data name="HabitScreen.Column.Cronologia" xml:space="preserve">
+    <value>Cronologia</value>
+  </data>
   <data name="HabitScreen.DayRecords" xml:space="preserve">
     <value>Registrazioni del giorno</value>
   </data>
