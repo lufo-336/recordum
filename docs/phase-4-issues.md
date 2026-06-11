@@ -6,7 +6,11 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
-## Stato al 2026-06-11 (sera) — rimodernizzazione UI: Fasi A+B eseguite
+## Stato al 2026-06-11 (sera) — rimodernizzazione UI: Fasi A+B+C eseguite
+
+**Fase C — Passata estetica**: piano `docs/superpowers/plans/2026-06-11-aesthetics-pass.md` eseguito (4 task, commit `7251c25`→`a0d2f31`). Stile condiviso **`Recordum.Segment`** (RadioButton→pill senza pallino, checked=elevated+bordo, focus=accent) adottato da Home tabs (Attive/Archiviate/Cestino in pill-group) e calendario (Settimana/Mese/Anno + Mesi/Heatmap); **ScrollBar flat** implicita a tema (thumb arrotondato, niente frecce, page-click ok); **ricerca Home** con icona Lucide + watermark funzionante (il vecchio `Tag` era inerte). Suite 457 verdi, build 0/0. **Stato: `fixed`, verifica visiva utente da fare (A+B+C insieme).**
+
+
 
 **Fase B — Guscio (title bar custom + ribbon + status bar)**: piano `docs/superpowers/plans/2026-06-11-shell-ribbon-titlebar.md` eseguito (5 task, commit `fb8ffdc`→`59cc46b`). `WindowChrome` (caption 36px, snap nativi, min/max/close flat, close hover rosso, fix overflow maximize via RootGrid margin); `WorkspaceRibbon` 44px (Home/Grafici con stato attivo accent | menu Backup Crea/Ripristina/Cronologia + Esporta libreria | Aiuto→Diagnostica, ⚙→Impostazioni); **eliminata la barra superiore testuale + Menu**; `Icon.Settings` completato a ingranaggio pieno + 3 icone nuove; TimerStatusBar compattata. Deviazione documentata: icona Backup apre un ContextMenu (restore/cronologia non avevano altra casa dopo la rimozione del menu). Ctrl+1..5 invariati. Suite WPF 456+1 flaky (verde isolato), build 0/0. **Stato: `fixed`, verifica visiva utente da fare.** Prossimo: **Fase C** (Home toolbar pill, scrollbar, hover audit).
 
