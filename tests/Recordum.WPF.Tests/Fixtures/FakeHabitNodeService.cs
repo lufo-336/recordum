@@ -28,12 +28,14 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     // soft-deleted/moved row from the tree-query fake) so a reload reflects it.
     public Action<Guid>? OnSoftDelete { get; set; }
     public Action<Guid, bool>? OnSetArchived { get; set; }
+    public Action<HabitNode>? OnCreate { get; set; }
 
     public ValueTask<Guid> CreateAsync(HabitNode draft, CancellationToken ct = default)
     {
         Throw();
         if (draft.Id == Guid.Empty) draft.Id = Guid.NewGuid();
         Store[draft.Id] = draft;
+        OnCreate?.Invoke(draft);
         return new ValueTask<Guid>(draft.Id);
     }
 

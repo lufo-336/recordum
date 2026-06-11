@@ -480,6 +480,78 @@ public class HomeViewModelTests
         public ValueTask<bool> ExecuteAsync(Guid habitNodeId, CancellationToken ct = default) => new(recorded);
     }
 
+    [Fact]
+    public async Task OpenNewHabit_with_group_selected_passes_group_as_parent()
+    {
+        var groupId = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: groupId));
+        var launcher = new FakeHabitTemplatePickerLauncher();
+        var sut = new HomeViewModel(_query, _nodes, _purge, launcher);
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectedRow = sut.Rows.Single(r => r.HabitNodeId == groupId);
+
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+
+        launcher.LastParentId.Should().Be(groupId);
+    }
+
+    [Fact]
+    public async Task OpenNewHabit_with_habit_selected_passes_its_parent_as_parent()
+    {
+        var groupId = Guid.NewGuid();
+        var habitId = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: groupId));
+        _query.HomeRows.Add(SampleRow(name: "h", id: habitId, parent: groupId));
+        var launcher = new FakeHabitTemplatePickerLauncher();
+        var sut = new HomeViewModel(_query, _nodes, _purge, launcher);
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectedRow = sut.Rows.Single(r => r.HabitNodeId == habitId);
+
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+
+        launcher.LastParentId.Should().Be(groupId);
+    }
+
+    [Fact]
+    public async Task CreateGroup_with_no_selection_creates_at_root_selects_and_raises()
+    {
+        _nodes.OnCreate = draft => _query.HomeRows.Add(
+            new HomeTreeRow(draft.Id, draft.ParentId, draft.Name, draft.Color, null, null, 0,
+                false, PinScope.None, 0, false,
+                ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        Guid? raised = null;
+        sut.GroupCreated += (_, id) => raised = id;
+
+        await sut.CreateGroupCommand.ExecuteAsync(null);
+
+        var created = _nodes.Store.Values.Single();
+        created.NodeType.Should().Be(NodeType.Group);
+        created.ParentId.Should().BeNull();
+        sut.SelectedRow!.HabitNodeId.Should().Be(created.Id);
+        raised.Should().Be(created.Id);
+    }
+
+    [Fact]
+    public async Task CreateGroup_with_group_selected_creates_inside_it()
+    {
+        var groupId = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: groupId));
+        _nodes.OnCreate = draft => _query.HomeRows.Add(
+            new HomeTreeRow(draft.Id, draft.ParentId, draft.Name, draft.Color, null, null, 0,
+                false, PinScope.None, 0, false,
+                ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectedRow = sut.Rows.Single(r => r.HabitNodeId == groupId);
+
+        await sut.CreateGroupCommand.ExecuteAsync(null);
+
+        _nodes.Store.Values.Single(n => n.NodeType == NodeType.Group)
+            .ParentId.Should().Be(groupId);
+    }
+
     private static HomeTreeRow SampleRow(string name = "x", bool archived = false, HabitType? type = HabitType.Action, Guid? id = null, Guid? parent = null) =>
         new(id ?? Guid.NewGuid(), parent, name, "#000000", type, null, 0, false, PinScope.None, 0, archived, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
 

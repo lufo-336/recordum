@@ -5,8 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.Quick;
 
@@ -117,10 +119,33 @@ public sealed partial class HomeViewModel : ObservableObject
     private async Task OpenNewHabitAsync()
     {
         if (_launcher is null) return;
-        var newId = await _launcher.PickAsync();
+        var newId = await _launcher.PickAsync(ResolveCreationParentId());
         if (newId is null) return;
         await LoadAsync();
         SelectedRow = Rows.FirstOrDefault(r => r.HabitNodeId == newId);
+    }
+
+    // ＋Nuova▾ context: group selected → inside it; habit selected → sibling; nothing → root.
+    private Guid? ResolveCreationParentId() => SelectedRow switch
+    {
+        null => null,
+        { IsGroup: true } row => row.HabitNodeId,
+        var row => row.ParentId,
+    };
+
+    [RelayCommand]
+    private async Task CreateGroupAsync()
+    {
+        var id = await _nodes.CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Group,
+            Name = Strings.Editor_Default_NewGroup,
+            Color = "#808080",
+            ParentId = ResolveCreationParentId(),
+        });
+        await LoadAsync();
+        SelectedRow = Rows.FirstOrDefault(r => r.HabitNodeId == id);
+        GroupCreated?.Invoke(this, id);
     }
 
     [RelayCommand]
@@ -167,6 +192,9 @@ public sealed partial class HomeViewModel : ObservableObject
     /// Setting <see cref="SelectedRow"/> would be a no-op, so the host must (re)open the workspace
     /// explicitly. Carries the habit node id to open.</summary>
     public event EventHandler<Guid>? HabitActivationRequested;
+
+    /// <summary>Raised after a group is created via the ＋New menu (host opens Configura for rename).</summary>
+    public event EventHandler<Guid>? GroupCreated;
 
     private void OnRowQuickActionExecuted(object? sender, QuickActionExecutedEventArgs e)
     {
