@@ -10,7 +10,7 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HabitEditorViewModel, IsDesignTimeCreatable=False}"
              Background="{DynamicResource Brush.Surface}"
-             MinWidth="360" Width="480">
+             MinWidth="360">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

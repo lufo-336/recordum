@@ -244,6 +244,38 @@
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     </Style>
 
+    <!-- Segment pill as independent toggle (chip bar of the habit column workspace): same look as
+         Recordum.Segment but on CheckBox, since columns toggle independently (not mutually exclusive). -->
+    <Style x:Key="Recordum.SegmentCheck" TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+        <Setter Property="Padding" Value="11,4"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Border x:Name="bd" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                            Background="Transparent" BorderThickness="1" BorderBrush="Transparent">
+                        <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Segmented pill for view toggles (Home tabs, calendar view modes): a RadioButton without
          the bullet — flat pill, checked = elevated bg + subtle border (Fase C). Form radios keep
          the classic implicit style above. -->
