@@ -6,7 +6,11 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
-## Stato al 2026-06-11 (sera) — rimodernizzazione UI: Fase A (SettingsWindow) eseguita
+## Stato al 2026-06-11 (sera) — rimodernizzazione UI: Fasi A+B eseguite
+
+**Fase B — Guscio (title bar custom + ribbon + status bar)**: piano `docs/superpowers/plans/2026-06-11-shell-ribbon-titlebar.md` eseguito (5 task, commit `fb8ffdc`→`59cc46b`). `WindowChrome` (caption 36px, snap nativi, min/max/close flat, close hover rosso, fix overflow maximize via RootGrid margin); `WorkspaceRibbon` 44px (Home/Grafici con stato attivo accent | menu Backup Crea/Ripristina/Cronologia + Esporta libreria | Aiuto→Diagnostica, ⚙→Impostazioni); **eliminata la barra superiore testuale + Menu**; `Icon.Settings` completato a ingranaggio pieno + 3 icone nuove; TimerStatusBar compattata. Deviazione documentata: icona Backup apre un ContextMenu (restore/cronologia non avevano altra casa dopo la rimozione del menu). Ctrl+1..5 invariati. Suite WPF 456+1 flaky (verde isolato), build 0/0. **Stato: `fixed`, verifica visiva utente da fare.** Prossimo: **Fase C** (Home toolbar pill, scrollbar, hover audit).
+
+
 
 **Piano master**: spec `docs/superpowers/specs/2026-06-11-ui-modernization-plan-design.md` (riferimento Obsidian; decisioni: solo guscio ora, ribbon variante B, categorie future disabilitate = deroga approvata al no-placeholder, title bar custom, ordine A→B→C; nav-model resta parcheggiato come fase 4 del piano).
 
