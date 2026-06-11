@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -21,10 +22,37 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     private MetricDefinition? _primary;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private Guid? _selectedScaleTemplateId;
-    [ObservableProperty] private string? _labelsJson;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScalePreview))]
+    private Guid? _selectedScaleTemplateId;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScalePreview))]
+    private string? _labelsJson;
 
     public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
+
+    /// <summary>Readable preview of the effective scale labels ("value  label" per step), so the user can see
+    /// what the scale means without parsing the raw JSON. The local override wins over the template's labels
+    /// (same precedence as recording); null when no scale / no labels so the view collapses it.</summary>
+    public string? ScalePreview
+    {
+        get
+        {
+            var tmpl = AvailableScales.FirstOrDefault(s => s.Id == SelectedScaleTemplateId);
+            if (tmpl is null) return null;
+            var labels = ParseLabels(LabelsJson) ?? ParseLabels(tmpl.LabelsJson);
+            if (labels is not { Length: > 0 }) return null;
+            return string.Join("    ", labels.Select((l, i) => $"{tmpl.MinValue + i}  {l}"));
+        }
+    }
+
+    private static string[]? ParseLabels(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonSerializer.Deserialize<string[]>(json); }
+        catch (JsonException) { return null; }
+    }
 
     public async Task LoadAsync(HabitNode node)
     {

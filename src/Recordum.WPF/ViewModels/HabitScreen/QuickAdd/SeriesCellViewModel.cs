@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -28,7 +29,22 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     [ObservableProperty] private long? _integerValue;
     [ObservableProperty] private decimal? _decimalValue;
     [ObservableProperty] private string? _textValue;
-    [ObservableProperty] private int? _selectedScaleIndex; // 0-based across steps
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedScaleLabel))]
+    private int? _selectedScaleIndex; // 0-based across steps
+
+    /// <summary>Label for the current slider position (falls back to the scale value when a step has no
+    /// label), so the slider reads "Good" instead of a bare 0-based index. Empty when nothing is picked.</summary>
+    public string SelectedScaleLabel
+    {
+        get
+        {
+            if (SelectedScaleIndex is not { } i) return string.Empty;
+            return i >= 0 && i < ScaleLabels.Count
+                ? ScaleLabels[i]
+                : (ScaleMin + i).ToString(CultureInfo.CurrentCulture);
+        }
+    }
 
     public static MetricInputKind ResolveKind(MetricDefinition metric)
     {

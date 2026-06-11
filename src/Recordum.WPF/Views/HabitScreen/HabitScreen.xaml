@@ -207,11 +207,14 @@
                             </Style>
                         </TextBox.Style>
                     </TextBox>
-                    <!-- Scale: labelled selector (<=10 steps) -->
-                    <ComboBox MinWidth="120" ItemsSource="{Binding ScaleLabels}"
-                              SelectedIndex="{Binding SelectedScaleIndex}">
-                        <ComboBox.Style>
-                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                    <!-- Scale: segmented selectable buttons (<=10 steps). A ListBox gives single-selection for
+                         free; SelectedIndex two-way binds to the 0-based step (same binding the dropdown used). -->
+                    <ListBox ItemsSource="{Binding ScaleLabels}" SelectedIndex="{Binding SelectedScaleIndex}"
+                             BorderThickness="0" Background="Transparent" Padding="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.Style>
+                            <Style TargetType="ListBox">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
                                     <MultiDataTrigger>
@@ -223,8 +226,39 @@
                                     </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </ComboBox.Style>
-                    </ComboBox>
+                        </ListBox.Style>
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Margin" Value="0,0,4,4"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="bd" CornerRadius="4" Padding="11,4" BorderThickness="1"
+                                                    Background="{DynamicResource Brush.SurfaceElevated}"
+                                                    BorderBrush="{DynamicResource Brush.Border}">
+                                                <ContentPresenter VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.Accent}"/>
+                                                    <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.OnAccent}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
                     <!-- Scale: slider (>10 steps) -->
                     <StackPanel Orientation="Horizontal">
                         <StackPanel.Style>
@@ -246,7 +280,7 @@
                                 IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
                         <TextBlock Margin="8,0,0,0" VerticalAlignment="Center"
                                    Foreground="{DynamicResource Brush.Text}"
-                                   Text="{Binding SelectedScaleIndex}"/>
+                                   Text="{Binding SelectedScaleLabel}"/>
                     </StackPanel>
                 </Grid>
                 <TextBlock Text="{Binding UnitLabel}" Margin="6,0,0,0" VerticalAlignment="Center"

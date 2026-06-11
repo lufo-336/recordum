@@ -6,6 +6,23 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Stato al 2026-06-11 (continuazione) — calendario chiuso + rifiniture minori esaurite
+
+**Calendario (filone #3) — chiuso.** Commit `3c97ead`:
+- **B-calYearRender** `verified-fixed`: celle Anno collassate per mancanza di `HorizontalContentAlignment/VerticalContentAlignment="Stretch"` sui Button (ereditavano Left/Top → ContentPresenter dimensionava a 0×0 il Grid solo-background). Aggiunto Stretch a `YearCellTemplate`+`HeatCellTemplate`.
+- **Settimana/Mese**: dimensione cella **fissa** via `CalendarNavigatorViewModel.CellSize` (40 Mese / 56 Settimana) come unica sorgente; header e body derivano la stessa larghezza colonna (7×(CellSize+4)), left-aligned → allineati senza trigger e **senza ingigantirsi** quando la colonna si allarga.
+- **Base cella**: aggiunta base grigia (`Brush.Border`) come sfondo del Button anche in Settimana/Mese (come Anno).
+- **Splitter workspace**: niente più rimbalzo — `MaxHabitScreenWidth` 800→1100 + `MaxWidth` sulla ColumnDefinition (`MainWindow.xaml`) così lo splitter si ferma al cap invece di clampare al rilascio.
+
+**Rifiniture minori — tutte chiuse:**
+- **RB6c-4** `fixed`: anteprima leggibile delle etichette scala nella sezione Scale dell'editor (`ScalesSectionViewModel.ScalePreview` + riquadro in `ScalesSectionView.xaml`).
+- **R-scaleUI** `fixed`: cella scala in registrazione ridisegnata — ≤10 step ora **bottoni segmentati** (ListBox stilizzato in `HabitScreen.xaml`, selezione accent/`Brush.OnAccent`) invece del dropdown; slider >10 mostra l'**etichetta** (`SeriesCellViewModel.SelectedScaleLabel`) invece dell'indice grezzo.
+- **R-statePlus**, **R1** (theming flat), **R2** (banner WebView2), **R3** (toolbar Toast), **R4** (backup delay configurabile/reattivo): già implementate in sessioni precedenti, tracker allineato qui.
+
+RB6c-4 + R-scaleUI: **verifica visiva utente da fare** (l'utente ha chiesto di fare tutte le limature e verificare dopo). Suite WPF calendario/scala verde.
+
+**Restano (NON limature minori — richiedono design/brainstorm):** B6b template custom, #8 finestra nuova-abitudine a fisarmonica + crea gruppo, #9 gruppi, R-responsiveUI, R5 audit accessibilità app-wide, nav-model a colonne. Bloccanti vaghi: B2 (personalizzazione note, serve repro), B3 (placeholder).
+
 ---
 
 ## Come segnalare un nuovo bug
@@ -290,7 +307,8 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 - Test VM: `CalendarNavigatorViewModelTests` 17 verdi (view modes, heatmap toggle, blocks).
 
 ### B-calYearRender. Le celle-giorno in ANNO non si renderizzano (BLOCCANTE, aperto)
-- **Stato**: `triaged` (root cause parziale, fix tentati insufficienti).
+- **Stato**: `verified-fixed` (2026-06-11, commit `3c97ead`, utente "ci siamo"). **Root cause**: i Button delle celle Anno (`YearCellTemplate`/`HeatCellTemplate`) non impostavano `HorizontalContentAlignment/VerticalContentAlignment="Stretch"`, quindi ereditavano Left/Top dal `Control` e il ContentPresenter del template chrome dimensionava il Grid (solo-Border-background) alla sua desired size 0×0 → celle invisibili (si vedeva solo il `Border Bd` del template = bordo "oggi" arrotondato + il Path nota con desired 6×6). Fix: aggiunto lo Stretch a entrambi i template (come già faceva `DayCellTemplate`). **Follow-up della stessa sessione** (vedi "Stato al 2026-06-11 (continuazione)"): Settimana/Mese a dimensione fissa via `CalendarNavigatorViewModel.CellSize` (no ballooning, header allineato), base grigia delle celle, splitter senza rimbalzo.
+- **Stato (storico)**: `triaged` (root cause parziale, fix tentati insufficienti).
 - **Sintomo**: in **Anno → Mesi** i mini-mesi mostrano solo il nome del mese; in **Anno → Heatmap** la griglia è vuota. In entrambi i casi si vedono solo il **bordo "oggi"** (come un ovale/anello sottile) e i **triangoli nota** fluttuanti — le celle-giorno (quadratini tint/base) **collassano o non appaiono**. **Mese e Settimana funzionano** (Mese verificato bello dall'utente).
 - **Diagnosi**:
   - Mese/Settimana = **singolo** ItemsControl + `MaxWidth` (larghezza definita) e le celle prendono altezza dal **contenuto testuale** (numero giorno) → niente collasso.
@@ -363,20 +381,19 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 ## Aperti — rifinitura
 
 ### R1. Theming Pass 2 — chrome flat per Button/TabItem/ComboBox
-- **Stato**: `triaged` (depends on B0 verified-fixed sotto)
-- **Scope**: BaseStyles Pass 1 (commit `6a15cea`) cabla solo Foreground; il `ControlTemplate` Aero di Button/TabItem/ComboBox usa un gradiente chiaro hardcoded. In dark mode il testo è leggibile ma lo sfondo bottone resta light-gradient = ugly.
-- **Approccio**: sostituire i 3 ControlTemplate con flat (Border + ContentPresenter) + Background = `Brush.SurfaceElevated` + hover state.
+- **Stato**: `fixed` (Theming Pass 1→3, vedi CLAUDE.md Fase 4; tracker allineato 2026-06-11) — Button/TabItem/ComboBox hanno ControlTemplate flat in `BaseStyles.xaml` (Border + ContentPresenter, hover/focus all'accent).
+- **Scope (storico)**: BaseStyles Pass 1 (commit `6a15cea`) cabla solo Foreground; il `ControlTemplate` Aero di Button/TabItem/ComboBox usa un gradiente chiaro hardcoded. In dark mode il testo è leggibile ma lo sfondo bottone resta light-gradient = ugly.
 
 ### R2. WebView2 fallback UX
-- **Stato**: `triaged`
-- **Scope**: se WebView2 Runtime non è installato, l'editor cade su `TextBox` senza preview markdown. Aggiungere banner di guida con link diretto al Runtime download.
+- **Stato**: `fixed` (tracker allineato 2026-06-11) — banner di guida con Hyperlink al download del Runtime già presente sopra `HabitScreen` (`HabitScreen.xaml`, `Editor_WebView2_NotAvailable_*`), visibile quando `Availability.IsAvailable=false`.
+- **Scope (storico)**: se WebView2 Runtime non è installato, l'editor cade su `TextBox` senza preview markdown. Aggiungere banner di guida con link diretto al Runtime download.
 
 ### R3. Toast UI toolbar — opzioni mancanti
 - **Stato**: `fixed` (2026-06-09, commit `ce155fe`) — aggiunti `task`/`table`/`codeblock`; source-view già nativo (mode-switch). `image` escluso (no `addImageBlobHook`). Vedi "Blocco limature 2026-06-09 (sera)".
 
 ### R4. BackupSchedulerHost — start delay configurabile
-- **Stato**: `triaged`
-- **Scope**: il fix di M3.10b è "wait one tick = 60min prima del primo run". Per polish: rendere il delay configurabile (es. 5min default per esperienza utente più reattiva).
+- **Stato**: `fixed` (tracker allineato 2026-06-11) — `BackupSchedulerHost` legge `BackupSchedulerOptions` iniettabile (`InitialDelay`/`Interval`); i default sono già reattivi (InitialDelay 2 min, Interval 30 min, "Defaults favour responsiveness"). Configurabile via DI in `ServiceRegistrar`.
+- **Scope (storico)**: il fix di M3.10b era "wait one tick = 60min prima del primo run". Per polish: rendere il delay configurabile (es. 5min default per esperienza utente più reattiva).
 
 ### R5. Accessibility / keyboard navigation
 - **Stato**: `fixed` parziale (2026-06-09, commit `c9442e4`) — color/icon picker resi keyboard-accessible (focus/Invio-Spazio/Escape + AutomationProperties.Name). **Resta aperto** l'audit app-wide: focus order, tab traversal su tutte le view, AutomationPeers, contrasto colori WCAG, nav-tastiera dei controlli custom. Effort separato (candidato milestone/brainstorm dedicato).
