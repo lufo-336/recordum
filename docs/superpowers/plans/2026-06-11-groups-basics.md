@@ -455,7 +455,7 @@ In `OnDrop`, prima riga del corpo: `SetDropTarget(null);`
 
 ### Task 6: verifica visiva + tracker
 
-- [ ] skill `run` + checklist: menu ＋Nuova▾ (2 voci); "Nuova habit" con gruppo selezionato → il picker crea dentro il gruppo; con habit selezionata → fratello; "Nuovo gruppo" nei 3 contesti → creato nel posto giusto, selezionato, Configura aperta col nome da rinominare; cambio habit con Configura aperta → editor segue (fix rebind); drag di una riga sopra un gruppo → highlight accent solo nella zona centrale; due temi.
+- [x] skill `run` + checklist (utente: ok 2026-06-11): menu ＋Nuova▾ (2 voci); "Nuova habit" con gruppo selezionato → il picker crea dentro il gruppo; con habit selezionata → fratello; "Nuovo gruppo" nei 3 contesti → creato nel posto giusto, selezionato, Configura aperta col nome da rinominare; cambio habit con Configura aperta → editor segue (fix rebind); drag di una riga sopra un gruppo → highlight accent solo nella zona centrale; due temi.
 - [x] aggiornare `docs/phase-4-issues.md` (gruppi-basi fatto; nav-model §3.2 chiuso; resta §5 vista gruppo) + memoria; commit docs.
 
 ---
