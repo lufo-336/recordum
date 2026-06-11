@@ -3,12 +3,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Calendar"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:CalendarNavigatorViewModel}">
     <UserControl.Resources>
-        <!-- Square day cell shared by Week + Month. Height binds to its own ActualWidth → responsive square. -->
+        <!-- Square day cell shared by Week + Month. Height tracks its own width → responsive square.
+             Day number = small muted metadata top-left; the habit count = the data, shown in a small
+             white-ish ring (contrast-aware, capsule when the value is wide) so it reads distinctly. -->
         <DataTemplate x:Key="DayCellTemplate" DataType="{x:Type vm:CalendarDayCellViewModel}">
             <Button Margin="2" Padding="0"
                     Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
@@ -51,11 +54,18 @@
                             </MultiBinding>
                         </Border.Background>
                     </Border>
+                    <!-- Day-of-month: small, muted, top-left -->
                     <TextBlock Text="{Binding DayNumber}" HorizontalAlignment="Left" VerticalAlignment="Top"
-                               Margin="5,3,0,0" FontSize="{StaticResource FontSize.Small}"/>
-                    <TextBlock Text="{Binding Number}" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                               Margin="0,0,0,4" FontWeight="SemiBold" FontSize="{StaticResource FontSize.Small}"
-                               Visibility="{Binding HasNumber, Converter={StaticResource BoolToVisible}}"/>
+                               Margin="5,3,0,0" FontSize="10" Opacity="0.85"/>
+                    <!-- Habit count: ringed, centered, contrast-aware (follows the button foreground). -->
+                    <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                            MinWidth="18" Height="18" Padding="4,0" CornerRadius="9" BorderThickness="1.2"
+                            BorderBrush="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                            Visibility="{Binding HasNumber, Converter={StaticResource BoolToVisible}}">
+                        <TextBlock Text="{Binding Number}" FontSize="10.5" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <!-- Note corner: per-habit colour -->
                     <Path HorizontalAlignment="Right" VerticalAlignment="Top" Data="M 0,0 L 13,0 L 13,13 Z"
                           Visibility="{Binding HasNote, Converter={StaticResource BoolToVisible}}"
                           Fill="{Binding DataContext.NoteColorHex, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource HexToBrush}}"/>
@@ -67,15 +77,77 @@
             </Button>
         </DataTemplate>
 
-        <!-- Compact heatmap cell for the Year view: fixed small square, tooltip, click selects. -->
+        <!-- Tiny day cell for the Year mini-months: responsive square, tooltip, note triangle, click selects.
+             Out-of-month days are collapsed (kept only so weekday columns line up). Select command + note
+             colour live on the navigator VM, two ItemsControl levels up (MonthBlocks → Cells). -->
         <DataTemplate x:Key="YearCellTemplate" DataType="{x:Type vm:CalendarDayCellViewModel}">
-            <Button Width="14" Height="14" Margin="1" Padding="0" BorderThickness="0"
+            <Button Width="14" Height="14" Margin="1" Padding="0" BorderThickness="1"
                     ToolTip="{Binding TooltipText}" ToolTipService.InitialShowDelay="300"
-                    Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    Visibility="{Binding InCurrentMonth, Converter={StaticResource BoolToVisible}}"
+                    Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}"
                     CommandParameter="{Binding}">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                         <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFuture}" Value="True">
+                                <Setter Property="IsEnabled" Value="False"/>
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                <Setter Property="BorderThickness" Value="2"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Grid>
+                    <!-- Always-visible faint base so the grid reads even on empty days. -->
+                    <Border CornerRadius="2" Background="{DynamicResource Brush.Border}"/>
+                    <Border CornerRadius="2">
+                        <Border.Background>
+                            <MultiBinding Converter="{StaticResource HabitColorTint}">
+                                <Binding Path="TintColorHex"/>
+                                <Binding Path="TintStep"/>
+                            </MultiBinding>
+                        </Border.Background>
+                    </Border>
+                    <Path HorizontalAlignment="Right" VerticalAlignment="Top" Data="M 0,0 L 6,0 L 6,6 Z"
+                          Visibility="{Binding HasNote, Converter={StaticResource BoolToVisible}}"
+                          Fill="{Binding DataContext.NoteColorHex, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}, Converter={StaticResource HexToBrush}}"/>
+                </Grid>
+            </Button>
+        </DataTemplate>
+
+        <!-- One month block in the Year mini-months view: month name + a compact 6×7 mini-grid. -->
+        <DataTemplate x:Key="YearMonthTemplate" DataType="{x:Type vm:CalendarMonthBlockViewModel}">
+            <StackPanel Width="112" Margin="6,4">
+                <TextBlock Text="{Binding MonthName}" Margin="2,0,0,3"
+                           FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.TextMuted}"/>
+                <ItemsControl ItemsSource="{Binding Cells}" ItemTemplate="{StaticResource YearCellTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><UniformGrid Columns="7" Rows="6"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- One day in the Year heatmap: fixed small square, tooltip, note triangle, click selects.
+             Select command + note colour are two ItemsControl levels up (YearWeeks → week). -->
+        <DataTemplate x:Key="HeatCellTemplate" DataType="{x:Type vm:CalendarDayCellViewModel}">
+            <Button Width="15" Height="15" Margin="1.5" Padding="0" BorderThickness="1"
+                    ToolTip="{Binding TooltipText}" ToolTipService.InitialShowDelay="300"
+                    Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}"
+                    CommandParameter="{Binding}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="Transparent"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsFuture}" Value="True">
                                 <Setter Property="IsEnabled" Value="False"/>
@@ -85,7 +157,6 @@
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsToday}" Value="True">
                                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
-                                <Setter Property="BorderThickness" Value="1"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
@@ -94,21 +165,28 @@
                         </Style.Triggers>
                     </Style>
                 </Button.Style>
-                <Border CornerRadius="2">
-                    <Border.Background>
-                        <MultiBinding Converter="{StaticResource HabitColorTint}">
-                            <Binding Path="TintColorHex"/>
-                            <Binding Path="TintStep"/>
-                        </MultiBinding>
-                    </Border.Background>
-                </Border>
+                <Grid>
+                    <!-- Always-visible faint base so the heatmap grid reads even on empty days. -->
+                    <Border CornerRadius="2" Background="{DynamicResource Brush.Border}"/>
+                    <Border CornerRadius="2">
+                        <Border.Background>
+                            <MultiBinding Converter="{StaticResource HabitColorTint}">
+                                <Binding Path="TintColorHex"/>
+                                <Binding Path="TintStep"/>
+                            </MultiBinding>
+                        </Border.Background>
+                    </Border>
+                    <Path HorizontalAlignment="Right" VerticalAlignment="Top" Data="M 0,0 L 6,0 L 6,6 Z"
+                          Visibility="{Binding HasNote, Converter={StaticResource BoolToVisible}}"
+                          Fill="{Binding DataContext.NoteColorHex, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}, Converter={StaticResource HexToBrush}}"/>
+                </Grid>
             </Button>
         </DataTemplate>
     </UserControl.Resources>
 
     <Border Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
         <StackPanel>
-            <!-- Header: view toggle, prev / label / jump / next -->
+            <!-- Header: view toggle (+ year sub-toggle), prev / label / jump / next -->
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -129,6 +207,21 @@
                     <RadioButton GroupName="calview" Content="{x:Static res:Strings.Calendar_View_Year}" Margin="6,0,0,0"
                                  Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static vm:CalendarViewMode.Year}"
                                  IsChecked="{Binding ViewMode, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:CalendarViewMode.Year}}"/>
+
+                    <!-- Year sub-toggle: Mesi / Heatmap (only in Year) -->
+                    <StackPanel Orientation="Horizontal" Margin="14,0,0,0"
+                                Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Year}}">
+                        <RadioButton GroupName="calsub" Content="{x:Static res:Strings.Calendar_Year_Months}"
+                                     Command="{Binding SetYearHeatmapCommand}"
+                                     IsChecked="{Binding YearAsHeatmap, Mode=OneWay, Converter={StaticResource InverseBool}}">
+                            <RadioButton.CommandParameter><sys:Boolean>False</sys:Boolean></RadioButton.CommandParameter>
+                        </RadioButton>
+                        <RadioButton GroupName="calsub" Content="{x:Static res:Strings.Calendar_Year_Heatmap}" Margin="6,0,0,0"
+                                     Command="{Binding SetYearHeatmapCommand}"
+                                     IsChecked="{Binding YearAsHeatmap, Mode=OneWay}">
+                            <RadioButton.CommandParameter><sys:Boolean>True</sys:Boolean></RadioButton.CommandParameter>
+                        </RadioButton>
+                    </StackPanel>
                 </StackPanel>
 
                 <Button Grid.Column="1" Content="&#x2039;" Width="28" Command="{Binding PrevCommand}"/>
@@ -144,12 +237,16 @@
                 <Button Grid.Column="5" Content="&#x203A;" Width="28" Margin="4,0,0,0" Command="{Binding NextCommand}"/>
             </Grid>
 
-            <!-- Weekday header (Week + Month only — hidden in Year via the Style trigger below) -->
-            <ItemsControl ItemsSource="{Binding WeekdayHeaders}">
+            <!-- Weekday header (Week + Month only — width matches the active grid; hidden in Year). -->
+            <ItemsControl ItemsSource="{Binding WeekdayHeaders}" HorizontalAlignment="Left">
                 <ItemsControl.Style>
                     <Style TargetType="ItemsControl">
                         <Setter Property="Visibility" Value="Visible"/>
+                        <Setter Property="MaxWidth" Value="308"/>
                         <Style.Triggers>
+                            <DataTrigger Binding="{Binding ViewMode}" Value="Week">
+                                <Setter Property="MaxWidth" Value="420"/>
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding ViewMode}" Value="Year">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
@@ -167,8 +264,8 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Month body: 6×7 square grid -->
-            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0"
+            <!-- Month body: compact 6×7 square grid (~40px cells), left-aligned and width-capped. -->
+            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0" HorizontalAlignment="Left" MaxWidth="308"
                           ItemTemplate="{StaticResource DayCellTemplate}"
                           Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Month}}">
                 <ItemsControl.ItemsPanel>
@@ -176,8 +273,8 @@
                 </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <!-- Week body: single row of 7 square cells -->
-            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0"
+            <!-- Week body: single row of 7 larger square cells (~56px). -->
+            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0" HorizontalAlignment="Left" MaxWidth="420"
                           ItemTemplate="{StaticResource DayCellTemplate}"
                           Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Week}}">
                 <ItemsControl.ItemsPanel>
@@ -185,15 +282,33 @@
                 </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <!-- Year body: 7×53 compact heatmap, horizontal scroll -->
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,4,0,0"
-                          Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Year}}">
-                <ItemsControl ItemsSource="{Binding Cells}" ItemTemplate="{StaticResource YearCellTemplate}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><UniformGrid Rows="7" Columns="53" FlowDirection="LeftToRight"/></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-            </ScrollViewer>
+            <!-- Year body: mini-months OR heatmap, switched by the sub-toggle. -->
+            <Grid Margin="0,4,0,0"
+                  Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Year}}">
+                <!-- Mini-months: twelve blocks wrapping to fit, vertical scroll if needed. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="460"
+                              Visibility="{Binding YearAsHeatmap, Converter={StaticResource InvBoolToVisible}}">
+                    <ItemsControl ItemsSource="{Binding MonthBlocks}" ItemTemplate="{StaticResource YearMonthTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+                <!-- Heatmap: 53 week-columns (horizontal) of 7 weekday cells (vertical). -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                              Visibility="{Binding YearAsHeatmap, Converter={StaticResource BoolToVisible}}">
+                    <ItemsControl ItemsSource="{Binding YearWeeks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ItemsControl ItemsSource="{Binding}" ItemTemplate="{StaticResource HeatCellTemplate}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
         </StackPanel>
     </Border>
 </UserControl>

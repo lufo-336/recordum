@@ -14,6 +14,8 @@ public static class Strings
     public static string Calendar_View_Week => Get("Calendar.View.Week");
     public static string Calendar_View_Month => Get("Calendar.View.Month");
     public static string Calendar_View_Year => Get("Calendar.View.Year");
+    public static string Calendar_Year_Months => Get("Calendar.Year.Months");
+    public static string Calendar_Year_Heatmap => Get("Calendar.Year.Heatmap");
 
     // HabitScreen
     public static string HabitScreen_Configure => Get("HabitScreen.Configure");

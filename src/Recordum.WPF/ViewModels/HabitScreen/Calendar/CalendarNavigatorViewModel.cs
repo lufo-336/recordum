@@ -45,9 +45,27 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     [ObservableProperty] private string _headerLabel = string.Empty;
     [ObservableProperty] private DateOnly? _selectedDate;
     [ObservableProperty] private CalendarViewMode _viewMode = CalendarViewMode.Month;
+
+    /// <summary>Year view only: false = twelve mini-months (default), true = GitHub-style heatmap.</summary>
+    [ObservableProperty] private bool _yearAsHeatmap;
     private DateOnly _weekAnchor;
 
+    /// <summary>Flat day cells: the Week + Month grids, and (when <see cref="YearAsHeatmap"/>) the Year
+    /// heatmap's 371 cells. Empty in the Year mini-months view.</summary>
     public ObservableCollection<CalendarDayCellViewModel> Cells { get; } = [];
+
+    /// <summary>The twelve month blocks of the Year mini-months view. Empty otherwise.</summary>
+    public ObservableCollection<CalendarMonthBlockViewModel> MonthBlocks { get; } = [];
+
+    /// <summary>The Year heatmap grouped into 53 week-columns (same cell instances as <see cref="Cells"/>),
+    /// so a horizontal stack of vertical columns renders a GitHub-style grid. Empty unless Year + heatmap.</summary>
+    public ObservableCollection<IReadOnlyList<CalendarDayCellViewModel>> YearWeeks { get; } = [];
+
+    /// <summary>Every currently-rendered day cell, regardless of view mode — the surface that markers
+    /// and selection are applied to.</summary>
+    private IEnumerable<CalendarDayCellViewModel> VisibleCells =>
+        ViewMode == CalendarViewMode.Year && !YearAsHeatmap ? MonthBlocks.SelectMany(b => b.Cells) : Cells;
+
     public IReadOnlyList<string> WeekdayHeaders { get; }
     public IReadOnlyList<int> SelectableYears { get; }
     public IReadOnlyList<int> SelectableMonths { get; } = Enumerable.Range(1, 12).ToList();
@@ -73,7 +91,8 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
             switch (ViewMode)
             {
                 case CalendarViewMode.Week: BuildWeekGrid(_weekAnchor); break;
-                case CalendarViewMode.Year: BuildYearGrid(DisplayYear); break;
+                case CalendarViewMode.Year when YearAsHeatmap: BuildYearHeatmap(DisplayYear); break;
+                case CalendarViewMode.Year: BuildYearBlocks(DisplayYear); break;
                 default: BuildMonthGrid(DisplayYear, DisplayMonth); break;
             }
             HeaderLabel = BuildHeaderLabel();
@@ -88,6 +107,8 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 
     private void BuildWeekGrid(DateOnly anchor)
     {
+        MonthBlocks.Clear();
+        YearWeeks.Clear();
         Cells.Clear();
         int firstDow = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
         int leading = ((int)anchor.DayOfWeek - firstDow + 7) % 7;
@@ -100,18 +121,60 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         }
     }
 
-    private void BuildYearGrid(int year)
+    /// <summary>Year view: twelve mini-month blocks, each a 6×7 grid with leading/trailing days of
+    /// adjacent months kept (blank in the template) so weekday columns line up.</summary>
+    private void BuildYearBlocks(int year)
     {
+        Cells.Clear();
+        YearWeeks.Clear();
+        MonthBlocks.Clear();
+        var dtf = CultureInfo.CurrentCulture.DateTimeFormat;
+        int firstDow = (int)dtf.FirstDayOfWeek;
+        for (int month = 1; month <= 12; month++)
+        {
+            var block = new CalendarMonthBlockViewModel(year, month, dtf.GetMonthName(month));
+            var first = new DateOnly(year, month, 1);
+            int leading = ((int)first.DayOfWeek - firstDow + 7) % 7;
+            var start = first.AddDays(-leading);
+            for (int i = 0; i < 42; i++)
+            {
+                var date = start.AddDays(i);
+                block.Cells.Add(new CalendarDayCellViewModel(
+                    date,
+                    inCurrentMonth: date.Month == month && date.Year == year,
+                    isToday: date == _today,
+                    isFuture: date > _today));
+            }
+            MonthBlocks.Add(block);
+        }
+    }
+
+    /// <summary>Year heatmap: 371 cells (53 weeks × 7) from the week boundary on/before Jan 1, grouped into
+    /// week-columns for a GitHub-style render. <see cref="Cells"/> and <see cref="YearWeeks"/> share instances.</summary>
+    private void BuildYearHeatmap(int year)
+    {
+        MonthBlocks.Clear();
+        YearWeeks.Clear();
         Cells.Clear();
         var jan1 = new DateOnly(year, 1, 1);
         int firstDow = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
         int leading = ((int)jan1.DayOfWeek - firstDow + 7) % 7;
         var start = jan1.AddDays(-leading);
-        for (int i = 0; i < 371; i++) // 53 weeks × 7
+        for (int w = 0; w < 53; w++)
         {
-            var date = start.AddDays(i);
-            Cells.Add(new CalendarDayCellViewModel(
-                date, inCurrentMonth: date.Year == year, isToday: date == _today, isFuture: date > _today));
+            var week = new List<CalendarDayCellViewModel>(7);
+            for (int d = 0; d < 7; d++)
+            {
+                var date = start.AddDays(w * 7 + d);
+                var cell = new CalendarDayCellViewModel(
+                    date,
+                    inCurrentMonth: date.Year == year,
+                    isToday: date == _today,
+                    isFuture: date > _today);
+                Cells.Add(cell);
+                week.Add(cell);
+            }
+            YearWeeks.Add(week);
         }
     }
 
@@ -128,6 +191,8 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 
     private void BuildMonthGrid(int year, int month)
     {
+        MonthBlocks.Clear();
+        YearWeeks.Clear();
         Cells.Clear();
         var first = new DateOnly(year, month, 1);
         int firstDow = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
@@ -147,18 +212,19 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     /// <summary>Fetches markers for the visible cell span and assigns tint/number/notes by date.</summary>
     private async Task ApplyMarkersAsync(CancellationToken ct)
     {
-        foreach (var cell in Cells)
+        var cells = VisibleCells.ToList();
+        foreach (var cell in cells)
         {
             cell.TintColorHex = CompletedColorHex;
             cell.TintStep = 0;
             cell.Number = null;
             cell.NoteCount = 0;
         }
-        if (MarkerProvider is null || Cells.Count == 0) return;
+        if (MarkerProvider is null || cells.Count == 0) return;
 
-        var markers = await MarkerProvider(Cells[0].Date, Cells[^1].Date, ct).ConfigureAwait(true);
+        var markers = await MarkerProvider(cells.Min(c => c.Date), cells.Max(c => c.Date), ct).ConfigureAwait(true);
         var byDate = markers.Days.ToDictionary(d => d.Date);
-        foreach (var cell in Cells)
+        foreach (var cell in cells)
         {
             if (byDate.TryGetValue(cell.Date, out var m))
             {
@@ -171,7 +237,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 
     private void RefreshSelection()
     {
-        foreach (var cell in Cells)
+        foreach (var cell in VisibleCells)
             cell.IsSelected = SelectedDate is { } d && cell.Date == d;
     }
 
@@ -206,6 +272,14 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         ViewMode = mode;
         if (mode == CalendarViewMode.Week) _weekAnchor = SelectedDate ?? _today;
         return ReloadAsync(ct);
+    }
+
+    [RelayCommand]
+    private Task SetYearHeatmapAsync(bool heatmap, CancellationToken ct)
+    {
+        if (YearAsHeatmap == heatmap) return Task.CompletedTask;
+        YearAsHeatmap = heatmap;
+        return ViewMode == CalendarViewMode.Year ? ReloadAsync(ct) : Task.CompletedTask;
     }
 
     /// <summary>Reloads the current month (bound to the jump dropdowns). No-op while a load is already in flight,

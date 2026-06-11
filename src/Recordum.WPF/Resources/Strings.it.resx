@@ -67,6 +67,12 @@
   <data name="Calendar.View.Year" xml:space="preserve">
     <value>Anno</value>
   </data>
+  <data name="Calendar.Year.Months" xml:space="preserve">
+    <value>Mesi</value>
+  </data>
+  <data name="Calendar.Year.Heatmap" xml:space="preserve">
+    <value>Heatmap</value>
+  </data>
   <data name="Home.Tab.Active" xml:space="preserve">
     <value>Attive</value>
   </data>

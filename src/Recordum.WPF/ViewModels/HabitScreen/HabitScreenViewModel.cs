@@ -286,10 +286,28 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         };
     }
 
-    private static string FormatMag(decimal mag) =>
-        mag == Math.Truncate(mag)
-            ? ((long)mag).ToString(System.Globalization.CultureInfo.CurrentCulture)
-            : mag.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture);
+    /// <summary>Compact magnitude for a calendar cell: exact below 1000, then abbreviated (1.2k / 13k /
+    /// 125k / 1.2M / 12M) so it fits the count ring. The exact value stays in the cell tooltip.</summary>
+    private static string FormatMag(decimal mag)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        if (mag >= 1000m)
+            return AbbreviateLarge(mag, culture);
+        return mag == Math.Truncate(mag)
+            ? ((long)mag).ToString(culture)
+            : mag.ToString("0.#", culture);
+    }
+
+    private static string AbbreviateLarge(decimal value, System.Globalization.CultureInfo culture)
+    {
+        var (scaled, suffix) = value < 1_000_000m ? (value / 1000m, "k") : (value / 1_000_000m, "M");
+        // One decimal below 10 of the scaled unit (1.2k), whole numbers above (13k, 125k); trim a trailing .0.
+        var rounded = scaled < 10m ? Math.Round(scaled, 1) : Math.Round(scaled, 0);
+        var text = rounded == Math.Truncate(rounded)
+            ? ((long)rounded).ToString(culture)
+            : rounded.ToString("0.0", culture);
+        return text + suffix;
+    }
 
     private async void OnCalendarDateSelected(object? sender, DateOnly date)
     {

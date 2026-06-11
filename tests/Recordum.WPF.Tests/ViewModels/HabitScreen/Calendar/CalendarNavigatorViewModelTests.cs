@@ -173,18 +173,23 @@ public class CalendarNavigatorViewModelTests
     }
 
     [Fact]
-    public async Task YearView_builds_371_cells_starting_on_a_week_boundary_on_or_before_Jan1()
+    public async Task YearView_builds_twelve_month_blocks_each_a_six_by_seven_grid()
     {
         var sut = NewSut(out _);
         await sut.LoadAsync(2026, 6, selected: null);
 
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
 
-        sut.Cells.Should().HaveCount(371);
-        sut.Cells[0].Date.Should().BeOnOrBefore(new DateOnly(2026, 1, 1));
-        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 1, 1));
-        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 12, 31));
-        sut.Cells.Count(c => c.InCurrentMonth).Should().Be(365); // 2026 is not a leap year
+        sut.MonthBlocks.Should().HaveCount(12);
+        sut.MonthBlocks.Should().OnlyContain(b => b.Cells.Count == 42);
+        sut.Cells.Should().BeEmpty();
+
+        var june = sut.MonthBlocks.Single(b => b.Month == 6);
+        june.Cells.Count(c => c.InCurrentMonth).Should().Be(30);
+        june.Cells.Should().Contain(c => c.Date == new DateOnly(2026, 6, 30) && c.InCurrentMonth);
+
+        // The whole year is covered: every day of 2026 appears as an in-month cell in exactly one block.
+        sut.MonthBlocks.Sum(b => b.Cells.Count(c => c.InCurrentMonth)).Should().Be(365); // 2026 is not a leap year
     }
 
     [Fact]
@@ -211,7 +216,39 @@ public class CalendarNavigatorViewModelTests
         await sut.NextCommand.ExecuteAsync(null);
 
         sut.DisplayYear.Should().Be(2027);
-        sut.Cells.Should().Contain(c => c.Date == new DateOnly(2027, 1, 1));
+        sut.MonthBlocks.Single(b => b.Month == 1).Cells
+            .Should().Contain(c => c.Date == new DateOnly(2027, 1, 1) && c.InCurrentMonth);
+    }
+
+    [Fact]
+    public async Task YearHeatmap_toggle_builds_371_week_grouped_cells()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
+
+        await sut.SetYearHeatmapCommand.ExecuteAsync(true);
+
+        sut.YearAsHeatmap.Should().BeTrue();
+        sut.YearWeeks.Should().HaveCount(53);
+        sut.YearWeeks.Should().OnlyContain(w => w.Count == 7);
+        sut.Cells.Should().HaveCount(371);
+        sut.MonthBlocks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task YearHeatmap_back_to_months_restores_blocks()
+    {
+        var sut = NewSut(out _);
+        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
+        await sut.SetYearHeatmapCommand.ExecuteAsync(true);
+
+        await sut.SetYearHeatmapCommand.ExecuteAsync(false);
+
+        sut.MonthBlocks.Should().HaveCount(12);
+        sut.YearWeeks.Should().BeEmpty();
+        sut.Cells.Should().BeEmpty();
     }
 
     [Fact]

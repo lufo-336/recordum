@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — Calendar design preview v2</title>
+<style>
+  :root {
+    --bg: #161616;
+    --surface: #1f1f1f;
+    --surface-2: #262626;
+    --border: #333;
+    --text: #e8e8e8;
+    --muted: #8a8a8a;
+    --habit: #d83b34;
+    --note: #e0b341;
+    --accent: var(--habit);
+    --radius: 6px;
+    --font: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); padding: 32px 40px 80px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 28px; }
+  h2 { font-size: 16px; font-weight: 600; margin: 40px 0 6px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .note-p { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .variants { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card .label { font-size: 12px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .rec { color: var(--habit); font-weight: 600; }
+
+  .dow { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+  .dow span { text-align: center; font-size: 11px; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(7, var(--cell)); gap: 3px; }
+  .cell { width: var(--cell); height: var(--cell); border-radius: var(--radius); position: relative;
+    background: var(--surface-2); border: 1px solid transparent; cursor: pointer; }
+  .cell.out { opacity: .35; }
+  .cell.today { border-color: var(--accent); }
+  .cell.sel { background: var(--accent) !important; }
+  .cell.fut { cursor: default; opacity: .4; }
+  /* day number = metadata: piccolo, muted, angolo */
+  .cell .d { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--muted); font-weight: 400; }
+  .cell.cur .d { color: #b8b8b8; }
+  .cell.sel .d { color: rgba(255,255,255,.85); }
+  /* note triangle */
+  .cell .notedot, .mcell .notedot { position: absolute; top: 0; right: 0; width: 0; height: 0;
+    border-top: 10px solid var(--note); border-left: 10px solid transparent; border-top-right-radius: var(--radius); }
+
+  /* count treatments */
+  .cell .cnt { position:absolute; }
+  /* T1: centro grande bold (riferimento) */
+  .t1 .cnt { inset:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--text); }
+  .t1 .cell.sel .cnt { color:#fff; }
+  /* RING: conteggio cerchiato di bianco — cerchio per 1-2 caratteri, capsula per 3-4 (auto) */
+  .ring .cnt { top:50%; left:50%; transform:translate(-50%,-50%); min-width:23px; height:23px; width:auto;
+    padding:0 5px; border-radius:999px; box-sizing:border-box; white-space:nowrap;
+    border:1.5px solid rgba(255,255,255,.92); display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff; }
+  /* FILL: disco bianco pieno, testo scuro */
+  .fillc .cnt { top:50%; left:50%; transform:translate(-50%,-50%); width:23px; height:23px; border-radius:50%;
+    background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#1a1a1a; }
+
+  /* year mini-months */
+  .year { display: grid; gap: 16px 20px; grid-template-columns: repeat(4, max-content); }
+  .mini .mname { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: capitalize; }
+  .mini .mgrid { display: grid; grid-template-columns: repeat(7, var(--mc)); gap: 2px; }
+  .mcell { width: var(--mc); height: var(--mc); border-radius: 2px; background: var(--surface-2); border: 1px solid transparent; position: relative; }
+  .mcell.out { background: transparent; }
+  .mcell.today { border-color: var(--accent); }
+  .mcell.fut { opacity: .35; }
+  .mcell .notedot { border-top-width: 7px; border-left-width: 7px; }
+
+  /* github heatmap */
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); gap: 3px; }
+  .hcell { width: 13px; height: 13px; border-radius: 2px; background: var(--surface-2); position: relative; }
+  .hcell.today { outline: 1px solid var(--accent); }
+  .hcell .notedot { border-top-width: 7px; border-left-width: 7px; }
+  .scrollx { overflow-x: auto; padding-bottom: 8px; max-width: 760px; }
+
+  .toggle { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:14px; }
+  .toggle button { background:var(--surface-2); color:var(--muted); border:0; padding:6px 14px; font:inherit; font-size:13px; cursor:pointer; }
+  .toggle button.on { background:var(--habit); color:#fff; }
+</style>
+</head>
+<body>
+  <h1>Recordum — anteprime calendario v2</h1>
+  <p class="sub">Scelte: <b>Mese = C (40px)</b> · <b>Anno = mini-mesi 4 col + toggle Heatmap</b> · <b>Settimana = B (56px)</b>. Qui scegli solo il <b>trattamento del conteggio</b> (numero abitudine vs numero giorno).</p>
+
+  <h2>MESE C — come distinguere il CONTEGGIO dal numero del GIORNO</h2>
+  <p class="note-p">Numero giorno = piccolo/muted in alto a sx (metadato). Conteggio abitudine = protagonista. Tre trattamenti:</p>
+  <div class="variants" id="count-variants"></div>
+
+  <h2>CONTEGGI GRANDI — adattamento cerchio → capsula + abbreviazione</h2>
+  <p class="note-p">Valore esatto sempre nel tooltip (passa il mouse). Regola: &lt;1000 intero · 1.2k · 13k · 125k · 1.2M · 12M.</p>
+  <div class="variants ring"><div class="card ring"><div class="label">esempi di magnitudine</div><div id="bignums" style="display:flex;gap:6px;flex-wrap:wrap;"></div></div></div>
+
+  <h2>ANNO — toggle Mini-mesi / Heatmap (entrambi con triangolo nota)</h2>
+  <p class="note-p">Nota: nei mini-mesi manca l'indicazione del giorno-settimana (rimandata, come d'accordo). Il triangolo nota giallo è presente in entrambi.</p>
+  <div class="toggle" id="year-toggle">
+    <button data-mode="mini" class="on">Mesi</button>
+    <button data-mode="heat">Heatmap</button>
+  </div>
+  <div id="year-body"></div>
+
+  <h2>SETTIMANA B (56px)</h2>
+  <div class="variants" id="week-variants"></div>
+
+<script>
+  const YEAR = 2026, TODAY = new Date(2026, 5, 11);
+  const DOW = ['L','M','M','G','V','S','D'];
+  const MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+  function rnd(seed){ let x = Math.sin(seed*12.9898)*43758.5453; return x - Math.floor(x); }
+  function dataFor(d){
+    if (d > TODAY) return {step:0, cnt:0, note:0};
+    const seed = d.getFullYear()*1000 + (d.getMonth()+1)*40 + d.getDate();
+    const r = rnd(seed);
+    if (r < 0.42) return {step:0, cnt:0, note: rnd(seed+7) < 0.10 ? 1 : 0};
+    const step = 1 + Math.floor(rnd(seed+3)*4);
+    const cnt  = step + Math.floor(rnd(seed+5)*step*2);
+    const note = rnd(seed+9) < 0.14 ? 1 + Math.floor(rnd(seed+11)*2) : 0;
+    return {step, cnt, note};
+  }
+  function tint(step){ if(step<=0) return null; const a=[0,0.28,0.5,0.72,1][step]; return `color-mix(in srgb, var(--habit) ${a*100}%, transparent)`; }
+  function leading(y,m){ return (new Date(y,m,1).getDay()+6)%7; }
+  function daysIn(y,m){ return new Date(y,m+1,0).getDate(); }
+  const same=(a,b)=>a.getFullYear()==b.getFullYear()&&a.getMonth()==b.getMonth()&&a.getDate()==b.getDate();
+
+  function monthGrid(y, m, cell, {selected=null}={}) {
+    const wrap=document.createElement('div');
+    const dow=document.createElement('div'); dow.className='dow';
+    DOW.forEach(x=>{const s=document.createElement('span');s.textContent=x;dow.appendChild(s);});
+    wrap.appendChild(dow);
+    const g=document.createElement('div'); g.className='grid'; g.style.setProperty('--cell',cell+'px');
+    const lead=leading(y,m); const start=new Date(y,m,1-lead);
+    for(let i=0;i<42;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i);
+      const cur=d.getMonth()===m;
+      const c=document.createElement('div'); c.className='cell'+(cur?' cur':' out');
+      const data=dataFor(d); const t=tint(data.step); if(t) c.style.background=t;
+      if(same(d,TODAY)) c.classList.add('today');
+      if(selected&&same(d,selected)) c.classList.add('sel');
+      if(d>TODAY) c.classList.add('fut');
+      const dn=document.createElement('div'); dn.className='d'; dn.textContent=d.getDate(); c.appendChild(dn);
+      if(cur&&data.cnt>1){ const cn=document.createElement('div'); cn.className='cnt'; cn.textContent=data.cnt; c.appendChild(cn); }
+      if(cur&&data.note){ const nd=document.createElement('div'); nd.className='notedot'; c.appendChild(nd); }
+      g.appendChild(c);
+    }
+    wrap.appendChild(g); return wrap;
+  }
+
+  function weekRow(anchor, cell, selected){
+    const wrap=document.createElement('div');
+    const dow=document.createElement('div'); dow.className='dow'; dow.style.gridTemplateColumns=`repeat(7, ${cell}px)`;
+    DOW.forEach(x=>{const s=document.createElement('span');s.textContent=x;dow.appendChild(s);});
+    wrap.appendChild(dow);
+    const g=document.createElement('div'); g.className='grid'; g.style.setProperty('--cell',cell+'px');
+    const lead=(anchor.getDay()+6)%7; const start=new Date(anchor); start.setDate(anchor.getDate()-lead);
+    for(let i=0;i<7;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i);
+      const c=document.createElement('div'); c.className='cell cur';
+      const data=dataFor(d); const t=tint(data.step); if(t) c.style.background=t;
+      if(same(d,TODAY)) c.classList.add('today');
+      if(selected&&same(d,selected)) c.classList.add('sel');
+      if(d>TODAY) c.classList.add('fut');
+      const dn=document.createElement('div'); dn.className='d'; dn.textContent=d.getDate(); c.appendChild(dn);
+      if(data.cnt>1){ const cn=document.createElement('div'); cn.className='cnt'; cn.textContent=data.cnt; c.appendChild(cn); }
+      g.appendChild(c);
+    }
+    wrap.appendChild(g); return wrap;
+  }
+
+  function miniMonth(y, m, mc){
+    const wrap=document.createElement('div'); wrap.className='mini';
+    const t=document.createElement('div'); t.className='mname'; t.textContent=MONTHS[m]; wrap.appendChild(t);
+    const g=document.createElement('div'); g.className='mgrid'; g.style.setProperty('--mc',mc+'px');
+    const lead=leading(y,m); const start=new Date(y,m,1-lead);
+    for(let i=0;i<42;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i);
+      const cur=d.getMonth()===m;
+      const c=document.createElement('div'); c.className='mcell'+(cur?'':' out');
+      if(cur){ const data=dataFor(d); const tt=tint(data.step); if(tt) c.style.background=tt;
+        if(same(d,TODAY)) c.classList.add('today'); if(d>TODAY) c.classList.add('fut');
+        if(data.note){ const nd=document.createElement('div'); nd.className='notedot'; c.appendChild(nd); }
+        c.title=d.toLocaleDateString('it-IT')+(data.cnt?` · ${data.cnt}`:''); }
+      g.appendChild(c);
+    }
+    wrap.appendChild(g); return wrap;
+  }
+  function yearMini(mc){ const y=document.createElement('div'); y.className='year'; for(let m=0;m<12;m++) y.appendChild(miniMonth(YEAR,m,mc)); return y; }
+
+  function yearHeat(){
+    const wrap=document.createElement('div'); wrap.className='scrollx';
+    const h=document.createElement('div'); h.className='heat';
+    const jan1=new Date(YEAR,0,1); const lead=(jan1.getDay()+6)%7; const start=new Date(jan1); start.setDate(1-lead);
+    for(let i=0;i<371;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i);
+      const c=document.createElement('div'); c.className='hcell';
+      if(d.getFullYear()===YEAR){ const data=dataFor(d); const t=tint(data.step); if(t) c.style.background=t;
+        if(same(d,TODAY)) c.classList.add('today'); if(data.note){ const nd=document.createElement('div'); nd.className='notedot'; c.appendChild(nd); }
+        c.title=d.toLocaleDateString('it-IT'); } else c.style.opacity=.2;
+      h.appendChild(c);
+    }
+    wrap.appendChild(h); return wrap;
+  }
+
+  function card(label, node, treatClass){
+    const c=document.createElement('div'); c.className='card'+(treatClass?' '+treatClass:'');
+    const l=document.createElement('div'); l.className='label'; l.innerHTML=label;
+    c.appendChild(l); c.appendChild(node); return c;
+  }
+
+  // Abbreviazione magnitudine: <1000 intero/decimale, poi k / M. Max ~4 caratteri.
+  function fmtCount(v){
+    const abbr=(n)=>{ let s=n.toFixed(1); if(s.endsWith('.0')) s=s.slice(0,-2); return s; };
+    if(v<1000) return Number.isInteger(v)? (''+v) : (''+v);
+    if(v<1e6) return v<1e4 ? abbr(v/1e3)+'k' : Math.round(v/1e3)+'k';
+    return v<1e7 ? abbr(v/1e6)+'M' : Math.round(v/1e6)+'M';
+  }
+  const bn=document.getElementById('bignums');
+  [3,42,120,1000,1250,9999,12500,125000,1200000,12000000].forEach(v=>{
+    const c=document.createElement('div'); c.className='cell cur'; c.style.cssText='width:40px;height:40px;position:relative;';
+    c.style.background='var(--habit)'; c.title='valore esatto: '+v.toLocaleString('it-IT');
+    const dn=document.createElement('div'); dn.className='d'; dn.textContent='9'; c.appendChild(dn);
+    const cn=document.createElement('div'); cn.className='cnt'; cn.textContent=fmtCount(v); c.appendChild(cn);
+    bn.appendChild(c);
+  });
+
+  const sel=new Date(2026,5,9);
+  const cv=document.getElementById('count-variants');
+  cv.appendChild(card('RING · conteggio cerchiato di bianco <span class="rec">(la tua idea)</span>', monthGrid(YEAR,5,40,{selected:sel}), 'ring'));
+  cv.appendChild(card('FILL · disco bianco pieno, numero scuro', monthGrid(YEAR,5,40,{selected:sel}), 'fillc'));
+  cv.appendChild(card('T1 · senza cerchio (riferimento)', monthGrid(YEAR,5,40,{selected:sel}), 't1'));
+
+  const yb=document.getElementById('year-body');
+  function renderYear(mode){ yb.innerHTML=''; yb.appendChild(mode==='heat'? yearHeat() : yearMini(12)); }
+  renderYear('mini');
+  document.querySelectorAll('#year-toggle button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#year-toggle button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); renderYear(b.dataset.mode);
+  }));
+
+  const wv=document.getElementById('week-variants');
+  wv.appendChild(card('Settimana B · 56px (con conteggio cerchiato)', weekRow(TODAY,56,sel), 'ring'));
+</script>
+</body>
+</html>

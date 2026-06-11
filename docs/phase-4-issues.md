@@ -263,6 +263,52 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 
 ---
 
+## Stato al 2026-06-11 — Calendar view modes + redesign Anno (filone #3)
+
+**Contesto**: continuazione del filone #3 (redesign visivo completo del calendario). Piano `docs/superpowers/plans/2026-06-10-calendar-view-modes.md` + spec `2026-06-10-calendar-view-modes-design.md`.
+
+**Fatto e COMMITTATO** (Task 1-4 del piano, versione "celle quadrate piene"):
+- Marker provider passato da per-mese a **range di date** (`CalendarMarkers`/`CalendarMarkerProvider(from,to,ct)`); host `LoadMarkersAsync` cicla i mesi del range e **normalizza il tint su tutto il range** (no modifiche Data-layer).
+- Enum `CalendarViewMode {Week,Month,Year}` + nav view-aware (`PrevCommand`/`NextCommand`/`StepAsync`), `HeaderLabel`, `SetViewModeCommand`, `_weekAnchor`.
+- `CalendarDayCellViewModel.TooltipText`.
+- Toggle Settimana/Mese/Anno in XAML.
+- Commit: `refactor(wpf): calendar markers by date range...` → `feat(wpf): calendar Week/Month/Year view modes` → `feat(wpf): TooltipText` → `feat(wpf): view-mode toggle + square cells + year heatmap body`.
+
+**Decisioni di design LOCKATE con l'utente** (via preview browser `docs/calendar-preview.html`):
+- **Mese**: cella ~40px (più piccola/compatta della prima versione).
+- **Settimana**: cella ~56px.
+- **Anno**: **12 mini-mesi** (riquadri-mese con dentro i giorni) come default + **sub-toggle [Mesi | Heatmap]** (heatmap = GitHub 7×53). Default Mesi.
+- **Conteggio abitudine** dentro la cella: in **cerchio bianco contrast-aware** (segue il foreground del bottone → bianco in dark, scuro in light), **capsula** quando il valore è largo, **abbreviazione ≥1000** (`1.2k`/`13k`/`125k`/`1.2M`/`12M`, valore esatto nel tooltip). Serve a **distinguerlo dal numero del giorno** (piccolo/muted in alto a sx).
+- **Triangolo nota** presente anche in Anno (mini-mesi + heatmap).
+- **Giorni-settimana dentro i mini-mesi**: RIMANDATO (d'accordo con l'utente).
+
+**Implementato ma WIP / NON funzionante visivamente** (committato come WIP, build 0/0, suite WPF 448 verde):
+- `CalendarMonthBlockViewModel` (new), `MonthBlocks` + `YearWeeks` (53×7, istanze condivise con `Cells`), `VisibleCells`, `BuildYearBlocks`/`BuildYearHeatmap`, `[ObservableProperty] YearAsHeatmap` + `SetYearHeatmapCommand`.
+- Host `FormatMag` con abbreviazione (`AbbreviateLarge`).
+- `InverseBooleanConverter` (per il radio "Mesi" = !YearAsHeatmap).
+- XAML: `DayCellTemplate` con ring/capsula contrast-aware, `YearMonthTemplate`+`YearCellTemplate` (mini-mese), `HeatCellTemplate`, sub-toggle, due body Anno (mini-mesi / heatmap).
+- Test VM: `CalendarNavigatorViewModelTests` 17 verdi (view modes, heatmap toggle, blocks).
+
+### B-calYearRender. Le celle-giorno in ANNO non si renderizzano (BLOCCANTE, aperto)
+- **Stato**: `triaged` (root cause parziale, fix tentati insufficienti).
+- **Sintomo**: in **Anno → Mesi** i mini-mesi mostrano solo il nome del mese; in **Anno → Heatmap** la griglia è vuota. In entrambi i casi si vedono solo il **bordo "oggi"** (come un ovale/anello sottile) e i **triangoli nota** fluttuanti — le celle-giorno (quadratini tint/base) **collassano o non appaiono**. **Mese e Settimana funzionano** (Mese verificato bello dall'utente).
+- **Diagnosi**:
+  - Mese/Settimana = **singolo** ItemsControl + `MaxWidth` (larghezza definita) e le celle prendono altezza dal **contenuto testuale** (numero giorno) → niente collasso.
+  - Anno usa **ItemsControl annidati (2 livelli)** dentro `ScrollViewer`; le celle Anno **non hanno testo** → desired height 0; in pannelli a vincolo infinito (UniformGrid/StackPanel dentro ScrollViewer) la misura collassa.
+- **Tentativi FALLITI** (tutti lasciano la griglia invisibile):
+  1. Versione iniziale flat `UniformGrid Rows=7 Cols=53` in ScrollViewer orizzontale → vuoto (classico UniformGrid in larghezza infinita).
+  2. `Height="{Binding ActualWidth, RelativeSource=Self}}"` (quadrato auto) → **deadlock a 0** (ActualWidth iniziale 0, nessun contenuto a dare altezza).
+  3. **Dimensioni FISSE** (mini 14px, heat 15px) **+ base `Border Background=Brush.Border`** → **ancora vuoto** secondo l'utente. ⇒ il problema NON è solo l'altezza: le celle probabilmente non vengono misurate/arrangiate dai pannelli annidati, o un binding annidato fallisce.
+- **PROSSIMI PASSI consigliati (ordine)**:
+  1. **Attivare il tracing dei binding WPF** (`PresentationTraceSources.TraceLevel=High` sui binding sospetti, o leggere l'Output) per confermare se i binding annidati falliscono: `Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}"`, `Fill=...NoteColorHex...AncestorLevel=2`, `Visibility={Binding InCurrentMonth,...}`. Un `AncestorLevel` sbagliato non collassa il layout ma è un segnale.
+  2. **Dare dimensioni in pixel ESPLICITE ai contenitori annidati**, non lasciare che il ScrollViewer passi misura infinita a UniformGrid/StackPanel: inner ItemsControl del mini-mese `Width=112 Height=96` (o `ItemHeight/ItemWidth` su UniformGrid); inner ItemsControl-colonna della heatmap `Height` esplicita (7×~17).
+  3. In alternativa **abbandonare l'annidamento**: pre-costruire nel VM una struttura già renderizzabile — heatmap come 53 colonne ognuna `StackPanel` verticale a `Height` fissa; mini-mese come **singolo** ItemsControl con `UniformGrid` a dimensione esplicita.
+  4. Confermare (test lo fanno già lato VM) che `MonthBlocks[].Cells` e `YearWeeks` siano popolati → è **puramente XAML/layout**, non dati.
+- **File WIP**: `CalendarNavigatorViewModel.cs`, `CalendarMonthBlockViewModel.cs` (new), `CalendarDayCellViewModel.cs`, `HabitScreenViewModel.cs`, `Views/HabitScreen/Calendar/CalendarNavigator.xaml`, `Converters/InverseBooleanConverter.cs` (new), `App.xaml`, `Resources/Strings(.it).resx`+`Designer.cs`. Preview design (riferimento visivo concordato): `docs/calendar-preview.html`.
+- **Da rivedere anche**: dimensione **Settimana** (l'utente in un giro l'ha vista ancora piccola — verificare che `MaxWidth=420` produca ~56px nella colonna reale).
+
+---
+
 ## Aperti — bloccanti
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale

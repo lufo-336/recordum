@@ -19,6 +19,7 @@
             <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>
             <conv:BoolToHiddenConverter x:Key="BoolToHidden"/>
             <conv:EnumToBoolConverter x:Key="EnumToBool"/>
+            <conv:InverseBooleanConverter x:Key="InverseBool"/>
             <conv:StateToVisibleConverter x:Key="StateToVisible"/>
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
