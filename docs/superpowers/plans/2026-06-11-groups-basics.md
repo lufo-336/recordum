@@ -35,7 +35,7 @@
 
 **Files:** Modify `Strings.resx`, `Strings.it.resx`, `Strings.Designer.cs`
 
-- [ ] **Step 1**: trovare la chiave esistente del bottone (`grep -n "Home.NewHabit.Button" src/Recordum.WPF/Resources/Strings.resx`) e aggiornarne il valore: EN `＋ New ▾`, IT `＋ Nuova ▾`. Poi aggiungere subito dopo (EN):
+- [x] **Step 1**: trovare la chiave esistente del bottone (`grep -n "Home.NewHabit.Button" src/Recordum.WPF/Resources/Strings.resx`) e aggiornarne il valore: EN `＋ New ▾`, IT `＋ Nuova ▾`. Poi aggiungere subito dopo (EN):
 
 ```xml
   <data name="Home.NewMenu.Habit" xml:space="preserve">
@@ -64,7 +64,7 @@ Designer (accanto a `Home_NewHabit_Button`):
     public static string Home_NewMenu_Group => Get("Home.NewMenu.Group");
 ```
 
-- [ ] **Step 2**: build `dotnet build src/Recordum.WPF -v q` 0 errori/0 warning; commit `feat(wpf): resx — New habit / New group menu strings`.
+- [x] **Step 2**: build `dotnet build src/Recordum.WPF -v q` 0 errori/0 warning; commit `feat(wpf): resx — New habit / New group menu strings`.
 
 ---
 
@@ -75,7 +75,7 @@ Designer (accanto a `Home_NewHabit_Button`):
 - Modify: `tests/Recordum.WPF.Tests/Fixtures/FakeHabitNodeService.cs` (hook `OnCreate`)
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HomeViewModelTests.cs` (append)
 
-- [ ] **Step 1: hook nel fake** — in `FakeHabitNodeService` aggiungere accanto agli altri hook (`OnSoftDelete`, riga ~29):
+- [x] **Step 1: hook nel fake** — in `FakeHabitNodeService` aggiungere accanto agli altri hook (`OnSoftDelete`, riga ~29):
 
 ```csharp
     public Action<HabitNode>? OnCreate { get; set; }
@@ -87,7 +87,7 @@ e in `CreateAsync`, dopo l'inserimento nello `Store` e prima del `return`, invoc
         OnCreate?.Invoke(draft);
 ```
 
-- [ ] **Step 2: test (RED)** — append a `HomeViewModelTests` (riusa `SampleRow`, `_query/_nodes/_purge`, `CreateSut`):
+- [x] **Step 2: test (RED)** — append a `HomeViewModelTests` (riusa `SampleRow`, `_query/_nodes/_purge`, `CreateSut`):
 
 ```csharp
     [Fact]
@@ -165,9 +165,9 @@ e in `CreateAsync`, dopo l'inserimento nello `Store` e prima del `return`, invoc
 
 NB: se `NodeType`/`ImmutableArray` non sono già importati nel file di test, aggiungere gli using (`Recordum.Core.Enums`, `System.Collections.Immutable` sono già presenti — verificare).
 
-- [ ] **Step 3: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "CreateGroup|OpenNewHabit_with"` (errori di compilazione attesi: `GroupCreated`, `CreateGroupCommand`, `OnCreate`).
+- [x] **Step 3: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "CreateGroup|OpenNewHabit_with"` (errori di compilazione attesi: `GroupCreated`, `CreateGroupCommand`, `OnCreate`).
 
-- [ ] **Step 4: implementare** in `HomeViewModel`:
+- [x] **Step 4: implementare** in `HomeViewModel`:
 
 Using nuovi in testa al file: `using Recordum.Core.Models;` e `using Recordum.WPF.Resources;`.
 
@@ -213,9 +213,9 @@ Nuovi membri (dopo `OpenNewHabitAsync`):
 
 (Dopo `LoadAsync` tutte le righe rinascono con `IsExpanded = true`, quindi il nuovo nodo è sempre presente in `Rows` anche dentro un gruppo.)
 
-- [ ] **Step 5: GREEN** — filtro `"CreateGroup|OpenNewHabit"` tutto verde (incluso il test esistente `OpenNewHabit_launches_picker_and_selects_created_row`).
+- [x] **Step 5: GREEN** — filtro `"CreateGroup|OpenNewHabit"` tutto verde (incluso il test esistente `OpenNewHabit_launches_picker_and_selects_created_row`).
 
-- [ ] **Step 6: commit** `feat(wpf): context-aware creation parent + direct group creation in HomeViewModel`.
+- [x] **Step 6: commit** `feat(wpf): context-aware creation parent + direct group creation in HomeViewModel`.
 
 ---
 
@@ -226,7 +226,7 @@ Nuovi membri (dopo `OpenNewHabitAsync`):
 - Modify: `tests/Recordum.WPF.Tests/Fixtures/MainWindowViewModelFactory.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/MainWindowViewModelTests.cs` (append)
 
-- [ ] **Step 1: factory** — in `MainWindowViewModelFactory` aggiungere un overload che espone i fake (rifattorizzare `Build` per delegare):
+- [x] **Step 1: factory** — in `MainWindowViewModelFactory` aggiungere un overload che espone i fake (rifattorizzare `Build` per delegare):
 
 ```csharp
     public static (MainWindowViewModel Vm, FakeHabitTreeQueryService Query, FakeHabitNodeService Nodes)
@@ -244,7 +244,7 @@ Nuovi membri (dopo `OpenNewHabitAsync`):
 
 NB: dentro la factory `HomeViewModel` è costruito senza launcher (`new HomeViewModel(query, nodes, purge)`) — va bene: questi test non passano dal picker.
 
-- [ ] **Step 2: test (RED)** — append a `MainWindowViewModelTests` (rispettare gli using esistenti del file; servono `Recordum.Core.Enums`, `Recordum.Core.Abstractions.Services.Dtos`, `System.Collections.Immutable` — verificare):
+- [x] **Step 2: test (RED)** — append a `MainWindowViewModelTests` (rispettare gli using esistenti del file; servono `Recordum.Core.Enums`, `Recordum.Core.Abstractions.Services.Dtos`, `System.Collections.Immutable` — verificare):
 
 ```csharp
     private static HomeTreeRow Row(Guid id, string name, HabitType? type = HabitType.Action, Guid? parent = null) =>
@@ -291,9 +291,9 @@ NB: dentro la factory `HomeViewModel` è costruito senza launcher (`new HomeView
 
 (Se `vm.Editor.Node` non esiste con quel nome, cercare la property del nodo corrente in `HabitEditorViewModel` — è l'`[ObservableProperty]` usato da `LoadAsync` — e adeguare le assert.)
 
-- [ ] **Step 3: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "Switching_habit_with_configura_open|Creating_a_group_opens_configura"` → il primo fallisce sull'ultima assert (editor fermo su `a`), il secondo non compila/fallisce.
+- [x] **Step 3: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "Switching_habit_with_configura_open|Creating_a_group_opens_configura"` → il primo fallisce sull'ultima assert (editor fermo su `a`), il secondo non compila/fallisce.
 
-- [ ] **Step 4: implementare** in `MainWindowViewModel`:
+- [x] **Step 4: implementare** in `MainWindowViewModel`:
 
 Nel ctor, dopo `Home.HabitActivationRequested += …`:
 
@@ -326,9 +326,9 @@ Nuovo handler accanto a `OnHabitScreenConfigureRequested`:
         => HabitScreen.IsConfiguraOpen = true;
 ```
 
-- [ ] **Step 5: GREEN** — filtro del passo 3 verde + filtro `MainWindowViewModel` completo verde.
+- [x] **Step 5: GREEN** — filtro del passo 3 verde + filtro `MainWindowViewModel` completo verde.
 
-- [ ] **Step 6: commit** `feat(wpf): open Configura on group creation; fix editor rebind with open Configura`.
+- [x] **Step 6: commit** `feat(wpf): open Configura on group creation; fix editor rebind with open Configura`.
 
 ---
 
@@ -336,7 +336,7 @@ Nuovo handler accanto a `OnHabitScreenConfigureRequested`:
 
 **Files:** Modify `src/Recordum.WPF/Views/HomeView.xaml`, `src/Recordum.WPF/Views/HomeView.xaml.cs`
 
-- [ ] **Step 1**: in `HomeView.xaml` (riga ~45) sostituire il Button:
+- [x] **Step 1**: in `HomeView.xaml` (riga ~45) sostituire il Button:
 
 ```xml
             <Button Grid.Column="2"
@@ -356,7 +356,7 @@ Nuovo handler accanto a `OnHabitScreenConfigureRequested`:
             </Button>
 ```
 
-- [ ] **Step 2**: in `HomeView.xaml.cs` aggiungere l'handler (stesso pattern del menu Backup nel ribbon — verificare `WorkspaceRibbon.xaml.cs` e riusarne la forma):
+- [x] **Step 2**: in `HomeView.xaml.cs` aggiungere l'handler (stesso pattern del menu Backup nel ribbon — verificare `WorkspaceRibbon.xaml.cs` e riusarne la forma):
 
 ```csharp
     private void OnNewMenuClick(object sender, RoutedEventArgs e)
@@ -371,7 +371,7 @@ Nuovo handler accanto a `OnHabitScreenConfigureRequested`:
 
 (using necessari: `System.Windows`, `System.Windows.Controls` — verificare quelli già presenti.)
 
-- [ ] **Step 3**: build 0/0; commit `feat(wpf): Home New button becomes Habit/Group menu`.
+- [x] **Step 3**: build 0/0; commit `feat(wpf): Home New button becomes Habit/Group menu`.
 
 ---
 
@@ -382,14 +382,14 @@ Nuovo handler accanto a `OnHabitScreenConfigureRequested`:
 - Modify: `src/Recordum.WPF/Behaviors/TreeDragDropBehavior.cs`
 - Modify: `src/Recordum.WPF/App.xaml`
 
-- [ ] **Step 1**: in `HomeRowViewModel` aggiungere accanto a `_isExpanded` (riga ~50):
+- [x] **Step 1**: in `HomeRowViewModel` aggiungere accanto a `_isExpanded` (riga ~50):
 
 ```csharp
     /// <summary>True while a dragged row hovers this group's "into" zone (drop highlight).</summary>
     [ObservableProperty] private bool _isDropTarget;
 ```
 
-- [ ] **Step 2**: in `TreeDragDropBehavior`:
+- [x] **Step 2**: in `TreeDragDropBehavior`:
 
 Campo statico accanto a `_armed`:
 
@@ -437,7 +437,7 @@ Nuovi handler:
 
 In `OnDrop`, prima riga del corpo: `SetDropTarget(null);`
 
-- [ ] **Step 3**: in `App.xaml`, nello style `Recordum.HabitBlock` (riga ~65), aggiungere DOPO il DataTrigger `IsSelected` (così il drop-target vince quando entrambi attivi):
+- [x] **Step 3**: in `App.xaml`, nello style `Recordum.HabitBlock` (riga ~65), aggiungere DOPO il DataTrigger `IsSelected` (così il drop-target vince quando entrambi attivi):
 
 ```xml
                     <DataTrigger Binding="{Binding IsDropTarget}" Value="True">
@@ -447,16 +447,16 @@ In `OnDrop`, prima riga del corpo: `SetDropTarget(null);`
                     </DataTrigger>
 ```
 
-- [ ] **Step 4**: build 0/0 + suite WPF completa (`dotnet test tests/Recordum.WPF.Tests -v q --nologo`) — verde (flaky noto ammesso se verde isolato).
+- [x] **Step 4**: build 0/0 + suite WPF completa (`dotnet test tests/Recordum.WPF.Tests -v q --nologo`) — verde (flaky noto ammesso se verde isolato).
 
-- [ ] **Step 5**: commit `feat(wpf): drop-target highlight while dragging onto a group`.
+- [x] **Step 5**: commit `feat(wpf): drop-target highlight while dragging onto a group`.
 
 ---
 
 ### Task 6: verifica visiva + tracker
 
 - [ ] skill `run` + checklist: menu ＋Nuova▾ (2 voci); "Nuova habit" con gruppo selezionato → il picker crea dentro il gruppo; con habit selezionata → fratello; "Nuovo gruppo" nei 3 contesti → creato nel posto giusto, selezionato, Configura aperta col nome da rinominare; cambio habit con Configura aperta → editor segue (fix rebind); drag di una riga sopra un gruppo → highlight accent solo nella zona centrale; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` (gruppi-basi fatto; nav-model §3.2 chiuso; resta §5 vista gruppo) + memoria; commit docs.
+- [x] aggiornare `docs/phase-4-issues.md` (gruppi-basi fatto; nav-model §3.2 chiuso; resta §5 vista gruppo) + memoria; commit docs.
 
 ---
 
