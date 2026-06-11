@@ -10,6 +10,7 @@ using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.Settings;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels;
@@ -17,25 +18,47 @@ namespace Recordum.WPF.Tests.ViewModels;
 public class MainWindowViewModelTests
 {
     [Fact]
-    public async Task Initialize_calls_HomeViewModel_LoadCommand_and_SettingsViewModel_InitializeAsync()
+    public async Task Initialize_calls_HomeViewModel_LoadCommand()
     {
-        var (sut, parts) = CreateSut(themeMode: ThemeMode.Dark);
+        var (sut, parts) = CreateSut();
 
         await sut.InitializeAsync();
 
         sut.Home.State.Should().NotBe(HomeState.Loading);
-        sut.Settings.ThemeMode.Should().Be(ThemeMode.Dark);
         parts.Query.HomeCallCount.Should().Be(1);
     }
 
     [Fact]
-    public void Home_Settings_Editor_are_exposed_to_the_view()
+    public void Home_and_Editor_are_exposed_to_the_view()
     {
         var (sut, parts) = CreateSut();
 
         sut.Home.Should().BeSameAs(parts.Home);
-        sut.Settings.Should().BeSameAs(parts.Settings);
         sut.Editor.Should().BeSameAs(parts.Editor);
+    }
+
+    [Fact]
+    public async Task BackupSettings_opens_settings_window_at_backup_category()
+    {
+        var (sut, parts) = CreateSut();
+        await sut.BackupSettingsCommand.ExecuteAsync(null);
+        parts.SettingsLauncher.ShowCalls.Should().Equal(SettingsCategoryId.Backup);
+    }
+
+    [Fact]
+    public async Task ShowDiagnosticInfo_opens_settings_window_at_diagnostics_category()
+    {
+        var (sut, parts) = CreateSut();
+        await sut.ShowDiagnosticInfoCommand.ExecuteAsync(null);
+        parts.SettingsLauncher.ShowCalls.Should().Equal(SettingsCategoryId.Diagnostics);
+    }
+
+    [Fact]
+    public async Task ShowSettings_opens_settings_window_at_default_category()
+    {
+        var (sut, parts) = CreateSut();
+        await sut.ShowSettingsCommand.ExecuteAsync(null);
+        parts.SettingsLauncher.ShowCalls.Should().Equal((SettingsCategoryId?)null);
     }
 
     [Fact]
@@ -248,12 +271,11 @@ public class MainWindowViewModelTests
         Assert.Equal(AppWorkspace.Home, sut.CurrentWorkspace);
     }
 
-    private static (MainWindowViewModel sut, Parts parts) CreateSut(ThemeMode themeMode = ThemeMode.System)
+    private static (MainWindowViewModel sut, Parts parts) CreateSut()
     {
         var query = new FakeHabitTreeQueryService();
         var nodes = new FakeHabitNodeService();
         var purge = new FakePurgeService();
-        var theme = new FakeThemeService { CurrentMode = themeMode };
         var configs = new FakeHabitConfigService();
         var goals = new FakeGoalService();
         var metrics = new FakeMetricDefinitionService();
@@ -261,7 +283,6 @@ public class MainWindowViewModelTests
         var tags = new FakeTagService();
         var settings = new FakeAppSettingService();
         var home = new HomeViewModel(query, nodes, purge);
-        var settingsVm = new SettingsViewModel(theme);
         var editor = new HabitEditorViewModel(nodes, configs, goals, metrics, notif, tags, settings, new FakeReferenceData(), new RecentColorStore(settings));
         var clock = new FakeClock();
         var ats = new FakeActiveTimerService();
@@ -280,21 +301,17 @@ public class MainWindowViewModelTests
         var backupLauncher = new FakeBackupDialogLauncher();
         var backupLog = new FakeBackupLogService();
         var backupHistory = new Recordum.WPF.ViewModels.Backup.BackupHistoryViewModel(backupLog);
-        var sut = new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeDiagnosticInfoLauncher());
-        return (sut, new Parts(query, nodes, home, settingsVm, editor, settings, exportLauncher));
+        var settingsLauncher = new FakeSettingsWindowLauncher();
+        var sut = new MainWindowViewModel(home, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, settingsLauncher);
+        return (sut, new Parts(query, nodes, home, editor, settings, exportLauncher, settingsLauncher));
     }
 
     private sealed record Parts(
         FakeHabitTreeQueryService Query,
         FakeHabitNodeService Nodes,
         HomeViewModel Home,
-        SettingsViewModel Settings,
         HabitEditorViewModel Editor,
         FakeAppSettingService AppSettings,
-        FakeExportDialogLauncher ExportLauncher);
-
-    private sealed class FakeDiagnosticInfoLauncher : IDiagnosticInfoLauncher
-    {
-        public Task ShowAsync() => Task.CompletedTask;
-    }
+        FakeExportDialogLauncher ExportLauncher,
+        FakeSettingsWindowLauncher SettingsLauncher);
 }

@@ -7,6 +7,7 @@ using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Export;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.WPF.ViewModels.Settings;
 using Recordum.WPF.ViewModels.Timer;
 
 namespace Recordum.WPF.ViewModels;
@@ -26,10 +27,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IAppSettingService _appSettings;
     private readonly IExportDialogLauncher _exportLauncher;
     private readonly IBackupDialogLauncher _backupLauncher;
-    private readonly IDiagnosticInfoLauncher _diagnosticLauncher;
+    private readonly ISettingsWindowLauncher _settingsLauncher;
 
     public HomeViewModel Home { get; }
-    public SettingsViewModel Settings { get; }
     public HabitEditorViewModel Editor { get; }
     public HabitScreenViewModel HabitScreen { get; }
     public TimerStatusBarViewModel TimerStatusBar { get; }
@@ -51,7 +51,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public MainWindowViewModel(
         HomeViewModel home,
-        SettingsViewModel settings,
         HabitEditorViewModel editor,
         IAppSettingService appSettings,
         TimerStatusBarViewModel timerStatusBar,
@@ -60,10 +59,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IExportDialogLauncher exportLauncher,
         IBackupDialogLauncher backupLauncher,
         BackupHistoryViewModel backupHistory,
-        IDiagnosticInfoLauncher diagnosticLauncher)
+        ISettingsWindowLauncher settingsLauncher)
     {
         ArgumentNullException.ThrowIfNull(home);
-        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(timerStatusBar);
@@ -72,9 +70,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(exportLauncher);
         ArgumentNullException.ThrowIfNull(backupLauncher);
         ArgumentNullException.ThrowIfNull(backupHistory);
-        ArgumentNullException.ThrowIfNull(diagnosticLauncher);
+        ArgumentNullException.ThrowIfNull(settingsLauncher);
         Home = home;
-        Settings = settings;
         Editor = editor;
         _appSettings = appSettings;
         TimerStatusBar = timerStatusBar;
@@ -83,7 +80,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _exportLauncher = exportLauncher;
         _backupLauncher = backupLauncher;
         BackupHistory = backupHistory;
-        _diagnosticLauncher = diagnosticLauncher;
+        _settingsLauncher = settingsLauncher;
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
@@ -116,13 +113,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand] private Task BackupCreateAsync() => _backupLauncher.ShowBackupAsync();
     [RelayCommand] private Task BackupRestoreAsync() => _backupLauncher.ShowRestoreAsync();
-    [RelayCommand] private Task BackupSettingsAsync() => _backupLauncher.ShowSettingsAsync();
+    [RelayCommand] private Task BackupSettingsAsync() => _settingsLauncher.ShowAsync(SettingsCategoryId.Backup);
+    [RelayCommand] private Task ShowSettingsAsync() => _settingsLauncher.ShowAsync();
 
     public async ValueTask InitializeAsync(CancellationToken ct = default)
     {
         await LoadEditorPaneWidthAsync(ct).ConfigureAwait(true);
         await LoadHabitScreenWidthAsync(ct).ConfigureAwait(true);
-        await Settings.InitializeAsync(ct);
         await Home.LoadCommand.ExecuteAsync(null);
         await TimerStatusBar.LoadAsync(ct).ConfigureAwait(true);
     }
@@ -199,5 +196,5 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ShowDiagnosticInfoAsync() => await _diagnosticLauncher.ShowAsync().ConfigureAwait(true);
+    private async Task ShowDiagnosticInfoAsync() => await _settingsLauncher.ShowAsync(SettingsCategoryId.Diagnostics).ConfigureAwait(true);
 }

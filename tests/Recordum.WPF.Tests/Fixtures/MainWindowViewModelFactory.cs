@@ -23,7 +23,6 @@ public static class MainWindowViewModelFactory
         var query = new FakeHabitTreeQueryService();
         var nodes = new FakeHabitNodeService();
         var purge = new FakePurgeService();
-        var theme = new FakeThemeService();
         var configs = new FakeHabitConfigService();
         var goals = new FakeGoalService();
         var metrics = new FakeMetricDefinitionService();
@@ -31,7 +30,6 @@ public static class MainWindowViewModelFactory
         var tags = new FakeTagService();
         var settings = new FakeAppSettingService();
         var home = new HomeViewModel(query, nodes, purge);
-        var settingsVm = new SettingsViewModel(theme);
         var editor = new HabitEditorViewModel(nodes, configs, goals, metrics, notif, tags, settings, new FakeReferenceData(), new RecentColorStore(settings));
         var clock = new FakeClock();
         var ats = new FakeActiveTimerService();
@@ -51,11 +49,6 @@ public static class MainWindowViewModelFactory
         var backupLog = log ?? new FakeBackupLogService();
         var backupHistory = new BackupHistoryViewModel(backupLog);
 
-        return new MainWindowViewModel(home, settingsVm, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeDiagnosticInfoLauncher());
-    }
-
-    private sealed class FakeDiagnosticInfoLauncher : IDiagnosticInfoLauncher
-    {
-        public Task ShowAsync() => Task.CompletedTask;
+        return new MainWindowViewModel(home, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeSettingsWindowLauncher());
     }
 }

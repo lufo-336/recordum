@@ -61,6 +61,8 @@
                 <MenuItem Header="{x:Static res:Strings.Workspace_Help}">
                     <MenuItem Header="{x:Static res:Strings.Diagnostic_Menu_Open}" Command="{Binding ShowDiagnosticInfoCommand}"/>
                 </MenuItem>
+                <!-- Bridge entry point: the whole top bar is replaced by the icon ribbon in Fase B. -->
+                <MenuItem Header="{x:Static res:Strings.Settings_Title}" Command="{Binding ShowSettingsCommand}"/>
             </Menu>
         </StackPanel>
 
@@ -112,13 +114,6 @@
                               ClipToBounds="True"
                               DataContext="{Binding Editor}"
                               Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"/>
-                <Popup x:Name="SettingsPopupHost"
-                       Grid.Column="0" Grid.ColumnSpan="5"
-                       StaysOpen="False"
-                       Placement="MousePoint"
-                       AllowsTransparency="True">
-                    <v:SettingsPopup DataContext="{Binding Settings}"/>
-                </Popup>
             </Grid>
 
             <v:ChartsView DataContext="{Binding Charts}"

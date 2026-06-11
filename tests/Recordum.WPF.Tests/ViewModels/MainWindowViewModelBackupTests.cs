@@ -40,14 +40,8 @@ public class MainWindowViewModelBackupTests
         fakeLauncher.RestoreShown.Should().Be(1);
     }
 
-    [Fact]
-    public async Task BackupSettingsCommand_invokes_launcher()
-    {
-        var fakeLauncher = new FakeBackupDialogLauncher();
-        var vm = MainWindowViewModelFactory.Build(launcher: fakeLauncher);
-        await vm.BackupSettingsCommand.ExecuteAsync(null);
-        fakeLauncher.SettingsShown.Should().Be(1);
-    }
+    // BackupSettingsCommand now opens the unified SettingsWindow at the Backup category —
+    // covered by MainWindowViewModelTests.BackupSettings_opens_settings_window_at_backup_category.
 
     [Fact]
     public void ShowHome_resets_IsBackupHistoryWorkspace_to_false()

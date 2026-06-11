@@ -167,7 +167,6 @@ public sealed class BootstrapSmokeTests : IDisposable
 
         vm.Home.State.Should().BeOneOf(HomeState.Empty, HomeState.Loaded);
         vm.Home.Rows.Should().BeEmpty();
-        vm.Settings.Should().NotBeNull();
     }
 
     [Fact]
