@@ -35,7 +35,7 @@
 - Modify: `src/Recordum.WPF/ViewModels/HomeViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HomeViewModelTests.cs` (append)
 
-- [ ] **Step 1: test (RED)** — append a `HomeViewModelTests` (riusa `SampleRow`, `CreateSut`):
+- [x] **Step 1: test (RED)** — append a `HomeViewModelTests` (riusa `SampleRow`, `CreateSut`):
 
 ```csharp
     [Fact]
@@ -61,9 +61,9 @@
     }
 ```
 
-- [ ] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter Collapsing_a_group` → FAIL (oggi il toggle è inerte: Rows resta 2).
+- [x] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter Collapsing_a_group` → FAIL (oggi il toggle è inerte: Rows resta 2).
 
-- [ ] **Step 3: implementare**
+- [x] **Step 3: implementare**
 
 `HomeRowViewModel` — accanto all'evento `Changed` (riga ~23):
 
@@ -126,9 +126,9 @@ In `WalkSubtree` (riga ~270), dopo `yield return (node, level);`:
         if (_collapsedGroupIds.Contains(node.HabitNodeId)) yield break;
 ```
 
-- [ ] **Step 4: GREEN** — filtro `Collapsing_a_group` + suite `HomeViewModel` completa verde.
+- [x] **Step 4: GREEN** — filtro `Collapsing_a_group` + suite `HomeViewModel` completa verde.
 
-- [ ] **Step 5: commit** `feat(wpf): group collapse hides descendants (session-scoped state)`.
+- [x] **Step 5: commit** `feat(wpf): group collapse hides descendants (session-scoped state)`.
 
 ---
 
@@ -139,7 +139,7 @@ In `WalkSubtree` (riga ~270), dopo `yield return (node, level);`:
 - Modify: `src/Recordum.WPF/ViewModels/MainWindowViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HabitScreen/HabitScreenColumnsTests.cs` + `tests/Recordum.WPF.Tests/ViewModels/MainWindowViewModelTests.cs` (append)
 
-- [ ] **Step 1: test (RED)** — append a `HabitScreenColumnsTests`:
+- [x] **Step 1: test (RED)** — append a `HabitScreenColumnsTests`:
 
 ```csharp
     [Fact]
@@ -211,9 +211,9 @@ e a `MainWindowViewModelTests` (riusa `SampleRow` e `CreateSut` del file):
     }
 ```
 
-- [ ] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "Reopen_defaults|AllColumnsClosed_raised|Restore_reads_the_persisted|Closing_the_last_open_column"` (errori di compilazione attesi: `LastClosedColumnSettingKey`, `AllColumnsClosed`).
+- [x] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "Reopen_defaults|AllColumnsClosed_raised|Restore_reads_the_persisted|Closing_the_last_open_column"` (errori di compilazione attesi: `LastClosedColumnSettingKey`, `AllColumnsClosed`).
 
-- [ ] **Step 3: implementare** in `HabitScreenViewModel`:
+- [x] **Step 3: implementare** in `HabitScreenViewModel`:
 
 Costante + campo + evento, nella regione column-workspace (sotto `OpenColumnsSettingKey`):
 
@@ -274,9 +274,9 @@ e accanto a `OnHomeGroupCreated`:
         => Home.SelectedRow = null;
 ```
 
-- [ ] **Step 4: GREEN** — filtro dello step 2 + suite `HabitScreenColumns` e `MainWindowViewModel` complete verdi.
+- [x] **Step 4: GREEN** — filtro dello step 2 + suite `HabitScreenColumns` e `MainWindowViewModel` complete verdi.
 
-- [ ] **Step 5: commit** `feat(wpf): empty column set closes the workspace; reopen on last closed column`.
+- [x] **Step 5: commit** `feat(wpf): empty column set closes the workspace; reopen on last closed column`.
 
 ---
 
@@ -286,7 +286,7 @@ e accanto a `OnHomeGroupCreated`:
 - Modify: `src/Recordum.WPF/Views/HomeView.xaml`
 - Modify: `src/Recordum.WPF/Views/WorkspaceRibbon.xaml`, `src/Recordum.WPF/Views/WorkspaceRibbon.xaml.cs`
 
-- [ ] **Step 1: scroll** — in `HomeView.xaml` (DataTrigger `State=Loaded`, riga ~169) avvolgere l'ItemsControl:
+- [x] **Step 1: scroll** — in `HomeView.xaml` (DataTrigger `State=Loaded`, riga ~169) avvolgere l'ItemsControl:
 
 ```xml
                                     <DataTemplate>
@@ -304,7 +304,7 @@ e accanto a `OnHomeGroupCreated`:
                                     </DataTemplate>
 ```
 
-- [ ] **Step 2: ribbon** — in `WorkspaceRibbon.xaml` sul Border radice (riga ~41) aggiungere `MouseLeftButtonUp="OnRibbonEmptyClick"`; in `WorkspaceRibbon.xaml.cs`:
+- [x] **Step 2: ribbon** — in `WorkspaceRibbon.xaml` sul Border radice (riga ~41) aggiungere `MouseLeftButtonUp="OnRibbonEmptyClick"`; in `WorkspaceRibbon.xaml.cs`:
 
 ```csharp
     // Clicking empty rail space deselects (spec §B.3): with a full tree there is no empty
@@ -327,16 +327,16 @@ e accanto a `OnHomeGroupCreated`:
     }
 ```
 
-- [ ] **Step 3**: build 0/0 + suite WPF completa verde (flaky noto ammesso se verde isolato).
+- [x] **Step 3**: build 0/0 + suite WPF completa verde (flaky noto ammesso se verde isolato).
 
-- [ ] **Step 4: commit** `feat(wpf): tree vertical scroll + ribbon empty-click deselect`.
+- [x] **Step 4: commit** `feat(wpf): tree vertical scroll + ribbon empty-click deselect`.
 
 ---
 
 ### Task 4: verifica visiva + tracker
 
 - [ ] skill `run` + checklist: albero con molte habit scrolla (rotella + scrollbar flat); ▾/▸ collassa/espande e lo stato regge al reload (es. dopo un completamento); click su spazio vuoto del ribbon deseleziona; chiudere l'ultima colonna (chip/✕/Esc) collassa il workspace; riselezionare una habit riapre l'ultima colonna chiusa anche dopo riavvio; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` + memoria (pacchetto B fatto; prossimo piano 2 = Panoramica); commit docs.
+- [x] aggiornare `docs/phase-4-issues.md` + memoria (pacchetto B fatto; prossimo piano 2 = Panoramica); commit docs.
 
 ---
 
