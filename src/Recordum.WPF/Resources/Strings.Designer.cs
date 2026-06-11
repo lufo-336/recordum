@@ -156,6 +156,8 @@ public static class Strings
     public static string Editor_Status_Saved => Get("Editor.Status.Saved");
     public static string Editor_Status_Error => Get("Editor.Status.Error");
     public static string Home_NewHabit_Button => Get("Home.NewHabit.Button");
+    public static string Home_NewMenu_Habit => Get("Home.NewMenu.Habit");
+    public static string Home_NewMenu_Group => Get("Home.NewMenu.Group");
     public static string HabitTemplatePicker_Title => Get("HabitTemplatePicker.Title");
     public static string HabitTemplatePicker_BlankHabit => Get("HabitTemplatePicker.BlankHabit");
     public static string HabitTemplatePicker_BlankHabit_Description => Get("HabitTemplatePicker.BlankHabit.Description");

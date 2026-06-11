@@ -234,7 +234,13 @@ Details: {0}</value>
     <value>Couldn't save</value>
   </data>
   <data name="Home.NewHabit.Button" xml:space="preserve">
-    <value>+ New</value>
+    <value>＋ New ▾</value>
+  </data>
+  <data name="Home.NewMenu.Habit" xml:space="preserve">
+    <value>New habit</value>
+  </data>
+  <data name="Home.NewMenu.Group" xml:space="preserve">
+    <value>New group</value>
   </data>
   <data name="HabitTemplatePicker.Title" xml:space="preserve">
     <value>New habit from template</value>
