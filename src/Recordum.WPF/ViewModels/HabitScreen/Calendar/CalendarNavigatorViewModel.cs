@@ -44,7 +44,14 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     [ObservableProperty] private int _displayMonth;
     [ObservableProperty] private string _headerLabel = string.Empty;
     [ObservableProperty] private DateOnly? _selectedDate;
-    [ObservableProperty] private CalendarViewMode _viewMode = CalendarViewMode.Month;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CellSize))]
+    private CalendarViewMode _viewMode = CalendarViewMode.Month;
+
+    /// <summary>Fixed day-cell edge in px (excludes the 2px margin) for the Week + Month grids; Week is
+    /// roomier. Single source of truth so the weekday header and the day grid derive the same column
+    /// width (7 × (CellSize+4)) and stay aligned, without view-mode-dependent width triggers.</summary>
+    public double CellSize => ViewMode == CalendarViewMode.Week ? 56 : 40;
 
     /// <summary>Year view only: false = twelve mini-months (default), true = GitHub-style heatmap.</summary>
     [ObservableProperty] private bool _yearAsHeatmap;

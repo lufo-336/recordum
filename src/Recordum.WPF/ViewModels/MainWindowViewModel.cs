@@ -21,7 +21,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     internal const string HabitScreenWidthSettingKey = "ui.habit_screen_width";
     internal const double DefaultHabitScreenWidth = 520d;
     internal const double MinHabitScreenWidth = 360d;
-    internal const double MaxHabitScreenWidth = 800d;
+    internal const double MaxHabitScreenWidth = 1100d;
 
     private readonly IAppSettingService _appSettings;
     private readonly IExportDialogLauncher _exportLauncher;

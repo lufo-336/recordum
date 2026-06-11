@@ -14,7 +14,8 @@
              white-ish ring (contrast-aware, capsule when the value is wide) so it reads distinctly. -->
         <DataTemplate x:Key="DayCellTemplate" DataType="{x:Type vm:CalendarDayCellViewModel}">
             <Button Margin="2" Padding="0"
-                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
+                    Width="{Binding DataContext.CellSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    Height="{Binding DataContext.CellSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                     BorderThickness="1"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"
@@ -22,7 +23,10 @@
                     CommandParameter="{Binding}">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="Background" Value="Transparent"/>
+                        <!-- Faint grey base so every cell reads as a square against the panel (same as the
+                             Year cells). The tint overlay covers it on days with data; the selected trigger
+                             below overrides it with the accent fill. -->
+                        <Setter Property="Background" Value="{DynamicResource Brush.Border}"/>
                         <Setter Property="BorderBrush" Value="Transparent"/>
                         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
                         <Style.Triggers>
@@ -82,6 +86,7 @@
              colour live on the navigator VM, two ItemsControl levels up (MonthBlocks → Cells). -->
         <DataTemplate x:Key="YearCellTemplate" DataType="{x:Type vm:CalendarDayCellViewModel}">
             <Button Width="14" Height="14" Margin="1" Padding="0" BorderThickness="1"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                     ToolTip="{Binding TooltipText}" ToolTipService.InitialShowDelay="300"
                     Visibility="{Binding InCurrentMonth, Converter={StaticResource BoolToVisible}}"
                     Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}"
@@ -141,6 +146,7 @@
              Select command + note colour are two ItemsControl levels up (YearWeeks → week). -->
         <DataTemplate x:Key="HeatCellTemplate" DataType="{x:Type vm:CalendarDayCellViewModel}">
             <Button Width="15" Height="15" Margin="1.5" Padding="0" BorderThickness="1"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                     ToolTip="{Binding TooltipText}" ToolTipService.InitialShowDelay="300"
                     Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl, AncestorLevel=2}}"
                     CommandParameter="{Binding}">
@@ -237,16 +243,14 @@
                 <Button Grid.Column="5" Content="&#x203A;" Width="28" Margin="4,0,0,0" Command="{Binding NextCommand}"/>
             </Grid>
 
-            <!-- Weekday header (Week + Month only — width matches the active grid; hidden in Year). -->
+            <!-- Weekday header (Week + Month only — each cell is CellSize wide with the same 2px margin as a
+                 day cell, so the 7 header columns line up pixel-for-pixel with the day grid below; hidden in
+                 Year). Left-aligned: the panel sizes to its content (7 × (CellSize+4)). -->
             <ItemsControl ItemsSource="{Binding WeekdayHeaders}" HorizontalAlignment="Left">
                 <ItemsControl.Style>
                     <Style TargetType="ItemsControl">
                         <Setter Property="Visibility" Value="Visible"/>
-                        <Setter Property="MaxWidth" Value="308"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding ViewMode}" Value="Week">
-                                <Setter Property="MaxWidth" Value="420"/>
-                            </DataTrigger>
                             <DataTrigger Binding="{Binding ViewMode}" Value="Year">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
@@ -258,14 +262,16 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding}" HorizontalAlignment="Center"
+                        <TextBlock Text="{Binding}" Margin="2" TextAlignment="Center"
+                                   Width="{Binding DataContext.CellSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                    FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Month body: compact 6×7 square grid (~40px cells), left-aligned and width-capped. -->
-            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0" HorizontalAlignment="Left" MaxWidth="308"
+            <!-- Month body: fixed-size 6×7 square grid (cells = CellSize), left-aligned so it sizes to its
+                 content (7 × (CellSize+4)) and shares that width with the header above. -->
+            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0" HorizontalAlignment="Left"
                           ItemTemplate="{StaticResource DayCellTemplate}"
                           Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Month}}">
                 <ItemsControl.ItemsPanel>
@@ -273,8 +279,9 @@
                 </ItemsControl.ItemsPanel>
             </ItemsControl>
 
-            <!-- Week body: single row of 7 larger square cells (~56px). -->
-            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0" HorizontalAlignment="Left" MaxWidth="420"
+            <!-- Week body: single row of 7 fixed-size square cells (cells = CellSize), left-aligned so it
+                 sizes to its content (7 × (CellSize+4)) and shares that width with the header above. -->
+            <ItemsControl ItemsSource="{Binding Cells}" Margin="0,4,0,0" HorizontalAlignment="Left"
                           ItemTemplate="{StaticResource DayCellTemplate}"
                           Visibility="{Binding ViewMode, Converter={StaticResource EnumToVisibility}, ConverterParameter={x:Static vm:CalendarViewMode.Week}}">
                 <ItemsControl.ItemsPanel>

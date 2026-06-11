@@ -70,7 +70,10 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0"/>
+                    <!-- MaxWidth matches MainWindowViewModel.MaxHabitScreenWidth so the splitter stops at the
+                         cap instead of overshooting and snapping back on release. MinWidth stays 0 so the
+                         column can still collapse to 0 when no habit is selected. -->
+                    <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0" MaxWidth="1100"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition x:Name="EditorPaneColumn" Width="0" MinWidth="0"/>
                 </Grid.ColumnDefinitions>
