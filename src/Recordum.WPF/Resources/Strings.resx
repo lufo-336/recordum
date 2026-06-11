@@ -260,6 +260,45 @@ Details: {0}</value>
   <data name="HabitTemplatePicker.PredefinedTemplates" xml:space="preserve">
     <value>Predefined templates</value>
   </data>
+  <data name="Settings.Category.Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Settings.Category.General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Settings.Category.Backup" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="Settings.Category.Diagnostics" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="Settings.Category.Sync" xml:space="preserve">
+    <value>Sync</value>
+  </data>
+  <data name="Settings.Category.Plugins" xml:space="preserve">
+    <value>Plugins</value>
+  </data>
+  <data name="Settings.Category.Ai" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="Settings.ComingSoon" xml:space="preserve">
+    <value>Coming soon</value>
+  </data>
+  <data name="Settings.ComingSoon.Sync" xml:space="preserve">
+    <value>Optional cloud sync through third-party providers. Your data never touches a Recordum server.</value>
+  </data>
+  <data name="Settings.ComingSoon.Plugins" xml:space="preserve">
+    <value>Install and manage plugins that extend Recordum with new chart types, export formats and more.</value>
+  </data>
+  <data name="Settings.ComingSoon.Ai" xml:space="preserve">
+    <value>Opt-in AI insights and correlations. Disabled by default: nothing leaves your device without consent.</value>
+  </data>
+  <data name="Settings.General.DailyResetTime" xml:space="preserve">
+    <value>Daily reset time</value>
+  </data>
+  <data name="Settings.General.DailyResetTime.Hint" xml:space="preserve">
+    <value>The time of day when a new habit day starts (HH:mm). Habits and groups can override it.</value>
+  </data>
   <data name="HabitTemplatePicker.Rename" xml:space="preserve">
     <value>Rename</value>
   </data>

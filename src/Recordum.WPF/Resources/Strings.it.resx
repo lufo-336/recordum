@@ -242,6 +242,45 @@
   <data name="HabitTemplatePicker.PredefinedTemplates" xml:space="preserve">
     <value>Modelli predefiniti</value>
   </data>
+  <data name="Settings.Category.Appearance" xml:space="preserve">
+    <value>Aspetto</value>
+  </data>
+  <data name="Settings.Category.General" xml:space="preserve">
+    <value>Generale</value>
+  </data>
+  <data name="Settings.Category.Backup" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="Settings.Category.Diagnostics" xml:space="preserve">
+    <value>Diagnostica</value>
+  </data>
+  <data name="Settings.Category.Sync" xml:space="preserve">
+    <value>Sincronizzazione</value>
+  </data>
+  <data name="Settings.Category.Plugins" xml:space="preserve">
+    <value>Plugin</value>
+  </data>
+  <data name="Settings.Category.Ai" xml:space="preserve">
+    <value>AI</value>
+  </data>
+  <data name="Settings.ComingSoon" xml:space="preserve">
+    <value>In arrivo</value>
+  </data>
+  <data name="Settings.ComingSoon.Sync" xml:space="preserve">
+    <value>Sincronizzazione cloud opzionale tramite provider terzi. I tuoi dati non passano mai da un server Recordum.</value>
+  </data>
+  <data name="Settings.ComingSoon.Plugins" xml:space="preserve">
+    <value>Installa e gestisci plugin che estendono Recordum con nuovi grafici, formati di export e altro.</value>
+  </data>
+  <data name="Settings.ComingSoon.Ai" xml:space="preserve">
+    <value>Insight e correlazioni AI opt-in. Disabilitata di default: nulla lascia il tuo dispositivo senza consenso.</value>
+  </data>
+  <data name="Settings.General.DailyResetTime" xml:space="preserve">
+    <value>Orario di reset giornaliero</value>
+  </data>
+  <data name="Settings.General.DailyResetTime.Hint" xml:space="preserve">
+    <value>L'orario in cui inizia un nuovo giorno per le abitudini (HH:mm). Abitudini e gruppi possono sovrascriverlo.</value>
+  </data>
   <data name="HabitTemplatePicker.Rename" xml:space="preserve">
     <value>Rinomina</value>
   </data>

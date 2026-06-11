@@ -134,6 +134,19 @@ public static class Strings
     public static string Settings_Theme_Dark => Get("Settings.Theme.Dark");
     public static string Settings_About => Get("Settings.About");
     public static string Settings_Quit => Get("Settings.Quit");
+    public static string Settings_Category_Appearance => Get("Settings.Category.Appearance");
+    public static string Settings_Category_General => Get("Settings.Category.General");
+    public static string Settings_Category_Backup => Get("Settings.Category.Backup");
+    public static string Settings_Category_Diagnostics => Get("Settings.Category.Diagnostics");
+    public static string Settings_Category_Sync => Get("Settings.Category.Sync");
+    public static string Settings_Category_Plugins => Get("Settings.Category.Plugins");
+    public static string Settings_Category_Ai => Get("Settings.Category.Ai");
+    public static string Settings_ComingSoon => Get("Settings.ComingSoon");
+    public static string Settings_ComingSoon_Sync => Get("Settings.ComingSoon.Sync");
+    public static string Settings_ComingSoon_Plugins => Get("Settings.ComingSoon.Plugins");
+    public static string Settings_ComingSoon_Ai => Get("Settings.ComingSoon.Ai");
+    public static string Settings_General_DailyResetTime => Get("Settings.General.DailyResetTime");
+    public static string Settings_General_DailyResetTime_Hint => Get("Settings.General.DailyResetTime.Hint");
 
     // Habit Editor (Milestone 3.4)
     public static string Editor_Close => Get("Editor.Close");
