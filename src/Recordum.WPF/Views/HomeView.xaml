@@ -48,25 +48,27 @@
                     Margin="0,0,16,0"
                     Padding="12,4"
                     VerticalAlignment="Center"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                <RadioButton GroupName="HomeTab"
-                             Content="{x:Static res:Strings.Home_Tab_Active}"
-                             IsChecked="{Binding ActiveTab, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:HomeTab.Active}}"
-                             Command="{Binding SwitchTabCommand}"
-                             CommandParameter="{x:Static vm:HomeTab.Active}" />
-                <RadioButton GroupName="HomeTab"
-                             Content="{x:Static res:Strings.Home_Tab_Archived}"
-                             IsChecked="{Binding ActiveTab, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
-                             Command="{Binding SwitchTabCommand}"
-                             CommandParameter="{x:Static vm:HomeTab.Archived}"
-                             Margin="8,0,0,0"/>
-                <RadioButton GroupName="HomeTab"
-                             Content="{x:Static res:Strings.Home_Tab_Trash}"
-                             IsChecked="{Binding ActiveTab, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
-                             Command="{Binding SwitchTabCommand}"
-                             CommandParameter="{x:Static vm:HomeTab.Trash}"
-                             Margin="8,0,0,0"/>
-            </StackPanel>
+            <!-- View tabs as a segmented pill group (Fase C). -->
+            <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource Brush.Background}" CornerRadius="6" Padding="3">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton GroupName="HomeTab" Style="{StaticResource Recordum.Segment}"
+                                 Content="{x:Static res:Strings.Home_Tab_Active}"
+                                 IsChecked="{Binding ActiveTab, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:HomeTab.Active}}"
+                                 Command="{Binding SwitchTabCommand}"
+                                 CommandParameter="{x:Static vm:HomeTab.Active}"/>
+                    <RadioButton GroupName="HomeTab" Style="{StaticResource Recordum.Segment}" Margin="2,0,0,0"
+                                 Content="{x:Static res:Strings.Home_Tab_Archived}"
+                                 IsChecked="{Binding ActiveTab, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
+                                 Command="{Binding SwitchTabCommand}"
+                                 CommandParameter="{x:Static vm:HomeTab.Archived}"/>
+                    <RadioButton GroupName="HomeTab" Style="{StaticResource Recordum.Segment}" Margin="2,0,0,0"
+                                 Content="{x:Static res:Strings.Home_Tab_Trash}"
+                                 IsChecked="{Binding ActiveTab, Mode=OneWay, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
+                                 Command="{Binding SwitchTabCommand}"
+                                 CommandParameter="{x:Static vm:HomeTab.Trash}"/>
+                </StackPanel>
+            </Border>
         </Grid>
 
         <!-- Filter row -->
@@ -81,10 +83,31 @@
                           Visibility="{Binding ActiveTab, Converter={StaticResource ActiveTabVisible}}"
                           VerticalAlignment="Center"
                           Margin="0,0,16,0"/>
-                <TextBox x:Name="SearchBox"
-                         Width="200"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Tag="{x:Static res:Strings.Home_Filter_SearchPlaceholder}"/>
+                <!-- Search with leading icon + watermark (the old bare Tag was inert). -->
+                <Grid VerticalAlignment="Center">
+                    <TextBox x:Name="SearchBox" Width="200" Padding="26,4,6,4"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <Path Width="13" Height="13" Margin="8,0,0,0" Stretch="Uniform"
+                          HorizontalAlignment="Left" VerticalAlignment="Center" IsHitTestVisible="False"
+                          Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.7"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="{StaticResource Icon.Search}"/>
+                    <TextBlock Text="{x:Static res:Strings.Home_Filter_SearchPlaceholder}"
+                               Margin="28,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               FontSize="{StaticResource FontSize.Small}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
             </StackPanel>
         </Grid>
 
