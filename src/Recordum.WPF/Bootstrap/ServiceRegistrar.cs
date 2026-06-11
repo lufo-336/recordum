@@ -162,7 +162,6 @@ public static class ServiceRegistrar
         services.AddTransient<ExportDialogViewModel>();
         services.AddSingleton<IClipboard, WpfClipboard>();
         services.AddTransient<DiagnosticInfoViewModel>();
-        services.AddSingleton<IDiagnosticInfoLauncher, WpfDiagnosticInfoLauncher>();
 
         // Backup / Restore.
         services.AddScoped<IBackupLogService, BackupLogService>();

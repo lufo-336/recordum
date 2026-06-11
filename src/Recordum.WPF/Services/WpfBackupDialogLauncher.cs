@@ -24,11 +24,5 @@ public sealed class WpfBackupDialogLauncher(IServiceProvider services) : IBackup
         return Task.CompletedTask;
     }
 
-    public async Task ShowSettingsAsync()
-    {
-        var vm = services.GetRequiredService<BackupSettingsViewModel>();
-        await vm.LoadAsync().ConfigureAwait(true);
-        var dlg = new BackupSettingsDialog(vm) { Owner = Application.Current?.MainWindow };
-        dlg.ShowDialog();
-    }
+    // Backup settings moved into the unified SettingsWindow (Backup category).
 }
