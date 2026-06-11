@@ -52,6 +52,9 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [ObservableProperty] private string _pendingName = string.Empty;
     [ObservableProperty] private bool _isSelected;
 
+    /// <summary>True while a dragged row hovers this group's "into" zone (drop highlight).</summary>
+    [ObservableProperty] private bool _isDropTarget;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRenameMenu))]
     [NotifyPropertyChangedFor(nameof(ShowPinMenu))]

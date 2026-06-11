@@ -74,6 +74,13 @@
                         <Setter Property="BorderBrush" Value="{Binding ColorHex, Converter={StaticResource HexToBrush}}"/>
                         <Setter Property="BorderThickness" Value="1.5"/>
                     </DataTrigger>
+                    <!-- Drop highlight while a dragged row hovers this group's "into" zone.
+                         After IsSelected so the drop affordance wins when both apply. -->
+                    <DataTrigger Binding="{Binding IsDropTarget}" Value="True">
+                        <Setter Property="Background" Value="{Binding ColorHex, Converter={StaticResource HabitTint}, ConverterParameter=51}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                        <Setter Property="BorderThickness" Value="1.5"/>
+                    </DataTrigger>
                 </Style.Triggers>
             </Style>
         </ResourceDictionary>
