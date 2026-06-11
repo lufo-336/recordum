@@ -144,8 +144,6 @@
                              cap instead of overshooting and snapping back on release. MinWidth stays 0 so the
                              column can still collapse to 0 when no habit is selected. -->
                         <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0" MaxWidth="1100"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition x:Name="EditorPaneColumn" Width="0" MinWidth="0"/>
                     </Grid.ColumnDefinitions>
                     <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
                     <GridSplitter x:Name="HabitScreenSplitter"
@@ -167,21 +165,6 @@
                                      Visibility="{Binding Home.SelectedRow,
                                                   RelativeSource={RelativeSource AncestorType=Window},
                                                   Converter={StaticResource NullToVisibility}}"/>
-                    <GridSplitter x:Name="EditorPaneSplitter"
-                                  Grid.Column="3"
-                                  Width="4"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalAlignment="Stretch"
-                                  ResizeBehavior="PreviousAndNext"
-                                  Background="{DynamicResource Brush.Border}"
-                                  ShowsPreview="False"
-                                  Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"
-                                  DragCompleted="OnEditorPaneSplitterDragCompleted"/>
-                    <v:EditorPane x:Name="EditorPaneContent"
-                                  Grid.Column="4"
-                                  ClipToBounds="True"
-                                  DataContext="{Binding Editor}"
-                                  Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"/>
                 </Grid>
 
                 <v:ChartsView DataContext="{Binding Charts}"

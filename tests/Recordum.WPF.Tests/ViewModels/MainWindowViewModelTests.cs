@@ -148,52 +148,8 @@ public class MainWindowViewModelTests
             .Should().Be(MainWindowViewModel.MinHabitScreenWidth.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
     }
 
-    [Fact]
-    public async Task InitializeAsync_loads_EditorPaneWidth_from_AppSetting()
-    {
-        var (sut, parts) = CreateSut();
-        parts.AppSettings.Store[MainWindowViewModel.EditorPaneWidthSettingKey] = "620";
-
-        await sut.InitializeAsync();
-
-        sut.EditorPaneWidth.Should().Be(620d);
-    }
-
-    [Fact]
-    public async Task InitializeAsync_falls_back_to_default_when_AppSetting_missing()
-    {
-        var (sut, _) = CreateSut();
-
-        await sut.InitializeAsync();
-
-        sut.EditorPaneWidth.Should().Be(MainWindowViewModel.DefaultEditorPaneWidth);
-    }
-
-    [Fact]
-    public async Task InitializeAsync_clamps_persisted_width_to_min_max()
-    {
-        var (sut, parts) = CreateSut();
-        parts.AppSettings.Store[MainWindowViewModel.EditorPaneWidthSettingKey] = "99999";
-
-        await sut.InitializeAsync();
-
-        sut.EditorPaneWidth.Should().Be(MainWindowViewModel.MaxEditorPaneWidth);
-    }
-
-    [Fact]
-    public async Task CommitEditorPaneWidthAsync_clamps_and_persists_via_AppSetting()
-    {
-        var (sut, parts) = CreateSut();
-        await sut.InitializeAsync();
-
-        sut.EditorPaneWidth = 50d; // below min — should clamp
-        await sut.CommitEditorPaneWidthAsync();
-
-        sut.EditorPaneWidth.Should().Be(MainWindowViewModel.MinEditorPaneWidth);
-        parts.AppSettings.Store.Should().ContainKey(MainWindowViewModel.EditorPaneWidthSettingKey);
-        parts.AppSettings.Store[MainWindowViewModel.EditorPaneWidthSettingKey]
-            .Should().Be(MainWindowViewModel.MinEditorPaneWidth.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
-    }
+    // EditorPaneWidth plumbing removed with the standalone editor pane: the editor now lives in
+    // the HabitScreen's Configura column (nav-model part 1).
 
     [Fact]
     public async Task Clearing_selection_unloads_HabitScreen_and_Editor()
@@ -302,7 +258,7 @@ public class MainWindowViewModelTests
         var backupLog = new FakeBackupLogService();
         var backupHistory = new Recordum.WPF.ViewModels.Backup.BackupHistoryViewModel(backupLog);
         var settingsLauncher = new FakeSettingsWindowLauncher();
-        var sut = new MainWindowViewModel(home, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, settingsLauncher);
+        var sut = new MainWindowViewModel(home, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, settingsLauncher);
         return (sut, new Parts(query, nodes, home, editor, settings, exportLauncher, settingsLauncher));
     }
 

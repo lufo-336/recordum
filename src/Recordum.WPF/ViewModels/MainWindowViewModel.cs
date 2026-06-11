@@ -14,10 +14,6 @@ namespace Recordum.WPF.ViewModels;
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-    internal const string EditorPaneWidthSettingKey = "ui.editor_pane_width";
-    internal const double DefaultEditorPaneWidth = 480d;
-    internal const double MinEditorPaneWidth = 320d;
-    internal const double MaxEditorPaneWidth = 900d;
 
     internal const string HabitScreenWidthSettingKey = "ui.habit_screen_width";
     internal const double DefaultHabitScreenWidth = 520d;
@@ -30,13 +26,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly ISettingsWindowLauncher _settingsLauncher;
 
     public HomeViewModel Home { get; }
-    public HabitEditorViewModel Editor { get; }
+
+    /// <summary>The habit editor lives in the HabitScreen's Configura column; exposed here for the
+    /// deselect-reset flow and tests.</summary>
+    public HabitEditorViewModel Editor => HabitScreen.Editor;
     public HabitScreenViewModel HabitScreen { get; }
     public TimerStatusBarViewModel TimerStatusBar { get; }
     public Charts.ChartsWorkspaceViewModel Charts { get; }
     public BackupHistoryViewModel BackupHistory { get; }
 
-    [ObservableProperty] private double _editorPaneWidth = DefaultEditorPaneWidth;
     [ObservableProperty] private double _habitScreenWidth = DefaultHabitScreenWidth;
 
     [ObservableProperty]
@@ -51,7 +49,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public MainWindowViewModel(
         HomeViewModel home,
-        HabitEditorViewModel editor,
         IAppSettingService appSettings,
         TimerStatusBarViewModel timerStatusBar,
         HabitScreenViewModel habitScreen,
@@ -62,7 +59,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ISettingsWindowLauncher settingsLauncher)
     {
         ArgumentNullException.ThrowIfNull(home);
-        ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(timerStatusBar);
         ArgumentNullException.ThrowIfNull(habitScreen);
@@ -72,7 +68,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(backupHistory);
         ArgumentNullException.ThrowIfNull(settingsLauncher);
         Home = home;
-        Editor = editor;
         _appSettings = appSettings;
         TimerStatusBar = timerStatusBar;
         HabitScreen = habitScreen;
@@ -118,25 +113,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public async ValueTask InitializeAsync(CancellationToken ct = default)
     {
-        await LoadEditorPaneWidthAsync(ct).ConfigureAwait(true);
         await LoadHabitScreenWidthAsync(ct).ConfigureAwait(true);
+        await HabitScreen.RestoreOpenColumnsAsync(ct).ConfigureAwait(true);
         await Home.LoadCommand.ExecuteAsync(null);
         await TimerStatusBar.LoadAsync(ct).ConfigureAwait(true);
     }
 
     [RelayCommand]
     private static void Quit() => System.Windows.Application.Current?.Shutdown();
-
-    public async Task CommitEditorPaneWidthAsync(CancellationToken ct = default)
-    {
-        var clamped = Math.Clamp(EditorPaneWidth, MinEditorPaneWidth, MaxEditorPaneWidth);
-        if (Math.Abs(clamped - EditorPaneWidth) > 0.5)
-            EditorPaneWidth = clamped;
-        await _appSettings.SetAsync(
-            EditorPaneWidthSettingKey,
-            EditorPaneWidth.ToString("0.##", CultureInfo.InvariantCulture),
-            ct).ConfigureAwait(true);
-    }
 
     public async Task CommitHabitScreenWidthAsync(CancellationToken ct = default)
     {
@@ -148,9 +132,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
             HabitScreenWidth.ToString("0.##", CultureInfo.InvariantCulture),
             ct).ConfigureAwait(true);
     }
-
-    private async ValueTask LoadEditorPaneWidthAsync(CancellationToken ct)
-        => EditorPaneWidth = await LoadWidthAsync(EditorPaneWidthSettingKey, DefaultEditorPaneWidth, MinEditorPaneWidth, MaxEditorPaneWidth, ct);
 
     private async ValueTask LoadHabitScreenWidthAsync(CancellationToken ct)
         => HabitScreenWidth = await LoadWidthAsync(HabitScreenWidthSettingKey, DefaultHabitScreenWidth, MinHabitScreenWidth, MaxHabitScreenWidth, ct);

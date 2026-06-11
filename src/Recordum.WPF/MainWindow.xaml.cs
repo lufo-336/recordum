@@ -24,7 +24,6 @@ public partial class MainWindow : Window
         FitToScreen();
         DataContext = viewModel;
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        viewModel.Editor.PropertyChanged += OnEditorPropertyChanged;
         viewModel.Home.PropertyChanged += OnHomePropertyChanged;
         Loaded += OnLoaded;
     }
@@ -51,7 +50,6 @@ public partial class MainWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         await _viewModel.InitializeAsync().ConfigureAwait(true);
-        ApplyEditorPaneWidth();
         ApplyHabitScreenWidth();
     }
 
@@ -80,16 +78,8 @@ public partial class MainWindow : Window
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainWindowViewModel.EditorPaneWidth))
-            ApplyEditorPaneWidth();
-        else if (e.PropertyName == nameof(MainWindowViewModel.HabitScreenWidth))
+        if (e.PropertyName == nameof(MainWindowViewModel.HabitScreenWidth))
             ApplyHabitScreenWidth();
-    }
-
-    private void OnEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(HabitEditorViewModel.HasNode))
-            ApplyEditorPaneWidth();
     }
 
     private void OnHomePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -97,9 +87,6 @@ public partial class MainWindow : Window
         if (e.PropertyName == nameof(HomeViewModel.SelectedRow))
             ApplyHabitScreenWidth();
     }
-
-    private void ApplyEditorPaneWidth()
-        => AnimateColumn(EditorPaneColumn, EditorPaneContent, _viewModel.Editor.HasNode ? _viewModel.EditorPaneWidth : 0);
 
     private void ApplyHabitScreenWidth()
         => AnimateColumn(HabitScreenColumn, HabitScreenContent, _viewModel.Home.SelectedRow is not null ? _viewModel.HabitScreenWidth : 0);
@@ -162,12 +149,6 @@ public partial class MainWindow : Window
             if (_viewModel.ShowHomeCommand.CanExecute(null))
                 _viewModel.ShowHomeCommand.Execute(null);
         }
-    }
-
-    private async void OnEditorPaneSplitterDragCompleted(object sender, DragCompletedEventArgs e)
-    {
-        _viewModel.EditorPaneWidth = EditorPaneColumn.ActualWidth;
-        await _viewModel.CommitEditorPaneWidthAsync().ConfigureAwait(true);
     }
 
     private async void OnHabitScreenSplitterDragCompleted(object sender, DragCompletedEventArgs e)

@@ -49,6 +49,6 @@ public static class MainWindowViewModelFactory
         var backupLog = log ?? new FakeBackupLogService();
         var backupHistory = new BackupHistoryViewModel(backupLog);
 
-        return new MainWindowViewModel(home, editor, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeSettingsWindowLauncher());
+        return new MainWindowViewModel(home, settings, timerStatusBar, habitScreen, charts, exportLauncher, backupLauncher, backupHistory, new FakeSettingsWindowLauncher());
     }
 }
