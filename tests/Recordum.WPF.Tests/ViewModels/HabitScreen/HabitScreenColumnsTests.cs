@@ -80,6 +80,53 @@ public class HabitScreenColumnsTests
     }
 
     [Fact]
+    public async Task Reopen_defaults_to_the_last_closed_column()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out var settings);
+        var a = AddHabit(nodes);
+        var b = AddHabit(nodes);
+        await sut.LoadAsync(a);          // Cronologia (default)
+        sut.IsDettaglioOpen = true;
+        sut.IsCronologiaOpen = false;    // last closed = Cronologia
+        sut.IsDettaglioOpen = false;     // last closed = Dettaglio, set vuoto
+
+        (await settings.GetAsync(HabitScreenViewModel.LastClosedColumnSettingKey)).Should().Be("Dettaglio");
+
+        await sut.LoadAsync(b);          // riapertura: usa l'ultima chiusa, non Cronologia
+        sut.IsDettaglioOpen.Should().BeTrue();
+        sut.IsCronologiaOpen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AllColumnsClosed_raised_when_the_open_set_empties()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
+        var id = AddHabit(nodes);
+        await sut.LoadAsync(id);         // Cronologia
+        var raised = 0;
+        sut.AllColumnsClosed += (_, _) => raised++;
+
+        sut.IsCronologiaOpen = false;
+
+        raised.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Restore_reads_the_persisted_last_closed_column()
+    {
+        var (_, _) = HabitScreenViewModelFactory.CreateWithSettings(out var settings);
+        await settings.SetAsync(HabitScreenViewModel.LastClosedColumnSettingKey, "Note");
+
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateOver(settings);
+        await sut.RestoreOpenColumnsAsync();
+        var id = AddHabit(nodes);
+        await sut.LoadAsync(id);
+
+        sut.IsNoteOpen.Should().BeTrue();
+        sut.IsCronologiaOpen.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task CloseLastColumn_closes_most_recently_opened()
     {
         var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out var _unused);

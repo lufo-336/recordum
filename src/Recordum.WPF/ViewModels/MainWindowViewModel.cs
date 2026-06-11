@@ -80,6 +80,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Home.HabitActivationRequested += OnHabitActivationRequested;
         Home.GroupCreated += OnHomeGroupCreated;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
+        HabitScreen.AllColumnsClosed += OnAllColumnsClosed;
         HabitScreen.ExportRequested += OnHabitScreenExportRequested;
     }
 
@@ -166,6 +167,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
     // already open the flag set is a no-op and the rebind above covers the reload.
     private void OnHomeGroupCreated(object? sender, Guid id)
         => HabitScreen.IsConfiguraOpen = true;
+
+    // Closing the last open column collapses the workspace back to a clean Home (§B.4).
+    private void OnAllColumnsClosed(object? sender, EventArgs e)
+        => Home.SelectedRow = null;
 
     // "+" on a habit whose row is already selected: SelectedRow won't change, so reload
     // the workspace explicitly to bring the QuickAdd panel forward.

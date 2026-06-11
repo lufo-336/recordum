@@ -265,6 +265,23 @@ public class MainWindowViewModelTests
         sut.Editor.Node!.NodeType.Should().Be(NodeType.Group);
     }
 
+    [Fact]
+    public async Task Closing_the_last_open_column_deselects_the_row()
+    {
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a", Color = "#808080" };
+        parts.Query.HomeRows.Add(SampleRow(id, "a"));
+        await sut.InitializeAsync();
+        sut.Home.SelectedRow = sut.Home.Rows.Single();
+        await Task.Delay(30);            // Cronologia aperta di default
+
+        sut.HabitScreen.IsCronologiaOpen = false;
+        await Task.Delay(30);
+
+        sut.Home.SelectedRow.Should().BeNull();
+    }
+
     private static HomeTreeRow SampleRow(Guid id, string name, HabitType? type = HabitType.Action, Guid? parent = null) =>
         new(id, parent, name, "#000000", type, null, 0, false, PinScope.None, 0, false,
             ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);

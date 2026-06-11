@@ -30,8 +30,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     // ---- column workspace state (nav-model) ----
 
     internal const string OpenColumnsSettingKey = "ui.open_columns";
+    internal const string LastClosedColumnSettingKey = "ui.last_closed_column";
     private readonly List<HabitColumn> _openOrder = [];
     private bool _restoringColumns;
+    private HabitColumn _lastClosedColumn = HabitColumn.Cronologia;
+
+    /// <summary>Raised when the user closes the last open view column (host deselects, spec §B.4).</summary>
+    public event EventHandler? AllColumnsClosed;
 
     /// <summary>The Configura column's editor; owned here so the column workspace and the host
     /// window share one instance (MainWindowViewModel.Editor is a passthrough).</summary>
@@ -55,7 +60,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         if (open) { if (!_openOrder.Contains(column)) _openOrder.Add(column); }
         else _openOrder.Remove(column);
-        if (!_restoringColumns) _ = PersistOpenColumnsAsync();
+        if (_restoringColumns) return;
+        _ = PersistOpenColumnsAsync();
+        if (!open)
+        {
+            _lastClosedColumn = column;
+            _ = _appSettings.SetAsync(LastClosedColumnSettingKey, column.ToString()).AsTask();
+            if (Node is not null && !CanonicalOpen().Any())
+                AllColumnsClosed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private Task PersistOpenColumnsAsync()
@@ -75,6 +88,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         // Widths restore must run even when no open-column set was ever persisted.
         await RestoreColumnWidthsAsync(ct).ConfigureAwait(true);
+
+        var lastClosed = await _appSettings.GetAsync(LastClosedColumnSettingKey, ct).ConfigureAwait(true);
+        if (Enum.TryParse<HabitColumn>(lastClosed, out var lastClosedColumn))
+            _lastClosedColumn = lastClosedColumn;
 
         var raw = await _appSettings.GetAsync(OpenColumnsSettingKey, ct).ConfigureAwait(true);
         if (string.IsNullOrWhiteSpace(raw)) return;
@@ -297,9 +314,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Name));
         if (node is null) { QuickAdd = null; return; }
 
-        // Opening a habit with no view columns open: default to Cronologia (nav-model §3.7).
+        // Opening a habit with no view columns open: default to the last closed column (§B.5),
+        // which starts as Cronologia (nav-model §3.7).
         if (!CanonicalOpen().Any())
-            IsCronologiaOpen = true;
+            SetColumnFlag(_lastClosedColumn, true);
 
         // Config is needed for both QuickAdd and TimerControl; fetch once, share.
         var configTask = _configs.GetAsync(node.Id, ct).AsTask();
