@@ -135,6 +135,9 @@ public static class ServiceRegistrar
         // ViewModels.
         services.AddTransient<HomeViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<ViewModels.Settings.GeneralSettingsViewModel>();
+        services.AddTransient<ViewModels.Settings.SettingsWindowViewModel>();
+        services.AddSingleton<ISettingsWindowLauncher, WpfSettingsWindowLauncher>();
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();
         services.AddSingleton<IHabitTemplatePickerLauncher, WpfHabitTemplatePickerLauncher>();
