@@ -140,6 +140,14 @@ public partial class MainWindow : Window
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // Esc closes the most recently opened view column of the habit workspace (nav-model §3.5).
+        if (e.Key == Key.Escape && _viewModel.Home.SelectedRow is not null)
+        {
+            _viewModel.HabitScreen.CloseLastColumn();
+            e.Handled = true;
+            return;
+        }
+
         // Ctrl+1/2/3 select a Home sub-tab (via the XAML KeyBindings) AND return to the
         // Home workspace. We only switch the workspace here and leave e.Handled false so
         // the tab KeyBinding still fires. Ctrl+4 (Charts) is handled by its own KeyBinding.
