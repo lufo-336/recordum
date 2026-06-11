@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen.Calendar;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
@@ -23,7 +24,87 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IReferenceDataQueryService _refData;
     private readonly IHabitConfigService _configs;
     private readonly IClock _clock;
+    private readonly IAppSettingService _appSettings;
     private readonly List<IDisposable> _subscriptions = [];
+
+    // ---- column workspace state (nav-model) ----
+
+    internal const string OpenColumnsSettingKey = "ui.open_columns";
+    private readonly List<HabitColumn> _openOrder = [];
+    private bool _restoringColumns;
+
+    /// <summary>The Configura column's editor; owned here so the column workspace and the host
+    /// window share one instance (MainWindowViewModel.Editor is a passthrough).</summary>
+    public HabitEditorViewModel Editor { get; }
+
+    [ObservableProperty] private bool _isCronologiaOpen;
+    [ObservableProperty] private bool _isDettaglioOpen;
+    [ObservableProperty] private bool _isNoteOpen;
+    [ObservableProperty] private bool _isConfiguraOpen;
+
+    partial void OnIsCronologiaOpenChanged(bool value) => OnColumnFlag(HabitColumn.Cronologia, value);
+    partial void OnIsDettaglioOpenChanged(bool value) => OnColumnFlag(HabitColumn.Dettaglio, value);
+    partial void OnIsNoteOpenChanged(bool value) => OnColumnFlag(HabitColumn.Note, value);
+    partial void OnIsConfiguraOpenChanged(bool value)
+    {
+        OnColumnFlag(HabitColumn.Configura, value);
+        if (value && !_restoringColumns) ConfigureRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnColumnFlag(HabitColumn column, bool open)
+    {
+        if (open) { if (!_openOrder.Contains(column)) _openOrder.Add(column); }
+        else _openOrder.Remove(column);
+        if (!_restoringColumns) _ = PersistOpenColumnsAsync();
+    }
+
+    private Task PersistOpenColumnsAsync()
+        => _appSettings.SetAsync(OpenColumnsSettingKey,
+            string.Join(",", CanonicalOpen().Select(c => c.ToString()))).AsTask();
+
+    private IEnumerable<HabitColumn> CanonicalOpen()
+    {
+        if (IsCronologiaOpen) yield return HabitColumn.Cronologia;
+        if (IsDettaglioOpen) yield return HabitColumn.Dettaglio;
+        if (IsNoteOpen) yield return HabitColumn.Note;
+        if (IsConfiguraOpen) yield return HabitColumn.Configura;
+    }
+
+    /// <summary>Restores the persisted open-column set (call once at startup, before the first load).</summary>
+    public async Task RestoreOpenColumnsAsync(CancellationToken ct = default)
+    {
+        var raw = await _appSettings.GetAsync(OpenColumnsSettingKey, ct).ConfigureAwait(true);
+        if (string.IsNullOrWhiteSpace(raw)) return;
+        _restoringColumns = true;
+        try
+        {
+            foreach (var token in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                if (Enum.TryParse<HabitColumn>(token, out var c))
+                    SetColumnFlag(c, true);
+        }
+        finally { _restoringColumns = false; }
+    }
+
+    private void SetColumnFlag(HabitColumn column, bool open)
+    {
+        switch (column)
+        {
+            case HabitColumn.Cronologia: IsCronologiaOpen = open; break;
+            case HabitColumn.Dettaglio: IsDettaglioOpen = open; break;
+            case HabitColumn.Note: IsNoteOpen = open; break;
+            case HabitColumn.Configura: IsConfiguraOpen = open; break;
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleColumn(HabitColumn column) => SetColumnFlag(column, !CanonicalOpen().Contains(column));
+
+    /// <summary>Esc: closes the most recently opened column.</summary>
+    public void CloseLastColumn()
+    {
+        if (_openOrder.Count == 0) return;
+        SetColumnFlag(_openOrder[^1], false);
+    }
 
     [ObservableProperty] private HabitNode? _node;
 
@@ -62,8 +143,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IHourlyDistributionQueryService hourly,
         IClock clock,
         IEventBus events,
-        IWebView2Availability availability)
+        IWebView2Availability availability,
+        IAppSettingService appSettings,
+        HabitEditorViewModel editor)
     {
+        ArgumentNullException.ThrowIfNull(appSettings);
+        ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
@@ -83,6 +168,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _refData = refData;
         _configs = configs;
         _clock = clock;
+        _appSettings = appSettings;
+        Editor = editor;
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData);
         DayCompletions = new CompletionListViewModel(completions, metrics, refData);
@@ -134,6 +221,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasNode));
         OnPropertyChanged(nameof(Name));
         if (node is null) { QuickAdd = null; return; }
+
+        // Opening a habit with no view columns open: default to Cronologia (nav-model §3.7).
+        if (!CanonicalOpen().Any())
+            IsCronologiaOpen = true;
 
         // Config is needed for both QuickAdd and TimerControl; fetch once, share.
         var configTask = _configs.GetAsync(node.Id, ct).AsTask();
@@ -366,7 +457,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void OpenConfigure() => ConfigureRequested?.Invoke(this, EventArgs.Empty);
+    private void OpenConfigure()
+    {
+        // Idempotent: opening when already open still re-raises so the host reloads the editor.
+        if (IsConfiguraOpen) ConfigureRequested?.Invoke(this, EventArgs.Empty);
+        else IsConfiguraOpen = true; // the flag's change handler raises ConfigureRequested
+    }
 
     [RelayCommand]
     private void Export() => ExportRequested?.Invoke(this, EventArgs.Empty);

@@ -40,11 +40,17 @@ public class HabitScreenViewModelTests
         clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
         bus = new FakeEventBus();
         noteSvc = new FakeNoteService();
+        var configs = new FakeHabitConfigService();
+        var goals = new FakeGoalService();
+        var settings = new FakeAppSettingService();
+        var editor = new Recordum.WPF.ViewModels.HabitEditor.HabitEditorViewModel(
+            nodes, configs, goals, metrics, new FakeNotificationService(), new FakeTagService(),
+            settings, new FakeReferenceData(), new Recordum.WPF.Services.RecentColorStore(settings));
         return new HabitScreenViewModel(
-            nodes, completions, timers, metrics, new FakeReferenceData(), new FakeHabitConfigService(),
-            noteSvc, new FakeGoalService(), new IntensityRampResolver(),
+            nodes, completions, timers, metrics, new FakeReferenceData(), configs,
+            noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            clock, bus, new FakeWebView2Availability(true));
+            clock, bus, new FakeWebView2Availability(true), settings, editor);
     }
 
     private static HabitScreenViewModel CreateSut(

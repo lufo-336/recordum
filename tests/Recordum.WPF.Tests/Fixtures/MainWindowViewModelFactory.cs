@@ -39,7 +39,7 @@ public static class MainWindowViewModelFactory
             nodes, completions, ats, metrics, new FakeReferenceData(), configs, new FakeNoteService(),
             goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            clock, new FakeEventBus(), new FakeWebView2Availability());
+            clock, new FakeEventBus(), new FakeWebView2Availability(), settings, editor);
         var charts = new ChartsWorkspaceViewModel(
             new FakeChartService(), new FakeChartQueryService(),
             new ExtensionPointRegistry(),
