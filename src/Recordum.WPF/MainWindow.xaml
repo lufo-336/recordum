@@ -17,6 +17,59 @@
         WindowStartupLocation="CenterScreen"
         PreviewKeyDown="OnWindowPreviewKeyDown"
         Background="{DynamicResource Brush.Background}">
+    <!-- Custom chrome: dark title bar that blends with the theme. CaptionHeight gives drag /
+         double-click-maximize on the 36px bar; ResizeBorderThickness keeps native resize + snap;
+         UseAeroCaptionButtons=False because we draw our own min/max/close. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="36" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+    <Window.Resources>
+        <Style x:Key="Caption.Icon" TargetType="Path">
+            <Setter Property="Width" Value="11"/>
+            <Setter Property="Height" Value="11"/>
+            <Setter Property="Stretch" Value="Uniform"/>
+            <Setter Property="Stroke" Value="{DynamicResource Brush.Text}"/>
+            <Setter Property="StrokeThickness" Value="1.4"/>
+        </Style>
+        <Style x:Key="Caption.Button" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Close gets the conventional red hover. -->
+        <Style x:Key="Caption.CloseButton" TargetType="Button" BasedOn="{StaticResource Caption.Button}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#c42b1c"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Window.InputBindings>
         <KeyBinding Key="D1" Modifiers="Control"
                     Command="{Binding Home.SwitchTabCommand}"
@@ -32,98 +85,114 @@
         <KeyBinding Key="D5" Modifiers="Control"
                     Command="{Binding ShowBackupHistoryCommand}"/>
     </Window.InputBindings>
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="36"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top-level workspace nav -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,4">
-            <RadioButton Content="{x:Static res:Strings.Workspace_Home}" GroupName="ws"
-                         IsChecked="{Binding IsHomeWorkspace, Mode=OneWay}"
-                         Command="{Binding ShowHomeCommand}"/>
-            <RadioButton Content="{x:Static res:Strings.Workspace_Charts}" GroupName="ws" Margin="8,0,0,0"
-                         IsChecked="{Binding IsChartsWorkspace, Mode=OneWay}"
-                         Command="{Binding ShowChartsCommand}"/>
-            <Button Content="{x:Static res:Strings.Export_Library}"
-                    Command="{Binding ExportLibraryCommand}"
-                    Margin="16,0,0,0"/>
-            <Menu Background="Transparent" Margin="16,0,0,0">
-                <MenuItem Header="{x:Static res:Strings.Workspace_Backup}">
-                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_Create}"   Command="{Binding BackupCreateCommand}"/>
-                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_Restore}"  Command="{Binding BackupRestoreCommand}"/>
-                    <Separator/>
-                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_History}"  Command="{Binding ShowBackupHistoryCommand}"/>
-                    <MenuItem Header="{x:Static res:Strings.Backup_Menu_Settings}" Command="{Binding BackupSettingsCommand}"/>
-                </MenuItem>
-                <MenuItem Header="{x:Static res:Strings.Workspace_Help}">
-                    <MenuItem Header="{x:Static res:Strings.Diagnostic_Menu_Open}" Command="{Binding ShowDiagnosticInfoCommand}"/>
-                </MenuItem>
-                <!-- Bridge entry point: the whole top bar is replaced by the icon ribbon in Fase B. -->
-                <MenuItem Header="{x:Static res:Strings.Settings_Title}" Command="{Binding ShowSettingsCommand}"/>
-            </Menu>
-        </StackPanel>
-
-        <!-- Content area: Home panes OR Charts workspace -->
-        <Grid Grid.Row="1">
-            <Grid Visibility="{Binding IsHomeWorkspace, Converter={StaticResource BoolToVisible}}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <!-- MaxWidth matches MainWindowViewModel.MaxHabitScreenWidth so the splitter stops at the
-                         cap instead of overshooting and snapping back on release. MinWidth stays 0 so the
-                         column can still collapse to 0 when no habit is selected. -->
-                    <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0" MaxWidth="1100"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition x:Name="EditorPaneColumn" Width="0" MinWidth="0"/>
-                </Grid.ColumnDefinitions>
-                <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
-                <GridSplitter x:Name="HabitScreenSplitter"
-                              Grid.Column="1"
-                              Width="4"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext"
-                              Background="{DynamicResource Brush.Border}"
-                              ShowsPreview="False"
-                              Visibility="{Binding Home.SelectedRow,
-                                           RelativeSource={RelativeSource AncestorType=Window},
-                                           Converter={StaticResource NullToVisibility}}"
-                              DragCompleted="OnHabitScreenSplitterDragCompleted"/>
-                <vhs:HabitScreen x:Name="HabitScreenContent"
-                                 Grid.Column="2"
-                                 ClipToBounds="True"
-                                 DataContext="{Binding HabitScreen}"
-                                 Visibility="{Binding Home.SelectedRow,
-                                              RelativeSource={RelativeSource AncestorType=Window},
-                                              Converter={StaticResource NullToVisibility}}"/>
-                <GridSplitter x:Name="EditorPaneSplitter"
-                              Grid.Column="3"
-                              Width="4"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext"
-                              Background="{DynamicResource Brush.Border}"
-                              ShowsPreview="False"
-                              Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"
-                              DragCompleted="OnEditorPaneSplitterDragCompleted"/>
-                <v:EditorPane x:Name="EditorPaneContent"
-                              Grid.Column="4"
-                              ClipToBounds="True"
-                              DataContext="{Binding Editor}"
-                              Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"/>
+        <!-- Custom title bar -->
+        <Border Grid.Row="0" Background="{DynamicResource Brush.Surface}"
+                BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                    <Path Width="15" Height="15" Stretch="Uniform" Margin="0,0,8,0"
+                          Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.8"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                          Data="{StaticResource Icon.Activity}"/>
+                    <TextBlock Text="{x:Static res:Strings.AppTitle}" VerticalAlignment="Center"
+                               FontWeight="SemiBold" FontSize="12.5"
+                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="MinButton" Style="{StaticResource Caption.Button}" Click="OnMinimizeClick"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            AutomationProperties.Name="Minimize">
+                        <Path Style="{StaticResource Caption.Icon}" Data="M5 12h14"/>
+                    </Button>
+                    <Button x:Name="MaxButton" Style="{StaticResource Caption.Button}" Click="OnMaximizeRestoreClick"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            AutomationProperties.Name="Maximize">
+                        <Path x:Name="MaxIcon" Style="{StaticResource Caption.Icon}" Data="M5 5h14v14H5z"/>
+                    </Button>
+                    <Button x:Name="CloseButton" Style="{StaticResource Caption.CloseButton}" Click="OnCloseClick"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            AutomationProperties.Name="Close">
+                        <Path Style="{StaticResource Caption.Icon}" Data="M6 6l12 12 M18 6L6 18"/>
+                    </Button>
+                </StackPanel>
             </Grid>
+        </Border>
 
-            <v:ChartsView DataContext="{Binding Charts}"
-                          Visibility="{Binding DataContext.IsChartsWorkspace,
-                                       RelativeSource={RelativeSource AncestorType=Window},
-                                       Converter={StaticResource BoolToVisible}}"/>
-            <vb:BackupHistoryView DataContext="{Binding BackupHistory}"
-                                  Visibility="{Binding DataContext.IsBackupHistoryWorkspace,
+        <!-- Content: icon ribbon | workspaces -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="44"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <v:WorkspaceRibbon Grid.Column="0"/>
+
+            <!-- Workspaces: Home panes OR Charts OR Backup history -->
+            <Grid Grid.Column="1">
+                <Grid Visibility="{Binding IsHomeWorkspace, Converter={StaticResource BoolToVisible}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- MaxWidth matches MainWindowViewModel.MaxHabitScreenWidth so the splitter stops at the
+                             cap instead of overshooting and snapping back on release. MinWidth stays 0 so the
+                             column can still collapse to 0 when no habit is selected. -->
+                        <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0" MaxWidth="1100"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition x:Name="EditorPaneColumn" Width="0" MinWidth="0"/>
+                    </Grid.ColumnDefinitions>
+                    <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
+                    <GridSplitter x:Name="HabitScreenSplitter"
+                                  Grid.Column="1"
+                                  Width="4"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ResizeBehavior="PreviousAndNext"
+                                  Background="{DynamicResource Brush.Border}"
+                                  ShowsPreview="False"
+                                  Visibility="{Binding Home.SelectedRow,
                                                RelativeSource={RelativeSource AncestorType=Window},
-                                               Converter={StaticResource BoolToVisible}}"/>
+                                               Converter={StaticResource NullToVisibility}}"
+                                  DragCompleted="OnHabitScreenSplitterDragCompleted"/>
+                    <vhs:HabitScreen x:Name="HabitScreenContent"
+                                     Grid.Column="2"
+                                     ClipToBounds="True"
+                                     DataContext="{Binding HabitScreen}"
+                                     Visibility="{Binding Home.SelectedRow,
+                                                  RelativeSource={RelativeSource AncestorType=Window},
+                                                  Converter={StaticResource NullToVisibility}}"/>
+                    <GridSplitter x:Name="EditorPaneSplitter"
+                                  Grid.Column="3"
+                                  Width="4"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ResizeBehavior="PreviousAndNext"
+                                  Background="{DynamicResource Brush.Border}"
+                                  ShowsPreview="False"
+                                  Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"
+                                  DragCompleted="OnEditorPaneSplitterDragCompleted"/>
+                    <v:EditorPane x:Name="EditorPaneContent"
+                                  Grid.Column="4"
+                                  ClipToBounds="True"
+                                  DataContext="{Binding Editor}"
+                                  Visibility="{Binding Editor.HasNode, Converter={StaticResource BoolToVisible}}"/>
+                </Grid>
+
+                <v:ChartsView DataContext="{Binding Charts}"
+                              Visibility="{Binding DataContext.IsChartsWorkspace,
+                                           RelativeSource={RelativeSource AncestorType=Window},
+                                           Converter={StaticResource BoolToVisible}}"/>
+                <vb:BackupHistoryView DataContext="{Binding BackupHistory}"
+                                      Visibility="{Binding DataContext.IsBackupHistoryWorkspace,
+                                                   RelativeSource={RelativeSource AncestorType=Window},
+                                                   Converter={StaticResource BoolToVisible}}"/>
+            </Grid>
         </Grid>
 
         <vt:TimerStatusBar Grid.Row="2" DataContext="{Binding TimerStatusBar}"/>

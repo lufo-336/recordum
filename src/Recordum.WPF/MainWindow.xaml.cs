@@ -55,6 +55,29 @@ public partial class MainWindow : Window
         ApplyHabitScreenWidth();
     }
 
+    // ---- custom title bar (WindowChrome) ----
+
+    private void OnMinimizeClick(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+
+    private void OnMaximizeRestoreClick(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(this);
+        else SystemCommands.MaximizeWindow(this);
+    }
+
+    private void OnCloseClick(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        // With a custom chrome a maximized window overflows the work area by the resize border:
+        // compensate with a margin, and swap the maximize glyph for the restore one.
+        RootGrid.Margin = WindowState == WindowState.Maximized ? new Thickness(7) : new Thickness(0);
+        MaxIcon.Data = Geometry.Parse(WindowState == WindowState.Maximized
+            ? "M8 5h11v11 M5 8h11v11H5z"   // restore: two offset squares
+            : "M5 5h14v14H5z");            // maximize: single square
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainWindowViewModel.EditorPaneWidth))
