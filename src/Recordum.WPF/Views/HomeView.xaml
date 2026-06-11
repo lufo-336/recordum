@@ -44,10 +44,19 @@
                        Foreground="{DynamicResource Brush.Text}"/>
             <Button Grid.Column="2"
                     Content="{x:Static res:Strings.Home_NewHabit_Button}"
-                    Command="{Binding OpenNewHabitCommand}"
+                    Click="OnNewMenuClick"
                     Margin="0,0,16,0"
                     Padding="12,4"
-                    VerticalAlignment="Center"/>
+                    VerticalAlignment="Center">
+                <Button.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Habit}"
+                                  Command="{Binding OpenNewHabitCommand}"/>
+                        <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Group}"
+                                  Command="{Binding CreateGroupCommand}"/>
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
             <!-- View tabs as a segmented pill group (Fase C). -->
             <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Background="{DynamicResource Brush.Background}" CornerRadius="6" Padding="3">

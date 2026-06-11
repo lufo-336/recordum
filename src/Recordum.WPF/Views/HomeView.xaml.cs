@@ -14,6 +14,17 @@ public partial class HomeView : UserControl
         InitializeComponent();
     }
 
+    // ＋Nuova▾: the button opens its ContextMenu as a dropdown (same pattern as the ribbon
+    // Backup menu). The menu doesn't inherit DataContext, so pass it explicitly.
+    private void OnNewMenuClick(object sender, RoutedEventArgs e)
+    {
+        var button = (Button)sender;
+        button.ContextMenu!.DataContext = button.DataContext;
+        button.ContextMenu.PlacementTarget = button;
+        button.ContextMenu.Placement = PlacementMode.Bottom;
+        button.ContextMenu.IsOpen = true;
+    }
+
     private void OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is not HomeViewModel home) return;
