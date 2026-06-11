@@ -257,6 +257,9 @@ Details: {0}</value>
   <data name="HabitTemplatePicker.YourTemplates" xml:space="preserve">
     <value>Your templates</value>
   </data>
+  <data name="HabitTemplatePicker.PredefinedTemplates" xml:space="preserve">
+    <value>Predefined templates</value>
+  </data>
   <data name="HabitTemplatePicker.Rename" xml:space="preserve">
     <value>Rename</value>
   </data>

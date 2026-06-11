@@ -16,7 +16,7 @@ public class HabitTemplatePickerViewModelTests
     private HabitTemplatePickerViewModel CreateSut() => new(_templates, _nodes);
 
     [Fact]
-    public async Task LoadAsync_lists_blanks_plus_official_templates()
+    public async Task LoadAsync_separates_pinned_actions_from_official_templates()
     {
         for (var i = 0; i < 8; i++)
             await _templates.CreateAsync(new HabitTemplate { Name = $"t{i}", IsOfficial = true });
@@ -24,9 +24,14 @@ public class HabitTemplatePickerViewModelTests
 
         await sut.LoadAsync();
 
-        sut.Options.Should().HaveCount(10);
-        sut.Options[0].Name.Should().Be(Strings.HabitTemplatePicker_FromScratch);
-        sut.Options[1].Name.Should().Be(Strings.HabitTemplatePicker_BlankGroup);
+        // The two primary actions live in their own pinned collection, out of the collapsible sections.
+        sut.Actions.Select(a => a.Name).Should().Equal(
+            Strings.HabitTemplatePicker_FromScratch, Strings.HabitTemplatePicker_BlankGroup);
+        sut.Actions.Should().OnlyContain(a => a.TemplateId == null);
+
+        // Official templates only — no action entries mixed in.
+        sut.OfficialTemplates.Should().HaveCount(8);
+        sut.OfficialTemplates.Should().OnlyContain(o => o.TemplateId != null && !o.IsCustom);
         sut.CustomOptions.Should().BeEmpty();
     }
 
@@ -39,7 +44,7 @@ public class HabitTemplatePickerViewModelTests
 
         await sut.LoadAsync();
 
-        sut.Options.Select(o => o.Name).Should().Contain("official").And.NotContain("mine");
+        sut.OfficialTemplates.Select(o => o.Name).Should().Contain("official").And.NotContain("mine");
         sut.CustomOptions.Should().ContainSingle(o => o.Name == "mine" && o.IsCustom);
     }
 
@@ -79,7 +84,7 @@ public class HabitTemplatePickerViewModelTests
         var sut = CreateSut();
         await sut.LoadAsync(parentId: parentId);
 
-        var option = sut.Options.Single(o => o.TemplateId == tId);
+        var option = sut.OfficialTemplates.Single(o => o.TemplateId == tId);
         await sut.PickCommand.ExecuteAsync(option);
 
         sut.CreatedHabitNodeId.Should().NotBeNull();
@@ -94,7 +99,7 @@ public class HabitTemplatePickerViewModelTests
         var sut = CreateSut();
         await sut.LoadAsync(parentId: parentId);
 
-        var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_FromScratch);
+        var blank = sut.Actions.Single(o => o.Name == Strings.HabitTemplatePicker_FromScratch);
         await sut.PickCommand.ExecuteAsync(blank);
 
         // "Build from scratch" no longer creates a node directly; it signals the host to open the builder.
@@ -110,7 +115,7 @@ public class HabitTemplatePickerViewModelTests
         var sut = CreateSut();
         await sut.LoadAsync();
 
-        var blank = sut.Options.Single(o => o.Name == Strings.HabitTemplatePicker_BlankGroup);
+        var blank = sut.Actions.Single(o => o.Name == Strings.HabitTemplatePicker_BlankGroup);
         await sut.PickCommand.ExecuteAsync(blank);
 
         _nodes.Store[sut.CreatedHabitNodeId!.Value].NodeType.Should().Be(NodeType.Group);

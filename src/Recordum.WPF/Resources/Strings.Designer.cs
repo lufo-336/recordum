@@ -149,6 +149,7 @@ public static class Strings
     public static string HabitTemplatePicker_BlankGroup_Description => Get("HabitTemplatePicker.BlankGroup.Description");
     public static string HabitTemplatePicker_FromScratch => Get("HabitTemplatePicker.FromScratch");
     public static string HabitTemplatePicker_YourTemplates => Get("HabitTemplatePicker.YourTemplates");
+    public static string HabitTemplatePicker_PredefinedTemplates => Get("HabitTemplatePicker.PredefinedTemplates");
     public static string HabitTemplatePicker_Rename => Get("HabitTemplatePicker.Rename");
     public static string HabitTemplatePicker_Delete => Get("HabitTemplatePicker.Delete");
 

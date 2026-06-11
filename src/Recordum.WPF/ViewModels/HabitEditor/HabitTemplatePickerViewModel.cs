@@ -22,10 +22,16 @@ public sealed partial class HabitTemplatePickerViewModel(
     private readonly IHabitTemplateService _templates = templates;
     private readonly IHabitNodeService _nodes = nodes;
 
-    public ObservableCollection<PickerOption> Options { get; } = new();
+    /// <summary>The two primary create actions ("build from scratch", "blank group"), pinned at the top
+    /// of the picker outside the collapsible template sections.</summary>
+    public ObservableCollection<PickerOption> Actions { get; } = new();
+
+    /// <summary>Official/built-in templates (<see cref="HabitTemplate.IsOfficial"/> == true), shown in the
+    /// collapsible "Predefined templates" section.</summary>
+    public ObservableCollection<PickerOption> OfficialTemplates { get; } = new();
 
     /// <summary>User-saved templates (<see cref="HabitTemplate.IsOfficial"/> == false), shown in a
-    /// separate "Your templates" section with rename/delete affordances.</summary>
+    /// separate collapsible "Your templates" section with rename/delete affordances.</summary>
     public ObservableCollection<PickerOption> CustomOptions { get; } = new();
 
     [ObservableProperty] private Guid? _createdHabitNodeId;
@@ -40,15 +46,16 @@ public sealed partial class HabitTemplatePickerViewModel(
     public async Task LoadAsync(Guid? parentId = null, CancellationToken ct = default)
     {
         ParentForBuilder = parentId;
-        Options.Clear();
+        Actions.Clear();
+        OfficialTemplates.Clear();
         CustomOptions.Clear();
-        Options.Add(new PickerOption(Strings.HabitTemplatePicker_FromScratch, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
-        Options.Add(new PickerOption(Strings.HabitTemplatePicker_BlankGroup, Strings.HabitTemplatePicker_BlankGroup_Description, null, NodeType.Group, parentId));
+        Actions.Add(new PickerOption(Strings.HabitTemplatePicker_FromScratch, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
+        Actions.Add(new PickerOption(Strings.HabitTemplatePicker_BlankGroup, Strings.HabitTemplatePicker_BlankGroup_Description, null, NodeType.Group, parentId));
         foreach (var t in await _templates.ListAsync(ct))
         {
             var option = new PickerOption(t.Name, t.Description ?? "", t.Id, NodeType.Habit, parentId, !t.IsOfficial);
             if (t.IsOfficial)
-                Options.Add(option);
+                OfficialTemplates.Add(option);
             else
                 CustomOptions.Add(option);
         }
