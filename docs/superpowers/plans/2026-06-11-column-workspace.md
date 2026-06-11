@@ -496,7 +496,7 @@ Rimuovere anche il bottone "Configura" dall'header del soggetto (riga ~585: ora 
 
 ### Task 6: verifica visiva + tracker
 
-- [ ] skill `run` + checklist (verifica visiva utente pendente): chip toggle aprono/chiudono colonne (ordine canonico stabile); default Cronologia; ✕ e Esc; set mantenuto cambiando habit (rebind contenuti); persistenza tra riavvii; Configura carica l'editor (progressive disclosure intatta, autosave ok); scroll orizzontale con 3+ colonne; click-a-vuoto deseleziona e chiude il workspace; export funziona; due temi.
+- [x] skill `run` + checklist (utente: ok 2026-06-11): chip toggle aprono/chiudono colonne (ordine canonico stabile); default Cronologia; ✕ e Esc; set mantenuto cambiando habit (rebind contenuti); persistenza tra riavvii; Configura carica l'editor (progressive disclosure intatta, autosave ok); scroll orizzontale con 3+ colonne; click-a-vuoto deseleziona e chiude il workspace; export funziona; due temi.
 - [x] aggiornare `docs/phase-4-issues.md` + memoria (nav-model parte 1 fatta; parte 2 = gruppi-basi ＋Nuova▾ + drag-drop evidente); commit docs.
 
 ---

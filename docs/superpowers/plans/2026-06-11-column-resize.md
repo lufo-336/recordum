@@ -301,7 +301,7 @@ git commit -m "feat(wpf): drag-resizable workspace columns with double-click res
 
 ### Task 3: verifica visiva + tracker
 
-- [ ] skill `run` + checklist: drag su ogni confine (cursore ↔, hover accent); clamp visibile a 320/1000; doppio-click reset; larghezze persistite tra riavvii; colonne chiuse/riaperte mantengono la larghezza; scroll orizzontale coerente; due temi.
+- [x] skill `run` + checklist (utente: ok 2026-06-11): drag su ogni confine (cursore ↔, hover accent); clamp visibile a 320/1000; doppio-click reset; larghezze persistite tra riavvii; colonne chiuse/riaperte mantengono la larghezza; scroll orizzontale coerente; due temi.
 - [x] aggiornare `docs/phase-4-issues.md` (resize colonne fatto, chiude nav-model §8 larghezze) + memoria; commit docs.
 
 ---
