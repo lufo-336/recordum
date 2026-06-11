@@ -143,30 +143,5 @@ public class DiagnosticInfoViewModelTests
         Entry = "entry.dll",
     };
 
-    // ---- fakes ----
-
-    private sealed class FakeBackupStoragePaths : IBackupStoragePaths
-    {
-        public string DatabasePath => "C:/fake/recordum.db";
-        public string KeyFilePath => "C:/fake/db.key";
-        public string SaltFilePath => "C:/fake/db.salt";
-        public string AttachmentsDirectory => "C:/fake/attachments";
-        public string BackupsDirectory => "C:/fake/backups";
-        public string AutoBackupKeyPath => "C:/fake/autobackup.key";
-    }
-
-    private sealed class FakePluginManagerDiag : IPluginManager
-    {
-        public List<PluginManifest> Manifests { get; } = [];
-        public Task EnableAsync(PluginManifest manifest, CancellationToken ct = default) => Task.CompletedTask;
-        public Task DisableAsync(string pluginId, CancellationToken ct = default) => Task.CompletedTask;
-        public IReadOnlyCollection<string> ListEnabled() => [];
-        public IReadOnlyList<PluginManifest> ListActivatedManifests() => Manifests;
-    }
-
-    private sealed class FakeClipboardDiag : IClipboard
-    {
-        public string? LastText { get; private set; }
-        public void SetText(string text) => LastText = text;
-    }
+    // Fakes promoted to Fixtures/FakeDiagnosticDependencies.cs (shared with settings-window tests).
 }
