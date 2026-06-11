@@ -6,6 +6,16 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Stato al 2026-06-11 (sera) — rimodernizzazione UI: Fase A (SettingsWindow) eseguita
+
+**Piano master**: spec `docs/superpowers/specs/2026-06-11-ui-modernization-plan-design.md` (riferimento Obsidian; decisioni: solo guscio ora, ribbon variante B, categorie future disabilitate = deroga approvata al no-placeholder, title bar custom, ordine A→B→C; nav-model resta parcheggiato come fase 4 del piano).
+
+**Fase A — Finestra Impostazioni unificata**: piano `docs/superpowers/plans/2026-06-11-settings-window.md` eseguito (8 task, commit `b6d5231`→`02a0a54`). `SettingsWindow` stile Obsidian (categorie sx: Aspetto/Generale/Backup/Diagnostica + Sync/Plugin/AI disabled "In arrivo"); nuova UI per `daily_reset_time` (`GeneralSettingsViewModel`); launcher `ISettingsWindowLauncher.ShowAsync(categoria?)`; menu ponte "Impostazioni"; **eliminati** SettingsPopup (orfano), BackupSettingsDialog, DiagnosticInfoDialog, IDiagnosticInfoLauncher, `IBackupDialogLauncher.ShowSettingsAsync`. 7 icone Lucide chrome nuove. Suite WPF **457 verdi** (incl. flaky), build 0/0. **Stato: `fixed`, verifica visiva utente in corso.** Prossimo: **Fase B** (title bar custom + ribbon + status bar).
+
+**Picker template (#8 parte 1)** — `fixed` (commit `20916a6`): sezioni "Modelli predefiniti"/"I tuoi modelli" collassabili (Expander, conteggio in header, azioni pinnate in alto, niente persistenza stato). Spec `2026-06-11-template-picker-collapsible-sections-design.md`. **Verifica visiva utente: da fare.**
+
+---
+
 ## Stato al 2026-06-11 (continuazione) — calendario chiuso + rifiniture minori esaurite
 
 **Calendario (filone #3) — chiuso.** Commit `3c97ead`:
