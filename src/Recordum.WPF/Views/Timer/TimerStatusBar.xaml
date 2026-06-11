@@ -10,7 +10,8 @@
     <Border BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource Brush.Border}"
             Background="{DynamicResource Brush.Surface}">
-        <ItemsControl ItemsSource="{Binding Rows}" Padding="12,6">
+        <!-- Compact status-bar metrics (Fase B shell restyle): small chips, small type. -->
+        <ItemsControl ItemsSource="{Binding Rows}" Padding="10,3">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal"/>
@@ -18,39 +19,41 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Margin="0,0,12,0"
-                            Padding="8,4"
-                            CornerRadius="4"
+                    <Border Margin="0,0,8,0"
+                            Padding="6,2"
+                            CornerRadius="3"
                             BorderThickness="1"
                             BorderBrush="{DynamicResource Brush.Border}"
                             Background="{DynamicResource Brush.SurfaceElevated}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{Binding HabitName}"
                                        FontWeight="SemiBold"
-                                       Margin="0,0,8,0"
+                                       FontSize="{StaticResource FontSize.Small}"
+                                       Margin="0,0,6,0"
                                        VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding ElapsedDisplay}"
                                        FontFamily="Consolas"
-                                       Margin="0,0,8,0"
+                                       FontSize="11.5"
+                                       Margin="0,0,6,0"
                                        VerticalAlignment="Center"/>
                             <Button Content="⏸"
                                     Command="{Binding PauseCommand}"
-                                    Width="24" Height="24"
-                                    Padding="0"
+                                    Width="20" Height="20"
+                                    Padding="0" FontSize="11"
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Visibility="{Binding IsPaused, Converter={StaticResource InvBoolToVisible}}"/>
                             <Button Content="▶"
                                     Command="{Binding ResumeCommand}"
-                                    Width="24" Height="24"
-                                    Padding="0"
+                                    Width="20" Height="20"
+                                    Padding="0" FontSize="11"
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Visibility="{Binding IsPaused, Converter={StaticResource BoolToVisible}}"/>
                             <Button Content="■"
                                     Command="{Binding StopCommand}"
-                                    Width="24" Height="24"
-                                    Padding="0"
+                                    Width="20" Height="20"
+                                    Padding="0" FontSize="11"
                                     Background="Transparent"
                                     BorderThickness="0"/>
                         </StackPanel>
