@@ -22,6 +22,11 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// </summary>
     public event EventHandler? Changed;
 
+    /// <summary>Raised when the ▾/▸ toggle changes (HomeViewModel rebuilds the visible rows).</summary>
+    public event EventHandler? ExpandToggled;
+
+    partial void OnIsExpandedChanged(bool value) => ExpandToggled?.Invoke(this, EventArgs.Empty);
+
     public bool CanQuickAction => !IsGroup && HabitType is not null && _quickActionSelector is not null;
 
     public void AttachQuickActionSelector(QuickActionHandlerSelector selector)

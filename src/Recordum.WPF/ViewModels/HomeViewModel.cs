@@ -23,6 +23,8 @@ public sealed partial class HomeViewModel : ObservableObject
     private readonly QuickActionHandlerSelector? _quickActions;
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
+    private readonly HashSet<Guid> _collapsedGroupIds = [];
+    private bool _rebuilding;
 
     [ObservableProperty] private HomeTab _activeTab = HomeTab.Active;
     [ObservableProperty] private HomeState _state = HomeState.Loading;
@@ -236,14 +238,24 @@ public sealed partial class HomeViewModel : ObservableObject
             var needle = SearchText.Trim();
             q = q.Where(r => r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
-        foreach (var (row, level) in OrderHierarchically(q.ToList()))
+        _rebuilding = true;
+        try
         {
-            var vm = new HomeRowViewModel(row, level, _nodes, _purge) { CurrentTab = ActiveTab };
-            if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
-            vm.Changed += OnRowChanged;
-            vm.QuickActionExecuted += OnRowQuickActionExecuted;
-            Rows.Add(vm);
+            foreach (var (row, level) in OrderHierarchically(q.ToList()))
+            {
+                var vm = new HomeRowViewModel(row, level, _nodes, _purge)
+                {
+                    CurrentTab = ActiveTab,
+                    IsExpanded = !_collapsedGroupIds.Contains(row.HabitNodeId),
+                };
+                if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
+                vm.Changed += OnRowChanged;
+                vm.QuickActionExecuted += OnRowQuickActionExecuted;
+                vm.ExpandToggled += OnRowExpandToggled;
+                Rows.Add(vm);
+            }
         }
+        finally { _rebuilding = false; }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
         foreach (var r in Rows) r.IsSelected = ReferenceEquals(r, SelectedRow);
     }
@@ -267,9 +279,20 @@ public sealed partial class HomeViewModel : ObservableObject
                 yield return pair;
     }
 
+    // ▾/▸ toggle: track the collapsed set and rebuild the visible rows. The guard skips
+    // the notifications fired by the IsExpanded initializer while Rebuild constructs rows.
+    private void OnRowExpandToggled(object? sender, EventArgs e)
+    {
+        if (_rebuilding || sender is not HomeRowViewModel row || !row.IsGroup) return;
+        if (row.IsExpanded) _collapsedGroupIds.Remove(row.HabitNodeId);
+        else _collapsedGroupIds.Add(row.HabitNodeId);
+        Rebuild();
+    }
+
     private IEnumerable<(HomeTreeRow Row, int Level)> WalkSubtree(HomeTreeRow node, int level, ILookup<Guid?, HomeTreeRow> byParent)
     {
         yield return (node, level);
+        if (_collapsedGroupIds.Contains(node.HabitNodeId)) yield break;
         var children = byParent[node.HabitNodeId].ToList();
         var sortedChildren = ApplySort(children)
             .OrderByDescending(c => c.PinScope == PinScope.Local)

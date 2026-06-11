@@ -481,6 +481,28 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task Collapsing_a_group_hides_descendants_and_survives_reload()
+    {
+        var groupId = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: groupId));
+        _query.HomeRows.Add(SampleRow(name: "child", parent: groupId));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.Rows.Should().HaveCount(2);
+
+        sut.Rows.Single(r => r.IsGroup).IsExpanded = false;   // toggle → rebuild
+
+        sut.Rows.Should().ContainSingle(r => r.HabitNodeId == groupId);
+
+        await sut.LoadCommand.ExecuteAsync(null);             // lo stato sopravvive al reload
+        sut.Rows.Should().ContainSingle(r => r.HabitNodeId == groupId);
+        sut.Rows.Single().IsExpanded.Should().BeFalse();
+
+        sut.Rows.Single(r => r.IsGroup).IsExpanded = true;    // re-espansione
+        sut.Rows.Should().HaveCount(2);
+    }
+
+    [Fact]
     public async Task OpenNewHabit_with_group_selected_passes_group_as_parent()
     {
         var groupId = Guid.NewGuid();
