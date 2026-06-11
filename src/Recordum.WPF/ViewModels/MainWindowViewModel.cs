@@ -78,6 +78,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _settingsLauncher = settingsLauncher;
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
+        Home.GroupCreated += OnHomeGroupCreated;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
         HabitScreen.ExportRequested += OnHabitScreenExportRequested;
     }
@@ -155,7 +156,16 @@ public sealed partial class MainWindowViewModel : ObservableObject
         await HabitScreen.LoadAsync(Home.SelectedRow?.HabitNodeId).ConfigureAwait(true);
         if (Home.SelectedRow is null)
             await Editor.LoadAsync(null).ConfigureAwait(true);
+        else if (HabitScreen.IsConfiguraOpen)
+            // Rebind: with the Configura column open, switching habit must reload the editor
+            // (ConfigureRequested only fires on the closed→open transition).
+            await Editor.LoadAsync(Home.SelectedRow.HabitNodeId).ConfigureAwait(true);
     }
+
+    // New group from ＋Nuova▾: open Configura for the immediate rename. If the column is
+    // already open the flag set is a no-op and the rebind above covers the reload.
+    private void OnHomeGroupCreated(object? sender, Guid id)
+        => HabitScreen.IsConfiguraOpen = true;
 
     // "+" on a habit whose row is already selected: SelectedRow won't change, so reload
     // the workspace explicitly to bring the QuickAdd panel forward.

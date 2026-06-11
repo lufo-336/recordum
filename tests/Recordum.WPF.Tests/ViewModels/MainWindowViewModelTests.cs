@@ -227,6 +227,48 @@ public class MainWindowViewModelTests
         Assert.Equal(AppWorkspace.Home, sut.CurrentWorkspace);
     }
 
+    [Fact]
+    public async Task Switching_habit_with_configura_open_rebinds_the_editor()
+    {
+        var (sut, parts) = CreateSut();
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        parts.Nodes.Store[a] = new HabitNode { Id = a, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a", Color = "#808080" };
+        parts.Nodes.Store[b] = new HabitNode { Id = b, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "b", Color = "#808080" };
+        parts.Query.HomeRows.Add(SampleRow(a, "a"));
+        parts.Query.HomeRows.Add(SampleRow(b, "b"));
+        await sut.InitializeAsync();
+
+        sut.Home.SelectedRow = sut.Home.Rows.Single(r => r.HabitNodeId == a);
+        await Task.Delay(30);
+        sut.HabitScreen.IsConfiguraOpen = true;
+        await Task.Delay(30);
+        sut.Editor.Node!.Id.Should().Be(a);
+
+        sut.Home.SelectedRow = sut.Home.Rows.Single(r => r.HabitNodeId == b);
+        await Task.Delay(30);
+
+        sut.Editor.Node!.Id.Should().Be(b);
+    }
+
+    [Fact]
+    public async Task Creating_a_group_opens_configura_on_the_new_group()
+    {
+        var (sut, parts) = CreateSut();
+        parts.Nodes.OnCreate = draft => parts.Query.HomeRows.Add(SampleRow(draft.Id, draft.Name, type: null));
+        await sut.InitializeAsync();
+
+        await sut.Home.CreateGroupCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+
+        sut.HabitScreen.IsConfiguraOpen.Should().BeTrue();
+        sut.Editor.Node!.NodeType.Should().Be(NodeType.Group);
+    }
+
+    private static HomeTreeRow SampleRow(Guid id, string name, HabitType? type = HabitType.Action, Guid? parent = null) =>
+        new(id, parent, name, "#000000", type, null, 0, false, PinScope.None, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
+
     private static (MainWindowViewModel sut, Parts parts) CreateSut()
     {
         var query = new FakeHabitTreeQueryService();
