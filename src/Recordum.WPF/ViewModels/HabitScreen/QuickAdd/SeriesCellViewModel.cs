@@ -2,6 +2,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Formatting;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
@@ -32,6 +33,18 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedScaleLabel))]
     private int? _selectedScaleIndex; // 0-based across steps
+
+    /// <summary>True per la cella durata (Measured + Seconds): usa DurationText/mask invece di IntegerValue.</summary>
+    public bool IsDuration => Kind == MetricInputKind.Measured && Metric.Type == MetricType.Seconds;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDurationInvalid))]
+    private string? _durationText;
+
+    public bool IsDurationInvalid =>
+        !string.IsNullOrWhiteSpace(DurationText) && !DurationFormat.TryParse(DurationText, out _);
+
+    public void SetDurationSeconds(int seconds) => DurationText = DurationFormat.Format(seconds);
 
     /// <summary>Label for the current slider position (falls back to the scale value when a step has no
     /// label), so the slider reads "Good" instead of a bare 0-based index. Empty when nothing is picked.</summary>
@@ -89,9 +102,12 @@ public sealed partial class SeriesCellViewModel : ObservableObject
                         v.ValueDecimal = DecimalValue;
                         return v;
                     case MetricType.Integer:
-                    case MetricType.Seconds:
                         if (IntegerValue is null) return null;
                         v.ValueInteger = IntegerValue;
+                        return v;
+                    case MetricType.Seconds:
+                        if (!DurationFormat.TryParse(DurationText, out var secs)) return null;
+                        v.ValueSeconds = secs;
                         return v;
                     default:
                         return null;

@@ -254,3 +254,35 @@ public class ResistanceQuickAddViewModelTests
         sut.RemoveSeriesCommand.CanExecute(sut.Series[0]).Should().BeFalse();
     }
 }
+
+public class SeriesCellViewModelDurationTests
+{
+    private static MetricDefinition SecondsMetric() =>
+        new() { Id = Guid.NewGuid(), Name = "Tempo", Type = MetricType.Seconds };
+
+    [Fact]
+    public void Seconds_cell_parses_duration_into_value_seconds()
+    {
+        var cell = new SeriesCellViewModel(SecondsMetric()) { DurationText = "1:02:05" };
+        var v = cell.BuildValue(0);
+        Assert.NotNull(v);
+        Assert.Equal(3725, v!.ValueSeconds);
+        Assert.Null(v.ValueInteger);
+    }
+
+    [Fact]
+    public void Seconds_cell_invalid_text_is_flagged_and_yields_null()
+    {
+        var cell = new SeriesCellViewModel(SecondsMetric()) { DurationText = "abc" };
+        Assert.True(cell.IsDurationInvalid);
+        Assert.Null(cell.BuildValue(0));
+    }
+
+    [Fact]
+    public void SetDurationSeconds_round_trips_display()
+    {
+        var cell = new SeriesCellViewModel(SecondsMetric());
+        cell.SetDurationSeconds(3725);
+        Assert.Equal("1:02:05", cell.DurationText);
+    }
+}
