@@ -90,6 +90,68 @@ public class HomeMultiSelectionTests
     }
 
     [Fact]
+    public async Task Row_archive_on_a_multi_selected_row_archives_all_selected()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow("a", a));
+        _query.HomeRows.Add(SampleRow("b", b));
+        _query.HomeRows.Add(SampleRow("c"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectInteractive(sut.Rows.Single(r => r.HabitNodeId == a), ctrl: false, shift: false);
+        sut.SelectInteractive(sut.Rows.Single(r => r.HabitNodeId == b), ctrl: true, shift: false);
+        var reloadsBefore = _query.HomeCallCount;
+
+        await sut.Rows.Single(r => r.HabitNodeId == a).ArchiveCommand.ExecuteAsync(null);
+
+        _nodes.ArchivedCalls.Should().BeEquivalentTo(new[] { (a, true), (b, true) });
+        _query.HomeCallCount.Should().Be(reloadsBefore + 1);   // un solo reload
+        sut.HasMultiSelection.Should().BeFalse();              // selezione azzerata dopo il bulk
+    }
+
+    [Fact]
+    public async Task Row_archive_on_a_row_outside_the_selection_stays_single()
+    {
+        var a = Guid.NewGuid();
+        var c = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow("a", a));
+        _query.HomeRows.Add(SampleRow("b"));
+        _query.HomeRows.Add(SampleRow("c", c));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectInteractive(sut.Rows[0], ctrl: false, shift: false);
+        sut.SelectInteractive(sut.Rows[1], ctrl: true, shift: false);
+
+        await sut.Rows.Single(r => r.HabitNodeId == c).ArchiveCommand.ExecuteAsync(null);
+
+        _nodes.ArchivedCalls.Should().BeEquivalentTo(new[] { (c, true) });
+    }
+
+    [Fact]
+    public async Task Bulk_move_moves_every_selected_row_and_skips_cycles()
+    {
+        var g = Guid.NewGuid();
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow("G", g, type: null));
+        _query.HomeRows.Add(SampleRow("a", a));
+        _query.HomeRows.Add(SampleRow("b", b));
+        _nodes.Store[a] = new Recordum.Core.Models.HabitNode { Id = a, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a", Color = "#000000" };
+        _nodes.Store[b] = new Recordum.Core.Models.HabitNode { Id = b, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "b", Color = "#000000" };
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var rowA = sut.Rows.Single(r => r.HabitNodeId == a);
+        sut.SelectInteractive(rowA, ctrl: false, shift: false);
+        sut.SelectInteractive(sut.Rows.Single(r => r.HabitNodeId == b), ctrl: true, shift: false);
+
+        var handled = await sut.TryBulkMoveAsync(rowA, g);
+
+        handled.Should().BeTrue();
+        _nodes.MoveCalls.Should().BeEquivalentTo(new[] { (a, (Guid?)g), (b, (Guid?)g) });
+    }
+
+    [Fact]
     public async Task Reload_preserves_the_multi_selection_set()
     {
         var sut = await LoadedSutAsync("a", "b", "c");

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
@@ -14,7 +15,7 @@ using Recordum.WPF.ViewModels.Quick;
 
 namespace Recordum.WPF.ViewModels;
 
-public sealed partial class HomeViewModel : ObservableObject
+public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
 {
     private readonly IHabitTreeQueryService _query;
     private readonly IHabitNodeService _nodes;
@@ -171,6 +172,43 @@ public sealed partial class HomeViewModel : ObservableObject
                 : null;
         }
         finally { _syncingSelection = false; }
+    }
+
+    public async Task<bool> TryBulkAsync(HomeRowViewModel origin, RowBulkAction action)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        if (!HasMultiSelection || !origin.IsSelected) return false;
+        var ids = Rows.Where(r => r.IsSelected).Select(r => r.HabitNodeId).ToList();
+        foreach (var id in ids)
+        {
+            switch (action)
+            {
+                case RowBulkAction.Archive: await _nodes.SetArchivedAsync(id, true); break;
+                case RowBulkAction.Unarchive: await _nodes.SetArchivedAsync(id, false); break;
+                case RowBulkAction.SoftDelete: await _nodes.SoftDeleteAsync(id); break;
+                case RowBulkAction.Restore: await _nodes.RestoreAsync(id); break;
+                case RowBulkAction.Purge: await _purge.PurgeSubtreeAsync(id); break;
+            }
+        }
+        ClearSelection();
+        await LoadAsync();
+        return true;
+    }
+
+    /// <summary>Bulk move from drag-drop: moves every selected row, skipping cyclic targets (spec §C.3).</summary>
+    public async Task<bool> TryBulkMoveAsync(HomeRowViewModel origin, Guid? newParentId)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        if (!HasMultiSelection || !origin.IsSelected) return false;
+        var ids = Rows.Where(r => r.IsSelected).Select(r => r.HabitNodeId).ToList();
+        foreach (var id in ids)
+        {
+            try { await _nodes.MoveAsync(id, newParentId); }
+            catch (CyclicHabitNodeMoveException) { /* skip, like the single-row path */ }
+        }
+        ClearSelection();
+        await LoadAsync();
+        return true;
     }
 
     /// <summary>Selects a node by id, expanding any collapsed ancestor so its row is visible
@@ -339,6 +377,7 @@ public sealed partial class HomeViewModel : ObservableObject
                 vm.Changed += OnRowChanged;
                 vm.QuickActionExecuted += OnRowQuickActionExecuted;
                 vm.ExpandToggled += OnRowExpandToggled;
+                vm.AttachSelectionHost(this);
                 Rows.Add(vm);
             }
         }

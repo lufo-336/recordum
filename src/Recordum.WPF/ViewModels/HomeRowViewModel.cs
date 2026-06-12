@@ -29,6 +29,14 @@ public sealed partial class HomeRowViewModel : ObservableObject
 
     public bool CanQuickAction => !IsGroup && HabitType is not null && _quickActionSelector is not null;
 
+    private IRowSelectionHost? _selectionHost;
+    public void AttachSelectionHost(IRowSelectionHost host) => _selectionHost = host;
+
+    // Row actions go bulk when this row is part of a multi-selection (spec §C.3): the host
+    // runs the op over every selected row with a single reload; otherwise fall through.
+    private async Task<bool> HandledAsBulkAsync(RowBulkAction action)
+        => _selectionHost is not null && await _selectionHost.TryBulkAsync(this, action);
+
     public void AttachQuickActionSelector(QuickActionHandlerSelector selector)
     {
         _quickActionSelector = selector;
@@ -150,6 +158,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [RelayCommand]
     private async Task ArchiveAsync()
     {
+        if (await HandledAsBulkAsync(RowBulkAction.Archive)) return;
         await _nodes.SetArchivedAsync(HabitNodeId, true);
         IsArchived = true;
         Changed?.Invoke(this, EventArgs.Empty);
@@ -158,6 +167,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [RelayCommand]
     private async Task UnarchiveAsync()
     {
+        if (await HandledAsBulkAsync(RowBulkAction.Unarchive)) return;
         await _nodes.SetArchivedAsync(HabitNodeId, false);
         IsArchived = false;
         Changed?.Invoke(this, EventArgs.Empty);
@@ -166,6 +176,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [RelayCommand]
     private async Task SoftDeleteAsync()
     {
+        if (await HandledAsBulkAsync(RowBulkAction.SoftDelete)) return;
         await _nodes.SoftDeleteAsync(HabitNodeId);
         Changed?.Invoke(this, EventArgs.Empty);
     }
@@ -173,6 +184,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [RelayCommand]
     private async Task RestoreAsync()
     {
+        if (await HandledAsBulkAsync(RowBulkAction.Restore)) return;
         await _nodes.RestoreAsync(HabitNodeId);
         Changed?.Invoke(this, EventArgs.Empty);
     }
@@ -180,6 +192,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     [RelayCommand]
     private async Task PurgeAsync()
     {
+        if (await HandledAsBulkAsync(RowBulkAction.Purge)) return;
         await _purge.PurgeSubtreeAsync(HabitNodeId);
         Changed?.Invoke(this, EventArgs.Empty);
     }
