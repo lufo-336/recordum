@@ -503,6 +503,59 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task Rebuild_builds_the_roots_hierarchy_in_parallel_with_flat_rows()
+    {
+        var g = Guid.NewGuid();
+        var sub = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: g));
+        _query.HomeRows.Add(SampleRow(name: "h1", parent: g));
+        _query.HomeRows.Add(SampleRow(name: "Sub", type: null, id: sub, parent: g));
+        _query.HomeRows.Add(SampleRow(name: "h2", parent: sub));
+        _query.HomeRows.Add(SampleRow(name: "root"));
+        var sut = CreateSut();
+
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.Rows.Should().HaveCount(5);                       // flat invariata
+        sut.Roots.Select(r => r.Name).Should().Equal("G", "root");
+        var gRow = sut.Roots.Single(r => r.Name == "G");
+        gRow.Children.Select(c => c.Name).Should().Equal("h1", "Sub");
+        gRow.Children.Single(c => c.Name == "Sub").Children.Single().Name.Should().Be("h2");
+        // stesse istanze nei due alberi (selezione/flag condivisi)
+        gRow.Should().BeSameAs(sut.Rows.Single(r => r.Name == "G"));
+    }
+
+    [Fact]
+    public async Task Collapsed_group_has_no_children_in_the_hierarchy()
+    {
+        var g = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: g));
+        _query.HomeRows.Add(SampleRow(name: "h1", parent: g));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        sut.Rows.Single(r => r.IsGroup).IsExpanded = false;
+
+        sut.Roots.Should().ContainSingle();
+        sut.Roots.Single().Children.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task NonActive_tabs_put_every_row_in_roots()
+    {
+        var g = Guid.NewGuid();
+        _query.TrashRows.Add(SampleRow(name: "G", type: null, id: g));
+        _query.TrashRows.Add(SampleRow(name: "h1", parent: g));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        await sut.SwitchTabCommand.ExecuteAsync(HomeTab.Trash);
+
+        sut.Roots.Should().HaveCount(2);
+        sut.Roots.Should().OnlyContain(r => r.Children.Count == 0);
+    }
+
+    [Fact]
     public async Task SelectById_expands_collapsed_ancestors_and_selects()
     {
         var groupId = Guid.NewGuid();

@@ -44,6 +44,11 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
 
     public ObservableCollection<HomeRowViewModel> Rows { get; } = new();
 
+    /// <summary>Top-level rows for the hierarchical view (the frame around group children
+    /// requires children to render INSIDE the group template). Built by Rebuild alongside
+    /// the flat Rows, which stays the source of truth for selection/shift/drag.</summary>
+    public ObservableCollection<HomeRowViewModel> Roots { get; } = new();
+
     public IReadOnlyList<HomeSort> AvailableSorts { get; } =
         new[] { HomeSort.Manual, HomeSort.Name, HomeSort.LastCompletion };
 
@@ -345,6 +350,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
             old.QuickActionExecuted -= OnRowQuickActionExecuted;
         }
         Rows.Clear();
+        Roots.Clear();
         IEnumerable<HomeTreeRow> q = _lastFetched;
         q = ActiveTab switch
         {
@@ -366,6 +372,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         _rebuilding = true;
         try
         {
+            var parentStack = new List<HomeRowViewModel>();
             foreach (var (row, level) in OrderHierarchically(q.ToList()))
             {
                 var vm = new HomeRowViewModel(row, level, _nodes, _purge)
@@ -379,6 +386,12 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
                 vm.ExpandToggled += OnRowExpandToggled;
                 vm.AttachSelectionHost(this);
                 Rows.Add(vm);
+
+                // Hierarchy mirror: level 0 → Roots, deeper rows → parent's Children.
+                while (parentStack.Count > level) parentStack.RemoveAt(parentStack.Count - 1);
+                if (level == 0) Roots.Add(vm);
+                else parentStack[level - 1].Children.Add(vm);
+                if (parentStack.Count == level) parentStack.Add(vm);
             }
         }
         finally { _rebuilding = false; }

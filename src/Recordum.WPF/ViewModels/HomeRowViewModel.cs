@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
@@ -53,6 +54,13 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public bool IsGroup => HabitType is null;
     public int ChildCount { get; }
     public ImmutableArray<int> CompletionsLast7Days { get; }
+
+    /// <summary>Visible children, populated by HomeViewModel.Rebuild (hierarchical view rendering).
+    /// Empty for habits and for collapsed groups.</summary>
+    public ObservableCollection<HomeRowViewModel> Children { get; } = new();
+
+    /// <summary>True when expanded children are actually rendered (drives the group frame chrome).</summary>
+    public bool HasVisibleChildren => Children.Count > 0;
     public DateTime? LastCompletionAt { get; }
     public bool IsCompletedToday { get; }
     public int IndentLevel { get; }
@@ -104,6 +112,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
         _originalName = row.Name;
         _pinScope = row.PinScope;
         _isArchived = row.IsArchived;
+        // Children are filled by Rebuild right after construction; keep the frame chrome in sync.
+        Children.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasVisibleChildren));
     }
 
     [RelayCommand]
