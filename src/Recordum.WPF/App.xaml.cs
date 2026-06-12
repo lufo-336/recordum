@@ -44,9 +44,13 @@ public partial class App : Application
             return;
         }
 
-        // Dev tool: `--seed-demo` populates a believable habit library (idempotent, see DemoDataSeeder).
+        // Dev tool: `--seed-demo` populates a believable habit library (idempotent);
+        // `--seed-habit <name>` backfills an existing habit with ~90 days of completions.
         if (e.Args.Contains("--seed-demo"))
             await _services.GetRequiredService<DemoDataSeeder>().SeedAsync().ConfigureAwait(true);
+        var seedHabitIndex = Array.IndexOf(e.Args, "--seed-habit");
+        if (seedHabitIndex >= 0 && seedHabitIndex + 1 < e.Args.Length)
+            await _services.GetRequiredService<DemoDataSeeder>().SeedHabitAsync(e.Args[seedHabitIndex + 1]).ConfigureAwait(true);
 
         var theme = _services.GetRequiredService<IThemeService>();
         await theme.InitializeAsync().ConfigureAwait(true);

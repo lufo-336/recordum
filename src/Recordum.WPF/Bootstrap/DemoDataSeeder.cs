@@ -18,6 +18,7 @@ public sealed class DemoDataSeeder(
     INoteService notes,
     ITagService tags,
     IAppSettingService settings,
+    IHabitTreeQueryService tree,
     IClock clock)
 {
     private const string MarkerKey = "dev.demo_seeded";
@@ -162,6 +163,49 @@ public sealed class DemoDataSeeder(
         }
 
         await settings.SetAsync(MarkerKey, today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Populates an EXISTING habit (looked up by name, case-insensitive) with ~90 days
+    /// of plausible completions: ~5 days a week, values with a slight upward trend for measured
+    /// types. Creates a "Ripetizioni" metric when the type needs values and none exists.
+    /// Triggered by <c>--seed-habit &lt;name&gt;</c>; no marker — repeated runs add more data.</summary>
+    public async Task SeedHabitAsync(string name, CancellationToken ct = default)
+    {
+        var rows = await tree.GetHomeTreeAsync(ct).ConfigureAwait(false);
+        var row = rows.FirstOrDefault(r =>
+            string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase) && r.HabitType is not null)
+            ?? throw new InvalidOperationException($"Nessuna habit attiva chiamata '{name}'.");
+        var type = row.HabitType!.Value;
+
+        Guid? metricId = null;
+        if (type is HabitType.Counter or HabitType.Resistance or HabitType.State)
+        {
+            var existing = await metrics.ListByHabitAsync(row.HabitNodeId, ct).ConfigureAwait(false);
+            metricId = existing.Count > 0
+                ? existing[0].Id
+                : await MetricAsync(row.HabitNodeId, "Ripetizioni", ct).ConfigureAwait(false);
+        }
+
+        var today = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone));
+        var start = today.AddDays(-90);
+
+        for (var day = start; day <= today; day = day.AddDays(1))
+        {
+            if (!Chance(0.72)) continue;
+            // Slight progression: later days trend higher (e.g. push-up counts growing).
+            var progress = (day.DayNumber - start.DayNumber) / 90.0;
+            var value = (int)(12 + progress * 20) + _rng.Next(0, 14);
+
+            if (type == HabitType.Action)
+                await ActionAsync(row.HabitNodeId, day, 7, 21, ct).ConfigureAwait(false);
+            else if (type == HabitType.Journal)
+                await completions.RecordAsync(
+                    Draft(row.HabitNodeId, day, 7, 21, notesBody: JournalEntries[_rng.Next(JournalEntries.Length)]),
+                    ct: ct).ConfigureAwait(false);
+            else
+                await ValueAsync(row.HabitNodeId, metricId!.Value, value, day, 7, 21, ct).ConfigureAwait(false);
+        }
     }
 
     private bool Chance(double p) => _rng.NextDouble() < p;
