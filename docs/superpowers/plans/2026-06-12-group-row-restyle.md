@@ -33,7 +33,7 @@
 - Modify: `src/Recordum.WPF/ViewModels/HomeRowViewModel.cs`, `src/Recordum.WPF/ViewModels/HomeViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HomeViewModelTests.cs` (append)
 
-- [ ] **Step 1: test (RED)** — append a `HomeViewModelTests` (riusa `SampleRow`/`CreateSut`):
+- [x] **Step 1: test (RED)** — append a `HomeViewModelTests` (riusa `SampleRow`/`CreateSut`):
 
 ```csharp
     [Fact]
@@ -90,9 +90,9 @@
     }
 ```
 
-- [ ] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "Rebuild_builds_the_roots|Collapsed_group_has_no_children|NonActive_tabs_put_every"` (compile error: `Roots`/`Children`).
+- [x] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter "Rebuild_builds_the_roots|Collapsed_group_has_no_children|NonActive_tabs_put_every"` (compile error: `Roots`/`Children`).
 
-- [ ] **Step 3: implementare**
+- [x] **Step 3: implementare**
 
 `HomeRowViewModel` (accanto a `Rows`-like membri, es. dopo `CompletionsLast7Days`):
 
@@ -131,9 +131,9 @@ con, PRIMA del foreach (dentro il try, dopo `_rebuilding = true;`):
 
 NB: serve il `level` — il foreach è già `foreach (var (row, level) in OrderHierarchically(...))`. I row VM sono ricreati a ogni Rebuild, quindi `Children` parte sempre vuota: nessun clear per-riga necessario.
 
-- [ ] **Step 4: GREEN** — filtro step 2 + suite `HomeViewModel|HomeMultiSelection` completa (la flat non cambia → tutto resta verde).
+- [x] **Step 4: GREEN** — filtro step 2 + suite `HomeViewModel|HomeMultiSelection` completa (la flat non cambia → tutto resta verde).
 
-- [ ] **Step 5: commit** `feat(wpf): hierarchical Roots/Children mirror for the tree view`.
+- [x] **Step 5: commit** `feat(wpf): hierarchical Roots/Children mirror for the tree view`.
 
 ---
 
@@ -141,7 +141,7 @@ NB: serve il `level` — il foreach è già `foreach (var (row, level) in OrderH
 
 **Files:** Modify `src/Recordum.WPF/Views/RowTemplateSelector.cs`, `src/Recordum.WPF/Views/HomeView.xaml`
 
-- [ ] **Step 1**: `RowTemplateSelector` risolve per chiave (le property restano per compat finché HomeView non è aggiornata, poi si tolgono):
+- [x] **Step 1**: `RowTemplateSelector` risolve per chiave (le property restano per compat finché HomeView non è aggiornata, poi si tolgono):
 
 ```csharp
 using System.Windows;
@@ -162,7 +162,7 @@ public sealed class RowTemplateSelector : DataTemplateSelector
 }
 ```
 
-- [ ] **Step 2**: in `HomeView.xaml` l'istanza del selettore (riga ~176) perde le property e si sposta nei Resources della UserControl per riuso; l'ItemsControl binda `Roots`:
+- [x] **Step 2**: in `HomeView.xaml` l'istanza del selettore (riga ~176) perde le property e si sposta nei Resources della UserControl per riuso; l'ItemsControl binda `Roots`:
 
 nei `UserControl.Resources` (dopo i merged dictionaries):
 
@@ -181,7 +181,7 @@ e il blocco ItemsControl del DataTrigger `Loaded` diventa:
                                         </ScrollViewer>
 ```
 
-- [ ] **Step 3**: build `dotnet build src/Recordum.WPF -v q` 0/0 (la GroupRowTemplate attuale funziona ancora: ignora Children); commit `refactor(wpf): key-based row template selector; tree renders from Roots`.
+- [x] **Step 3**: build `dotnet build src/Recordum.WPF -v q` 0/0 (la GroupRowTemplate attuale funziona ancora: ignora Children); commit `refactor(wpf): key-based row template selector; tree renders from Roots`.
 
 ---
 
@@ -189,7 +189,7 @@ e il blocco ItemsControl del DataTrigger `Loaded` diventa:
 
 **Files:** Modify `src/Recordum.WPF/Views/GroupRowTemplate.xaml`
 
-- [ ] **Step 1**: riscrivere il DataTemplate:
+- [x] **Step 1**: riscrivere il DataTemplate:
 
 ```xml
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -330,16 +330,16 @@ NB:
 - Verificare che `HabitTint` accetti il parametro come stringa numerica alpha (è usato con `26`/`51` in App.xaml): per la cornice usare `80` (bordo) e `10` (velo) — se la resa fosse troppo forte/debole, aggiustare i due valori.
 - `Layout.RowHeight`, `Layout.AccentBarWidth`, `Recordum.HabitBlock`, `HexToBrush`, `BoolToVisible` già in scope applicativo.
 
-- [ ] **Step 2**: build 0/0 + suite WPF completa verde.
+- [x] **Step 2**: build 0/0 + suite WPF completa verde.
 
-- [ ] **Step 3: commit** `style(wpf): group rows — chevron + BC3 container frame with indented children`.
+- [x] **Step 3: commit** `style(wpf): group rows — chevron + BC3 container frame with indented children`.
 
 ---
 
 ### Task 4: verifica visiva + tracker
 
 - [ ] skill `run` + checklist: chevron ▸/▾ ruota e niente più quadrato; gruppo chiuso = card pulita con conteggio; aperto = cornice nel colore del gruppo con figli indentati; gruppi annidati = cornici annidate; drag-drop dentro la cornice funziona e l'highlight drop-target resta visibile; selezione/multi-selezione sulle righe interne; click-a-vuoto; collasso/espansione fluidi; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` + memoria; commit docs.
+- [x] aggiornare `docs/phase-4-issues.md` + memoria; commit docs.
 
 ---
 
