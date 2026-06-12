@@ -25,7 +25,7 @@ public class PanoramicaViewModelTests
         new() { Id = id, NodeType = NodeType.Group, Name = "G", Color = "#808080" };
 
     [Fact]
-    public async Task Load_lists_descendant_habits_recursively_excluding_subgroup_rows()
+    public async Task Load_lists_children_hierarchically_including_subgroup_rows()
     {
         var g = Guid.NewGuid();
         var sub = Guid.NewGuid();
@@ -41,10 +41,32 @@ public class PanoramicaViewModelTests
 
         await sut.LoadAsync(Group(g));
 
-        sut.Children.Select(c => c.Name).Should().BeEquivalentTo("diretto", "annidato");
-        sut.TotalChildren.Should().Be(2);
+        sut.Children.Select(c => c.Name).Should().Equal("diretto", "Sub", "annidato");
+        var subRow = sut.Children.Single(c => c.Name == "Sub");
+        subRow.IsGroup.Should().BeTrue();
+        subRow.Indent.Should().Be(0);
+        sut.Children.Single(c => c.Name == "annidato").Indent.Should().Be(1);
+        sut.Children.Single(c => c.Name == "diretto").IsGroup.Should().BeFalse();
+        sut.TotalChildren.Should().Be(2);     // conta solo le habit
         sut.CompletedToday.Should().Be(1);
         sut.HasChildren.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Selecting_a_subgroup_row_raises_ChildSelected_with_its_id()
+    {
+        var g = Guid.NewGuid();
+        var sub = Guid.NewGuid();
+        _tree.HomeRows.Add(Row(g, "G", null, type: null));
+        _tree.HomeRows.Add(Row(sub, "Sub", g, type: null));
+        var sut = CreateSut();
+        await sut.LoadAsync(Group(g));
+        Guid? selected = null;
+        sut.ChildSelected += (_, id) => selected = id;
+
+        sut.SelectChildCommand.Execute(sut.Children.Single());
+
+        selected.Should().Be(sub);
     }
 
     [Fact]

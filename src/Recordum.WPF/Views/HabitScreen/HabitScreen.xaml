@@ -688,6 +688,7 @@
                                                     <Button Command="{Binding DataContext.SelectChildCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                             CommandParameter="{Binding}"
                                                             Background="Transparent" BorderThickness="0" Padding="0"
+                                                            Margin="{Binding Indent, Converter={StaticResource IndentToMargin}}"
                                                             HorizontalContentAlignment="Stretch" Cursor="Hand">
                                                         <Grid Height="32">
                                                             <Grid.ColumnDefinitions>
@@ -700,10 +701,27 @@
                                                                        Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}"/>
                                                             <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="8,0,0,0"
                                                                        VerticalAlignment="Center"
-                                                                       Foreground="{DynamicResource Brush.Text}"/>
+                                                                       Foreground="{DynamicResource Brush.Text}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsGroup}" Value="True">
+                                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <!-- Habits: sparkline + today check. Subgroups: child count instead. -->
+                                                            <TextBlock Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       FontSize="{StaticResource FontSize.Small}" Opacity="0.6"
+                                                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                                                       Text="{Binding ChildCount, StringFormat={x:Static res:Strings.Home_GroupChildCount_Format}}"
+                                                                       Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisible}}"/>
                                                             <ve:HeatmapStrip Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                              Counts="{Binding CompletionsLast7Days}"
-                                                                             AccentColor="{Binding ColorHex}"/>
+                                                                             AccentColor="{Binding ColorHex}"
+                                                                             Visibility="{Binding IsGroup, Converter={StaticResource InvBoolToVisible}}"/>
                                                             <TextBlock Grid.Column="3" Text="✓" Margin="0,0,4,0" VerticalAlignment="Center"
                                                                        Foreground="{DynamicResource Brush.Accent}"
                                                                        Visibility="{Binding IsCompletedToday, Converter={StaticResource BoolToVisible}}"/>

@@ -19,7 +19,6 @@ public sealed partial class PanoramicaViewModel : ObservableObject
     public ObservableCollection<PanoramicaChildRow> Children { get; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasChildren))]
     [NotifyPropertyChangedFor(nameof(TodayLabel))]
     private int _totalChildren;
 
@@ -27,7 +26,8 @@ public sealed partial class PanoramicaViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TodayLabel))]
     private int _completedToday;
 
-    public bool HasChildren => TotalChildren > 0;
+    /// <summary>True when the rollup has any row (habit OR subgroup) — drives the empty-state.</summary>
+    public bool HasChildren => Children.Count > 0;
 
 #pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
     public string TodayLabel => string.Format(
@@ -49,28 +49,53 @@ public sealed partial class PanoramicaViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(group);
         var rows = await _tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
         var byParent = rows.ToLookup(r => r.ParentId);
-        var habits = Descendants(group.Id, byParent).Where(r => r.HabitType is not null).ToList();
         Children.Clear();
-        foreach (var h in habits)
-            Children.Add(new PanoramicaChildRow(h.HabitNodeId, h.Name, h.ColorHex, h.IsCompletedToday, h.CompletionsLast7Days));
-        TotalChildren = habits.Count;
-        CompletedToday = habits.Count(h => h.IsCompletedToday);
-        await Goal.LoadAsync(group, ct).ConfigureAwait(true);
-    }
+        var habitCount = 0;
+        var completedCount = 0;
 
-    private static IEnumerable<HomeTreeRow> Descendants(Guid parentId, ILookup<Guid?, HomeTreeRow> byParent)
-    {
-        foreach (var child in byParent[parentId])
+        // Hierarchical rollup: subgroups appear as their own (indented) rows, habits beneath
+        // them. The today counter still counts habits only.
+        void Walk(Guid parentId, int indent)
         {
-            yield return child;
-            foreach (var nested in Descendants(child.HabitNodeId, byParent))
-                yield return nested;
+            foreach (var child in byParent[parentId])
+            {
+                if (child.HabitType is null)
+                {
+                    Children.Add(new PanoramicaChildRow(
+                        child.HabitNodeId, child.Name, child.ColorHex, false,
+                        child.CompletionsLast7Days, IsGroup: true, Indent: indent, ChildCount: child.ChildCount));
+                    Walk(child.HabitNodeId, indent + 1);
+                }
+                else
+                {
+                    Children.Add(new PanoramicaChildRow(
+                        child.HabitNodeId, child.Name, child.ColorHex, child.IsCompletedToday,
+                        child.CompletionsLast7Days, Indent: indent));
+                    habitCount++;
+                    if (child.IsCompletedToday) completedCount++;
+                }
+            }
         }
+
+        Walk(group.Id, 0);
+        TotalChildren = habitCount;
+        CompletedToday = completedCount;
+        OnPropertyChanged(nameof(HasChildren));
+        await Goal.LoadAsync(group, ct).ConfigureAwait(true);
     }
 
     [RelayCommand]
     private void SelectChild(PanoramicaChildRow row) => ChildSelected?.Invoke(this, row.HabitNodeId);
 }
 
-/// <summary>One descendant habit in the group overview.</summary>
-public sealed record PanoramicaChildRow(Guid HabitNodeId, string Name, string ColorHex, bool IsCompletedToday, ImmutableArray<int> CompletionsLast7Days);
+/// <summary>One descendant row in the group overview: a habit, or a subgroup heading its
+/// own indented sub-block.</summary>
+public sealed record PanoramicaChildRow(
+    Guid HabitNodeId,
+    string Name,
+    string ColorHex,
+    bool IsCompletedToday,
+    ImmutableArray<int> CompletionsLast7Days,
+    bool IsGroup = false,
+    int Indent = 0,
+    int ChildCount = 0);
