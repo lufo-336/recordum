@@ -14,10 +14,12 @@ public static class DurationFormat
         if (t.All(char.IsAsciiDigit))
         {
             // cifre nude: le ultime due sono i secondi ("130" → 1:30, "45" → 0:45)
-            int ss = int.Parse(t.Length <= 2 ? t : t[^2..], CultureInfo.InvariantCulture);
-            int mm = t.Length <= 2 ? 0 : int.Parse(t[..^2], CultureInfo.InvariantCulture);
+            if (!int.TryParse(t.Length <= 2 ? t : t[^2..], NumberStyles.None, CultureInfo.InvariantCulture, out int ss)) return false;
+            if (!int.TryParse(t.Length <= 2 ? "0" : t[..^2], NumberStyles.None, CultureInfo.InvariantCulture, out int mm)) return false;
             if (ss > 59) return false;
-            seconds = mm * 60 + ss;
+            long total = (long)mm * 60 + ss;
+            if (total > int.MaxValue) return false;
+            seconds = (int)total;
             return true;
         }
         var parts = t.Split(':');
@@ -28,12 +30,16 @@ public static class DurationFormat
         if (parts.Length == 2)
         {
             if (nums[1] > 59) return false;
-            seconds = nums[0] * 60 + nums[1];
+            long total = (long)nums[0] * 60 + nums[1];
+            if (total > int.MaxValue) return false;
+            seconds = (int)total;
         }
         else
         {
             if (nums[1] > 59 || nums[2] > 59) return false;
-            seconds = nums[0] * 3600 + nums[1] * 60 + nums[2];
+            long total = (long)nums[0] * 3600 + (long)nums[1] * 60 + nums[2];
+            if (total > int.MaxValue) return false;
+            seconds = (int)total;
         }
         return true;
     }

@@ -17,6 +17,8 @@ public class DurationFormatTests
 
     [Theory]
     [InlineData("")] [InlineData("  ")] [InlineData("abc")] [InlineData("1:99")] [InlineData("1:2:3:4")] [InlineData("-10")]
+    [InlineData("99999999999")]   // long digit string — must not throw
+    [InlineData("999999999:00")] // colon-branch silent overflow
     public void Rejects(string text) => Assert.False(DurationFormat.TryParse(text, out _));
 
     [Theory]
