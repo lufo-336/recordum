@@ -35,7 +35,7 @@
 - Modify: `src/Recordum.WPF/ViewModels/HomeViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HomeMultiSelectionTests.cs` (new)
 
-- [ ] **Step 1: test (RED)**
+- [x] **Step 1: test (RED)**
 
 ```csharp
 using System.Collections.Immutable;
@@ -144,9 +144,9 @@ public class HomeMultiSelectionTests
 }
 ```
 
-- [ ] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter HomeMultiSelection` (errori di compilazione: `SelectInteractive`, `HasMultiSelection`, `ClearSelection`).
+- [x] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter HomeMultiSelection` (errori di compilazione: `SelectInteractive`, `HasMultiSelection`, `ClearSelection`).
 
-- [ ] **Step 3: implementare** in `HomeViewModel`:
+- [x] **Step 3: implementare** in `HomeViewModel`:
 
 Campi (accanto a `_collapsedGroupIds`):
 
@@ -259,9 +259,9 @@ In `Rebuild()`, l'ultima riga `foreach (var r in Rows) r.IsSelected = ReferenceE
     }
 ```
 
-- [ ] **Step 4: GREEN** — filtro `HomeMultiSelection` + suite `HomeViewModel` completa (i test esistenti su `SelectedRow` devono restare verdi).
+- [x] **Step 4: GREEN** — filtro `HomeMultiSelection` + suite `HomeViewModel` completa (i test esistenti su `SelectedRow` devono restare verdi).
 
-- [ ] **Step 5: commit** `feat(wpf): multi-selection model — plain/Ctrl/Shift with anchor`.
+- [x] **Step 5: commit** `feat(wpf): multi-selection model — plain/Ctrl/Shift with anchor`.
 
 ---
 
@@ -272,7 +272,7 @@ In `Rebuild()`, l'ultima riga `foreach (var r in Rows) r.IsSelected = ReferenceE
 - Modify: `src/Recordum.WPF/ViewModels/HomeViewModel.cs`, `src/Recordum.WPF/ViewModels/HomeRowViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HomeMultiSelectionTests.cs` (append)
 
-- [ ] **Step 1: test (RED)** — append:
+- [x] **Step 1: test (RED)** — append:
 
 ```csharp
     [Fact]
@@ -341,9 +341,9 @@ NB: verificare che `FakeHabitNodeService` esponga `ArchivedCalls`/`MoveCalls`; s
 
 registrando in `SetArchivedAsync` → `ArchivedCalls.Add((id, archived));` e in `MoveAsync` → `MoveCalls.Add((id, newParentId));` (PRIMA degli hook esistenti, senza rimuoverli).
 
-- [ ] **Step 2: RED** — filtro `"Row_archive_on|Bulk_move_moves"`.
+- [x] **Step 2: RED** — filtro `"Row_archive_on|Bulk_move_moves"`.
 
-- [ ] **Step 3: implementare**
+- [x] **Step 3: implementare**
 
 `IRowSelectionHost.cs` (nuovo):
 
@@ -426,9 +426,9 @@ e in testa a ciascun command body (`ArchiveAsync`, `UnarchiveAsync`, `SoftDelete
         if (await HandledAsBulkAsync(RowBulkAction.Archive)) return;   // (azione corrispondente)
 ```
 
-- [ ] **Step 4: GREEN** — filtro step 2 + suite `HomeViewModel|HomeMultiSelection` completa.
+- [x] **Step 4: GREEN** — filtro step 2 + suite `HomeViewModel|HomeMultiSelection` completa.
 
-- [ ] **Step 5: commit** `feat(wpf): bulk archive/delete/restore/purge/move over the multi-selection`.
+- [x] **Step 5: commit** `feat(wpf): bulk archive/delete/restore/purge/move over the multi-selection`.
 
 ---
 
@@ -439,7 +439,7 @@ e in testa a ciascun command body (`ArchiveAsync`, `UnarchiveAsync`, `SoftDelete
 - Modify: `src/Recordum.WPF/Behaviors/TreeDragDropBehavior.cs`
 - Modify: `src/Recordum.WPF/MainWindow.xaml.cs`
 
-- [ ] **Step 1: clic con modificatori** — in `HomeView.xaml.cs`, `OnPreviewMouseLeftButtonUp`, il ramo `if (row is not null)` diventa:
+- [x] **Step 1: clic con modificatori** — in `HomeView.xaml.cs`, `OnPreviewMouseLeftButtonUp`, il ramo `if (row is not null)` diventa:
 
 ```csharp
         if (row is not null)
@@ -454,7 +454,7 @@ e in testa a ciascun command body (`ArchiveAsync`, `UnarchiveAsync`, `SoftDelete
         }
 ```
 
-- [ ] **Step 2: right-click collapse (§C.3)** — sul `Border` `TreeRegion` in `HomeView.xaml` (riga ~126) aggiungere `PreviewMouseRightButtonDown="OnPreviewMouseRightButtonDown"`; handler nel code-behind:
+- [x] **Step 2: right-click collapse (§C.3)** — sul `Border` `TreeRegion` in `HomeView.xaml` (riga ~126) aggiungere `PreviewMouseRightButtonDown="OnPreviewMouseRightButtonDown"`; handler nel code-behind:
 
 ```csharp
     // Right-click on a row OUTSIDE the selection collapses the selection to that row, like
@@ -468,14 +468,14 @@ e in testa a ciascun command body (`ArchiveAsync`, `UnarchiveAsync`, `SoftDelete
     }
 ```
 
-- [ ] **Step 3: drop multiplo** — in `TreeDragDropBehavior.OnDrop`, subito PRIMA di `try { await src.MoveToAsync(newParent); }`:
+- [x] **Step 3: drop multiplo** — in `TreeDragDropBehavior.OnDrop`, subito PRIMA di `try { await src.MoveToAsync(newParent); }`:
 
 ```csharp
         if (ic.DataContext is HomeViewModel homeVm && await homeVm.TryBulkMoveAsync(src, newParent))
             return;   // bulk path reloads by itself
 ```
 
-- [ ] **Step 4: Esc** — in `MainWindow.xaml.cs`, `OnWindowPreviewKeyDown`, PRIMA del blocco Esc esistente:
+- [x] **Step 4: Esc** — in `MainWindow.xaml.cs`, `OnWindowPreviewKeyDown`, PRIMA del blocco Esc esistente:
 
 ```csharp
         // Esc with a multi-selection: clear it (spec §C.1) before any column handling.
@@ -487,16 +487,16 @@ e in testa a ciascun command body (`ArchiveAsync`, `UnarchiveAsync`, `SoftDelete
         }
 ```
 
-- [ ] **Step 5**: build 0/0 + suite WPF completa verde.
+- [x] **Step 5**: build 0/0 + suite WPF completa verde.
 
-- [ ] **Step 6: commit** `feat(wpf): multi-selection UI — modifier clicks, bulk context routing, multi-drop, Esc`.
+- [x] **Step 6: commit** `feat(wpf): multi-selection UI — modifier clicks, bulk context routing, multi-drop, Esc`.
 
 ---
 
 ### Task 4: verifica visiva + tracker
 
 - [ ] skill `run` + checklist (tutte e tre le tab): Ctrl+clic toggla e le righe si evidenziano; Shift+clic seleziona l'intervallo; con 2+ il workspace si chiude; menu contestuale su riga selezionata archivia/elimina TUTTE; su riga fuori selezione collassa a quella; Canc/Ctrl+E bulk; drag di una selezionata trascina tutte in un gruppo (highlight invariato); Esc azzera; cambio tab azzera; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` + memoria (pacchetto C fatto → spec combinata completata); commit docs.
+- [x] aggiornare `docs/phase-4-issues.md` + memoria (pacchetto C fatto → spec combinata completata); commit docs.
 
 ---
 
