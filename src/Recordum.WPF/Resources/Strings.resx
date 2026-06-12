@@ -341,9 +341,6 @@ Details: {0}</value>
   <data name="HabitBuilder.Blocks" xml:space="preserve">
     <value>Blocks</value>
   </data>
-  <data name="HabitBuilder.AddCount" xml:space="preserve">
-    <value>+ Count</value>
-  </data>
   <data name="HabitBuilder.AddQuantity" xml:space="preserve">
     <value>+ Quantity</value>
   </data>
@@ -382,9 +379,6 @@ Details: {0}</value>
   </data>
   <data name="HabitBuilder.SeriesRow" xml:space="preserve">
     <value>Series {0}</value>
-  </data>
-  <data name="HabitBuilder.DefaultField.Count" xml:space="preserve">
-    <value>Count</value>
   </data>
   <data name="HabitBuilder.DefaultField.Quantity" xml:space="preserve">
     <value>Quantity</value>

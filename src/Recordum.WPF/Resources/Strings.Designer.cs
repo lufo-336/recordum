@@ -183,7 +183,6 @@ public static class Strings
     public static string HabitBuilder_Color => Get("HabitBuilder.Color");
     public static string HabitBuilder_Icon => Get("HabitBuilder.Icon");
     public static string HabitBuilder_Blocks => Get("HabitBuilder.Blocks");
-    public static string HabitBuilder_AddCount => Get("HabitBuilder.AddCount");
     public static string HabitBuilder_AddQuantity => Get("HabitBuilder.AddQuantity");
     public static string HabitBuilder_AddTime => Get("HabitBuilder.AddTime");
     public static string HabitBuilder_AddScale => Get("HabitBuilder.AddScale");
@@ -197,7 +196,6 @@ public static class Strings
     public static string HabitBuilder_Preview => Get("HabitBuilder.Preview");
     public static string HabitBuilder_TextFieldNote => Get("HabitBuilder.TextFieldNote");
     public static string HabitBuilder_SeriesRow => Get("HabitBuilder.SeriesRow");
-    public static string HabitBuilder_DefaultField_Count => Get("HabitBuilder.DefaultField.Count");
     public static string HabitBuilder_DefaultField_Quantity => Get("HabitBuilder.DefaultField.Quantity");
     public static string HabitBuilder_DefaultField_Time => Get("HabitBuilder.DefaultField.Time");
     public static string HabitBuilder_DefaultField_Scale => Get("HabitBuilder.DefaultField.Scale");
