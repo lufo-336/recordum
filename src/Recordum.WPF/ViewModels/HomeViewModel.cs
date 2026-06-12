@@ -111,6 +111,18 @@ public sealed partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
 
+    /// <summary>Selects a node by id, expanding any collapsed ancestor so its row is visible
+    /// (used by the group Panoramica child navigation, spec §A.3).</summary>
+    public void SelectById(Guid id)
+    {
+        var byId = _lastFetched.ToDictionary(r => r.HabitNodeId);
+        var changed = false;
+        for (var cur = byId.GetValueOrDefault(id); cur?.ParentId is { } pid; cur = byId.GetValueOrDefault(pid))
+            changed |= _collapsedGroupIds.Remove(pid);
+        if (changed) Rebuild();
+        SelectedRow = Rows.FirstOrDefault(r => r.HabitNodeId == id);
+    }
+
     partial void OnSelectedRowChanged(HomeRowViewModel? oldValue, HomeRowViewModel? newValue)
     {
         if (oldValue is not null) oldValue.IsSelected = false;

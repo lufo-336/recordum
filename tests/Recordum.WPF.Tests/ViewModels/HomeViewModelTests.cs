@@ -503,6 +503,23 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task SelectById_expands_collapsed_ancestors_and_selects()
+    {
+        var groupId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: groupId));
+        _query.HomeRows.Add(SampleRow(name: "child", id: childId, parent: groupId));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.Rows.Single(r => r.IsGroup).IsExpanded = false;   // il figlio sparisce
+
+        sut.SelectById(childId);
+
+        sut.SelectedRow!.HabitNodeId.Should().Be(childId);
+        sut.Rows.Should().HaveCount(2);                        // antenato riespanso
+    }
+
+    [Fact]
     public async Task OpenNewHabit_with_group_selected_passes_group_as_parent()
     {
         var groupId = Guid.NewGuid();

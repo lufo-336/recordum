@@ -266,6 +266,26 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task Panoramica_child_click_selects_the_habit_in_home()
+    {
+        var (sut, parts) = CreateSut();
+        var g = Guid.NewGuid();
+        var h = Guid.NewGuid();
+        parts.Nodes.Store[g] = new HabitNode { Id = g, NodeType = NodeType.Group, Name = "G", Color = "#808080" };
+        parts.Nodes.Store[h] = new HabitNode { Id = h, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "h", Color = "#808080" };
+        parts.Query.HomeRows.Add(SampleRow(g, "G", type: null));
+        parts.Query.HomeRows.Add(SampleRow(h, "h", parent: g));
+        await sut.InitializeAsync();
+        sut.Home.SelectedRow = sut.Home.Rows.Single(r => r.HabitNodeId == g);
+        await Task.Delay(30);
+
+        sut.HabitScreen.Panoramica.SelectChildCommand.Execute(sut.HabitScreen.Panoramica.Children.Single());
+        await Task.Delay(30);
+
+        sut.Home.SelectedRow!.HabitNodeId.Should().Be(h);
+    }
+
+    [Fact]
     public async Task Closing_the_last_open_column_deselects_the_row()
     {
         var (sut, parts) = CreateSut();

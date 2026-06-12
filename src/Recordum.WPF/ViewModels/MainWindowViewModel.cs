@@ -81,6 +81,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Home.GroupCreated += OnHomeGroupCreated;
         HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
         HabitScreen.AllColumnsClosed += OnAllColumnsClosed;
+        HabitScreen.Panoramica.ChildSelected += OnPanoramicaChildSelected;
         HabitScreen.ExportRequested += OnHabitScreenExportRequested;
     }
 
@@ -171,6 +172,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
     // Closing the last open column collapses the workspace back to a clean Home (§B.4).
     private void OnAllColumnsClosed(object? sender, EventArgs e)
         => Home.SelectedRow = null;
+
+    // Panoramica child row click: jump to that habit in the tree (spec §A.3).
+    private void OnPanoramicaChildSelected(object? sender, Guid habitNodeId)
+        => Home.SelectById(habitNodeId);
 
     // "+" on a habit whose row is already selected: SelectedRow won't change, so reload
     // the workspace explicitly to bring the QuickAdd panel forward.
