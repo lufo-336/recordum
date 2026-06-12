@@ -42,19 +42,51 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// window share one instance (MainWindowViewModel.Editor is a passthrough).</summary>
     public HabitEditorViewModel Editor { get; }
 
+    /// <summary>The Panoramica column's group rollup (spec §A.2).</summary>
+    public PanoramicaViewModel Panoramica { get; }
+
     [ObservableProperty] private bool _isCronologiaOpen;
     [ObservableProperty] private bool _isDettaglioOpen;
     [ObservableProperty] private bool _isNoteOpen;
     [ObservableProperty] private bool _isConfiguraOpen;
+    [ObservableProperty] private bool _isPanoramicaOpen;
 
-    partial void OnIsCronologiaOpenChanged(bool value) => OnColumnFlag(HabitColumn.Cronologia, value);
-    partial void OnIsDettaglioOpenChanged(bool value) => OnColumnFlag(HabitColumn.Dettaglio, value);
-    partial void OnIsNoteOpenChanged(bool value) => OnColumnFlag(HabitColumn.Note, value);
+    partial void OnIsCronologiaOpenChanged(bool value) { OnColumnFlag(HabitColumn.Cronologia, value); NotifyShowFlags(); }
+    partial void OnIsDettaglioOpenChanged(bool value) { OnColumnFlag(HabitColumn.Dettaglio, value); NotifyShowFlags(); }
+    partial void OnIsNoteOpenChanged(bool value) { OnColumnFlag(HabitColumn.Note, value); NotifyShowFlags(); }
+    partial void OnIsPanoramicaOpenChanged(bool value) { OnColumnFlag(HabitColumn.Panoramica, value); NotifyShowFlags(); }
     partial void OnIsConfiguraOpenChanged(bool value)
     {
         OnColumnFlag(HabitColumn.Configura, value);
         if (value && !_restoringColumns) ConfigureRequested?.Invoke(this, EventArgs.Empty);
+        NotifyShowFlags();
     }
+
+    /// <summary>Column applicability per node type (spec §A.1): groups get Panoramica/Note/Configura.</summary>
+    internal static bool IsColumnApplicable(HabitColumn column, NodeType nodeType) => nodeType == NodeType.Group
+        ? column is HabitColumn.Panoramica or HabitColumn.Note or HabitColumn.Configura
+        : column is not HabitColumn.Panoramica;
+
+    // Column visibility = open flag AND applicability to the current node type, so the open
+    // set survives habit↔group switches intact (spec §A.1).
+    public bool IsGroupNode => Node?.NodeType == NodeType.Group;
+    public bool ShowPanoramica => IsPanoramicaOpen && Node is not null && IsColumnApplicable(HabitColumn.Panoramica, Node.NodeType);
+    public bool ShowCronologia => IsCronologiaOpen && Node is not null && IsColumnApplicable(HabitColumn.Cronologia, Node.NodeType);
+    public bool ShowDettaglio => IsDettaglioOpen && Node is not null && IsColumnApplicable(HabitColumn.Dettaglio, Node.NodeType);
+    public bool ShowNote => IsNoteOpen && Node is not null;
+    public bool ShowConfigura => IsConfiguraOpen && Node is not null;
+
+    private void NotifyShowFlags()
+    {
+        OnPropertyChanged(nameof(IsGroupNode));
+        OnPropertyChanged(nameof(ShowPanoramica));
+        OnPropertyChanged(nameof(ShowCronologia));
+        OnPropertyChanged(nameof(ShowDettaglio));
+        OnPropertyChanged(nameof(ShowNote));
+        OnPropertyChanged(nameof(ShowConfigura));
+    }
+
+    partial void OnNodeChanged(HabitNode? value) => NotifyShowFlags();
 
     private void OnColumnFlag(HabitColumn column, bool open)
     {
@@ -66,7 +98,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             _lastClosedColumn = column;
             _ = _appSettings.SetAsync(LastClosedColumnSettingKey, column.ToString()).AsTask();
-            if (Node is not null && !CanonicalOpen().Any())
+            if (Node is not null && !CanonicalOpen().Any(c => IsColumnApplicable(c, Node.NodeType)))
                 AllColumnsClosed?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -81,6 +113,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (IsDettaglioOpen) yield return HabitColumn.Dettaglio;
         if (IsNoteOpen) yield return HabitColumn.Note;
         if (IsConfiguraOpen) yield return HabitColumn.Configura;
+        if (IsPanoramicaOpen) yield return HabitColumn.Panoramica;
     }
 
     /// <summary>Restores the persisted open-column set (call once at startup, before the first load).</summary>
@@ -113,6 +146,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             case HabitColumn.Dettaglio: IsDettaglioOpen = open; break;
             case HabitColumn.Note: IsNoteOpen = open; break;
             case HabitColumn.Configura: IsConfiguraOpen = open; break;
+            case HabitColumn.Panoramica: IsPanoramicaOpen = open; break;
         }
     }
 
@@ -137,6 +171,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         HabitColumn.Cronologia => 460,
         HabitColumn.Dettaglio => 520,
         HabitColumn.Note => 460,
+        HabitColumn.Panoramica => 460,
         _ => 480,
     };
 
@@ -155,11 +190,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private double _configuraWidth = DefaultWidth(HabitColumn.Configura);
     public double ConfiguraWidth { get => _configuraWidth; set => SetProperty(ref _configuraWidth, ClampWidth(value)); }
 
+    private double _panoramicaWidth = DefaultWidth(HabitColumn.Panoramica);
+    public double PanoramicaWidth { get => _panoramicaWidth; set => SetProperty(ref _panoramicaWidth, ClampWidth(value)); }
+
     public double GetColumnWidth(HabitColumn column) => column switch
     {
         HabitColumn.Cronologia => CronologiaWidth,
         HabitColumn.Dettaglio => DettaglioWidth,
         HabitColumn.Note => NoteWidth,
+        HabitColumn.Panoramica => PanoramicaWidth,
         _ => ConfiguraWidth,
     };
 
@@ -171,6 +210,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             case HabitColumn.Dettaglio: DettaglioWidth = width; break;
             case HabitColumn.Note: NoteWidth = width; break;
             case HabitColumn.Configura: ConfiguraWidth = width; break;
+            case HabitColumn.Panoramica: PanoramicaWidth = width; break;
         }
     }
 
@@ -237,10 +277,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IEventBus events,
         IWebView2Availability availability,
         IAppSettingService appSettings,
-        HabitEditorViewModel editor)
+        HabitEditorViewModel editor,
+        IHabitTreeQueryService tree)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(editor);
+        ArgumentNullException.ThrowIfNull(tree);
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
@@ -268,6 +310,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
+        Panoramica = new PanoramicaViewModel(tree, goals, completions, clock);
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
@@ -314,10 +357,16 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Name));
         if (node is null) { QuickAdd = null; return; }
 
-        // Opening a habit with no view columns open: default to the last closed column (§B.5),
-        // which starts as Cronologia (nav-model §3.7).
-        if (!CanonicalOpen().Any())
-            SetColumnFlag(_lastClosedColumn, true);
+        // No applicable column open for this node type: open the last closed one if it fits,
+        // else the type's default (group → Panoramica §A.1, habit → Cronologia §3.7/§B.5).
+        if (!CanonicalOpen().Any(c => IsColumnApplicable(c, node.NodeType)))
+        {
+            var fallback = node.NodeType == NodeType.Group ? HabitColumn.Panoramica : HabitColumn.Cronologia;
+            SetColumnFlag(IsColumnApplicable(_lastClosedColumn, node.NodeType) ? _lastClosedColumn : fallback, true);
+        }
+
+        if (node.NodeType == NodeType.Group)
+            await Panoramica.LoadAsync(node, ct).ConfigureAwait(true);
 
         // Config is needed for both QuickAdd and TimerControl; fetch once, share.
         var configTask = _configs.GetAsync(node.Id, ct).AsTask();

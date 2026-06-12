@@ -38,7 +38,7 @@ public class HabitScreenColumnWidthsTests
         await sut.PersistColumnWidthsAsync();
 
         (await settings.GetAsync(HabitScreenViewModel.ColumnWidthsSettingKey))
-            .Should().Be("Cronologia=460,Dettaglio=520,Note=600,Configura=480");
+            .Should().Be("Cronologia=460,Dettaglio=520,Note=600,Configura=480,Panoramica=460");
 
         var (sut2, _) = HabitScreenViewModelFactory.CreateOver(settings);
         await sut2.RestoreOpenColumnsAsync();

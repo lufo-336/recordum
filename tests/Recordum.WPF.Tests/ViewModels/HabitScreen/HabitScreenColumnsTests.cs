@@ -16,6 +16,76 @@ public class HabitScreenColumnsTests
         return id;
     }
 
+    private static Guid AddGroup(FakeHabitNodeService nodes)
+    {
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Group, Name = "g", Color = "#808080" };
+        return id;
+    }
+
+    [Fact]
+    public async Task Group_with_no_applicable_columns_defaults_to_panoramica()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
+        var g = AddGroup(nodes);
+
+        await sut.LoadAsync(g);
+
+        sut.IsPanoramicaOpen.Should().BeTrue();
+        sut.ShowPanoramica.Should().BeTrue();
+        sut.ShowCronologia.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Habit_columns_stay_flagged_but_hidden_on_a_group_and_return_on_a_habit()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
+        var h = AddHabit(nodes);
+        var g = AddGroup(nodes);
+        await sut.LoadAsync(h);          // Cronologia aperta
+        sut.IsDettaglioOpen = true;
+
+        await sut.LoadAsync(g);          // gruppo: flag intatti, colonne habit nascoste
+
+        sut.IsCronologiaOpen.Should().BeTrue();
+        sut.ShowCronologia.Should().BeFalse();
+        sut.ShowDettaglio.Should().BeFalse();
+        sut.ShowPanoramica.Should().BeTrue();   // default applicabile aggiunto
+
+        await sut.LoadAsync(h);          // tornando alla habit le colonne ricompaiono
+        sut.ShowCronologia.Should().BeTrue();
+        sut.ShowDettaglio.Should().BeTrue();
+        sut.ShowPanoramica.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Closing_the_last_applicable_column_on_a_group_raises_AllColumnsClosed()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
+        var h = AddHabit(nodes);
+        var g = AddGroup(nodes);
+        await sut.LoadAsync(h);          // Cronologia aperta (non applicabile al gruppo)
+        await sut.LoadAsync(g);          // + Panoramica
+        var raised = 0;
+        sut.AllColumnsClosed += (_, _) => raised++;
+
+        sut.IsPanoramicaOpen = false;    // Cronologia resta flaggata ma non applicabile
+
+        raised.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Group_load_populates_the_panoramica_rollup()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
+        var g = AddGroup(nodes);
+
+        await sut.LoadAsync(g);
+
+        sut.Panoramica.Should().NotBeNull();
+        sut.Panoramica.TotalChildren.Should().Be(0);   // il fake tree è vuoto: rollup caricato, zero figli
+    }
+
     [Fact]
     public async Task First_load_with_no_columns_opens_cronologia()
     {

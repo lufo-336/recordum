@@ -41,7 +41,7 @@ public class PanoramicaViewModelTests
 
         await sut.LoadAsync(Group(g));
 
-        sut.Children.Select(c => c.Name).Should().BeEquivalentTo(new[] { "diretto", "annidato" });
+        sut.Children.Select(c => c.Name).Should().BeEquivalentTo("diretto", "annidato");
         sut.TotalChildren.Should().Be(2);
         sut.CompletedToday.Should().Be(1);
         sut.HasChildren.Should().BeTrue();
