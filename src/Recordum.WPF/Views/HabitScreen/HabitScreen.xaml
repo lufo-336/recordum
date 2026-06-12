@@ -623,14 +623,21 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Chip bar: independent view toggles (nav-model). -->
+            <!-- Chip bar: independent view toggles (nav-model). Panoramica only for groups,
+                 Cronologia/Dettaglio only for habits (spec §A.1). -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="12,8,12,4">
                 <CheckBox Style="{StaticResource Recordum.SegmentCheck}"
+                          Content="{x:Static res:Strings.HabitScreen_Column_Panoramica}"
+                          IsChecked="{Binding IsPanoramicaOpen}"
+                          Visibility="{Binding IsGroupNode, Converter={StaticResource BoolToVisible}}"/>
+                <CheckBox Style="{StaticResource Recordum.SegmentCheck}"
                           Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
-                          IsChecked="{Binding IsCronologiaOpen}"/>
+                          IsChecked="{Binding IsCronologiaOpen}"
+                          Visibility="{Binding IsGroupNode, Converter={StaticResource InvBoolToVisible}}"/>
                 <CheckBox Style="{StaticResource Recordum.SegmentCheck}" Margin="4,0,0,0"
                           Content="{x:Static res:Strings.HabitScreen_Tab_Detail}"
-                          IsChecked="{Binding IsDettaglioOpen}"/>
+                          IsChecked="{Binding IsDettaglioOpen}"
+                          Visibility="{Binding IsGroupNode, Converter={StaticResource InvBoolToVisible}}"/>
                 <CheckBox Style="{StaticResource Recordum.SegmentCheck}" Margin="4,0,0,0"
                           Content="{x:Static res:Strings.HabitScreen_Tab_Notes}"
                           IsChecked="{Binding IsNoteOpen}"/>
@@ -643,9 +650,82 @@
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <StackPanel Orientation="Horizontal">
 
+                    <!-- Panoramica (group overview, spec §A.2) -->
+                    <Border Width="{Binding PanoramicaWidth}" Style="{StaticResource HabitScreen.Column}"
+                            Visibility="{Binding ShowPanoramica, Converter={StaticResource BoolToVisible}}">
+                        <Grid>
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
+                                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Panoramica}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnClose}"
+                                            Command="{Binding ToggleColumnCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Panoramica}"/>
+                                </Grid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel DataContext="{Binding Panoramica}" Margin="12">
+                                        <!-- Group goal card (same markup family as the Detail column) -->
+                                        <StackPanel Margin="0,0,0,12"
+                                                    Visibility="{Binding Goal.IsEmpty, Converter={StaticResource InvBoolToVisible}}">
+                                            <TextBlock Text="{Binding Goal.Name}" FontWeight="SemiBold"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                <TextBlock Text="{Binding Goal.Actual}" FontSize="{StaticResource FontSize.Heading}"/>
+                                                <TextBlock Text=" / " VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Goal.Target}" FontSize="{StaticResource FontSize.Heading}"/>
+                                                <TextBlock Text="{Binding Goal.PeriodLabel}" Foreground="{DynamicResource Brush.TextMuted}"
+                                                           Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <!-- Today rollup -->
+                                        <TextBlock Text="{Binding TodayLabel}" FontWeight="SemiBold" Margin="0,0,0,8"
+                                                   Foreground="{DynamicResource Brush.Text}"/>
+                                        <TextBlock Text="{x:Static res:Strings.HabitScreen_Panoramica_Empty}"
+                                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                                   Visibility="{Binding HasChildren, Converter={StaticResource InvBoolToVisible}}"/>
+                                        <!-- Child habit rows: click navigates to the habit (spec §A.3) -->
+                                        <ItemsControl ItemsSource="{Binding Children}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Command="{Binding DataContext.SelectChildCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="Transparent" BorderThickness="0" Padding="0"
+                                                            HorizontalContentAlignment="Stretch" Cursor="Hand">
+                                                        <Grid Height="32">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Rectangle Width="4" RadiusX="1" RadiusY="1" Margin="0,4"
+                                                                       Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="8,0,0,0"
+                                                                       VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource Brush.Text}"/>
+                                                            <ve:HeatmapStrip Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                             Counts="{Binding CompletionsLast7Days}"
+                                                                             AccentColor="{Binding ColorHex}"/>
+                                                            <TextBlock Grid.Column="3" Text="✓" Margin="0,0,4,0" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource Brush.Accent}"
+                                                                       Visibility="{Binding IsCompletedToday, Converter={StaticResource BoolToVisible}}"/>
+                                                        </Grid>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </DockPanel>
+                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
+                                   Tag="{x:Static vm:HabitColumn.Panoramica}"
+                                   DragDelta="OnColumnResizeDelta"
+                                   DragCompleted="OnColumnResizeCompleted"
+                                   MouseDoubleClick="OnColumnResizeReset"/>
+                        </Grid>
+                    </Border>
+
                     <!-- Cronologia -->
                     <Border Width="{Binding CronologiaWidth}" Style="{StaticResource HabitScreen.Column}"
-                            Visibility="{Binding IsCronologiaOpen, Converter={StaticResource BoolToVisible}}">
+                            Visibility="{Binding ShowCronologia, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
@@ -685,7 +765,7 @@
 
                     <!-- Dettaglio -->
                     <Border Width="{Binding DettaglioWidth}" Style="{StaticResource HabitScreen.Column}"
-                            Visibility="{Binding IsDettaglioOpen, Converter={StaticResource BoolToVisible}}">
+                            Visibility="{Binding ShowDettaglio, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
@@ -706,7 +786,7 @@
 
                     <!-- Note -->
                     <Border Width="{Binding NoteWidth}" Style="{StaticResource HabitScreen.Column}"
-                            Visibility="{Binding IsNoteOpen, Converter={StaticResource BoolToVisible}}">
+                            Visibility="{Binding ShowNote, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
@@ -727,7 +807,7 @@
 
                     <!-- Configura (the habit editor) -->
                     <Border Width="{Binding ConfiguraWidth}" Style="{StaticResource HabitScreen.Column}"
-                            Visibility="{Binding IsConfiguraOpen, Converter={StaticResource BoolToVisible}}">
+                            Visibility="{Binding ShowConfigura, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
