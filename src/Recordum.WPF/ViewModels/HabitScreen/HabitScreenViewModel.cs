@@ -404,7 +404,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
             HabitType.Counter => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
-            HabitType.Resistance => new ResistanceQuickAddViewModel(_completions, _metrics, _refData, _clock),
+            HabitType.Resistance => new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock),
             HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
             _ => null,
@@ -414,7 +414,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         switch (vm)
         {
             case MeasuredQuickAddViewModel mq: await mq.LoadMetricsAsync(ct).ConfigureAwait(true); break;
-            case ResistanceQuickAddViewModel r: await r.LoadMetricsAsync(ct).ConfigureAwait(true); break;
+            case CounterSeriesQuickAddViewModel r: await r.LoadMetricsAsync(ct).ConfigureAwait(true); break;
         }
         QuickAdd = vm;
     }

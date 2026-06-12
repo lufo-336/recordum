@@ -317,7 +317,7 @@
             </StackPanel>
         </DataTemplate>
 
-        <DataTemplate x:Key="ResistanceQuickAddTemplate" DataType="{x:Type qa:ResistanceQuickAddViewModel}">
+        <DataTemplate x:Key="CounterSeriesQuickAddTemplate" DataType="{x:Type qa:CounterSeriesQuickAddViewModel}">
             <StackPanel Margin="12" Orientation="Vertical">
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
@@ -510,7 +510,7 @@
         <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"
                                       Action="{StaticResource ActionQuickAddTemplate}"
                                       Measured="{StaticResource MeasuredQuickAddTemplate}"
-                                      Resistance="{StaticResource ResistanceQuickAddTemplate}"
+                                      CounterSeries="{StaticResource CounterSeriesQuickAddTemplate}"
                                       Journal="{StaticResource JournalQuickAddTemplate}"/>
 
         <!-- Column chrome (nav-model: chip-toggled side-by-side view columns). -->

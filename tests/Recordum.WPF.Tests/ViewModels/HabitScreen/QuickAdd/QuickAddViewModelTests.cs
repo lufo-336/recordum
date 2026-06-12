@@ -132,12 +132,33 @@ public class JournalQuickAddViewModelTests
     }
 }
 
-public class ResistanceQuickAddViewModelTests
+public class CounterSeriesQuickAddViewModelTests
 {
     private static readonly int[] ExpectedSeriesIndices = [0, 0, 1, 1];
 
+    private static MetricDefinition IntMetric(string name, Guid habitId) =>
+        new() { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = name, Type = MetricType.Integer, SortOrder = 0 };
 
-    private static (FakeCompletionService cs, FakeMetricDefinitionService metrics, ResistanceQuickAddViewModel sut, Guid habitId, MetricDefinition reps, MetricDefinition load)
+    private static MetricDefinition SecondsMetric(Guid habitId) =>
+        new() { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "Tempo", Type = MetricType.Seconds, SortOrder = 1 };
+
+    private static (CounterSeriesQuickAddViewModel vm, FakeCompletionService completions) CreateCounterSeriesVm()
+    {
+        var cs = new FakeCompletionService();
+        var metrics = new FakeMetricDefinitionService();
+        var habitId = Guid.NewGuid();
+        var reps = IntMetric("Ripetizioni", habitId);
+        var tempo = SecondsMetric(habitId);
+        metrics.Store[reps.Id] = reps;
+        metrics.Store[tempo.Id] = tempo;
+        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock())
+        {
+            Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
+        };
+        return (vm, cs);
+    }
+
+    private static (FakeCompletionService cs, FakeMetricDefinitionService metrics, CounterSeriesQuickAddViewModel sut, Guid habitId, MetricDefinition reps, MetricDefinition load)
         CreateSut()
     {
         var cs = new FakeCompletionService();
@@ -147,7 +168,7 @@ public class ResistanceQuickAddViewModelTests
         var load = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "load", Type = MetricType.Decimal, SortOrder = 1 };
         metrics.Store[reps.Id] = reps;
         metrics.Store[load.Id] = load;
-        var sut = new ResistanceQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock())
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Resistance },
         };
@@ -163,9 +184,9 @@ public class ResistanceQuickAddViewModelTests
         var habitId = Guid.NewGuid();
         var unitId = rd.Units[0].Id;
         await metrics.CreateAsync(new MetricDefinition { HabitNodeId = habitId, Name = "Distance", Type = MetricType.Decimal, UnitOfMeasureId = unitId, SortOrder = 0 });
-        var sut = new ResistanceQuickAddViewModel(cs, metrics, rd, new FakeClock())
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, rd, new FakeClock())
         {
-            Node = new HabitNode { Id = habitId, HabitType = HabitType.Resistance },
+            Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
         };
 
         await sut.LoadMetricsAsync();
@@ -252,6 +273,48 @@ public class ResistanceQuickAddViewModelTests
 
         sut.RemoveSeriesCommand.Execute(sut.Series[0]);
         sut.RemoveSeriesCommand.CanExecute(sut.Series[0]).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Save_skips_empty_rows_and_reindexes_series()
+    {
+        var (vm, completions) = CreateCounterSeriesVm();
+        await vm.LoadMetricsAsync();
+        vm.AddSeriesCommand.Execute(null);
+        vm.AddSeriesCommand.Execute(null);                 // 3 righe
+        vm.Series[0].Cells[0].IntegerValue = 14;
+        vm.Series[2].Cells[0].IntegerValue = 11;           // la riga 1 resta vuota
+        await vm.SaveAsync();
+        var indexes = completions.LastValues!.Select(v => v.SeriesIndex).Distinct().OrderBy(i => i).ToList();
+        Assert.Equal(new[] { 0, 1 }, indexes);             // reindicizzate senza buchi
+    }
+
+    [Fact]
+    public async Task Missing_field_in_valid_row_produces_no_value()
+    {
+        var (vm, completions) = CreateCounterSeriesVm();
+        await vm.LoadMetricsAsync();
+        vm.Series[0].Cells[0].IntegerValue = 14;           // Ripetizioni sì, Tempo no
+        await vm.SaveAsync();
+        Assert.Single(completions.LastValues!);            // un solo CompletionValue (spec D6)
+    }
+}
+
+public class SeriesRowViewModelTests
+{
+    private static MetricDefinition IntMetric(string name) =>
+        new() { Id = Guid.NewGuid(), Name = name, Type = MetricType.Integer };
+
+    private static MetricDefinition SecondsMetric() =>
+        new() { Id = Guid.NewGuid(), Name = "Tempo", Type = MetricType.Seconds };
+
+    [Fact]
+    public void Row_is_valid_when_any_cell_has_a_value()
+    {
+        var row = new SeriesRowViewModel(new[] { IntMetric("Ripetizioni"), SecondsMetric() });
+        Assert.False(row.IsValid);
+        row.Cells[0].IntegerValue = 14;
+        Assert.True(row.IsValid);
     }
 }
 

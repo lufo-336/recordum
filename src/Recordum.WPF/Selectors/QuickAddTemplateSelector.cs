@@ -8,14 +8,14 @@ public sealed class QuickAddTemplateSelector : DataTemplateSelector
 {
     public DataTemplate? Action { get; set; }
     public DataTemplate? Measured { get; set; }
-    public DataTemplate? Resistance { get; set; }
+    public DataTemplate? CounterSeries { get; set; }
     public DataTemplate? Journal { get; set; }
 
     public override DataTemplate? SelectTemplate(object? item, DependencyObject container) => item switch
     {
         ActionQuickAddViewModel => Action,
         MeasuredQuickAddViewModel => Measured,
-        ResistanceQuickAddViewModel => Resistance,
+        CounterSeriesQuickAddViewModel => CounterSeries,
         JournalQuickAddViewModel => Journal,
         _ => null,
     };

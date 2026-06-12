@@ -8,14 +8,14 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
-public sealed partial class ResistanceQuickAddViewModel : QuickAddViewModelBase
+public sealed partial class CounterSeriesQuickAddViewModel : QuickAddViewModelBase
 {
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
     private List<MetricDefinition> _orderedMetrics = [];
     private MetricCellFactory _factory = new(Array.Empty<UnitOfMeasure>(), Array.Empty<ScaleTemplate>());
 
-    public ResistanceQuickAddViewModel(
+    public CounterSeriesQuickAddViewModel(
         ICompletionService completions,
         IMetricDefinitionService metrics,
         IReferenceDataQueryService refData,
@@ -24,12 +24,21 @@ public sealed partial class ResistanceQuickAddViewModel : QuickAddViewModelBase
         _metrics = metrics;
         _refData = refData;
         // Keep the per-row delete button's enabled state in sync with the "at least one series" rule.
-        Series.CollectionChanged += (_, _) => RemoveSeriesCommand.NotifyCanExecuteChanged();
+        // Also notify ValidSeriesCount whenever the collection changes (add/remove rows).
+        Series.CollectionChanged += (_, _) =>
+        {
+            RemoveSeriesCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(ValidSeriesCount));
+        };
     }
 
     public ObservableCollection<SeriesRowViewModel> Series { get; } = [];
 
     [ObservableProperty] private string? _notes;
+
+    /// <summary>Number of rows with at least one value (spec D6 implicit-check rule).
+    /// Drives "Registra N serie" button label.</summary>
+    public int ValidSeriesCount => Series.Count(r => r.IsValid);
 
     public async Task LoadMetricsAsync(CancellationToken ct = default)
     {
@@ -44,7 +53,13 @@ public sealed partial class ResistanceQuickAddViewModel : QuickAddViewModelBase
             Series.Add(NewRow());
     }
 
-    private SeriesRowViewModel NewRow() => new(_orderedMetrics.Select(_factory.Create));
+    private SeriesRowViewModel NewRow()
+    {
+        var row = new SeriesRowViewModel(_orderedMetrics.Select(_factory.Create));
+        // Re-notify ValidSeriesCount whenever any cell changes in this row.
+        row.PropertyChanged += (_, _) => OnPropertyChanged(nameof(ValidSeriesCount));
+        return row;
+    }
 
     [RelayCommand]
     private void AddSeries()
@@ -71,15 +86,12 @@ public sealed partial class ResistanceQuickAddViewModel : QuickAddViewModelBase
         ErrorMessage = null;
         try
         {
+            var validRows = Series.Where(r => r.IsValid).ToList();
             var values = new List<CompletionValue>();
-            for (int i = 0; i < Series.Count; i++)
-            {
-                foreach (var cell in Series[i].Cells)
-                {
-                    var v = cell.BuildValue(i);
-                    if (v is not null) values.Add(v);
-                }
-            }
+            for (int i = 0; i < validRows.Count; i++)
+                foreach (var cell in validRows[i].Cells)
+                    if (cell.BuildValue(i) is { } v) values.Add(v);
+
             if (values.Count == 0)
             {
                 ErrorMessage = Strings.QuickAdd_Error_ValueRequired;
