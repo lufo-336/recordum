@@ -356,12 +356,6 @@
   <data name="HabitBuilder.Preview.AddSeries" xml:space="preserve">
     <value>+ Aggiungi serie</value>
   </data>
-  <data name="HabitBuilder.Series" xml:space="preserve">
-    <value>Serie</value>
-  </data>
-  <data name="HabitBuilder.SeriesCount" xml:space="preserve">
-    <value>ripetizioni:</value>
-  </data>
   <data name="HabitBuilder.Preview" xml:space="preserve">
     <value>Anteprima</value>
   </data>

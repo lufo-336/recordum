@@ -194,8 +194,6 @@ public static class Strings
     public static string HabitBuilder_AbstinenceBlock_Tip => Get("HabitBuilder.AbstinenceBlock.Tip");
     public static string HabitBuilder_Preview_Tap => Get("HabitBuilder.Preview.Tap");
     public static string HabitBuilder_Preview_AddSeries => Get("HabitBuilder.Preview.AddSeries");
-    public static string HabitBuilder_Series => Get("HabitBuilder.Series");
-    public static string HabitBuilder_SeriesCount => Get("HabitBuilder.SeriesCount");
     public static string HabitBuilder_Preview => Get("HabitBuilder.Preview");
     public static string HabitBuilder_TextFieldNote => Get("HabitBuilder.TextFieldNote");
     public static string HabitBuilder_SeriesRow => Get("HabitBuilder.SeriesRow");
