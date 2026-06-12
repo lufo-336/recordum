@@ -140,6 +140,14 @@ public partial class MainWindow : Window
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // Esc with a multi-selection: clear it (spec §C.1) before any column handling.
+        if (e.Key == Key.Escape && _viewModel.Home.HasMultiSelection)
+        {
+            _viewModel.Home.ClearSelection();
+            e.Handled = true;
+            return;
+        }
+
         // Esc closes the most recently opened view column of the habit workspace (nav-model §3.5).
         if (e.Key == Key.Escape && _viewModel.Home.SelectedRow is not null)
         {

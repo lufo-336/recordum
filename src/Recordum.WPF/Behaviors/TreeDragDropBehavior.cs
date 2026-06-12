@@ -115,6 +115,10 @@ public static class TreeDragDropBehavior
             ? target.HabitNodeId
             : target.ParentId;
 
+        // Dragging a row that is part of a multi-selection moves the whole selection (§C.3).
+        if (ic.DataContext is HomeViewModel homeVm && await homeVm.TryBulkMoveAsync(src, newParent))
+            return;   // bulk path reloads by itself
+
         try
         {
             await src.MoveToAsync(newParent);

@@ -123,7 +123,8 @@
         <!-- Tree / state. The Border carries a Transparent (not null) background so empty space
              below the rows is hit-testable — clicking it deselects (see HomeView.xaml.cs).
              A ContentControl's default template ignores Background, hence the wrapping Border. -->
-        <Border x:Name="TreeRegion" Grid.Row="2" Background="Transparent" Margin="0,8,0,0">
+        <Border x:Name="TreeRegion" Grid.Row="2" Background="Transparent" Margin="0,8,0,0"
+                PreviewMouseRightButtonDown="OnPreviewMouseRightButtonDown">
         <ContentControl Content="{Binding}">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
