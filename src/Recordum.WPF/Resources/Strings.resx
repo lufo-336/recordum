@@ -356,6 +356,24 @@ Details: {0}</value>
   <data name="HabitBuilder.AddText" xml:space="preserve">
     <value>+ Free text</value>
   </data>
+  <data name="HabitBuilder.CounterBlock" xml:space="preserve">
+    <value>Counter (+1)</value>
+  </data>
+  <data name="HabitBuilder.CounterBlock.Tip" xml:space="preserve">
+    <value>This habit counts occurrences: record with a single tap.</value>
+  </data>
+  <data name="HabitBuilder.AbstinenceBlock" xml:space="preserve">
+    <value>Abstinence</value>
+  </data>
+  <data name="HabitBuilder.AbstinenceBlock.Tip" xml:space="preserve">
+    <value>Resist something: record lapses/episodes; the streak measures the time since the last one.</value>
+  </data>
+  <data name="HabitBuilder.Preview.Tap" xml:space="preserve">
+    <value>+1</value>
+  </data>
+  <data name="HabitBuilder.Preview.AddSeries" xml:space="preserve">
+    <value>+ Add series</value>
+  </data>
   <data name="HabitBuilder.Series" xml:space="preserve">
     <value>Series</value>
   </data>

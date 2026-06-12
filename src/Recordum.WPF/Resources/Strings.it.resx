@@ -338,6 +338,24 @@
   <data name="HabitBuilder.AddText" xml:space="preserve">
     <value>+ Testo libero</value>
   </data>
+  <data name="HabitBuilder.CounterBlock" xml:space="preserve">
+    <value>Contatore (+1)</value>
+  </data>
+  <data name="HabitBuilder.CounterBlock.Tip" xml:space="preserve">
+    <value>Questa abitudine conta occorrenze: si registra con un tap.</value>
+  </data>
+  <data name="HabitBuilder.AbstinenceBlock" xml:space="preserve">
+    <value>Astinenza</value>
+  </data>
+  <data name="HabitBuilder.AbstinenceBlock.Tip" xml:space="preserve">
+    <value>Resistere a qualcosa: registri le ricadute/episodi; la streak misura il tempo dall'ultima.</value>
+  </data>
+  <data name="HabitBuilder.Preview.Tap" xml:space="preserve">
+    <value>+1</value>
+  </data>
+  <data name="HabitBuilder.Preview.AddSeries" xml:space="preserve">
+    <value>+ Aggiungi serie</value>
+  </data>
   <data name="HabitBuilder.Series" xml:space="preserve">
     <value>Serie</value>
   </data>

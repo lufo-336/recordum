@@ -13,7 +13,7 @@ using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
-/// <summary>Costruttore block-first: assembli mattoni (campi, serie, modo), vedi l'anteprima dal vivo
+/// <summary>Costruttore block-first: assembli mattoni (campi, contatore, astinenza, modo), vedi l'anteprima dal vivo
 /// e Lanci la creazione atomica. Il <see cref="DerivedType"/> è dedotto dalla grammatica pura in Core.</summary>
 public sealed partial class HabitBuilderViewModel : ObservableObject
 {
@@ -38,7 +38,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     public RecordingPreviewViewModel Preview { get; } = new();
 
     /// <summary>Units and scales available to the Quantity / Scale field pickers, loaded by
-    /// <see cref="InitializeAsync"/>. Without a pick, those fields keep <see cref="CanLaunch"/> false.</summary>
+    /// <see cref="InitializeAsync"/>.</summary>
     public ObservableCollection<UnitOfMeasure> AvailableUnits { get; } = new();
     public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
 
@@ -69,8 +69,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _color = "#808080";
     [ObservableProperty] private string? _icon;
-    [ObservableProperty] private bool _seriesEnabled;
-    [ObservableProperty] private int _seriesCount = 3;
+    [ObservableProperty] private bool _countsOccurrences;
+    [ObservableProperty] private bool _abstinence;
     [ObservableProperty] private RecordingMode _mode = RecordingMode.Manual;
     [ObservableProperty] private HabitType _derivedType = HabitType.Action;
     [ObservableProperty] private Guid? _createdHabitNodeId;
@@ -82,13 +82,19 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     public void SetParent(Guid? parentId) => _parentId = parentId;
 
     private HabitComposition Snapshot() =>
-        new(Fields.Select(f => f.Nature).ToList(), SeriesEnabled, Mode);
+        new(Fields.Select(f => f.Nature).ToList(), CountsOccurrences, Abstinence, Mode);
 
     public bool CanAddField(FieldNature nature) => HabitCompositionRules.CanAddField(Snapshot(), nature);
 
-    /// <summary>True when the current composition allows the Series toggle (no Scale/Text field).
-    /// Bound to the Series CheckBox <c>IsEnabled</c> so it can't be flipped into an invalid state.</summary>
-    public bool CanEnableSeries => HabitCompositionRules.CanEnableSeries(Snapshot());
+    /// <summary>True when the current composition allows the Counter block (empty canvas, no abstinence).
+    /// Bound to the Counter CheckBox <c>IsEnabled</c> so it can't be flipped into an invalid state.</summary>
+    public bool CanEnableCounter => HabitCompositionRules.CanEnableCounter(Snapshot());
+
+    /// <summary>True when the current composition allows the Abstinence block (no text field, no counter).</summary>
+    public bool CanEnableAbstinence => HabitCompositionRules.CanEnableAbstinence(Snapshot());
+
+    partial void OnCountsOccurrencesChanged(bool value) => Recompute();
+    partial void OnAbstinenceChanged(bool value) => Recompute();
 
     [RelayCommand]
     private void AddField(FieldNature nature)
@@ -119,29 +125,19 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private void ToggleSeries(bool enabled)
-    {
-        if (enabled && !HabitCompositionRules.CanEnableSeries(Snapshot())) return;
-        SeriesEnabled = enabled; // OnSeriesEnabledChanged recomputes
-    }
-
-    partial void OnSeriesCountChanged(int value) => Recompute();
     partial void OnModeChanged(RecordingMode value) => Recompute();
     partial void OnNameChanged(string value) { TemplateSaved = false; RaiseLaunchState(); }
     partial void OnColorChanged(string value) => TemplateSaved = false;
     partial void OnIconChanged(string? value) => TemplateSaved = false;
 
-    // The Series CheckBox binds SeriesEnabled TwoWay (bypassing ToggleSeries), so toggling it must
-    // recompute the derived type + preview here — otherwise Launch persists a stale Counter. (B13)
-    partial void OnSeriesEnabledChanged(bool value) => Recompute();
-
     private void Recompute()
     {
         TemplateSaved = false;
         DerivedType = HabitCompositionRules.ResolveType(Snapshot());
-        Preview.Rebuild(Fields, SeriesEnabled, SeriesCount);
-        OnPropertyChanged(nameof(CanEnableSeries));
+        bool hasCells = Fields.Any(f => f.Nature != FieldNature.Text);
+        Preview.Rebuild(Fields, CountsOccurrences, DerivedType == HabitType.Counter && hasCells);
+        OnPropertyChanged(nameof(CanEnableCounter));
+        OnPropertyChanged(nameof(CanEnableAbstinence));
         RaiseLaunchState();
     }
 
@@ -152,13 +148,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         LaunchCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>Lancia abilitato solo con nome valido e ogni campo ben formato
-    /// (Quantity → unità scelta; Scale → scala scelta). Spec §8.</summary>
+    /// <summary>Lancia abilitato solo con nome valido e ogni campo Scale ben formato (unità quantità opzionale). Spec §3.1.</summary>
     public bool CanLaunch =>
         !string.IsNullOrWhiteSpace(Name)
-        && Fields.All(f =>
-            (f.Nature != FieldNature.Quantity || f.UnitOfMeasureId is not null) &&
-            (f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null));
+        && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null);
 
     /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
     public bool LaunchBlocked => !CanLaunch;
@@ -227,7 +220,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     /// <summary>Serializes the current composition into the same payload shape that
     /// <c>HabitTemplateService.InstantiateAsync</c> reads (snake_case keys), so a saved custom
-    /// template re-instantiates the same node + metrics. Series default → <see cref="SeriesCount"/>.</summary>
+    /// template re-instantiates the same node + metrics.</summary>
     private string BuildTemplatePayloadJson()
     {
         var unitCodeById = AvailableUnits.ToDictionary(u => u.Id, u => u.Code);
@@ -256,7 +249,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                     ScaleCode = f.ScaleTemplateId is { } sid && scaleCodeById.TryGetValue(sid, out var sc) ? sc : null,
                 })
                 .ToList(),
-            SeriesCount = SeriesEnabled ? SeriesCount : null,
+            CountsOccurrences = CountsOccurrences ? true : null,
             Mode = Mode.ToString(),
         };
         return JsonSerializer.Serialize(payload, s_templateJsonOptions);
@@ -267,7 +260,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         public NodePayload? Node { get; set; }
         public List<MetricPayload>? Metrics { get; set; }
-        public int? SeriesCount { get; set; }
+        public bool? CountsOccurrences { get; set; }
         public string? Mode { get; set; }
     }
 
@@ -291,7 +284,6 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     private static string DefaultName(FieldNature n) => n switch
     {
-        FieldNature.Count => Strings.HabitBuilder_DefaultField_Count,
         FieldNature.Quantity => Strings.HabitBuilder_DefaultField_Quantity,
         FieldNature.Time => Strings.HabitBuilder_DefaultField_Time,
         FieldNature.Scale => Strings.HabitBuilder_DefaultField_Scale,

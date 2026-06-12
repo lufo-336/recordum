@@ -5,9 +5,10 @@ namespace Recordum.Core.Composition;
 /// <summary>Snapshot immutabile dei mattoni correnti, input puro della grammatica.</summary>
 public sealed record HabitComposition(
     IReadOnlyList<FieldNature> Fields,
-    bool SeriesEnabled,
+    bool CountsOccurrences,
+    bool Abstinence,
     RecordingMode Mode)
 {
     public static HabitComposition Empty { get; } =
-        new(Array.Empty<FieldNature>(), SeriesEnabled: false, RecordingMode.Manual);
+        new(Array.Empty<FieldNature>(), CountsOccurrences: false, Abstinence: false, RecordingMode.Manual);
 }

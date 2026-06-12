@@ -21,6 +21,9 @@ public class HabitBuilderViewModelTests
                refData ?? new FakeReferenceData(), new FakeClock(),
                recentColors ?? new RecentColorStore(new FakeAppSettingService()));
 
+    // Alias for plan compatibility — same as NewSut()
+    private static HabitBuilderViewModel CreateVm() => NewSut();
+
     [WpfFact]
     public async Task InitializeAsync_loads_recent_colors()
     {
@@ -41,7 +44,8 @@ public class HabitBuilderViewModelTests
         var sut = NewSut(recentColors: store);
         sut.Name = "Corsa";
         sut.Color = "#abcdef";
-        sut.AddFieldCommand.Execute(FieldNature.Count);
+        // Use Quantity without unit (now launchable per spec §3.1)
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
 
         await sut.LaunchCommand.ExecuteAsync(null);
 
@@ -49,50 +53,43 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
-    public void Adding_count_then_time_then_series_yields_resistance_and_preview()
+    public void Counter_block_derives_counter_and_locks_palette()
     {
-        var sut = NewSut();
-        sut.Name = "Flessioni";
-        sut.AddFieldCommand.Execute(FieldNature.Count);
-        sut.AddFieldCommand.Execute(FieldNature.Time);
-        sut.ToggleSeriesCommand.Execute(true);
-        sut.SeriesCount = 3;
-
-        sut.DerivedType.Should().Be(HabitType.Resistance);
-        sut.Preview.Rows.Should().HaveCount(3);
-        sut.Preview.Rows[0].CellNames.Should().HaveCount(2);
+        var vm = CreateVm();
+        vm.CountsOccurrences = true;
+        vm.DerivedType.Should().Be(HabitType.Counter);
+        vm.CanAddField(FieldNature.Quantity).Should().BeFalse();
+        vm.Preview.IsTapCounter.Should().BeTrue();
     }
 
     [WpfFact]
-    public void Checking_series_directly_updates_derived_type_and_preview()
+    public void Abstinence_derives_resistance()
     {
-        // The Series CheckBox binds SeriesEnabled TwoWay (not the ToggleSeries command), so
-        // setting the property directly must still recompute the derived type + preview. (B13)
-        var sut = NewSut();
-        sut.Name = "Flessioni";
-        sut.AddFieldCommand.Execute(FieldNature.Count);
-        sut.DerivedType.Should().Be(HabitType.Counter);
-
-        sut.SeriesEnabled = true;
-
-        sut.DerivedType.Should().Be(HabitType.Resistance);
-        sut.Preview.Rows.Should().HaveCount(sut.SeriesCount);
+        var vm = CreateVm();
+        vm.Abstinence = true;
+        vm.AddFieldCommand.Execute(FieldNature.Quantity);
+        vm.DerivedType.Should().Be(HabitType.Resistance);
     }
 
     [WpfFact]
-    public async Task Launch_after_checking_series_directly_persists_resistance()
+    public void Quantity_without_unit_is_integer_and_launchable()
     {
-        // End-to-end B13: check Series via the property (the binding path), then Launch — the
-        // persisted node must be Resistance, not a stale Counter.
-        var fake = new FakeComposedHabitService();
-        var sut = NewSut(composed: fake);
-        sut.Name = "Flessioni";
-        sut.AddFieldCommand.Execute(FieldNature.Count);
-        sut.SeriesEnabled = true;
+        var vm = CreateVm();
+        vm.Name = "Lettura";
+        vm.AddFieldCommand.Execute(FieldNature.Quantity);
+        vm.CanLaunch.Should().BeTrue(); // unità opzionale (spec §3.1)
+        vm.Fields[0].MetricType.Should().Be(MetricType.Integer);
+        vm.Fields[0].UnitOfMeasureId = Guid.NewGuid();
+        vm.Fields[0].MetricType.Should().Be(MetricType.Decimal);
+    }
 
-        await sut.LaunchCommand.ExecuteAsync(null);
-
-        fake.LastRequest!.Node.HabitType.Should().Be(HabitType.Resistance);
+    [WpfFact]
+    public void Counter_with_fields_preview_shows_add_series()
+    {
+        var vm = CreateVm();
+        vm.AddFieldCommand.Execute(FieldNature.Quantity);
+        vm.Preview.HasAddSeries.Should().BeTrue();
+        vm.Preview.Rows.Should().HaveCount(1);
     }
 
     [WpfFact]
@@ -100,7 +97,7 @@ public class HabitBuilderViewModelTests
     {
         var sut = NewSut();
         sut.Name = "Flessioni";
-        sut.AddFieldCommand.Execute(FieldNature.Count);
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
         sut.TemplateSaved.Should().BeFalse();
 
         await sut.SaveAsTemplateCommand.ExecuteAsync(null);
@@ -126,8 +123,7 @@ public class HabitBuilderViewModelTests
         var sut = NewSut(composed: fake);
         sut.Name = "Bevi acqua";
         sut.AddFieldCommand.Execute(FieldNature.Quantity);
-        // Quantity requires a unit for CanLaunch — set one on the field:
-        sut.Fields[0].UnitOfMeasureId = Guid.NewGuid();
+        // Quantity does NOT require unit for CanLaunch (spec §3.1) — launch without setting unit
 
         await sut.LaunchCommand.ExecuteAsync(null);
 
@@ -143,41 +139,42 @@ public class HabitBuilderViewModelTests
         var fakeTemplates = new FakeHabitTemplateService();
         var sut = NewSut(templates: fakeTemplates);
         sut.Name = "Flessioni";
-        sut.AddFieldCommand.Execute(FieldNature.Count);
-        sut.ToggleSeriesCommand.Execute(true);
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
 
         await sut.SaveAsTemplateCommand.ExecuteAsync(null);
 
         var saved = fakeTemplates.Created.Single();
         saved.IsOfficial.Should().BeFalse();
         saved.Name.Should().Be("Flessioni");
-        saved.PayloadJson.Should().NotBe("{}").And.Contain(Strings.HabitBuilder_DefaultField_Count); // default Count field name
+        saved.PayloadJson.Should().NotBe("{}");
 
         // Round-trip: the payload must match the shape HabitTemplateService.InstantiateAsync reads
-        // (snake_case keys: node.habit_type + metrics[].name/type). Series → Resistance.
+        // (snake_case keys: node.habit_type + metrics[].name/type). Quantity → Counter.
         using var doc = JsonDocument.Parse(saved.PayloadJson);
         var root = doc.RootElement;
-        root.GetProperty("node").GetProperty("habit_type").GetString().Should().Be("Resistance");
+        root.GetProperty("node").GetProperty("habit_type").GetString().Should().Be("Counter");
         var metrics = root.GetProperty("metrics");
         metrics.GetArrayLength().Should().Be(1);
-        metrics[0].GetProperty("name").GetString().Should().Be(Strings.HabitBuilder_DefaultField_Count);
-        metrics[0].GetProperty("type").GetString().Should().Be("Integer");
+        metrics[0].GetProperty("name").GetString().Should().Be(Strings.HabitBuilder_DefaultField_Quantity); // check via parsed JSON (not raw)
+        metrics[0].GetProperty("type").GetString().Should().Be("Integer"); // no unit → Integer
     }
 
     [WpfFact]
-    public void Picking_a_unit_re_enables_the_launch_command()
+    public void Picking_a_unit_changes_metric_type_and_notifies_launch()
     {
         var sut = NewSut();
         sut.Name = "Bevi acqua";
         sut.AddFieldCommand.Execute(FieldNature.Quantity);
-        sut.CanLaunch.Should().BeFalse(); // unit not yet picked
+        sut.CanLaunch.Should().BeTrue(); // quantity without unit is now launchable
         var fired = false;
         sut.LaunchCommand.CanExecuteChanged += (_, _) => fired = true;
 
         sut.Fields[0].UnitOfMeasureId = Guid.NewGuid();
 
-        fired.Should().BeTrue(); // button must be told to re-query
-        sut.LaunchCommand.CanExecute(null).Should().BeTrue();
+        // MetricType changes from Integer to Decimal when unit is set
+        sut.Fields[0].MetricType.Should().Be(MetricType.Decimal);
+        // CanExecuteChanged was fired (because OnFieldChanged is called)
+        fired.Should().BeTrue();
     }
 
     [WpfFact]
@@ -186,6 +183,7 @@ public class HabitBuilderViewModelTests
         var sut = NewSut();
         sut.Name = "Umore";
         sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.CanLaunch.Should().BeFalse(); // scale still requires template
         var fired = false;
         sut.LaunchCommand.CanExecuteChanged += (_, _) => fired = true;
 
@@ -196,12 +194,21 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
-    public void CanEnableSeries_is_false_when_scale_field_present()
+    public void CanEnableCounter_is_false_when_fields_present()
     {
         var sut = NewSut();
-        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
 
-        sut.CanEnableSeries.Should().BeFalse();
+        sut.CanEnableCounter.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public void CanEnableAbstinence_is_false_when_text_field_present()
+    {
+        var sut = NewSut();
+        sut.AddFieldCommand.Execute(FieldNature.Text);
+
+        sut.CanEnableAbstinence.Should().BeFalse();
     }
 
     [WpfFact]

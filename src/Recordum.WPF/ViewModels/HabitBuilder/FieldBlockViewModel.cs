@@ -11,7 +11,11 @@ public sealed partial class FieldBlockViewModel : ObservableObject
     public FieldNature Nature { get; }
 
     [ObservableProperty] private string _name = string.Empty;
-    [ObservableProperty] private Guid? _unitOfMeasureId;     // Quantity
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MetricType))]
+    private Guid? _unitOfMeasureId;     // Quantity (opzionale)
+
     [ObservableProperty] private Guid? _scaleTemplateId;     // Scale
 
     public FieldBlockViewModel(FieldNature nature, string name)
@@ -20,11 +24,10 @@ public sealed partial class FieldBlockViewModel : ObservableObject
         _name = name;
     }
 
-    /// <summary>Mappa la nature al MetricType del dominio.</summary>
+    /// <summary>Mappa la nature al MetricType del dominio. Per Quantity: Integer se nessuna unità scelta, Decimal se unità presente.</summary>
     public MetricType MetricType => Nature switch
     {
-        FieldNature.Count => MetricType.Integer,
-        FieldNature.Quantity => MetricType.Decimal,
+        FieldNature.Quantity => UnitOfMeasureId is null ? MetricType.Integer : MetricType.Decimal,
         FieldNature.Time => MetricType.Seconds,
         FieldNature.Scale => MetricType.Integer,
         FieldNature.Text => MetricType.Text,

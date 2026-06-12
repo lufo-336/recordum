@@ -188,6 +188,12 @@ public static class Strings
     public static string HabitBuilder_AddTime => Get("HabitBuilder.AddTime");
     public static string HabitBuilder_AddScale => Get("HabitBuilder.AddScale");
     public static string HabitBuilder_AddText => Get("HabitBuilder.AddText");
+    public static string HabitBuilder_CounterBlock => Get("HabitBuilder.CounterBlock");
+    public static string HabitBuilder_CounterBlock_Tip => Get("HabitBuilder.CounterBlock.Tip");
+    public static string HabitBuilder_AbstinenceBlock => Get("HabitBuilder.AbstinenceBlock");
+    public static string HabitBuilder_AbstinenceBlock_Tip => Get("HabitBuilder.AbstinenceBlock.Tip");
+    public static string HabitBuilder_Preview_Tap => Get("HabitBuilder.Preview.Tap");
+    public static string HabitBuilder_Preview_AddSeries => Get("HabitBuilder.Preview.AddSeries");
     public static string HabitBuilder_Series => Get("HabitBuilder.Series");
     public static string HabitBuilder_SeriesCount => Get("HabitBuilder.SeriesCount");
     public static string HabitBuilder_Preview => Get("HabitBuilder.Preview");

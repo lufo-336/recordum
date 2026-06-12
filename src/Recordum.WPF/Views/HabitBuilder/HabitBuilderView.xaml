@@ -127,10 +127,6 @@
 
                 <!-- Palette -->
                 <WrapPanel Margin="0,0,0,10">
-                    <Button Content="{x:Static res:Strings.HabitBuilder_AddCount}"
-                            Padding="10,5" Margin="0,0,6,6"
-                            Command="{Binding AddFieldCommand}"
-                            CommandParameter="{x:Static enums:FieldNature.Count}"/>
                     <Button Content="{x:Static res:Strings.HabitBuilder_AddQuantity}"
                             Padding="10,5" Margin="0,0,6,6"
                             Command="{Binding AddFieldCommand}"
@@ -149,23 +145,20 @@
                             CommandParameter="{x:Static enums:FieldNature.Text}"/>
                 </WrapPanel>
 
-                <!-- Series -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <CheckBox Content="{x:Static res:Strings.HabitBuilder_Series}"
-                              VerticalAlignment="Center"
-                              IsEnabled="{Binding CanEnableSeries}"
-                              IsChecked="{Binding SeriesEnabled, Mode=TwoWay}"/>
-                    <TextBlock Text="{x:Static res:Strings.HabitBuilder_SeriesCount}"
-                               VerticalAlignment="Center"
-                               Margin="14,0,6,0"
-                               Foreground="{DynamicResource Brush.TextMuted}"
-                               Visibility="{Binding SeriesEnabled, Converter={StaticResource BoolToVisible}}"/>
-                    <TextBox Width="48"
-                             Padding="4,2"
-                             Text="{Binding SeriesCount, UpdateSourceTrigger=PropertyChanged}"
-                             VerticalAlignment="Center"
-                             Visibility="{Binding SeriesEnabled, Converter={StaticResource BoolToVisible}}"/>
-                </StackPanel>
+                <!-- Mattoni blocco: Contatore e Astinenza -->
+                <WrapPanel Margin="0,0,0,10">
+                    <CheckBox Content="{x:Static res:Strings.HabitBuilder_CounterBlock}"
+                              ToolTip="{x:Static res:Strings.HabitBuilder_CounterBlock_Tip}"
+                              IsChecked="{Binding CountsOccurrences}"
+                              IsEnabled="{Binding CanEnableCounter}"
+                              Margin="0,0,14,0"
+                              VerticalAlignment="Center"/>
+                    <CheckBox Content="{x:Static res:Strings.HabitBuilder_AbstinenceBlock}"
+                              ToolTip="{x:Static res:Strings.HabitBuilder_AbstinenceBlock_Tip}"
+                              IsChecked="{Binding Abstinence}"
+                              IsEnabled="{Binding CanEnableAbstinence}"
+                              VerticalAlignment="Center"/>
+                </WrapPanel>
 
                 <!-- Field list -->
                 <ItemsControl ItemsSource="{Binding Fields}" Margin="0,0,0,16">
@@ -291,7 +284,23 @@
                         BorderBrush="{DynamicResource Brush.Border}"
                         Background="{DynamicResource Brush.SurfaceElevated}">
                     <StackPanel>
-                        <ItemsControl ItemsSource="{Binding Preview.Rows}">
+
+                        <!-- Mock bottone +1 per counter nudo -->
+                        <Border Width="56" Height="56"
+                                CornerRadius="28"
+                                HorizontalAlignment="Left"
+                                Background="{DynamicResource Brush.Accent}"
+                                Visibility="{Binding Preview.IsTapCounter, Converter={StaticResource BoolToVisible}}">
+                            <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview_Tap}"
+                                       FontSize="22" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Brush.OnAccent}"/>
+                        </Border>
+
+                        <!-- Righe anteprima (counter con campi o habit normale) -->
+                        <ItemsControl ItemsSource="{Binding Preview.Rows}"
+                                      Visibility="{Binding Preview.IsTapCounter, Converter={StaticResource InvBoolToVisible}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="0,3">
@@ -321,6 +330,13 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <!-- Hint "+ Aggiungi serie" (counter con campi) -->
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview_AddSeries}"
+                                   Margin="0,6,0,0"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                   Visibility="{Binding Preview.HasAddSeries, Converter={StaticResource BoolToVisible}}"/>
 
                         <TextBlock Text="{x:Static res:Strings.HabitBuilder_TextFieldNote}"
                                    Margin="0,8,0,0"
