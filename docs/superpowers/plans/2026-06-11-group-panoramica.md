@@ -34,7 +34,7 @@
 
 **Files:** Modify `Strings.resx`, `Strings.it.resx`, `Strings.Designer.cs`
 
-- [ ] **Step 1**: EN, accanto a `HabitScreen.Column.Cronologia`:
+- [x] **Step 1**: EN, accanto a `HabitScreen.Column.Cronologia`:
 
 ```xml
   <data name="HabitScreen.Column.Panoramica" xml:space="preserve">
@@ -70,7 +70,7 @@ Designer (accanto a `HabitScreen_Column_Cronologia`):
     public static string HabitScreen_Panoramica_Empty => Get("HabitScreen.Panoramica.Empty");
 ```
 
-- [ ] **Step 2**: build 0/0; commit `feat(wpf): resx — Panoramica column strings`.
+- [x] **Step 2**: build 0/0; commit `feat(wpf): resx — Panoramica column strings`.
 
 ---
 
@@ -80,7 +80,7 @@ Designer (accanto a `HabitScreen_Column_Cronologia`):
 - Create: `src/Recordum.WPF/ViewModels/HabitScreen/PanoramicaViewModel.cs`
 - Test: `tests/Recordum.WPF.Tests/ViewModels/HabitScreen/PanoramicaViewModelTests.cs` (new)
 
-- [ ] **Step 1: test (RED)**
+- [x] **Step 1: test (RED)**
 
 ```csharp
 using System.Collections.Immutable;
@@ -160,9 +160,9 @@ public class PanoramicaViewModelTests
 }
 ```
 
-- [ ] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter PanoramicaViewModel` (compile error: tipo mancante).
+- [x] **Step 2: RED** — `dotnet test tests/Recordum.WPF.Tests --filter PanoramicaViewModel` (compile error: tipo mancante).
 
-- [ ] **Step 3: implementare**
+- [x] **Step 3: implementare**
 
 ```csharp
 using System.Collections.Immutable;
@@ -234,9 +234,9 @@ public sealed record PanoramicaChildRow(Guid HabitNodeId, string Name, string Co
 
 NB: verificare il namespace/ctor esatti di `GoalProgressCardViewModel` (in `ViewModels/HabitScreen/Detail/`, ctor `(IGoalService, ICompletionService, IClock)`) e di `IClock` (`Recordum.Core.Abstractions`); adeguare gli using se differiscono.
 
-- [ ] **Step 4: GREEN** — filtro `PanoramicaViewModel` → 3 PASS.
+- [x] **Step 4: GREEN** — filtro `PanoramicaViewModel` → 3 PASS.
 
-- [ ] **Step 5: commit** `feat(wpf): PanoramicaViewModel — group rollup with child navigation`.
+- [x] **Step 5: commit** `feat(wpf): PanoramicaViewModel — group rollup with child navigation`.
 
 ---
 
@@ -248,7 +248,7 @@ NB: verificare il namespace/ctor esatti di `GoalProgressCardViewModel` (in `View
 - Modify: fixture `HabitScreenViewModelFactory.Build`, `MainWindowViewModelFactory`, `MainWindowViewModelTests.CreateSut` (ctor +1: `IHabitTreeQueryService` → `new FakeHabitTreeQueryService()`; in `MainWindowViewModelTests.CreateSut` e `MainWindowViewModelFactory` riusare la `query` già istanziata)
 - Test: `HabitScreenColumnsTests` (append) + `HabitScreenColumnWidthsTests` (update CSV atteso)
 
-- [ ] **Step 1: test (RED)** — append a `HabitScreenColumnsTests` (aggiungere helper `AddGroup`):
+- [x] **Step 1: test (RED)** — append a `HabitScreenColumnsTests` (aggiungere helper `AddGroup`):
 
 ```csharp
     private static Guid AddGroup(FakeHabitNodeService nodes)
@@ -328,9 +328,9 @@ e in `HabitScreenColumnWidthsTests.Persist_writes_csv_and_roundtrips_on_restore`
             .Should().Be("Cronologia=460,Dettaglio=520,Note=600,Configura=480,Panoramica=460");
 ```
 
-- [ ] **Step 2: RED** — filtro `"Group_with_no_applicable|Habit_columns_stay_flagged|Closing_the_last_applicable|Group_load_populates|Persist_writes_csv"`.
+- [x] **Step 2: RED** — filtro `"Group_with_no_applicable|Habit_columns_stay_flagged|Closing_the_last_applicable|Group_load_populates|Persist_writes_csv"`.
 
-- [ ] **Step 3: implementare**
+- [x] **Step 3: implementare**
 
 `HabitColumn.cs`: aggiungere `Panoramica` come ULTIMO membro (ordine CSV stabile).
 
@@ -416,9 +416,9 @@ e in `HabitScreenColumnWidthsTests.Persist_writes_csv_and_roundtrips_on_restore`
 
 8. Fixture: aggiornare le 3 costruzioni (`HabitScreenViewModelFactory.Build`, `MainWindowViewModelFactory`, `MainWindowViewModelTests.CreateSut`) col nuovo parametro (`query` esistente in MainWindow*, `new FakeHabitTreeQueryService()` nella factory di HabitScreen). `grep -rn "new HabitScreenViewModel" src tests` per verificare che non ce ne siano altre (in `src` la costruzione è via DI: nessun cambio a `ServiceRegistrar`).
 
-- [ ] **Step 4: GREEN** — filtri step 2 + suite `HabitScreenColumns|HabitScreenColumnWidths|MainWindowViewModel` complete verdi.
+- [x] **Step 4: GREEN** — filtri step 2 + suite `HabitScreenColumns|HabitScreenColumnWidths|MainWindowViewModel` complete verdi.
 
-- [ ] **Step 5: commit** `feat(wpf): Panoramica column state — per-node-type applicability`.
+- [x] **Step 5: commit** `feat(wpf): Panoramica column state — per-node-type applicability`.
 
 ---
 
@@ -429,7 +429,7 @@ e in `HabitScreenColumnWidthsTests.Persist_writes_csv_and_roundtrips_on_restore`
 - Modify: `src/Recordum.WPF/ViewModels/MainWindowViewModel.cs` (wiring)
 - Test: `HomeViewModelTests` + `MainWindowViewModelTests` (append)
 
-- [ ] **Step 1: test (RED)** — `HomeViewModelTests`:
+- [x] **Step 1: test (RED)** — `HomeViewModelTests`:
 
 ```csharp
     [Fact]
@@ -473,9 +473,9 @@ e in `HabitScreenColumnWidthsTests.Persist_writes_csv_and_roundtrips_on_restore`
     }
 ```
 
-- [ ] **Step 2: RED** — filtro `"SelectById_expands|Panoramica_child_click"`.
+- [x] **Step 2: RED** — filtro `"SelectById_expands|Panoramica_child_click"`.
 
-- [ ] **Step 3: implementare**
+- [x] **Step 3: implementare**
 
 `HomeViewModel` (dopo `SelectRow`):
 
@@ -507,9 +507,9 @@ e accanto a `OnAllColumnsClosed`:
         => Home.SelectById(habitNodeId);
 ```
 
-- [ ] **Step 4: GREEN** — filtri step 2 + suite `HomeViewModel` e `MainWindowViewModel` verdi.
+- [x] **Step 4: GREEN** — filtri step 2 + suite `HomeViewModel` e `MainWindowViewModel` verdi.
 
-- [ ] **Step 5: commit** `feat(wpf): Panoramica child navigation selects the habit in the tree`.
+- [x] **Step 5: commit** `feat(wpf): Panoramica child navigation selects the habit in the tree`.
 
 ---
 
@@ -517,7 +517,7 @@ e accanto a `OnAllColumnsClosed`:
 
 **Files:** Modify `src/Recordum.WPF/Views/HabitScreen/HabitScreen.xaml`
 
-- [ ] **Step 1: chip** — nella chip-bar (StackPanel, riga ~600): la chip Panoramica va PRIMA di Cronologia; le chip Cronologia/Dettaglio si nascondono sui gruppi; tutte le `Visibility` con `BoolToVisible`:
+- [x] **Step 1: chip** — nella chip-bar (StackPanel, riga ~600): la chip Panoramica va PRIMA di Cronologia; le chip Cronologia/Dettaglio si nascondono sui gruppi; tutte le `Visibility` con `BoolToVisible`:
 
 ```xml
                 <CheckBox Style="{StaticResource Recordum.SegmentCheck}"
@@ -534,9 +534,9 @@ e sulle chip Cronologia e Dettaglio esistenti aggiungere:
 
 (verificare la key esatta del converter inverso già usato nel file: `InvBoolToVisible`).
 
-- [ ] **Step 2: visibilità colonne** — sostituire i binding `Visibility` delle 4 colonne esistenti: `IsCronologiaOpen`→`ShowCronologia`, `IsDettaglioOpen`→`ShowDettaglio`, `IsNoteOpen`→`ShowNote`, `IsConfiguraOpen`→`ShowConfigura` (stesso converter).
+- [x] **Step 2: visibilità colonne** — sostituire i binding `Visibility` delle 4 colonne esistenti: `IsCronologiaOpen`→`ShowCronologia`, `IsDettaglioOpen`→`ShowDettaglio`, `IsNoteOpen`→`ShowNote`, `IsConfiguraOpen`→`ShowConfigura` (stesso converter).
 
-- [ ] **Step 3: colonna Panoramica** — PRIMA del Border Cronologia, stesso chrome delle altre (header+✕+thumb):
+- [x] **Step 3: colonna Panoramica** — PRIMA del Border Cronologia, stesso chrome delle altre (header+✕+thumb):
 
 ```xml
                     <!-- Panoramica (group overview) -->
@@ -629,16 +629,16 @@ NB: verificare l'xmlns per `HeatmapStrip` (`Recordum.WPF.Views`, probabilmente g
 
 con `[NotifyPropertyChangedFor(nameof(TodayLabel))]` su `_completedToday` e `_totalChildren`, e nel XAML un semplice `Text="{Binding TodayLabel}"`. **Preferire direttamente questa seconda forma** (più semplice e testabile).
 
-- [ ] **Step 4**: build 0/0 + suite WPF completa verde.
+- [x] **Step 4**: build 0/0 + suite WPF completa verde.
 
-- [ ] **Step 5: commit** `feat(wpf): Panoramica column UI — group rollup with goal card and child rows`.
+- [x] **Step 5: commit** `feat(wpf): Panoramica column UI — group rollup with goal card and child rows`.
 
 ---
 
 ### Task 6: verifica visiva + tracker
 
 - [ ] skill `run` + checklist: gruppo selezionato → chip Panoramica/Note/Configura (niente Cronologia/Dettaglio); Panoramica default; rollup oggi x/y + righe figli con sparkline e ✓; click su figlio → naviga (anche con gruppo collassato); goal di gruppo visibile se configurato; habit → le 4 chip tornano col set conservato; resize/✕/Esc della colonna Panoramica; due temi.
-- [ ] aggiornare `docs/phase-4-issues.md` + memoria (piano 2 fatto; resta piano 3 = selezione multipla); commit docs.
+- [x] aggiornare `docs/phase-4-issues.md` + memoria (piano 2 fatto; resta piano 3 = selezione multipla); commit docs.
 
 ---
 
