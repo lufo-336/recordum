@@ -44,6 +44,10 @@ public partial class App : Application
             return;
         }
 
+        // Dev tool: `--seed-demo` populates a believable habit library (idempotent, see DemoDataSeeder).
+        if (e.Args.Contains("--seed-demo"))
+            await _services.GetRequiredService<DemoDataSeeder>().SeedAsync().ConfigureAwait(true);
+
         var theme = _services.GetRequiredService<IThemeService>();
         await theme.InitializeAsync().ConfigureAwait(true);
         ApplyTheme(theme.EffectiveTheme);

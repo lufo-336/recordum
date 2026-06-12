@@ -213,6 +213,7 @@ public static class ServiceRegistrar
 
         // Bootstrap.
         services.AddSingleton<ApplicationInitializer>();
+        services.AddTransient<DemoDataSeeder>();   // dev tool, runs only with --seed-demo
 
         return services;
     }
