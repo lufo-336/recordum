@@ -4,11 +4,13 @@ using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Views;
 
+/// <summary>Resolves the row template by resource key from the container's scope, so the
+/// group template can recursively select itself for nested groups (a self StaticResource
+/// inside GroupRowTemplate.xaml would be unresolvable).</summary>
 public sealed class RowTemplateSelector : DataTemplateSelector
 {
-    public DataTemplate? HabitTemplate { get; set; }
-    public DataTemplate? GroupTemplate { get; set; }
-
     public override DataTemplate? SelectTemplate(object? item, DependencyObject container) =>
-        item is HomeRowViewModel { IsGroup: true } ? GroupTemplate : HabitTemplate;
+        container is FrameworkElement fe
+            ? (DataTemplate)fe.FindResource(item is HomeRowViewModel { IsGroup: true } ? "GroupRowTemplate" : "HabitRowTemplate")
+            : null;
 }

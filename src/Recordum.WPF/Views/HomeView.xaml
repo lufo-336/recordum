@@ -18,6 +18,7 @@
                 <ResourceDictionary Source="HabitRowTemplate.xaml"/>
                 <ResourceDictionary Source="GroupRowTemplate.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <v:RowTemplateSelector x:Key="RowSelector"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -172,15 +173,10 @@
                                 <Setter.Value>
                                     <DataTemplate>
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                            <ItemsControl ItemsSource="{Binding Rows}"
+                                            <ItemsControl ItemsSource="{Binding Roots}"
                                                           b:TreeDragDropBehavior.Enabled="True"
-                                                          KeyboardNavigation.TabNavigation="Continue">
-                                                <ItemsControl.ItemTemplateSelector>
-                                                    <v:RowTemplateSelector
-                                                        HabitTemplate="{StaticResource HabitRowTemplate}"
-                                                        GroupTemplate="{StaticResource GroupRowTemplate}"/>
-                                                </ItemsControl.ItemTemplateSelector>
-                                            </ItemsControl>
+                                                          KeyboardNavigation.TabNavigation="Continue"
+                                                          ItemTemplateSelector="{StaticResource RowSelector}"/>
                                         </ScrollViewer>
                                     </DataTemplate>
                                 </Setter.Value>
