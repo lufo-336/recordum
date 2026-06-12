@@ -512,6 +512,15 @@ Details: {0}</value>
   <data name="HabitScreen.Column.Cronologia" xml:space="preserve">
     <value>Log</value>
   </data>
+  <data name="HabitScreen.Column.Panoramica" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="HabitScreen.Panoramica.Today" xml:space="preserve">
+    <value>Today {0}/{1}</value>
+  </data>
+  <data name="HabitScreen.Panoramica.Empty" xml:space="preserve">
+    <value>No habits in this group yet</value>
+  </data>
   <data name="HabitScreen.DayRecords" xml:space="preserve">
     <value>Records for this day</value>
   </data>

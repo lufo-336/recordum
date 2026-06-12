@@ -494,6 +494,15 @@
   <data name="HabitScreen.Column.Cronologia" xml:space="preserve">
     <value>Cronologia</value>
   </data>
+  <data name="HabitScreen.Column.Panoramica" xml:space="preserve">
+    <value>Panoramica</value>
+  </data>
+  <data name="HabitScreen.Panoramica.Today" xml:space="preserve">
+    <value>Oggi {0}/{1}</value>
+  </data>
+  <data name="HabitScreen.Panoramica.Empty" xml:space="preserve">
+    <value>Nessuna abitudine in questo gruppo</value>
+  </data>
   <data name="HabitScreen.DayRecords" xml:space="preserve">
     <value>Registrazioni del giorno</value>
   </data>

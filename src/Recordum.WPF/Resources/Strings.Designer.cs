@@ -40,6 +40,9 @@ public static class Strings
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
     public static string HabitScreen_Tab_Abitudine => Get("HabitScreen.Tab.Abitudine");
     public static string HabitScreen_Column_Cronologia => Get("HabitScreen.Column.Cronologia");
+    public static string HabitScreen_Column_Panoramica => Get("HabitScreen.Column.Panoramica");
+    public static string HabitScreen_Panoramica_Today => Get("HabitScreen.Panoramica.Today");
+    public static string HabitScreen_Panoramica_Empty => Get("HabitScreen.Panoramica.Empty");
     public static string HabitScreen_DayRecords => Get("HabitScreen.DayRecords");
     public static string HabitScreen_DayRecords_Empty => Get("HabitScreen.DayRecords.Empty");
     public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");
