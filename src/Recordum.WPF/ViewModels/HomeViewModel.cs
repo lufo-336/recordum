@@ -25,6 +25,9 @@ public sealed partial class HomeViewModel : ObservableObject
     private bool _suppressRebuild;
     private readonly HashSet<Guid> _collapsedGroupIds = [];
     private bool _rebuilding;
+    private readonly HashSet<Guid> _selectedIds = [];
+    private Guid? _selectionAnchor;
+    private bool _syncingSelection;
 
     [ObservableProperty] private HomeTab _activeTab = HomeTab.Active;
     [ObservableProperty] private HomeState _state = HomeState.Loading;
@@ -111,6 +114,65 @@ public sealed partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
 
+    public bool HasMultiSelection => _selectedIds.Count > 1;
+
+    /// <summary>File-manager selection (spec §C.1): plain=single, Ctrl=toggle, Shift=range from anchor.</summary>
+    public void SelectInteractive(HomeRowViewModel row, bool ctrl, bool shift)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        if (shift && _selectionAnchor is { } anchorId
+                  && Rows.FirstOrDefault(r => r.HabitNodeId == anchorId) is { } anchorRow)
+        {
+            var from = Rows.IndexOf(anchorRow);
+            var to = Rows.IndexOf(row);
+            _selectedIds.Clear();
+            foreach (var r in Rows.Skip(Math.Min(from, to)).Take(Math.Abs(to - from) + 1))
+                _selectedIds.Add(r.HabitNodeId);
+        }
+        else if (ctrl)
+        {
+            if (!_selectedIds.Remove(row.HabitNodeId)) _selectedIds.Add(row.HabitNodeId);
+            _selectionAnchor = row.HabitNodeId;
+        }
+        else
+        {
+            _selectedIds.Clear();
+            _selectedIds.Add(row.HabitNodeId);
+            _selectionAnchor = row.HabitNodeId;
+        }
+        ApplySelectionToRows();
+        SyncSelectedRowFromSet();
+    }
+
+    /// <summary>Esc with 2+ selected, or tab switches: back to no selection (spec §C.1).</summary>
+    public void ClearSelection()
+    {
+        _selectedIds.Clear();
+        _selectionAnchor = null;
+        ApplySelectionToRows();
+        SyncSelectedRowFromSet();
+    }
+
+    private void ApplySelectionToRows()
+    {
+        foreach (var r in Rows) r.IsSelected = _selectedIds.Contains(r.HabitNodeId);
+        OnPropertyChanged(nameof(HasMultiSelection));
+    }
+
+    // SelectedRow is the single-selection API the workspace tracks: non-null only when
+    // exactly one row is selected. The guard stops the setter's partial from clobbering the set.
+    private void SyncSelectedRowFromSet()
+    {
+        _syncingSelection = true;
+        try
+        {
+            SelectedRow = _selectedIds.Count == 1
+                ? Rows.FirstOrDefault(r => _selectedIds.Contains(r.HabitNodeId))
+                : null;
+        }
+        finally { _syncingSelection = false; }
+    }
+
     /// <summary>Selects a node by id, expanding any collapsed ancestor so its row is visible
     /// (used by the group Panoramica child navigation, spec §A.3).</summary>
     public void SelectById(Guid id)
@@ -125,8 +187,17 @@ public sealed partial class HomeViewModel : ObservableObject
 
     partial void OnSelectedRowChanged(HomeRowViewModel? oldValue, HomeRowViewModel? newValue)
     {
-        if (oldValue is not null) oldValue.IsSelected = false;
-        if (newValue is not null) newValue.IsSelected = true;
+        if (!_syncingSelection)
+        {
+            // Direct assignment (tree click plumbing, SelectById, deselects) = single selection.
+            _selectedIds.Clear();
+            if (newValue is not null)
+            {
+                _selectedIds.Add(newValue.HabitNodeId);
+                _selectionAnchor = newValue.HabitNodeId;
+            }
+        }
+        ApplySelectionToRows();
     }
 
     [RelayCommand]
@@ -194,9 +265,13 @@ public sealed partial class HomeViewModel : ObservableObject
 
     private async Task ReloadPreservingSelectionAsync()
     {
-        var keep = SelectedRow?.HabitNodeId;
+        var keep = _selectedIds.ToList();
         await LoadAsync();
-        SelectedRow = keep is { } id ? Rows.FirstOrDefault(r => r.HabitNodeId == id) : null;
+        _selectedIds.Clear();
+        foreach (var id in keep.Where(id => Rows.Any(r => r.HabitNodeId == id)))
+            _selectedIds.Add(id);
+        ApplySelectionToRows();
+        SyncSelectedRowFromSet();
     }
 
     // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
@@ -269,7 +344,7 @@ public sealed partial class HomeViewModel : ObservableObject
         }
         finally { _rebuilding = false; }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
-        foreach (var r in Rows) r.IsSelected = ReferenceEquals(r, SelectedRow);
+        ApplySelectionToRows();
     }
 
     private IEnumerable<(HomeTreeRow Row, int Level)> OrderHierarchically(IReadOnlyList<HomeTreeRow> rows)
