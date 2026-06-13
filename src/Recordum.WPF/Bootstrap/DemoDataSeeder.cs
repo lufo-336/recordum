@@ -165,10 +165,11 @@ public sealed class DemoDataSeeder(
         await settings.SetAsync(MarkerKey, today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
     }
 
-    /// <summary>Populates an EXISTING habit (looked up by name, case-insensitive) with ~90 days
-    /// of plausible completions: ~5 days a week, values with a slight upward trend for measured
-    /// types. Creates a "Ripetizioni" metric when the type needs values and none exists.
-    /// Triggered by <c>--seed-habit &lt;name&gt;</c>; no marker — repeated runs add more data.</summary>
+    /// <summary>Populates an EXISTING habit (by name, case-insensitive) with ~90 days of plausible
+    /// completions, filling ALL its metrics nature-aware (spec multivalue §6): Integer/Decimal =
+    /// quantity with trend, Seconds = activity durations, scale = weighted. Counter with fields → 1–4
+    /// series/day with ~10% of fields left empty; bare counter → N bare occurrences. No marker:
+    /// repeated runs add more data. Triggered by <c>--seed-habit &lt;name&gt;</c>.</summary>
     public async Task SeedHabitAsync(string name, CancellationToken ct = default)
     {
         var rows = await tree.GetHomeTreeAsync(ct).ConfigureAwait(false);
@@ -176,15 +177,8 @@ public sealed class DemoDataSeeder(
             string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase) && r.HabitType is not null)
             ?? throw new InvalidOperationException($"Nessuna habit attiva chiamata '{name}'.");
         var type = row.HabitType!.Value;
-
-        Guid? metricId = null;
-        if (type is HabitType.Counter or HabitType.Resistance or HabitType.State)
-        {
-            var existing = await metrics.ListByHabitAsync(row.HabitNodeId, ct).ConfigureAwait(false);
-            metricId = existing.Count > 0
-                ? existing[0].Id
-                : await MetricAsync(row.HabitNodeId, "Ripetizioni", ct).ConfigureAwait(false);
-        }
+        var defs = (await metrics.ListByHabitAsync(row.HabitNodeId, ct).ConfigureAwait(false))
+            .OrderBy(m => m.SortOrder).ToList();
 
         var today = DateOnly.FromDateTime(
             TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone));
@@ -192,20 +186,72 @@ public sealed class DemoDataSeeder(
 
         for (var day = start; day <= today; day = day.AddDays(1))
         {
-            if (!Chance(0.72)) continue;
-            // Slight progression: later days trend higher (e.g. push-up counts growing).
-            var progress = (day.DayNumber - start.DayNumber) / 90.0;
-            var value = (int)(12 + progress * 20) + _rng.Next(0, 14);
-
-            if (type == HabitType.Action)
-                await ActionAsync(row.HabitNodeId, day, 7, 21, ct).ConfigureAwait(false);
-            else if (type == HabitType.Journal)
-                await completions.RecordAsync(
-                    Draft(row.HabitNodeId, day, 7, 21, notesBody: JournalEntries[_rng.Next(JournalEntries.Length)]),
-                    ct: ct).ConfigureAwait(false);
-            else
-                await ValueAsync(row.HabitNodeId, metricId!.Value, value, day, 7, 21, ct).ConfigureAwait(false);
+            double progress = (day.DayNumber - start.DayNumber) / 90.0;
+            switch (type)
+            {
+                case HabitType.Action when Chance(0.72):
+                    await ActionAsync(row.HabitNodeId, day, 7, 21, ct).ConfigureAwait(false);
+                    break;
+                case HabitType.Journal when Chance(0.40):
+                    await completions.RecordAsync(
+                        Draft(row.HabitNodeId, day, 7, 21, notesBody: JournalEntries[_rng.Next(JournalEntries.Length)]),
+                        ct: ct).ConfigureAwait(false);
+                    break;
+                case HabitType.Counter when defs.Count == 0 && Chance(0.85):
+                    for (int i = _rng.Next(1, 6); i > 0; i--)
+                        await completions.RecordAsync(Draft(row.HabitNodeId, day, 7, 21), ct: ct).ConfigureAwait(false);
+                    break;
+                case HabitType.Counter when defs.Count > 0 && Chance(0.72):
+                    await SeriesDayAsync(row.HabitNodeId, defs, _rng.Next(1, 5), progress, day, ct).ConfigureAwait(false);
+                    break;
+                case HabitType.Resistance when Chance(0.12): // lapses/episodes, rare
+                    await SeriesDayAsync(row.HabitNodeId, defs, 1, progress, day, ct).ConfigureAwait(false);
+                    break;
+                case HabitType.State when defs.Count > 0 && Chance(0.85):
+                    await ValueAsync(row.HabitNodeId, defs[0].Id, WeightedMood(), day, 20, 22, ct).ConfigureAwait(false);
+                    break;
+            }
         }
+    }
+
+    /// <summary>One completion with N series rows, every cell populated by nature; ~10% of fields
+    /// (never all in a row) left empty to exercise the "missing" case (spec D6).</summary>
+    private async Task SeriesDayAsync(Guid habitId, List<MetricDefinition> defs, int series,
+        double progress, DateOnly day, CancellationToken ct)
+    {
+        if (defs.Count == 0)
+        {
+            await completions.RecordAsync(Draft(habitId, day, 17, 21), ct: ct).ConfigureAwait(false);
+            return;
+        }
+        var values = new List<CompletionValue>();
+        for (int s = 0; s < series; s++)
+        {
+            var written = new List<CompletionValue>();
+            for (int m = 0; m < defs.Count; m++)
+            {
+                bool skip = defs.Count > 1 && m > 0 && Chance(0.10);
+                if (skip) continue;
+                written.Add(MakeValue(defs[m], s, progress));
+            }
+            if (written.Count == 0) written.Add(MakeValue(defs[0], s, progress)); // row never fully empty
+            values.AddRange(written);
+        }
+        await completions.RecordAsync(Draft(habitId, day, 17, 21), values, ct: ct).ConfigureAwait(false);
+    }
+
+    private CompletionValue MakeValue(MetricDefinition def, int seriesIndex, double progress)
+    {
+        var v = new CompletionValue { MetricDefinitionId = def.Id, SeriesIndex = seriesIndex };
+        bool isScale = def.ScaleTemplateId is not null || def.LabelsJson is not null;
+        if (isScale) v.ValueInteger = WeightedMood() - 1;                       // 0-based index
+        else switch (def.Type)
+        {
+            case MetricType.Seconds: v.ValueSeconds = 20 + _rng.Next(0, 100) + (int)(progress * 30); break;
+            case MetricType.Decimal: v.ValueDecimal = Math.Round((decimal)(0.5 + _rng.NextDouble() * 2.5 + progress), 2); break;
+            default: v.ValueInteger = (int)(12 + progress * 20) + _rng.Next(0, 14); break;
+        }
+        return v;
     }
 
     private bool Chance(double p) => _rng.NextDouble() < p;
