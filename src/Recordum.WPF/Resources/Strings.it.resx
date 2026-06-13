@@ -336,10 +336,16 @@
     <value>+ Testo libero</value>
   </data>
   <data name="HabitBuilder.CounterBlock" xml:space="preserve">
-    <value>Contatore (+1)</value>
+    <value>Contatore a tap (+1, senza campi)</value>
   </data>
   <data name="HabitBuilder.CounterBlock.Tip" xml:space="preserve">
-    <value>Questa abitudine conta occorrenze: si registra con un tap.</value>
+    <value>Un conteggio nudo: un tap = un'occorrenza, senza campi. Per un contatore con ripetizioni / tempo / ecc. lascia questa spenta e aggiungi i campi qui sotto.</value>
+  </data>
+  <data name="HabitBuilder.FieldsHint" xml:space="preserve">
+    <value>Aggiungi campi da misurare (quantità, tempo, scala). Un'abitudine con campi diventa un contatore che registri come una o più serie.</value>
+  </data>
+  <data name="HabitBuilder.TapCounterNote" xml:space="preserve">
+    <value>Un contatore a tap non ha campi: lo registri con un singolo +1.</value>
   </data>
   <data name="HabitBuilder.AbstinenceBlock" xml:space="preserve">
     <value>Astinenza</value>

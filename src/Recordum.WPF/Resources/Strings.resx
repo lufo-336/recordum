@@ -354,10 +354,16 @@ Details: {0}</value>
     <value>+ Free text</value>
   </data>
   <data name="HabitBuilder.CounterBlock" xml:space="preserve">
-    <value>Counter (+1)</value>
+    <value>Tap counter (+1, no fields)</value>
   </data>
   <data name="HabitBuilder.CounterBlock.Tip" xml:space="preserve">
-    <value>This habit counts occurrences: record with a single tap.</value>
+    <value>A bare tally: one tap = one occurrence, with no fields. For a counter with reps / time / etc., leave this off and just add fields below.</value>
+  </data>
+  <data name="HabitBuilder.FieldsHint" xml:space="preserve">
+    <value>Add fields to measure (quantity, time, scale). A habit with fields becomes a counter you can log as one or more series.</value>
+  </data>
+  <data name="HabitBuilder.TapCounterNote" xml:space="preserve">
+    <value>A tap counter has no fields — you record it with a single +1.</value>
   </data>
   <data name="HabitBuilder.AbstinenceBlock" xml:space="preserve">
     <value>Abstinence</value>

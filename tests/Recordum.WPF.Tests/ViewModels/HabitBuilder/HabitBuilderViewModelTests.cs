@@ -56,10 +56,30 @@ public class HabitBuilderViewModelTests
     public void Counter_block_derives_counter_and_locks_palette()
     {
         var vm = CreateVm();
+        vm.FieldsAllowed.Should().BeTrue(); // palette enabled on an empty canvas
         vm.CountsOccurrences = true;
         vm.DerivedType.Should().Be(HabitType.Counter);
         vm.CanAddField(FieldNature.Quantity).Should().BeFalse();
+        vm.FieldsAllowed.Should().BeFalse(); // bare counter disables the field palette
         vm.Preview.IsTapCounter.Should().BeTrue();
+
+        vm.CountsOccurrences = false;
+        vm.FieldsAllowed.Should().BeTrue(); // re-enabled when the tally block is cleared
+    }
+
+    [WpfFact]
+    public void Adding_fields_makes_a_counter_with_series_preview_without_the_tally_block()
+    {
+        var vm = CreateVm();
+        vm.AddFieldCommand.Execute(FieldNature.Quantity);
+        vm.AddFieldCommand.Execute(FieldNature.Time);
+
+        vm.Fields.Should().HaveCount(2);               // multiple blocks coexist
+        vm.DerivedType.Should().Be(HabitType.Counter); // auto-derived, no tally checkbox needed
+        vm.Preview.IsTapCounter.Should().BeFalse();    // shows series rows, not the +1 mock
+        vm.Preview.HasAddSeries.Should().BeTrue();
+        vm.Preview.Rows.Should().ContainSingle()
+            .Which.CellNames.Should().HaveCount(2);
     }
 
     [WpfFact]

@@ -93,6 +93,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <summary>True when the current composition allows the Abstinence block (no text field, no counter).</summary>
     public bool CanEnableAbstinence => HabitCompositionRules.CanEnableAbstinence(Snapshot());
 
+    /// <summary>False when the bare "Counter (+1)" block is on — a tap counter has no fields, so the
+    /// builder disables the whole field palette (instead of letting clicks silently no-op) and shows
+    /// a hint. Bound to the palette <c>IsEnabled</c>.</summary>
+    public bool FieldsAllowed => !CountsOccurrences;
+
     partial void OnCountsOccurrencesChanged(bool value) => Recompute();
     partial void OnAbstinenceChanged(bool value) => Recompute();
 
@@ -138,6 +143,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         Preview.Rebuild(Fields, CountsOccurrences, DerivedType == HabitType.Counter && hasCells);
         OnPropertyChanged(nameof(CanEnableCounter));
         OnPropertyChanged(nameof(CanEnableAbstinence));
+        OnPropertyChanged(nameof(FieldsAllowed));
         RaiseLaunchState();
     }
 

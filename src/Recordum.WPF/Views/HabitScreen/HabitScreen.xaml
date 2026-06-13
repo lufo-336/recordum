@@ -149,13 +149,13 @@
              "Undo last" deletes the newest of the selected day (spec multivalue §4.1). -->
         <DataTemplate x:Key="CounterTapQuickAddTemplate" DataType="{x:Type qa:CounterTapQuickAddViewModel}">
             <StackPanel Margin="12" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Command="{Binding TapCommand}" Width="64" Height="64"
+                <Button Command="{Binding TapCommand}" Width="44" Height="44"
                         Content="{x:Static res:Strings.HabitScreen_QuickAdd_Tap}"
-                        FontSize="22" FontWeight="SemiBold"
+                        FontSize="17" FontWeight="SemiBold"
                         Foreground="{DynamicResource Brush.OnAccent}" Cursor="Hand">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="bd" CornerRadius="32" Background="{DynamicResource Brush.Accent}">
+                            <Border x:Name="bd" CornerRadius="22" Background="{DynamicResource Brush.Accent}">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
