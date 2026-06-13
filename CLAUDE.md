@@ -10,7 +10,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 
 - **Autore**: ITS Web Solutions Architect · Torino
 - **Product spec**: v2.0 (aprile 2026)
-- **DB schema**: v2.7 (maggio 2026) — delta `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
+- **DB schema**: v2.10 (giugno 2026) — delta `counter_reclass` v2.10 (data-only: resistance-serie → counter) > `note_history` v2.9 > `abitudine_calendar` v2.8 > `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
 - **Namespace**: `Recordum`
 
 ---
