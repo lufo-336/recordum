@@ -29,6 +29,12 @@ public static class Strings
     public static string HabitScreen_QuickAdd_RemoveSeries => Get("HabitScreen.QuickAdd.RemoveSeries");
     public static string HabitScreen_QuickAdd_SeriesIndex => Get("HabitScreen.QuickAdd.SeriesIndex");
     public static string HabitScreen_QuickAdd_State_Select => Get("HabitScreen.QuickAdd.State.Select");
+    public static string HabitScreen_QuickAdd_Tap => Get("HabitScreen.QuickAdd.Tap");
+    public static string HabitScreen_QuickAdd_TodayCount => Get("HabitScreen.QuickAdd.TodayCount");
+    public static string HabitScreen_QuickAdd_UndoLast => Get("HabitScreen.QuickAdd.UndoLast");
+    public static string HabitScreen_QuickAdd_SaveSeries => Get("HabitScreen.QuickAdd.SaveSeries");
+    public static string HabitScreen_QuickAdd_ChronoStart => Get("HabitScreen.QuickAdd.ChronoStart");
+    public static string HabitScreen_QuickAdd_ChronoStop => Get("HabitScreen.QuickAdd.ChronoStop");
     public static string Home_QuickAction => Get("Home.QuickAction");
     public static string HabitScreen_Timer_Start => Get("HabitScreen.Timer.Start");
     public static string HabitScreen_Timer_Pause => Get("HabitScreen.Timer.Pause");

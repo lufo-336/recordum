@@ -467,6 +467,24 @@
   <data name="HabitScreen.QuickAdd.State.Select" xml:space="preserve">
     <value>Seleziona livello</value>
   </data>
+  <data name="HabitScreen.QuickAdd.Tap" xml:space="preserve">
+    <value>+1</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.TodayCount" xml:space="preserve">
+    <value>{0} oggi</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.UndoLast" xml:space="preserve">
+    <value>Annulla ultima</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.SaveSeries" xml:space="preserve">
+    <value>Registra {0} serie</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.ChronoStart" xml:space="preserve">
+    <value>Avvia cronometro</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.ChronoStop" xml:space="preserve">
+    <value>Ferma e compila il tempo</value>
+  </data>
   <data name="Home.QuickAction" xml:space="preserve">
     <value>Log rapido</value>
   </data>

@@ -145,6 +145,47 @@
             </StackPanel>
         </DataTemplate>
 
+        <!-- Bare counter: each tap records one occurrence immediately; the count = number of completions today.
+             "Undo last" deletes the newest of the selected day (spec multivalue §4.1). -->
+        <DataTemplate x:Key="CounterTapQuickAddTemplate" DataType="{x:Type qa:CounterTapQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Command="{Binding TapCommand}" Width="64" Height="64"
+                        Content="{x:Static res:Strings.HabitScreen_QuickAdd_Tap}"
+                        FontSize="22" FontWeight="SemiBold"
+                        Foreground="{DynamicResource Brush.OnAccent}" Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" CornerRadius="32" Background="{DynamicResource Brush.Accent}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Opacity" Value="0.9"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="bd" Property="Opacity" Value="0.8"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                    <TextBlock FontSize="20" FontWeight="Bold" Foreground="{DynamicResource Brush.Text}">
+                        <TextBlock.Text>
+                            <Binding Path="DayCount" StringFormat="{x:Static res:Strings.HabitScreen_QuickAdd_TodayCount}"/>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <Button Command="{Binding UndoLastCommand}"
+                            Content="{x:Static res:Strings.HabitScreen_QuickAdd_UndoLast}"
+                            HorizontalAlignment="Left" Padding="0,4,0,0"
+                            Background="Transparent" BorderThickness="0"
+                            Foreground="{DynamicResource Brush.TextMuted}" Cursor="Hand"/>
+                </StackPanel>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="12,0,0,0" VerticalAlignment="Center"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+        </DataTemplate>
+
         <!-- Kind-aware input cell for one metric: measured (numeric + unit), scale (labelled selector or slider), or text.
              Horizontal: [Name] [input] [unit]. Stacked vertically in Measured, side-by-side in CounterSeries series rows. -->
         <DataTemplate x:Key="MetricCellTemplate" DataType="{x:Type qa:SeriesCellViewModel}">
@@ -152,7 +193,7 @@
                 <TextBlock Text="{Binding Name}" MinWidth="110" VerticalAlignment="Center" Margin="0,0,8,0"
                            Foreground="{DynamicResource Brush.TextMuted}"/>
                 <Grid VerticalAlignment="Center">
-                    <!-- Measured: Integer/Seconds -->
+                    <!-- Measured: Integer (Seconds is handled by the duration mask below) -->
                     <TextBox Width="90"
                              Text="{Binding IntegerValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}">
                         <TextBox.Style>
@@ -166,13 +207,24 @@
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Visibility" Value="Visible"/>
                                     </MultiDataTrigger>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding Kind}" Value="Measured"/>
-                                            <Condition Binding="{Binding Type}" Value="Seconds"/>
-                                        </MultiDataTrigger.Conditions>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                    <!-- Measured: Seconds → mm:ss duration mask (writes ValueSeconds). Red border when unparseable. -->
+                    <TextBox Width="90"
+                             Text="{Binding DurationText, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"
+                             ToolTip="12:30">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDuration}" Value="True">
                                         <Setter Property="Visibility" Value="Visible"/>
-                                    </MultiDataTrigger>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsDurationInvalid}" Value="True">
+                                        <Setter Property="BorderBrush" Value="Red"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBox.Style>
@@ -338,12 +390,30 @@
                             <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6" CornerRadius="3">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
+                                    <!-- Validity marker: ✓ when any cell carries a value, ○ otherwise (spec D6). -->
+                                    <TextBlock Grid.Column="0" Width="18" TextAlignment="Center" VerticalAlignment="Top"
+                                               Margin="0,4,4,0" FontSize="13"
+                                               Text="{Binding IsValid, Converter={StaticResource BoolToCheckMark}}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                                                <Setter Property="Opacity" Value="0.5"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsValid}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                     <!-- WrapPanel (not horizontal StackPanel) so series cells flow to the next
                                          line instead of clipping off the right edge in a narrow column. -->
-                                    <ItemsControl Grid.Column="0"
+                                    <ItemsControl Grid.Column="1"
                                                   ItemsSource="{Binding Cells}"
                                                   ItemTemplate="{StaticResource MetricCellTemplate}">
                                         <ItemsControl.ItemsPanel>
@@ -351,7 +421,7 @@
                                         </ItemsControl.ItemsPanel>
                                     </ItemsControl>
                                     <!-- Per-series delete; disabled (via CanRemoveSeries) when only one series remains. -->
-                                    <Button Grid.Column="1"
+                                    <Button Grid.Column="2"
                                             Content="✕"
                                             Width="24" Height="24" Padding="0"
                                             VerticalAlignment="Top"
@@ -369,8 +439,12 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_AddSeries}"
                             Command="{Binding AddSeriesCommand}" Padding="8,4" Margin="0,0,8,0"/>
-                    <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
-                            Command="{Binding SaveCommand}" Padding="12,4"/>
+                    <Button Command="{Binding SaveCommand}" Padding="12,4">
+                        <Button.Content>
+                            <Binding Path="ValidSeriesCount"
+                                     StringFormat="{x:Static res:Strings.HabitScreen_QuickAdd_SaveSeries}"/>
+                        </Button.Content>
+                    </Button>
                 </StackPanel>
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
@@ -511,6 +585,7 @@
                                       Action="{StaticResource ActionQuickAddTemplate}"
                                       Measured="{StaticResource MeasuredQuickAddTemplate}"
                                       CounterSeries="{StaticResource CounterSeriesQuickAddTemplate}"
+                                      CounterTap="{StaticResource CounterTapQuickAddTemplate}"
                                       Journal="{StaticResource JournalQuickAddTemplate}"/>
 
         <!-- Column chrome (nav-model: chip-toggled side-by-side view columns). -->

@@ -485,6 +485,24 @@ Details: {0}</value>
   <data name="HabitScreen.QuickAdd.State.Select" xml:space="preserve">
     <value>Select level</value>
   </data>
+  <data name="HabitScreen.QuickAdd.Tap" xml:space="preserve">
+    <value>+1</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.TodayCount" xml:space="preserve">
+    <value>{0} today</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.UndoLast" xml:space="preserve">
+    <value>Undo last</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.SaveSeries" xml:space="preserve">
+    <value>Record {0} series</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.ChronoStart" xml:space="preserve">
+    <value>Start stopwatch</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.ChronoStop" xml:space="preserve">
+    <value>Stop and fill in the time</value>
+  </data>
   <data name="Home.QuickAction" xml:space="preserve">
     <value>Quick log</value>
   </data>
