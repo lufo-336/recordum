@@ -1,7 +1,10 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Formatting;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -12,6 +15,10 @@ public sealed partial class StreakSummaryViewModel(IStreakAggregator aggregator,
     [ObservableProperty] private DateOnly? _longestStartedOn;
     [ObservableProperty] private int _runsLast90Days;
     [ObservableProperty] private bool _isEmpty;
+
+    /// <summary>The big "current streak" number, formatted for display. Resistance habits render
+    /// the elapsed time since the last lapse ("2a 41g"); other types show the plain day count.</summary>
+    [ObservableProperty] private string _currentDisplay = "0";
 
     public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
     {
@@ -28,5 +35,9 @@ public sealed partial class StreakSummaryViewModel(IStreakAggregator aggregator,
         var current = allTime.FirstOrDefault(r => r.End == today || r.End == today.AddDays(-1));
         CurrentLength = current?.Length ?? 0;
         IsEmpty = allTime.Count == 0;
+
+        CurrentDisplay = node.HabitType == HabitType.Resistance
+            ? DurationFormat.FormatDays(CurrentLength)
+            : CurrentLength.ToString(CultureInfo.InvariantCulture);
     }
 }

@@ -50,6 +50,44 @@ public sealed class StreakSummaryViewModelTests
     }
 
     [Fact]
+    public async Task Resistance_current_streak_renders_elapsed_format()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var aggr = new FakeStreakAggregator();
+        aggr.Runs.Add(new StreakRun(today.AddDays(-770), today, 771)); // 771 days = 2y 41d
+
+        var vm = new StreakSummaryViewModel(aggr, clock);
+        await vm.LoadAsync(new HabitNode
+        {
+            Id = Guid.NewGuid(),
+            HabitType = HabitType.Resistance,
+            CreatedAt = clock.UtcNow.AddYears(-3).UtcDateTime,
+        });
+
+        Assert.Equal("2a 41g", vm.CurrentDisplay);
+    }
+
+    [Fact]
+    public async Task Non_resistance_current_streak_stays_numeric()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var aggr = new FakeStreakAggregator();
+        aggr.Runs.Add(new StreakRun(today.AddDays(-11), today, 12));
+
+        var vm = new StreakSummaryViewModel(aggr, clock);
+        await vm.LoadAsync(new HabitNode
+        {
+            Id = Guid.NewGuid(),
+            HabitType = HabitType.Counter,
+            CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime,
+        });
+
+        Assert.Equal("12", vm.CurrentDisplay);
+    }
+
+    [Fact]
     public async Task Longest_pulls_max_length_across_all_time()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));

@@ -549,7 +549,7 @@
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="{x:Static res:Strings.Detail_Streak_Current}"
                                                Foreground="{DynamicResource Brush.TextMuted}"/>
-                                    <TextBlock Text="{Binding StreakSummary.CurrentLength}"
+                                    <TextBlock Text="{Binding StreakSummary.CurrentDisplay}"
                                                FontSize="{StaticResource FontSize.Heading}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
