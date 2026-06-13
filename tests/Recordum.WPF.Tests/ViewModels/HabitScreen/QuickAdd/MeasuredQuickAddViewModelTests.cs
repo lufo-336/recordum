@@ -15,7 +15,7 @@ public class MeasuredQuickAddViewModelTests
         var cs = new FakeCompletionService();
         var ms = new FakeMetricDefinitionService();
         var rd = new FakeReferenceData();
-        var sut = new MeasuredQuickAddViewModel(cs, ms, rd, new FakeClock())
+        var sut = new MeasuredQuickAddViewModel(cs, ms, rd, new FakeClock(), new FakeActiveTimerService())
         {
             Node = new HabitNode { Id = nodeId, HabitType = HabitType.Counter },
         };

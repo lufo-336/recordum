@@ -211,6 +211,35 @@ public class ActiveTimerServiceTests
     }
 
     [Fact]
+    public async Task StopWithoutRecording_returns_elapsed_and_removes_timer_without_completion()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx, HabitType.Counter);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        await sut.StartAsync(habitId, TimerMode.Stopwatch);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(95));
+
+        var elapsed = await sut.StopWithoutRecordingAsync(habitId);
+
+        elapsed.Should().Be(95);
+        (await sut.GetActiveAsync(habitId)).Should().BeNull();
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.Completions.AnyAsync(x => x.HabitNodeId == habitId)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task StopWithoutRecording_throws_when_no_active_timer()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedHabit(fx, HabitType.Counter);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+
+        var act = async () => await sut.StopWithoutRecordingAsync(habitId);
+        await act.Should().ThrowAsync<ActiveTimerNotFoundException>();
+    }
+
+    [Fact]
     public async Task NextSegmentAsync_increments_segment_index_for_session_mode()
     {
         await using var fx = new DbFixture();

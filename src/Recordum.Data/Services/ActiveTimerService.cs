@@ -58,10 +58,7 @@ public sealed class ActiveTimerService(
         var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct)
             ?? throw new ActiveTimerNotFoundException(habitNodeId);
 
-        var nowMs = clock.UtcNowMs;
-        var endMs = t.PausedAtMs ?? nowMs;
-        var elapsedActiveMs = endMs - t.StartedAtMs - t.AccumulatedPausedMs;
-        if (elapsedActiveMs < 0) elapsedActiveMs = 0;
+        var endMs = t.PausedAtMs ?? clock.UtcNowMs;
 
         var draft = new Completion
         {
@@ -72,13 +69,34 @@ public sealed class ActiveTimerService(
             StartedAtMs = t.StartedAtMs,
             EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(endMs).UtcDateTime,
             EndedAtMs = endMs,
-            DurationSeconds = (int)(elapsedActiveMs / 1000),
+            DurationSeconds = ElapsedSeconds(t, endMs),
         };
 
         db.ActiveTimers.Remove(t);
         await db.SaveChangesAsync(ct);
         await completions.RecordAsync(draft, values: null, segments: null, ct);
         return draft;
+    }
+
+    public async ValueTask<int> StopWithoutRecordingAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var t = await db.ActiveTimers.FirstOrDefaultAsync(x => x.HabitNodeId == habitNodeId, ct)
+            ?? throw new ActiveTimerNotFoundException(habitNodeId);
+
+        var endMs = t.PausedAtMs ?? clock.UtcNowMs;
+        var elapsed = ElapsedSeconds(t, endMs);
+        db.ActiveTimers.Remove(t);
+        await db.SaveChangesAsync(ct);
+        return elapsed;
+    }
+
+    /// <summary>Elapsed active seconds at <paramref name="endMs"/>, net of accumulated pauses (never negative).</summary>
+    private static int ElapsedSeconds(ActiveTimer t, long endMs)
+    {
+        var elapsedActiveMs = endMs - t.StartedAtMs - t.AccumulatedPausedMs;
+        if (elapsedActiveMs < 0) elapsedActiveMs = 0;
+        return (int)(elapsedActiveMs / 1000);
     }
 
     public async ValueTask NextSegmentAsync(Guid habitNodeId, CancellationToken ct = default)

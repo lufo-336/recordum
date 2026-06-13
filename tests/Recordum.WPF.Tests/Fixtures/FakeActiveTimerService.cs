@@ -14,10 +14,12 @@ public sealed class FakeActiveTimerService(IClock? clock = null) : IActiveTimerS
     public List<Guid> PauseCalls { get; } = [];
     public List<Guid> ResumeCalls { get; } = [];
     public List<Guid> StopCalls { get; } = [];
+    public List<Guid> StopWithoutRecordingCalls { get; } = [];
     public List<Guid> NextSegmentCalls { get; } = [];
     public List<(Guid HabitNodeId, TimerMode Mode)> StartCalls { get; } = [];
 
     public Func<Guid, Completion>? StopFactory { get; set; }
+    public Func<Guid, int>? StopWithoutRecordingFactory { get; set; }
 
     public ValueTask<ActiveTimer> StartAsync(Guid habitNodeId, TimerMode mode, CancellationToken ct = default)
     {
@@ -55,6 +57,13 @@ public sealed class FakeActiveTimerService(IClock? clock = null) : IActiveTimerS
         var c = StopFactory?.Invoke(habitNodeId)
             ?? new Completion { Id = Guid.NewGuid(), HabitNodeId = habitNodeId, CompletedAt = _clock.UtcNow.UtcDateTime, CompletedAtMs = _clock.UtcNowMs };
         return new ValueTask<Completion>(c);
+    }
+
+    public ValueTask<int> StopWithoutRecordingAsync(Guid habitNodeId, CancellationToken ct = default)
+    {
+        StopWithoutRecordingCalls.Add(habitNodeId);
+        Active.RemoveAll(t => t.HabitNodeId == habitNodeId);
+        return new ValueTask<int>(StopWithoutRecordingFactory?.Invoke(habitNodeId) ?? 0);
     }
 
     public ValueTask NextSegmentAsync(Guid habitNodeId, CancellationToken ct = default)

@@ -151,11 +151,28 @@ public class CounterSeriesQuickAddViewModelTests
         var tempo = SecondsMetric(habitId);
         metrics.Store[reps.Id] = reps;
         metrics.Store[tempo.Id] = tempo;
-        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock())
+        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), new FakeActiveTimerService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
         };
         return (vm, cs);
+    }
+
+    private static (CounterSeriesQuickAddViewModel vm, FakeActiveTimerService timers) CreateCounterSeriesVmWithTimers()
+    {
+        var cs = new FakeCompletionService();
+        var metrics = new FakeMetricDefinitionService();
+        var habitId = Guid.NewGuid();
+        var reps = IntMetric("Ripetizioni", habitId);
+        var tempo = SecondsMetric(habitId);
+        metrics.Store[reps.Id] = reps;
+        metrics.Store[tempo.Id] = tempo;
+        var timers = new FakeActiveTimerService { StopWithoutRecordingFactory = _ => 95 };
+        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), timers)
+        {
+            Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
+        };
+        return (vm, timers);
     }
 
     private static (FakeCompletionService cs, FakeMetricDefinitionService metrics, CounterSeriesQuickAddViewModel sut, Guid habitId, MetricDefinition reps, MetricDefinition load)
@@ -168,7 +185,7 @@ public class CounterSeriesQuickAddViewModelTests
         var load = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "load", Type = MetricType.Decimal, SortOrder = 1 };
         metrics.Store[reps.Id] = reps;
         metrics.Store[load.Id] = load;
-        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock())
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), new FakeActiveTimerService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Resistance },
         };
@@ -184,7 +201,7 @@ public class CounterSeriesQuickAddViewModelTests
         var habitId = Guid.NewGuid();
         var unitId = rd.Units[0].Id;
         await metrics.CreateAsync(new MetricDefinition { HabitNodeId = habitId, Name = "Distance", Type = MetricType.Decimal, UnitOfMeasureId = unitId, SortOrder = 0 });
-        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, rd, new FakeClock())
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, rd, new FakeClock(), new FakeActiveTimerService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
         };
@@ -297,6 +314,22 @@ public class CounterSeriesQuickAddViewModelTests
         vm.Series[0].Cells[0].IntegerValue = 14;           // Ripetizioni sì, Tempo no
         await vm.SaveAsync();
         Assert.Single(completions.LastValues!);            // un solo CompletionValue (spec D6)
+    }
+
+    [Fact]
+    public async Task Chrono_toggle_fills_the_duration_cell()
+    {
+        var (vm, timers) = CreateCounterSeriesVmWithTimers();
+        await vm.LoadMetricsAsync();
+        var cell = vm.Series[0].Cells.First(c => c.IsDuration);
+
+        await vm.ToggleChronoCommand.ExecuteAsync(cell);  // start
+        Assert.True(vm.ChronoRunning);
+
+        await vm.ToggleChronoCommand.ExecuteAsync(cell);  // stop → 95s
+        Assert.Equal("1:35", cell.DurationText);
+        Assert.False(vm.ChronoRunning);
+        Assert.Single(timers.StopWithoutRecordingCalls);
     }
 }
 

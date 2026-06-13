@@ -19,6 +19,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 {
     private readonly IHabitNodeService _nodes;
     private readonly ICompletionService _completions;
+    private readonly IActiveTimerService _timers;
     private readonly INoteService _noteService;
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
@@ -297,6 +298,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(availability);
         _nodes = nodes;
         _completions = completions;
+        _timers = timers;
         _noteService = noteService;
         _metrics = metrics;
         _refData = refData;
@@ -404,9 +406,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
             HabitType.Counter => await BuildCounterQuickAddAsync(ct).ConfigureAwait(true),
-            HabitType.Resistance => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
+            HabitType.Resistance => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock),
-            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
+            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
             _ => null,
         };
         if (vm is null) { QuickAdd = null; return; }
@@ -426,7 +428,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             var defs = await _metrics.ListByHabitAsync(node.Id, c).ConfigureAwait(true);
             return defs.Count == 0
                 ? new CounterTapQuickAddViewModel(_completions, _clock)
-                : new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock);
+                : new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers);
         }
     }
 
