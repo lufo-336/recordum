@@ -29,7 +29,24 @@ public class ActionQuickActionHandlerTests
 public class CounterQuickActionHandlerTests
 {
     [Fact]
-    public async Task ExecuteAsync_records_value_1_against_first_metric()
+    public async Task Bare_counter_records_occurrence_without_values()
+    {
+        var cs = new FakeCompletionService();
+        var metrics = new FakeMetricDefinitionService(); // no metrics → bare tap counter
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 10, 0, 0, TimeSpan.Zero));
+        var sut = new CounterQuickActionHandler(cs, metrics, clock);
+        var habitId = Guid.NewGuid();
+
+        var recorded = await sut.ExecuteAsync(habitId);
+
+        recorded.Should().BeTrue();
+        cs.LastRecord!.HabitNodeId.Should().Be(habitId);
+        cs.LastRecord.CompletedAt.Should().Be(clock.UtcNow.UtcDateTime);
+        cs.LastValues.Should().BeNull(); // occorrenza nuda: nessun CompletionValue
+    }
+
+    [Fact]
+    public async Task Counter_with_metrics_defers_to_screen()
     {
         var cs = new FakeCompletionService();
         var metrics = new FakeMetricDefinitionService();
@@ -40,21 +57,7 @@ public class CounterQuickActionHandlerTests
 
         var recorded = await sut.ExecuteAsync(habitId);
 
-        recorded.Should().BeTrue();
-        cs.LastValues!.Single().ValueInteger.Should().Be(1);
-        cs.LastValues[0].MetricDefinitionId.Should().Be(m.Id);
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_with_no_metric_returns_false_and_records_nothing()
-    {
-        var cs = new FakeCompletionService();
-        var metrics = new FakeMetricDefinitionService();
-        var sut = new CounterQuickActionHandler(cs, metrics, new FakeClock());
-
-        var recorded = await sut.ExecuteAsync(Guid.NewGuid());
-
-        recorded.Should().BeFalse();
+        recorded.Should().BeFalse(); // con campi il +1 cieco non ha senso: apri la schermata
         cs.LastRecord.Should().BeNull();
     }
 }

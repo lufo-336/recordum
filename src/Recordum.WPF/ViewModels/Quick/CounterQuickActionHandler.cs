@@ -15,25 +15,15 @@ public sealed class CounterQuickActionHandler(
     public async ValueTask<bool> ExecuteAsync(Guid habitNodeId, CancellationToken ct = default)
     {
         var list = await metrics.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(false);
-        var primary = list.OrderBy(m => m.SortOrder).FirstOrDefault();
-        if (primary is null) return false;
+        if (list.Count > 0) return false; // con campi il +1 cieco non ha senso: apri la schermata
 
-        var draft = new Completion
+        // Bare counter: one tap = one occurrence (no CompletionValue). Spec multivalue §4.1.
+        await completions.RecordAsync(new Completion
         {
             HabitNodeId = habitNodeId,
             CompletedAt = clock.UtcNow.UtcDateTime,
             CompletedAtMs = clock.UtcNowMs,
-        };
-        var values = new[]
-        {
-            new CompletionValue
-            {
-                MetricDefinitionId = primary.Id,
-                SeriesIndex = 0,
-                ValueInteger = 1,
-            },
-        };
-        await completions.RecordAsync(draft, values, ct: ct).ConfigureAwait(false);
+        }, ct: ct).ConfigureAwait(false);
         return true;
     }
 }
