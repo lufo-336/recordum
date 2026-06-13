@@ -300,6 +300,49 @@ public class CounterSeriesQuickAddViewModelTests
     }
 }
 
+public class CounterTapQuickAddViewModelTests
+{
+    private static (CounterTapQuickAddViewModel vm, FakeCompletionService completions, FakeClock clock) CreateCounterTapVm()
+    {
+        var cs = new FakeCompletionService();
+        var clock = new FakeClock(new DateTimeOffset(2026, 1, 1, 10, 0, 0, TimeSpan.Zero));
+        var vm = new CounterTapQuickAddViewModel(cs, clock)
+        {
+            Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter },
+        };
+        return (vm, cs, clock);
+    }
+
+    [Fact]
+    public async Task Tap_records_bare_completion_and_increments_day_count()
+    {
+        var (vm, completions, _) = CreateCounterTapVm();
+        await vm.LoadDayAsync();
+
+        await vm.TapCommand.ExecuteAsync(null);
+
+        vm.DayCount.Should().Be(1);
+        completions.LastValues.Should().BeNull(); // nessun CompletionValue (occorrenza nuda)
+    }
+
+    [Fact]
+    public async Task UndoLast_deletes_newest_completion_of_the_day()
+    {
+        var (vm, completions, clock) = CreateCounterTapVm();
+
+        await vm.TapCommand.ExecuteAsync(null);
+        var first = completions.Store.Keys.Single();
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await vm.TapCommand.ExecuteAsync(null);
+        var second = completions.Store.Keys.Single(k => k != first);
+
+        await vm.UndoLastCommand.ExecuteAsync(null);
+
+        vm.DayCount.Should().Be(1);
+        completions.DeleteCalls.Single().Should().Be(second); // l'ultima registrata
+    }
+}
+
 public class SeriesRowViewModelTests
 {
     private static MetricDefinition IntMetric(string name) =>

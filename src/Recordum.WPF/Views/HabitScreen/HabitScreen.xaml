@@ -146,7 +146,7 @@
         </DataTemplate>
 
         <!-- Kind-aware input cell for one metric: measured (numeric + unit), scale (labelled selector or slider), or text.
-             Horizontal: [Name] [input] [unit]. Stacked vertically in Measured, side-by-side in Resistance series rows. -->
+             Horizontal: [Name] [input] [unit]. Stacked vertically in Measured, side-by-side in CounterSeries series rows. -->
         <DataTemplate x:Key="MetricCellTemplate" DataType="{x:Type qa:SeriesCellViewModel}">
             <StackPanel Orientation="Horizontal" Margin="0,3,12,3" VerticalAlignment="Center">
                 <TextBlock Text="{Binding Name}" MinWidth="110" VerticalAlignment="Center" Margin="0,0,8,0"

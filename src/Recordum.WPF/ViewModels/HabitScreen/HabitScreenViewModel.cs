@@ -403,8 +403,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         QuickAddViewModelBase? vm = node.HabitType switch
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
-            HabitType.Counter => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
-            HabitType.Resistance => new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock),
+            HabitType.Counter => await BuildCounterQuickAddAsync(ct).ConfigureAwait(true),
+            HabitType.Resistance => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock),
             HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock),
             _ => null,
@@ -414,9 +414,20 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         switch (vm)
         {
             case MeasuredQuickAddViewModel mq: await mq.LoadMetricsAsync(ct).ConfigureAwait(true); break;
-            case CounterSeriesQuickAddViewModel r: await r.LoadMetricsAsync(ct).ConfigureAwait(true); break;
+            case CounterSeriesQuickAddViewModel cs: await cs.LoadMetricsAsync(ct).ConfigureAwait(true); break;
+            case CounterTapQuickAddViewModel tap: await tap.LoadDayAsync(ct).ConfigureAwait(true); break;
         }
         QuickAdd = vm;
+
+        // Counter splits by shape: bare (no metrics) records single-tap occurrences; with
+        // metrics it records valid series rows (spec multivalue §4.1).
+        async Task<QuickAddViewModelBase> BuildCounterQuickAddAsync(CancellationToken c)
+        {
+            var defs = await _metrics.ListByHabitAsync(node.Id, c).ConfigureAwait(true);
+            return defs.Count == 0
+                ? new CounterTapQuickAddViewModel(_completions, _clock)
+                : new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock);
+        }
     }
 
     private async void OnCompletionEvent(EventEnvelope envelope)

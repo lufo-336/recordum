@@ -9,6 +9,7 @@ public sealed class QuickAddTemplateSelector : DataTemplateSelector
     public DataTemplate? Action { get; set; }
     public DataTemplate? Measured { get; set; }
     public DataTemplate? CounterSeries { get; set; }
+    public DataTemplate? CounterTap { get; set; }
     public DataTemplate? Journal { get; set; }
 
     public override DataTemplate? SelectTemplate(object? item, DependencyObject container) => item switch
@@ -16,6 +17,7 @@ public sealed class QuickAddTemplateSelector : DataTemplateSelector
         ActionQuickAddViewModel => Action,
         MeasuredQuickAddViewModel => Measured,
         CounterSeriesQuickAddViewModel => CounterSeries,
+        CounterTapQuickAddViewModel => CounterTap,
         JournalQuickAddViewModel => Journal,
         _ => null,
     };

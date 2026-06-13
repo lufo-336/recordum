@@ -57,9 +57,12 @@ public sealed partial class CounterSeriesQuickAddViewModel : QuickAddViewModelBa
     {
         var row = new SeriesRowViewModel(_orderedMetrics.Select(_factory.Create));
         // Re-notify ValidSeriesCount whenever any cell changes in this row.
-        row.PropertyChanged += (_, _) => OnPropertyChanged(nameof(ValidSeriesCount));
+        row.PropertyChanged += OnRowPropertyChanged;
         return row;
     }
+
+    private void OnRowPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        => OnPropertyChanged(nameof(ValidSeriesCount));
 
     [RelayCommand]
     private void AddSeries()
@@ -71,7 +74,10 @@ public sealed partial class CounterSeriesQuickAddViewModel : QuickAddViewModelBa
     [RelayCommand(CanExecute = nameof(CanRemoveSeries))]
     private void RemoveSeries(SeriesRowViewModel row)
     {
-        if (Series.Count > 1) Series.Remove(row);
+        if (Series.Count <= 1) return;
+        // Unhook the PropertyChanged handler before removing to avoid stale notifications.
+        row.PropertyChanged -= OnRowPropertyChanged;
+        Series.Remove(row);
     }
 
     private bool CanRemoveSeries(SeriesRowViewModel row) => Series.Count > 1;

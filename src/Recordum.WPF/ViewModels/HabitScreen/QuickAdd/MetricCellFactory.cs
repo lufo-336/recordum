@@ -4,7 +4,7 @@ using Recordum.Core.Models;
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
 /// <summary>Builds enriched <see cref="SeriesCellViewModel"/>s from resolved units and scales.
-/// Built once per load from reference data; reused for every row (Measured = 1 row, Resistance = N).</summary>
+/// Built once per load from reference data; reused for every row (Measured = 1 row, CounterSeries = N).</summary>
 public sealed class MetricCellFactory
 {
     private readonly Dictionary<Guid, string> _unitCodeById;
