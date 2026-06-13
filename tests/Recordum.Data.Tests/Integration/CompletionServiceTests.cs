@@ -35,12 +35,13 @@ public class CompletionServiceTests
     }
 
     [Fact]
-    public async Task Record_counter_without_values_throws()
+    public async Task Record_bare_counter_occurrence_succeeds()
     {
+        // Spec multivalue §4.1: a bare counter tap (+1, no values) is a valid occurrence.
         var (fx, habitId) = await SeedActionAsync(HabitType.Counter);
         var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
-        await Assert.ThrowsAsync<InvalidCompletionForHabitTypeException>(() =>
-            svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 }).AsTask());
+        var id = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 });
+        Assert.NotEqual(Guid.Empty, id);
         await fx.DisposeAsync();
     }
 
@@ -384,12 +385,12 @@ public class CompletionServiceTests
     }
 
     [Fact]
-    public async Task Magnitude_counter_sums_primary_metric()
+    public async Task Magnitude_counter_counts_occurrences_not_metric_values()
     {
         var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Counter);
         var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
         var day = new DateOnly(2026, 6, 3);
-        // Two completions same day with ValueInteger 60 and 40
+        // Two single-series completions same day (values 60 and 40) → 2 occurrences, not 100.
         await svc.RecordAsync(
             new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) },
             new[] { new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 60 } });
@@ -399,7 +400,30 @@ public class CompletionServiceTests
 
         var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
 
-        Assert.Equal(100m, mags.Single(d => d.Date == day).Magnitude);
+        Assert.Equal(2m, mags.Single(d => d.Date == day).Magnitude);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Counter_magnitude_counts_bare_occurrence_and_multi_series()
+    {
+        var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Counter);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 6, 7);
+        // 1 bare completion (floor 1) + 1 completion with 3 distinct series → 1 + 3 = 4.
+        await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) });
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 12), CompletedAtMs = MsAt(day, 12) },
+            new[]
+            {
+                new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 10 },
+                new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 1, ValueInteger = 11 },
+                new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 2, ValueInteger = 12 },
+            });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Equal(4m, mags.Single(d => d.Date == day).Magnitude);
         await fx.DisposeAsync();
     }
 

@@ -206,10 +206,10 @@ public sealed partial class CompletionService(
         {
             decimal mag = node.HabitType switch
             {
-                HabitType.Resistance => g.Sum(c => c.Values.Select(v => v.SeriesIndex).Distinct().Count()),
-                HabitType.Counter => g.SelectMany(c => c.Values)
-                    .Where(v => primaryMetricId == null || v.MetricDefinitionId == primaryMetricId.Value)
-                    .Sum(v => v.Numeric),
+                // Counter/Resistance magnitude = occurrences: each completion counts its distinct
+                // series rows, with a floor of 1 so bare occurrences (no values) still count (spec §12).
+                HabitType.Resistance or HabitType.Counter =>
+                    g.Sum(c => Math.Max(1, c.Values.Select(v => v.SeriesIndex).Distinct().Count())),
                 HabitType.State => g.OrderByDescending(c => c.CompletedAtMs)
                     .SelectMany(c => c.Values)
                     .Where(v => primaryMetricId == null || v.MetricDefinitionId == primaryMetricId.Value)
@@ -233,9 +233,11 @@ public sealed partial class CompletionService(
         switch (type)
         {
             case HabitType.Action:
-                break;
+            // Counter records occurrences: a bare tap (+1) is valid; series values are optional
+            // (spec multivalue §4.1). Resistance records abstinence lapses, also bare.
             case HabitType.Counter:
             case HabitType.Resistance:
+                break;
             case HabitType.State:
                 if (values is null || values.Count == 0)
                     throw new InvalidCompletionForHabitTypeException(
