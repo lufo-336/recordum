@@ -162,6 +162,25 @@ public class HabitNodeServiceTests
     }
 
     [Fact]
+    public async Task Reorder_before_anchor_inserts_ahead_of_it()
+    {
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var g = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "g" });
+        var a = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a", ParentId = g, SortOrder = 0 });
+        var b = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "b", ParentId = g, SortOrder = 1 });
+        var c = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "c", ParentId = g, SortOrder = 2 });
+
+        // Move c to sit right before b → order should become a, c, b.
+        await svc.MoveAndReorderAsync(c, g, anchorSiblingId: b, placeAfter: false);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var ordered = await db.HabitNodes.Where(n => n.ParentId == g)
+            .OrderBy(n => n.SortOrder).Select(n => n.Name).ToListAsync();
+        ordered.Should().Equal("a", "c", "b");
+    }
+
+    [Fact]
     public async Task Reorder_with_null_anchor_appends_at_end_and_can_change_parent()
     {
         await using var fx = new DbFixture();

@@ -12,7 +12,8 @@ public interface IHabitNodeService
     /// <summary>
     /// Moves <paramref name="id"/> under <paramref name="newParentId"/> and reorders it among its
     /// siblings: placed before/after <paramref name="anchorSiblingId"/> (or appended at the end when
-    /// the anchor is null). Reassigns contiguous SortOrder (0..n-1) to the sibling set. Transactional.
+    /// the anchor is null or not found among the siblings). Reassigns contiguous SortOrder (0..n-1)
+    /// to the sibling set. Transactional.
     /// </summary>
     ValueTask MoveAndReorderAsync(
         Guid id, Guid? newParentId, Guid? anchorSiblingId, bool placeAfter, CancellationToken ct = default);
