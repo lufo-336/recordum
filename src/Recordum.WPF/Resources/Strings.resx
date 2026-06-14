@@ -671,6 +671,9 @@ Details: {0}</value>
   <data name="Detail.Streak.Runs90" xml:space="preserve">
     <value>Runs (90d)</value>
   </data>
+  <data name="Detail.Streak.Lapses90" xml:space="preserve">
+    <value>Lapses (90d)</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

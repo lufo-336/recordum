@@ -653,6 +653,9 @@
   <data name="Detail.Streak.Runs90" xml:space="preserve">
     <value>Cicli (90gg)</value>
   </data>
+  <data name="Detail.Streak.Lapses90" xml:space="preserve">
+    <value>Ricadute (90g)</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

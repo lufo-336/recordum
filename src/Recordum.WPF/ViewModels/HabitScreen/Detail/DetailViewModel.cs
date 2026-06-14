@@ -44,7 +44,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         _configs = configs;
         Goal = new GoalProgressCardViewModel(goals, completions, clock);
         YearHeatmap = new YearHeatmapViewModel(completions, metrics, ramp, clock);
-        StreakSummary = new StreakSummaryViewModel(streaks, clock);
+        StreakSummary = new StreakSummaryViewModel(streaks, completions, clock);
         StreakTimeline = new StreakTimelineViewModel(streaks, clock);
         Trend = new TrendChartViewModel(trend, clock);
         Hourly = new HourlyHistogramViewModel(hourly, clock);

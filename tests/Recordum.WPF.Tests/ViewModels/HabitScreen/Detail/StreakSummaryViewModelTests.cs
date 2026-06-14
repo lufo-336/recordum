@@ -1,4 +1,6 @@
+using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
@@ -12,7 +14,7 @@ public sealed class StreakSummaryViewModelTests
     [Fact]
     public async Task Empty_streaks_sets_IsEmpty_true()
     {
-        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeClock());
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeCompletionService(), new FakeClock());
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow });
 
         Assert.True(vm.IsEmpty);
@@ -29,7 +31,7 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-4), today, 5));
 
-        var vm = new StreakSummaryViewModel(aggr, clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
 
         Assert.Equal(5, vm.CurrentLength);
@@ -43,7 +45,7 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-10), today.AddDays(-3), 8));
 
-        var vm = new StreakSummaryViewModel(aggr, clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
 
         Assert.Equal(0, vm.CurrentLength);
@@ -56,11 +58,20 @@ public sealed class StreakSummaryViewModelTests
         var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-770), today, 771)); // 771 days = 2y 41d
+        var nodeId = Guid.NewGuid();
+        var completions = new FakeCompletionService();
+        // last lapse was exactly 771 days ago → FormatElapsed gives "2a 41g"
+        var lastLapse = clock.UtcNow.AddDays(-771);
+        completions.Store[Guid.NewGuid()] = new Completion
+        {
+            HabitNodeId = nodeId, CompletedAt = lastLapse.UtcDateTime,
+            CompletedAtMs = lastLapse.ToUnixTimeMilliseconds(),
+        };
 
-        var vm = new StreakSummaryViewModel(aggr, clock);
+        var vm = new StreakSummaryViewModel(aggr, completions, clock);
         await vm.LoadAsync(new HabitNode
         {
-            Id = Guid.NewGuid(),
+            Id = nodeId,
             HabitType = HabitType.Resistance,
             CreatedAt = clock.UtcNow.AddYears(-3).UtcDateTime,
         });
@@ -76,7 +87,7 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-11), today, 12));
 
-        var vm = new StreakSummaryViewModel(aggr, clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
         await vm.LoadAsync(new HabitNode
         {
             Id = Guid.NewGuid(),
@@ -95,10 +106,74 @@ public sealed class StreakSummaryViewModelTests
         aggr.Runs.Add(new StreakRun(new DateOnly(2025, 1, 1), new DateOnly(2025, 1, 14), 14));
         aggr.Runs.Add(new StreakRun(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 5), 5));
 
-        var vm = new StreakSummaryViewModel(aggr, clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) });
 
         Assert.Equal(14, vm.LongestLength);
         Assert.Equal(new DateOnly(2025, 1, 1), vm.LongestStartedOn);
+    }
+
+    [WpfFact]
+    public async Task Resistance_current_shows_elapsed_since_last_lapse()
+    {
+        var today = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
+        var clock = new FakeClock(today);
+        var node = new HabitNode
+        {
+            Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
+            Name = "no smoking", CreatedAt = today.AddDays(-100).UtcDateTime,
+        };
+        var completions = new FakeCompletionService();
+        var lastLapse = today.AddDays(-3).AddHours(-6); // 3d 6h ago
+        completions.Store[Guid.NewGuid()] = new Completion
+        {
+            HabitNodeId = node.Id, CompletedAt = lastLapse.UtcDateTime, CompletedAtMs = lastLapse.ToUnixTimeMilliseconds(),
+        };
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), completions, clock);
+
+        await vm.LoadAsync(node);
+
+        vm.CurrentDisplay.Should().Be("3g 6h");
+    }
+
+    [WpfFact]
+    public async Task Resistance_never_lapsed_counts_from_creation()
+    {
+        var today = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
+        var clock = new FakeClock(today);
+        var node = new HabitNode
+        {
+            Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
+            Name = "no smoking", CreatedAt = today.AddDays(-10).UtcDateTime,
+        };
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeCompletionService(), clock);
+
+        await vm.LoadAsync(node);
+
+        vm.CurrentDisplay.Should().Be("10g 0h");
+    }
+
+    [WpfFact]
+    public async Task Resistance_caption_is_lapses_and_counts_lapse_days_in_90()
+    {
+        var today = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
+        var clock = new FakeClock(today);
+        var node = new HabitNode
+        {
+            Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
+            Name = "no smoking", CreatedAt = today.AddDays(-100).UtcDateTime,
+        };
+        var completions = new FakeCompletionService();
+        completions.HeatmapByHabit[node.Id] = new[]
+        {
+            new HeatmapCell(DateOnly.FromDateTime(today.AddDays(-10).UtcDateTime), 1, 0),
+            new HeatmapCell(DateOnly.FromDateTime(today.AddDays(-40).UtcDateTime), 2, 0),
+        };
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), completions, clock);
+
+        await vm.LoadAsync(node);
+
+        vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
+        vm.RunsLast90Days.Should().Be(2);
     }
 }

@@ -559,7 +559,7 @@
                                                FontSize="{StaticResource FontSize.Heading}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="{x:Static res:Strings.Detail_Streak_Runs90}"
+                                    <TextBlock Text="{Binding StreakSummary.RunsCaption}"
                                                Foreground="{DynamicResource Brush.TextMuted}"/>
                                     <TextBlock Text="{Binding StreakSummary.RunsLast90Days}"
                                                FontSize="{StaticResource FontSize.Heading}"/>

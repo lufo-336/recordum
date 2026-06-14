@@ -5,10 +5,12 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Formatting;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
-public sealed partial class StreakSummaryViewModel(IStreakAggregator aggregator, IClock clock) : ObservableObject
+public sealed partial class StreakSummaryViewModel(
+    IStreakAggregator aggregator, ICompletionService completions, IClock clock) : ObservableObject
 {
     [ObservableProperty] private int _currentLength;
     [ObservableProperty] private int _longestLength;
@@ -20,6 +22,9 @@ public sealed partial class StreakSummaryViewModel(IStreakAggregator aggregator,
     /// the elapsed time since the last lapse ("2a 41g"); other types show the plain day count.</summary>
     [ObservableProperty] private string _currentDisplay = "0";
 
+    /// <summary>Caption for the third stat: "Lapses (90d)" for Resistance, "Runs (90d)" otherwise.</summary>
+    [ObservableProperty] private string _runsCaption = Strings.Detail_Streak_Runs90;
+
     public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
@@ -30,14 +35,31 @@ public sealed partial class StreakSummaryViewModel(IStreakAggregator aggregator,
         var longest = allTime.OrderByDescending(r => r.Length).FirstOrDefault();
         LongestLength = longest?.Length ?? 0;
         LongestStartedOn = longest?.Start;
-        RunsLast90Days = last90.Count;
 
         var current = allTime.FirstOrDefault(r => r.End == today || r.End == today.AddDays(-1));
         CurrentLength = current?.Length ?? 0;
         IsEmpty = allTime.Count == 0;
 
-        CurrentDisplay = node.HabitType == HabitType.Resistance
-            ? DurationFormat.FormatDays(CurrentLength)
-            : CurrentLength.ToString(CultureInfo.InvariantCulture);
+        if (node.HabitType == HabitType.Resistance)
+        {
+            RunsCaption = Strings.Detail_Streak_Lapses90;
+
+            // Current streak = fine-precision elapsed since the last lapse instant (or creation).
+            var last = await completions.ListByHabitAsync(node.Id, take: 1, ct: ct).ConfigureAwait(true);
+            var cleanSince = last.Count > 0
+                ? DateTimeOffset.FromUnixTimeMilliseconds(last[0].CompletedAtMs)
+                : new DateTimeOffset(DateTime.SpecifyKind(node.CreatedAt, DateTimeKind.Utc));
+            CurrentDisplay = DurationFormat.FormatElapsed(clock.UtcNow - cleanSince);
+
+            // Third stat = number of lapse days in the last 90 days.
+            var heat90 = await completions.GetHeatmapAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
+            RunsLast90Days = heat90.Count(c => c.Count > 0);
+        }
+        else
+        {
+            RunsCaption = Strings.Detail_Streak_Runs90;
+            RunsLast90Days = last90.Count;
+            CurrentDisplay = CurrentLength.ToString(CultureInfo.InvariantCulture);
+        }
     }
 }

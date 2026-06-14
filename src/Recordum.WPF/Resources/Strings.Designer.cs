@@ -242,6 +242,7 @@ public static class Strings
     public static string Detail_Streak_Current => Get("Detail.Streak.Current");
     public static string Detail_Streak_Longest => Get("Detail.Streak.Longest");
     public static string Detail_Streak_Runs90 => Get("Detail.Streak.Runs90");
+    public static string Detail_Streak_Lapses90 => Get("Detail.Streak.Lapses90");
     public static string Detail_Streak_Empty => Get("Detail.Streak.Empty");
     public static string Detail_Streak_Days => Get("Detail.Streak.Days");
     public static string Detail_Trend_Range_30d => Get("Detail.Trend.Range.30d");
