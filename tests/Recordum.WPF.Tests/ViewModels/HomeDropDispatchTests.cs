@@ -42,6 +42,26 @@ public class HomeDropDispatchTests
     }
 
     [Fact]
+    public async Task Reorder_drop_refetches_so_new_order_is_not_stale()
+    {
+        // Guards against sorting the cached _lastFetched snapshot after a reorder: switching to
+        // Manual alone would Rebuild on stale rows (DB has the new SortOrder, the cache doesn't).
+        // A reorder drop must re-fetch — assert a fresh GetHomeTreeAsync happened.
+        _query.HomeRows.Add(Row("a"));
+        _query.HomeRows.Add(Row("b"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SortOption = HomeSort.Name;
+        var fetchesBefore = _query.HomeCallCount;
+
+        var src = sut.Rows.Single(r => r.Name == "a");
+        var target = sut.Rows.Single(r => r.Name == "b");
+        await sut.ApplyDropAsync(src, new TreeDragDropBehavior.DropPlan(target.ParentId, target.HabitNodeId, true));
+
+        _query.HomeCallCount.Should().BeGreaterThan(fetchesBefore);
+    }
+
+    [Fact]
     public async Task Onto_group_drop_appends_without_switching_sort()
     {
         _query.HomeRows.Add(Row("a"));

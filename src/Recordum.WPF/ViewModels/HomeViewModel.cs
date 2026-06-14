@@ -230,10 +230,17 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
             return;
         }
 
+        // A fine-grained reorder (anchor != null) forces Manual sort so the new order is visible.
+        // We suppress the setter's Rebuild because it would sort the *stale* _lastFetched snapshot
+        // (MoveAndReorderAsync wrote the new SortOrder to the DB, not to that cache); the reload
+        // below re-fetches so the fresh order actually shows. Onto-group append just reloads.
         if (plan.Anchor is not null && SortOption != HomeSort.Manual)
-            SortOption = HomeSort.Manual; // setter triggers Rebuild via OnSortOptionChanged
-        else
-            await LoadCommand.ExecuteAsync(null);
+        {
+            _suppressRebuild = true;
+            SortOption = HomeSort.Manual;
+            _suppressRebuild = false;
+        }
+        await LoadCommand.ExecuteAsync(null);
     }
 
     /// <summary>Selects a node by id, expanding any collapsed ancestor so its row is visible
