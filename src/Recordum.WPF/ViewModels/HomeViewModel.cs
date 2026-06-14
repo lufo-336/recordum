@@ -439,6 +439,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
     {
         HomeSort.Name => rows.OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase),
         HomeSort.LastCompletion => rows.OrderByDescending(r => r.LastCompletionAt ?? DateTime.MinValue),
+        HomeSort.Manual => rows.OrderBy(r => r.SortOrder).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase),
         _ => rows,
     };
 }

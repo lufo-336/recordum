@@ -17,4 +17,5 @@ public sealed record HomeTreeRow(
     bool IsArchived,
     ImmutableArray<int> CompletionsLast7Days,
     ImmutableArray<Guid> TagIds,
-    string? Icon = null);
+    string? Icon = null,
+    int SortOrder = 0);
