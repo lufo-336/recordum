@@ -92,7 +92,8 @@ Per Resistance, la card che oggi mostra `RunsLast90Days` mostra invece il **nume
 ## 5. Fuori scope (YAGNI)
 
 - Goal per Resistance.
-- Sottrazione delle pause a granularità sub-giornaliera nel display fine (si sottraggono giorni interi).
+- **Sottrazione delle pause dal display fine corrente** (descopato in implementazione, 2026-06-14): l'elapsed "grande" è `now − ultima ricaduta` senza sottrarre i giorni in pausa. I run a giorni dell'aggregator (Più lungo / timeline) **sì** escludono le pause → per una Resistance *con pause* il numero corrente e i run storici possono divergere. Caso raro (astinenza + pausa); implementarlo richiede iniettare `IStreakPauseService` in `StreakSummaryViewModel` (cascata su `DetailViewModel`). Da fare se serve la precisione su quel caso.
+- **Localizzazione di `DurationFormat`**: `"appena ora"` e le abbreviazioni `a/g/h/m` restano hardcoded (coerenti con `FormatDays` preesistente). Localizzare l'intera classe è un refactor separato.
 - Localizzazione dei nomi display dei template seed.
 - Riscrittura del percorso generico dell'aggregator per gli altri tipi.
 
