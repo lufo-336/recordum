@@ -83,6 +83,19 @@
                         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
                         <Setter Property="BorderThickness" Value="1.5"/>
                     </DataTrigger>
+                    <!-- Source row while it is being dragged: ghosted in place. -->
+                    <DataTrigger Binding="{Binding IsBeingDragged}" Value="True">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </DataTrigger>
+                    <!-- Insertion indicators for manual reorder (thin accent edge). -->
+                    <DataTrigger Binding="{Binding DropEdge}" Value="Before">
+                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                        <Setter Property="BorderThickness" Value="0,2,0,0"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding DropEdge}" Value="After">
+                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,2"/>
+                    </DataTrigger>
                 </Style.Triggers>
             </Style>
         </ResourceDictionary>
