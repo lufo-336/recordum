@@ -70,7 +70,9 @@ public sealed partial class MeasuredQuickAddViewModel(
         try
         {
             var values = Row.Cells.Select(c => c.BuildValue(0)).Where(v => v is not null).Select(v => v!).ToList();
-            if (values.Count == 0)
+            // Only State must carry a value (it records a current state). Resistance records abstinence
+            // lapses — a bare relapse (e.g. "Stop smoking", zero metrics) is valid (spec multivalue §4.1).
+            if (values.Count == 0 && Node.HabitType == HabitType.State)
             {
                 ErrorMessage = Strings.QuickAdd_Error_ValueRequired;
                 return;

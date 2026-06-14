@@ -109,16 +109,36 @@ public class MeasuredQuickAddViewModelTests
     }
 
     [WpfFact]
-    public async Task Save_with_no_values_sets_error_and_does_not_record()
+    public async Task State_save_with_no_values_sets_error_and_does_not_record()
     {
+        // Only State requires a value (it records a current state); bare makes no sense and the
+        // service would reject it. Resistance/Counter allow bare completions (spec multivalue §4.1).
         var node = Guid.NewGuid();
         var (sut, cs, ms, _) = Build(node);
-        await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Reps", Type = MetricType.Integer, SortOrder = 0 });
+        sut.Node = new HabitNode { Id = node, HabitType = HabitType.State };
+        await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Mood", Type = MetricType.Integer, SortOrder = 0 });
         await sut.LoadMetricsAsync();
 
         await sut.SaveAsync();
 
         cs.LastRecord.Should().BeNull();
         sut.ErrorMessage.Should().NotBeNullOrEmpty();
+    }
+
+    [WpfFact]
+    public async Task Resistance_with_no_metrics_records_a_bare_lapse()
+    {
+        // "Stop smoking" abstinence has zero metrics: recording a relapse is a single gesture with
+        // no value. The value-required guard must not block it (spec: Resistance records bare lapses).
+        var node = Guid.NewGuid();
+        var (sut, cs, ms, _) = Build(node);
+        sut.Node = new HabitNode { Id = node, HabitType = HabitType.Resistance };
+        await sut.LoadMetricsAsync(); // no metrics → no cells
+
+        await sut.SaveAsync();
+
+        cs.LastRecord.Should().NotBeNull();
+        cs.LastRecord!.HabitNodeId.Should().Be(node);
+        sut.ErrorMessage.Should().BeNullOrEmpty();
     }
 }
