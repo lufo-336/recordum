@@ -18,6 +18,7 @@ public sealed class DragAdorner : Adorner
     {
         IsHitTestVisible = false;
         _bounds = new Rect(new Size(source.ActualWidth, source.ActualHeight));
+        // ~0.55 effective opacity (0.65 brush x 0.85 in OnRender) — a faint ghost, restrained per the design brief.
         _ghost = new VisualBrush(source) { Opacity = 0.65, Stretch = Stretch.None, AlignmentX = AlignmentX.Left, AlignmentY = AlignmentY.Top };
     }
 
@@ -26,7 +27,8 @@ public sealed class DragAdorner : Adorner
     public void SetPosition(Point cursor)
     {
         _offset = new Point(cursor.X + 8, cursor.Y + 8);
-        (Parent as AdornerLayer)?.Update(AdornedElement);
+        // The ghost is repositioned via _offset inside OnRender, so a render invalidation is all
+        // that's needed — no adorner-layer arrange pass (we don't override GetDesiredTransform).
         InvalidateVisual();
     }
 
