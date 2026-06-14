@@ -22,15 +22,20 @@ public class HomeSortManualTests
             SortOrder: sortOrder);
 
     [Fact]
-    public async Task Manual_sort_orders_rows_by_SortOrder()
+    public async Task Switching_to_Manual_orders_rows_by_SortOrder()
     {
-        _query.HomeRows.Add(Row("second", 1));
-        _query.HomeRows.Add(Row("first", 0));
+        // Names chosen so alphabetical order (Name sort) differs from SortOrder order:
+        // "zeta" sits first by SortOrder, last alphabetically.
+        _query.HomeRows.Add(Row("zeta", 0));
+        _query.HomeRows.Add(Row("alpha", 1));
         var sut = CreateSut();
         await sut.LoadCommand.ExecuteAsync(null);
 
-        sut.SortOption = HomeSort.Manual;
+        // Start in a non-Manual sort, then flip to Manual to prove the transition re-sorts.
+        sut.SortOption = HomeSort.Name;
+        sut.Rows.Select(r => r.Name).Should().Equal("alpha", "zeta");
 
-        sut.Rows.Select(r => r.Name).Should().Equal("first", "second");
+        sut.SortOption = HomeSort.Manual;
+        sut.Rows.Select(r => r.Name).Should().Equal("zeta", "alpha");
     }
 }
