@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Recordum.Core.Errors;
 using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Behaviors;
@@ -29,12 +28,24 @@ public static class TreeDragDropBehavior
 
     private static Point _start;
     private static bool _armed;
-    private static HomeRowViewModel? _dropTarget;
+    private static HomeRowViewModel? _indicated;
 
     internal static DropZone ResolveZone(double relative) =>
         relative < 0.4 ? DropZone.Before :
         relative < 0.7 ? DropZone.Onto :
         DropZone.After;
+
+    /// <summary>
+    /// Pure mapping from a hovered zone+target to a drop plan.
+    /// Onto a group → append inside it. Onto a habit → sibling after it. Before/After → reorder around the target.
+    /// </summary>
+    public static DropPlan ResolveDrop(DropZone zone, bool targetIsGroup, Guid targetId, Guid? targetParentId) => zone switch
+    {
+        DropZone.Onto when targetIsGroup => new DropPlan(targetId, null, false),
+        DropZone.Before => new DropPlan(targetParentId, targetId, false),
+        // After, and Onto-on-a-habit, both place the row right after the target among its siblings.
+        _ => new DropPlan(targetParentId, targetId, true),
+    };
 
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -77,61 +88,55 @@ public static class TreeDragDropBehavior
         }
     }
 
-    // Drop affordance (nav-model §3.2): highlight the group row while the cursor is in
-    // its "into" zone. Before/After zones get no indicator — there is no manual ordering.
+    // Drop affordance: a single indicator at a time — either the group "into" highlight
+    // (IsDropTarget) or an insertion edge (DropEdge) on the hovered sibling.
     private static void OnDragOver(object sender, DragEventArgs e)
     {
-        HomeRowViewModel? target = null;
         if (e.Data.GetData(typeof(HomeRowViewModel)) is HomeRowViewModel src
             && e.OriginalSource is FrameworkElement fe
             && fe.DataContext is HomeRowViewModel row
-            && !ReferenceEquals(row, src)
-            && row.IsGroup
-            && ResolveZone(e.GetPosition(fe).Y / Math.Max(1, fe.ActualHeight)) == DropZone.Onto)
+            && !ReferenceEquals(row, src))
         {
-            target = row;
+            var zone = ResolveZone(e.GetPosition(fe).Y / Math.Max(1, fe.ActualHeight));
+            if (zone == DropZone.Onto && row.IsGroup)
+                SetIndicator(row, isGroupTarget: true, RowDropEdge.None);
+            else
+                SetIndicator(row, isGroupTarget: false, zone == DropZone.Before ? RowDropEdge.Before : RowDropEdge.After);
         }
-        SetDropTarget(target);
+        else
+        {
+            SetIndicator(null, false, RowDropEdge.None);
+        }
     }
 
-    private static void OnDragLeave(object sender, DragEventArgs e) => SetDropTarget(null);
+    private static void OnDragLeave(object sender, DragEventArgs e) => SetIndicator(null, false, RowDropEdge.None);
 
-    private static void SetDropTarget(HomeRowViewModel? target)
+    private static void SetIndicator(HomeRowViewModel? row, bool isGroupTarget, RowDropEdge edge)
     {
-        if (ReferenceEquals(_dropTarget, target)) return;
-        if (_dropTarget is not null) _dropTarget.IsDropTarget = false;
-        _dropTarget = target;
-        if (_dropTarget is not null) _dropTarget.IsDropTarget = true;
+        if (_indicated is not null)
+        {
+            _indicated.IsDropTarget = false;
+            _indicated.DropEdge = RowDropEdge.None;
+        }
+        _indicated = row;
+        if (_indicated is not null)
+        {
+            _indicated.IsDropTarget = isGroupTarget;
+            _indicated.DropEdge = edge;
+        }
     }
 
     private static async void OnDrop(object sender, DragEventArgs e)
     {
-        SetDropTarget(null);
+        SetIndicator(null, false, RowDropEdge.None);
         if (sender is not ItemsControl ic) return;
         if (e.Data.GetData(typeof(HomeRowViewModel)) is not HomeRowViewModel src) return;
         if (e.OriginalSource is not FrameworkElement fe || fe.DataContext is not HomeRowViewModel target) return;
         if (ReferenceEquals(src, target)) return;
+        if (ic.DataContext is not HomeViewModel home) return;
 
-        var p = e.GetPosition(fe);
-        var zone = ResolveZone(p.Y / Math.Max(1, fe.ActualHeight));
-        Guid? newParent = zone == DropZone.Onto && target.IsGroup
-            ? target.HabitNodeId
-            : target.ParentId;
-
-        // Dragging a row that is part of a multi-selection moves the whole selection (§C.3).
-        if (ic.DataContext is HomeViewModel homeVm && await homeVm.TryBulkMoveAsync(src, newParent))
-            return;   // bulk path reloads by itself
-
-        try
-        {
-            await src.MoveToAsync(newParent);
-        }
-        catch (CyclicHabitNodeMoveException)
-        {
-            return;
-        }
-
-        if (ic.DataContext is HomeViewModel home)
-            await home.LoadCommand.ExecuteAsync(null);
+        var zone = ResolveZone(e.GetPosition(fe).Y / Math.Max(1, fe.ActualHeight));
+        var plan = ResolveDrop(zone, target.IsGroup, target.HabitNodeId, target.ParentId);
+        await home.ApplyDropAsync(src, plan);
     }
 }
