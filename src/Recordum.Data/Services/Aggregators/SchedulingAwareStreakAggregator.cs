@@ -32,6 +32,9 @@ public sealed class SchedulingAwareStreakAggregator(
         if (habitNode is null || habitNode.NodeType != NodeType.Habit)
             return Array.Empty<StreakRun>();
 
+        if (habitNode.HabitType == HabitType.Resistance)
+            return await ComputeAbstinenceAsync(habitNode, fromDate, toDate, ct).ConfigureAwait(false);
+
         var cfg = await configs.GetAsync(habitNodeId, ct).ConfigureAwait(false);
         if (cfg is null) return Array.Empty<StreakRun>();
 
@@ -156,6 +159,55 @@ public sealed class SchedulingAwareStreakAggregator(
             runs.Add(new StreakRun(rsFinal, runEnd, length, isCurrent, recoveriesUsed, null));
         }
 
+        return runs;
+    }
+
+    // Abstinence (Resistance) streak: a completion = a lapse. The "streak" is the run of consecutive
+    // clean days (no completion) since the last lapse, or since creation if never lapsed. Pauses are
+    // frozen (neither clean nor lapse). Schedule/mode/recovery do not apply. See spec 2026-06-14.
+    private async ValueTask<IReadOnlyList<StreakRun>> ComputeAbstinenceAsync(
+        HabitNode habitNode, DateOnly fromDate, DateOnly toDate, CancellationToken ct)
+    {
+        var createdDate = DateOnly.FromDateTime(habitNode.CreatedAt);
+        var start = fromDate < createdDate ? createdDate : fromDate;
+        if (start > toDate) return Array.Empty<StreakRun>();
+
+        var heatmap = await completions.GetHeatmapAsync(habitNode.Id, start, toDate, ct).ConfigureAwait(false);
+        var lapseDays = heatmap.Where(c => c.Count >= 1).Select(c => c.Date).ToHashSet();
+        var pauseList = await pauses.ListByHabitAsync(habitNode.Id, ct).ConfigureAwait(false);
+        bool IsPaused(DateOnly d) => pauseList.Any(p => d >= p.PauseFrom && d <= p.PauseTo);
+
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var runs = new List<StreakRun>();
+        DateOnly? runStart = null;
+        var runEnd = default(DateOnly);
+        var length = 0;
+
+        for (var day = start; day <= toDate; day = day.AddDays(1))
+        {
+            if (IsPaused(day)) continue; // frozen: run stays open, length unchanged
+
+            if (lapseDays.Contains(day))
+            {
+                if (runStart is { } rs)
+                {
+                    runs.Add(new StreakRun(rs, runEnd, length, false, 0, StreakBreakReason.Lapse));
+                    runStart = null; length = 0;
+                }
+                continue;
+            }
+
+            // clean day
+            runStart ??= day;
+            runEnd = day;
+            length++;
+        }
+
+        if (runStart is { } rsFinal)
+        {
+            var isCurrent = runEnd >= today.AddDays(-1);
+            runs.Add(new StreakRun(rsFinal, runEnd, length, isCurrent, 0, null));
+        }
         return runs;
     }
 

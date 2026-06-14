@@ -1,2 +1,2 @@
 namespace Recordum.Core.Enums;
-public enum StreakBreakReason { Missed, Manual, Closed }
+public enum StreakBreakReason { Missed, Manual, Closed, Lapse }
