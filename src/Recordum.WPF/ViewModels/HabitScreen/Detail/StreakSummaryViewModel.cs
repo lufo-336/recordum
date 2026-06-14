@@ -30,7 +30,6 @@ public sealed partial class StreakSummaryViewModel(
         ArgumentNullException.ThrowIfNull(node);
         var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
         var allTime = await aggregator.GetHistoryAsync(node.Id, DateOnly.FromDateTime(node.CreatedAt), today, ct).ConfigureAwait(true);
-        var last90 = await aggregator.GetHistoryAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
 
         var longest = allTime.OrderByDescending(r => r.Length).FirstOrDefault();
         LongestLength = longest?.Length ?? 0;
@@ -48,7 +47,7 @@ public sealed partial class StreakSummaryViewModel(
             var last = await completions.ListByHabitAsync(node.Id, take: 1, ct: ct).ConfigureAwait(true);
             var cleanSince = last.Count > 0
                 ? DateTimeOffset.FromUnixTimeMilliseconds(last[0].CompletedAtMs)
-                : new DateTimeOffset(DateTime.SpecifyKind(node.CreatedAt, DateTimeKind.Utc));
+                : new DateTimeOffset(node.CreatedAt, TimeSpan.Zero);
             CurrentDisplay = DurationFormat.FormatElapsed(clock.UtcNow - cleanSince);
 
             // Third stat = number of lapse days in the last 90 days.
@@ -58,6 +57,7 @@ public sealed partial class StreakSummaryViewModel(
         else
         {
             RunsCaption = Strings.Detail_Streak_Runs90;
+            var last90 = await aggregator.GetHistoryAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
             RunsLast90Days = last90.Count;
             CurrentDisplay = CurrentLength.ToString(CultureInfo.InvariantCulture);
         }
