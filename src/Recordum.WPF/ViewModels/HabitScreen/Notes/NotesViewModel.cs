@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
 
@@ -39,9 +40,9 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         Availability = availability;
         History = new NoteHistoryViewModel(notes);
         History.Restored += (_, _) => IsShowingHistory = false;
-        _subs.Add(events.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
-        _subs.Add(events.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
-        _subs.Add(events.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
+        _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteCreated, OnNoteEvent));
+        _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
+        _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
     }
 
     private async void OnNoteEvent(EventEnvelope env)

@@ -12,6 +12,7 @@ using Recordum.WPF.ViewModels.HabitScreen.Calendar;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
+using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -316,13 +317,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
-        _subscriptions.Add(events.Subscribe(WellKnownEvents.HabitUpdated, OnHabitUpdatedEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteCreated, OnNoteEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.HabitUpdated, OnHabitUpdatedEvent));
     }
 
     public void Dispose()

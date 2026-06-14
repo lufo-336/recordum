@@ -53,6 +53,29 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task Launch_does_not_crash_when_recording_recent_color_fails()
+    {
+        // Recording the picked color is a best-effort MRU side effect; a transient DB hiccup there
+        // must not crash the app or undo the habit that was already created. Regression for B-dbLock.
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake, recentColors: new ThrowingRecentColorStore());
+        sut.Name = "Corsa";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.LaunchCommand.ExecuteAsync(null); // must not throw
+
+        sut.CreatedHabitNodeId.Should().Be(fake.LastRequest!.Node.Id);
+    }
+
+    private sealed class ThrowingRecentColorStore : IRecentColorStore
+    {
+        public ValueTask<IReadOnlyList<string>> GetAsync(CancellationToken ct = default)
+            => ValueTask.FromResult<IReadOnlyList<string>>([]);
+        public ValueTask AddAsync(string hex, CancellationToken ct = default)
+            => throw new InvalidOperationException("database is locked");
+    }
+
+    [WpfFact]
     public void Counter_block_derives_counter_and_locks_palette()
     {
         var vm = CreateVm();

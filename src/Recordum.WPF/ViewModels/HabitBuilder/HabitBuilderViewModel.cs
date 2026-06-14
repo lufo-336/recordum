@@ -166,7 +166,16 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private async Task LaunchAsync(CancellationToken ct)
     {
         CreatedHabitNodeId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
-        await _recentColors.AddAsync(Color, ct).ConfigureAwait(true);
+        // Recording the picked color is a best-effort MRU side effect — never let it undo a created
+        // habit or crash the app if the write hiccups (e.g. a transient DB lock). See B-dbLock.
+        try
+        {
+            await _recentColors.AddAsync(Color, ct).ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            // ignore: the habit is already persisted; the recent-color list is cosmetic.
+        }
     }
 
     [RelayCommand]

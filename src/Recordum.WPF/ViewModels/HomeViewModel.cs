@@ -10,6 +10,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Resources;
+using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.Quick;
 
@@ -69,23 +70,16 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete) must
         // refresh the row indicators (sparkline / completed-today); a habit edit (name/color/icon
         // in Configura) must refresh the row's name and accent. The bus is the single signal source.
-        events?.Subscribe(WellKnownEvents.CompletionRecorded, OnRowsInvalidated);
-        events?.Subscribe(WellKnownEvents.CompletionUpdated, OnRowsInvalidated);
-        events?.Subscribe(WellKnownEvents.CompletionDeleted, OnRowsInvalidated);
-        events?.Subscribe(WellKnownEvents.HabitUpdated, OnRowsInvalidated);
+        // SubscribeOnUi marshals onto the UI dispatcher: the bus invokes handlers on the publisher's
+        // thread (quick-action handlers record with ConfigureAwait(false)), so events can arrive off
+        // the UI thread, and OnRowsInvalidated touches Rows (an ObservableCollection bound to the view).
+        events?.SubscribeOnUi(WellKnownEvents.CompletionRecorded, OnRowsInvalidated);
+        events?.SubscribeOnUi(WellKnownEvents.CompletionUpdated, OnRowsInvalidated);
+        events?.SubscribeOnUi(WellKnownEvents.CompletionDeleted, OnRowsInvalidated);
+        events?.SubscribeOnUi(WellKnownEvents.HabitUpdated, OnRowsInvalidated);
     }
 
-    private void OnRowsInvalidated(EventEnvelope env)
-    {
-        // EventBus invokes handlers on the publisher's thread; quick-action handlers
-        // record with ConfigureAwait(false), so this can arrive off the UI thread.
-        // Marshal before touching Rows (an ObservableCollection bound to the view).
-        var dispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (dispatcher is null || dispatcher.CheckAccess())
-            _ = ReloadPreservingSelectionAsync();
-        else
-            dispatcher.InvokeAsync(() => ReloadPreservingSelectionAsync());
-    }
+    private void OnRowsInvalidated(EventEnvelope env) => _ = ReloadPreservingSelectionAsync();
 
     [RelayCommand]
     private async Task LoadAsync()

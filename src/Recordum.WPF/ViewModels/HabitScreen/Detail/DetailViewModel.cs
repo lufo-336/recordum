@@ -5,6 +5,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -49,12 +50,12 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         Hourly = new HourlyHistogramViewModel(hourly, clock);
         Trend.RangeChanged += OnTrendRangeChanged;
 
-        _subs.Add(bus.Subscribe(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
-        _subs.Add(bus.Subscribe(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
-        _subs.Add(bus.Subscribe(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
-        _subs.Add(bus.Subscribe(WellKnownEvents.NoteCreated, OnNoteEvent));
-        _subs.Add(bus.Subscribe(WellKnownEvents.NoteUpdated, OnNoteEvent));
-        _subs.Add(bus.Subscribe(WellKnownEvents.NoteDeleted, OnNoteEvent));
+        _subs.Add(bus.SubscribeOnUi(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
+        _subs.Add(bus.SubscribeOnUi(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
+        _subs.Add(bus.SubscribeOnUi(WellKnownEvents.CompletionDeleted, OnCompletionEvent));
+        _subs.Add(bus.SubscribeOnUi(WellKnownEvents.NoteCreated, OnNoteEvent));
+        _subs.Add(bus.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
+        _subs.Add(bus.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
     }
 
     public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
