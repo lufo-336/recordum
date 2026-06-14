@@ -76,6 +76,12 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// <summary>True while a dragged row hovers this group's "into" zone (drop highlight).</summary>
     [ObservableProperty] private bool _isDropTarget;
 
+    /// <summary>True for the row currently being dragged (drives the lifted/ghosted look).</summary>
+    [ObservableProperty] private bool _isBeingDragged;
+
+    /// <summary>Insertion indicator edge while a drag hovers this row (reorder affordance).</summary>
+    [ObservableProperty] private RowDropEdge _dropEdge;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowRenameMenu))]
     [NotifyPropertyChangedFor(nameof(ShowPinMenu))]

@@ -15,6 +15,9 @@ public static class TreeDragDropBehavior
         After,
     }
 
+    /// <summary>Resolved drop intent: new parent, the sibling to anchor next to (null = append), and side.</summary>
+    public readonly record struct DropPlan(Guid? Parent, Guid? Anchor, bool PlaceAfter);
+
     public static readonly DependencyProperty EnabledProperty = DependencyProperty.RegisterAttached(
         "Enabled",
         typeof(bool),

@@ -9,6 +9,7 @@ using Recordum.Core.Errors;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.WPF.Behaviors;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitEditor;
@@ -208,6 +209,31 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         ClearSelection();
         await LoadAsync();
         return true;
+    }
+
+    /// <summary>
+    /// Applies a resolved drop: bulk selection → reparent in blocco (existing semantics);
+    /// single row → MoveAndReorderAsync. A fine-grained reorder (anchor != null) forces
+    /// Manual sort so the new order is visible and sticks.
+    /// </summary>
+    public async Task ApplyDropAsync(HomeRowViewModel src, TreeDragDropBehavior.DropPlan plan)
+    {
+        if (await TryBulkMoveAsync(src, plan.Parent))
+            return; // bulk path reparents and reloads by itself
+
+        try
+        {
+            await _nodes.MoveAndReorderAsync(src.HabitNodeId, plan.Parent, plan.Anchor, plan.PlaceAfter);
+        }
+        catch (CyclicHabitNodeMoveException)
+        {
+            return;
+        }
+
+        if (plan.Anchor is not null && SortOption != HomeSort.Manual)
+            SortOption = HomeSort.Manual; // setter triggers Rebuild via OnSortOptionChanged
+        else
+            await LoadCommand.ExecuteAsync(null);
     }
 
     /// <summary>Selects a node by id, expanding any collapsed ancestor so its row is visible
