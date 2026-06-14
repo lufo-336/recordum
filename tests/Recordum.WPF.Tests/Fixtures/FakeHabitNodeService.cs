@@ -21,6 +21,9 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     private readonly List<(Guid Id, Guid? NewParent)> _moveCalls = new();
     public IReadOnlyList<(Guid Id, Guid? NewParent)> MoveCalls => _moveCalls;
 
+    private readonly List<(Guid Id, Guid? NewParent, Guid? Anchor, bool After)> _reorderCalls = new();
+    public IReadOnlyList<(Guid Id, Guid? NewParent, Guid? Anchor, bool After)> ReorderCalls => _reorderCalls;
+
     public Dictionary<Guid, HabitNode> Store { get; } = new();
     public Exception? NextException { get; set; }
 
@@ -51,6 +54,15 @@ public sealed class FakeHabitNodeService : IHabitNodeService
         Throw();
         _moveCalls.Add((id, newParentId));
         Store[id].ParentId = newParentId;
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask MoveAndReorderAsync(
+        Guid id, Guid? newParentId, Guid? anchorSiblingId, bool placeAfter, CancellationToken ct = default)
+    {
+        Throw();
+        _reorderCalls.Add((id, newParentId, anchorSiblingId, placeAfter));
+        if (Store.TryGetValue(id, out var n)) n.ParentId = newParentId;
         return ValueTask.CompletedTask;
     }
 

@@ -139,4 +139,54 @@ public class HabitNodeServiceTests
         var act = async () => await svc.SetArchivedAsync(id, archived: true);
         await act.Should().ThrowAsync<HabitNodeAlreadySoftDeletedException>();
     }
+
+    [Fact]
+    public async Task Reorder_after_anchor_reassigns_contiguous_sort_order()
+    {
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var g = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "g" });
+        var a = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a", ParentId = g, SortOrder = 0 });
+        var b = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "b", ParentId = g, SortOrder = 1 });
+        var c = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "c", ParentId = g, SortOrder = 2 });
+
+        // Move c to sit right after a → order should become a, c, b.
+        await svc.MoveAndReorderAsync(c, g, anchorSiblingId: a, placeAfter: true);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var ordered = await db.HabitNodes.Where(n => n.ParentId == g)
+            .OrderBy(n => n.SortOrder).Select(n => n.Name).ToListAsync();
+        ordered.Should().Equal("a", "c", "b");
+        (await db.HabitNodes.Where(n => n.ParentId == g).Select(n => n.SortOrder).OrderBy(x => x).ToListAsync())
+            .Should().Equal(0, 1, 2);
+    }
+
+    [Fact]
+    public async Task Reorder_with_null_anchor_appends_at_end_and_can_change_parent()
+    {
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var g1 = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "g1" });
+        var g2 = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "g2" });
+        var x = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x", ParentId = g2, SortOrder = 0 });
+        var leaf = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "leaf", ParentId = g1, SortOrder = 0 });
+
+        await svc.MoveAndReorderAsync(leaf, g2, anchorSiblingId: null, placeAfter: false);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var moved = (await db.HabitNodes.FindAsync(leaf))!;
+        moved.ParentId.Should().Be(g2);
+        moved.SortOrder.Should().Be(1); // appended after x
+    }
+
+    [Fact]
+    public async Task Reorder_into_own_descendant_throws_CyclicHabitNodeMoveException()
+    {
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var root = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "root" });
+        var child = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "child", ParentId = root });
+        await Assert.ThrowsAsync<CyclicHabitNodeMoveException>(() =>
+            svc.MoveAndReorderAsync(root, child, anchorSiblingId: null, placeAfter: false).AsTask());
+    }
 }

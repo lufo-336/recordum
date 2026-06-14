@@ -24,6 +24,9 @@ public sealed partial class HabitNodeService(
     [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "HabitNode {Id} moved to {NewParent}")]
     private partial void LogMoved(Guid id, Guid? newParent);
 
+    [LoggerMessage(EventId = 8, Level = LogLevel.Information, Message = "HabitNode {Id} reordered under {NewParent} (anchor {Anchor}, after={After})")]
+    private partial void LogReordered(Guid id, Guid? newParent, Guid? anchor, bool after);
+
     [LoggerMessage(EventId = 4, Level = LogLevel.Information, Message = "HabitNode {Id} soft-deleted (subtree size {Count})")]
     private partial void LogSoftDeleted(Guid id, int count);
 
@@ -76,6 +79,46 @@ public sealed partial class HabitNodeService(
         node.ParentId = newParentId;
         await db.SaveChangesAsync(ct);
         LogMoved(id, newParentId);
+    }
+
+    public async ValueTask MoveAndReorderAsync(
+        Guid id, Guid? newParentId, Guid? anchorSiblingId, bool placeAfter, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var node = await db.HabitNodes.FirstOrDefaultAsync(n => n.Id == id, ct)
+            ?? throw new HabitNodeNotFoundException(id);
+        if (node.DeletedAt is not null) throw new HabitNodeAlreadySoftDeletedException(id);
+
+        if (newParentId is { } np)
+        {
+            var descendantIds = await DescendantIdsAsync(db, id, ct);
+            if (np == id || descendantIds.Contains(np))
+                throw new CyclicHabitNodeMoveException(id, np);
+            var parentExists = await db.HabitNodes.AnyAsync(n => n.Id == np, ct);
+            if (!parentExists) throw new HabitNodeNotFoundException(np);
+        }
+
+        node.ParentId = newParentId;
+
+        // Build the sibling sequence under the (new) parent, excluding the moved node,
+        // in current SortOrder then Name order for stability.
+        var siblings = await db.HabitNodes
+            .Where(n => n.ParentId == newParentId && n.Id != id && n.DeletedAt == null)
+            .OrderBy(n => n.SortOrder).ThenBy(n => n.Name)
+            .ToListAsync(ct);
+
+        var insertAt = siblings.Count; // default: append
+        if (anchorSiblingId is { } anchor)
+        {
+            var anchorIndex = siblings.FindIndex(n => n.Id == anchor);
+            if (anchorIndex >= 0) insertAt = placeAfter ? anchorIndex + 1 : anchorIndex;
+        }
+
+        siblings.Insert(insertAt, node);
+        for (var i = 0; i < siblings.Count; i++) siblings[i].SortOrder = i;
+
+        await db.SaveChangesAsync(ct);
+        LogReordered(id, newParentId, anchorSiblingId, placeAfter);
     }
 
     public async ValueTask<HabitNode?> GetAsync(Guid id, CancellationToken ct = default)
