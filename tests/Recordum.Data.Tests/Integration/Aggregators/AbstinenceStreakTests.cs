@@ -59,15 +59,20 @@ public sealed class AbstinenceStreakTests
         var today = new DateOnly(2026, 6, 1);
         var created = today.AddDays(-10);
         var (fx, clock, id) = await SeedResistanceAsync(created);
-        clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
-        var aggr = BuildAggregator(fx);
+        try
+        {
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
 
-        var runs = await aggr.GetHistoryAsync(id, created, today);
+            var runs = await aggr.GetHistoryAsync(id, created, today);
 
-        runs.Should().ContainSingle();
-        runs[0].IsCurrent.Should().BeTrue();
-        runs[0].Start.Should().Be(created);
-        runs[0].End.Should().Be(today);
+            runs.Should().ContainSingle();
+            runs[0].IsCurrent.Should().BeTrue();
+            runs[0].Start.Should().Be(created);
+            runs[0].End.Should().Be(today);
+            runs[0].Length.Should().Be(11); // created=today-10 → 11 inclusive clean days
+        }
+        finally { await fx.DisposeAsync(); }
     }
 
     [Fact]
@@ -76,18 +81,24 @@ public sealed class AbstinenceStreakTests
         var today = new DateOnly(2026, 6, 1);
         var created = today.AddDays(-30);
         var (fx, clock, id) = await SeedResistanceAsync(created);
-        await LapseOnAsync(fx, id, today.AddDays(-10));
-        clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
-        var aggr = BuildAggregator(fx);
+        try
+        {
+            await LapseOnAsync(fx, id, today.AddDays(-10));
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
 
-        var runs = await aggr.GetHistoryAsync(id, created, today);
+            var runs = await aggr.GetHistoryAsync(id, created, today);
 
-        runs.Should().HaveCount(2);
-        runs[0].BreakReason.Should().Be(StreakBreakReason.Lapse);
-        runs[0].IsCurrent.Should().BeFalse();
-        runs[1].IsCurrent.Should().BeTrue();
-        runs[1].Start.Should().Be(today.AddDays(-9)); // day after the lapse
-        runs[1].End.Should().Be(today);
+            runs.Should().HaveCount(2);
+            runs[0].BreakReason.Should().Be(StreakBreakReason.Lapse);
+            runs[0].IsCurrent.Should().BeFalse();
+            runs[0].End.Should().Be(today.AddDays(-11)); // day before the lapse
+            runs[0].Length.Should().Be(20);              // created=today-30, lapse=today-10 → days -30..-11 = 20 days
+            runs[1].IsCurrent.Should().BeTrue();
+            runs[1].Start.Should().Be(today.AddDays(-9)); // day after the lapse
+            runs[1].End.Should().Be(today);
+        }
+        finally { await fx.DisposeAsync(); }
     }
 
     [Fact]
@@ -96,16 +107,20 @@ public sealed class AbstinenceStreakTests
         var today = new DateOnly(2026, 6, 1);
         var created = today.AddDays(-30);
         var (fx, clock, id) = await SeedResistanceAsync(created);
-        await LapseOnAsync(fx, id, today);
-        clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
-        var aggr = BuildAggregator(fx);
+        try
+        {
+            await LapseOnAsync(fx, id, today);
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
 
-        var runs = await aggr.GetHistoryAsync(id, created, today);
+            var runs = await aggr.GetHistoryAsync(id, created, today);
 
-        runs.Should().ContainSingle();
-        runs[0].IsCurrent.Should().BeFalse();
-        runs[0].BreakReason.Should().Be(StreakBreakReason.Lapse);
-        runs[0].End.Should().Be(today.AddDays(-1));
+            runs.Should().ContainSingle();
+            runs[0].IsCurrent.Should().BeFalse();
+            runs[0].BreakReason.Should().Be(StreakBreakReason.Lapse);
+            runs[0].End.Should().Be(today.AddDays(-1));
+        }
+        finally { await fx.DisposeAsync(); }
     }
 
     [Fact]
@@ -114,16 +129,24 @@ public sealed class AbstinenceStreakTests
         var today = new DateOnly(2026, 6, 1);
         var created = today.AddDays(-10);
         var (fx, clock, id) = await SeedResistanceAsync(created);
-        await LapseOnAsync(fx, id, today.AddDays(-5));
-        await LapseOnAsync(fx, id, today.AddDays(-4));
-        clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
-        var aggr = BuildAggregator(fx);
+        try
+        {
+            await LapseOnAsync(fx, id, today.AddDays(-5));
+            await LapseOnAsync(fx, id, today.AddDays(-4));
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
 
-        var runs = await aggr.GetHistoryAsync(id, created, today);
+            var runs = await aggr.GetHistoryAsync(id, created, today);
 
-        runs.Should().HaveCount(2); // [created..-6] closed, then [-3..today] current; nothing between the two lapses
-        runs[1].Start.Should().Be(today.AddDays(-3));
-        runs[1].IsCurrent.Should().BeTrue();
+            runs.Should().HaveCount(2); // [created..-6] closed, then [-3..today] current; nothing between the two lapses
+            runs[0].Start.Should().Be(created);
+            runs[0].End.Should().Be(today.AddDays(-6)); // day before the first lapse
+            runs[0].Length.Should().Be(5);              // created=today-10, first lapse=today-5 → days -10..-6 = 5 days
+            runs[0].BreakReason.Should().Be(StreakBreakReason.Lapse);
+            runs[1].Start.Should().Be(today.AddDays(-3));
+            runs[1].IsCurrent.Should().BeTrue();
+        }
+        finally { await fx.DisposeAsync(); }
     }
 
     [Fact]
@@ -132,24 +155,46 @@ public sealed class AbstinenceStreakTests
         var today = new DateOnly(2026, 6, 1);
         var created = today.AddDays(-10); // 11 clean days inclusive
         var (fx, clock, id) = await SeedResistanceAsync(created);
-        await using (var db = await fx.Factory.CreateDbContextAsync())
+        try
         {
-            db.StreakPauses.Add(new StreakPause
+            await using (var db = await fx.Factory.CreateDbContextAsync())
             {
-                Id = Guid.NewGuid(),
-                HabitNodeId = id,
-                PauseFrom = today.AddDays(-6),
-                PauseTo = today.AddDays(-4), // 3 paused days
-            });
-            await db.SaveChangesAsync();
+                db.StreakPauses.Add(new StreakPause
+                {
+                    Id = Guid.NewGuid(),
+                    HabitNodeId = id,
+                    PauseFrom = today.AddDays(-6),
+                    PauseTo = today.AddDays(-4), // 3 paused days
+                });
+                await db.SaveChangesAsync();
+            }
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
+
+            var runs = await aggr.GetHistoryAsync(id, created, today);
+
+            runs.Should().ContainSingle();
+            runs[0].IsCurrent.Should().BeTrue();
+            runs[0].Length.Should().Be(8); // 11 calendar days - 3 paused
         }
-        clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
-        var aggr = BuildAggregator(fx);
+        finally { await fx.DisposeAsync(); }
+    }
 
-        var runs = await aggr.GetHistoryAsync(id, created, today);
+    [Fact]
+    public async Task A_lapse_on_the_creation_day_produces_no_run()
+    {
+        var today = new DateOnly(2026, 6, 1);
+        var (fx, clock, id) = await SeedResistanceAsync(today);
+        try
+        {
+            await LapseOnAsync(fx, id, today);
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
 
-        runs.Should().ContainSingle();
-        runs[0].IsCurrent.Should().BeTrue();
-        runs[0].Length.Should().Be(8); // 11 calendar days - 3 paused
+            var runs = await aggr.GetHistoryAsync(id, today, today);
+
+            runs.Should().BeEmpty();
+        }
+        finally { await fx.DisposeAsync(); }
     }
 }

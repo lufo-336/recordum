@@ -173,7 +173,7 @@ public sealed class SchedulingAwareStreakAggregator(
         if (start > toDate) return Array.Empty<StreakRun>();
 
         var heatmap = await completions.GetHeatmapAsync(habitNode.Id, start, toDate, ct).ConfigureAwait(false);
-        var lapseDays = heatmap.Where(c => c.Count >= 1).Select(c => c.Date).ToHashSet();
+        var lapseDays = heatmap.Where(c => c.Count > 0).Select(c => c.Date).ToHashSet();
         var pauseList = await pauses.ListByHabitAsync(habitNode.Id, ct).ConfigureAwait(false);
         bool IsPaused(DateOnly d) => pauseList.Any(p => d >= p.PauseFrom && d <= p.PauseTo);
 
