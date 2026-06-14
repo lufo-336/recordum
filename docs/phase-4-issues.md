@@ -6,6 +6,24 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Stato al 2026-06-15 — drag-and-drop visivo + riordino manuale
+
+### R-dragReorder. Drag-and-drop visivo con fantasma + riordino manuale persistente
+- **Stato**: `fixed` (verifica visiva utente da fare) — eseguito subagent-driven 2026-06-15, 6 task TDD (+ Task 7 verifica). Per ogni task: implementer → spec-review → code-quality-review.
+- **Richiesta utente**: «inserisci il drag-n-drop visivo. Voglio vedere la casella dell'abitudine "sollevarsi" quando la trascino». In chiarimento: fantasma agganciato al cursore (stile file-manager) + indicatori di posizione (dentro un gruppo, sopra/sotto un'abitudine) per **riordinare e spostare**. Decisione UX: riordinando in un ordinamento non-Manuale, l'app **passa a Manuale in automatico**.
+- **Spec**: `docs/superpowers/specs/2026-06-15-drag-reorder-visual-design.md`; piano `docs/superpowers/plans/2026-06-15-drag-reorder-visual.md`. **Nessuna migrazione**: `HabitNode.SortOrder` esisteva già nel modello/DB ma non era né letto né scritto per i nodi habit, e `HomeSort.Manual` era inerte (`_ => rows`).
+- **Eseguito** (commit `7f6251f`→`e0784f3`, + rifiniture review `a23292e`/`a7f1195`/`5676505`):
+  1. **Data** `IHabitNodeService.MoveAndReorderAsync(id, newParent, anchorSiblingId, placeAfter)` — riordino **anchor-based** (più robusto dell'indice intero): riassegna `SortOrder` contigui 0..n-1 ai fratelli inserendo il nodo accanto all'ancora (null/non trovata = append in coda); cycle guard riusato da `MoveAsync`; transazionale.
+  2. **Sort** `SortOrder` esposto in `HomeTreeRow` (param opzionale in coda, zero blast-radius) + proiettato nella query; `HomeSort.Manual` ora ordina per `SortOrder` (tie-break Name).
+  3. **VM** flag riga `IsBeingDragged`/`DropEdge` (enum `RowDropEdge`), `DropPlan` value type, `HomeViewModel.ApplyDropAsync` (bulk reparent vs single `MoveAndReorderAsync`; auto-switch a Manuale solo su reorder fine).
+  4. **Behavior** `TreeDragDropBehavior.ResolveDrop` puro (zona+bersaglio→DropPlan, testato); indicatore **singolo** alla volta via `SetIndicator` (highlight gruppo *oppure* edge inserimento); `OnDrop`→`ApplyDropAsync`.
+  5. **Ghost** `DragAdorner` (snapshot `VisualBrush` ~0.55 opacità che segue il cursore); spawn/teardown deterministico nel `finally` di `DoDragDrop` (pulisce ghost+flag+indicatore anche su annullamento/Esc).
+  6. **XAML** trigger in `Recordum.HabitBlock`: sorgente trascinata sbiadita (opacità 0.4), linea di inserimento accent 2px sopra (Before)/sotto (After).
+- Suite finali: **Data 332 / WPF 554 / Core 55 / Plugins 66 / Export 17 / Chart 18** verdi, build 0/0.
+- **Limiti noti (accettati, da spec §6/§7)**: multi-selezione = reparent in blocco senza indice fine (il riordino preciso vale per il drag a riga singola); i pin (Global/Local) restano in cima, `SortOrder` ordina *dentro* il gruppo dei pin.
+- **Follow-up (non bloccante, da review Task 4)**: `OnDrop` è `async void` e `ApplyDropAsync` cattura solo `CyclicHabitNodeMoveException`; un'eccezione diversa (DB error…) propagherebbe come unhandled. **Pre-esistente** (anche il vecchio `OnDrop` catturava solo quella) — valutare un try/catch con logging in `ApplyDropAsync` per non far cadere il processo su un gesto utente.
+- **Verifica visiva utente**: fantasma semitrasparente che segue il cursore + originale sbiadito; linea sopra/sotto su abitudine (riordino) ed evidenziazione su gruppo (entra-dentro), mai insieme; riordino persiste al riavvio + auto-switch a Manuale; due temi.
+
 ## Stato al 2026-06-14 — crash "database is locked" al Lancia builder
 
 ### B-dbLock. Crash `SQLITE_BUSY` su scrittura concorrente (verifica visiva R-multiValue)
