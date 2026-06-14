@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using Recordum.WPF.ViewModels;
 
@@ -29,6 +30,7 @@ public static class TreeDragDropBehavior
     private static Point _start;
     private static bool _armed;
     private static HomeRowViewModel? _indicated;
+    private static DragAdorner? _dragAdorner;
 
     internal static DropZone ResolveZone(double relative) =>
         relative < 0.4 ? DropZone.Before :
@@ -81,10 +83,27 @@ public static class TreeDragDropBehavior
         if (!_armed || e.LeftButton != MouseButtonState.Pressed) return;
         var p = e.GetPosition(sender as IInputElement);
         if ((p - _start).Length < 5) return;
-        if (e.OriginalSource is FrameworkElement fe && fe.DataContext is HomeRowViewModel src)
+        if (sender is ItemsControl ic
+            && e.OriginalSource is FrameworkElement fe
+            && fe.DataContext is HomeRowViewModel src)
         {
             _armed = false;
-            DragDrop.DoDragDrop(fe, src, DragDropEffects.Move);
+            var layer = AdornerLayer.GetAdornerLayer(ic);
+            _dragAdorner = new DragAdorner(ic, fe);
+            layer?.Add(_dragAdorner);
+            src.IsBeingDragged = true;
+            try
+            {
+                DragDrop.DoDragDrop(fe, src, DragDropEffects.Move);
+            }
+            finally
+            {
+                // DoDragDrop is blocking; this runs on drop OR cancel, wherever it ends.
+                if (layer is not null && _dragAdorner is not null) layer.Remove(_dragAdorner);
+                _dragAdorner = null;
+                src.IsBeingDragged = false;
+                SetIndicator(null, false, RowDropEdge.None);
+            }
         }
     }
 
@@ -92,6 +111,7 @@ public static class TreeDragDropBehavior
     // (IsDropTarget) or an insertion edge (DropEdge) on the hovered sibling.
     private static void OnDragOver(object sender, DragEventArgs e)
     {
+        _dragAdorner?.SetPosition(e.GetPosition(sender as IInputElement));
         if (e.Data.GetData(typeof(HomeRowViewModel)) is HomeRowViewModel src
             && e.OriginalSource is FrameworkElement fe
             && fe.DataContext is HomeRowViewModel row
