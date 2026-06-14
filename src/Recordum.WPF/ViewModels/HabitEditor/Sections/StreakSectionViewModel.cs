@@ -34,7 +34,9 @@ public sealed partial class StreakSectionViewModel(IHabitConfigService configs) 
         return Task.CompletedTask;
     }
 
-    public override bool IsApplicable(NodeType node, HabitType? habit) => node == NodeType.Habit;
+    // Abstinence uses a dedicated streak (clean time since last lapse); mode/recovery don't apply.
+    public override bool IsApplicable(NodeType node, HabitType? habit)
+        => node == NodeType.Habit && habit != HabitType.Resistance;
 
     partial void OnStreakModeChanged(StreakMode value)
     {

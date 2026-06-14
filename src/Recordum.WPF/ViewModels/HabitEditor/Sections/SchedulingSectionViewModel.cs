@@ -61,7 +61,9 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
         return Task.CompletedTask;
     }
 
-    public override bool IsApplicable(NodeType node, HabitType? habit) => node == NodeType.Habit;
+    // Abstinence ignores scheduling — the streak is "time since last lapse" (spec 2026-06-14).
+    public override bool IsApplicable(NodeType node, HabitType? habit)
+        => node == NodeType.Habit && habit != HabitType.Resistance;
 
     partial void OnScheduleTypeChanged(ScheduleType value)
     {
