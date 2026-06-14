@@ -69,4 +69,22 @@ public static class DurationFormat
             ? string.Create(CultureInfo.InvariantCulture, $"{days}g")
             : string.Create(CultureInfo.InvariantCulture, $"{days / 365}a {days % 365}g");
     }
+
+    /// <summary>Elapsed-time display for the Resistance current streak: the two most significant
+    /// units. "2a 41g" / "41g 6h" / "6h 12m" / "12m" / "appena ora". Years approximated as 365 days,
+    /// consistent with <see cref="FormatDays"/>.</summary>
+    public static string FormatElapsed(TimeSpan elapsed)
+    {
+        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
+        int totalDays = (int)elapsed.TotalDays;
+        if (totalDays >= 365)
+            return string.Create(CultureInfo.InvariantCulture, $"{totalDays / 365}a {totalDays % 365}g");
+        if (totalDays >= 1)
+            return string.Create(CultureInfo.InvariantCulture, $"{totalDays}g {elapsed.Hours}h");
+        if (elapsed.TotalHours >= 1)
+            return string.Create(CultureInfo.InvariantCulture, $"{elapsed.Hours}h {elapsed.Minutes}m");
+        if (elapsed.TotalMinutes >= 1)
+            return string.Create(CultureInfo.InvariantCulture, $"{elapsed.Minutes}m");
+        return "appena ora";
+    }
 }
