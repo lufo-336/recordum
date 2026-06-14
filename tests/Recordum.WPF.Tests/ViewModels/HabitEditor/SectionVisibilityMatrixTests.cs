@@ -18,7 +18,7 @@ public class SectionVisibilityMatrixTests
         new object?[] { NodeType.Group, (HabitType?)null,            "L1,Goal,Notifications,Tags,AiSharing,ResetTime" },
         new object?[] { NodeType.Habit, (HabitType?)HabitType.Action,    "L1,Scheduling,Streak,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
         new object?[] { NodeType.Habit, (HabitType?)HabitType.Counter,   "L1,Scheduling,Streak,Timer,Metrics,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
-        new object?[] { NodeType.Habit, (HabitType?)HabitType.Resistance,"L1,Scheduling,Streak,Timer,Metrics,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
+        new object?[] { NodeType.Habit, (HabitType?)HabitType.Resistance,"L1,Timer,Metrics,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
         new object?[] { NodeType.Habit, (HabitType?)HabitType.Journal,   "L1,Scheduling,Streak,Goal,Notifications,Tags,AiSharing,ResetTime" },
         new object?[] { NodeType.Habit, (HabitType?)HabitType.State,     "L1,Scheduling,Streak,Scales,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
     };
