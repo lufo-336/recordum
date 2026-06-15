@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using Recordum.WPF.Interop;
 using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Behaviors;
@@ -32,7 +32,7 @@ public static class TreeDragDropBehavior
     private static Point _start;
     private static bool _armed;
     private static HomeRowViewModel? _indicated;
-    private static DragAdorner? _dragAdorner;
+    private static DragGhost? _ghost;
 
     internal static DropZone ResolveZone(double relative) =>
         relative < 0.4 ? DropZone.Before :
@@ -62,6 +62,17 @@ public static class TreeDragDropBehavior
             if (d is FrameworkElement fe && ReferenceEquals(fe.Style, style))
                 return fe;
         return null;
+    }
+
+    /// <summary>La card di riga da fotografare: il Border "Recordum.HabitBlock" antenato del punto
+    /// afferrato. Fallback al container della riga (ContentPresenter) se lo Style non si risolve — comunque
+    /// a livello-riga, mai un sotto-elemento. Null solo in casi difensivi non attesi.</summary>
+    private static FrameworkElement? FindRowCard(DependencyObject? origin, ItemsControl ic)
+    {
+        if (Application.Current?.TryFindResource("Recordum.HabitBlock") is Style cardStyle
+            && FindAncestorWithStyle(origin, cardStyle) is { } card)
+            return card;
+        return ItemsControl.ContainerFromElement(ic, origin) as FrameworkElement;
     }
 
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -103,19 +114,28 @@ public static class TreeDragDropBehavior
             && fe.DataContext is HomeRowViewModel src)
         {
             _armed = false;
-            var layer = AdornerLayer.GetAdornerLayer(ic);
-            _dragAdorner = new DragAdorner(ic, fe);
-            layer?.Add(_dragAdorner);
+            var card = FindRowCard(fe, ic);
+            _ghost = card is not null ? new DragGhost(card) : null;
             src.IsBeingDragged = true;
+
+            // QueryContinueDrag scatta a ogni movimento del mouse (molto più fitto di DragOver) e ovunque
+            // sullo schermo; i suoi args non portano la posizione, quindi la leggiamo da GetCursorPos.
+            void OnQueryContinue(object? s, QueryContinueDragEventArgs args)
+            {
+                if (_ghost is not null && NativeMethods.TryGetCursorPos() is { } pos)
+                    _ghost.SetScreenPosition(pos);
+            }
+            fe.QueryContinueDrag += OnQueryContinue;
             try
             {
                 DragDrop.DoDragDrop(fe, src, DragDropEffects.Move);
             }
             finally
             {
-                // DoDragDrop is blocking; this runs on drop OR cancel, wherever it ends.
-                if (layer is not null && _dragAdorner is not null) layer.Remove(_dragAdorner);
-                _dragAdorner = null;
+                // DoDragDrop è bloccante; questo gira al drop O all'annullamento, ovunque finisca.
+                fe.QueryContinueDrag -= OnQueryContinue;
+                _ghost?.Dispose();
+                _ghost = null;
                 src.IsBeingDragged = false;
                 SetIndicator(null, false, RowDropEdge.None);
             }
@@ -126,7 +146,6 @@ public static class TreeDragDropBehavior
     // (IsDropTarget) or an insertion edge (DropEdge) on the hovered sibling.
     private static void OnDragOver(object sender, DragEventArgs e)
     {
-        _dragAdorner?.SetPosition(e.GetPosition(sender as IInputElement));
         if (e.Data.GetData(typeof(HomeRowViewModel)) is HomeRowViewModel src
             && e.OriginalSource is FrameworkElement fe
             && fe.DataContext is HomeRowViewModel row
