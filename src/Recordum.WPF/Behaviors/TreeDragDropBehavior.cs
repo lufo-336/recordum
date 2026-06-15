@@ -72,6 +72,9 @@ public static class TreeDragDropBehavior
         if (Application.Current?.TryFindResource("Recordum.HabitBlock") is Style cardStyle
             && FindAncestorWithStyle(origin, cardStyle) is { } card)
             return card;
+        // Fallback: ContainerFromElement risolve solo container dell'`ic` radice → null per righe in un
+        // ItemsControl annidato (gruppi). Quelle righe contano sul percorso style-match qui sopra: se lo
+        // Style "Recordum.HabitBlock" cambia/sparisce, le righe annidate resterebbero senza ghost.
         return ItemsControl.ContainerFromElement(ic, origin) as FrameworkElement;
     }
 
@@ -125,6 +128,8 @@ public static class TreeDragDropBehavior
                 if (_ghost is not null && NativeMethods.TryGetCursorPos() is { } pos)
                     _ghost.SetScreenPosition(pos);
             }
+            // `fe` funge anche da sorgente passata a DoDragDrop: QueryContinueDrag scatta su QUELL'elemento,
+            // quindi l'handler va agganciato qui. Se un refactor separasse sorgente e hover, andrebbe rivisto.
             fe.QueryContinueDrag += OnQueryContinue;
             try
             {
