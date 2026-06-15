@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Behaviors;
@@ -55,7 +56,9 @@ public static class TreeDragDropBehavior
     /// riga (Border "Recordum.HabitBlock") partendo dal sotto-elemento sotto il cursore.</summary>
     internal static FrameworkElement? FindAncestorWithStyle(DependencyObject? origin, Style style)
     {
-        for (var d = origin; d is not null; d = VisualTreeHelper.GetParent(d))
+        // VisualTreeHelper.GetParent lancia su un ContentElement (es. Run): risali solo finché sei su un
+        // Visual/Visual3D, così il metodo è totale (ritorna null) anche se il chiamante passa un non-Visual.
+        for (var d = origin; d is Visual or Visual3D; d = VisualTreeHelper.GetParent(d))
             if (d is FrameworkElement fe && ReferenceEquals(fe.Style, style))
                 return fe;
         return null;
