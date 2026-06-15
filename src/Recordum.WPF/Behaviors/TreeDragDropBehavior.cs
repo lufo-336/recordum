@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using Recordum.WPF.ViewModels;
 
 namespace Recordum.WPF.Behaviors;
@@ -48,6 +49,17 @@ public static class TreeDragDropBehavior
         // After, and Onto-on-a-habit, both place the row right after the target among its siblings.
         _ => new DropPlan(targetParentId, targetId, true),
     };
+
+    /// <summary>Risale l'albero visuale dal punto dato al primo <see cref="FrameworkElement"/> il cui
+    /// <c>Style</c> è (reference-equal) lo <paramref name="style"/> dato. Usato per trovare la card di
+    /// riga (Border "Recordum.HabitBlock") partendo dal sotto-elemento sotto il cursore.</summary>
+    internal static FrameworkElement? FindAncestorWithStyle(DependencyObject? origin, Style style)
+    {
+        for (var d = origin; d is not null; d = VisualTreeHelper.GetParent(d))
+            if (d is FrameworkElement fe && ReferenceEquals(fe.Style, style))
+                return fe;
+        return null;
+    }
 
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

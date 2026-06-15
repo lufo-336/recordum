@@ -1,5 +1,7 @@
 using FluentAssertions;
 using Recordum.WPF.Behaviors;
+using System.Windows;
+using System.Windows.Controls;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Behaviors;
@@ -54,5 +56,34 @@ public class TreeDragDropBehaviorTests
         var plan = TreeDragDropBehavior.ResolveDrop(
             TreeDragDropBehavior.DropZone.Onto, targetIsGroup: false, targetId: target, targetParentId: parent);
         plan.Should().Be(new TreeDragDropBehavior.DropPlan(parent, target, true));
+    }
+
+    [WpfFact]
+    public void Find_ancestor_with_style_returns_the_card_not_the_inner_element()
+    {
+        var cardStyle = new Style(typeof(Border));
+        var inner = new TextBlock();
+        var card = new Border { Style = cardStyle, Child = inner };
+        var root = new Border { Child = card };
+        root.Measure(new Size(500, 500));
+        root.Arrange(new Rect(0, 0, 500, 500));
+
+        var found = TreeDragDropBehavior.FindAncestorWithStyle(inner, cardStyle);
+
+        found.Should().BeSameAs(card);
+    }
+
+    [WpfFact]
+    public void Find_ancestor_with_style_returns_null_when_no_ancestor_matches()
+    {
+        var cardStyle = new Style(typeof(Border));
+        var inner = new TextBlock();
+        var root = new Border { Child = inner }; // nessuno ha cardStyle
+        root.Measure(new Size(100, 100));
+        root.Arrange(new Rect(0, 0, 100, 100));
+
+        var found = TreeDragDropBehavior.FindAncestorWithStyle(inner, cardStyle);
+
+        found.Should().BeNull();
     }
 }
