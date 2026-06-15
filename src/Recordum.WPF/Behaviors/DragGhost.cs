@@ -12,13 +12,12 @@ namespace Recordum.WPF.Behaviors;
 /// </summary>
 public sealed class DragGhost : IDisposable
 {
-    private const double CornerRadius = 6;
+    private const double CardCornerRadius = 6;
     private const double GhostOpacity = 0.95;
     private const double CursorOffset = 8; // il ghost sta giù-a-destra così il cursore resta visibile
 
     private readonly Popup _popup;
     private readonly Visual _source; // per la matrice DPI della sorgente di presentazione
-    private bool _opened;
     private bool _disposed;
 
     public DragGhost(FrameworkElement rowCard)
@@ -42,7 +41,7 @@ public sealed class DragGhost : IDisposable
             Background = Resolve("Brush.SurfaceElevated", "Brush.Background") ?? Brushes.White,
             BorderBrush = Resolve("Brush.Border", "Brush.Accent") ?? Brushes.Gray,
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(CornerRadius),
+            CornerRadius = new CornerRadius(CardCornerRadius),
             Opacity = GhostOpacity,
             SnapsToDevicePixels = true,
             Child = image,
@@ -69,6 +68,9 @@ public sealed class DragGhost : IDisposable
     {
         if (_disposed) return;
 
+        // _source resta nell'albero durante il drag (solo sbiadito), quindi FromVisual è null di fatto
+        // solo nei test/se la card è stata staccata; in quel raro caso a DPI != 100% il ghost andrebbe
+        // alla deriva dal cursore. Accettato: in produzione la card è sempre connessa.
         var transform = PresentationSource.FromVisual(_source)?.CompositionTarget?.TransformFromDevice
                         ?? Matrix.Identity;
         var dip = PhysicalToDip(physicalCursor, transform);
@@ -76,19 +78,16 @@ public sealed class DragGhost : IDisposable
         _popup.HorizontalOffset = dip.X + CursorOffset;
         _popup.VerticalOffset = dip.Y + CursorOffset;
 
-        if (!_opened)
-        {
-            _popup.IsOpen = true; // ritardato alla prima posizione per evitare un flash a (0,0)
-            _opened = true;
-        }
+        // ritardato alla prima posizione per evitare un flash a (0,0)
+        if (!_popup.IsOpen) _popup.IsOpen = true;
     }
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        _popup.IsOpen = false;
-        _popup.Child = null;
+        _popup.Child = null;   // stacca il contenuto prima
+        _popup.IsOpen = false; // poi chiudi
     }
 
     /// <summary>Converte pixel fisici dello schermo in unità WPF (DIU) data la matrice
