@@ -864,8 +864,8 @@
                                             <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
                                                        Foreground="{DynamicResource Brush.TextMuted}"
                                                        FontSize="{StaticResource FontSize.Small}"
-                                                       Visibility="{Binding DayCompletions.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
-                                            <ContentControl Content="{Binding DayCompletions}"/>
+                                                       Visibility="{Binding Records.Records.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
+                                            <ContentControl Content="{Binding Records.Records}"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </ScrollViewer>
