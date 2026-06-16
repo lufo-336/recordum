@@ -33,17 +33,21 @@ public sealed partial class CompletionListViewModel : ObservableObject
         Populate(list, lookup);
     }
 
-    /// <summary>Loads the completions recorded on a single day, each with readable per-field values
-    /// (metric name : value + unit, or scale label). Powers the Abitudine tab's "day records" panel.</summary>
-    public async Task LoadDayAsync(Guid habitNodeId, DateOnly date, CancellationToken ct = default)
+    /// <summary>Loads the completions in [from, to] (inclusive; null bound = unbounded that side), each
+    /// with readable per-field values. Powers both the day panel (from==to) and the period list.</summary>
+    public async Task LoadRangeAsync(Guid habitNodeId, DateOnly? from, DateOnly? to, CancellationToken ct = default)
     {
         NodeId = habitNodeId;
-        var from = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var to = from.AddDays(1).AddTicks(-1);
-        var list = await _completions.ListByHabitAsync(habitNodeId, from, to, ct: ct).ConfigureAwait(true);
+        var fromTs = from is { } f ? new DateTimeOffset(f.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : (DateTimeOffset?)null;
+        var toTs = to is { } t ? new DateTimeOffset(t.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero) : (DateTimeOffset?)null;
+        var list = await _completions.ListByHabitAsync(habitNodeId, fromTs, toTs, ct: ct).ConfigureAwait(true);
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
         Populate(list, lookup);
     }
+
+    /// <summary>Loads the completions recorded on a single day. Thin wrapper over <see cref="LoadRangeAsync"/>.</summary>
+    public Task LoadDayAsync(Guid habitNodeId, DateOnly date, CancellationToken ct = default)
+        => LoadRangeAsync(habitNodeId, date, date, ct);
 
     private void Populate(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup)
     {

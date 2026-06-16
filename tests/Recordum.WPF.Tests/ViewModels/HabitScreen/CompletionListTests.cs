@@ -49,6 +49,50 @@ public class CompletionListViewModelTests
         sut.Rows.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task LoadRangeAsync_lists_only_completions_within_range_descending()
+    {
+        var cs = new FakeCompletionService();
+        var habit = Guid.NewGuid();
+        foreach (var d in new[] { 10, 14, 18, 25 }) // giorni di giugno 2026
+        {
+            var ts = new DateTime(2026, 6, d, 12, 0, 0, DateTimeKind.Utc);
+            cs.Store[Guid.NewGuid()] = new Completion
+            {
+                Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = ts,
+                CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds(),
+            };
+        }
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+
+        await sut.LoadRangeAsync(habit, new DateOnly(2026, 6, 12), new DateOnly(2026, 6, 20));
+
+        sut.Rows.Should().HaveCount(2);
+        sut.Rows[0].CompletedAt.Day.Should().Be(18); // desc
+        sut.Rows[1].CompletedAt.Day.Should().Be(14);
+    }
+
+    [Fact]
+    public async Task LoadRangeAsync_with_null_bounds_lists_everything()
+    {
+        var cs = new FakeCompletionService();
+        var habit = Guid.NewGuid();
+        for (int d = 1; d <= 5; d++)
+        {
+            var ts = new DateTime(2026, 6, d, 9, 0, 0, DateTimeKind.Utc);
+            cs.Store[Guid.NewGuid()] = new Completion
+            {
+                Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = ts,
+                CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds(),
+            };
+        }
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+
+        await sut.LoadRangeAsync(habit, null, null);
+
+        sut.Rows.Should().HaveCount(5);
+    }
+
     [WpfFact]
     public async Task LoadDayAsync_lists_only_that_day_with_readable_field_values()
     {
