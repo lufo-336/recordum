@@ -34,6 +34,8 @@
             <conv:HexToColorConverter x:Key="HexToColor"/>
             <conv:IndentToMarginConverter x:Key="IndentToMargin"/>
             <conv:BoolToCheckMarkConverter x:Key="BoolToCheckMark"/>
+            <conv:EntriesPeriodLabelConverter x:Key="EntriesPeriodLabel"/>
+            <conv:DateOnlyToDateTimeConverter x:Key="DateOnlyToDateTime"/>
 
             <!-- Enum value sources for editor-section ComboBoxes. Global so section
                  views (instantiated via DataTemplate, not yet in the visual tree)
@@ -58,6 +60,9 @@
             </ObjectDataProvider>
             <ObjectDataProvider x:Key="NotifyTypeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
                 <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:NotifyType"/></ObjectDataProvider.MethodParameters>
+            </ObjectDataProvider>
+            <ObjectDataProvider x:Key="EntriesPeriodValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+                <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:EntriesPeriod"/></ObjectDataProvider.MethodParameters>
             </ObjectDataProvider>
             <ObjectDataProvider x:Key="AiDataSharingValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
                 <ObjectDataProvider.MethodParameters><x:Type TypeName="enums:AiDataSharing"/></ObjectDataProvider.MethodParameters>

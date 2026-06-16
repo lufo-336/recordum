@@ -539,6 +539,36 @@
   <data name="HabitScreen.DayRecords.Empty" xml:space="preserve">
     <value>Nessuna registrazione in questo giorno.</value>
   </data>
+  <data name="HabitScreen.Records" xml:space="preserve">
+    <value>Registrazioni</value>
+  </data>
+  <data name="Records.Mode.Day" xml:space="preserve">
+    <value>Giorno</value>
+  </data>
+  <data name="Records.Mode.Period" xml:space="preserve">
+    <value>Periodo</value>
+  </data>
+  <data name="Period.Week" xml:space="preserve">
+    <value>Settimana</value>
+  </data>
+  <data name="Period.Month" xml:space="preserve">
+    <value>Mese</value>
+  </data>
+  <data name="Period.Year" xml:space="preserve">
+    <value>Anno</value>
+  </data>
+  <data name="Period.All" xml:space="preserve">
+    <value>Tutto</value>
+  </data>
+  <data name="Period.Custom" xml:space="preserve">
+    <value>Personalizzato</value>
+  </data>
+  <data name="Period.From" xml:space="preserve">
+    <value>Da</value>
+  </data>
+  <data name="Period.To" xml:space="preserve">
+    <value>A</value>
+  </data>
   <data name="HabitScreen.Tab.Notes" xml:space="preserve">
     <value>Note</value>
   </data>

@@ -51,6 +51,16 @@ public static class Strings
     public static string HabitScreen_Panoramica_Empty => Get("HabitScreen.Panoramica.Empty");
     public static string HabitScreen_DayRecords => Get("HabitScreen.DayRecords");
     public static string HabitScreen_DayRecords_Empty => Get("HabitScreen.DayRecords.Empty");
+    public static string HabitScreen_Records => Get("HabitScreen.Records");
+    public static string Records_Mode_Day => Get("Records.Mode.Day");
+    public static string Records_Mode_Period => Get("Records.Mode.Period");
+    public static string Period_Week => Get("Period.Week");
+    public static string Period_Month => Get("Period.Month");
+    public static string Period_Year => Get("Period.Year");
+    public static string Period_All => Get("Period.All");
+    public static string Period_Custom => Get("Period.Custom");
+    public static string Period_From => Get("Period.From");
+    public static string Period_To => Get("Period.To");
     public static string HabitScreen_Tab_Notes => Get("HabitScreen.Tab.Notes");
     public static string HabitScreen_DayNote_Title => Get("HabitScreen.DayNote.Title");
     public static string HabitScreen_DayNote_Save => Get("HabitScreen.DayNote.Save");
