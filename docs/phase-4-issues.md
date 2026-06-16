@@ -6,6 +6,17 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Stato al 2026-06-16 — lista inserimenti filtrabile per periodo (Feature B)
+
+### B-entriesPeriod. Lista registrazioni commutabile Giorno/Periodo nella colonna Cronologia
+- **Stato**: `fixed` (verifica visiva utente da fare) — eseguito 2026-06-16, 6 task TDD (executing-plans). Spec `docs/superpowers/specs/2026-06-15-entries-list-period-filter-design.md`, piano `docs/superpowers/plans/2026-06-15-entries-list-period-filter.md`.
+- **Cosa**: nella colonna **Cronologia** dello HabitScreen il pannello "Registrazioni" ora è commutabile **Giorno / Periodo** (RadioButton). In modalità Periodo un ComboBox sceglie **Settimana / Mese / Anno / Tutto / Personalizzato**; con Personalizzato compaiono due `DatePicker` Da/A. Default invariato: **Giorno**, guidato dal giorno selezionato sul calendario (nessuna regressione del comportamento esistente).
+- **Architettura**: resolver puro `EntriesPeriodRange.Resolve(period, today, customFrom?, customTo?)` in Core (Settimana = settimana ISO lun→dom; Mese/Anno = calendario; Tutto = illimitato; Personalizzato = estremi passati). `CompletionListViewModel.LoadRangeAsync(from?, to?)` riusa l'overload range già esistente su `ICompletionService` (`LoadDayAsync` ora è un wrapper `from==to`). Nuovo `HabitRecordsViewModel` incapsula modalità+filtro+lista, alleggerendo `HabitScreenViewModel` (`Records` rimpiazza `DayCompletions`). UI additiva sulla colonna Cronologia + 2 converter (`EntriesPeriodLabel`, `DateOnlyToDateTime`) + `ObjectDataProvider EntriesPeriodValues` + i18n EN/IT (10 stringhe). **Nessuna migrazione, nessun cambio a `ICompletionService`/schema.**
+- **Commit**: `a17a776` (Task 1 Core resolver + 6 test) · `64945bb` (Task 2 LoadRangeAsync) · `29708df` (Task 3 HabitRecordsViewModel + 4 test) · `7d28349` (Task 4 cablaggio, comportamento invariato) · `1059da3` (Task 5 UI+i18n).
+- **Test**: Core **61** verdi (+6), WPF **567** verdi (+2 LoadRange, +4 HabitRecords), build 0 errori.
+- **Verifica visiva pendente** (tema scuro+chiaro): default Giorno = nessuna regressione; toggle Periodo → Mese corrente; preset Settimana/Anno/Tutto; Personalizzato Da/A (Da>A ⇒ lista vuota, nessun crash); selezione giorno-su-calendario in Periodo NON cambia la lista (QuickAdd/DayNote sì); ritorno a Giorno; refresh post-completamento nella modalità corrente; righe ancora editabili/eliminabili.
+- **Resta aperto il ciclo successivo**: **Feature A** (tab Note cronologia pagine+note) — non ancora pianificata.
+
 ## Stato al 2026-06-15 — drag-and-drop visivo + riordino manuale
 
 ### R-dragReorder. Drag-and-drop visivo con fantasma + riordino manuale persistente
