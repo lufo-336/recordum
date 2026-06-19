@@ -7,5 +7,20 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <!-- Dev is Windows-only (WPF). Pinning the RID makes every build RID-specific so it
+         emits ONLY win-x64 native assets, instead of copying SkiaSharp/sqlcipher/QuestPDF
+         natives for all ~8 RIDs (osx/linux/win-x86/arm64…) into bin/. Framework-dependent
+         (SelfContained=false) keeps output small — no bundled .NET runtime. Phase 5 (web)
+         and Phase 7 (MAUI) build their own projects and re-resolve the RIDs they need. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <!-- NU1903: SQLitePCLRaw.lib.e_sqlite3 (transitive via EF Core Sqlite) is flagged for
+         CVE-2025-6965 (SQLite < 3.50.2 memory corruption). It affects ALL 2.1.x releases and
+         NO patched SQLitePCLRaw package exists yet, so it cannot be resolved by upgrading.
+         Practical risk for Recordum is low: offline-first, local encrypted DB, no user-supplied
+         SQL (the CVE needs crafted SQL). Keep it a VISIBLE warning (not silenced via NoWarn) so
+         it stays on the radar, but don't fail the build. REMOVE this line once SQLitePCLRaw
+         ships SQLite >= 3.50.2 and bump the package. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1903</WarningsNotAsErrors>
   </PropertyGroup>
 </Project>
