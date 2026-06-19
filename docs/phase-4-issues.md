@@ -6,6 +6,136 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Code review 2026-06-19 — sottosistema 1: Data layer
+
+> Review mirata (multi-agente, recall-biased) sul codice scritto a mano in `src/Recordum.Data` (backup/restore, migrazioni, services) — diff `fase-4-polish` vs `main`, esclusi i file EF generati. Parte di un giro di review per sottosistema (ordine: 1. Data layer ✓ → 2. motore streak → builder/altri). Tutti `reported`, da triagiare/fixare.
+
+### CR1. Restore non atomico → distruzione del DB se il re-encrypt fallisce
+- **Stato**: `reported` · gravità **alta (perdita dati)**
+- **Dove**: `src/Recordum.Data/Backup/RestoreService.cs:93`
+- **Cosa**: `RestoreAsync` fa `File.Delete(dbPath)` + cancella gli attachment (93-95) e *poi* chiama `ReEncryptDbAsync` (100). Se il dump plaintext è corrotto/troncato, disco pieno, o crash in mezzo → DB live perso e nuovo assente/parziale. Lo snapshot pre-restore esiste ma **non viene ripristinato in automatico** sul fallimento. Manca swap atomico (scrivi su temp → rename) e rollback dello snapshot.
+
+### CR2. Guard di compatibilità restore inefficace (costante stale + confronto solo major)
+- **Stato**: `reported` · gravità **alta**
+- **Dove**: `src/Recordum.Data/Backup/RestoreService.cs:21,39,140`
+- **Cosa**: `CurrentSchemaVersion = "2.7"` hardcoded mentre lo schema reale è 2.10; `CompareMajor` confronta solo il major. La guard non scatta mai per i 2.x e non rifiuterebbe un backup con schema-minore più recente → EF mapping failure / perdita dati invece del messaggio "Update Recordum to restore it". Leggere lo schema_version reale e confrontare major.minor.
+
+### CR3. Input backup non fidato senza bound → DoS all'apertura
+- **Stato**: `reported` · gravità **alta (sicurezza)**
+- **Dove**: `src/Recordum.Data/Backup/AesGcmBackupCipher.cs:78,121` (+ `:85`)
+- **Cosa**: `DecryptAsync` legge i parametri Argon2id (`memMib` fino a 65535, `iters`, `parallel`) dall'header non fidato → `MemorySize = memMib*1024` ⇒ ~64 GiB allocati aprendo un `.recbak` malevolo (già in `PreviewAsync`). In più ciphertext interamente in RAM + entry ZIP estratte senza tetto (bomba di decompressione). Mancano bound su parametri/dimensioni da fonte esterna. *(OK invece: nonce random, nessun riuso GCM, tag verificato.)*
+
+### CR4. Dump DB in chiaro non distrutto (resta recuperabile)
+- **Stato**: `reported` · gravità **media (sicurezza)**
+- **Dove**: `src/Recordum.Data/Backup/RestoreService.cs:105`
+- **Cosa**: `tempPlainDb` è copia in chiaro dell'intero DB in `%TEMP%`; rimosso con `File.Delete` (solo unlink). `BackupService` usa `ShredDirectory`, il restore no → DB decifrato forense-recuperabile dopo ogni ripristino. Usare lo stesso shred del backup.
+
+### CR5. State con valore 0 sparisce dal calendario (falsy-zero)
+- **Stato**: `reported` · gravità **media (correttezza dati)**
+- **Dove**: `src/Recordum.Data/Services/CompletionService.cs:222` (logica 213-222)
+- **Cosa**: `GetDailyMagnitudeAsync` per `HabitType.State` usa il valore numerico della metrica primaria, poi `if (mag > 0) result.Add(...)`. Con una scala **0-based** (es. NRS dolore, valore più basso = 0) il giorno dà `mag=0` ed è escluso → cella calendario vuota pur con registrazione. Counter/Resistance hanno floor `Math.Max(1,…)`, Action/Journal `Count()≥1`; solo State è vulnerabile. Distinguere "nessuna registrazione" da "valore 0".
+
+### CR6. CounterReclassV210 riclassifica resistance a metriche miste
+- **Stato**: `reported` · gravità **media (dati, irreversibile)**
+- **Dove**: `src/Recordum.Data/Migrations/20260613210206_CounterReclassV210.cs:19`
+- **Cosa**: il subquery matcha **per riga di metrica**: una resistance con sia metrica scala sia misurata (Integer/Decimal/Seconds) entra in `id IN (...)` per la seconda → l'intero habit diventa Counter, contro l'intento del commento ("scale-only resistances stay"). Down irreversibile → perdita semantica silenziosa. Edge case (resistance multi-metrica) ma migrazione già applicata.
+
+### CR7. Materializzazione template = N+3 aperture di connessione (hazard SQLITE_BUSY)
+- **Stato**: `reported` · gravità **bassa (efficienza/robustezza)**
+- **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs:1287`
+- **Cosa**: `MaterializeMetricsSegmentsGoalAsync` apre un context per i lookup, poi `metrics.CreateAsync` per ogni metrica (ciascuna apre+salva il suo context), poi context per i segmenti, poi `goals.CreateAsync`. Ogni apertura ri-esegue `PRAGMA key` → stesso hazard SQLITE_BUSY già noto. `ComposedHabitService` lo fa in singola transazione: replicare quel pattern.
+
+### CR8. Seed `schema_version = "2.9"` stale rispetto a 2.10
+- **Stato**: `reported` · gravità **bassa**
+- **Dove**: `src/Recordum.Data/SeedData/AppSettingSeed.cs:925`
+- **Cosa**: il seed dice 2.9, la migrazione HEAD bumpa a 2.10. Valore morto/fuorviante; allinearlo a 2.10 come i bump precedenti.
+
+### CR9. Stringa "Goal" hardcoded (viola regola .resx)
+- **Stato**: `reported` · gravità **bassa (convenzioni)**
+- **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs:1349`
+- **Cosa**: `Name = payload.Node?.Name ?? "Goal"`. CLAUDE.md §8: «Stringhe utente in .resx … Niente hardcoded.» Default non localizzabile.
+
+### CR10. `MoveAndReorderAsync` duplica la validazione di `MoveAsync`
+- **Stato**: `reported` · gravità **bassa (manutenibilità)**
+- **Dove**: `src/Recordum.Data/Services/HabitNodeService.cs:1217`
+- **Cosa**: cycle-check + parent-existence copiati verbatim da `MoveAsync`. Un futuro fix va fatto in due punti o divergono. Estrarre helper condiviso `ValidateAndReparentAsync`.
+
+### Sottosistema 2 — motore streak (delta astinenza). Esito: solido, 2 note minori
+> Delta `fase-4-polish` (il core schedule×mode×recovery è in `main`, già rivisto a M3.8). Verificato OK: ordinamento ricaduta più recente (`OrderByDescending(CompletedAtMs)`), storia piena in `allTime`, coerenza UTC, `DurationFormat.TryParse` robusto. Nessun bug bloccante.
+
+### CR11. Streak astinenza: `length` del run corrente troncato alla finestra di query (latente)
+- **Stato**: `reported` · gravità **bassa (latente)**
+- **Dove**: `src/Recordum.Data/Services/Aggregators/SchedulingAwareStreakAggregator.cs:186` (`ComputeAbstinenceAsync`)
+- **Cosa**: se chiamato con `fromDate` dopo l'ultima ricaduta, `length` conta solo dentro [start,toDate]. Nessun chiamante attuale lo colpisce (la VM usa storia piena da `createdDate`), ma un futuro chiamante con finestra stretta avrebbe una streak corrente sbagliata. Calcolare il `length` dall'ultima ricaduta reale.
+
+### CR12. `CurrentLength` numerico stale subito dopo una ricaduta in giornata (cosmetico)
+- **Stato**: `reported` · gravità **bassa (cosmetico)**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/Detail/StreakSummaryViewModel.cs` (selezione `current` + `CurrentLength`)
+- **Cosa**: ricaduta *oggi* → headline corretto ("appena ora" via elapsed), ma `CurrentLength` resta sul run che finisce ieri (clausola `r.End == today.AddDays(-1)`). Innocuo finché `CurrentLength` non è mostrato per Resistance; verificare il binding del timeline.
+
+### Sottosistema 3 — ViewModels WPF (HabitScreen/Home/drag-drop/builder). 12 findings
+> Delta `fase-4-polish` (~3.700 righe, 69 VM + behaviors). Review multi-agente recall-biased; i CONFIRMED sotto sono stati verificati leggendo il codice.
+
+### CR13. Metriche durata invisibili nelle liste registrazioni (CONFIRMED)
+- **Stato**: `reported` · gravità **media (dato visibile mancante)**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/CompletionListViewModel.cs` (`FormatValue`) ↔ `…/QuickAdd/SeriesCellViewModel.cs:110` (`BuildValue` scrive `ValueSeconds`)
+- **Cosa**: `FormatValue` controlla ScaleLabels/ValueText/ValueDecimal/ValueInteger ma **non `ValueSeconds`** → una serie con sola durata (es. 1:30) appare con riga vuota in Cronologia/Records. Dato salvato ma invisibile. Aggiungere il ramo Seconds (riusare `DurationFormat.Format`).
+
+### CR14. `HabitEditorViewModel.LoadAsync` senza generation guard → stato misto/salvataggio su habit sbagliato (CONFIRMED)
+- **Stato**: `reported` · gravità **media (integrità)**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitEditor/HabitEditorViewModel.cs:181`
+- **Cosa**: `LoadAsync` setta `_loading` ma non ha token di generazione (HabitScreen sì). Con Configura aperta e cambio rapido di habit i load si interlacciano: sezioni miste A/B, `Node` = ultimo writer, edit successivo persiste sul Node corrente potenzialmente errato. Aggiungere generation guard come in `HabitScreenViewModel`.
+
+### CR15. Handler `async void` non protetti → crash su errore transitorio
+- **Stato**: `reported` · gravità **media (robustezza)**
+- **Dove**: `src/Recordum.WPF/ViewModels/MainWindowViewModel.cs` (OnHomePropertyChanged + 3 handler) · `…/HabitScreen/HabitScreenViewModel.cs` (handler bus/calendario)
+- **Cosa**: `await` su chiamate DB/launcher senza try/catch in handler `async void`. Errore SQLite transitorio reagendo a un evento → eccezione non osservata → `DispatcherUnhandledException` → crash. Avvolgere in try/catch con logging.
+
+### CR16. Drag-drop: cattura solo `CyclicHabitNodeMoveException` → altre eccezioni crashano
+- **Stato**: `reported` · gravità **media (crash su gesto)** — *era follow-up sotto R-dragReorder, promosso a CR*
+- **Dove**: `src/Recordum.WPF/Behaviors/TreeDragDropBehavior.cs` (`OnDrop`) → `HomeViewModel.ApplyDropAsync` / `TryBulkMoveAsync`
+- **Cosa**: `HabitNodeNotFoundException`/`AlreadySoftDeleted` (parent rimosso da reload/cleanup concorrente) sfuggono dall'`async void` → crash. try/catch completo in `ApplyDropAsync`/`TryBulkMoveAsync`.
+
+### CR17. Zona di drop calcolata sul sotto-elemento, non sulla card riga
+- **Stato**: `reported` · gravità **bassa (fragilità)** — verifica visiva da fare (drag già "funziona alla grande" lato utente)
+- **Dove**: `src/Recordum.WPF/Behaviors/TreeDragDropBehavior.cs` (`ResolveZone`/`OnDragOver`)
+- **Cosa**: il bordo Before/Onto/After deriva da `e.OriginalSource.ActualHeight` (spesso un figlio: testo/sparkline), non dalla card; il rapporto Y/altezza non mappa il vero terzo della riga → indicatore/SortOrder potenzialmente errati. Il ghost usa già `FindRowCard`: applicarlo anche alla zona.
+
+### CR18. `HomeViewModel`: reload fire-and-forget senza generation guard
+- **Stato**: `reported` · gravità **bassa**
+- **Dove**: `src/Recordum.WPF/ViewModels/HomeViewModel.cs` (`ReloadPreservingSelectionAsync`/`OnRowChanged`)
+- **Cosa**: eventi bus sovrapposti possono interlacciare due `Rebuild` sulla stessa `Rows` (duplicati transitori, handler doppi). HabitScreen/Detail hanno il guard; Home no.
+
+### CR19. `HabitRecordsViewModel`: cambio periodo/modalità senza guard
+- **Stato**: `reported` · gravità **bassa**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/HabitRecordsViewModel.cs`
+- **Cosa**: handler `OnModeChanged`/`OnSelectedPeriodChanged` fanno `_ = ReloadAsync()` sovrapponibili; toggle rapido Giorno↔Periodo può lasciare in lista i risultati della query più vecchia.
+
+### CR20. `BackupDialogViewModel` usa `DateTime.UtcNow` diretto (CONFIRMED, convenzioni)
+- **Stato**: `reported` · gravità **bassa (convenzioni)**
+- **Dove**: `src/Recordum.WPF/ViewModels/Backup/BackupDialogViewModel.cs:34`
+- **Cosa**: nome file backup da `DateTime.UtcNow`. CLAUDE.md §4: «Mai DateTime.UtcNow/Now diretti. Tutto via IClock/TimeProvider.» Iniettare `IClock`.
+
+### CR21. QuickAdd: eccezioni grezze in UI + duplicazione
+- **Stato**: `reported` · gravità **bassa (convenzioni/UX/reuse)**
+- **Dove**: `…/QuickAdd/MeasuredQuickAddViewModel.cs`, `CounterSeriesQuickAddViewModel.cs`, `CounterTapQuickAddViewModel.cs`
+- **Cosa**: `ErrorMessage = ex.Message` → stringa non localizzata (es. "UNIQUE constraint failed") mostrata all'utente (viola §8 .resx); usare messaggio localizzato + log. Inoltre `ToggleChrono` e lo skeleton Save sono duplicati tra le 3 VM → estrarre base condivisa.
+
+### CR22. Heatmap anno perde il 31 dic di un bisestile che inizia di domenica (CONFIRMED)
+- **Stato**: `reported` · gravità **bassa (raro, display)**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/Calendar/CalendarNavigatorViewModel.cs:159-175` (griglia fissa 371 celle)
+- **Cosa**: con `leading==6` (Jan 1 di domenica in anno bisestile, es. 2012/2040) l'ultima cella è `jan1+364 < 31 dic = jan1+365` → il 31 dic non è renderizzato; un completamento/nota quel giorno sparisce dalla heatmap. Stessa assunzione 371 condivisa con l'ExportEngine. Usare 54 settimane.
+
+### CR23. `HabitEditorViewModel.OnColorChanged` inquina la MRU colori a ogni tasto
+- **Stato**: `reported` · gravità **bassa**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitEditor/HabitEditorViewModel.cs` (`OnColorChanged`)
+- **Cosa**: `_recentColors.AddAsync` su ogni colore valido (anche intermedi mentre si digita l'hex), fire-and-forget. MRU riempita di colori transitori, condivisa con builder e picker note. Salvare solo sul commit.
+
+### CR24. `LoadMarkersAsync`: 2×N query sequenziali per mese (perf)
+- **Stato**: `reported` · gravità **bassa (perf)**
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/HabitScreenViewModel.cs` (`LoadMarkersAsync`)
+- **Cosa**: per ogni mese del range due `await` DB sequenziali (`GetDailyMagnitudeAsync` + `ListNoteCountsInMonthAsync`), ri-eseguiti a ogni completamento/nota via `Calendar.JumpAsync`. Contro il budget home <500ms. Parallelizzare (`Task.WhenAll`) o query a range unica.
+
 ## Stato al 2026-06-16 — lista inserimenti filtrabile per periodo (Feature B)
 
 ### B-entriesPeriod. Lista registrazioni commutabile Giorno/Periodo nella colonna Cronologia
