@@ -76,4 +76,117 @@ public class DiaryServiceTests
 
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task DeleteEntryAsync_by_note_id_removes_both_and_publishes_both_events()
+    {
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out var bus);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var noteId = await sut.SaveEntryAsync(habitId, today, "entry");
+        Guid completionId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+            completionId = (await db.Notes.SingleAsync(n => n.Id == noteId)).CompletionId!.Value;
+        bus.Published.Clear();
+
+        await sut.DeleteEntryAsync(noteId);
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.Notes.AnyAsync(n => n.Id == noteId)).Should().BeFalse();
+            (await db.Completions.AnyAsync(c => c.Id == completionId)).Should().BeFalse();
+            (await db.NoteHistories.AnyAsync(h => h.NoteId == noteId)).Should().BeFalse();
+        }
+        bus.Published.Should().Contain(p => p is NoteDeletedPayload);
+        bus.Published.Should().Contain(p => p is CompletionDeletedPayload);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteEntryAsync_by_completion_id_removes_both()
+    {
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out _);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var noteId = await sut.SaveEntryAsync(habitId, today, "entry");
+        Guid completionId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+            completionId = (await db.Notes.SingleAsync(n => n.Id == noteId)).CompletionId!.Value;
+
+        await sut.DeleteEntryAsync(completionId);
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.Notes.AnyAsync(n => n.Id == noteId)).Should().BeFalse();
+            (await db.Completions.AnyAsync(c => c.Id == completionId)).Should().BeFalse();
+        }
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteEntryAsync_one_of_two_same_day_keeps_the_day_complete()
+    {
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out _);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var firstId = await sut.SaveEntryAsync(habitId, today, "first");
+        await sut.SaveEntryAsync(habitId, today, "second");
+
+        await sut.DeleteEntryAsync(firstId);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        // One note + one completion remain on the day → day stays "done".
+        (await db.Notes.CountAsync(n => n.HabitNodeId == habitId)).Should().Be(1);
+        (await db.Completions.CountAsync(c => c.HabitNodeId == habitId)).Should().Be(1);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task EditEntryAsync_updates_body_and_history_but_not_the_completion()
+    {
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out var bus);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var noteId = await sut.SaveEntryAsync(habitId, today, "v1");
+        Guid completionId;
+        long completedMs;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var n = await db.Notes.SingleAsync(x => x.Id == noteId);
+            completionId = n.CompletionId!.Value;
+            completedMs = (await db.Completions.SingleAsync(c => c.Id == completionId)).CompletedAtMs;
+        }
+        bus.Published.Clear();
+
+        await sut.EditEntryAsync(noteId, "v2");
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var n = await db.Notes.SingleAsync(x => x.Id == noteId);
+            n.BodyMd.Should().Be("v2");
+            n.CompletionId.Should().Be(completionId);
+            (await db.Completions.SingleAsync(c => c.Id == completionId)).CompletedAtMs.Should().Be(completedMs);
+            (await db.NoteHistories.CountAsync(h => h.NoteId == noteId)).Should().Be(2); // v1 + v2
+        }
+        bus.Published.Should().Contain(p => p is NoteUpdatedPayload);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task GetEntryByCompletionAsync_returns_paired_note()
+    {
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out _);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var noteId = await sut.SaveEntryAsync(habitId, today, "find me");
+        Guid completionId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+            completionId = (await db.Notes.SingleAsync(n => n.Id == noteId)).CompletionId!.Value;
+
+        var note = await sut.GetEntryByCompletionAsync(completionId);
+        note.Should().NotBeNull();
+        note!.Id.Should().Be(noteId);
+        note.BodyMd.Should().Be("find me");
+        await fx.DisposeAsync();
+    }
 }

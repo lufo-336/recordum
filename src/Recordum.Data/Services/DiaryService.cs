@@ -65,12 +65,49 @@ public sealed partial class DiaryService(
         return note.Id;
     }
 
-    public ValueTask DeleteEntryAsync(Guid noteOrCompletionId, CancellationToken ct = default)
-        => throw new NotImplementedException();
+    public async ValueTask DeleteEntryAsync(Guid noteOrCompletionId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        // Resolve the Diario note from either the note id or the paired completion id.
+        var note = await db.Notes.AsNoTracking()
+            .FirstOrDefaultAsync(n => n.Id == noteOrCompletionId || n.CompletionId == noteOrCompletionId, ct);
+        if (note is null) return; // not a diary entry → nothing to do ("never delete the completion alone")
 
-    public ValueTask EditEntryAsync(Guid noteId, string text, CancellationToken ct = default)
-        => throw new NotImplementedException();
+        DateTime? completedAt = null;
+        if (note.CompletionId is { } cid)
+            completedAt = await db.Completions.AsNoTracking()
+                .Where(c => c.Id == cid).Select(c => (DateTime?)c.CompletedAt).FirstOrDefaultAsync(ct);
 
-    public ValueTask<Note?> GetEntryByCompletionAsync(Guid completionId, CancellationToken ct = default)
-        => throw new NotImplementedException();
+        await using (var tx = await db.Database.BeginTransactionAsync(ct))
+        {
+            await db.NoteHistories.Where(h => h.NoteId == note.Id).ExecuteDeleteAsync(ct);
+            await db.Notes.Where(n => n.Id == note.Id).ExecuteDeleteAsync(ct);
+            if (note.CompletionId is { } cid2)
+                await db.Completions.Where(c => c.Id == cid2).ExecuteDeleteAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+
+        eventBus.Publish(new NoteDeletedPayload(note.Id, note.HabitNodeId));
+        if (note.CompletionId is { } cid3)
+            eventBus.Publish(new CompletionDeletedPayload(cid3, note.HabitNodeId, completedAt ?? default));
+    }
+
+    public async ValueTask EditEntryAsync(Guid noteId, string text, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var note = await db.Notes.FirstOrDefaultAsync(n => n.Id == noteId, ct);
+        if (note is null) return;
+        if (note.BodyMd == text) return; // no-op, no spurious version
+        note.BodyMd = text;
+        note.UpdatedAtMs = clock.UtcNowMs;
+        db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = noteId, BodyMd = text, CreatedAt = clock.UtcNow.UtcDateTime });
+        await db.SaveChangesAsync(ct);
+        eventBus.Publish(new NoteUpdatedPayload(note.Id, note.HabitNodeId));
+    }
+
+    public async ValueTask<Note?> GetEntryByCompletionAsync(Guid completionId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.CompletionId == completionId, ct);
+    }
 }
