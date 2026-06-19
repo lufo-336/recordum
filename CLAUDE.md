@@ -112,18 +112,18 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 ## 7. Roadmap
 
+> **Roadmap rivista 2026-06-19** (brainstorm con l'autore): vedi `docs/superpowers/specs/2026-06-19-roadmap-revision-design.md`. Mobile anticipato sopra il web; Web/AI rimandati; sync di terzi confermato.
+
 | Fase | Scope | Stato |
 |---|---|---|
 | 0–2 | Console + WPF prototyping | ✓ formativo (non importare codice in Fase 3) |
 | 3 | WPF production: schema + UI + plugin foundation | ✓ **completata 2026-05-29** |
-| **4** | **Polish/UX — bugfix produzione + theming completo + DX rifinita prima di estendere piattaforma** | **→ corrente** |
-| 5 | Web/PWA | Pianificata |
-| 6 | Cloud sync via provider terzi | Pianificata |
-| 7 | MAUI mobile | Pianificata |
-| 8 | Plugin runtime WebView2 + marketplace + widget + accessibilità | Pianificata |
-| 9 | AI insight + correlazioni | Pianificata |
+| **4** | **Stabilizzazione → Desktop v1.0: chiusura findings (priorità CR1–CR4 sicurezza/perdita-dati), chart funzionanti, export+plugin verificati, esplorazione dati di base, perf, UX gradevole. AI fuori.** | **→ corrente** |
+| 5 | **Mobile (MAUI), standalone offline** — riusa Core/Data/Plugins invariati; dati locali; ponte dati via export/import `.recbak` | Pianificata |
+| 6 | **Sync cloud via provider terzi** — "bring your own cloud" (Dropbox/Drive/OneDrive/iCloud), zero costi server; LWW già supportato (`updated_at_ms`) | Pianificata |
+| Future | Plugin runtime WebView2 + marketplace + widget + accessibilità completa → Web/PWA → AI insight+correlazioni → (molto futuro, richiede risorse) sync con server proprietario | Rimandate, senza numero fisso finché la Fase 6 non è fatta |
 
-**Principi roadmap**: piattaforma completa prima di espandere. Schema finale dalla Fase 3 — nessuna migrazione invasiva successiva. Ogni fase = prodotto funzionante. Nessuna UI placeholder.
+**Principi roadmap**: **v1.0 desktop funzionante prima di espandere la piattaforma** (freeze fasi deciso 2026-06-16). Mobile prima del web. Schema finale dalla Fase 3 — nessuna migrazione invasiva successiva (mobile/sync riusano lo schema). Ogni fase = prodotto funzionante. Nessuna UI placeholder.
 
 ### Milestone Fase 3
 
@@ -141,13 +141,15 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 | **3.10a** | Export System (PDF/HTML/Markdown/JSON/CSV). **Export Engine come secondo core plugin** consumer di `export.format` | ✓ **completata 2026-05-28** |
 | **3.10b** | Backup/restore `.recbak` (Argon2id + AES-256-GCM) + auto-backup scheduler + backup history | ✓ **completata 2026-05-29** |
 
-### Fase 4 — Polish/UX (corrente)
+### Fase 4 — Stabilizzazione → Desktop v1.0 (corrente)
 
 **Branch**: `fase-4-polish` (creato 2026-05-29 da `milestone-3.10b-backup-restore`).
 
-**Decisione**: prima di estendere a Fase 5 (Web/PWA), chiudere i bug di produzione emersi dal test della build WPF M3.10b e portare l'app a "perfettamente funzionante e gradevole alla vista". Niente nuove feature.
+**Decisione (freeze 2026-06-16)**: nessuna nuova fase finché il desktop non è una **v1.0 funzionante e gradevole**. Asticella v1.0 = *core solido + UX gradevole + esplorazione dati funzionante* (vedi spec `docs/superpowers/specs/2026-06-19-roadmap-revision-design.md`). **Niente nuove feature.**
 
-**Bug + rifinitura aperti** — tracker triagato in [`docs/phase-4-issues.md`](docs/phase-4-issues.md). Stati: `reported / verified / triaged / in-progress / fixed / verified-fixed`.
+**Scope v1.0** (exit criteria): chiudere i findings del tracker, **priorità CR1–CR4** (perdita-dati/sicurezza backup-restore); **far funzionare i chart** (oggi rotti); **verificare+fixare export e plugin**; esplorazione dati di base (heatmap/statistiche); perf (<500ms home); UX/theming "gradevole". Aree core verificate a schermo dall'autore; `/security-review` superata sui findings di sicurezza. **Fuori scope**: AI/correlazioni, audit accessibilità completo (→ 1.x).
+
+**Bug + rifinitura aperti** — tracker triagato in [`docs/phase-4-issues.md`](docs/phase-4-issues.md). Stati: `reported / verified / triaged / in-progress / fixed / verified-fixed`. Code review 2026-06-19: findings **CR1–CR24** (4 alti su sicurezza/perdita-dati).
 
 **Progresso 2026-05-29**: Theming Pass 1→3 (BaseStyles implicit style + chrome flat Button/TabItem/ComboBox + CheckBox flat + DatePicker/Calendar tematizzati); crash tab Dettaglio risolto; WebView2 probe sul Dispatcher UI (editor markdown ripristinato); refresh Home dopo mutazioni riga (B4) e dopo ogni completamento (B5); instanziazione template materializza metriche/scala/goal/segmenti (B6a); **costruita l'intera UI di personalizzazione dell'editor** — 10 section view + host Expander (B6c); i18n editor+picker (B9); day-picker schedule + chip Tag selezionate. Suite WPF 335 / Data 296 verdi. **Aperti**: B6b template custom (richiede design), rifiniture minori (picker scala, scala State, "+" State), nav-model a colonne toggle (spec parcheggiato). Tracker autoritativo `docs/phase-4-issues.md`; spec/piani in `docs/superpowers/`.
 
