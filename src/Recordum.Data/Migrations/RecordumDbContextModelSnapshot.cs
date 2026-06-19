@@ -15,7 +15,7 @@ namespace Recordum.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.16");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
 
             modelBuilder.Entity("Recordum.Core.Models.AIInsight", b =>
                 {
@@ -1465,6 +1465,18 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("body_md");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Veloce")
+                        .HasColumnName("category");
+
+                    b.Property<Guid?>("CompletionId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("completion_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
@@ -1488,13 +1500,19 @@ namespace Recordum.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_notes");
 
+                    b.HasIndex("CompletionId")
+                        .HasDatabaseName("ix_notes_completion_id");
+
                     b.HasIndex("HabitNodeId", "CreatedAt")
                         .HasDatabaseName("ix_notes_habit_node_id_created_at");
 
                     b.HasIndex("HabitNodeId", "TargetDate")
                         .HasDatabaseName("ix_notes_habit_node_id_target_date");
 
-                    b.ToTable("notes", (string)null);
+                    b.ToTable("notes", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_note_category", "category IN ('Diario','Veloce')");
+                        });
                 });
 
             modelBuilder.Entity("Recordum.Core.Models.NoteHistory", b =>
