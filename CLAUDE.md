@@ -169,6 +169,8 @@ Spostato in [`docs/MILESTONES.md`](docs/MILESTONES.md). Quel file è il companio
 - **Plugin context**: service Core che crea entità per conto di un plugin deve farlo dentro uno scope con `IPluginContext.PluginId` valorizzato. Codice user-driven o core lascia `PluginId = null`. First-party features (Chart Engine, export…) registrano capability via `IExtensionPoint` — niente shortcut che bypassano il routing.
 - **Soft delete**: usa il filtro globale; per Trash/diagnostica `IgnoreQueryFilters()`.
 - **Test**: per Fase 3 servono test su soft-delete cascade/restore, snapshot HabitConfigHistory, `StreakEngine` (tutte le combinazioni schedule × streak × recovery + pause + cambi config + reset_time cascade), export su dataset grandi.
+- **Sicurezza pre-merge**: prima di mergiare un branch `fase-*` → `main`, eseguire `/security-review` e chiudere i findings ad alta priorità (l'app spedisce pubblicamente, con DB cifrato). Backlog sicurezza corrente: CR1–CR4 in `docs/phase-4-issues.md`.
+- **Guardrail hook** (`.claude/settings.json` + `.claude/hooks/*.js`, team-wide): commit/push su `main` bloccato; edit a mano dei file EF generati (`*.Designer.cs`/`*ModelSnapshot.cs`) bloccato; delete di dati utente (`%LocalAppData%\Recordum`/`.recbak`) chiede conferma; promemoria a fine turno se il working tree è sporco. Gestibili con `/hooks`.
 
 ### Migrazioni
 
@@ -178,6 +180,10 @@ dotnet ef database update    --project src/Recordum.Data --startup-project src/R
 ```
 
 Verifica il SQL generato contro la documentazione schema **prima** di eseguire l'update.
+
+### Build
+
+Il RID è vincolato a **`win-x64`** (`SelfContained=false`) in `Directory.Build.props`: ogni build emette solo i nativi Windows invece di SkiaSharp/sqlcipher/QuestPDF per ~8 RID (cartella di lavoro ~530 MB invece di ~2.6 GB). Fase 5 (mobile) / sync useranno i propri progetti che ri-risolvono i RID che servono. Nota: `NU1903` (CVE-2025-6965 su `e_sqlite3 ≤ 2.1.11`, **nessun fix upstream**) è declassato a warning visibile — rimuovere il declass quando SQLitePCLRaw spedirà SQLite ≥ 3.50.2. Vedi memoria `recordum-build-rid-and-cve`.
 
 ---
 
