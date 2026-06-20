@@ -87,6 +87,10 @@ public static class Strings
     public static string Notes_Category_Diary => Get("Notes.Category.Diary");
     public static string Notes_Category_Quick => Get("Notes.Category.Quick");
     public static string Workspace_Tab_Panoramica => Get("Workspace.Tab.Panoramica");
+    public static string Workspace_NewTab => Get("Workspace.NewTab");
+    public static string Workspace_CloseTab => Get("Workspace.CloseTab");
+    public static string Workspace_Empty => Get("Workspace.Empty");
+    public static string Workspace_ToggleSidebar => Get("Workspace.ToggleSidebar");
     public static string Notes_History_Current => Get("Notes.History.Current");
     public static string Notes_History => Get("Notes.History");
     public static string Notes_History_Back => Get("Notes.History.Back");

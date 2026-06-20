@@ -725,6 +725,18 @@
   <data name="Workspace.Tab.Panoramica" xml:space="preserve">
     <value>Panoramica</value>
   </data>
+  <data name="Workspace.NewTab" xml:space="preserve">
+    <value>Nuovo tab</value>
+  </data>
+  <data name="Workspace.CloseTab" xml:space="preserve">
+    <value>Chiudi tab</value>
+  </data>
+  <data name="Workspace.Empty" xml:space="preserve">
+    <value>Seleziona un'abitudine dalla barra laterale</value>
+  </data>
+  <data name="Workspace.ToggleSidebar" xml:space="preserve">
+    <value>Mostra/nascondi barra laterale</value>
+  </data>
   <data name="Charts.New" xml:space="preserve">
     <value>Nuovo grafico</value>
   </data>
