@@ -149,19 +149,22 @@
             <Grid Grid.Column="1">
                 <Grid Visibility="{Binding IsHomeWorkspace, Converter={StaticResource BoolToVisible}}">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="SidebarColumn" MinWidth="0" MaxWidth="460">
+                        <!-- No subject tab → Home fills the window; with a tab open it becomes a
+                             collapsible sidebar (width 0 when collapsed, persisted width otherwise). -->
+                        <ColumnDefinition x:Name="SidebarColumn">
                             <ColumnDefinition.Width>
-                                <MultiBinding Converter="{StaticResource SidebarWidth}" Mode="OneWay">
+                                <MultiBinding Converter="{StaticResource HomeColumnWidth}" Mode="OneWay">
+                                    <Binding Path="Workspace.IsPanoramicaActive"/>
                                     <Binding Path="Workspace.SidebarCollapsed"/>
                                     <Binding Path="Workspace.SidebarWidth"/>
                                 </MultiBinding>
                             </ColumnDefinition.Width>
                         </ColumnDefinition>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
+                        <!-- Workspace (tab bar + content): hidden (0) when no subject tab so Home gets all the room. -->
+                        <ColumnDefinition Width="{Binding Workspace.IsPanoramicaActive, Converter={StaticResource OpenColumnWidth}, ConverterParameter=Invert}"/>
                     </Grid.ColumnDefinitions>
-                    <v:HomeView Grid.Column="0" DataContext="{Binding Home}"
-                                Visibility="{Binding Workspace.SidebarCollapsed, Converter={StaticResource InvBoolToVisible}}"/>
+                    <v:HomeView Grid.Column="0" DataContext="{Binding Home}" ClipToBounds="True"/>
                     <GridSplitter x:Name="SidebarSplitter"
                                   Grid.Column="1"
                                   Width="4"
@@ -170,8 +173,14 @@
                                   ResizeBehavior="PreviousAndNext"
                                   Background="{DynamicResource Brush.Border}"
                                   ShowsPreview="False"
-                                  Visibility="{Binding Workspace.SidebarCollapsed, Converter={StaticResource InvBoolToVisible}}"
-                                  DragCompleted="OnSidebarSplitterDragCompleted"/>
+                                  DragCompleted="OnSidebarSplitterDragCompleted">
+                        <GridSplitter.Visibility>
+                            <MultiBinding Converter="{StaticResource SidebarSplitterVisibility}">
+                                <Binding Path="Workspace.IsPanoramicaActive"/>
+                                <Binding Path="Workspace.SidebarCollapsed"/>
+                            </MultiBinding>
+                        </GridSplitter.Visibility>
+                    </GridSplitter>
                     <vw:WorkspaceView Grid.Column="2" DataContext="{Binding Workspace}"/>
                 </Grid>
 

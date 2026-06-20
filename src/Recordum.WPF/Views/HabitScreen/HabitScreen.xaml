@@ -745,12 +745,57 @@
                           IsChecked="{Binding IsConfiguraOpen}"/>
             </StackPanel>
 
-            <!-- Open columns, side by side, horizontal scroll when they overflow (nav-model §3.8). -->
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal">
+            <!-- Open panes fill & split the tab width: each pane's column is * when open, 0 when closed
+                 (one open pane fills the tab; several split it equally — no leftover gap). A splitter
+                 shows only between two adjacent open panes. -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding ShowPanoramica, Converter={StaticResource OpenColumnWidth}}"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="{Binding ShowCronologia, Converter={StaticResource OpenColumnWidth}}"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="{Binding ShowDettaglio, Converter={StaticResource OpenColumnWidth}}"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="{Binding ShowNote, Converter={StaticResource OpenColumnWidth}}"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="{Binding ShowConfigura, Converter={StaticResource OpenColumnWidth}}"/>
+                </Grid.ColumnDefinitions>
+
+                <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                    <GridSplitter.Visibility>
+                        <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                            <Binding Path="ShowPanoramica"/><Binding Path="ShowCronologia"/>
+                        </MultiBinding>
+                    </GridSplitter.Visibility>
+                </GridSplitter>
+                <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                    <GridSplitter.Visibility>
+                        <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                            <Binding Path="ShowCronologia"/><Binding Path="ShowDettaglio"/>
+                        </MultiBinding>
+                    </GridSplitter.Visibility>
+                </GridSplitter>
+                <GridSplitter Grid.Column="5" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                    <GridSplitter.Visibility>
+                        <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                            <Binding Path="ShowDettaglio"/><Binding Path="ShowNote"/>
+                        </MultiBinding>
+                    </GridSplitter.Visibility>
+                </GridSplitter>
+                <GridSplitter Grid.Column="7" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                    <GridSplitter.Visibility>
+                        <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                            <Binding Path="ShowNote"/><Binding Path="ShowConfigura"/>
+                        </MultiBinding>
+                    </GridSplitter.Visibility>
+                </GridSplitter>
 
                     <!-- Panoramica (group overview, spec §A.2) -->
-                    <Border Width="{Binding PanoramicaWidth}" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="0" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowPanoramica, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -832,16 +877,11 @@
                                     </StackPanel>
                                 </ScrollViewer>
                             </DockPanel>
-                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
-                                   Tag="{x:Static vm:HabitColumn.Panoramica}"
-                                   DragDelta="OnColumnResizeDelta"
-                                   DragCompleted="OnColumnResizeCompleted"
-                                   MouseDoubleClick="OnColumnResizeReset"/>
                         </Grid>
                     </Border>
 
                     <!-- Cronologia -->
-                    <Border Width="{Binding CronologiaWidth}" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="2" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowCronologia, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -901,16 +941,11 @@
                                     </StackPanel>
                                 </ScrollViewer>
                             </DockPanel>
-                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
-                                   Tag="{x:Static vm:HabitColumn.Cronologia}"
-                                   DragDelta="OnColumnResizeDelta"
-                                   DragCompleted="OnColumnResizeCompleted"
-                                   MouseDoubleClick="OnColumnResizeReset"/>
                         </Grid>
                     </Border>
 
                     <!-- Dettaglio -->
-                    <Border Width="{Binding DettaglioWidth}" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="4" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowDettaglio, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -922,16 +957,11 @@
                                 </Grid>
                                 <ContentControl Content="{Binding Detail}"/>
                             </DockPanel>
-                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
-                                   Tag="{x:Static vm:HabitColumn.Dettaglio}"
-                                   DragDelta="OnColumnResizeDelta"
-                                   DragCompleted="OnColumnResizeCompleted"
-                                   MouseDoubleClick="OnColumnResizeReset"/>
                         </Grid>
                     </Border>
 
                     <!-- Note -->
-                    <Border Width="{Binding NoteWidth}" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="6" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowNote, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -943,16 +973,11 @@
                                 </Grid>
                                 <ContentControl Content="{Binding Notes}"/>
                             </DockPanel>
-                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
-                                   Tag="{x:Static vm:HabitColumn.Note}"
-                                   DragDelta="OnColumnResizeDelta"
-                                   DragCompleted="OnColumnResizeCompleted"
-                                   MouseDoubleClick="OnColumnResizeReset"/>
                         </Grid>
                     </Border>
 
                     <!-- Configura (the habit editor) -->
-                    <Border Width="{Binding ConfiguraWidth}" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="8" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowConfigura, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -964,16 +989,10 @@
                                 </Grid>
                                 <ve:EditorPane DataContext="{Binding Editor}"/>
                             </DockPanel>
-                            <Thumb Style="{StaticResource HabitScreen.ColumnResizeThumb}"
-                                   Tag="{x:Static vm:HabitColumn.Configura}"
-                                   DragDelta="OnColumnResizeDelta"
-                                   DragCompleted="OnColumnResizeCompleted"
-                                   MouseDoubleClick="OnColumnResizeReset"/>
                         </Grid>
                     </Border>
 
-                </StackPanel>
-            </ScrollViewer>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

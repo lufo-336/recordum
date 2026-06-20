@@ -24,7 +24,10 @@
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
             <conv:ZeroToVisibilityConverter x:Key="ZeroToVisible"/>
-            <conv:SidebarWidthConverter x:Key="SidebarWidth"/>
+            <conv:OpenColumnWidthConverter x:Key="OpenColumnWidth"/>
+            <conv:AllTrueToVisibilityConverter x:Key="AllTrueToVisible"/>
+            <conv:HomeColumnWidthConverter x:Key="HomeColumnWidth"/>
+            <conv:SidebarSplitterVisibilityConverter x:Key="SidebarSplitterVisibility"/>
             <conv:EnumToVisibilityConverter x:Key="EnumToVisibility"/>
             <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
             <conv:HabitColorTintConverter x:Key="HabitColorTint"/>
