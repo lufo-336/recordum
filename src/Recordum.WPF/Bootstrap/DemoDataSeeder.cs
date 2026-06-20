@@ -16,6 +16,7 @@ public sealed class DemoDataSeeder(
     IGoalService goals,
     ICompletionService completions,
     INoteService notes,
+    IDiaryService diary,
     ITagService tags,
     IAppSettingService settings,
     IHabitTreeQueryService tree,
@@ -138,9 +139,8 @@ public sealed class DemoDataSeeder(
             if (Chance(0.85))
                 await ValueAsync(mood, mUmore, WeightedMood(), day, 21, 22, ct).ConfigureAwait(false);
             if (Chance(0.35))
-                await completions.RecordAsync(
-                    Draft(diario, day, 22, 23, notesBody: JournalEntries[_rng.Next(JournalEntries.Length)]),
-                    ct: ct).ConfigureAwait(false);
+                await diary.SaveEntryAsync(diario, day, JournalEntries[_rng.Next(JournalEntries.Length)], ct)
+                    .ConfigureAwait(false);
         }
 
         // "Niente fumo" abstinence: record only relapses (rare). Clean streak = time since the last
@@ -196,9 +196,8 @@ public sealed class DemoDataSeeder(
                     await ActionAsync(row.HabitNodeId, day, 7, 21, ct).ConfigureAwait(false);
                     break;
                 case HabitType.Journal when Chance(0.40):
-                    await completions.RecordAsync(
-                        Draft(row.HabitNodeId, day, 7, 21, notesBody: JournalEntries[_rng.Next(JournalEntries.Length)]),
-                        ct: ct).ConfigureAwait(false);
+                    await diary.SaveEntryAsync(row.HabitNodeId, day, JournalEntries[_rng.Next(JournalEntries.Length)], ct)
+                        .ConfigureAwait(false);
                     break;
                 case HabitType.Counter when defs.Count == 0 && Chance(0.85):
                     for (int i = _rng.Next(1, 6); i > 0; i--)
