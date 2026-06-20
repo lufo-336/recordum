@@ -5,10 +5,9 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.Export;
-using Recordum.WPF.ViewModels.HabitEditor;
-using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Settings;
 using Recordum.WPF.ViewModels.Timer;
+using Recordum.WPF.ViewModels.Workspace;
 
 namespace Recordum.WPF.ViewModels;
 
@@ -27,10 +26,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public HomeViewModel Home { get; }
 
-    /// <summary>The habit editor lives in the HabitScreen's Configura column; exposed here for the
-    /// deselect-reset flow and tests.</summary>
-    public HabitEditorViewModel Editor => HabitScreen.Editor;
-    public HabitScreenViewModel HabitScreen { get; }
+    public WorkspaceViewModel Workspace { get; }
     public TimerStatusBarViewModel TimerStatusBar { get; }
     public Charts.ChartsWorkspaceViewModel Charts { get; }
     public BackupHistoryViewModel BackupHistory { get; }
@@ -51,7 +47,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         HomeViewModel home,
         IAppSettingService appSettings,
         TimerStatusBarViewModel timerStatusBar,
-        HabitScreenViewModel habitScreen,
+        WorkspaceViewModel workspace,
         Charts.ChartsWorkspaceViewModel charts,
         IExportDialogLauncher exportLauncher,
         IBackupDialogLauncher backupLauncher,
@@ -61,7 +57,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(timerStatusBar);
-        ArgumentNullException.ThrowIfNull(habitScreen);
+        ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(charts);
         ArgumentNullException.ThrowIfNull(exportLauncher);
         ArgumentNullException.ThrowIfNull(backupLauncher);
@@ -70,7 +66,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Home = home;
         _appSettings = appSettings;
         TimerStatusBar = timerStatusBar;
-        HabitScreen = habitScreen;
+        Workspace = workspace;
         Charts = charts;
         _exportLauncher = exportLauncher;
         _backupLauncher = backupLauncher;
@@ -79,10 +75,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
         Home.GroupCreated += OnHomeGroupCreated;
-        HabitScreen.ConfigureRequested += OnHabitScreenConfigureRequested;
-        HabitScreen.AllColumnsClosed += OnAllColumnsClosed;
-        HabitScreen.Panoramica.ChildSelected += OnPanoramicaChildSelected;
-        HabitScreen.ExportRequested += OnHabitScreenExportRequested;
     }
 
     [RelayCommand]
@@ -117,7 +109,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public async ValueTask InitializeAsync(CancellationToken ct = default)
     {
         await LoadHabitScreenWidthAsync(ct).ConfigureAwait(true);
-        await HabitScreen.RestoreOpenColumnsAsync(ct).ConfigureAwait(true);
         await Home.LoadCommand.ExecuteAsync(null);
         await TimerStatusBar.LoadAsync(ct).ConfigureAwait(true);
     }
@@ -155,46 +146,32 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async void OnHomePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(HomeViewModel.SelectedRow)) return;
-        await HabitScreen.LoadAsync(Home.SelectedRow?.HabitNodeId).ConfigureAwait(true);
-        if (Home.SelectedRow is null)
-            await Editor.LoadAsync(null).ConfigureAwait(true);
-        else if (HabitScreen.IsConfiguraOpen)
-            // Rebind: with the Configura column open, switching habit must reload the editor
-            // (ConfigureRequested only fires on the closed→open transition).
-            await Editor.LoadAsync(Home.SelectedRow.HabitNodeId).ConfigureAwait(true);
+        if (Home.SelectedRow is not { } row) { Workspace.ActivatePanoramica(); return; }
+        await Workspace.OpenSubjectAsync(row.HabitNodeId, KindOf(row), row.Name).ConfigureAwait(true);
     }
 
-    // New group from ＋Nuova▾: open Configura for the immediate rename. If the column is
-    // already open the flag set is a no-op and the rebind above covers the reload.
-    private void OnHomeGroupCreated(object? sender, Guid id)
-        => HabitScreen.IsConfiguraOpen = true;
+    private static WorkspaceTabKind KindOf(HomeRowViewModel row)
+        => row.IsGroup ? WorkspaceTabKind.Group : WorkspaceTabKind.Habit;
 
-    // Closing the last open column collapses the workspace back to a clean Home (§B.4).
-    private void OnAllColumnsClosed(object? sender, EventArgs e)
-        => Home.SelectedRow = null;
-
-    // Panoramica child row click: jump to that habit in the tree (spec §A.3).
-    private void OnPanoramicaChildSelected(object? sender, Guid habitNodeId)
-        => Home.SelectById(habitNodeId);
-
-    // "+" on a habit whose row is already selected: SelectedRow won't change, so reload
-    // the workspace explicitly to bring the QuickAdd panel forward.
+    // "+" on a habit whose row is already selected: SelectedRow won't change, so pin
+    // the subject in the workspace to keep it from being replaced by the next preview.
     private async void OnHabitActivationRequested(object? sender, Guid habitNodeId)
-        => await HabitScreen.LoadAsync(habitNodeId).ConfigureAwait(true);
-
-    private async void OnHabitScreenConfigureRequested(object? sender, EventArgs e)
     {
-        await Editor.LoadAsync(Home.SelectedRow?.HabitNodeId).ConfigureAwait(true);
+        var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == habitNodeId);
+        if (row is null) return;
+        await Workspace.OpenSubjectAsync(habitNodeId, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+    }
+
+    // New group from ＋Nuova▾: open it as a pinned tab (Configura auto-opens per-tab in Task 2).
+    private async void OnHomeGroupCreated(object? sender, Guid id)
+    {
+        var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == id);
+        if (row is null) return;
+        await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
     }
 
     [RelayCommand]
     private async Task ExportLibraryAsync() => await _exportLauncher.ShowForLibraryAsync().ConfigureAwait(true);
-
-    private async void OnHabitScreenExportRequested(object? sender, EventArgs e)
-    {
-        if (HabitScreen.Node is null) return;
-        await _exportLauncher.ShowForHabitAsync(HabitScreen.Node.Id, HabitScreen.Name).ConfigureAwait(true);
-    }
 
     [RelayCommand]
     private async Task ShowDiagnosticInfoAsync() => await _settingsLauncher.ShowAsync(SettingsCategoryId.Diagnostics).ConfigureAwait(true);
