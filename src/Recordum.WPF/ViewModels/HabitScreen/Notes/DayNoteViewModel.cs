@@ -35,7 +35,13 @@ public sealed partial class DayNoteViewModel : ObservableObject
     /// when not done — rendered as a line icon instead of a text glyph (design brief).</summary>
     [ObservableProperty] private string? _summaryIconKey;
 
-    public void SetContext(Guid habitNodeId)
+    [ObservableProperty] private bool _showEditor = true;
+
+    public void SetContext(Guid habitNodeId) => SetContext(habitNodeId, isJournal: false);
+
+    /// <summary>For journals the QuickAdd markdown editor is the diary editor, so the brief day-note
+    /// editor is hidden (ShowEditor = false). For other types it stays as the quick-note editor.</summary>
+    public void SetContext(Guid habitNodeId, bool isJournal)
     {
         _habitNodeId = habitNodeId;
         _current = null;
@@ -44,6 +50,7 @@ public sealed partial class DayNoteViewModel : ObservableObject
         Text = string.Empty;
         SummaryText = string.Empty;
         SummaryIconKey = null;
+        ShowEditor = !isJournal;
     }
 
     /// <summary>The host supplies the day's summary (done-state + magnitude + note count) pre-formatted in the domain layer.</summary>

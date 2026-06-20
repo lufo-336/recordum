@@ -95,4 +95,24 @@ public class DayNoteViewModelTests
         sut.SummaryIconKey.Should().BeNull();
         sut.SummaryText.Should().NotContain("—");
     }
+
+    [Fact]
+    public void SetContext_journal_hides_the_editor()
+    {
+        var sut = new DayNoteViewModel(new FakeNoteService(), new FakeClock());
+
+        sut.SetContext(Guid.NewGuid(), isJournal: true);
+
+        sut.ShowEditor.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SetContext_non_journal_shows_the_editor()
+    {
+        var sut = new DayNoteViewModel(new FakeNoteService(), new FakeClock());
+
+        sut.SetContext(Guid.NewGuid(), isJournal: false);
+
+        sut.ShowEditor.Should().BeTrue();
+    }
 }

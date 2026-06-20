@@ -394,7 +394,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (QuickAdd is not null && Calendar.SelectedDate is { } preSelected)
             QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
-        DayNote.SetContext(node.Id);
+        DayNote.SetContext(node.Id, node.HabitType == HabitType.Journal);
         Records.SetContext(node.Id);
         if (Calendar.SelectedDate is { } sel)
         {
