@@ -56,16 +56,11 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         var screen = _screenFactory();
         var tab = new SubjectTabViewModel(subjectId, kind, title, screen, isPreview: !pin);
 
-        if (!pin && _previewTab is not null)
-        {
-            // Replace the existing preview tab in place (no accumulation).
-            var idx = Tabs.IndexOf(_previewTab);
-            Tabs[idx] = tab;
-        }
+        var previewIdx = !pin && _previewTab is not null ? Tabs.IndexOf(_previewTab) : -1;
+        if (previewIdx >= 0)
+            Tabs[previewIdx] = tab;   // replace the existing preview tab in place (no accumulation)
         else
-        {
             Tabs.Add(tab);
-        }
         _previewTab = pin ? null : tab;
         ActiveSubjectTab = tab;
 
