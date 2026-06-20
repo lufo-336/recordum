@@ -21,4 +21,9 @@ public interface IDiaryService
 
     /// <summary>The Diario note paired with <paramref name="completionId"/>, or null.</summary>
     ValueTask<Note?> GetEntryByCompletionAsync(Guid completionId, CancellationToken ct = default);
+
+    /// <summary>Maps each given completion id to its paired Diario note body, for joining the
+    /// Cronologia list to diary text in one query (omits ids with no paired note).</summary>
+    ValueTask<IReadOnlyDictionary<Guid, string>> GetEntryBodiesByCompletionsAsync(
+        IReadOnlyCollection<Guid> completionIds, CancellationToken ct = default);
 }

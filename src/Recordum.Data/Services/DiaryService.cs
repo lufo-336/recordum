@@ -110,4 +110,15 @@ public sealed partial class DiaryService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.CompletionId == completionId, ct);
     }
+
+    public async ValueTask<IReadOnlyDictionary<Guid, string>> GetEntryBodiesByCompletionsAsync(
+        IReadOnlyCollection<Guid> completionIds, CancellationToken ct = default)
+    {
+        if (completionIds.Count == 0) return new Dictionary<Guid, string>();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var ids = completionIds.ToHashSet();
+        return await db.Notes.AsNoTracking()
+            .Where(n => n.CompletionId != null && ids.Contains(n.CompletionId.Value))
+            .ToDictionaryAsync(n => n.CompletionId!.Value, n => n.BodyMd, ct);
+    }
 }

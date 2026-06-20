@@ -189,4 +189,27 @@ public class DiaryServiceTests
         note.BodyMd.Should().Be("find me");
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task GetEntryBodiesByCompletionsAsync_maps_completion_ids_to_bodies()
+    {
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out _);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var n1 = await sut.SaveEntryAsync(habitId, today, "first");
+        var n2 = await sut.SaveEntryAsync(habitId, today, "second");
+        Guid c1, c2;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            c1 = (await db.Notes.SingleAsync(n => n.Id == n1)).CompletionId!.Value;
+            c2 = (await db.Notes.SingleAsync(n => n.Id == n2)).CompletionId!.Value;
+        }
+
+        var map = await sut.GetEntryBodiesByCompletionsAsync(new[] { c1, c2, Guid.NewGuid() });
+
+        map.Should().HaveCount(2);
+        map[c1].Should().Be("first");
+        map[c2].Should().Be("second");
+        await fx.DisposeAsync();
+    }
 }
