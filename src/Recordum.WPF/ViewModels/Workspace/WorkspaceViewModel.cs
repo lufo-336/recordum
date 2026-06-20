@@ -66,4 +66,33 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
         await screen.LoadAsync(subjectId, ct).ConfigureAwait(true);
     }
+
+    public void PinActiveTab()
+    {
+        if (ActiveSubjectTab is { } t)
+        {
+            t.Pin();
+            if (_previewTab == t) _previewTab = null;
+        }
+    }
+
+    public void ActivateTab(SubjectTabViewModel tab) => ActiveSubjectTab = tab;
+
+    public void CloseTab(SubjectTabViewModel tab)
+    {
+        var idx = Tabs.IndexOf(tab);
+        if (idx < 0) return;
+        if (_previewTab == tab) _previewTab = null;
+        Tabs.RemoveAt(idx);
+        if (ActiveSubjectTab == tab)
+            ActiveSubjectTab = Tabs.Count == 0 ? null : Tabs[Math.Min(idx, Tabs.Count - 1)];
+    }
+
+    public void MoveTab(SubjectTabViewModel tab, int newIndex)
+    {
+        var old = Tabs.IndexOf(tab);
+        if (old < 0) return;
+        newIndex = Math.Clamp(newIndex, 0, Tabs.Count - 1);
+        if (old != newIndex) Tabs.Move(old, newIndex);
+    }
 }

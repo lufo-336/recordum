@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
+using Recordum.WPF.ViewModels.Workspace;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Workspace;
@@ -76,5 +77,61 @@ public class WorkspaceViewModelTests
         await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa", pin: true);
 
         sut.Tabs[0].IsPreview.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task PinActiveTab_promotes_the_preview_and_clears_preview_slot()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa");
+
+        sut.PinActiveTab();
+
+        sut.ActiveSubjectTab!.IsPreview.Should().BeFalse();
+        // A later single open now ADDS rather than replaces (preview slot is empty).
+        var n = sut.Tabs.Count;
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Peso");
+        sut.Tabs.Should().HaveCount(n + 1);
+    }
+
+    [Fact]
+    public async Task CloseTab_removes_it_and_closing_last_returns_to_panoramica()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", pin: true);
+        var tab = sut.Tabs[0];
+
+        sut.CloseTab(tab);
+
+        sut.Tabs.Should().BeEmpty();
+        sut.IsPanoramicaActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CloseTab_activates_a_neighbour_when_others_remain()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "B", pin: true);
+        var first = sut.Tabs[0];
+        sut.ActivateTab(first);
+
+        sut.CloseTab(first);
+
+        sut.Tabs.Should().ContainSingle();
+        sut.ActiveSubjectTab.Should().Be(sut.Tabs[0]);
+    }
+
+    [Fact]
+    public async Task MoveTab_reorders()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "B", pin: true);
+        var a = sut.Tabs[0];
+
+        sut.MoveTab(a, 1);
+
+        sut.Tabs[1].Should().Be(a);
     }
 }
