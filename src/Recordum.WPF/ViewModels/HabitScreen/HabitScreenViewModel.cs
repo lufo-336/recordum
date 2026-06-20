@@ -401,6 +401,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Records.SetContext(node.Id, node.HabitType == HabitType.Journal);
         if (Calendar.SelectedDate is { } sel)
         {
+            Notes.SetCalendarDay(sel);
             await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);
             await PushDaySummaryAsync(sel, ct).ConfigureAwait(true);
             await Records.ShowDayAsync(sel, ct).ConfigureAwait(true);
@@ -565,6 +566,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         if (QuickAdd is not null)
             QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
+        Notes.SetCalendarDay(date);
         await DayNote.LoadDayAsync(date).ConfigureAwait(true);
         await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
         if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);

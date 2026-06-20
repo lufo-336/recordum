@@ -3,6 +3,7 @@ using Microsoft.Web.WebView2.Core;
 using Recordum.Core.Models;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
+using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Xunit;
 
@@ -286,5 +287,34 @@ public class NotesViewModelTests
         sut.HideHistoryCommand.Execute(null);
 
         sut.IsShowingHistory.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Default_period_All_shows_every_note()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "a", UpdatedAtMs = 1, TargetDate = new DateOnly(2026, 1, 1) };
+        svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "b", UpdatedAtMs = 2, TargetDate = new DateOnly(2026, 6, 1) };
+
+        await sut.LoadAsync(habitId);
+
+        sut.Notes.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Day_mode_filters_notes_to_the_selected_calendar_day()
+    {
+        var sut = CreateSut(out var svc, out _, out _);
+        var habitId = Guid.NewGuid();
+        svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "kept", UpdatedAtMs = 2, TargetDate = new DateOnly(2026, 6, 19) };
+        svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "other", UpdatedAtMs = 1, TargetDate = new DateOnly(2026, 6, 18) };
+        await sut.LoadAsync(habitId);
+
+        sut.SetCalendarDay(new DateOnly(2026, 6, 19));
+        sut.Mode = EntriesRecordsMode.Giorno;
+        await Task.Delay(20);
+
+        sut.Notes.Should().ContainSingle().Which.Note.BodyMd.Should().Be("kept");
     }
 }

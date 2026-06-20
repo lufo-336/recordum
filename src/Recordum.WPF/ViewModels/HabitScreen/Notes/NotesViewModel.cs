@@ -3,7 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Services;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
@@ -17,6 +19,8 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private readonly IClock _clock;
     private readonly List<IDisposable> _subs = [];
     private Guid _habitNodeId;
+    private List<Note> _all = [];
+    private DateOnly? _calendarDay;
 
     public ObservableCollection<NoteRowViewModel> Notes { get; } = [];
 
@@ -24,6 +28,11 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _editorMarkdown = string.Empty;
     [ObservableProperty] private bool _isConfirmingDelete;
     [ObservableProperty] private bool _isShowingHistory;
+
+    [ObservableProperty] private EntriesRecordsMode _mode = EntriesRecordsMode.Periodo;
+    [ObservableProperty] private EntriesPeriod _selectedPeriod = EntriesPeriod.Tutto;
+    [ObservableProperty] private DateOnly? _customFrom;
+    [ObservableProperty] private DateOnly? _customTo;
 
     public IWebView2Availability Availability { get; }
 
@@ -65,10 +74,54 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     {
         _habitNodeId = habitNodeId;
         var list = await _notes.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(true);
-        Notes.Clear();
-        foreach (var n in list) Notes.Add(new NoteRowViewModel(n));
+        _all = list.ToList();
+        ApplyFilter();
         SelectedNote = null;
         EditorMarkdown = string.Empty;
+    }
+
+    /// <summary>Mirrors the calendar selection into Day mode (parallels HabitRecordsViewModel).</summary>
+    public void SetCalendarDay(DateOnly day)
+    {
+        _calendarDay = day;
+        if (Mode == EntriesRecordsMode.Giorno) ApplyFilter();
+    }
+
+    private static DateOnly AnchorOf(Note n) => n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt);
+
+    private void ApplyFilter()
+    {
+        IEnumerable<Note> filtered;
+        if (Mode == EntriesRecordsMode.Giorno)
+        {
+            filtered = _calendarDay is { } d ? _all.Where(n => AnchorOf(n) == d) : [];
+        }
+        else
+        {
+            var today = DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone));
+            var (from, to) = EntriesPeriodRange.Resolve(SelectedPeriod, today, CustomFrom, CustomTo);
+            filtered = _all.Where(n =>
+            {
+                var a = AnchorOf(n);
+                return (from is null || a >= from) && (to is null || a <= to);
+            });
+        }
+
+        var keptSelection = SelectedNote?.Id;
+        Notes.Clear();
+        foreach (var n in filtered.OrderByDescending(n => n.UpdatedAtMs)) Notes.Add(new NoteRowViewModel(n));
+        if (keptSelection is { } sel) SelectedNote = Notes.FirstOrDefault(r => r.Id == sel);
+    }
+
+    partial void OnModeChanged(EntriesRecordsMode value) => ApplyFilter();
+    partial void OnSelectedPeriodChanged(EntriesPeriod value) { if (Mode == EntriesRecordsMode.Periodo) ApplyFilter(); }
+    partial void OnCustomFromChanged(DateOnly? value) => ReloadIfCustom();
+    partial void OnCustomToChanged(DateOnly? value) => ReloadIfCustom();
+
+    private void ReloadIfCustom()
+    {
+        if (Mode == EntriesRecordsMode.Periodo && SelectedPeriod == EntriesPeriod.Personalizzato) ApplyFilter();
     }
 
     public bool IsDirty => SelectedNote is { } row && EditorMarkdown != row.Note.BodyMd;
@@ -78,6 +131,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     {
         var draft = new Note { HabitNodeId = _habitNodeId, BodyMd = string.Empty, UpdatedAtMs = _clock.UtcNowMs };
         await _notes.CreateAsync(draft, ct).ConfigureAwait(true);
+        _all.Insert(0, draft);
         var row = new NoteRowViewModel(draft);
         Notes.Insert(0, row);
         SelectedNote = row;
@@ -134,6 +188,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     {
         if (SelectedNote is not { } row) { IsConfirmingDelete = false; return; }
         await _notes.DeleteAsync(row.Id, ct).ConfigureAwait(true);
+        _all.RemoveAll(n => n.Id == row.Id);
         var idx = Notes.IndexOf(row);
         Notes.RemoveAt(idx);
         SelectedNote = Notes.Count > 0 ? Notes[Math.Min(idx, Notes.Count - 1)] : null;
