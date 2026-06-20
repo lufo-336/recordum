@@ -216,6 +216,32 @@ public class WorkspaceViewModelTests
     }
 
     [Fact]
+    public async Task RestoreState_emits_no_saves_while_restoring()
+    {
+        // Persist a pinned tab + sidebar state into a store.
+        var (writer, settings) = WorkspaceViewModelFactory.Create();
+        await writer.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        writer.SidebarCollapsed = true;
+        await writer.SaveStateAsync();
+
+        // New VM over the SAME store, wired like MainWindowViewModel (save on every change).
+        var sut = new WorkspaceViewModel(new FakeSubjectScreenFactory(), settings);
+        sut.Tabs.CollectionChanged += async (_, _) => await sut.SaveStateAsync();
+        sut.PropertyChanged += async (_, e) =>
+        {
+            if (e.PropertyName is nameof(WorkspaceViewModel.ActiveSubjectTab)
+                or nameof(WorkspaceViewModel.SidebarCollapsed) or nameof(WorkspaceViewModel.SidebarWidth))
+                await sut.SaveStateAsync();
+        };
+        var before = settings.SetCount;
+
+        await sut.RestoreStateAsync((id, kind) => "A");
+
+        // Restore mutates tabs/active/sidebar; none of those may trigger a persist.
+        settings.SetCount.Should().Be(before);
+    }
+
+    [Fact]
     public async Task RestoreState_ignores_a_stale_open_columns_value_and_defaults_clean()
     {
         var (sut, settings) = WorkspaceViewModelFactory.Create();

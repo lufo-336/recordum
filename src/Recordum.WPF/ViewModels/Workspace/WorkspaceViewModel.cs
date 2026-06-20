@@ -15,7 +15,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     private readonly ISubjectScreenFactory _screenFactory;
     private readonly IAppSettingService _appSettings;
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
     private SubjectTabViewModel? _previewTab;
+    private bool _restoring;
 
     public ObservableCollection<SubjectTabViewModel> Tabs { get; } = [];
 
@@ -140,9 +142,13 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
         if (_previewTab == tab) _previewTab = null;
     }
 
-    /// <summary>Persist the light session state (pinned tabs + active + sidebar) to <c>ui.workspace</c>.</summary>
+    /// <summary>Persist the light session state (pinned tabs + active + sidebar) to <c>ui.workspace</c>.
+    /// Suppressed while <see cref="RestoreStateAsync"/> is replaying (the restored state == the persisted
+    /// state, and the replay mutates many properties — saving each would be a write storm). Serialized via
+    /// a gate so two near-simultaneous changes can't both INSERT a not-yet-existing key (UNIQUE violation).</summary>
     public async Task SaveStateAsync(CancellationToken ct = default)
     {
+        if (_restoring) return;
         var state = new WorkspaceState
         {
             SidebarCollapsed = SidebarCollapsed,
@@ -152,7 +158,16 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
                        .Select(t => new WorkspaceTabState(t.SubjectId, t.Kind))
                        .ToList(),
         };
-        await _appSettings.SetAsync(StateSettingKey, state.ToJson(), ct).ConfigureAwait(true);
+        var json = state.ToJson();
+        await _saveGate.WaitAsync(ct).ConfigureAwait(true);
+        try
+        {
+            await _appSettings.SetAsync(StateSettingKey, json, ct).ConfigureAwait(true);
+        }
+        finally
+        {
+            _saveGate.Release();
+        }
     }
 
     /// <summary>Reopen pinned tabs + active tab + sidebar from <c>ui.workspace</c>. <paramref name="titleResolver"/>
@@ -163,16 +178,24 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
         var state = WorkspaceState.FromJson(await _appSettings.GetAsync(StateSettingKey, ct).ConfigureAwait(true));
         if (state is null) return;
 
-        SidebarCollapsed = state.SidebarCollapsed;
-        if (state.SidebarWidth > 0) SidebarWidth = state.SidebarWidth;
+        _restoring = true;
+        try
+        {
+            SidebarCollapsed = state.SidebarCollapsed;
+            if (state.SidebarWidth > 0) SidebarWidth = state.SidebarWidth;
 
-        foreach (var t in state.Tabs)
-            await OpenSubjectAsync(t.SubjectId, t.Kind, titleResolver(t.SubjectId, t.Kind), pin: true, ct).ConfigureAwait(true);
+            foreach (var t in state.Tabs)
+                await OpenSubjectAsync(t.SubjectId, t.Kind, titleResolver(t.SubjectId, t.Kind), pin: true, ct).ConfigureAwait(true);
 
-        if (state.ActiveTabId == WorkspaceState.PanoramicaId || !Guid.TryParse(state.ActiveTabId, out var activeId))
-            ActivatePanoramica();
-        else
-            ActiveSubjectTab = Tabs.FirstOrDefault(t => t.SubjectId == activeId);
+            if (state.ActiveTabId == WorkspaceState.PanoramicaId || !Guid.TryParse(state.ActiveTabId, out var activeId))
+                ActivatePanoramica();
+            else
+                ActiveSubjectTab = Tabs.FirstOrDefault(t => t.SubjectId == activeId);
+        }
+        finally
+        {
+            _restoring = false;
+        }
     }
 
     /// <summary>Dispose every open tab's DI scope (app shutdown). Plan 1 deferred this here.</summary>
@@ -180,5 +203,6 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     {
         foreach (var tab in Tabs) tab.Dispose();
         Tabs.Clear();
+        _saveGate.Dispose();
     }
 }

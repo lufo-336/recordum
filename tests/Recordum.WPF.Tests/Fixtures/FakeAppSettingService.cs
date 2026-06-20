@@ -6,11 +6,15 @@ public sealed class FakeAppSettingService : IAppSettingService
 {
     public Dictionary<string, string> Store { get; } = new();
 
+    /// <summary>Number of <see cref="SetAsync"/> calls — lets tests assert write storms / suppression.</summary>
+    public int SetCount { get; private set; }
+
     public ValueTask<string?> GetAsync(string key, CancellationToken ct = default) =>
         new ValueTask<string?>(Store.TryGetValue(key, out var v) ? v : null);
 
     public ValueTask SetAsync(string key, string value, CancellationToken ct = default)
     {
+        SetCount++;
         Store[key] = value;
         return ValueTask.CompletedTask;
     }
