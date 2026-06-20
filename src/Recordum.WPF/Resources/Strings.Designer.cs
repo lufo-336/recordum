@@ -84,6 +84,8 @@ public static class Strings
     public static string Notes_Untitled => Get("Notes.Untitled");
     public static string Notes_Badge_General => Get("Notes.Badge.General");
     public static string Notes_ModifiedAt => Get("Notes_ModifiedAt");
+    public static string Notes_Category_Diary => Get("Notes.Category.Diary");
+    public static string Notes_Category_Quick => Get("Notes.Category.Quick");
     public static string Notes_History_Current => Get("Notes.History.Current");
     public static string Notes_History => Get("Notes.History");
     public static string Notes_History_Back => Get("Notes.History.Back");

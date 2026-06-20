@@ -626,6 +626,12 @@
   <data name="Notes_ModifiedAt" xml:space="preserve">
     <value>Modificata il {0}</value>
   </data>
+  <data name="Notes.Category.Diary" xml:space="preserve">
+    <value>Diario</value>
+  </data>
+  <data name="Notes.Category.Quick" xml:space="preserve">
+    <value>Nota veloce</value>
+  </data>
   <data name="Notes.History.Current" xml:space="preserve">
     <value>corrente</value>
   </data>
