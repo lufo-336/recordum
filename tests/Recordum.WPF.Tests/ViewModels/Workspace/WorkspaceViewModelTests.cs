@@ -332,6 +332,38 @@ public class WorkspaceViewModelTests
     }
 
     [Fact]
+    public async Task TogglePin_pins_a_preview_then_demotes_back_to_preview()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa"); // preview
+        var tab = sut.Tabs[0];
+        tab.IsPreview.Should().BeTrue();
+
+        sut.TogglePinCommand.Execute(tab);
+        tab.IsPreview.Should().BeFalse();
+
+        sut.TogglePinCommand.Execute(tab);
+        tab.IsPreview.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TogglePin_demote_keeps_at_most_one_preview_tab()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Pinned", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Preview"); // the preview slot
+        var pinned = sut.Tabs[0];
+        var preview = sut.Tabs[1];
+
+        sut.TogglePinCommand.Execute(pinned); // demote the pinned one to preview
+
+        // The old preview was promoted; only the just-demoted tab is now a preview.
+        sut.Tabs.Count(t => t.IsPreview).Should().Be(1);
+        pinned.IsPreview.Should().BeTrue();
+        preview.IsPreview.Should().BeFalse();
+    }
+
+    [Fact]
     public void ToggleSidebar_flips_collapsed()
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();

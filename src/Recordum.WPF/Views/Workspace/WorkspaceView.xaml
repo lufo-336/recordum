@@ -81,8 +81,34 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
+                        <Button Margin="8,0,0,0"
+                                Padding="2,0"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                ToolTip="{x:Static res:Strings.Workspace_PinTab}"
+                                Command="{Binding DataContext.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                CommandParameter="{Binding}">
+                            <Path Width="12" Height="12" Stretch="Uniform"
+                                  StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Data="{StaticResource Icon.Pin}">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <!-- Pinned = solid accent; preview = faint muted outline. -->
+                                        <Setter Property="Stroke" Value="{DynamicResource Brush.Accent}"/>
+                                        <Setter Property="Opacity" Value="1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsPreview}" Value="True">
+                                                <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
+                                                <Setter Property="Opacity" Value="0.45"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </Button>
                         <Button Content="✕"
-                                Margin="8,0,0,0"
+                                Margin="6,0,0,0"
                                 Padding="3,0"
                                 FontSize="11"
                                 Background="Transparent"

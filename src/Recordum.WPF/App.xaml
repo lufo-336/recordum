@@ -24,6 +24,7 @@
             <conv:ActiveTabVisibleConverter x:Key="ActiveTabVisible"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
             <conv:ZeroToVisibilityConverter x:Key="ZeroToVisible"/>
+            <conv:SidebarWidthConverter x:Key="SidebarWidth"/>
             <conv:EnumToVisibilityConverter x:Key="EnumToVisibility"/>
             <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
             <conv:HabitColorTintConverter x:Key="HabitColorTint"/>

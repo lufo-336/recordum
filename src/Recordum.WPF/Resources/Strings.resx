@@ -749,6 +749,9 @@ Details: {0}</value>
   <data name="Workspace.CloseTab" xml:space="preserve">
     <value>Close tab</value>
   </data>
+  <data name="Workspace.PinTab" xml:space="preserve">
+    <value>Pin / unpin tab</value>
+  </data>
   <data name="Workspace.Empty" xml:space="preserve">
     <value>Select a habit from the sidebar</value>
   </data>

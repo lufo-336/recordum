@@ -149,9 +149,14 @@
             <Grid Grid.Column="1">
                 <Grid Visibility="{Binding IsHomeWorkspace, Converter={StaticResource BoolToVisible}}">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="SidebarColumn"
-                                          Width="{Binding Workspace.SidebarWidth, Mode=OneWay}"
-                                          MinWidth="0" MaxWidth="460"/>
+                        <ColumnDefinition x:Name="SidebarColumn" MinWidth="0" MaxWidth="460">
+                            <ColumnDefinition.Width>
+                                <MultiBinding Converter="{StaticResource SidebarWidth}" Mode="OneWay">
+                                    <Binding Path="Workspace.SidebarCollapsed"/>
+                                    <Binding Path="Workspace.SidebarWidth"/>
+                                </MultiBinding>
+                            </ColumnDefinition.Width>
+                        </ColumnDefinition>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>

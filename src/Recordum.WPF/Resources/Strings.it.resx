@@ -731,6 +731,9 @@
   <data name="Workspace.CloseTab" xml:space="preserve">
     <value>Chiudi tab</value>
   </data>
+  <data name="Workspace.PinTab" xml:space="preserve">
+    <value>Fissa / sblocca tab</value>
+  </data>
   <data name="Workspace.Empty" xml:space="preserve">
     <value>Seleziona un'abitudine dalla barra laterale</value>
   </data>

@@ -63,6 +63,25 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
         if (ActiveSubjectTab is { } t) CloseTab(t);
     }
 
+    /// <summary>Tab pin-icon click: a preview tab gets pinned; a pinned tab is demoted back to the
+    /// single preview slot (promoting any other current preview first, to keep one preview at most).</summary>
+    [RelayCommand]
+    private void TogglePin(SubjectTabViewModel? tab)
+    {
+        if (tab is null) return;
+        if (tab.IsPreview)
+        {
+            tab.Pin();
+            if (_previewTab == tab) _previewTab = null;
+        }
+        else
+        {
+            if (_previewTab is not null && _previewTab != tab) _previewTab.Pin();
+            tab.IsPreview = true;
+            _previewTab = tab;
+        }
+    }
+
     /// <summary>Open a subject as a tab. Single open = a transient preview tab that the next single
     /// open replaces; <paramref name="pin"/> = a persistent tab. Re-opening an already-open subject
     /// just activates it (spec §3.3).</summary>

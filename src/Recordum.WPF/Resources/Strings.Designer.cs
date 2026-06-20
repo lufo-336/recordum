@@ -89,6 +89,7 @@ public static class Strings
     public static string Workspace_Tab_Panoramica => Get("Workspace.Tab.Panoramica");
     public static string Workspace_NewTab => Get("Workspace.NewTab");
     public static string Workspace_CloseTab => Get("Workspace.CloseTab");
+    public static string Workspace_PinTab => Get("Workspace.PinTab");
     public static string Workspace_Empty => Get("Workspace.Empty");
     public static string Workspace_ToggleSidebar => Get("Workspace.ToggleSidebar");
     public static string Notes_History_Current => Get("Notes.History.Current");
