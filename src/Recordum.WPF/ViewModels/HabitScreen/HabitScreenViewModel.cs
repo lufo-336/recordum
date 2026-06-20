@@ -20,6 +20,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 {
     private readonly IHabitNodeService _nodes;
     private readonly ICompletionService _completions;
+    private readonly IDiaryService _diary;
     private readonly IActiveTimerService _timers;
     private readonly INoteService _noteService;
     private readonly IMetricDefinitionService _metrics;
@@ -280,11 +281,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IWebView2Availability availability,
         IAppSettingService appSettings,
         HabitEditorViewModel editor,
-        IHabitTreeQueryService tree)
+        IHabitTreeQueryService tree,
+        IDiaryService diary)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(tree);
+        ArgumentNullException.ThrowIfNull(diary);
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
@@ -299,6 +302,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(availability);
         _nodes = nodes;
         _completions = completions;
+        _diary = diary;
         _timers = timers;
         _noteService = noteService;
         _metrics = metrics;
@@ -409,7 +413,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
             HabitType.Counter => await BuildCounterQuickAddAsync(ct).ConfigureAwait(true),
             HabitType.Resistance => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
-            HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock),
+            HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock, _diary),
             HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
             _ => null,
         };

@@ -327,7 +327,8 @@ public class MainWindowViewModelTests
             nodes, completions, ats, metrics, new FakeReferenceData(), configs, new FakeNoteService(),
             goals, new Recordum.Core.Services.IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            clock, new FakeEventBus(), new FakeWebView2Availability(), settings, editor, query);
+            clock, new FakeEventBus(), new FakeWebView2Availability(), settings, editor, query,
+            new FakeDiaryService());
         var charts = new Recordum.WPF.ViewModels.Charts.ChartsWorkspaceViewModel(
             new FakeChartService(), new FakeChartQueryService(),
             new Recordum.Plugins.ExtensionPoints.ExtensionPointRegistry(),

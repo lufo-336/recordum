@@ -101,10 +101,10 @@ public class ActionQuickAddViewModelTests
 public class JournalQuickAddViewModelTests
 {
     [Fact]
-    public async Task SaveAsync_empty_notes_sets_ErrorMessage_and_skips_record()
+    public async Task SaveAsync_empty_notes_sets_ErrorMessage_and_skips_diary()
     {
-        var cs = new FakeCompletionService();
-        var sut = new JournalQuickAddViewModel(cs, new FakeClock())
+        var diary = new FakeDiaryService();
+        var sut = new JournalQuickAddViewModel(new FakeCompletionService(), new FakeClock(), diary)
         {
             Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Journal },
             Notes = "",
@@ -113,22 +113,28 @@ public class JournalQuickAddViewModelTests
         await sut.SaveAsync();
 
         sut.ErrorMessage.Should().NotBeNullOrEmpty();
-        cs.LastRecord.Should().BeNull();
+        diary.SaveCalls.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task SaveAsync_with_notes_records_completion()
+    public async Task SaveAsync_with_notes_saves_a_diary_entry_for_the_completion_day()
     {
-        var cs = new FakeCompletionService();
-        var sut = new JournalQuickAddViewModel(cs, new FakeClock())
+        var diary = new FakeDiaryService();
+        var habitId = Guid.NewGuid();
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 19, 12, 0, 0, TimeSpan.Zero));
+        var sut = new JournalQuickAddViewModel(new FakeCompletionService(), clock, diary)
         {
-            Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Journal },
+            Node = new HabitNode { Id = habitId, HabitType = HabitType.Journal },
             Notes = "Hello.",
+            CompletionDate = new DateTime(2026, 6, 17, 0, 0, 0, DateTimeKind.Utc),
         };
 
         await sut.SaveAsync();
 
-        cs.LastRecord!.Notes.Should().Be("Hello.");
+        diary.SaveCalls.Should().ContainSingle();
+        diary.SaveCalls[0].HabitId.Should().Be(habitId);
+        diary.SaveCalls[0].Day.Should().Be(new DateOnly(2026, 6, 17));
+        diary.SaveCalls[0].Text.Should().Be("Hello.");
     }
 }
 

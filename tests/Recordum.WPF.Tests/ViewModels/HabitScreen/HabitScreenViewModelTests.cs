@@ -50,7 +50,8 @@ public class HabitScreenViewModelTests
             nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            clock, bus, new FakeWebView2Availability(true), settings, editor, new FakeHabitTreeQueryService());
+            clock, bus, new FakeWebView2Availability(true), settings, editor, new FakeHabitTreeQueryService(),
+            new FakeDiaryService());
     }
 
     private static HabitScreenViewModel CreateSut(

@@ -2,12 +2,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
-using Recordum.Core.Models;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
-public sealed partial class JournalQuickAddViewModel(ICompletionService completions, IClock clock)
+/// <summary>Journal QuickAdd: writing the note IS what completes the habit. Routes through
+/// IDiaryService so the Note(Diario)+Completion pair is created together (spec §6); never touches
+/// Completion.Notes directly.</summary>
+public sealed partial class JournalQuickAddViewModel(ICompletionService completions, IClock clock, IDiaryService diary)
     : QuickAddViewModelBase(completions, clock)
 {
     [ObservableProperty] private string? _notes;
@@ -27,17 +29,9 @@ public sealed partial class JournalQuickAddViewModel(ICompletionService completi
         ErrorMessage = null;
         try
         {
-            var (ts, ms, retro) = ResolveCompletionTimestamp();
-            var draft = new Completion
-            {
-                HabitNodeId = Node.Id,
-                CompletedAt = ts,
-                CompletedAtMs = ms,
-                IsRetroactive = retro,
-                Notes = Notes,
-            };
-            var id = await Completions.RecordAsync(draft, ct: ct).ConfigureAwait(true);
-            OnSaved(id);
+            var day = DateOnly.FromDateTime(CompletionDate.Date);
+            var noteId = await diary.SaveEntryAsync(Node.Id, day, Notes!, ct).ConfigureAwait(true);
+            OnSaved(noteId);
         }
         catch (Exception ex)
         {
