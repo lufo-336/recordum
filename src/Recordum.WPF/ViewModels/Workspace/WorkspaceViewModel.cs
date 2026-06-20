@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 
 namespace Recordum.WPF.ViewModels.Workspace;
@@ -7,7 +8,7 @@ namespace Recordum.WPF.ViewModels.Workspace;
 /// <summary>Owns the tabbed workspace shell: the open subject tabs, the always-present Panoramica
 /// (active when no subject tab is), the preview/pin lifecycle, and light session persistence.
 /// Ships no XAML; Plans 2–3 render it.</summary>
-public sealed partial class WorkspaceViewModel : ObservableObject
+public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
 {
     internal const double DefaultSidebarWidth = 280d;
     internal const string StateSettingKey = "ui.workspace";
@@ -42,6 +43,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     /// <summary>Make the Panoramica the active view (no subject tab selected).</summary>
     public void ActivatePanoramica() => ActiveSubjectTab = null;
+
+    [RelayCommand]
+    private void ToggleSidebar() => SidebarCollapsed = !SidebarCollapsed;
 
     /// <summary>Open a subject as a tab. Single open = a transient preview tab that the next single
     /// open replaces; <paramref name="pin"/> = a persistent tab. Re-opening an already-open subject
@@ -155,5 +159,12 @@ public sealed partial class WorkspaceViewModel : ObservableObject
             ActivatePanoramica();
         else
             ActiveSubjectTab = Tabs.FirstOrDefault(t => t.SubjectId == activeId);
+    }
+
+    /// <summary>Dispose every open tab's DI scope (app shutdown). Plan 1 deferred this here.</summary>
+    public void Dispose()
+    {
+        foreach (var tab in Tabs) tab.Dispose();
+        Tabs.Clear();
     }
 }

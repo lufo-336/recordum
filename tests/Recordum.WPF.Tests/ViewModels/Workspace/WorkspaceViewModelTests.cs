@@ -278,4 +278,27 @@ public class WorkspaceViewModelTests
 
         exported.Should().Be(id);
     }
+
+    [Fact]
+    public void ToggleSidebar_flips_collapsed()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        sut.SidebarCollapsed.Should().BeFalse();
+
+        sut.ToggleSidebarCommand.Execute(null);
+
+        sut.SidebarCollapsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Dispose_disposes_all_open_tabs_scopes()
+    {
+        var (sut, _, screens) = WorkspaceViewModelFactory.CreateWithScreens();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "B", pin: true);
+
+        sut.Dispose();
+
+        screens.Scopes.Should().OnlyContain(s => s.Disposed);
+    }
 }
