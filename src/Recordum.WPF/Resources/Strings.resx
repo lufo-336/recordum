@@ -740,6 +740,9 @@ Details: {0}</value>
   <data name="Workspace.Charts" xml:space="preserve">
     <value>Charts</value>
   </data>
+  <data name="Workspace.Tab.Panoramica" xml:space="preserve">
+    <value>Overview</value>
+  </data>
   <data name="Charts.New" xml:space="preserve">
     <value>New chart</value>
   </data>

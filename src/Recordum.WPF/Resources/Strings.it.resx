@@ -722,6 +722,9 @@
   <data name="Workspace.Charts" xml:space="preserve">
     <value>Grafici</value>
   </data>
+  <data name="Workspace.Tab.Panoramica" xml:space="preserve">
+    <value>Panoramica</value>
+  </data>
   <data name="Charts.New" xml:space="preserve">
     <value>Nuovo grafico</value>
   </data>
