@@ -16,6 +16,7 @@ public sealed partial class SubjectTabViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isPreview;
 
     private readonly IDisposable _scope;
+    private bool _disposed;
 
     public SubjectTabViewModel(Guid subjectId, WorkspaceTabKind kind, string title,
         HabitScreenViewModel screen, IDisposable scope, bool isPreview)
@@ -33,6 +34,11 @@ public sealed partial class SubjectTabViewModel : ObservableObject, IDisposable
     /// <summary>Promote a preview tab to a persistent one (no-op if already pinned).</summary>
     public void Pin() => IsPreview = false;
 
-    /// <summary>Disposes the tab's DI scope, releasing its HabitScreenViewModel and scoped services.</summary>
-    public void Dispose() => _scope.Dispose();
+    /// <summary>Disposes the tab's DI scope, releasing its HabitScreenViewModel and scoped services. Idempotent.</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _scope.Dispose();
+    }
 }

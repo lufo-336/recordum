@@ -56,4 +56,23 @@ public class SubjectTabViewModelTests
 
         scope.Disposed.Should().BeTrue();
     }
+
+    [Fact]
+    public void Dispose_is_idempotent()
+    {
+        var (screen, _) = HabitScreenViewModelFactory.Create();
+        var scope = new CountingDisposable();
+        var tab = new SubjectTabViewModel(Guid.NewGuid(), WorkspaceTabKind.Habit, "x", screen, scope, isPreview: false);
+
+        tab.Dispose();
+        tab.Dispose();
+
+        scope.DisposeCount.Should().Be(1);
+    }
+
+    private sealed class CountingDisposable : IDisposable
+    {
+        public int DisposeCount { get; private set; }
+        public void Dispose() => DisposeCount++;
+    }
 }
