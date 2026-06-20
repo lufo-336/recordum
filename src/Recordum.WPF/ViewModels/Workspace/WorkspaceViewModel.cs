@@ -95,4 +95,15 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         newIndex = Math.Clamp(newIndex, 0, Tabs.Count - 1);
         if (old != newIndex) Tabs.Move(old, newIndex);
     }
+
+    /// <summary>Called when the user mutates a subject (saved a diary entry, recorded a completion,
+    /// edited config). Promotes that subject's preview tab to a persistent one (spec §3.3). Plan 3
+    /// wires the per-tab save paths to call this; in Plan 1 it is unit-tested directly.</summary>
+    public void NotifySubjectEdited(Guid subjectId)
+    {
+        var tab = Tabs.FirstOrDefault(t => t.SubjectId == subjectId && t.IsPreview);
+        if (tab is null) return;
+        tab.Pin();
+        if (_previewTab == tab) _previewTab = null;
+    }
 }

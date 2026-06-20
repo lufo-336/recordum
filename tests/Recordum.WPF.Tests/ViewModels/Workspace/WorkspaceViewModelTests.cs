@@ -134,4 +134,28 @@ public class WorkspaceViewModelTests
 
         sut.Tabs[1].Should().Be(a);
     }
+
+    [Fact]
+    public async Task NotifySubjectEdited_promotes_the_matching_preview_tab()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        var id = Guid.NewGuid();
+        await sut.OpenSubjectAsync(id, WorkspaceTabKind.Habit, "Diario");
+        sut.Tabs[0].IsPreview.Should().BeTrue();
+
+        sut.NotifySubjectEdited(id);
+
+        sut.Tabs[0].IsPreview.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task NotifySubjectEdited_ignores_unknown_subjects()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Diario");
+
+        sut.NotifySubjectEdited(Guid.NewGuid());
+
+        sut.Tabs[0].IsPreview.Should().BeTrue();
+    }
 }
