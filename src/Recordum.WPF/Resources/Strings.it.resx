@@ -443,6 +443,12 @@
   <data name="HabitScreen.Configure" xml:space="preserve">
     <value>Configura</value>
   </data>
+  <data name="HabitScreen.Focus" xml:space="preserve">
+    <value>Focus (espandi a tutto il tab)</value>
+  </data>
+  <data name="HabitScreen.ExitFocus" xml:space="preserve">
+    <value>Esci dal focus (Esc)</value>
+  </data>
   <data name="HabitScreen.Close" xml:space="preserve">
     <value>Chiudi</value>
   </data>

@@ -72,6 +72,34 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         NotifyShowFlags();
     }
 
+    /// <summary>Focus mode (spec §3.6): when set, only this column fills the whole tab and the chip bar
+    /// is hidden; <c>null</c> = normal split layout. Session-only (not persisted).</summary>
+    [ObservableProperty] private HabitColumn? _focusedColumn;
+
+    /// <summary>True while a single column is expanded to fill the tab.</summary>
+    public bool IsFocusActive => FocusedColumn is not null;
+
+    /// <summary>The chip toggle bar is hidden while a column is focused (a return affordance shows instead).</summary>
+    public bool ShowChipBar => FocusedColumn is null;
+
+    partial void OnFocusedColumnChanged(HabitColumn? value)
+    {
+        OnPropertyChanged(nameof(IsFocusActive));
+        OnPropertyChanged(nameof(ShowChipBar));
+        NotifyShowFlags();
+    }
+
+    // A column is visible only when focus allows it: no focus → all open columns; focus → just that one.
+    private bool FocusAllows(HabitColumn column) => FocusedColumn is null || FocusedColumn == column;
+
+    /// <summary>⤢ header toggle: expand this column to fill the tab, or restore the split layout.</summary>
+    [RelayCommand]
+    private void ToggleFocus(HabitColumn column) => FocusedColumn = FocusedColumn == column ? null : column;
+
+    /// <summary>Esc / ↩: leave focus mode (no-op when not focused).</summary>
+    [RelayCommand]
+    private void ExitFocus() => FocusedColumn = null;
+
     /// <summary>Column applicability per node type (spec §A.1): groups get Panoramica/Note/Configura.</summary>
     internal static bool IsColumnApplicable(HabitColumn column, NodeType nodeType) => nodeType == NodeType.Group
         ? column is HabitColumn.Panoramica or HabitColumn.Note or HabitColumn.Configura
@@ -80,11 +108,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     // Column visibility = open flag AND applicability to the current node type, so the open
     // set survives habit↔group switches intact (spec §A.1).
     public bool IsGroupNode => Node?.NodeType == NodeType.Group;
-    public bool ShowPanoramica => IsPanoramicaOpen && Node is not null && IsColumnApplicable(HabitColumn.Panoramica, Node.NodeType);
-    public bool ShowCronologia => IsCronologiaOpen && Node is not null && IsColumnApplicable(HabitColumn.Cronologia, Node.NodeType);
-    public bool ShowDettaglio => IsDettaglioOpen && Node is not null && IsColumnApplicable(HabitColumn.Dettaglio, Node.NodeType);
-    public bool ShowNote => IsNoteOpen && Node is not null;
-    public bool ShowConfigura => IsConfiguraOpen && Node is not null;
+    public bool ShowPanoramica => IsPanoramicaOpen && Node is not null && IsColumnApplicable(HabitColumn.Panoramica, Node.NodeType) && FocusAllows(HabitColumn.Panoramica);
+    public bool ShowCronologia => IsCronologiaOpen && Node is not null && IsColumnApplicable(HabitColumn.Cronologia, Node.NodeType) && FocusAllows(HabitColumn.Cronologia);
+    public bool ShowDettaglio => IsDettaglioOpen && Node is not null && IsColumnApplicable(HabitColumn.Dettaglio, Node.NodeType) && FocusAllows(HabitColumn.Dettaglio);
+    public bool ShowNote => IsNoteOpen && Node is not null && FocusAllows(HabitColumn.Note);
+    public bool ShowConfigura => IsConfiguraOpen && Node is not null && FocusAllows(HabitColumn.Configura);
 
     private void NotifyShowFlags()
     {
@@ -101,7 +129,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private void OnColumnFlag(HabitColumn column, bool open)
     {
         if (open) { if (!_openOrder.Contains(column)) _openOrder.Add(column); }
-        else _openOrder.Remove(column);
+        else { _openOrder.Remove(column); if (FocusedColumn == column) FocusedColumn = null; }
         if (_restoringColumns) return;
         _ = PersistOpenColumnsAsync();
         if (!open)

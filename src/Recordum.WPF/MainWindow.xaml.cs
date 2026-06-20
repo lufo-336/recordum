@@ -80,11 +80,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Esc closes the most recently opened view column of the active tab's habit screen (nav-model §3.5).
-        // Task 2 will wire this through the per-tab screen; until then, no-op.
-        if (e.Key == Key.Escape && _viewModel.Home.SelectedRow is not null)
+        // Esc on the active tab's screen: leave focus mode if active, else close the most recently
+        // opened view column (nav-model §3.5 / focus §3.6).
+        if (e.Key == Key.Escape && _viewModel.Workspace.ActiveSubjectTab?.Screen is { } screen)
         {
-            (_viewModel.Workspace.ActiveSubjectTab?.Screen)?.CloseLastColumn();
+            if (screen.IsFocusActive) screen.ExitFocusCommand.Execute(null);
+            else screen.CloseLastColumn();
             e.Handled = true;
             return;
         }

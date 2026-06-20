@@ -639,6 +639,33 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="11"/>
         </Style>
+        <!-- ⤢ focus toggle in each column header (template instantiates the Path per use). -->
+        <Style x:Key="HabitScreen.ColumnFocus" TargetType="Button">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="0,0,30,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}">
+                            <Path Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Data="M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="HabitScreen.ColumnResizeThumb" TargetType="Thumb">
             <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="Width" Value="6"/>
@@ -722,9 +749,19 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!-- In focus mode the chip bar is replaced by a return affordance (spec §3.6). -->
+            <Button Grid.Row="0" HorizontalAlignment="Left" Margin="12,8,12,4"
+                    Padding="8,3" Cursor="Hand"
+                    Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    Content="{x:Static res:Strings.HabitScreen_ExitFocus}"
+                    Command="{Binding ExitFocusCommand}"
+                    Visibility="{Binding IsFocusActive, Converter={StaticResource BoolToVisible}}"/>
+
             <!-- Chip bar: independent view toggles (nav-model). Panoramica only for groups,
                  Cronologia/Dettaglio only for habits (spec §A.1). -->
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="12,8,12,4">
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="12,8,12,4"
+                        Visibility="{Binding ShowChipBar, Converter={StaticResource BoolToVisible}}">
                 <CheckBox Style="{StaticResource Recordum.SegmentCheck}"
                           Content="{x:Static res:Strings.HabitScreen_Column_Panoramica}"
                           IsChecked="{Binding IsPanoramicaOpen}"
@@ -801,6 +838,10 @@
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
                                     <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Panoramica}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnFocus}"
+                                            ToolTip="{x:Static res:Strings.HabitScreen_Focus}"
+                                            Command="{Binding ToggleFocusCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Panoramica}"/>
                                     <Button Style="{StaticResource HabitScreen.ColumnClose}"
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Panoramica}"/>
@@ -887,6 +928,10 @@
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
                                     <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnFocus}"
+                                            ToolTip="{x:Static res:Strings.HabitScreen_Focus}"
+                                            Command="{Binding ToggleFocusCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Cronologia}"/>
                                     <Button Style="{StaticResource HabitScreen.ColumnClose}"
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Cronologia}"/>
@@ -951,6 +996,10 @@
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
                                     <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Detail}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnFocus}"
+                                            ToolTip="{x:Static res:Strings.HabitScreen_Focus}"
+                                            Command="{Binding ToggleFocusCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Dettaglio}"/>
                                     <Button Style="{StaticResource HabitScreen.ColumnClose}"
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Dettaglio}"/>
@@ -967,6 +1016,10 @@
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
                                     <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Notes}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnFocus}"
+                                            ToolTip="{x:Static res:Strings.HabitScreen_Focus}"
+                                            Command="{Binding ToggleFocusCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Note}"/>
                                     <Button Style="{StaticResource HabitScreen.ColumnClose}"
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Note}"/>
@@ -983,6 +1036,10 @@
                             <DockPanel>
                                 <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
                                     <TextBlock Text="{x:Static res:Strings.HabitScreen_Configure}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnFocus}"
+                                            ToolTip="{x:Static res:Strings.HabitScreen_Focus}"
+                                            Command="{Binding ToggleFocusCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Configura}"/>
                                     <Button Style="{StaticResource HabitScreen.ColumnClose}"
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Configura}"/>

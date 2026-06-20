@@ -19,6 +19,8 @@ public static class Strings
 
     // HabitScreen
     public static string HabitScreen_Configure => Get("HabitScreen.Configure");
+    public static string HabitScreen_Focus => Get("HabitScreen.Focus");
+    public static string HabitScreen_ExitFocus => Get("HabitScreen.ExitFocus");
     public static string HabitScreen_Close => Get("HabitScreen.Close");
     public static string HabitScreen_QuickAdd_Save => Get("HabitScreen.QuickAdd.Save");
     public static string HabitScreen_QuickAdd_Action_Mark => Get("HabitScreen.QuickAdd.Action.Mark");

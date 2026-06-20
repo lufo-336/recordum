@@ -128,6 +128,46 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
+    public async Task Focus_expands_one_column_and_hides_the_others()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+        sut.IsCronologiaOpen = true;
+        sut.IsNoteOpen = true;
+        sut.ShowCronologia.Should().BeTrue();
+        sut.ShowNote.Should().BeTrue();
+
+        sut.ToggleFocusCommand.Execute(HabitColumn.Note);
+
+        sut.IsFocusActive.Should().BeTrue();
+        sut.ShowChipBar.Should().BeFalse();
+        sut.ShowNote.Should().BeTrue();
+        sut.ShowCronologia.Should().BeFalse();
+
+        sut.ExitFocusCommand.Execute(null);
+        sut.IsFocusActive.Should().BeFalse();
+        sut.ShowCronologia.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Closing_the_focused_column_exits_focus()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+        sut.IsNoteOpen = true;
+        sut.ToggleFocusCommand.Execute(HabitColumn.Note);
+        sut.IsFocusActive.Should().BeTrue();
+
+        sut.IsNoteOpen = false;
+
+        sut.FocusedColumn.Should().BeNull();
+    }
+
+    [Fact]
     public async Task LoadAsync_populates_CompletionList_rows_from_service()
     {
         var sut = CreateSut(out var nodes, out var completions, out _, out _, out _);
