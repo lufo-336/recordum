@@ -1,5 +1,6 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
@@ -32,6 +33,18 @@ public sealed partial class NoteRowViewModel(Note note) : ObservableObject
     public string AnchorDateDisplay =>
         (Note.TargetDate ?? DateOnly.FromDateTime(Note.CreatedAt))
             .ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+
+    public bool IsDiario => Note.Category == NoteCategory.Diario;
+
+    /// <summary>Chip label: "Diary" for paired diary entries, "Quick note" for free notes.</summary>
+    public string CategoryLabel => IsDiario
+        ? Recordum.WPF.Resources.Strings.Notes_Category_Diary
+        : Recordum.WPF.Resources.Strings.Notes_Category_Quick;
+
+    /// <summary>Time-of-day the note was written (HH:mm), from CreatedAt.</summary>
+    public string CreatedAtTimeDisplay =>
+        DateTime.SpecifyKind(Note.CreatedAt, DateTimeKind.Utc)
+            .ToString("HH:mm", CultureInfo.InvariantCulture);
 
     /// <summary>True once the note has been edited after creation (1s tolerance for clock granularity).</summary>
     public bool WasModified => Note.UpdatedAtMs > CreatedAtMs + 1000;

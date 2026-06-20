@@ -1,5 +1,6 @@
 using System.Globalization;
 using FluentAssertions;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Xunit;
@@ -97,5 +98,43 @@ public class NoteRowViewModelTests
         var created = new DateTime(2026, 6, 1, 8, 0, 0, DateTimeKind.Utc);
         var row = new NoteRowViewModel(new Note { CreatedAt = created, UpdatedAtMs = Ms(created.AddMinutes(5)) });
         row.WasModified.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Diario_note_reports_IsDiario_and_diary_label()
+    {
+        var row = new NoteRowViewModel(new Note
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = Guid.NewGuid(),
+            BodyMd = "entry",
+            Category = NoteCategory.Diario,
+        });
+
+        row.IsDiario.Should().BeTrue();
+        row.CategoryLabel.Should().Be(Recordum.WPF.Resources.Strings.Notes_Category_Diary);
+    }
+
+    [Fact]
+    public void Veloce_note_reports_not_diario_and_quick_label()
+    {
+        var row = new NoteRowViewModel(new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" });
+
+        row.IsDiario.Should().BeFalse();
+        row.CategoryLabel.Should().Be(Recordum.WPF.Resources.Strings.Notes_Category_Quick);
+    }
+
+    [Fact]
+    public void CreatedAtTimeDisplay_formats_hour_and_minute()
+    {
+        var row = new NoteRowViewModel(new Note
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = Guid.NewGuid(),
+            BodyMd = "x",
+            CreatedAt = new DateTime(2026, 6, 19, 8, 5, 0, DateTimeKind.Utc),
+        });
+
+        row.CreatedAtTimeDisplay.Should().Be("08:05");
     }
 }
