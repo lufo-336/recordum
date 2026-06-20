@@ -148,9 +148,8 @@ public static class ServiceRegistrar
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();
         services.AddTransient<HabitScreenViewModel>();
-        // Each workspace tab needs its own HabitScreenViewModel; expose a factory delegate
-        // (MS.DI does not auto-provide Func<T>).
-        services.AddTransient<Func<HabitScreenViewModel>>(sp => () => sp.GetRequiredService<HabitScreenViewModel>());
+        // Each workspace tab gets its own DI scope via ISubjectScreenFactory (disposed on tab close).
+        services.AddSingleton<ISubjectScreenFactory, SubjectScreenFactory>();
         services.AddTransient<WorkspaceViewModel>();
 
         services.AddScoped<IQuickActionHandler, ActionQuickActionHandler>();

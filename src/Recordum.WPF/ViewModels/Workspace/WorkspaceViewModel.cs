@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
-using Recordum.WPF.ViewModels.HabitScreen;
 
 namespace Recordum.WPF.ViewModels.Workspace;
 
@@ -13,7 +12,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
     internal const double DefaultSidebarWidth = 280d;
     internal const string StateSettingKey = "ui.workspace";
 
-    private readonly Func<HabitScreenViewModel> _screenFactory;
+    private readonly ISubjectScreenFactory _screenFactory;
     private readonly IAppSettingService _appSettings;
     private SubjectTabViewModel? _previewTab;
 
@@ -28,7 +27,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public bool IsPanoramicaActive => ActiveSubjectTab is null;
 
-    public WorkspaceViewModel(Func<HabitScreenViewModel> screenFactory, IAppSettingService appSettings)
+    public WorkspaceViewModel(ISubjectScreenFactory screenFactory, IAppSettingService appSettings)
     {
         ArgumentNullException.ThrowIfNull(screenFactory);
         ArgumentNullException.ThrowIfNull(appSettings);
@@ -54,18 +53,24 @@ public sealed partial class WorkspaceViewModel : ObservableObject
             return;
         }
 
-        var screen = _screenFactory();
-        var tab = new SubjectTabViewModel(subjectId, kind, title, screen, isPreview: !pin);
+        var created = _screenFactory.Create();
+        var tab = new SubjectTabViewModel(subjectId, kind, title, created.Screen, created.Scope, isPreview: !pin);
 
         var previewIdx = !pin && _previewTab is not null ? Tabs.IndexOf(_previewTab) : -1;
         if (previewIdx >= 0)
-            Tabs[previewIdx] = tab;   // replace the existing preview tab in place (no accumulation)
+        {
+            var replaced = Tabs[previewIdx];
+            Tabs[previewIdx] = tab;       // replace the existing preview tab in place (no accumulation)
+            replaced.Dispose();           // release the discarded preview tab's scope
+        }
         else
+        {
             Tabs.Add(tab);
+        }
         _previewTab = pin ? null : tab;
         ActiveSubjectTab = tab;
 
-        await screen.LoadAsync(subjectId, ct).ConfigureAwait(true);
+        await created.Screen.LoadAsync(subjectId, ct).ConfigureAwait(true);
     }
 
     public void PinActiveTab()
@@ -87,6 +92,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         Tabs.RemoveAt(idx);
         if (ActiveSubjectTab == tab)
             ActiveSubjectTab = Tabs.Count == 0 ? null : Tabs[Math.Min(idx, Tabs.Count - 1)];
+        tab.Dispose();
     }
 
     public void MoveTab(SubjectTabViewModel tab, int newIndex)

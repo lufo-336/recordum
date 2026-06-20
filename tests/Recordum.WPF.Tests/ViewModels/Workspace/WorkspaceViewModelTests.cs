@@ -206,9 +206,7 @@ public class WorkspaceViewModelTests
         await writer.SaveStateAsync();
 
         // New VM over the SAME settings store.
-        Func<Recordum.WPF.ViewModels.HabitScreen.HabitScreenViewModel> factory =
-            () => HabitScreenViewModelFactory.Create().Vm;
-        var sut = new WorkspaceViewModel(factory, settings);
+        var sut = new WorkspaceViewModel(new FakeSubjectScreenFactory(), settings);
 
         await sut.RestoreStateAsync((id, kind) => kind == WorkspaceTabKind.Group ? "B" : "A");
 
@@ -227,5 +225,30 @@ public class WorkspaceViewModelTests
 
         sut.Tabs.Should().BeEmpty();
         sut.IsPanoramicaActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CloseTab_disposes_the_tabs_scope()
+    {
+        var (sut, _, screens) = WorkspaceViewModelFactory.CreateWithScreens();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", pin: true);
+        var scope = screens.Scopes[0];
+
+        sut.CloseTab(sut.Tabs[0]);
+
+        scope.Disposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Replacing_a_preview_tab_disposes_the_replaced_tabs_scope()
+    {
+        var (sut, _, screens) = WorkspaceViewModelFactory.CreateWithScreens();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa"); // preview
+        var firstScope = screens.Scopes[0];
+
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Peso"); // replaces preview
+
+        firstScope.Disposed.Should().BeTrue();
+        sut.Tabs.Should().ContainSingle();
     }
 }

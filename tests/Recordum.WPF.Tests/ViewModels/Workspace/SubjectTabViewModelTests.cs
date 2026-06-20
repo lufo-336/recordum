@@ -10,7 +10,8 @@ public class SubjectTabViewModelTests
     private static SubjectTabViewModel NewTab(bool isPreview)
     {
         var (screen, _) = HabitScreenViewModelFactory.Create();
-        return new SubjectTabViewModel(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", screen, isPreview);
+        return new SubjectTabViewModel(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", screen,
+            new Recordum.WPF.Tests.Fixtures.TrackingDisposable(), isPreview);
     }
 
     [Fact]
@@ -42,5 +43,17 @@ public class SubjectTabViewModelTests
         var tab = NewTab(isPreview: false);
         tab.Pin();
         tab.IsPreview.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Dispose_disposes_the_owned_scope()
+    {
+        var (screen, _) = HabitScreenViewModelFactory.Create();
+        var scope = new Recordum.WPF.Tests.Fixtures.TrackingDisposable();
+        var tab = new SubjectTabViewModel(Guid.NewGuid(), WorkspaceTabKind.Habit, "x", screen, scope, isPreview: false);
+
+        tab.Dispose();
+
+        scope.Disposed.Should().BeTrue();
     }
 }

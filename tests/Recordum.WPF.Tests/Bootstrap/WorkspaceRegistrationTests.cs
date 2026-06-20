@@ -2,7 +2,6 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions;
 using Recordum.WPF.Bootstrap;
-using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Workspace;
 using Xunit;
 
@@ -16,15 +15,20 @@ public sealed class WorkspaceRegistrationTests
             .BuildServiceProvider();
 
     [Fact]
-    public void Screen_factory_resolves_distinct_instances()
+    public void Subject_screen_factory_creates_distinct_screens_in_their_own_scopes()
     {
         using var sp = BuildProvider();
-        using var scope = sp.CreateScope();
-        var factory = scope.ServiceProvider.GetRequiredService<Func<HabitScreenViewModel>>();
-        var a = factory();
-        var b = factory();
-        a.Should().NotBeNull();
-        b.Should().NotBeSameAs(a);
+        var factory = sp.GetRequiredService<ISubjectScreenFactory>();
+
+        var a = factory.Create();
+        var b = factory.Create();
+
+        a.Screen.Should().NotBeNull();
+        b.Screen.Should().NotBeSameAs(a.Screen);
+        a.Scope.Should().NotBeNull();
+        b.Scope.Should().NotBeSameAs(a.Scope);
+        a.Scope.Dispose();
+        b.Scope.Dispose();
     }
 
     [Fact]
