@@ -34,6 +34,7 @@ using Recordum.WPF.ViewModels.HabitBuilder;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Quick;
+using Recordum.WPF.ViewModels.Workspace;
 using Recordum.WPF.ViewModels.Timer;
 using Recordum.WPF.Views;
 
@@ -147,6 +148,10 @@ public static class ServiceRegistrar
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();
         services.AddTransient<HabitScreenViewModel>();
+        // Each workspace tab needs its own HabitScreenViewModel; expose a factory delegate
+        // (MS.DI does not auto-provide Func<T>).
+        services.AddTransient<Func<HabitScreenViewModel>>(sp => () => sp.GetRequiredService<HabitScreenViewModel>());
+        services.AddTransient<WorkspaceViewModel>();
 
         services.AddScoped<IQuickActionHandler, ActionQuickActionHandler>();
         services.AddScoped<IQuickActionHandler, CounterQuickActionHandler>();
