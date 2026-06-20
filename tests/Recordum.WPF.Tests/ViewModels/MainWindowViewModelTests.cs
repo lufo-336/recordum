@@ -224,6 +224,25 @@ public class MainWindowViewModelTests
         sut.Workspace.Tabs[0].IsPreview.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Closing_all_tabs_persists_workspace_state()
+    {
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Corsa", Color = "#000000" };
+        parts.Query.HomeRows.Add(SampleRow(id, "Corsa"));
+        await sut.InitializeAsync();
+        sut.Home.SelectedRow = sut.Home.Rows.First(r => r.HabitNodeId == id);
+        await Task.Delay(30);
+        sut.Workspace.PinActiveTab();
+
+        sut.Workspace.CloseTab(sut.Workspace.Tabs[0]);
+        await Task.Delay(30);
+
+        var raw = await parts.AppSettings.GetAsync(WorkspaceViewModel.StateSettingKey);
+        raw.Should().NotBeNull(); // save was triggered on the change
+    }
+
     private static HomeTreeRow SampleRow(Guid id, string name, HabitType? type = HabitType.Action, Guid? parent = null) =>
         new(id, parent, name, "#000000", type, null, 0, false, PinScope.None, 0, false,
             ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);

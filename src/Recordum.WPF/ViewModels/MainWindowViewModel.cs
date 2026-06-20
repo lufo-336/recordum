@@ -81,6 +81,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
             var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == id);
             if (row is not null) await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name).ConfigureAwait(true);
         };
+        // Persist the light workspace session whenever tabs/active/sidebar change (SP1: no debounce).
+        Workspace.Tabs.CollectionChanged += async (_, _) => await Workspace.SaveStateAsync().ConfigureAwait(true);
+        Workspace.PropertyChanged += async (_, e) =>
+        {
+            if (e.PropertyName is nameof(WorkspaceViewModel.ActiveSubjectTab)
+                or nameof(WorkspaceViewModel.SidebarCollapsed) or nameof(WorkspaceViewModel.SidebarWidth))
+                await Workspace.SaveStateAsync().ConfigureAwait(true);
+        };
     }
 
     [RelayCommand]
@@ -116,8 +124,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         await LoadHabitScreenWidthAsync(ct).ConfigureAwait(true);
         await Home.LoadCommand.ExecuteAsync(null);
+        // After Home.Rows is populated so the title resolver can name persisted subjects.
+        await Workspace.RestoreStateAsync(ResolveTitle, ct).ConfigureAwait(true);
         await TimerStatusBar.LoadAsync(ct).ConfigureAwait(true);
     }
+
+    private string ResolveTitle(Guid id, WorkspaceTabKind kind)
+        => Home.Rows.FirstOrDefault(r => r.HabitNodeId == id)?.Name ?? string.Empty;
 
     [RelayCommand]
     private static void Quit() => System.Windows.Application.Current?.Shutdown();
