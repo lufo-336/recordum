@@ -105,31 +105,6 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task InitializeAsync_loads_HabitScreenWidth_from_AppSetting()
-    {
-        var (sut, parts) = CreateSut();
-        parts.AppSettings.Store[MainWindowViewModel.HabitScreenWidthSettingKey] = "600";
-
-        await sut.InitializeAsync();
-
-        sut.HabitScreenWidth.Should().Be(600d);
-    }
-
-    [Fact]
-    public async Task CommitHabitScreenWidthAsync_clamps_and_persists()
-    {
-        var (sut, parts) = CreateSut();
-        await sut.InitializeAsync();
-
-        sut.HabitScreenWidth = 50d;
-        await sut.CommitHabitScreenWidthAsync();
-
-        sut.HabitScreenWidth.Should().Be(MainWindowViewModel.MinHabitScreenWidth);
-        parts.AppSettings.Store[MainWindowViewModel.HabitScreenWidthSettingKey]
-            .Should().Be(MainWindowViewModel.MinHabitScreenWidth.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
-    }
-
-    [Fact]
     public async Task Clearing_selection_activates_panoramica()
     {
         var (sut, parts) = CreateSut();

@@ -4,11 +4,10 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using Recordum.WPF.Controls;
 using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.WPF.ViewModels.Workspace;
 
 namespace Recordum.WPF;
 
@@ -23,8 +22,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         FitToScreen();
         DataContext = viewModel;
-        viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        viewModel.Home.PropertyChanged += OnHomePropertyChanged;
         Loaded += OnLoaded;
     }
 
@@ -48,10 +45,7 @@ public partial class MainWindow : Window
         => (Math.Min(desiredWidth, workAreaWidth), Math.Min(desiredHeight, workAreaHeight));
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        await _viewModel.InitializeAsync().ConfigureAwait(true);
-        ApplyHabitScreenWidth();
-    }
+        => await _viewModel.InitializeAsync().ConfigureAwait(true);
 
     // ---- custom title bar (WindowChrome) ----
 
@@ -76,68 +70,6 @@ public partial class MainWindow : Window
             : "M5 5h14v14H5z");            // maximize: single square
     }
 
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainWindowViewModel.HabitScreenWidth))
-            ApplyHabitScreenWidth();
-    }
-
-    private void OnHomePropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(HomeViewModel.SelectedRow))
-            ApplyHabitScreenWidth();
-    }
-
-    private void ApplyHabitScreenWidth()
-        => AnimateColumn(HabitScreenColumn, HabitScreenContent, _viewModel.Home.SelectedRow is not null ? _viewModel.HabitScreenWidth : 0);
-
-    // Opens a column by sliding its content in (animated TranslateTransform — composition only, no
-    // per-frame layout), and closes it by shrinking the now-empty column with the cheap width animation.
-    // Sets the target width as the base (local) value and uses Stop-fill animations so the GridSplitter
-    // can still resize the column afterwards (a held animation would override later width changes).
-    private static void AnimateColumn(ColumnDefinition column, FrameworkElement content, double target)
-    {
-        double current = column.ActualWidth;
-        if (Math.Abs(current - target) < 0.5) return;
-
-        if (target > 0.5)
-        {
-            // Open: reserve the final width once (single layout pass), then slide the content in from
-            // the right. Content is ClipToBounds, so the off-screen start position is invisible.
-            column.Width = new GridLength(target);
-            var tt = EnsureTranslate(content);
-            tt.X = target; // set before BeginAnimation to avoid a one-frame flash at the final position
-            var slide = new DoubleAnimation
-            {
-                From = target,
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(160),
-                FillBehavior = FillBehavior.Stop,
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
-            slide.Completed += (_, _) => tt.X = 0; // settle the base value after Stop-fill
-            tt.BeginAnimation(TranslateTransform.XProperty, slide);
-        }
-        else
-        {
-            // Close: the content collapses via its Visibility binding; the empty column shrinks cheaply.
-            column.Width = new GridLength(0);
-            var collapse = new GridLengthAnimation
-            {
-                From = current,
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(160),
-                FillBehavior = FillBehavior.Stop,
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
-            column.BeginAnimation(ColumnDefinition.WidthProperty, collapse);
-        }
-    }
-
-    private static TranslateTransform EnsureTranslate(FrameworkElement content)
-        => content.RenderTransform as TranslateTransform
-           ?? (TranslateTransform)(content.RenderTransform = new TranslateTransform());
-
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
         // Esc with a multi-selection: clear it (spec §C.1) before any column handling.
@@ -148,10 +80,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Esc closes the most recently opened view column of the habit workspace (nav-model §3.5).
+        // Esc closes the most recently opened view column of the active tab's habit screen (nav-model §3.5).
+        // Task 2 will wire this through the per-tab screen; until then, no-op.
         if (e.Key == Key.Escape && _viewModel.Home.SelectedRow is not null)
         {
-            _viewModel.HabitScreen.CloseLastColumn();
+            (_viewModel.Workspace.ActiveSubjectTab?.Screen)?.CloseLastColumn();
             e.Handled = true;
             return;
         }
@@ -167,9 +100,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnHabitScreenSplitterDragCompleted(object sender, DragCompletedEventArgs e)
+    private async void OnSidebarSplitterDragCompleted(object sender, DragCompletedEventArgs e)
     {
-        _viewModel.HabitScreenWidth = HabitScreenColumn.ActualWidth;
-        await _viewModel.CommitHabitScreenWidthAsync().ConfigureAwait(true);
+        _viewModel.Workspace.SidebarWidth = Math.Clamp(SidebarColumn.ActualWidth, 0, 460);
+        await _viewModel.Workspace.SaveStateAsync().ConfigureAwait(true);
     }
 }

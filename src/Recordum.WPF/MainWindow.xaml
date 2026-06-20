@@ -7,6 +7,7 @@
         xmlns:v="clr-namespace:Recordum.WPF.Views"
         xmlns:vt="clr-namespace:Recordum.WPF.Views.Timer"
         xmlns:vhs="clr-namespace:Recordum.WPF.Views.HabitScreen"
+        xmlns:vw="clr-namespace:Recordum.WPF.Views.Workspace"
         xmlns:vb="clr-namespace:Recordum.WPF.Views.Backup"
         xmlns:res="clr-namespace:Recordum.WPF.Resources"
         mc:Ignorable="d"
@@ -96,7 +97,15 @@
         <Border Grid.Row="0" Background="{DynamicResource Brush.Surface}"
                 BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
             <Grid>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,12,0">
+                    <Button Width="32" Height="28" Margin="0,0,6,0"
+                            Style="{StaticResource Caption.Button}"
+                            Command="{Binding Workspace.ToggleSidebarCommand}"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            ToolTip="{x:Static res:Strings.Workspace_ToggleSidebar}"
+                            AutomationProperties.Name="{x:Static res:Strings.Workspace_ToggleSidebar}">
+                        <Path Style="{StaticResource Caption.Icon}" Data="M4 6h16 M4 12h16 M4 18h16"/>
+                    </Button>
                     <Path Width="15" Height="15" Stretch="Uniform" Margin="0,0,8,0"
                           Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.8"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
@@ -138,15 +147,15 @@
             <Grid Grid.Column="1">
                 <Grid Visibility="{Binding IsHomeWorkspace, Converter={StaticResource BoolToVisible}}">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition x:Name="SidebarColumn"
+                                          Width="{Binding Workspace.SidebarWidth, Mode=OneWay}"
+                                          MinWidth="0" MaxWidth="460"/>
                         <ColumnDefinition Width="Auto"/>
-                        <!-- MaxWidth matches MainWindowViewModel.MaxHabitScreenWidth so the splitter stops at the
-                             cap instead of overshooting and snapping back on release. MinWidth stays 0 so the
-                             column can still collapse to 0 when no habit is selected. -->
-                        <ColumnDefinition x:Name="HabitScreenColumn" Width="0" MinWidth="0" MaxWidth="1100"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <v:HomeView Grid.Column="0" DataContext="{Binding Home}"/>
-                    <GridSplitter x:Name="HabitScreenSplitter"
+                    <v:HomeView Grid.Column="0" DataContext="{Binding Home}"
+                                Visibility="{Binding Workspace.SidebarCollapsed, Converter={StaticResource InvBoolToVisible}}"/>
+                    <GridSplitter x:Name="SidebarSplitter"
                                   Grid.Column="1"
                                   Width="4"
                                   HorizontalAlignment="Stretch"
@@ -154,17 +163,9 @@
                                   ResizeBehavior="PreviousAndNext"
                                   Background="{DynamicResource Brush.Border}"
                                   ShowsPreview="False"
-                                  Visibility="{Binding Home.SelectedRow,
-                                               RelativeSource={RelativeSource AncestorType=Window},
-                                               Converter={StaticResource NullToVisibility}}"
-                                  DragCompleted="OnHabitScreenSplitterDragCompleted"/>
-                    <vhs:HabitScreen x:Name="HabitScreenContent"
-                                     Grid.Column="2"
-                                     ClipToBounds="True"
-                                     DataContext="{Binding HabitScreen}"
-                                     Visibility="{Binding Home.SelectedRow,
-                                                  RelativeSource={RelativeSource AncestorType=Window},
-                                                  Converter={StaticResource NullToVisibility}}"/>
+                                  Visibility="{Binding Workspace.SidebarCollapsed, Converter={StaticResource InvBoolToVisible}}"
+                                  DragCompleted="OnSidebarSplitterDragCompleted"/>
+                    <vw:WorkspaceView Grid.Column="2" DataContext="{Binding Workspace}"/>
                 </Grid>
 
                 <v:ChartsView DataContext="{Binding Charts}"

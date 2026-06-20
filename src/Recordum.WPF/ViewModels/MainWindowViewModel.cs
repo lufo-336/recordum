@@ -13,12 +13,6 @@ namespace Recordum.WPF.ViewModels;
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-
-    internal const string HabitScreenWidthSettingKey = "ui.habit_screen_width";
-    internal const double DefaultHabitScreenWidth = 520d;
-    internal const double MinHabitScreenWidth = 360d;
-    internal const double MaxHabitScreenWidth = 1100d;
-
     private readonly IAppSettingService _appSettings;
     private readonly IExportDialogLauncher _exportLauncher;
     private readonly IBackupDialogLauncher _backupLauncher;
@@ -30,8 +24,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public TimerStatusBarViewModel TimerStatusBar { get; }
     public Charts.ChartsWorkspaceViewModel Charts { get; }
     public BackupHistoryViewModel BackupHistory { get; }
-
-    [ObservableProperty] private double _habitScreenWidth = DefaultHabitScreenWidth;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsHomeWorkspace))]
@@ -122,7 +114,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public async ValueTask InitializeAsync(CancellationToken ct = default)
     {
-        await LoadHabitScreenWidthAsync(ct).ConfigureAwait(true);
         await Home.LoadCommand.ExecuteAsync(null);
         // After Home.Rows is populated so the title resolver can name persisted subjects.
         await Workspace.RestoreStateAsync(ResolveTitle, ct).ConfigureAwait(true);
@@ -134,33 +125,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand]
     private static void Quit() => System.Windows.Application.Current?.Shutdown();
-
-    public async Task CommitHabitScreenWidthAsync(CancellationToken ct = default)
-    {
-        var clamped = Math.Clamp(HabitScreenWidth, MinHabitScreenWidth, MaxHabitScreenWidth);
-        if (Math.Abs(clamped - HabitScreenWidth) > 0.5)
-            HabitScreenWidth = clamped;
-        await _appSettings.SetAsync(
-            HabitScreenWidthSettingKey,
-            HabitScreenWidth.ToString("0.##", CultureInfo.InvariantCulture),
-            ct).ConfigureAwait(true);
-    }
-
-    private async ValueTask LoadHabitScreenWidthAsync(CancellationToken ct)
-        => HabitScreenWidth = await LoadWidthAsync(HabitScreenWidthSettingKey, DefaultHabitScreenWidth, MinHabitScreenWidth, MaxHabitScreenWidth, ct);
-
-    private async Task<double> LoadWidthAsync(string key, double @default, double min, double max, CancellationToken ct)
-    {
-        var raw = await _appSettings.GetAsync(key, ct).ConfigureAwait(true);
-        var value = @default;
-        if (raw is not null
-            && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
-            && double.IsFinite(parsed))
-        {
-            value = parsed;
-        }
-        return Math.Clamp(value, min, max);
-    }
 
     private async void OnHomePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
