@@ -41,6 +41,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>Raised when the user closes the last open view column (host deselects, spec §B.4).</summary>
     public event EventHandler? AllColumnsClosed;
 
+    /// <summary>Test seam: raise <see cref="AllColumnsClosed"/> from tests (the screen is concrete and
+    /// driving its columns to all-closed is awkward to set up).</summary>
+    internal void RaiseAllColumnsClosedForTest() => AllColumnsClosed?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Test seam: raise <see cref="ExportRequested"/> from tests.</summary>
+    internal void RaiseExportRequestedForTest() => ExportRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>The Configura column's editor; owned here so the column workspace and the host
     /// window share one instance (MainWindowViewModel.Editor is a passthrough).</summary>
     public HabitEditorViewModel Editor { get; }

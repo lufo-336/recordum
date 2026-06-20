@@ -251,4 +251,31 @@ public class WorkspaceViewModelTests
         firstScope.Disposed.Should().BeTrue();
         sut.Tabs.Should().ContainSingle();
     }
+
+    [Fact]
+    public async Task A_tabs_AllColumnsClosed_closes_that_tab()
+    {
+        var (sut, _, _) = WorkspaceViewModelFactory.CreateWithScreens();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", pin: true);
+        var tab = sut.Tabs[0];
+
+        tab.Screen.RaiseAllColumnsClosedForTest();
+
+        sut.Tabs.Should().BeEmpty();
+        sut.IsPanoramicaActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_tabs_ExportRequested_bubbles_up_with_the_subject_id()
+    {
+        var (sut, _, _) = WorkspaceViewModelFactory.CreateWithScreens();
+        var id = Guid.NewGuid();
+        await sut.OpenSubjectAsync(id, WorkspaceTabKind.Habit, "Corsa", pin: true);
+        Guid? exported = null;
+        sut.ExportRequested += (_, sid) => exported = sid;
+
+        sut.Tabs[0].Screen.RaiseExportRequestedForTest();
+
+        exported.Should().Be(id);
+    }
 }

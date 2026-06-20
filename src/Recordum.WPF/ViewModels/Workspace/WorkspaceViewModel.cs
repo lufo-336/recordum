@@ -27,6 +27,11 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
     public bool IsPanoramicaActive => ActiveSubjectTab is null;
 
+    /// <summary>Raised when a tab asks to export its subject (bubbled from the tab's screen).</summary>
+    public event EventHandler<Guid>? ExportRequested;
+    /// <summary>Raised when something inside a tab (e.g. a Panoramica child row) asks to open another subject.</summary>
+    public event EventHandler<Guid>? SubjectActivationRequested;
+
     public WorkspaceViewModel(ISubjectScreenFactory screenFactory, IAppSettingService appSettings)
     {
         ArgumentNullException.ThrowIfNull(screenFactory);
@@ -55,6 +60,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject
 
         var created = _screenFactory.Create();
         var tab = new SubjectTabViewModel(subjectId, kind, title, created.Screen, created.Scope, isPreview: !pin);
+        tab.AllColumnsClosed += (_, _) => CloseTab(tab);
+        tab.ExportRequested += (_, _) => ExportRequested?.Invoke(this, tab.SubjectId);
+        tab.ChildSelected += (_, id) => SubjectActivationRequested?.Invoke(this, id);
 
         var previewIdx = !pin && _previewTab is not null ? Tabs.IndexOf(_previewTab) : -1;
         if (previewIdx >= 0)

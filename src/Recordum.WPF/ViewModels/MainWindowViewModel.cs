@@ -75,6 +75,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
         Home.GroupCreated += OnHomeGroupCreated;
+        Workspace.ExportRequested += OnWorkspaceExportRequested;
+        Workspace.SubjectActivationRequested += async (_, id) =>
+        {
+            var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == id);
+            if (row is not null) await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name).ConfigureAwait(true);
+        };
     }
 
     [RelayCommand]
@@ -172,6 +178,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand]
     private async Task ExportLibraryAsync() => await _exportLauncher.ShowForLibraryAsync().ConfigureAwait(true);
+
+    // A tab asked to export its subject: resolve the display name from its Home row.
+    private async void OnWorkspaceExportRequested(object? sender, Guid subjectId)
+    {
+        var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == subjectId);
+        await _exportLauncher.ShowForHabitAsync(subjectId, row?.Name ?? string.Empty).ConfigureAwait(true);
+    }
 
     [RelayCommand]
     private async Task ShowDiagnosticInfoAsync() => await _settingsLauncher.ShowAsync(SettingsCategoryId.Diagnostics).ConfigureAwait(true);
