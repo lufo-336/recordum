@@ -54,6 +54,13 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
         if (tab is not null) CloseTab(tab);
     }
 
+    /// <summary>Ctrl+W: close the active tab (no-op on Panoramica).</summary>
+    [RelayCommand]
+    private void CloseActiveTab()
+    {
+        if (ActiveSubjectTab is { } t) CloseTab(t);
+    }
+
     /// <summary>Open a subject as a tab. Single open = a transient preview tab that the next single
     /// open replaces; <paramref name="pin"/> = a persistent tab. Re-opening an already-open subject
     /// just activates it (spec §3.3).</summary>

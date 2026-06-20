@@ -85,6 +85,8 @@
                     Command="{Binding ShowChartsCommand}"/>
         <KeyBinding Key="D5" Modifiers="Control"
                     Command="{Binding ShowBackupHistoryCommand}"/>
+        <KeyBinding Key="W" Modifiers="Control"
+                    Command="{Binding Workspace.CloseActiveTabCommand}"/>
     </Window.InputBindings>
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>

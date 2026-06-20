@@ -292,6 +292,20 @@ public class WorkspaceViewModelTests
     }
 
     [Fact]
+    public async Task CloseActiveTab_closes_the_active_tab()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "B", pin: true);
+        var active = sut.ActiveSubjectTab!;
+
+        sut.CloseActiveTabCommand.Execute(null);
+
+        sut.Tabs.Should().NotContain(active);
+        sut.Tabs.Should().ContainSingle();
+    }
+
+    [Fact]
     public void ToggleSidebar_flips_collapsed()
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();
