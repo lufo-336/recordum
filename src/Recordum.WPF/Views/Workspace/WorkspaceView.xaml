@@ -1,0 +1,110 @@
+<UserControl x:Class="Recordum.WPF.Views.Workspace.WorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:wsvm="clr-namespace:Recordum.WPF.ViewModels.Workspace"
+             xmlns:hsvm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen"
+             xmlns:vhs="clr-namespace:Recordum.WPF.Views.HabitScreen"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance wsvm:WorkspaceViewModel, IsDesignTimeCreatable=False}"
+             Background="{DynamicResource Brush.Surface}">
+    <UserControl.Resources>
+        <!-- Each tab hosts a full HabitScreen, reused verbatim from the single-screen design. -->
+        <DataTemplate DataType="{x:Type hsvm:HabitScreenViewModel}">
+            <vhs:HabitScreen/>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- Tab strip: a flat ListBox whose selection IS the active tab. Single-click activates
+             (native selection); double-click pins (code-behind). -->
+        <ListBox DockPanel.Dock="Top"
+                 x:Name="TabStrip"
+                 ItemsSource="{Binding Tabs}"
+                 SelectedItem="{Binding ActiveSubjectTab, Mode=TwoWay}"
+                 MouseDoubleClick="OnTabStripDoubleClick"
+                 Background="{DynamicResource Brush.Background}"
+                 BorderBrush="{DynamicResource Brush.Border}"
+                 BorderThickness="0,0,0,1"
+                 Padding="4,2"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0,0,2,0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border x:Name="Chrome"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="0,0,0,2"
+                                        Padding="10,5">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource Brush.Surface}"/>
+                                        <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type wsvm:SubjectTabViewModel}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Title}"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Brush.Text}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPreview}" Value="True">
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Button Content="✕"
+                                Margin="8,0,0,0"
+                                Padding="3,0"
+                                FontSize="11"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{DynamicResource Brush.TextMuted}"
+                                ToolTip="{x:Static res:Strings.Workspace_CloseTab}"
+                                Command="{Binding DataContext.CloseTabCmdCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                CommandParameter="{Binding}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Active content: the selected tab's HabitScreen, or an empty welcome panel. -->
+        <Grid>
+            <ContentControl Content="{Binding ActiveSubjectTab.Screen}"
+                            Visibility="{Binding IsPanoramicaActive, Converter={StaticResource InvBoolToVisible}}"/>
+            <TextBlock Text="{x:Static res:Strings.Workspace_Empty}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource Brush.TextMuted}"
+                       FontSize="14"
+                       Visibility="{Binding IsPanoramicaActive, Converter={StaticResource BoolToVisible}}"/>
+        </Grid>
+    </DockPanel>
+</UserControl>

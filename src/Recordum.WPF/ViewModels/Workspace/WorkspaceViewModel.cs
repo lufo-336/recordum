@@ -47,6 +47,13 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ToggleSidebar() => SidebarCollapsed = !SidebarCollapsed;
 
+    /// <summary>Parameterized wrapper so the tab strip's ✕ button can bind with a CommandParameter.</summary>
+    [RelayCommand]
+    private void CloseTabCmd(SubjectTabViewModel? tab)
+    {
+        if (tab is not null) CloseTab(tab);
+    }
+
     /// <summary>Open a subject as a tab. Single open = a transient preview tab that the next single
     /// open replaces; <paramref name="pin"/> = a persistent tab. Re-opening an already-open subject
     /// just activates it (spec §3.3).</summary>

@@ -280,6 +280,18 @@ public class WorkspaceViewModelTests
     }
 
     [Fact]
+    public async Task CloseTabCmd_command_removes_the_tab()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", pin: true);
+        var tab = sut.Tabs[0];
+
+        sut.CloseTabCmdCommand.Execute(tab);
+
+        sut.Tabs.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ToggleSidebar_flips_collapsed()
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();
