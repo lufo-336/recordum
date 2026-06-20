@@ -32,7 +32,11 @@ public sealed partial class HabitRecordsViewModel : ObservableObject
         _clock = clock;
     }
 
-    public void SetContext(Guid nodeId) => _nodeId = nodeId;
+    public void SetContext(Guid nodeId, bool isJournal)
+    {
+        _nodeId = nodeId;
+        Records.IsJournal = isJournal;
+    }
 
     /// <summary>Registra il giorno scelto sul calendario; ricarica la lista solo se si è in modalità Giorno.</summary>
     public async Task ShowDayAsync(DateOnly date, CancellationToken ct = default)

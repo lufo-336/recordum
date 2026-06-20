@@ -105,7 +105,8 @@
                                             Content="✎"
                                             Command="{Binding BeginEditCommand}"
                                             Width="28" Height="28"
-                                            Background="Transparent" BorderThickness="0"/>
+                                            Background="Transparent" BorderThickness="0"
+                                            Visibility="{Binding CanInlineEdit, Converter={StaticResource BoolToVisible}}"/>
                                     <Button Grid.Column="2"
                                             Content="✕"
                                             Command="{Binding DeleteCommand}"

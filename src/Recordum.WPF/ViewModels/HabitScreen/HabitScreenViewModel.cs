@@ -312,8 +312,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _appSettings = appSettings;
         Editor = editor;
         Availability = availability;
-        CompletionList = new CompletionListViewModel(completions, metrics, refData);
-        Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData), clock);
+        CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
+        Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
@@ -375,6 +375,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (node.NodeType == NodeType.Group)
             await Panoramica.LoadAsync(node, ct).ConfigureAwait(true);
 
+        // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
+        CompletionList.IsJournal = node.HabitType == HabitType.Journal;
+
         // Config is needed for both QuickAdd and TimerControl; fetch once, share.
         var configTask = _configs.GetAsync(node.Id, ct).AsTask();
         var listTask = CompletionList.LoadAsync(node.Id, ct);
@@ -395,7 +398,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
         DayNote.SetContext(node.Id, node.HabitType == HabitType.Journal);
-        Records.SetContext(node.Id);
+        Records.SetContext(node.Id, node.HabitType == HabitType.Journal);
         if (Calendar.SelectedDate is { } sel)
         {
             await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);

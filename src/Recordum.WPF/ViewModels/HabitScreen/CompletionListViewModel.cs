@@ -13,16 +13,23 @@ public sealed partial class CompletionListViewModel : ObservableObject
     private readonly ICompletionService _completions;
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
+    private readonly IDiaryService _diary;
 
     public Guid? NodeId { get; private set; }
     public ObservableCollection<CompletionRowViewModel> Rows { get; } = [];
     public int Take { get; init; } = 20;
 
-    public CompletionListViewModel(ICompletionService completions, IMetricDefinitionService metrics, IReferenceDataQueryService refData)
+    /// <summary>When true (journal habit), rows show the paired diary note body and delete the pair
+    /// via IDiaryService instead of the bare completion.</summary>
+    public bool IsJournal { get; set; }
+
+    public CompletionListViewModel(ICompletionService completions, IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData, IDiaryService diary)
     {
         _completions = completions;
         _metrics = metrics;
         _refData = refData;
+        _diary = diary;
     }
 
     public async Task LoadAsync(Guid habitNodeId, CancellationToken ct = default)
@@ -30,7 +37,7 @@ public sealed partial class CompletionListViewModel : ObservableObject
         NodeId = habitNodeId;
         var list = await _completions.ListByHabitAsync(habitNodeId, take: Take, ct: ct).ConfigureAwait(true);
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
-        Populate(list, lookup);
+        await PopulateAsync(list, lookup, ct).ConfigureAwait(true);
     }
 
     /// <summary>Loads the completions in [from, to] (inclusive; null bound = unbounded that side), each
@@ -42,20 +49,32 @@ public sealed partial class CompletionListViewModel : ObservableObject
         var toTs = to is { } t ? new DateTimeOffset(t.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero) : (DateTimeOffset?)null;
         var list = await _completions.ListByHabitAsync(habitNodeId, fromTs, toTs, ct: ct).ConfigureAwait(true);
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
-        Populate(list, lookup);
+        await PopulateAsync(list, lookup, ct).ConfigureAwait(true);
     }
 
     /// <summary>Loads the completions recorded on a single day. Thin wrapper over <see cref="LoadRangeAsync"/>.</summary>
     public Task LoadDayAsync(Guid habitNodeId, DateOnly date, CancellationToken ct = default)
         => LoadRangeAsync(habitNodeId, date, date, ct);
 
-    private void Populate(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup)
+    private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, CancellationToken ct)
     {
         Rows.Clear();
+        IReadOnlyDictionary<Guid, string> bodies = IsJournal
+            ? await _diary.GetEntryBodiesByCompletionsAsync(list.Select(c => c.Id).ToList(), ct).ConfigureAwait(true)
+            : new Dictionary<Guid, string>();
         foreach (var c in list.OrderByDescending(c => c.CompletedAtMs))
+        {
+            string? overrideNotes = IsJournal && bodies.TryGetValue(c.Id, out var body) ? body : null;
+            Func<Guid, CancellationToken, Task>? del = IsJournal
+                ? (id, token) => _diary.DeleteEntryAsync(id, token).AsTask()
+                : null;
             Rows.Add(new CompletionRowViewModel(c, _completions, c.Values,
                 onDeleted: row => Rows.Remove(row),
-                fieldDisplays: BuildFieldDisplays(c.Values, lookup)));
+                fieldDisplays: BuildFieldDisplays(c.Values, lookup),
+                overrideNotes: overrideNotes,
+                deleteOverride: del,
+                canInlineEdit: !IsJournal));
+        }
     }
 
     private async Task<Dictionary<Guid, MetricDisplay>> BuildLookupAsync(Guid habitNodeId, CancellationToken ct)

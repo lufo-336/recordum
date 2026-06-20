@@ -9,6 +9,8 @@ public sealed partial class CompletionRowViewModel : ObservableObject
 {
     private readonly ICompletionService _completions;
     private readonly Action<CompletionRowViewModel>? _onDeleted;
+    private readonly string? _overrideNotes;
+    private readonly Func<Guid, CancellationToken, Task>? _deleteOverride;
 
     public Completion Completion { get; }
     public IReadOnlyList<CompletionValue> Values { get; }
@@ -17,10 +19,13 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     public IReadOnlyList<string> FieldDisplays { get; }
     public bool HasFieldDisplays => FieldDisplays.Count > 0;
 
+    /// <summary>False for journal rows: the diary text is edited in the Note column, not inline here.</summary>
+    public bool CanInlineEdit { get; }
+
     public Guid Id => Completion.Id;
     public DateTime CompletedAt => Completion.CompletedAt;
     public bool IsRetroactive => Completion.IsRetroactive;
-    public string? Notes => Completion.Notes;
+    public string? Notes => _overrideNotes ?? Completion.Notes;
     public string Display => CompletedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
     [ObservableProperty] private bool _isEditing;
@@ -34,7 +39,10 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         ICompletionService completions,
         IReadOnlyList<CompletionValue>? values = null,
         Action<CompletionRowViewModel>? onDeleted = null,
-        IReadOnlyList<string>? fieldDisplays = null)
+        IReadOnlyList<string>? fieldDisplays = null,
+        string? overrideNotes = null,
+        Func<Guid, CancellationToken, Task>? deleteOverride = null,
+        bool canInlineEdit = true)
     {
         ArgumentNullException.ThrowIfNull(completion);
         ArgumentNullException.ThrowIfNull(completions);
@@ -43,6 +51,9 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         _onDeleted = onDeleted;
         Values = values ?? [];
         FieldDisplays = fieldDisplays ?? [];
+        _overrideNotes = overrideNotes;
+        _deleteOverride = deleteOverride;
+        CanInlineEdit = canInlineEdit;
         EditedNotes = completion.Notes;
         EditedDate = completion.CompletedAt;
     }
@@ -83,7 +94,10 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteAsync(CancellationToken ct)
     {
-        await _completions.DeleteAsync(Id, ct).ConfigureAwait(true);
+        if (_deleteOverride is not null)
+            await _deleteOverride(Id, ct).ConfigureAwait(true);
+        else
+            await _completions.DeleteAsync(Id, ct).ConfigureAwait(true);
         _onDeleted?.Invoke(this);
     }
 }

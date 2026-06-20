@@ -25,7 +25,7 @@ public class CompletionListViewModelTests
                 CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds(),
             };
         }
-        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
 
         await sut.LoadAsync(habitId);
 
@@ -40,7 +40,7 @@ public class CompletionListViewModelTests
         var habitId = Guid.NewGuid();
         var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 };
         cs.Store[c.Id] = c;
-        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
         await sut.LoadAsync(habitId);
 
         await sut.Rows[0].DeleteCommand.ExecuteAsync(null);
@@ -63,7 +63,7 @@ public class CompletionListViewModelTests
                 CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds(),
             };
         }
-        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
 
         await sut.LoadRangeAsync(habit, new DateOnly(2026, 6, 12), new DateOnly(2026, 6, 20));
 
@@ -86,7 +86,7 @@ public class CompletionListViewModelTests
                 CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds(),
             };
         }
-        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
 
         await sut.LoadRangeAsync(habit, null, null);
 
@@ -116,7 +116,7 @@ public class CompletionListViewModelTests
         var otherDay = new DateTime(2026, 5, 30, 9, 0, 0, DateTimeKind.Utc);
         cs.Store[Guid.NewGuid()] = new Completion { Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = otherDay, CompletedAtMs = new DateTimeOffset(otherDay).ToUnixTimeMilliseconds() };
 
-        var sut = new CompletionListViewModel(cs, ms, rd);
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, day);
 
         sut.Rows.Should().ContainSingle();
@@ -152,7 +152,7 @@ public class CompletionListViewModelTests
             },
         };
 
-        var sut = new CompletionListViewModel(cs, ms, rd);
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, day);
 
         var displays = sut.Rows.Single().FieldDisplays;
@@ -187,10 +187,54 @@ public class CompletionListViewModelTests
             Values = new List<CompletionValue> { new() { MetricDefinitionId = moodId, SeriesIndex = 0, ValueInteger = 1 } }, // index 1 = Neutral
         };
 
-        var sut = new CompletionListViewModel(cs, ms, rd);
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, day);
 
         sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Mood: Neutral");
+    }
+
+    [Fact]
+    public async Task Journal_rows_show_paired_note_body_and_hide_inline_edit()
+    {
+        var completions = new FakeCompletionService();
+        var diary = new FakeDiaryService();
+        var habitId = Guid.NewGuid();
+        // Pair a completion with a diary note via the fake's store.
+        var noteId = await diary.SaveEntryAsync(habitId, new DateOnly(2026, 6, 19), "diary body");
+        var completionId = diary.Notes[noteId].CompletionId!.Value;
+        completions.Store[completionId] = diary.Completions[completionId];
+
+        var sut = new CompletionListViewModel(completions, new FakeMetricDefinitionService(), new FakeReferenceData(), diary)
+        {
+            IsJournal = true,
+        };
+        await sut.LoadAsync(habitId);
+
+        var row = sut.Rows.Should().ContainSingle().Subject;
+        row.Notes.Should().Be("diary body");
+        row.CanInlineEdit.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Deleting_a_journal_row_routes_through_IDiaryService()
+    {
+        var completions = new FakeCompletionService();
+        var diary = new FakeDiaryService();
+        var habitId = Guid.NewGuid();
+        var noteId = await diary.SaveEntryAsync(habitId, new DateOnly(2026, 6, 19), "x");
+        var completionId = diary.Notes[noteId].CompletionId!.Value;
+        completions.Store[completionId] = diary.Completions[completionId];
+
+        var sut = new CompletionListViewModel(completions, new FakeMetricDefinitionService(), new FakeReferenceData(), diary)
+        {
+            IsJournal = true,
+        };
+        await sut.LoadAsync(habitId);
+        await sut.Rows.Single().DeleteCommand.ExecuteAsync(null);
+
+        diary.DeleteCalls.Should().Contain(completionId);
+        completions.DeleteCalls.Should().BeEmpty(); // not deleted directly
+        sut.Rows.Should().BeEmpty();
     }
 }
 

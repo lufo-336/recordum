@@ -13,9 +13,9 @@ public class HabitRecordsViewModelTests
     {
         var cs = new FakeCompletionService();
         var habit = Guid.NewGuid();
-        var list = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData());
+        var list = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
         var sut = new HabitRecordsViewModel(list, new FakeClock(now));
-        sut.SetContext(habit);
+        sut.SetContext(habit, isJournal: false);
         return (sut, cs, habit);
     }
 
