@@ -11,6 +11,7 @@ namespace Recordum.WPF.ViewModels.Workspace;
 public sealed partial class WorkspaceViewModel : ObservableObject
 {
     internal const double DefaultSidebarWidth = 280d;
+    internal const string StateSettingKey = "ui.workspace";
 
     private readonly Func<HabitScreenViewModel> _screenFactory;
     private readonly IAppSettingService _appSettings;
@@ -105,5 +106,40 @@ public sealed partial class WorkspaceViewModel : ObservableObject
         if (tab is null) return;
         tab.Pin();
         if (_previewTab == tab) _previewTab = null;
+    }
+
+    /// <summary>Persist the light session state (pinned tabs + active + sidebar) to <c>ui.workspace</c>.</summary>
+    public async Task SaveStateAsync(CancellationToken ct = default)
+    {
+        var state = new WorkspaceState
+        {
+            SidebarCollapsed = SidebarCollapsed,
+            SidebarWidth = SidebarWidth,
+            ActiveTabId = ActiveSubjectTab?.SubjectId.ToString() ?? WorkspaceState.PanoramicaId,
+            Tabs = Tabs.Where(t => !t.IsPreview)
+                       .Select(t => new WorkspaceTabState(t.SubjectId, t.Kind))
+                       .ToList(),
+        };
+        await _appSettings.SetAsync(StateSettingKey, state.ToJson(), ct).ConfigureAwait(true);
+    }
+
+    /// <summary>Reopen pinned tabs + active tab + sidebar from <c>ui.workspace</c>. <paramref name="titleResolver"/>
+    /// supplies a fresh title for each persisted subject (the workspace doesn't depend on the node service).
+    /// A stale legacy <c>ui.open_columns</c> value is never parsed.</summary>
+    public async Task RestoreStateAsync(Func<Guid, WorkspaceTabKind, string> titleResolver, CancellationToken ct = default)
+    {
+        var state = WorkspaceState.FromJson(await _appSettings.GetAsync(StateSettingKey, ct).ConfigureAwait(true));
+        if (state is null) return;
+
+        SidebarCollapsed = state.SidebarCollapsed;
+        if (state.SidebarWidth > 0) SidebarWidth = state.SidebarWidth;
+
+        foreach (var t in state.Tabs)
+            await OpenSubjectAsync(t.SubjectId, t.Kind, titleResolver(t.SubjectId, t.Kind), pin: true, ct).ConfigureAwait(true);
+
+        if (state.ActiveTabId == WorkspaceState.PanoramicaId || !Guid.TryParse(state.ActiveTabId, out var activeId))
+            ActivatePanoramica();
+        else
+            ActiveSubjectTab = Tabs.FirstOrDefault(t => t.SubjectId == activeId);
     }
 }

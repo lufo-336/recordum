@@ -158,4 +158,74 @@ public class WorkspaceViewModelTests
 
         sut.Tabs[0].IsPreview.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task SaveState_persists_only_pinned_tabs_plus_active_and_sidebar()
+    {
+        var (sut, settings) = WorkspaceViewModelFactory.Create();
+        var pinned = Guid.NewGuid();
+        await sut.OpenSubjectAsync(pinned, WorkspaceTabKind.Habit, "Corsa", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "preview"); // preview, must NOT persist
+        sut.ActivateTab(sut.Tabs.First(t => t.SubjectId == pinned));
+        sut.SidebarCollapsed = true;
+        sut.SidebarWidth = 240;
+
+        await sut.SaveStateAsync();
+
+        var json = await settings.GetAsync(WorkspaceViewModel.StateSettingKey);
+        var state = WorkspaceState.FromJson(json);
+        state!.Tabs.Should().ContainSingle();
+        state.Tabs[0].SubjectId.Should().Be(pinned);
+        state.ActiveTabId.Should().Be(pinned.ToString());
+        state.SidebarCollapsed.Should().BeTrue();
+        state.SidebarWidth.Should().Be(240);
+    }
+
+    [Fact]
+    public async Task SaveState_records_panoramica_when_no_subject_active()
+    {
+        var (sut, settings) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", pin: true);
+        sut.ActivatePanoramica();
+
+        await sut.SaveStateAsync();
+
+        var state = WorkspaceState.FromJson(await settings.GetAsync(WorkspaceViewModel.StateSettingKey));
+        state!.ActiveTabId.Should().Be(WorkspaceState.PanoramicaId);
+    }
+
+    [Fact]
+    public async Task RestoreState_reopens_pinned_tabs_and_active()
+    {
+        var (writer, settings) = WorkspaceViewModelFactory.Create();
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        await writer.OpenSubjectAsync(a, WorkspaceTabKind.Habit, "A", pin: true);
+        await writer.OpenSubjectAsync(b, WorkspaceTabKind.Group, "B", pin: true);
+        writer.ActivateTab(writer.Tabs.First(t => t.SubjectId == b));
+        await writer.SaveStateAsync();
+
+        // New VM over the SAME settings store.
+        Func<Recordum.WPF.ViewModels.HabitScreen.HabitScreenViewModel> factory =
+            () => HabitScreenViewModelFactory.Create().Vm;
+        var sut = new WorkspaceViewModel(factory, settings);
+
+        await sut.RestoreStateAsync((id, kind) => kind == WorkspaceTabKind.Group ? "B" : "A");
+
+        sut.Tabs.Select(t => t.SubjectId).Should().Equal(a, b);
+        sut.Tabs.Should().OnlyContain(t => !t.IsPreview);
+        sut.ActiveSubjectTab!.SubjectId.Should().Be(b);
+    }
+
+    [Fact]
+    public async Task RestoreState_ignores_a_stale_open_columns_value_and_defaults_clean()
+    {
+        var (sut, settings) = WorkspaceViewModelFactory.Create();
+        await settings.SetAsync("ui.open_columns", "Cronologia,Note"); // legacy key, must be ignored
+
+        await sut.RestoreStateAsync((id, kind) => "x");
+
+        sut.Tabs.Should().BeEmpty();
+        sut.IsPanoramicaActive.Should().BeTrue();
+    }
 }
