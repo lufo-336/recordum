@@ -84,23 +84,19 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task ShowHome_returns_to_the_full_width_tree()
+    public void ShowHome_on_the_home_workspace_toggles_the_sidebar()
     {
-        // Model A: ⌂ deactivates the active tab (Panoramica) and deselects → the tree fills the window.
-        var (sut, parts) = CreateSut();
-        var id = Guid.NewGuid();
-        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "yoga", Color = "#000000" };
-        parts.Query.HomeRows.Add(SampleRow(id, "yoga"));
-        await sut.InitializeAsync();
-        sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
-        await Task.Delay(30);
-        sut.Workspace.IsPanoramicaActive.Should().BeFalse();
+        // Model A: ⌂ on Home collapses/expands the tree sidebar so an open habit's columns + focus can
+        // fill the window. (Making the tree fill the window instead is via empty-click / closing tabs.)
+        var (sut, _) = CreateSut();
+        sut.IsHomeWorkspace.Should().BeTrue();
+        sut.Workspace.SidebarCollapsed.Should().BeFalse();
 
         sut.ShowHomeCommand.Execute(null);
+        sut.Workspace.SidebarCollapsed.Should().BeTrue();
 
-        sut.Workspace.IsPanoramicaActive.Should().BeTrue();
-        sut.Home.SelectedRow.Should().BeNull();
-        sut.IsHomeWorkspace.Should().BeTrue();
+        sut.ShowHomeCommand.Execute(null);
+        sut.Workspace.SidebarCollapsed.Should().BeFalse();
     }
 
     [Fact]

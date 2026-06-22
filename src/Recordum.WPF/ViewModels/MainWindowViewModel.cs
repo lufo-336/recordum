@@ -89,11 +89,16 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void ShowHome()
     {
-        // Model A: ⌂ returns to the full-width tree — switch to the Home workspace, deactivate any
-        // active subject tab (Panoramica), and deselect. Collapsing the sidebar lives on the title-bar ☰.
-        CurrentWorkspace = AppWorkspace.Home;
-        Workspace.ActivatePanoramica();
-        Home.SelectedRow = null;
+        // Model A: from Charts/Backup, ⌂ returns to the Home workspace. When already on Home it
+        // collapses/expands the tree sidebar, so an open habit's columns + focus can fill the window
+        // (collapse) and the sidebar comes back (expand). The title-bar ☰ does the same toggle.
+        // To make the *tree* fill the window instead, close the tab (✕ / Ctrl+W) or click empty tree space.
+        if (CurrentWorkspace != AppWorkspace.Home)
+        {
+            CurrentWorkspace = AppWorkspace.Home;
+            return;
+        }
+        Workspace.ToggleSidebar();
     }
 
     [RelayCommand]
