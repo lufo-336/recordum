@@ -6,6 +6,16 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Verifica visiva v1.0 — in attesa di resoconto utente (2026-06-19)
+
+App lanciata via skill `run` (build win-x64 verde). Aree da controllare a schermo, da consolidare nel "resoconto stato app" (agenda punto 3) e da triare contro i CR:
+1. **Grafici** — sappiamo rotti: sintomo esatto (errore / area vuota / crash) e in quale schermata.
+2. **Export** (PDF/HTML/Markdown/JSON/CSV) — parte? produce file leggibile?
+3. **Plugin** — qualcosa di visibile/funzionante?
+4. **Backup/Restore** — area dei findings gravi CR1–CR4; testare su dati di prova.
+5. **Basics**: 5 tipi habit, registrazione, calendario/heatmap, streak, gruppi, note.
+6. **UX/theming** — cosa non sembra "da v1.0".
+
 ## Code review 2026-06-19 — sottosistema 1: Data layer
 
 > Review mirata (multi-agente, recall-biased) sul codice scritto a mano in `src/Recordum.Data` (backup/restore, migrazioni, services) — diff `fase-4-polish` vs `main`, esclusi i file EF generati. Parte di un giro di review per sottosistema (ordine: 1. Data layer ✓ → 2. motore streak → builder/altri). Tutti `reported`, da triagiare/fixare.

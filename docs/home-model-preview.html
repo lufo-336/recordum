@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recordum — Modelli Home (anteprima)</title>
+<style>
+  :root{
+    --bg:#09090B; --surface:#18181B; --elev:#27272A; --border:#3F3F46;
+    --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA; --onaccent:#09090B;
+    --green:#4ADE80; --purple:#a855f7; --amber:#e0b341;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0c0c0e;color:var(--text);
+       font-family:'Segoe UI',Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;padding:28px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 24px;max-width:760px}
+  .model{margin:0 0 40px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+  .model > header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:12px}
+  .model > header h2{font-size:15px;margin:0}
+  .badge{font-size:11px;color:var(--onaccent);background:var(--accent);border-radius:5px;padding:2px 8px;font-weight:600}
+  .model > header .desc{color:var(--muted);font-size:13px}
+  .controls{padding:12px 18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);background:#141417}
+  .controls .lbl{color:var(--muted);font-size:12px;margin-right:4px}
+  button.ctl{background:var(--elev);color:var(--text);border:1px solid var(--border);border-radius:6px;
+             padding:6px 12px;font-size:12.5px;cursor:pointer}
+  button.ctl:hover{border-color:var(--accent)}
+  button.ctl.on{background:var(--accent);color:var(--onaccent);border-color:var(--accent);font-weight:600}
+  .state{color:var(--muted);font-size:12px;margin-left:auto;font-style:italic}
+
+  /* ---- window mock ---- */
+  .win{height:360px;display:flex;flex-direction:column;background:var(--bg)}
+  .titlebar{height:34px;flex:0 0 34px;background:var(--surface);border-bottom:1px solid var(--border);
+            display:flex;align-items:center;gap:10px;padding:0 6px}
+  .tb-btn{width:26px;height:24px;display:grid;place-items:center;color:var(--text);border-radius:4px;cursor:pointer}
+  .tb-btn:hover{background:var(--elev)}
+  .tb-btn.hl{box-shadow:0 0 0 1.5px var(--accent) inset;border-radius:5px}
+  .tb-title{color:var(--muted);font-weight:600;font-size:12px}
+  .tb-spacer{flex:1}
+  .tb-win{display:flex;gap:2px}
+  .tb-win span{width:34px;height:24px;display:grid;place-items:center;color:var(--muted)}
+  .body{flex:1;display:flex;min-height:0}
+  .rail{width:42px;flex:0 0 42px;background:var(--surface);border-right:1px solid var(--border);
+        display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:14px}
+  .rail .ic{width:20px;height:20px;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+  .rail .ic.active{color:var(--accent)}
+  .rail .ic.hl{box-shadow:0 0 0 1.5px var(--accent);border-radius:6px;padding:3px;width:auto;height:auto}
+
+  .content{flex:1;display:flex;min-width:0;position:relative}
+  /* sidebar / home */
+  .home{background:var(--bg);border-right:1px solid var(--border);overflow:hidden;
+        transition:width .28s ease, flex-basis .28s ease;display:flex;flex-direction:column}
+  .home-top{height:38px;flex:0 0 38px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border)}
+  .home-top .ht{font-weight:600;font-size:12.5px}
+  .pill{display:flex;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;margin-left:auto}
+  .pill span{font-size:10px;color:var(--muted);padding:2px 8px;border-radius:4px}
+  .pill span.on{background:var(--elev);color:var(--text)}
+  .tree{padding:8px;overflow:auto;flex:1}
+  .row{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:5px;font-size:12.5px;cursor:pointer}
+  .row:hover{background:var(--elev)}
+  .row.sel{background:var(--elev);box-shadow:0 0 0 1px var(--accent) inset}
+  .bar{width:3px;height:18px;border-radius:2px}
+  .row .ty{margin-left:auto;color:var(--muted);font-size:10.5px}
+  .grp{font-weight:600}
+  .indent{padding-left:22px}
+
+  .split{width:4px;background:var(--border);flex:0 0 4px;cursor:col-resize}
+  .split.hide{display:none}
+
+  /* workspace */
+  .ws{flex:1;min-width:0;background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+  .ws.zero{flex:0 0 0;width:0}
+  .tabstrip{height:32px;flex:0 0 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:4px;padding:0 6px;background:var(--bg)}
+  .tab{font-size:12px;padding:5px 10px;border-bottom:2px solid transparent;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .tab.act{color:var(--text);border-bottom-color:var(--accent);background:var(--surface)}
+  .tab .x{color:var(--muted)}
+  .panes{flex:1;display:flex;min-height:0}
+  .pane{border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0;flex:1;transition:flex .25s}
+  .pane:last-child{border-right:0}
+  .pane-h{height:28px;flex:0 0 28px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);font-weight:600}
+  .pane-h .exp{margin-left:auto;cursor:pointer;color:var(--muted)}
+  .pane-b{flex:1;padding:12px;color:var(--muted);font-size:12px;overflow:hidden}
+  .editor{border:1px solid var(--border);border-radius:6px;height:100%;background:var(--bg);padding:10px;color:var(--muted)}
+  .ws-empty{flex:1;display:grid;place-items:center;color:var(--muted);font-style:italic}
+  .note{padding:10px 18px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);background:#141417}
+  .key{color:var(--accent)}
+  code{background:var(--elev);padding:1px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>Recordum — tre modelli per la Home</h1>
+<p class="sub">Mockup interattivo (tema scuro reale). Usa i pulsanti sotto ogni modello per simulare:
+apertura di un habit, ritorno a vuoto, e collasso/espansione. Il pannello <b>✎ Diario</b> compare
+quando apri l'abitudine journal "Daily journal".</p>
+
+<!-- ============ MODEL A ============ -->
+<section class="model" id="A">
+  <header>
+    <span class="badge">Modello A</span>
+    <h2>Auto: piena ↔ sidebar</h2>
+    <span class="desc">Niente aperto → Home riempie. Apri un habit → Home si stringe a sidebar. Il tasto ⌂ collassa/espande.</span>
+  </header>
+  <div class="controls">
+    <span class="lbl">Prova:</span>
+    <button class="ctl" data-act="A-open">Apri "Daily journal"</button>
+    <button class="ctl" data-act="A-desel">Deseleziona (vuoto)</button>
+    <button class="ctl" data-act="A-collapse">⌂ Collassa / espandi sidebar</button>
+    <button class="ctl" data-act="A-focus">⤢ Focus sul Diario</button>
+    <span class="state" id="A-state">Stato: Home piena</span>
+  </div>
+  <div class="win" data-model="A"></div>
+  <div class="note">⌂ sul rail sinistro = collassa la sidebar a 0 (Home torna piena se non c'è tab; resta solo il workspace se un tab è aperto).
+    <span class="key">Deselezionare</span> riporta sempre la Home piena → niente più spazio nero.</div>
+</section>
+
+<!-- ============ MODEL B ============ -->
+<section class="model" id="B">
+  <header>
+    <span class="badge">Modello B</span>
+    <h2>Home sempre sidebar fissa</h2>
+    <span class="desc">La Home è sempre una colonna stretta a sinistra. Il workspace mostra la Panoramica o un habit. ☰ collassa la sidebar.</span>
+  </header>
+  <div class="controls">
+    <span class="lbl">Prova:</span>
+    <button class="ctl" data-act="B-open">Apri "Daily journal"</button>
+    <button class="ctl" data-act="B-pano">Torna a Panoramica</button>
+    <button class="ctl" data-act="B-collapse">☰ Collassa / espandi sidebar</button>
+    <button class="ctl" data-act="B-focus">⤢ Focus sul Diario</button>
+    <span class="state" id="B-state">Stato: Panoramica</span>
+  </div>
+  <div class="win" data-model="B"></div>
+  <div class="note">La sidebar non sparisce mai (salvo collasso esplicito ☰). Lo spazio a destra è <b>sempre</b> il workspace:
+    una "Panoramica" di default quando nessun habit è aperto (non più area nera).</div>
+</section>
+
+<!-- ============ MODEL C ============ -->
+<section class="model" id="C">
+  <header>
+    <span class="badge">Modello C</span>
+    <h2>Solo fix, modello attuale</h2>
+    <span class="desc">Comportamento di oggi (piena↔sidebar) ma reso affidabile: deselezionare riporta Home piena, niente larghezza sidebar "incastrata".</span>
+  </header>
+  <div class="controls">
+    <span class="lbl">Prova:</span>
+    <button class="ctl" data-act="C-open">Apri "Daily journal"</button>
+    <button class="ctl" data-act="C-desel">Deseleziona (vuoto)</button>
+    <button class="ctl" data-act="C-focus">⤢ Focus sul Diario</button>
+    <span class="state" id="C-state">Stato: Home piena</span>
+  </div>
+  <div class="win" data-model="C"></div>
+  <div class="note">Nessun nuovo affordance: solo il <span class="key">fix</span> dello spazio nero (deselezione → Home piena) + reset della larghezza sidebar persistita + i 2 crash del log.</div>
+</section>
+
+<script>
+const C = {
+  habits:[
+    {n:'Camminata', t:'azione', c:'var(--green)'},
+    {n:'Daily journal', t:'journal', c:'var(--accent)', journal:true},
+  ],
+  groups:[
+    {n:'Mente', c:'var(--purple)', kids:[
+      {n:'Diario', t:'journal', c:'var(--purple)', journal:true},
+      {n:'Lettura', t:'contatore', c:'var(--purple)'},
+    ]},
+    {n:'Salute', c:'#ef4444', kids:[
+      {n:'Acqua', t:'contatore', c:'var(--accent)'},
+      {n:'Mood', t:'stato', c:'var(--amber)'},
+    ]},
+  ]
+};
+
+// per-model state
+const S = {
+  A:{tab:null, collapsed:false, focus:false},
+  B:{tab:'pano', collapsed:false, focus:false},
+  C:{tab:null, focus:false},
+};
+
+function ico(d){return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`}
+const I={
+  home:ico('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>'),
+  chart:ico('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  menu:ico('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+  exp:ico('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'),
+};
+
+function treeHTML(selName){
+  let h=`<div class="home-top"><span class="ht">Recordum</span>
+    <div class="pill"><span class="on">Attive</span><span>Archiviate</span><span>Cestino</span></div></div><div class="tree">`;
+  for(const x of C.habits){
+    h+=row(x, selName);
+  }
+  for(const g of C.groups){
+    h+=`<div class="row grp"><span class="bar" style="background:${g.c}"></span>▾ ${g.n}<span class="ty">${g.kids.length} abitudini</span></div>`;
+    for(const k of g.kids) h+=row(k, selName, true);
+  }
+  h+=`</div>`;
+  return h;
+}
+function row(x, selName, ind){
+  const sel = x.n===selName?' sel':'';
+  return `<div class="row${sel}${ind?' indent':''}"><span class="bar" style="background:${x.c}"></span>${x.n}<span class="ty">${x.t}</span></div>`;
+}
+
+function paneHTML(title, body, focusBtn){
+  return `<div class="pane"><div class="pane-h">${title}${focusBtn?'<span class="exp">⤢</span>':''}</div><div class="pane-b">${body}</div></div>`;
+}
+function journalPanes(focus){
+  const diario = `<div class="pane" style="flex:${focus?3:1.4}"><div class="pane-h">✎ Diario <span class="exp">${focus?'⤡':'⤢'}</span></div>`+
+    `<div class="pane-b"><div class="editor">Scrivi la voce di diario di oggi…<br><br>Markdown a tutta altezza —<br>in focus (⤢) diventa la superficie ampia.</div></div></div>`;
+  if(focus) return diario;
+  return diario + paneHTML('Cronologia','📅 calendario + lista voci') + paneHTML('Dettaglio','heatmap · streak');
+}
+
+function workspaceHTML(model){
+  const st=S[model];
+  // determine active subject
+  let activeName = (st.tab && st.tab!=='pano') ? st.tab : null;
+  let strip='';
+  if(model==='B'){
+    strip=`<div class="tabstrip">
+      <div class="tab ${st.tab==='pano'?'act':''}">Panoramica</div>
+      ${st.tab && st.tab!=='pano' ? `<div class="tab act">${st.tab} <span class="x">✕</span></div>`:''}
+    </div>`;
+  } else {
+    strip = activeName ? `<div class="tabstrip"><div class="tab act">${activeName} <span class="x">✕</span></div></div>` : '';
+  }
+  let body;
+  if(activeName){
+    body=`<div class="panes">${journalPanes(st.focus)}</div>`;
+  } else if(model==='B'){
+    body=`<div class="pane-b" style="flex:1"><b style="color:var(--text)">Panoramica</b><br>rollup di oggi · prossime · streak<br><br><span style="color:var(--muted)">(vista di default quando nessun habit è aperto)</span></div>`;
+  } else {
+    body=`<div class="ws-empty">— nessun habit aperto —</div>`;
+  }
+  return strip+body;
+}
+
+function render(model){
+  const win=document.querySelector(`.win[data-model="${model}"]`);
+  const st=S[model];
+  const homeFull = (model==='A'||model==='C') && !(st.tab && st.tab!=='pano');
+  const homeCollapsed = st.collapsed;
+  let homeBasis, wsZero=false, splitHide=false;
+
+  if(model==='B'){
+    homeBasis = homeCollapsed ? '0px' : '220px';
+    splitHide = homeCollapsed;
+  } else {
+    if(homeFull){ homeBasis = homeCollapsed ? '0px' : '100%'; wsZero=true; splitHide=true; }
+    else { homeBasis = homeCollapsed ? '0px' : '230px'; splitHide=homeCollapsed; }
+    if(homeFull && homeCollapsed){ wsZero=true; } // nothing to show
+  }
+  const selName = (st.tab && st.tab!=='pano') ? st.tab : null;
+  const homeHLrail = (model==='A'); // ⌂ acts as collapse in A
+
+  win.innerHTML=`
+    <div class="titlebar">
+      <div class="tb-btn ${model==='B'&&false?'hl':''}">${I.menu}</div>
+      <span class="tb-title">Recordum</span>
+      <div class="tb-spacer"></div>
+      <div class="tb-win"><span>—</span><span>▢</span><span>✕</span></div>
+    </div>
+    <div class="body">
+      <div class="rail">
+        <div class="ic active ${homeHLrail?'hl':''}" title="Home">${I.home}</div>
+        <div class="ic">${I.chart}</div>
+      </div>
+      <div class="content">
+        <div class="home" style="flex:0 0 ${homeBasis}; ${homeBasis==='100%'?'flex:1 1 auto;':''}">${treeHTML(selName)}</div>
+        <div class="split ${splitHide?'hide':''}"></div>
+        <div class="ws ${wsZero?'zero':''}">${workspaceHTML(model)}</div>
+      </div>
+    </div>`;
+}
+
+function setState(model){
+  const st=S[model]; const el=document.getElementById(model+'-state'); let s;
+  if(model==='B'){
+    s = st.collapsed ? 'sidebar collassata' : (st.tab==='pano'?'Panoramica':`habit "${st.tab}"`);
+    if(st.focus && st.tab && st.tab!=='pano') s+=' · focus Diario';
+  }else{
+    const open = st.tab && st.tab!=='pano';
+    s = st.collapsed ? 'sidebar collassata' : (open?`habit "${st.tab}" + sidebar`:'Home piena');
+    if(st.focus && open) s+=' · focus Diario';
+  }
+  el.textContent='Stato: '+s;
+}
+
+document.querySelectorAll('button.ctl').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const [m,act]=b.dataset.act.split('-');
+    const st=S[m];
+    if(act==='open'){ st.tab='Daily journal'; st.focus=false; if(m==='A'||m==='C') st.collapsed=false; }
+    if(act==='desel'){ st.tab=null; st.focus=false; st.collapsed=false; }
+    if(act==='pano'){ st.tab='pano'; st.focus=false; }
+    if(act==='collapse'){ st.collapsed=!st.collapsed; }
+    if(act==='focus'){ if(st.tab&&st.tab!=='pano') st.focus=!st.focus; }
+    render(m); setState(m);
+    b.classList.toggle('on', (act==='collapse'&&st.collapsed)||(act==='focus'&&st.focus));
+  });
+});
+
+['A','B','C'].forEach(m=>{render(m);setState(m);});
+</script>
+</body>
+</html>
