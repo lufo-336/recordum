@@ -162,7 +162,8 @@
                         </ColumnDefinition>
                         <ColumnDefinition Width="Auto"/>
                         <!-- Workspace (tab bar + content): hidden (0) when no subject tab so Home gets all the room. -->
-                        <ColumnDefinition Width="{Binding Workspace.IsPanoramicaActive, Converter={StaticResource OpenColumnWidth}, ConverterParameter=Invert}"/>
+                        <ColumnDefinition x:Name="WorkspaceColumn"
+                                          Width="{Binding Workspace.IsPanoramicaActive, Converter={StaticResource OpenColumnWidth}, ConverterParameter=Invert}"/>
                     </Grid.ColumnDefinitions>
                     <v:HomeView Grid.Column="0" DataContext="{Binding Home}" ClipToBounds="True"/>
                     <GridSplitter x:Name="SidebarSplitter"

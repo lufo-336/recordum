@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using Recordum.WPF.Controls;
@@ -14,6 +15,14 @@ namespace Recordum.WPF;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
+
+    // The two workspace columns whose Width is bound to VM state. A GridSplitter drag with
+    // ResizeBehavior=PreviousAndNext writes ColumnDefinition.Width as a LOCAL value, which in WPF
+    // permanently replaces (kills) the binding. After that, returning to the panoramica state can't
+    // re-collapse the columns and the Home stops filling the window. We capture both bindings on load
+    // and re-apply them after every drag so VM state stays the source of truth.
+    private MultiBinding? _sidebarColumnWidthBinding;
+    private BindingBase? _workspaceColumnWidthBinding;
 
     public MainWindow(MainWindowViewModel viewModel)
     {
@@ -45,7 +54,28 @@ public partial class MainWindow : Window
         => (Math.Min(desiredWidth, workAreaWidth), Math.Min(desiredHeight, workAreaHeight));
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
-        => await _viewModel.InitializeAsync().ConfigureAwait(true);
+    {
+        CaptureColumnWidthBindings();
+        await _viewModel.InitializeAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Snapshots the original Width bindings of the two splitter-adjacent columns so a drag
+    /// (which clobbers them with a local value) can be undone via <see cref="ReapplyColumnWidthBindings"/>.</summary>
+    private void CaptureColumnWidthBindings()
+    {
+        _sidebarColumnWidthBinding ??=
+            BindingOperations.GetMultiBindingExpression(SidebarColumn, ColumnDefinition.WidthProperty)?.ParentMultiBinding;
+        _workspaceColumnWidthBinding ??=
+            BindingOperations.GetBindingExpression(WorkspaceColumn, ColumnDefinition.WidthProperty)?.ParentBinding;
+    }
+
+    private void ReapplyColumnWidthBindings()
+    {
+        if (_sidebarColumnWidthBinding is not null)
+            BindingOperations.SetBinding(SidebarColumn, ColumnDefinition.WidthProperty, _sidebarColumnWidthBinding);
+        if (_workspaceColumnWidthBinding is not null)
+            BindingOperations.SetBinding(WorkspaceColumn, ColumnDefinition.WidthProperty, _workspaceColumnWidthBinding);
+    }
 
     // ---- custom title bar (WindowChrome) ----
 
@@ -103,7 +133,11 @@ public partial class MainWindow : Window
 
     private async void OnSidebarSplitterDragCompleted(object sender, DragCompletedEventArgs e)
     {
+        // Read the rendered width BEFORE re-applying the binding (the drag left it as a local value),
+        // push it to the VM, then restore the bindings so VM state drives the columns again. Without
+        // the restore, the dragged local Width persists and the Home never re-fills on panoramica.
         _viewModel.Workspace.SidebarWidth = Math.Clamp(SidebarColumn.ActualWidth, 0, 460);
+        ReapplyColumnWidthBindings();
         await _viewModel.Workspace.SaveStateAsync().ConfigureAwait(true);
     }
 }
