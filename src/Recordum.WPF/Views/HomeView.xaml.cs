@@ -44,10 +44,11 @@ public partial class HomeView : UserControl
             return;
         }
 
-        // Clicking empty space inside the tree region deselects, collapsing the workspace/editor
-        // columns. Scoped to the tree so clicks on the top bar / filter row don't deselect.
-        if (home.SelectedRow is not null && IsDescendantOf(source, TreeRegion))
-            home.SelectRowCommand.Execute(null);
+        // Clicking empty space inside the tree region returns to the full-width Home (Model A):
+        // deselect + deactivate the active tab. Fires even with no row selected (a tab can be active
+        // while SelectedRow is null). Scoped to the tree so top-bar / filter-row clicks don't trigger.
+        if (IsDescendantOf(source, TreeRegion))
+            home.ClickBackground();
     }
 
     // Right-click on a row OUTSIDE the selection collapses the selection to that row, like

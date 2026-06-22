@@ -67,6 +67,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
         Home.GroupCreated += OnHomeGroupCreated;
+        // Empty-click in the tree → full-width Home, even when SelectedRow is already null (a tab can be
+        // active without a tree selection): the SelectedRow setter wouldn't notify, so deactivate here.
+        Home.BackgroundClicked += (_, _) => Workspace.ActivatePanoramica();
         Workspace.ExportRequested += OnWorkspaceExportRequested;
         Workspace.SubjectActivationRequested += async (_, id) =>
         {
@@ -86,15 +89,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void ShowHome()
     {
-        // Model A: ⌂ when already on Home collapses/expands the tree sidebar (so an open habit can use
-        // the full width); the title-bar ☰ does the same. From Charts/Backup it just returns to Home.
-        // Back to a clean full-width tree is via empty-click in the tree or closing the tabs.
-        if (CurrentWorkspace == AppWorkspace.Home)
-        {
-            Workspace.ToggleSidebar();
-            return;
-        }
+        // Model A: ⌂ returns to the full-width tree — switch to the Home workspace, deactivate any
+        // active subject tab (Panoramica), and deselect. Collapsing the sidebar lives on the title-bar ☰.
         CurrentWorkspace = AppWorkspace.Home;
+        Workspace.ActivatePanoramica();
+        Home.SelectedRow = null;
     }
 
     [RelayCommand]

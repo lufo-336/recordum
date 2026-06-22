@@ -355,6 +355,18 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
     /// <summary>Raised after a group is created via the ＋New menu (host opens Configura for rename).</summary>
     public event EventHandler<Guid>? GroupCreated;
 
+    /// <summary>Empty-space click in the tree: ask the host to return to the full-width Home (Model A).</summary>
+    public event EventHandler? BackgroundClicked;
+
+    /// <summary>Empty-space click in the tree (Model A): deselect any row AND signal a return to the
+    /// full-width Home. Fires even when no row is selected — tabs are independent of the tree selection,
+    /// so a tab can be active with <see cref="SelectedRow"/> already null (re-activated from the strip).</summary>
+    public void ClickBackground()
+    {
+        SelectedRow = null;
+        BackgroundClicked?.Invoke(this, EventArgs.Empty);
+    }
+
     private void OnRowQuickActionExecuted(object? sender, QuickActionExecutedEventArgs e)
     {
         // recorded == true: the completion fires a bus event that refreshes the list

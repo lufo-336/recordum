@@ -84,19 +84,47 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void ShowHome_on_the_home_workspace_toggles_the_sidebar()
+    public async Task ShowHome_returns_to_the_full_width_tree()
     {
-        // Model A: the ⌂ ribbon button, when Home is already the active workspace, collapses/expands
-        // the tree sidebar (so an open habit can use the full width). It does not deselect.
-        var (sut, _) = CreateSut();
+        // Model A: ⌂ deactivates the active tab (Panoramica) and deselects → the tree fills the window.
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "yoga", Color = "#000000" };
+        parts.Query.HomeRows.Add(SampleRow(id, "yoga"));
+        await sut.InitializeAsync();
+        sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
+        await Task.Delay(30);
+        sut.Workspace.IsPanoramicaActive.Should().BeFalse();
+
+        sut.ShowHomeCommand.Execute(null);
+
+        sut.Workspace.IsPanoramicaActive.Should().BeTrue();
+        sut.Home.SelectedRow.Should().BeNull();
         sut.IsHomeWorkspace.Should().BeTrue();
-        sut.Workspace.SidebarCollapsed.Should().BeFalse();
+    }
 
-        sut.ShowHomeCommand.Execute(null);
-        sut.Workspace.SidebarCollapsed.Should().BeTrue();
+    [Fact]
+    public async Task Tree_background_click_returns_to_full_home_even_with_no_row_selected()
+    {
+        // The bug: a tab re-activated from the strip leaves SelectedRow null, so setting it null again
+        // wouldn't notify. ClickBackground must still return to the full-width Home.
+        var (sut, parts) = CreateSut();
+        var id = Guid.NewGuid();
+        parts.Nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "yoga", Color = "#000000" };
+        parts.Query.HomeRows.Add(SampleRow(id, "yoga"));
+        await sut.InitializeAsync();
+        sut.Home.SelectRowCommand.Execute(sut.Home.Rows.First());
+        await Task.Delay(30);
+        sut.Workspace.PinActiveTab();
+        sut.Home.SelectRowCommand.Execute(null);   // deselect → Panoramica, tab stays pinned
+        await Task.Delay(30);
+        sut.Workspace.ActivateTab(sut.Workspace.Tabs[0]);   // re-activate from the strip; SelectedRow stays null
+        sut.Workspace.IsPanoramicaActive.Should().BeFalse();
+        sut.Home.SelectedRow.Should().BeNull();
 
-        sut.ShowHomeCommand.Execute(null);
-        sut.Workspace.SidebarCollapsed.Should().BeFalse();
+        sut.Home.ClickBackground();
+
+        sut.Workspace.IsPanoramicaActive.Should().BeTrue();
     }
 
     [Fact]
