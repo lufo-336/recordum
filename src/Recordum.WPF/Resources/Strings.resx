@@ -548,6 +548,9 @@ Details: {0}</value>
   <data name="HabitScreen.Column.Cronologia" xml:space="preserve">
     <value>Log</value>
   </data>
+  <data name="HabitScreen.Column.Diario" xml:space="preserve">
+    <value>✎ Diary</value>
+  </data>
   <data name="HabitScreen.Column.Panoramica" xml:space="preserve">
     <value>Overview</value>
   </data>

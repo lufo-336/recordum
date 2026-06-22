@@ -48,6 +48,7 @@ public static class Strings
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");
     public static string HabitScreen_Tab_Abitudine => Get("HabitScreen.Tab.Abitudine");
     public static string HabitScreen_Column_Cronologia => Get("HabitScreen.Column.Cronologia");
+    public static string HabitScreen_Column_Diario => Get("HabitScreen.Column.Diario");
     public static string HabitScreen_Column_Panoramica => Get("HabitScreen.Column.Panoramica");
     public static string HabitScreen_Panoramica_Today => Get("HabitScreen.Panoramica.Today");
     public static string HabitScreen_Panoramica_Empty => Get("HabitScreen.Panoramica.Empty");

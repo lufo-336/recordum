@@ -503,6 +503,36 @@
             </StackPanel>
         </DataTemplate>
 
+        <!-- Dedicated ✎ Diario pane (spec §3.5): same journal VM as the quick-add, but the markdown editor
+             fills the pane so focus mode (⤢) becomes a wide writing surface. Keyed (not via the selector)
+             and bound only from the Diario host's QuickAddForDiario, so the WebView2 editor instantiates once. -->
+        <DataTemplate x:Key="JournalDiarioTemplate" DataType="{x:Type qa:JournalQuickAddViewModel}">
+            <DockPanel Margin="12">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Text}"
+                               Text="{Binding CompletionDate, StringFormat=d}"/>
+                </Grid>
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,6,0,0"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+                <Button DockPanel.Dock="Bottom" Margin="0,8,0,0"
+                        Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                        Command="{Binding SaveCommand}"
+                        HorizontalAlignment="Left" Padding="12,6"/>
+                <ctrl:MarkdownEditorControl Markdown="{Binding Notes, Mode=TwoWay}"
+                                            Availability="{Binding DataContext.Availability,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"/>
+            </DockPanel>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vmn:NotesViewModel}">
             <v:NotesTabView/>
         </DataTemplate>
@@ -766,6 +796,10 @@
                           Content="{x:Static res:Strings.HabitScreen_Column_Panoramica}"
                           IsChecked="{Binding IsPanoramicaOpen}"
                           Visibility="{Binding IsGroupNode, Converter={StaticResource BoolToVisible}}"/>
+                <CheckBox Style="{StaticResource Recordum.SegmentCheck}" Margin="0,0,4,0"
+                          Content="{x:Static res:Strings.HabitScreen_Column_Diario}"
+                          IsChecked="{Binding IsDiarioOpen}"
+                          Visibility="{Binding IsJournal, Converter={StaticResource BoolToVisible}}"/>
                 <CheckBox Style="{StaticResource Recordum.SegmentCheck}"
                           Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
                           IsChecked="{Binding IsCronologiaOpen}"
@@ -789,6 +823,8 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{Binding ShowPanoramica, Converter={StaticResource OpenColumnWidth}}"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="{Binding ShowDiario, Converter={StaticResource OpenColumnWidth}}"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="{Binding ShowCronologia, Converter={StaticResource OpenColumnWidth}}"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="{Binding ShowDettaglio, Converter={StaticResource OpenColumnWidth}}"/>
@@ -798,11 +834,12 @@
                     <ColumnDefinition Width="{Binding ShowConfigura, Converter={StaticResource OpenColumnWidth}}"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Panoramica|Diario: mutually exclusive subject types, so never both visible. -->
                 <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                               ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
-                            <Binding Path="ShowPanoramica"/><Binding Path="ShowCronologia"/>
+                            <Binding Path="ShowPanoramica"/><Binding Path="ShowDiario"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
@@ -810,7 +847,7 @@
                               ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
-                            <Binding Path="ShowCronologia"/><Binding Path="ShowDettaglio"/>
+                            <Binding Path="ShowDiario"/><Binding Path="ShowCronologia"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
@@ -818,11 +855,19 @@
                               ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
-                            <Binding Path="ShowDettaglio"/><Binding Path="ShowNote"/>
+                            <Binding Path="ShowCronologia"/><Binding Path="ShowDettaglio"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
                 <GridSplitter Grid.Column="7" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                    <GridSplitter.Visibility>
+                        <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                            <Binding Path="ShowDettaglio"/><Binding Path="ShowNote"/>
+                        </MultiBinding>
+                    </GridSplitter.Visibility>
+                </GridSplitter>
+                <GridSplitter Grid.Column="9" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                               ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
@@ -921,8 +966,30 @@
                         </Grid>
                     </Border>
 
-                    <!-- Cronologia -->
+                    <!-- ✎ Diario (journal-only writing surface, spec §3.5). The editor is hosted only here
+                         via QuickAddForDiario (null for non-journal), so WebView2 instantiates once. -->
                     <Border Grid.Column="2" Style="{StaticResource HabitScreen.Column}"
+                            Visibility="{Binding ShowDiario, Converter={StaticResource BoolToVisible}}">
+                        <Grid>
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Top" Style="{StaticResource HabitScreen.ColumnHeader}">
+                                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Diario}" Style="{StaticResource HabitScreen.ColumnTitle}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnFocus}"
+                                            ToolTip="{x:Static res:Strings.HabitScreen_Focus}"
+                                            Command="{Binding ToggleFocusCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Diario}"/>
+                                    <Button Style="{StaticResource HabitScreen.ColumnClose}"
+                                            Command="{Binding ToggleColumnCommand}"
+                                            CommandParameter="{x:Static vm:HabitColumn.Diario}"/>
+                                </Grid>
+                                <ContentControl Content="{Binding QuickAddForDiario}"
+                                                ContentTemplate="{StaticResource JournalDiarioTemplate}"/>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Cronologia -->
+                    <Border Grid.Column="4" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowCronologia, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -939,7 +1006,9 @@
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel>
                                         <cal:CalendarNavigator DataContext="{Binding Calendar}"/>
-                                        <ContentControl Content="{Binding QuickAdd}"
+                                        <!-- Journal habits write in the ✎ Diario pane; here Cronologia stays
+                                             calendar + list only (QuickAddForCronologia is null for journals). -->
+                                        <ContentControl Content="{Binding QuickAddForCronologia}"
                                                         ContentTemplateSelector="{StaticResource QuickAddSelector}"/>
                                         <ContentControl Content="{Binding TimerControl}"/>
                                         <v:DayNoteView DataContext="{Binding DayNote}"/>
@@ -990,7 +1059,7 @@
                     </Border>
 
                     <!-- Dettaglio -->
-                    <Border Grid.Column="4" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="6" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowDettaglio, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -1010,7 +1079,7 @@
                     </Border>
 
                     <!-- Note -->
-                    <Border Grid.Column="6" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="8" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowNote, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -1030,7 +1099,7 @@
                     </Border>
 
                     <!-- Configura (the habit editor) -->
-                    <Border Grid.Column="8" Style="{StaticResource HabitScreen.Column}"
+                    <Border Grid.Column="10" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowConfigura, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
