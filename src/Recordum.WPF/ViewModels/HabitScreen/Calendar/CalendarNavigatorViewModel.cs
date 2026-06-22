@@ -290,9 +290,11 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     }
 
     /// <summary>Reloads the current month (bound to the jump dropdowns). No-op while a load is already in flight,
-    /// which prevents a reentrant loop when LoadAsync mutates DisplayMonth/DisplayYear (TwoWay-bound to the ComboBoxes).</summary>
+    /// which prevents a reentrant loop when LoadAsync mutates DisplayMonth/DisplayYear (TwoWay-bound to the ComboBoxes).
+    /// Also a no-op before the first <see cref="LoadAsync"/> (DisplayMonth still 0): completion/note events can fire
+    /// this on a tab whose calendar hasn't loaded yet, and BuildMonthGrid(0,0) would throw.</summary>
     public Task JumpAsync(CancellationToken ct = default)
-        => _isLoading ? Task.CompletedTask : ReloadAsync(ct);
+        => _isLoading || DisplayMonth == 0 ? Task.CompletedTask : ReloadAsync(ct);
 
     [RelayCommand]
     private void SelectDate(CalendarDayCellViewModel? cell)

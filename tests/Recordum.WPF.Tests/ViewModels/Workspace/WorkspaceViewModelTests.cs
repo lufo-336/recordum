@@ -216,6 +216,19 @@ public class WorkspaceViewModelTests
     }
 
     [Fact]
+    public async Task RestoreState_clamps_an_oversized_persisted_sidebar_width()
+    {
+        var settings = new FakeAppSettingService();
+        var state = new WorkspaceState { SidebarWidth = 900, ActiveTabId = WorkspaceState.PanoramicaId };
+        await settings.SetAsync(WorkspaceViewModel.StateSettingKey, state.ToJson());
+        var sut = new WorkspaceViewModel(new FakeSubjectScreenFactory(), settings);
+
+        await sut.RestoreStateAsync((id, kind) => "x");
+
+        sut.SidebarWidth.Should().Be(WorkspaceViewModel.MaxSidebarWidth);
+    }
+
+    [Fact]
     public async Task RestoreState_emits_no_saves_while_restoring()
     {
         // Persist a pinned tab + sidebar state into a store.
@@ -251,6 +264,21 @@ public class WorkspaceViewModelTests
 
         sut.Tabs.Should().BeEmpty();
         sut.IsPanoramicaActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveState_after_Dispose_is_suppressed()
+    {
+        // At shutdown Dispose() clears Tabs, firing the host's CollectionChanged → SaveStateAsync.
+        // By then the DI scope (and its DbContext) is disposed, so the save must be a no-op.
+        var (sut, settings, _) = WorkspaceViewModelFactory.CreateWithScreens();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa", pin: true);
+        var writesBeforeDispose = settings.SetCount;
+
+        sut.Dispose();
+        await sut.SaveStateAsync();
+
+        settings.SetCount.Should().Be(writesBeforeDispose);
     }
 
     [Fact]

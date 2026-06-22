@@ -11,6 +11,7 @@ namespace Recordum.WPF.ViewModels.Workspace;
 public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
 {
     internal const double DefaultSidebarWidth = 280d;
+    internal const double MaxSidebarWidth = 460d;   // matches the drag clamp in MainWindow.OnSidebarSplitterDragCompleted
     internal const string StateSettingKey = "ui.workspace";
 
     private readonly ISubjectScreenFactory _screenFactory;
@@ -18,6 +19,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private SubjectTabViewModel? _previewTab;
     private bool _restoring;
+    private bool _disposed;
 
     public ObservableCollection<SubjectTabViewModel> Tabs { get; } = [];
 
@@ -46,8 +48,10 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     /// <summary>Make the Panoramica the active view (no subject tab selected).</summary>
     public void ActivatePanoramica() => ActiveSubjectTab = null;
 
+    /// <summary>Collapse/expand the tree sidebar. Bound to the title-bar ☰ and the ⌂ ribbon button
+    /// (the latter via <c>MainWindowViewModel.ShowHome</c>), so it is public, not just a command.</summary>
     [RelayCommand]
-    private void ToggleSidebar() => SidebarCollapsed = !SidebarCollapsed;
+    public void ToggleSidebar() => SidebarCollapsed = !SidebarCollapsed;
 
     /// <summary>Parameterized wrapper so the tab strip's ✕ button can bind with a CommandParameter.</summary>
     [RelayCommand]
@@ -167,7 +171,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     /// a gate so two near-simultaneous changes can't both INSERT a not-yet-existing key (UNIQUE violation).</summary>
     public async Task SaveStateAsync(CancellationToken ct = default)
     {
-        if (_restoring) return;
+        // Suppressed during restore (replay == persisted state) and after Dispose: shutdown clears Tabs,
+        // firing the host's CollectionChanged → here, but the DI scope/DbContext is already disposed.
+        if (_restoring || _disposed) return;
         var state = new WorkspaceState
         {
             SidebarCollapsed = SidebarCollapsed,
@@ -201,7 +207,9 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
         try
         {
             SidebarCollapsed = state.SidebarCollapsed;
-            if (state.SidebarWidth > 0) SidebarWidth = state.SidebarWidth;
+            // Clamp a previously-persisted width to the drag max: an older session could have stored a
+            // huge value that would make the tree sidebar swallow the window (the "black space" report).
+            if (state.SidebarWidth > 0) SidebarWidth = Math.Min(state.SidebarWidth, MaxSidebarWidth);
 
             foreach (var t in state.Tabs)
                 await OpenSubjectAsync(t.SubjectId, t.Kind, titleResolver(t.SubjectId, t.Kind), pin: true, ct).ConfigureAwait(true);
@@ -220,6 +228,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     /// <summary>Dispose every open tab's DI scope (app shutdown). Plan 1 deferred this here.</summary>
     public void Dispose()
     {
+        _disposed = true;   // set before clearing Tabs: the CollectionChanged → SaveStateAsync must no-op
         foreach (var tab in Tabs) tab.Dispose();
         Tabs.Clear();
         _saveGate.Dispose();

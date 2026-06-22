@@ -86,11 +86,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void ShowHome()
     {
+        // Model A: ⌂ when already on Home collapses/expands the tree sidebar (so an open habit can use
+        // the full width); the title-bar ☰ does the same. From Charts/Backup it just returns to Home.
+        // Back to a clean full-width tree is via empty-click in the tree or closing the tabs.
+        if (CurrentWorkspace == AppWorkspace.Home)
+        {
+            Workspace.ToggleSidebar();
+            return;
+        }
         CurrentWorkspace = AppWorkspace.Home;
-        // Clicking "Home" returns to a clean tree: deselecting closes the open habit
-        // workspace + editor columns (their visibility/width track SelectedRow). Without
-        // this, the only way to collapse them was to bounce through Archived/Trash.
-        Home.SelectedRow = null;
     }
 
     [RelayCommand]

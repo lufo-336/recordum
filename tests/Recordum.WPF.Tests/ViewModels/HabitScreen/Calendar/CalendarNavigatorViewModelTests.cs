@@ -29,6 +29,19 @@ public class CalendarNavigatorViewModelTests
     }
 
     [Fact]
+    public async Task JumpAsync_before_LoadAsync_is_a_safe_noop()
+    {
+        // Completion/note events can fire JumpAsync on a tab whose calendar hasn't loaded yet
+        // (DisplayYear/Month still 0). BuildMonthGrid(0,0) would throw "un-representable DateTime".
+        var sut = NewSut(out _);
+
+        var act = async () => await sut.JumpAsync();
+
+        await act.Should().NotThrowAsync();
+        sut.Cells.Should().BeEmpty();   // no grid built before an explicit LoadAsync
+    }
+
+    [Fact]
     public async Task LoadAsync_flags_today_and_future()
     {
         var sut = NewSut(out _);
