@@ -142,23 +142,33 @@
                                           Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="Left"
                                           VerticalAlignment="Center"/>
+                        <!-- Same floating-panel language as the context menus: rounded, soft shadow.
+                             The transparent outer margin gives the shadow bleed room; the Popup
+                             offsets cancel it so the panel still sits flush under the box (~2px gap). -->
                         <Popup x:Name="Popup"
                                Placement="Bottom"
+                               HorizontalOffset="-6" VerticalOffset="-4"
                                IsOpen="{TemplateBinding IsDropDownOpen}"
                                AllowsTransparency="True"
                                Focusable="False"
                                PopupAnimation="Slide">
-                            <Border x:Name="DropDownBorder"
-                                    MinWidth="{Binding ActualWidth, ElementName=ToggleButton}"
-                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
-                                    Background="{DynamicResource Brush.SurfaceElevated}"
-                                    BorderBrush="{DynamicResource Brush.Border}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Margin="0,2,0,0">
-                                <ScrollViewer>
-                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
-                                </ScrollViewer>
+                            <Border Margin="6" Background="Transparent">
+                                <Border x:Name="DropDownBorder"
+                                        MinWidth="{Binding ActualWidth, ElementName=ToggleButton}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Background="{DynamicResource Brush.SurfaceElevated}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="4">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000" Opacity="0.20" BlurRadius="18"
+                                                          ShadowDepth="3" Direction="270"/>
+                                    </Border.Effect>
+                                    <ScrollViewer>
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
                             </Border>
                         </Popup>
                     </Grid>
@@ -176,20 +186,26 @@
     <Style TargetType="{x:Type ComboBoxItem}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Padding" Value="8,5"/>
+        <Setter Property="Padding" Value="8,6"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ComboBoxItem}">
-                    <Border x:Name="Bd"
-                            Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter/>
-                    </Border>
+                    <!-- Rounded row with the same soft accent-tint hover as a menu item; the tint is a
+                         separate layer so the label stays crisp. The current value keeps a faint tint. -->
+                    <Grid>
+                        <Border x:Name="Tint" CornerRadius="5" Background="{DynamicResource Brush.Accent}" Opacity="0"/>
+                        <Border x:Name="Bd" CornerRadius="5" Background="Transparent"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter/>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Tint" Property="Opacity" Value="0.08"/>
+                        </Trigger>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.Border}"/>
+                            <Setter TargetName="Tint" Property="Opacity" Value="0.14"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

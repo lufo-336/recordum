@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — anteprima ComboBox dropdown</title>
+<style>
+  :root{ --font:"Palatino Linotype","Book Antiqua",Georgia,serif; }
+  .light{ --bg:#FFFFFF; --surface:#F7F7F8; --elevated:#FFFFFF; --border:#E4E4E7; --text:#18181B; --muted:#71717A; --accent:#3B82F6; }
+  .dark { --bg:#18181B; --surface:#27272A; --elevated:#27272A; --border:#3F3F46; --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:#0b0b0d;color:#e4e4e7;
+       display:flex;gap:46px;flex-wrap:wrap;justify-content:center;padding:48px 24px 80px}
+  .stage{display:flex;flex-direction:column;gap:16px;align-items:center}
+  .stage h2{font:600 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin:0}
+  .canvas{width:300px;background:var(--bg);border:1px solid var(--border);border-radius:14px;
+          padding:34px 30px 90px;display:flex;flex-direction:column;align-items:center}
+  /* closed combobox */
+  .combo{width:200px;height:32px;display:flex;align-items:center;justify-content:space-between;
+         padding:0 10px;background:var(--elevated);border:1px solid var(--border);border-radius:4px;
+         color:var(--text);font-size:14px}
+  .combo .chev{width:9px;height:9px}
+  .combo .chev path{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  /* open dropdown — floating panel matching the menus */
+  .menu{width:200px;margin-top:2px;background:var(--elevated);border:1px solid var(--border);
+        border-radius:8px;padding:4px;box-shadow:0 3px 18px rgba(0,0,0,.20);color:var(--text);font-size:14px}
+  .opt{position:relative;border-radius:5px;padding:6px 8px;cursor:default}
+  .opt.sel{background:color-mix(in srgb, var(--accent) 8%, transparent)}
+  .opt.hover{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  .note{max-width:300px;font:400 13px/1.55 system-ui;color:#9ca3af;text-align:center}
+  /* before */
+  .oldmenu{width:200px;margin-top:2px;background:#fff;border:1px solid #b9b9b9;color:#111;font:14px "Segoe UI",sans-serif}
+  .oldmenu .o{padding:5px 8px}
+  .oldmenu .o.h{background:#cfe5ff}
+</style>
+</head>
+<body>
+
+  <div class="stage light">
+    <h2>Dopo — Light</h2>
+    <div class="canvas">
+      <div class="combo">Settimana
+        <svg class="chev" viewBox="0 0 9 9"><path d="M1,3 L4.5,6.5 L8,3"/></svg></div>
+      <div class="menu">
+        <div class="opt">Giorno</div>
+        <div class="opt sel">Settimana</div>
+        <div class="opt hover">Mese</div>
+        <div class="opt">Anno</div>
+        <div class="opt">Personalizzato</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage dark">
+    <h2>Dopo — Dark</h2>
+    <div class="canvas">
+      <div class="combo">Mese
+        <svg class="chev" viewBox="0 0 9 9"><path d="M1,3 L4.5,6.5 L8,3"/></svg></div>
+      <div class="menu">
+        <div class="opt">Giorno</div>
+        <div class="opt">Settimana</div>
+        <div class="opt sel">Mese</div>
+        <div class="opt hover">Anno</div>
+        <div class="opt">Personalizzato</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <h2>Prima</h2>
+    <div class="canvas" style="--bg:#deded6;--border:#b8b8b8;--text:#222;--elevated:#fff;--muted:#555">
+      <div class="combo">Settimana
+        <svg class="chev" viewBox="0 0 9 9"><path d="M1,3 L4.5,6.5 L8,3"/></svg></div>
+      <div class="oldmenu">
+        <div class="o">Giorno</div>
+        <div class="o">Settimana</div>
+        <div class="o h">Mese</div>
+        <div class="o">Anno</div>
+      </div>
+    </div>
+    <p class="note">Prima: pannello piatto raggio 4, niente ombra, hover grigio pieno.
+       Ora: stessa famiglia dei menù — raggio 8, ombra morbida, hover accento 14%,
+       valore corrente con tinta tenue.</p>
+  </div>
+
+</body>
+</html>
