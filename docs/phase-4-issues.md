@@ -80,6 +80,11 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
 - **Fix** (`HabitScreen.xaml`): i 5 `GridSplitter` tra le colonne erano barre **piene 4px `Brush.Border`** (grigie, pesanti, sempre visibili). Nuovo stile condiviso `HabitScreen.ColumnSplitter`: area di presa 7px **trasparente** a riposo (resta visibile solo la hairline 1px del bordo colonna), una sottile **barra accento 2px** che compare al 50% su hover e va piena durante il drag, cursore `SizeWE`. Stesso linguaggio del thumb dello slider. Anteprima `docs/column-splitter-preview.html`.
 
+### R-emptyState — stati vuoti con icona + titolo (compile-only)
+- **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
+- **Fix**: gli empty-state erano **una sola riga grigia** al 60% opacità. **`EmptyState.xaml`** (Home) ora è una composizione centrata **icona line + titolo**, con icona e testo per-tab via DataTrigger su `ActiveTab`: Attive → `Icon.Sprout` ("pianta un seme"), Archiviate → `Icon.Moon`, Cestino → `Icon.Sparkles`. **`WorkspaceView.xaml`** welcome allineato allo stesso pattern (`Icon.BookOpen` + testo). Nessuna nuova stringa (riuso `Home_Empty_*` / `Workspace_Empty`). Anteprima `docs/empty-state-preview.html`.
+- **Possibile next**: una CTA "Nuova abitudine" nell'empty-state Attive (richiede un command nel Home VM raggiungibile da qui) — non incluso per ora.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---

@@ -148,6 +148,7 @@ Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegu
 - [ ] **R-columnScroll** (ibrido fill-then-scroll): apri **1–2 colonne** → riempiono il tab senza spazio vuoto a destra; apri **molte** (Cronologia+Dettaglio+Note+Configura…) → quando non ci stanno parte lo **scroll orizzontale**, ogni colonna resta ≥320 (non si schiaccia). Lo scroll è liscio (trackpad / Shift+rotella). I GridSplitter tra colonne ridimensionano ancora. Rif: `docs/column-scroll-preview.html`.
 - [ ] **R-tooltip**: passa sopra un pulsante con tooltip (es. ⌂ sidebar, Backup) → riquadro **arrotondato con ombra** (non più rettangolo squadrato), angoli trasparenti puliti. Light+dark. Rif: `docs/tooltip-preview.html`.
 - [ ] **R-columnSplitter**: con 2+ colonne aperte, il divisore a riposo è solo la **hairline** (non più la barra grigia 4px); passandoci sopra compare una **barra accento** sottile, piena mentre trascini; il resize funziona ancora. Rif: `docs/column-splitter-preview.html`.
+- [ ] **R-emptyState**: Home senza abitudini (Attive/Archiviate/Cestino) → **icona line + titolo** centrati, icona diversa per tab (Sprout/Moon/Sparkles); workspace senza tab → BookOpen + testo. Light+dark. Rif: `docs/empty-state-preview.html`.
 
 **Altro:**
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).

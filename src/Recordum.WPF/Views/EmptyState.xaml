@@ -3,23 +3,44 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels">
-    <TextBlock HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               Opacity="0.6"
-               FontSize="{StaticResource FontSize.Body}"
-               Foreground="{DynamicResource Brush.TextMuted}">
-        <TextBlock.Style>
-            <Style TargetType="TextBlock">
-                <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Active}"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Archived}">
-                        <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Archived}"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Trash}">
-                        <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Trash}"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </TextBlock.Style>
-    </TextBlock>
+    <!-- A centered icon + line, instead of a single faint grey sentence. Icon and text both vary
+         by the active Home tab (an empty Active list = a seedling to plant; Archived = dormant;
+         Trash = clean). "An empty screen is an invitation to act." -->
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="320" Margin="24">
+        <Path Width="46" Height="46" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,16"
+              Opacity="0.45"
+              Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.4"
+              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round">
+            <Path.Style>
+                <Style TargetType="Path">
+                    <Setter Property="Data" Value="{StaticResource Icon.Sprout}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Archived}">
+                            <Setter Property="Data" Value="{StaticResource Icon.Moon}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Trash}">
+                            <Setter Property="Data" Value="{StaticResource Icon.Sparkles}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Path.Style>
+        </Path>
+        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                   FontSize="{StaticResource FontSize.Heading}"
+                   Foreground="{DynamicResource Brush.TextMuted}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Active}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Archived}">
+                            <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Archived}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Trash}">
+                            <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Trash}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+    </StackPanel>
 </UserControl>

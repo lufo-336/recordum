@@ -126,11 +126,18 @@
         <Grid>
             <ContentControl Content="{Binding ActiveSubjectTab.Screen}"
                             Visibility="{Binding IsPanoramicaActive, Converter={StaticResource InvBoolToVisible}}"/>
-            <TextBlock Text="{x:Static res:Strings.Workspace_Empty}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{DynamicResource Brush.TextMuted}"
-                       FontSize="14"
-                       Visibility="{Binding IsPanoramicaActive, Converter={StaticResource BoolToVisible}}"/>
+            <!-- Welcome panel: icon + line, same composition as the Home empty state. -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="320" Margin="24"
+                        Visibility="{Binding IsPanoramicaActive, Converter={StaticResource BoolToVisible}}">
+                <Path Width="46" Height="46" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,16"
+                      Opacity="0.45" Data="{StaticResource Icon.BookOpen}"
+                      Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.4"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                <TextBlock Text="{x:Static res:Strings.Workspace_Empty}"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           FontSize="{StaticResource FontSize.Heading}"/>
+            </StackPanel>
         </Grid>
     </DockPanel>
 </UserControl>
