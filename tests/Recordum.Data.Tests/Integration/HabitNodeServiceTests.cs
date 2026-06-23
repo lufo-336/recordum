@@ -208,4 +208,16 @@ public class HabitNodeServiceTests
         await Assert.ThrowsAsync<CyclicHabitNodeMoveException>(() =>
             svc.MoveAndReorderAsync(root, child, anchorSiblingId: null, placeAfter: false).AsTask());
     }
+
+    [Fact]
+    public async Task Reorder_into_missing_parent_throws_HabitNodeNotFoundException()
+    {
+        // Locks the shared reparent validation (CR10): a non-existent new parent is rejected
+        // identically to MoveAsync.
+        await using var fx = new DbFixture();
+        var svc = Svc(fx);
+        var leaf = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "leaf" });
+        await Assert.ThrowsAsync<HabitNodeNotFoundException>(() =>
+            svc.MoveAndReorderAsync(leaf, Guid.NewGuid(), anchorSiblingId: null, placeAfter: false).AsTask());
+    }
 }

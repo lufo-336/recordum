@@ -169,7 +169,10 @@ public sealed class SchedulingAwareStreakAggregator(
         HabitNode habitNode, DateOnly fromDate, DateOnly toDate, CancellationToken ct)
     {
         var createdDate = DateOnly.FromDateTime(habitNode.CreatedAt);
-        var start = fromDate < createdDate ? createdDate : fromDate;
+        // Abstinence runs are anchored at creation, never at the query window: a fromDate after the
+        // last lapse must not truncate the current run's length (CR11). Compute over the full life,
+        // then filter the returned runs to those intersecting [fromDate, toDate] below.
+        var start = createdDate;
         if (start > toDate) return Array.Empty<StreakRun>();
 
         var heatmap = await completions.GetHeatmapAsync(habitNode.Id, start, toDate, ct).ConfigureAwait(false);
@@ -208,7 +211,9 @@ public sealed class SchedulingAwareStreakAggregator(
             var isCurrent = runEnd >= today.AddDays(-1);
             runs.Add(new StreakRun(rsFinal, runEnd, length, isCurrent, 0, null));
         }
-        return runs;
+        // Keep only runs that reach into the requested window; the current/overlapping run still
+        // carries its true full length computed above (CR11).
+        return runs.Where(r => r.End >= fromDate).ToList();
     }
 
     private static WeeklyPeriodState? BuildWeekState(

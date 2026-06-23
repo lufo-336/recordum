@@ -31,6 +31,17 @@ Sessione svolta da Mac (vincoli e checklist di verifica VM: `docs/dev-environmen
 
 **Anteprime browser** (per giudicare il look lato Mac, non sono UI spedita): `docs/editor-theme-preview.html`, `docs/font-preview.html`, `docs/diario-ui-preview.html`.
 
+### Continuazione 2026-06-23 (da Mac) — chiusi CR5, CR10, CR11; CR8 triato→VM
+
+Sessione da Mac (VM non accessibile). Triage dei CR Data-layer: **i numeri di riga di CR5–CR24 sono stale** (review pre-refactor; es. `HabitTemplateService` ora 263 righe non 1349) — corretti man mano. **Scoperta**: lo schema reale a HEAD è **2.11** (`NoteCategoryV211`, 2026-06-19), non 2.10 — CLAUDE.md §1 va aggiornata (note v2.11: colonne `category`/`completion_id` su `notes`, check `ck_note_category`).
+
+- **CR5** `fixed` (Data verificato osx-arm64 + WPF compila; **resa WPF da verificare a vista VM**).
+- **CR10** `fixed` (refactor `ValidateAndReparentAsync`, 19/19 verdi).
+- **CR11** `fixed` (ancoraggio a `createdDate` + filtro `End>=fromDate`; 7/7 verdi). Si è rivelato **non solo latente**: tocca `ExportQueryService.BuildSummaryAsync`.
+- **CR8** `triaged`→**VM**: il fix richiede rigenerare il ModelSnapshot (`dotnet ef`, non su Mac); impatto runtime zero.
+
+Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Windows-only, `PlatformNotSupportedException`, pre-esistenti). Aree toccate tutte verdi. **Da fare sulla VM**: suite Data completa (incl. i 17), verifica visiva CR5, + CR8 (snapshot). Non ancora committato.
+
 ---
 
 ## Code review 2026-06-19 — sottosistema 1: Data layer
@@ -62,8 +73,9 @@ Sessione svolta da Mac (vincoli e checklist di verifica VM: `docs/dev-environmen
 - **Cosa**: `tempPlainDb` è copia in chiaro dell'intero DB in `%TEMP%`; rimosso con `File.Delete` (solo unlink). `BackupService` usa `ShredDirectory`, il restore no → DB decifrato forense-recuperabile dopo ogni ripristino. Usare lo stesso shred del backup.
 
 ### CR5. State con valore 0 sparisce dal calendario (falsy-zero)
-- **Stato**: `reported` · gravità **media (correttezza dati)**
-- **Dove**: `src/Recordum.Data/Services/CompletionService.cs:222` (logica 213-222)
+- **Stato**: `fixed` (2026-06-23 cont.) — **verifica visiva VM** (parte WPF) · gravità **media (correttezza dati)**
+- **Fix**: cross-layer. **Data** (`CompletionService.GetDailyMagnitudeAsync`): rimosso il filtro `if (mag > 0)` — ogni gruppo deriva da una registrazione reale, quindi il giorno è sempre riportato (no-op per Counter/Resistance floor-1 e Action/Journal Count≥1; sblocca State a valore 0). Test `Magnitude_state_includes_zero_valued_day` verde (osx-arm64). **WPF** (`HabitScreenViewModel`): `TintStepFor`/`NumberFor` ricevono ora un flag `hasCompletion` (presenza in `magByDate`) distinto dal valore → un giorno State registrato a 0 prende lo step di tinta minimo e mostra il numero "0"; un giorno con sola nota resta senza tinta. `PushDaySummaryAsync` usa la presenza (`dayMag is not null`) invece di `mag > 0`. **Compila su Mac**; resa da verificare a vista sulla VM (scelta design: cella State-0 = tinta presenza minima + numero "0").
+- **Dove**: `src/Recordum.Data/Services/CompletionService.cs` (`GetDailyMagnitudeAsync`, ex riga 222) · `src/Recordum.WPF/ViewModels/HabitScreen/HabitScreenViewModel.cs` (`TintStepFor`/`NumberFor`/`PushDaySummaryAsync`)
 - **Cosa**: `GetDailyMagnitudeAsync` per `HabitType.State` usa il valore numerico della metrica primaria, poi `if (mag > 0) result.Add(...)`. Con una scala **0-based** (es. NRS dolore, valore più basso = 0) il giorno dà `mag=0` ed è escluso → cella calendario vuota pur con registrazione. Counter/Resistance hanno floor `Math.Max(1,…)`, Action/Journal `Count()≥1`; solo State è vulnerabile. Distinguere "nessuna registrazione" da "valore 0".
 
 ### CR6. CounterReclassV210 riclassifica resistance a metriche miste
@@ -76,10 +88,10 @@ Sessione svolta da Mac (vincoli e checklist di verifica VM: `docs/dev-environmen
 - **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs:1287`
 - **Cosa**: `MaterializeMetricsSegmentsGoalAsync` apre un context per i lookup, poi `metrics.CreateAsync` per ogni metrica (ciascuna apre+salva il suo context), poi context per i segmenti, poi `goals.CreateAsync`. Ogni apertura ri-esegue `PRAGMA key` → stesso hazard SQLITE_BUSY già noto. `ComposedHabitService` lo fa in singola transazione: replicare quel pattern.
 
-### CR8. Seed `schema_version = "2.9"` stale rispetto a 2.10
-- **Stato**: `reported` · gravità **bassa**
-- **Dove**: `src/Recordum.Data/SeedData/AppSettingSeed.cs:925`
-- **Cosa**: il seed dice 2.9, la migrazione HEAD bumpa a 2.10. Valore morto/fuorviante; allinearlo a 2.10 come i bump precedenti.
+### CR8. Seed `schema_version = "2.9"` stale rispetto a HEAD (2.11)
+- **Stato**: `triaged` — **rimandato alla VM** (serve `dotnet ef`) · gravità **bassa**
+- **Dove**: `src/Recordum.Data/SeedData/AppSettingSeed.cs:31` (era indicato `:925`, riga stale)
+- **Triage 2026-06-23 cont.**: il valore `2.9` è in `HasData` → finisce nel **ModelSnapshot** (`RecordumDbContextModelSnapshot.cs:262`). `InitialSchema` semina `2.3` (riga 678); fu bumpato a `2.9` con `NoteHistoryV29` ma `CounterReclassV210`/`NoteCategoryV211` hanno bumpato solo via `UpdateData`, lasciando il costante a `2.9` mentre **HEAD reale è 2.11** (`NoteCategoryV211`, non 2.10 come dice CR/CLAUDE.md). **Impatto runtime = zero**: il guard CR2 legge lo `schema_version` reale dal DB vivo. Allinearlo richiede rigenerare lo snapshot (`dotnet ef migrations add`), non installato su Mac e file sotto guardrail → **da fare sulla VM**.
 
 ### CR9. Stringa "Goal" hardcoded (viola regola .resx)
 - **Stato**: `reported` · gravità **bassa (convenzioni)**
@@ -87,17 +99,20 @@ Sessione svolta da Mac (vincoli e checklist di verifica VM: `docs/dev-environmen
 - **Cosa**: `Name = payload.Node?.Name ?? "Goal"`. CLAUDE.md §8: «Stringhe utente in .resx … Niente hardcoded.» Default non localizzabile.
 
 ### CR10. `MoveAndReorderAsync` duplica la validazione di `MoveAsync`
-- **Stato**: `reported` · gravità **bassa (manutenibilità)**
-- **Dove**: `src/Recordum.Data/Services/HabitNodeService.cs:1217`
+- **Stato**: `fixed` (2026-06-23 cont.) — verificato (osx-arm64) · gravità **bassa (manutenibilità)**
+- **Fix**: estratto `private static ValidateAndReparentAsync(db, id, newParentId, ct)` che carica il nodo, rifiuta i soft-deleted, valida ciclo + parent-existence e riassegna `ParentId`, ritornando il nodo tracciato così `MoveAndReorderAsync` continua col riordino. Aggiunto test di regressione `Reorder_into_missing_parent_throws_HabitNodeNotFoundException`. `HabitNodeServiceTests` 19/19 verdi.
+- **Dove**: `src/Recordum.Data/Services/HabitNodeService.cs` (`MoveAsync`/`MoveAndReorderAsync`/`ValidateAndReparentAsync`; era indicato `:1217`, riga stale)
 - **Cosa**: cycle-check + parent-existence copiati verbatim da `MoveAsync`. Un futuro fix va fatto in due punti o divergono. Estrarre helper condiviso `ValidateAndReparentAsync`.
 
 ### Sottosistema 2 — motore streak (delta astinenza). Esito: solido, 2 note minori
 > Delta `fase-4-polish` (il core schedule×mode×recovery è in `main`, già rivisto a M3.8). Verificato OK: ordinamento ricaduta più recente (`OrderByDescending(CompletedAtMs)`), storia piena in `allTime`, coerenza UTC, `DurationFormat.TryParse` robusto. Nessun bug bloccante.
 
-### CR11. Streak astinenza: `length` del run corrente troncato alla finestra di query (latente)
-- **Stato**: `reported` · gravità **bassa (latente)**
-- **Dove**: `src/Recordum.Data/Services/Aggregators/SchedulingAwareStreakAggregator.cs:186` (`ComputeAbstinenceAsync`)
-- **Cosa**: se chiamato con `fromDate` dopo l'ultima ricaduta, `length` conta solo dentro [start,toDate]. Nessun chiamante attuale lo colpisce (la VM usa storia piena da `createdDate`), ma un futuro chiamante con finestra stretta avrebbe una streak corrente sbagliata. Calcolare il `length` dall'ultima ricaduta reale.
+### CR11. Streak astinenza: `length` del run corrente troncato alla finestra di query
+- **Stato**: `fixed` (2026-06-23 cont.) — verificato (osx-arm64) · gravità **bassa** *(non solo latente: tocca l'export)*
+- **Fix**: `ComputeAbstinenceAsync` ancora ora il conteggio dei giorni puliti a `createdDate` (la `fromDate` non tronca più la run corrente), poi filtra le run restituite a quelle con `End >= fromDate` — i caller con finestra non vedono run antiche chiuse, ma la run corrente/sovrapposta porta la lunghezza vera. Test `Current_run_length_counts_from_the_real_last_lapse_not_the_query_window` verde; `AbstinenceStreakTests` 7/7.
+- **Nota triage**: **non del tutto latente** — `ExportQueryService.BuildSummaryAsync` calcola `current = runs.First(IsCurrent).Length` da `GetHistoryAsync(request.From,…)`, quindi un export Resistance su finestra recente troncava la streak corrente. `StreakSummaryViewModel` invece passa `createdDate` (nessun cambio di comportamento per lui).
+- **Dove**: `src/Recordum.Data/Services/Aggregators/SchedulingAwareStreakAggregator.cs` (`ComputeAbstinenceAsync`; era indicato `:186`, riga stale)
+- **Cosa**: se chiamato con `fromDate` dopo l'ultima ricaduta, `length` conta solo dentro [start,toDate]. Calcolare il `length` dall'ultima ricaduta reale.
 
 ### CR12. `CurrentLength` numerico stale subito dopo una ricaduta in giornata (cosmetico)
 - **Stato**: `reported` · gravità **bassa (cosmetico)**

@@ -595,28 +595,37 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var days = new List<CalendarDayMarker>();
         foreach (var date in magByDate.Keys.Union(noteByDate.Keys).Distinct())
         {
-            var mag = magByDate.TryGetValue(date, out var mv) ? mv : 0m;
+            // Presence in magByDate = a real completion that day. Kept distinct from the magnitude
+            // value so a State day on a 0-based scale (mag == 0) still renders as recorded (CR5),
+            // while a date that only carries a note (no completion) stays untinted.
+            var hasCompletion = magByDate.TryGetValue(date, out var mv);
+            var mag = hasCompletion ? mv : 0m;
             var noteCount = noteByDate.TryGetValue(date, out var nc) ? nc : 0;
-            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, rangeMax), NumberFor(type, mag), noteCount));
+            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, rangeMax, hasCompletion), NumberFor(type, mag, hasCompletion), noteCount));
         }
         return new CalendarMarkers(days);
     }
 
-    private static int TintStepFor(HabitType type, decimal mag, decimal monthMax)
+    private static int TintStepFor(HabitType type, decimal mag, decimal monthMax, bool hasCompletion)
     {
-        if (mag <= 0) return 0;
+        if (!hasCompletion) return 0; // only a note that day, no completion → no tint
         if (type is HabitType.Action or HabitType.Journal) return 4; // binario: fatto = pieno
-        if (monthMax <= 0) return 1;
+        // A recorded day always gets at least the lowest non-empty step. State on a 0-based (or
+        // negative) scale can legitimately record mag <= 0 yet must still show as filled (CR5);
+        // Counter/Resistance always floor at 1.
+        if (monthMax <= 0 || mag <= 0) return 1;
         var step = (int)Math.Ceiling((double)(mag / monthMax) * 4);
         return Math.Clamp(step, 1, 4);
     }
 
-    private static string? NumberFor(HabitType type, decimal mag)
+    private static string? NumberFor(HabitType type, decimal mag, bool hasCompletion)
     {
-        if (mag <= 0) return null;
+        if (!hasCompletion) return null;
         return type switch
         {
-            HabitType.Counter or HabitType.State => FormatMag(mag),
+            // State shows its recorded value, including 0 (the cell IS the scale level).
+            HabitType.State => FormatMag(mag),
+            HabitType.Counter => mag > 0 ? FormatMag(mag) : null,
             HabitType.Resistance => mag > 1 ? FormatMag(mag) : null,
             _ => mag > 1 ? $"{FormatMag(mag)}×" : null, // Action/Journal: hidden unless multiple
         };
@@ -660,13 +669,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var node = Node;
         if (node is null) return;
         var mags = await _completions.GetDailyMagnitudeAsync(node.Id, date.Year, date.Month, ct).ConfigureAwait(true);
-        var mag = mags.FirstOrDefault(m => m.Date == date)?.Magnitude ?? 0m;
+        var dayMag = mags.FirstOrDefault(m => m.Date == date);
+        var mag = dayMag?.Magnitude ?? 0m;
         // Enrich the aggregate with the primary metric's unit (Counter) or scale label (State) so the
         // strip reads "4 km" / "Good" instead of a bare number (R-daySummaryUnits).
         var (unit, scaleLabels) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
         var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
-        DayNote.SetDaySummary(mag > 0, label, notes.Count);
+        // Presence (a completion exists) drives the strip, not the value: a State 0 still counts (CR5).
+        DayNote.SetDaySummary(dayMag is not null, label, notes.Count);
     }
 
     /// <summary>Resolves the primary (lowest SortOrder) metric's unit code (Counter) or scale labels

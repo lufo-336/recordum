@@ -10,7 +10,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 
 - **Autore**: ITS Web Solutions Architect · Torino
 - **Product spec**: v2.0 (aprile 2026)
-- **DB schema**: v2.10 (giugno 2026) — delta `counter_reclass` v2.10 (data-only: resistance-serie → counter) > `note_history` v2.9 > `abitudine_calendar` v2.8 > `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
+- **DB schema**: v2.11 (giugno 2026) — delta `note_category` v2.11 (`notes.category` + `notes.completion_id`) > `counter_reclass` v2.10 (data-only: resistance-serie → counter) > `note_history` v2.9 > `abitudine_calendar` v2.8 > `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
 - **Namespace**: `Recordum`
 
 ---
@@ -103,6 +103,8 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 **StreakBrokenAt v2.6**: `habit_config.streak_broken_at TEXT NULL` per supportare `StreakRecovery.Manual`. **Non versionata** in `HabitConfigHistory` (è uno stato puntuale, non un setting); aggiunta a `HabitConfigHistoryColumns.Excluded`. Migration `StreakBrokenAtV26` bumpa `schema_version` a `2.6`.
 
 **BackupLog v2.7**: tabella `backup_log` (`id` GUID PK, `created_at` TEXT, `kind` TEXT con CHECK `IN ('Manual','Auto','PreRestore')`, `path` TEXT, `size_bytes` INTEGER, `schema_version` TEXT, `app_version` TEXT, `notes` TEXT NULL) + indice `ix_backup_log_created_at` discendente. **Singola migration additiva** `BackupLogV27`: crea la tabella + bumpa `schema_version` a `2.7` + inserisce 5 nuovi AppSetting (`backup.auto.enabled`=true, `backup.auto.frequency_days`=7, `backup.auto.retention_count`=8, `backup.auto.last_run_utc`="", `backup.auto.path`=""). Conta totale AppSetting: 18.
+
+**NoteCategory v2.11**: `notes.category TEXT NOT NULL DEFAULT 'Veloce'` (maxLength 16, CHECK `ck_note_category` `category IN ('Diario','Veloce')`) + `notes.completion_id TEXT NULL` (FK soft a una completion, indice `ix_notes_completion_id`). Migration additiva `NoteCategoryV211` bumpa `schema_version` a `2.11`. **Nota debito**: il seed `AppSettingSeed.schema_version` è fermo a `2.9` (bumpato solo via `UpdateData` nelle migration successive, non nel costante `HasData`/ModelSnapshot) — disallineamento **senza impatto runtime** (il restore-guard CR2 legge lo `schema_version` reale dal DB vivo); riallineamento tracciato come **CR8** (richiede `dotnet ef migrations add` per rigenerare lo snapshot).
 
 **Soft delete**: solo su `HabitNode`. Cascade in transazione singola ai discendenti. Restore ripristina solo i discendenti chiusi nella stessa operazione. Purge permanente è job background per nodi >30 giorni (ordine: file → tabelle figlie → HabitNode).
 

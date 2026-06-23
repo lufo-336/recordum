@@ -181,6 +181,33 @@ public sealed class AbstinenceStreakTests
     }
 
     [Fact]
+    public async Task Current_run_length_counts_from_the_real_last_lapse_not_the_query_window()
+    {
+        // CR11: querying with a fromDate AFTER the last lapse must not truncate the current run's
+        // length. created=today-30, lapse=today-20, window starts at today-5 → the current clean run
+        // really started today-19 and is 20 days long; the old code reported only the 6 in-window days.
+        var today = new DateOnly(2026, 6, 1);
+        var created = today.AddDays(-30);
+        var (fx, clock, id) = await SeedResistanceAsync(created);
+        try
+        {
+            await LapseOnAsync(fx, id, today.AddDays(-20));
+            clock.Set(new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
+
+            var runs = await aggr.GetHistoryAsync(id, today.AddDays(-5), today);
+
+            // Only the current run intersects the window; the closed pre-lapse run is filtered out.
+            runs.Should().ContainSingle();
+            runs[0].IsCurrent.Should().BeTrue();
+            runs[0].Start.Should().Be(today.AddDays(-19)); // day after the real lapse
+            runs[0].End.Should().Be(today);
+            runs[0].Length.Should().Be(20); // days -19..0 inclusive
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task A_lapse_on_the_creation_day_produces_no_run()
     {
         var today = new DateOnly(2026, 6, 1);

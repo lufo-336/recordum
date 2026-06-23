@@ -464,6 +464,25 @@ public class CompletionServiceTests
     }
 
     [Fact]
+    public async Task Magnitude_state_includes_zero_valued_day()
+    {
+        // CR5: a State habit on a 0-based scale (e.g. a pain NRS where 0 = best) records value 0.
+        // The day has a real registration and must still appear in the magnitude list — the old
+        // `if (mag > 0)` filter dropped it, making the calendar cell vanish ("no registration").
+        var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.State);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 6, 6);
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId!.Value, SeriesIndex = 0, ValueInteger = 0 } });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 6);
+
+        Assert.Equal(0m, mags.Single(d => d.Date == day).Magnitude);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Magnitude_excludes_other_months_and_empty_days()
     {
         var (fx, habitId, _) = await SeedHabitWithMetricAsync(HabitType.Action);

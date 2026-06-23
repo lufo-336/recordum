@@ -219,7 +219,11 @@ public sealed partial class CompletionService(
                 // Action, Journal, null → count completions
                 _ => g.Count(),
             };
-            if (mag > 0) result.Add(new DailyMagnitude(g.Key, mag));
+            // Every group corresponds to a real completion on that day, so the day is always reported
+            // (CR5): a State day on a 0-based scale yields mag == 0 yet must still appear — dropping it
+            // made the calendar cell indistinguishable from "no registration". Counter/Resistance floor
+            // at 1 and Action/Journal count ≥ 1, so this is a no-op for them.
+            result.Add(new DailyMagnitude(g.Key, mag));
         }
         return result.OrderBy(d => d.Date).ToList();
     }

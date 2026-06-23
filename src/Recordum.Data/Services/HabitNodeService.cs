@@ -62,9 +62,13 @@ public sealed partial class HabitNodeService(
         LogUpdated(id);
     }
 
-    public async ValueTask MoveAsync(Guid id, Guid? newParentId, CancellationToken ct = default)
+    // Loads the node, rejects a soft-deleted target, validates the (optional) new parent isn't the
+    // node itself, one of its descendants (cycle), or missing, then reparents it. Shared by MoveAsync
+    // and MoveAndReorderAsync so the cycle/parent guards can never diverge (CR10). Returns the tracked
+    // node so reorder callers can keep mutating it before SaveChanges.
+    private static async ValueTask<HabitNode> ValidateAndReparentAsync(
+        RecordumDbContext db, Guid id, Guid? newParentId, CancellationToken ct)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
         var node = await db.HabitNodes.FirstOrDefaultAsync(n => n.Id == id, ct)
             ?? throw new HabitNodeNotFoundException(id);
         if (node.DeletedAt is not null) throw new HabitNodeAlreadySoftDeletedException(id);
@@ -77,6 +81,13 @@ public sealed partial class HabitNodeService(
             if (!parentExists) throw new HabitNodeNotFoundException(np);
         }
         node.ParentId = newParentId;
+        return node;
+    }
+
+    public async ValueTask MoveAsync(Guid id, Guid? newParentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        await ValidateAndReparentAsync(db, id, newParentId, ct);
         await db.SaveChangesAsync(ct);
         LogMoved(id, newParentId);
     }
@@ -85,20 +96,7 @@ public sealed partial class HabitNodeService(
         Guid id, Guid? newParentId, Guid? anchorSiblingId, bool placeAfter, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var node = await db.HabitNodes.FirstOrDefaultAsync(n => n.Id == id, ct)
-            ?? throw new HabitNodeNotFoundException(id);
-        if (node.DeletedAt is not null) throw new HabitNodeAlreadySoftDeletedException(id);
-
-        if (newParentId is { } np)
-        {
-            var descendantIds = await DescendantIdsAsync(db, id, ct);
-            if (np == id || descendantIds.Contains(np))
-                throw new CyclicHabitNodeMoveException(id, np);
-            var parentExists = await db.HabitNodes.AnyAsync(n => n.Id == np, ct);
-            if (!parentExists) throw new HabitNodeNotFoundException(np);
-        }
-
-        node.ParentId = newParentId;
+        var node = await ValidateAndReparentAsync(db, id, newParentId, ct);
 
         // Build the sibling sequence under the (new) parent, excluding the moved node,
         // in current SortOrder then Name order for stability.
