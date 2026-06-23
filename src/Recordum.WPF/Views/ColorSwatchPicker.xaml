@@ -18,62 +18,74 @@
         <Popup x:Name="PickerPopup" PlacementTarget="{Binding ElementName=Trigger}"
                Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
                PopupAnimation="Fade" Opened="OnPopupOpened">
-            <Border x:Name="PopupRoot" Focusable="True"
-                    Background="{DynamicResource Brush.SurfaceElevated}"
-                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
-                    CornerRadius="6" Padding="10" Margin="0,2,0,0"
-                    KeyDown="OnPopupKeyDown">
-                <StackPanel Width="232">
-                    <!-- Visual HSV picker (square + hue strip) so users can pick any color, not just type hex -->
-                    <local:HsvColorPicker Color="{Binding Color, Mode=TwoWay}" HorizontalAlignment="Center"/>
+            <Border Margin="8" Background="Transparent">
+                <Border x:Name="PopupRoot" Focusable="True"
+                        Background="{DynamicResource Brush.SurfaceElevated}"
+                        BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                        CornerRadius="8" Padding="12"
+                        KeyDown="OnPopupKeyDown">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" Opacity="0.20" BlurRadius="18" ShadowDepth="3" Direction="270"/>
+                    </Border.Effect>
+                    <StackPanel Width="232">
+                        <!-- Visual HSV picker (square + hue strip) so users can pick any color, not just type hex -->
+                        <local:HsvColorPicker Color="{Binding Color, Mode=TwoWay}" HorizontalAlignment="Center"/>
 
-                    <!-- Palette grid: 3 swatches per hue column, 12 columns -->
-                    <ItemsControl x:Name="PaletteItems" Margin="0,12,0,0" ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="20" Height="20" Margin="2" CornerRadius="3"
-                                        Cursor="Hand" Focusable="True"
-                                        AutomationProperties.Name="{Binding .}"
-                                        Background="{Binding ., Converter={StaticResource HexToBrush}}"
-                                        MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        <!-- Palette grid: 3 swatches per hue column, 12 columns -->
+                        <ItemsControl x:Name="PaletteItems" Margin="0,12,0,0" ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="20" Height="20" Margin="2" CornerRadius="3"
+                                            Cursor="Hand" Focusable="True"
+                                            AutomationProperties.Name="{Binding .}"
+                                            Background="{Binding ., Converter={StaticResource HexToBrush}}"
+                                            MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                    <!-- Recents -->
-                    <TextBlock Text="{x:Static res:Strings.ColorPicker_Recent}"
-                               Margin="0,8,0,2"
-                               FontSize="{StaticResource FontSize.Small}"
-                               Foreground="{DynamicResource Brush.TextMuted}"
-                               Visibility="{Binding HasRecentColors, Converter={StaticResource BoolToVisible}}"/>
-                    <ItemsControl ItemsSource="{Binding RecentColors}"
-                                  Visibility="{Binding HasRecentColors, Converter={StaticResource BoolToVisible}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="20" Height="20" Margin="2" CornerRadius="3"
-                                        Cursor="Hand" Focusable="True"
-                                        AutomationProperties.Name="{Binding .}"
-                                        Background="{Binding ., Converter={StaticResource HexToBrush}}"
-                                        MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        <!-- Recents -->
+                        <TextBlock Text="{x:Static res:Strings.ColorPicker_Recent}"
+                                   Margin="0,8,0,2"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                   Visibility="{Binding HasRecentColors, Converter={StaticResource BoolToVisible}}"/>
+                        <ItemsControl ItemsSource="{Binding RecentColors}"
+                                      Visibility="{Binding HasRecentColors, Converter={StaticResource BoolToVisible}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="20" Height="20" Margin="2" CornerRadius="3"
+                                            Cursor="Hand" Focusable="True"
+                                            AutomationProperties.Name="{Binding .}"
+                                            Background="{Binding ., Converter={StaticResource HexToBrush}}"
+                                            MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                    <!-- Hex entry + preview -->
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <TextBox Width="100" VerticalContentAlignment="Center"
-                                 Text="{Binding Color, UpdateSourceTrigger=LostFocus}"/>
-                        <Border Width="24" Height="24" Margin="8,0,0,0" CornerRadius="3"
-                                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
-                                Background="{Binding Color, Converter={StaticResource HexToBrush}}"/>
+                        <!-- Hex entry + preview -->
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="2,2">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="#" Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center"
+                                               FontFamily="Consolas"/>
+                                    <TextBox x:Name="HexBox" Width="84" BorderThickness="0" FontFamily="Consolas"
+                                             VerticalContentAlignment="Center" MaxLength="6"
+                                             Text="{Binding Color, Converter={StaticResource HexDigitsConverter}, UpdateSourceTrigger=LostFocus}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Width="24" Height="24" Margin="8,0,0,0" CornerRadius="5"
+                                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                    Background="{Binding Color, Converter={StaticResource HexToBrush}}"/>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Border>
             </Border>
         </Popup>
     </StackPanel>

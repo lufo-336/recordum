@@ -8,7 +8,7 @@
              SizeChanged="OnSizeChanged">
     <StackPanel Width="200">
         <!-- Saturation (x) / Value (y) square -->
-        <Border x:Name="SvArea" Height="140" CornerRadius="3" ClipToBounds="True"
+        <Border x:Name="SvArea" Height="140" CornerRadius="6" ClipToBounds="True"
                 Cursor="Cross"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
                 MouseLeftButtonDown="OnSvMouseDown"
@@ -47,7 +47,7 @@
         </Border>
 
         <!-- Hue strip -->
-        <Border x:Name="HueArea" Height="16" Margin="0,8,0,0" CornerRadius="3" ClipToBounds="True"
+        <Border x:Name="HueArea" Height="16" Margin="0,8,0,0" CornerRadius="6" ClipToBounds="True"
                 Cursor="Cross"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
                 MouseLeftButtonDown="OnHueMouseDown"
