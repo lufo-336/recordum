@@ -76,6 +76,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
 - **Fix** (`BaseStyles.xaml`): il `ToolTip` aveva solo setter di colore → template default Aero (rettangolo squadrato, bordo grigio scuro). Aggiunto un `ControlTemplate` nella stessa famiglia flottante: angoli **raggio 6**, bordo tema 1px, `DropShadowEffect` morbido (opacity 0.16, blur 12, depth 2), `HasDropShadow=True` per la trasparenza degli angoli + margine trasparente esterno per il bleed, `MaxWidth 320`, font Small. Anteprima `docs/tooltip-preview.html`.
 
+### R-columnSplitter — divisori colonne come sash (compile-only)
+- **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
+- **Fix** (`HabitScreen.xaml`): i 5 `GridSplitter` tra le colonne erano barre **piene 4px `Brush.Border`** (grigie, pesanti, sempre visibili). Nuovo stile condiviso `HabitScreen.ColumnSplitter`: area di presa 7px **trasparente** a riposo (resta visibile solo la hairline 1px del bordo colonna), una sottile **barra accento 2px** che compare al 50% su hover e va piena durante il drag, cursore `SizeWE`. Stesso linguaggio del thumb dello slider. Anteprima `docs/column-splitter-preview.html`.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---

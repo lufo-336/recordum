@@ -717,6 +717,36 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Column splitter: an invisible "sash" (the column's own 1px right border is the resting
+             divider) with a roomy grab area; a thin accent bar fades in on hover and goes solid while
+             dragging. Replaces the heavy solid 4px grey bar. -->
+        <Style x:Key="HabitScreen.ColumnSplitter" TargetType="GridSplitter">
+            <Setter Property="Width" Value="7"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
+            <Setter Property="ShowsPreview" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Cursor" Value="SizeWE"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridSplitter">
+                        <Border Background="{TemplateBinding Background}">
+                            <Border x:Name="bar" Width="2" CornerRadius="1" HorizontalAlignment="Center"
+                                    Background="{DynamicResource Brush.Accent}" Opacity="0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bar" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="bar" Property="Opacity" Value="1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -841,40 +871,35 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Panoramica|Diario: mutually exclusive subject types, so never both visible. -->
-                <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                <GridSplitter Grid.Column="1" Style="{StaticResource HabitScreen.ColumnSplitter}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
                             <Binding Path="ShowPanoramica"/><Binding Path="ShowDiario"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
-                <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                <GridSplitter Grid.Column="3" Style="{StaticResource HabitScreen.ColumnSplitter}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
                             <Binding Path="ShowDiario"/><Binding Path="ShowCronologia"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
-                <GridSplitter Grid.Column="5" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                <GridSplitter Grid.Column="5" Style="{StaticResource HabitScreen.ColumnSplitter}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
                             <Binding Path="ShowCronologia"/><Binding Path="ShowDettaglio"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
-                <GridSplitter Grid.Column="7" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                <GridSplitter Grid.Column="7" Style="{StaticResource HabitScreen.ColumnSplitter}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
                             <Binding Path="ShowDettaglio"/><Binding Path="ShowNote"/>
                         </MultiBinding>
                     </GridSplitter.Visibility>
                 </GridSplitter>
-                <GridSplitter Grid.Column="9" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                              ResizeBehavior="PreviousAndNext" ShowsPreview="False" Background="{DynamicResource Brush.Border}">
+                <GridSplitter Grid.Column="9" Style="{StaticResource HabitScreen.ColumnSplitter}">
                     <GridSplitter.Visibility>
                         <MultiBinding Converter="{StaticResource AllTrueToVisible}">
                             <Binding Path="ShowNote"/><Binding Path="ShowConfigura"/>
