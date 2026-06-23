@@ -25,6 +25,7 @@
     <Style TargetType="{x:Type Window}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="{DynamicResource Brush.Background}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Default}"/>
         <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
         <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
     </Style>
@@ -36,6 +37,7 @@
     <Style TargetType="{x:Type Page}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="{DynamicResource Brush.Background}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource Font.Default}"/>
     </Style>
 
     <!-- Text elements — the big one for "black on black" bug. -->
@@ -50,24 +52,40 @@
 
     <!-- Input controls. -->
 
+    <!-- Minimal "underline" TextBox (Obsidian-like): transparent fill, a single hairline under the
+         field, accent underline on focus. Lighter / airier than a fully boxed input. The default WPF
+         TextBox template honours Background/BorderBrush/BorderThickness, so no custom template needed.
+         Fields that set BorderThickness="0" locally (e.g. the editor title/description) keep their
+         borderless look since local values win over this implicit style. -->
     <Style TargetType="{x:Type TextBox}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
-        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
         <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}"/>
-        <Setter Property="Padding" Value="6,4"/>
-        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="2,4"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Style.Triggers>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
+    <!-- PasswordBox: same minimal "underline" look as TextBox, for input consistency. -->
     <Style TargetType="{x:Type PasswordBox}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
-        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
         <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}"/>
-        <Setter Property="Padding" Value="6,4"/>
-        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="2,4"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Style.Triggers>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Flat ComboBox: toggle chrome template, then the control + item styles. -->

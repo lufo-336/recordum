@@ -193,6 +193,15 @@
   <data name="Settings.Theme.Dark" xml:space="preserve">
     <value>Scuro</value>
   </data>
+  <data name="Settings.Font" xml:space="preserve">
+    <value>Carattere</value>
+  </data>
+  <data name="Settings.Font.System" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="Settings.Font.Serif" xml:space="preserve">
+    <value>Serif (Palatino)</value>
+  </data>
   <data name="Settings.About" xml:space="preserve">
     <value>Informazioni su Recordum</value>
   </data>

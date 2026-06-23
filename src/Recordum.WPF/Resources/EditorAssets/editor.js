@@ -46,6 +46,22 @@
         if (ui) ui.style.pointerEvents = data.value ? 'none' : '';
         break;
       }
+      case 'setTheme': {
+        // Map the host's theme brushes onto the CSS variables that editor.html's overrides read,
+        // so the editor matches the app exactly (and follows a light/dark swap).
+        const r = document.documentElement.style;
+        const v = data.vars || {};
+        if (v.bg) r.setProperty('--rec-bg', v.bg);
+        if (v.text) r.setProperty('--rec-text', v.text);
+        if (v.muted) r.setProperty('--rec-muted', v.muted);
+        if (v.border) r.setProperty('--rec-border', v.border);
+        if (v.accent) r.setProperty('--rec-accent', v.accent);
+        if (v.elev) r.setProperty('--rec-elev', v.elev);
+        if (v.font) r.setProperty('--rec-font', v.font);   // UI font follows the app's Font.Default
+        // Dark UI needs the dark glyph sprites inverted to light; light UI leaves them as-is.
+        r.setProperty('--rec-icon-invert', v.dark ? '0.7' : '0');
+        break;
+      }
     }
   });
 

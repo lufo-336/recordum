@@ -23,6 +23,13 @@
                              IsChecked="{Binding ThemeMode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:ThemeMode.Light}}"/>
                 <RadioButton GroupName="Theme" Content="{x:Static res:Strings.Settings_Theme_Dark}"
                              IsChecked="{Binding ThemeMode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:ThemeMode.Dark}}"/>
+
+                <TextBlock Text="{x:Static res:Strings.Settings_Font}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Text}" Margin="0,18,0,8"/>
+                <RadioButton GroupName="Font" Content="{x:Static res:Strings.Settings_Font_System}" Margin="0,0,0,4"
+                             IsChecked="{Binding AppFont, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppFont.System}}"/>
+                <RadioButton GroupName="Font" Content="{x:Static res:Strings.Settings_Font_Serif}"
+                             IsChecked="{Binding AppFont, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppFont.Serif}}"/>
             </StackPanel>
         </DataTemplate>
 

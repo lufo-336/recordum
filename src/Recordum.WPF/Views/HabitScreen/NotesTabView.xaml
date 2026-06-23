@@ -167,10 +167,7 @@
                         <TextBox Text="{Binding PreviewMarkdown, Mode=OneWay}"
                                  IsReadOnly="True" TextWrapping="Wrap"
                                  AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Background="{DynamicResource Brush.Surface}"
-                                 BorderThickness="1"
-                                 BorderBrush="{DynamicResource Brush.Border}"/>
+                                 VerticalScrollBarVisibility="Auto"/>
                     </DockPanel>
                 </Grid>
             </Grid>

@@ -1,11 +1,13 @@
 using System.Globalization;
 using System.Text;
 using System.Windows;
+using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Theming;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Diagnostics;
 using CoreThemeMode = Recordum.Core.Enums.ThemeMode;
+using CoreAppFont = Recordum.Core.Enums.AppFont;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF;
@@ -57,6 +59,11 @@ public partial class App : Application
         ApplyTheme(theme.EffectiveTheme);
         theme.EffectiveThemeChanged += (_, mode) => Dispatcher.Invoke(() => ApplyTheme(mode));
 
+        var font = _services.GetRequiredService<IAppFontService>();
+        await font.InitializeAsync().ConfigureAwait(true);
+        ApplyFont(font.CurrentFont);
+        font.FontChanged += (_, f) => Dispatcher.Invoke(() => ApplyFont(f));
+
         var window = _services.GetRequiredService<MainWindow>();
         window.Show();
     }
@@ -67,6 +74,16 @@ public partial class App : Application
         var dict = new ResourceDictionary { Source = new Uri(path, UriKind.Relative) };
         // Index 0 = Tokens.xaml (static). Index 1 = active theme (swappable).
         Resources.MergedDictionaries[1] = dict;
+    }
+
+    private void ApplyFont(CoreAppFont font)
+    {
+        // Override the merged Font.Default at the app-resource level; DynamicResource references
+        // (Window/Page in BaseStyles + the editor's font tripwire) pick the change up live.
+        var key = font == CoreAppFont.Serif ? "Font.Serif" : "Font.System";
+        // TryFindResource (not the Resources[] indexer) so it traverses the merged Tokens.xaml.
+        if (TryFindResource(key) is FontFamily family)
+            Resources["Font.Default"] = family;
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -163,6 +163,9 @@ public static class Strings
     public static string Settings_Theme_System => Get("Settings.Theme.System");
     public static string Settings_Theme_Light => Get("Settings.Theme.Light");
     public static string Settings_Theme_Dark => Get("Settings.Theme.Dark");
+    public static string Settings_Font => Get("Settings.Font");
+    public static string Settings_Font_System => Get("Settings.Font.System");
+    public static string Settings_Font_Serif => Get("Settings.Font.Serif");
     public static string Settings_About => Get("Settings.About");
     public static string Settings_Quit => Get("Settings.Quit");
     public static string Settings_Category_Appearance => Get("Settings.Category.Appearance");

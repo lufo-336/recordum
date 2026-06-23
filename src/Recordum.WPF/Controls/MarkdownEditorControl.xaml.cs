@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
 using Recordum.WPF.Bootstrap;
 
@@ -12,6 +13,29 @@ public partial class MarkdownEditorControl : UserControl
     private bool _bridgeReady;
     private bool _isDisposed;
     private bool _initStarted;
+
+    // Tripwire bound to a theme brush via DynamicResource (SetResourceReference in the ctor). When
+    // the app swaps Dark.xaml <-> Light.xaml at runtime the brush re-resolves and this callback
+    // re-pushes the new theme into an open editor. PushThemeToEditor no-ops until the bridge is
+    // ready, so the early resolution during load is harmless (the "ready" handler does the first push).
+    private static readonly DependencyProperty ThemeTripwireProperty =
+        DependencyProperty.Register(nameof(ThemeTripwire), typeof(Brush), typeof(MarkdownEditorControl),
+            new PropertyMetadata(null, (d, _) => ((MarkdownEditorControl)d).PushThemeToEditor()));
+    private Brush? ThemeTripwire
+    {
+        get => (Brush?)GetValue(ThemeTripwireProperty);
+        set => SetValue(ThemeTripwireProperty, value);
+    }
+
+    // Second tripwire, same idea, bound to the UI font (Font.Default) so a font-only switch re-pushes too.
+    private static readonly DependencyProperty FontTripwireProperty =
+        DependencyProperty.Register(nameof(FontTripwire), typeof(FontFamily), typeof(MarkdownEditorControl),
+            new PropertyMetadata(null, (d, _) => ((MarkdownEditorControl)d).PushThemeToEditor()));
+    private FontFamily? FontTripwire
+    {
+        get => (FontFamily?)GetValue(FontTripwireProperty);
+        set => SetValue(FontTripwireProperty, value);
+    }
 
     public static readonly DependencyProperty MarkdownProperty =
         DependencyProperty.Register(nameof(Markdown), typeof(string), typeof(MarkdownEditorControl),
@@ -57,6 +81,9 @@ public partial class MarkdownEditorControl : UserControl
     public MarkdownEditorControl()
     {
         InitializeComponent();
+        // Re-push to the editor whenever the app swaps theme dictionaries or the UI font at runtime.
+        SetResourceReference(ThemeTripwireProperty, "Brush.Surface");
+        SetResourceReference(FontTripwireProperty, "Font.Default");
         Loaded += async (_, _) => await TryInitAsync().ConfigureAwait(true);
         Unloaded += (_, _) => _isDisposed = true;
     }
@@ -113,6 +140,7 @@ public partial class MarkdownEditorControl : UserControl
             {
                 case "ready":
                     _bridgeReady = true;
+                    PushThemeToEditor();
                     PushContentToEditor(Markdown);
                     PushReadOnlyToEditor(IsReadOnly);
                     break;
@@ -145,5 +173,35 @@ public partial class MarkdownEditorControl : UserControl
         if (!_bridgeReady || _isDisposed || WebView.CoreWebView2 is null) return;
         var payload = JsonSerializer.Serialize(new { type = "setReadOnly", value });
         WebView.CoreWebView2.PostWebMessageAsJson(payload);
+    }
+
+    /// <summary>Pushes the current theme brushes to the WebView editor so its surface, text and
+    /// toolbar match the app exactly (dark by default, follows a light theme too).</summary>
+    private void PushThemeToEditor()
+    {
+        if (!_bridgeReady || _isDisposed || WebView.CoreWebView2 is null) return;
+        var vars = new
+        {
+            bg = Hex("Brush.Surface"),
+            text = Hex("Brush.Text"),
+            muted = Hex("Brush.TextMuted"),
+            border = Hex("Brush.Border"),
+            accent = Hex("Brush.Accent"),
+            elev = Hex("Brush.SurfaceElevated"),
+            dark = ThemeProbe.IsDark(),
+            font = (Application.Current?.TryFindResource("Font.Default") as FontFamily)?.Source,
+        };
+        var payload = JsonSerializer.Serialize(new { type = "setTheme", vars });
+        WebView.CoreWebView2.PostWebMessageAsJson(payload);
+    }
+
+    private static string? Hex(string brushKey)
+    {
+        if (Application.Current?.TryFindResource(brushKey) is SolidColorBrush b)
+        {
+            var c = b.Color;
+            return $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+        }
+        return null;
     }
 }

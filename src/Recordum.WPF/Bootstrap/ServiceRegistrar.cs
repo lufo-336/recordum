@@ -55,6 +55,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IPluginContext, AmbientPluginContext>();
         services.AddLogging();
         services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IAppFontService, AppFontService>();
         services.AddSingleton<IWebView2Availability, WebView2Availability>();
 
         // Security: DPAPI by default. Passphrase opt-in via IKeyTransitionService.
