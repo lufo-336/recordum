@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — anteprima scrollbar</title>
+<style>
+  :root{ --font:"Palatino Linotype","Book Antiqua",Georgia,serif; }
+  .light{ --bg:#FFFFFF; --border:#E4E4E7; --muted:#71717A; --text:#18181B; }
+  .dark { --bg:#18181B; --border:#3F3F46; --muted:#A1A1AA; --text:#FAFAFA; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:#1b1b1f;color:#e4e4e7;
+       display:flex;gap:40px;flex-wrap:wrap;justify-content:center;padding:44px 22px 70px}
+  .stage{display:flex;flex-direction:column;gap:16px;align-items:center}
+  .stage h2{font:600 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin:0}
+  .pane{width:240px;height:200px;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+        position:relative;overflow:hidden;padding:14px 18px}
+  .pane p{margin:0 0 9px;color:var(--text);font-size:13px;line-height:1.5;opacity:.85}
+  /* scrollbar mock: 10px gutter on the right */
+  .bar{position:absolute;top:6px;right:1px;bottom:6px;width:10px}
+  .thumb{position:absolute;border-radius:3px;background:var(--border)}
+  /* rest: ~4px pill (margin 3), faint */
+  .rest .thumb{left:3px;right:3px;top:20%;height:42%}
+  /* hover: ~6px pill (margin 2), darker */
+  .hover .thumb{left:2px;right:2px;top:20%;height:42%;background:var(--muted)}
+  .cap{font:500 12px/1 system-ui;color:#9aa0a8}
+  .note{max-width:640px;font:400 12.5px/1.55 system-ui;color:#9ca3af;text-align:center}
+  b{color:#e4e4e7}
+</style>
+</head>
+<body>
+  <div class="stage light"><h2>Light</h2>
+    <span class="cap">Riposo (sottile, faint)</span>
+    <div class="pane"><p>Voce uno…</p><p>Voce due…</p><p>Voce tre…</p><p>Voce quattro…</p><p>Voce cinque…</p>
+      <div class="bar rest"><div class="thumb"></div></div></div>
+    <span class="cap">Hover / trascinamento (più scuro e largo)</span>
+    <div class="pane"><p>Voce uno…</p><p>Voce due…</p><p>Voce tre…</p><p>Voce quattro…</p><p>Voce cinque…</p>
+      <div class="bar hover"><div class="thumb"></div></div></div>
+  </div>
+
+  <div class="stage dark"><h2>Dark</h2>
+    <span class="cap">Riposo</span>
+    <div class="pane"><p>Voce uno…</p><p>Voce due…</p><p>Voce tre…</p><p>Voce quattro…</p><p>Voce cinque…</p>
+      <div class="bar rest"><div class="thumb"></div></div></div>
+    <span class="cap">Hover / trascinamento</span>
+    <div class="pane"><p>Voce uno…</p><p>Voce due…</p><p>Voce tre…</p><p>Voce quattro…</p><p>Voce cinque…</p>
+      <div class="bar hover"><div class="thumb"></div></div></div>
+  </div>
+
+  <p class="note">Già flat dalla Fase C (niente frecce, traccia trasparente, thumb arrotondato). Aggiunto:
+     thumb con <b>min-size</b> (non sparisce su liste lunghe) e uno <b>stato hover/drag</b> — a riposo è
+     una pillola sottile e tenue, passando il mouse si <b>scurisce e allarga</b> leggermente.</p>
+</body>
+</html>

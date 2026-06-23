@@ -85,6 +85,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Fix**: gli empty-state erano **una sola riga grigia** al 60% opacità. **`EmptyState.xaml`** (Home) ora è una composizione centrata **icona line + titolo**, con icona e testo per-tab via DataTrigger su `ActiveTab`: Attive → `Icon.Sprout` ("pianta un seme"), Archiviate → `Icon.Moon`, Cestino → `Icon.Sparkles`. **`WorkspaceView.xaml`** welcome allineato allo stesso pattern (`Icon.BookOpen` + testo). Nessuna nuova stringa (riuso `Home_Empty_*` / `Workspace_Empty`). Anteprima `docs/empty-state-preview.html`.
 - **Possibile next**: una CTA "Nuova abitudine" nell'empty-state Attive (richiede un command nel Home VM raggiungibile da qui) — non incluso per ora.
 
+### R-scrollbar — stato hover + min-size (compile-only)
+- **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
+- **Fix** (`BaseStyles.xaml`): la scrollbar era già flat (Fase C) ma **piatta**: thumb `Brush.Border` faint, nessun hover, nessun min-size (poteva rimpicciolirsi all'infinito su liste lunghe). Aggiunto: `Thumb MinHeight/MinWidth 28` (non collassa); thumb a riposo pillola sottile (`Brush.Border`, margin 3 → ~4px) che su **hover/drag** si **scurisce** (`Brush.TextMuted`) e **allarga** (margin 2 → ~6px). Anteprima `docs/scrollbar-preview.html`.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---
