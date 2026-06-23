@@ -145,6 +145,7 @@ Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegu
 - [ ] **R-slider** (scala State): habit State con slider → traccia sottile, porzione riempita in accento fino al thumb circolare; anello su hover/drag; snap-to-tick funziona. Light+dark. Rif: `docs/slider-preview.html`.
 - [ ] **R-brandMark** (title bar): accanto a "Recordum" c'è una **R serif** (Palatino) nel colore del testo, non più la linea-impulso; resta serif anche se imposti UI font System. Rif: `docs/brand-mark-preview.html`.
 - [ ] **R-comboDropdown**: apri un ComboBox (es. periodo in Cronologia) → pannello con **ombra** e raggio come i menù, **allineato sotto la casella** (no scostamenti), hover accento, valore corrente con tinta tenue. Light+dark. Rif: `docs/combobox-preview.html`.
+- [ ] **R-columnScroll** (ibrido fill-then-scroll): apri **1–2 colonne** → riempiono il tab senza spazio vuoto a destra; apri **molte** (Cronologia+Dettaglio+Note+Configura…) → quando non ci stanno parte lo **scroll orizzontale**, ogni colonna resta ≥320 (non si schiaccia). Lo scroll è liscio (trackpad / Shift+rotella). I GridSplitter tra colonne ridimensionano ancora. Rif: `docs/column-scroll-preview.html`.
 
 **Altro:**
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).

@@ -131,6 +131,20 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public bool ShowNote => IsNoteOpen && Node is not null && FocusAllows(HabitColumn.Note);
     public bool ShowConfigura => IsConfiguraOpen && Node is not null && FocusAllows(HabitColumn.Configura);
 
+    /// <summary>Total minimum width the open columns demand (each at <see cref="MinColumnWidth"/>).
+    /// Bound to the columns Grid's MinWidth: the Grid fills the tab viewport when there is room
+    /// (star-split, no leftover gap), but never shrinks below this — past it the host ScrollViewer
+    /// scrolls horizontally instead of squeezing the columns (hybrid "fill-then-scroll").</summary>
+    public double OpenColumnsMinWidth
+    {
+        get
+        {
+            var open = (ShowPanoramica ? 1 : 0) + (ShowDiario ? 1 : 0) + (ShowCronologia ? 1 : 0)
+                     + (ShowDettaglio ? 1 : 0) + (ShowNote ? 1 : 0) + (ShowConfigura ? 1 : 0);
+            return open * MinColumnWidth;
+        }
+    }
+
     private void NotifyShowFlags()
     {
         OnPropertyChanged(nameof(IsGroupNode));
@@ -141,6 +155,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowDettaglio));
         OnPropertyChanged(nameof(ShowNote));
         OnPropertyChanged(nameof(ShowConfigura));
+        OnPropertyChanged(nameof(OpenColumnsMinWidth));
     }
 
     partial void OnNodeChanged(HabitNode? value)

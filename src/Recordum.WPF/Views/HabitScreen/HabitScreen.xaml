@@ -816,10 +816,16 @@
                           IsChecked="{Binding IsConfiguraOpen}"/>
             </StackPanel>
 
-            <!-- Open panes fill & split the tab width: each pane's column is * when open, 0 when closed
-                 (one open pane fills the tab; several split it equally — no leftover gap). A splitter
-                 shows only between two adjacent open panes. -->
-            <Grid Grid.Row="1">
+            <!-- Hybrid "fill-then-scroll" (restores the horizontal column scroll lost when f08fba9
+                 switched to a pure star-split): the inner Grid is bound to the host ScrollViewer's
+                 ViewportWidth, so with room the open panes star-split it and leave no gap; its
+                 MinWidth = open count × 320 means once the panes no longer fit, the ScrollViewer
+                 scrolls horizontally instead of squeezing them below 320. A splitter shows only
+                 between two adjacent open panes. -->
+            <ScrollViewer Grid.Row="1" x:Name="ColumnsScroll"
+                          HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <Grid Width="{Binding ViewportWidth, ElementName=ColumnsScroll}"
+                  MinWidth="{Binding OpenColumnsMinWidth}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{Binding ShowPanoramica, Converter={StaticResource OpenColumnWidth}}"/>
                     <ColumnDefinition Width="Auto"/>
@@ -1119,6 +1125,7 @@
                     </Border>
 
             </Grid>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

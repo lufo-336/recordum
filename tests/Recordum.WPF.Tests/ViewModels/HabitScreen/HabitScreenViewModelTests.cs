@@ -152,6 +152,26 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
+    public async Task OpenColumnsMinWidth_tracks_the_open_applicable_columns()
+    {
+        // Drives the hybrid fill-then-scroll: the columns Grid MinWidth = open count × 320, so the
+        // host ScrollViewer scrolls once the panes no longer fit instead of squeezing them.
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
+        await sut.LoadAsync(id);
+
+        sut.IsCronologiaOpen = true;
+        sut.IsDettaglioOpen = true;
+        sut.IsNoteOpen = true;
+        sut.OpenColumnsMinWidth.Should().Be(3 * HabitScreenViewModel.MinColumnWidth);
+
+        // Focus collapses the visible set to one column → one column's worth of min width.
+        sut.ToggleFocusCommand.Execute(HabitColumn.Note);
+        sut.OpenColumnsMinWidth.Should().Be(HabitScreenViewModel.MinColumnWidth);
+    }
+
+    [Fact]
     public async Task Closing_the_focused_column_exits_focus()
     {
         var sut = CreateSut(out var nodes, out _, out _, out _, out _);

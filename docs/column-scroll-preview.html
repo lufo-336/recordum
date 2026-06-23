@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — anteprima scorrimento colonne</title>
+<style>
+  :root{
+    --font:"Palatino Linotype","Book Antiqua",Georgia,serif;
+    --bg:#FFFFFF; --surface:#F7F7F8; --elevated:#FFFFFF; --border:#E4E4E7;
+    --text:#18181B; --muted:#71717A; --accent:#3B82F6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:#1b1b1f;color:#e4e4e7;
+       padding:34px 22px 60px;display:flex;flex-direction:column;align-items:center;gap:22px}
+  h1{font:600 15px/1.3 var(--font);margin:0;text-align:center}
+  .sub{font:400 13px/1.5 system-ui;color:#9ca3af;max-width:680px;text-align:center;margin:0}
+
+  .controls{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .panel{background:#26262b;border:1px solid #3a3a40;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+  .panel h3{margin:0 0 2px;font:600 11px/1 system-ui;letter-spacing:.08em;text-transform:uppercase;color:#9aa0a8}
+  .chip{display:inline-flex;align-items:center;gap:7px;font:500 13px/1 system-ui;color:#d4d4d8;cursor:pointer;padding:5px 2px}
+  .chip input{accent-color:#60a5fa;width:15px;height:15px}
+  .seg{display:inline-flex;border:1px solid #3a3a40;border-radius:8px;overflow:hidden}
+  .seg button{font:500 13px/1 system-ui;color:#cfcfd4;background:transparent;border:0;padding:9px 14px;cursor:pointer}
+  .seg button.on{background:#3b82f6;color:#fff}
+
+  /* the "tab" viewport */
+  .tabwrap{width:min(720px,94vw)}
+  .tablabel{font:500 12px/1 system-ui;color:#8a8f98;margin:0 0 6px 2px;display:flex;justify-content:space-between}
+  .tab{height:300px;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+  .scroller{flex:1;overflow-x:auto;overflow-y:hidden}
+  .cols{display:flex;height:100%;align-items:stretch}
+
+  /* a column */
+  .col{flex:none;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg)}
+  .col:last-child{border-right:0}
+  .col .hd{height:30px;display:flex;align-items:center;padding:0 12px;background:var(--surface);
+           border-bottom:1px solid var(--border);font:600 12px/1 var(--font);color:var(--muted);letter-spacing:.02em}
+  .col .body{flex:1;padding:14px 12px;color:var(--text);font-size:13px;line-height:1.6;color:var(--muted)}
+
+  /* MODE: hybrid → fill then scroll (flex + min-width) */
+  .mode-hybrid .col{flex:1 1 0;min-width:220px}
+  /* MODE: fixed → fixed comfortable width, gap when few */
+  .mode-fixed .col{width:230px}
+
+  /* themed thin scrollbar (mirrors the flat themed one) */
+  .scroller::-webkit-scrollbar{height:10px}
+  .scroller::-webkit-scrollbar-thumb{background:#c9c9cf;border-radius:5px;border:2px solid var(--bg)}
+  .scroller::-webkit-scrollbar-track{background:transparent}
+
+  .hint{font:400 12.5px/1.5 system-ui;color:#9ca3af;text-align:center;max-width:680px}
+  b{color:#e4e4e7}
+</style>
+</head>
+<body>
+  <h1>Scorrimento colonne — confronto interattivo</h1>
+  <p class="sub">Accendi/spegni le colonne e cambia comportamento. Guarda cosa succede con <b>poche</b> colonne
+     (riempimento vs spazio vuoto) e con <b>tante</b> (scroll vs schiacciamento).</p>
+
+  <div class="controls">
+    <div class="panel">
+      <h3>Colonne aperte</h3>
+      <label class="chip"><input type="checkbox" data-col="Cronologia" checked> Cronologia</label>
+      <label class="chip"><input type="checkbox" data-col="Dettaglio" checked> Dettaglio</label>
+      <label class="chip"><input type="checkbox" data-col="Note"> Note</label>
+      <label class="chip"><input type="checkbox" data-col="Configura"> Configura</label>
+      <label class="chip"><input type="checkbox" data-col="Diario"> Diario</label>
+    </div>
+    <div class="panel">
+      <h3>Comportamento</h3>
+      <div class="seg" id="seg">
+        <button data-mode="hybrid" class="on">Ibrido · riempi-poi-scorri</button>
+        <button data-mode="fixed">Fisse + scroll</button>
+      </div>
+      <p style="margin:6px 2px 0;font:400 12px/1.5 system-ui;color:#9aa0a8;max-width:240px" id="modeNote"></p>
+    </div>
+  </div>
+
+  <div class="tabwrap">
+    <div class="tablabel"><span>Tab (larghezza fissa simulata)</span><span id="count"></span></div>
+    <div class="tab">
+      <div class="scroller"><div class="cols mode-hybrid" id="cols"></div></div>
+    </div>
+  </div>
+
+  <p class="hint" id="hint"></p>
+
+<script>
+  const filler = {
+    Cronologia:"Registrazioni del giorno · serie e valori · note rapide…",
+    Dettaglio:"Heatmap · streak corrente/record · trend · distribuzione oraria…",
+    Note:"Editor note · cronologia pagine…",
+    Configura:"Editor abitudine · scheduling · metriche · goal…",
+    Diario:"Pagine di diario in serif…",
+  };
+  const cols = document.getElementById('cols');
+  const seg = document.getElementById('seg');
+  const checks = [...document.querySelectorAll('input[data-col]')];
+  let mode = 'hybrid';
+
+  function render(){
+    const open = checks.filter(c=>c.checked).map(c=>c.dataset.col);
+    cols.className = 'cols mode-' + mode;
+    cols.innerHTML = open.map(n=>`<div class="col"><div class="hd">${n}</div><div class="body">${filler[n]}</div></div>`).join('');
+    document.getElementById('count').textContent = open.length + ' colonne aperte';
+    const minTotal = open.length*220, viewport = 718; // mirrors min-width 220 vs tab width
+    const scrolls = mode==='hybrid' ? minTotal>viewport : open.length>=4;
+    document.getElementById('hint').innerHTML = mode==='hybrid'
+      ? (scrolls ? '<b>Ibrido:</b> troppe per la larghezza → parte lo <b>scroll orizzontale</b>, ogni colonna resta ≥ comoda.'
+                 : '<b>Ibrido:</b> poche colonne → <b>riempiono</b> il tab, nessuno spazio vuoto.')
+      : (open.length<=2 ? '<b>Fisse:</b> larghezza comoda fissa → con poche colonne resta <b>spazio vuoto</b> a destra.'
+                        : '<b>Fisse:</b> ogni colonna a larghezza fissa → <b>scroll orizzontale</b> quando sfondano.');
+    document.getElementById('modeNote').textContent = mode==='hybrid'
+      ? 'Riempiono se c’è spazio, non scendono sotto ~320px, poi scrollano. Contemporaneo.'
+      : 'Sempre larghezza fissa; scroll quando sfondano; possibile buco a destra.';
+  }
+  checks.forEach(c=>c.addEventListener('change', render));
+  seg.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    mode = b.dataset.mode;
+    [...seg.children].forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  });
+  render();
+</script>
+</body>
+</html>
