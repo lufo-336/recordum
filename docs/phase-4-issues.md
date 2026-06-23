@@ -72,6 +72,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Fix scelto dall'utente: ibrido "riempi-poi-scorri"** (anteprima interattiva `docs/column-scroll-preview.html`). `HabitScreen.xaml`: la griglia colonne è avvolta in uno `ScrollViewer` orizzontale (`x:Name="ColumnsScroll"`, vertical disabled); `Grid.Width="{Binding ViewportWidth, ElementName=ColumnsScroll}"` (riempie il tab → star-split senza buco) e `Grid.MinWidth="{Binding OpenColumnsMinWidth}"` (= colonne aperte × 320 → oltre quella soglia lo ScrollViewer scrolla invece di schiacciare). Nuova proprietà VM `OpenColumnsMinWidth` (notificata in `NotifyShowFlags`). I GridSplitter star restano per il resize fine. Test `OpenColumnsMinWidth_tracks_the_open_applicable_columns` (compile-only). "Fluido" = scroll fisico a pixel + trackpad/Shift-rotella + scrollbar flat tematizzata.
 - **Nota**: `RestoreColumnWidthsAsync`/`GetColumnWidth`/`HabitScreen.ColumnResizeThumb`/`OnColumnResizeDelta` restano orfani (lo erano già da `f08fba9`); cleanup separato, non toccato qui.
 
+### R-tooltip — ToolTip arrotondato + ombra (compile-only)
+- **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
+- **Fix** (`BaseStyles.xaml`): il `ToolTip` aveva solo setter di colore → template default Aero (rettangolo squadrato, bordo grigio scuro). Aggiunto un `ControlTemplate` nella stessa famiglia flottante: angoli **raggio 6**, bordo tema 1px, `DropShadowEffect` morbido (opacity 0.16, blur 12, depth 2), `HasDropShadow=True` per la trasparenza degli angoli + margine trasparente esterno per il bleed, `MaxWidth 320`, font Small. Anteprima `docs/tooltip-preview.html`.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---

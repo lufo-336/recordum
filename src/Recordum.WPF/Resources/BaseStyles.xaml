@@ -545,14 +545,35 @@
         </Setter>
     </Style>
 
-    <!-- Tooltips. -->
+    <!-- Tooltips. The default template is a square 1px-bordered box; templated to the same
+         floating-panel language as the menus/dropdown — rounded corners + a soft shadow.
+         HasDropShadow=True keeps the hosting popup transparent so the rounded corners read
+         cleanly; the transparent outer margin gives the shadow bleed room. -->
 
     <Style TargetType="{x:Type ToolTip}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
+        <Setter Property="HasDropShadow" Value="True"/>
+        <Setter Property="MaxWidth" Value="320"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToolTip}">
+                    <Border Margin="6" Background="Transparent">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                CornerRadius="6" Padding="9,6" SnapsToDevicePixels="True">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.16" BlurRadius="12"
+                                                  ShadowDepth="2" Direction="270"/>
+                            </Border.Effect>
+                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Slider (State scale entry). The Aero default ships a pointed gradient thumb on a
