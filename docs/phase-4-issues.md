@@ -61,6 +61,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Anteprima approvata dall'utente**: `docs/context-menu-preview.html` (light+dark, submenu aperto, confronto col default). Build WPF verde.
 - **Da verificare a vista sulla VM**: in particolare la **trasparenza degli angoli del popup** (`HasDropShadow=True` deve mantenere `AllowsTransparency` sul popup interno) e l'apertura submenu.
 
+**Quinto giro — altri ritocchi UI datati** (richiesta utente, compile-only, anteprime approvate):
+- **R-slider** (`BaseStyles.xaml`): lo `Slider` della scala State (unico nell'app, `HabitScreen.xaml:333`) non aveva stile → thumb appuntito Aero. Nuovo stile flat: traccia 4px arrotondata (`Brush.Border`), porzione raggiunta in `Brush.Accent`, thumb circolare 16px con anello morbido su hover/drag. RepeatButton/Thumb **keyed** (non impliciti) → non toccano ScrollBar/Expander. Anteprima `docs/slider-preview.html`.
+- **R-brandMark** (`MainWindow.xaml`): il simbolo del programma nella title bar era l'icona Lucide `Icon.Activity` (linea-impulso). Sostituita con una **R serif Palatino** bold 18px (agganciata a `Font.Serif` → resta serif anche con UI font System), colore **`Brush.Text`** (scelta utente, non accento). `Icon.Activity` ora non più referenziata. Anteprima `docs/brand-mark-preview.html`.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---

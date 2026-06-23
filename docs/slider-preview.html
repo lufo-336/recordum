@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — anteprima Slider (scala State)</title>
+<style>
+  :root{ --font:"Palatino Linotype","Book Antiqua",Georgia,serif; }
+  .light{ --bg:#FFFFFF; --elevated:#FFFFFF; --border:#E4E4E7; --text:#18181B; --muted:#71717A; --accent:#3B82F6; }
+  .dark { --bg:#18181B; --elevated:#27272A; --border:#3F3F46; --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:#0b0b0d;color:#e4e4e7;
+       display:flex;gap:40px;flex-wrap:wrap;justify-content:center;padding:48px 24px 72px}
+  .stage{display:flex;flex-direction:column;gap:16px;align-items:center}
+  .stage h2{font:600 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin:0}
+  .canvas{width:360px;background:var(--bg);border:1px solid var(--border);border-radius:14px;
+          padding:34px 30px;display:flex;flex-direction:column;gap:26px}
+  .row{display:flex;align-items:center;gap:14px;color:var(--text);font-size:14px}
+
+  /* ── flat themed slider (mirrors the XAML) ── */
+  .sl{position:relative;width:140px;height:16px;flex:none}
+  .sl .groove{position:absolute;top:6px;left:0;right:0;height:4px;border-radius:2px;background:var(--border)}
+  .sl .fill{position:absolute;top:6px;left:0;height:4px;border-radius:2px;background:var(--accent)}
+  .sl .thumb{position:absolute;top:0;width:16px;height:16px;border-radius:50%;
+             background:var(--accent);border:2px solid var(--elevated);transform:translateX(-50%)}
+  .sl .thumb::after{content:"";position:absolute;inset:-4px;border-radius:50%;
+                    background:var(--accent);opacity:0}
+  .sl.hover .thumb::after{opacity:.18}
+  .lab{min-width:54px;color:var(--text)}
+
+  /* ── before: Aero default, faked ── */
+  .aero{position:relative;width:140px;height:24px;flex:none}
+  .aero .trk{position:absolute;top:9px;left:0;right:0;height:5px;border:1px solid #aeb6bf;border-radius:2px;
+             background:linear-gradient(#e9ecef,#d2d7de)}
+  .aero .th{position:absolute;top:0;width:11px;height:22px;transform:translateX(-50%);
+            background:linear-gradient(#fafafa,#c8ccd1);border:1px solid #707070;border-radius:2px}
+  .aero .th::after{content:"";position:absolute;left:3px;right:3px;bottom:1px;height:5px;
+                   border-left:1px solid #888;border-right:1px solid #888;
+                   clip-path:polygon(0 0,100% 0,50% 100%)}
+  .note{max-width:360px;font:400 13px/1.6 system-ui;color:#9ca3af;text-align:center}
+</style>
+</head>
+<body>
+
+  <div class="stage light">
+    <h2>Dopo — Light</h2>
+    <div class="canvas">
+      <div class="row"><div class="sl"><div class="groove"></div><div class="fill" style="width:30%"></div><div class="thumb" style="left:30%"></div></div><span class="lab">Lieve</span></div>
+      <div class="row"><div class="sl hover"><div class="groove"></div><div class="fill" style="width:60%"></div><div class="thumb" style="left:60%"></div></div><span class="lab">Moderato</span></div>
+      <div class="row"><div class="sl"><div class="groove"></div><div class="fill" style="width:90%"></div><div class="thumb" style="left:90%"></div></div><span class="lab">Forte</span></div>
+    </div>
+  </div>
+
+  <div class="stage dark">
+    <h2>Dopo — Dark</h2>
+    <div class="canvas">
+      <div class="row"><div class="sl"><div class="groove"></div><div class="fill" style="width:20%"></div><div class="thumb" style="left:20%"></div></div><span class="lab">Basso</span></div>
+      <div class="row"><div class="sl hover"><div class="groove"></div><div class="fill" style="width:50%"></div><div class="thumb" style="left:50%"></div></div><span class="lab">Medio</span></div>
+      <div class="row"><div class="sl"><div class="groove"></div><div class="fill" style="width:80%"></div><div class="thumb" style="left:80%"></div></div><span class="lab">Alto</span></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <h2>Prima — default Aero</h2>
+    <div class="canvas" style="--bg:#deded6;--border:#b8b8b8;--text:#222">
+      <div class="row"><div class="aero"><div class="trk"></div><div class="th" style="left:30%"></div></div><span class="lab">Lieve</span></div>
+      <div class="row"><div class="aero"><div class="trk"></div><div class="th" style="left:60%"></div></div><span class="lab">Moderato</span></div>
+    </div>
+    <p class="note">Il default Aero ha il thumb appuntito sfumato su una traccia incassata col bordo grigio.
+       Il nuovo stile usa una traccia sottile arrotondata, la porzione raggiunta riempita in accento e un
+       thumb circolare pulito con anello morbido su hover/drag.</p>
+  </div>
+
+</body>
+</html>

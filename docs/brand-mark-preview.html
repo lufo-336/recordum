@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — anteprima simbolo (R serif)</title>
+<style>
+  :root{ --serif:"Palatino Linotype","Book Antiqua",Georgia,serif; }
+  .light{ --surface:#F7F7F8; --border:#E4E4E7; --text:#18181B; --muted:#71717A; --accent:#3B82F6; }
+  .dark { --surface:#18181B; --border:#3F3F46; --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0b0d;color:#e4e4e7;font-family:system-ui;
+       display:flex;flex-direction:column;align-items:center;gap:30px;padding:54px 20px}
+  h1{font:600 14px/1 system-ui;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;margin:0}
+  .group{display:flex;flex-direction:column;gap:14px;width:520px}
+  .cap{font:500 12px/1 system-ui;color:#8a8f98;margin-left:4px}
+  /* title bar mock (36px, mirrors the WindowChrome caption) */
+  .bar{height:36px;display:flex;align-items:center;background:var(--surface);
+       border:1px solid var(--border);border-radius:8px;padding:0 12px;gap:0}
+  .ham{width:18px;height:18px;margin-right:10px;flex:none}
+  .ham line{stroke:var(--muted);stroke-width:1.8;stroke-linecap:round}
+  .mark{font-family:var(--serif);font-weight:700;font-size:18px;line-height:1;margin-right:8px}
+  .mark.accent{color:var(--accent)}
+  .mark.text{color:var(--text)}
+  .title{font:600 12.5px/1 var(--serif);color:var(--muted)}
+  .row{display:flex;gap:20px}
+  .col{flex:1;display:flex;flex-direction:column;gap:10px}
+</style>
+</head>
+<body>
+
+  <h1>Simbolo del programma — R serif (Palatino)</h1>
+
+  <div class="row">
+    <div class="col">
+      <div class="cap">Light · R accento (scelta attuale)</div>
+      <div class="group light"><div class="bar">
+        <svg class="ham" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <span class="mark accent">R</span><span class="title">Recordum</span>
+      </div></div>
+
+      <div class="cap">Light · R colore testo</div>
+      <div class="group light"><div class="bar">
+        <svg class="ham" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <span class="mark text">R</span><span class="title">Recordum</span>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <div class="cap">Dark · R accento (scelta attuale)</div>
+      <div class="group dark"><div class="bar">
+        <svg class="ham" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <span class="mark accent">R</span><span class="title">Recordum</span>
+      </div></div>
+
+      <div class="cap">Dark · R colore testo</div>
+      <div class="group dark"><div class="bar">
+        <svg class="ham" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <span class="mark text">R</span><span class="title">Recordum</span>
+      </div></div>
+    </div>
+  </div>
+
+  <p style="max-width:520px;font:400 13px/1.6 system-ui;color:#9ca3af;text-align:center">
+    Era la linea-impulso Lucide (icon.activity). Ora una <b>R serif Palatino</b> bold, 18px,
+    accanto al titolo. Scelta attuale: <b>accento</b>. Se preferisci la R nel colore del testo, lo cambio.</p>
+
+</body>
+</html>

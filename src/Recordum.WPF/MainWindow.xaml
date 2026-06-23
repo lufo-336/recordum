@@ -108,10 +108,13 @@
                             AutomationProperties.Name="{x:Static res:Strings.Workspace_ToggleSidebar}">
                         <Path Style="{StaticResource Caption.Icon}" Data="M4 6h16 M4 12h16 M4 18h16"/>
                     </Button>
-                    <Path Width="15" Height="15" Stretch="Uniform" Margin="0,0,8,0"
-                          Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.8"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                          Data="{StaticResource Icon.Activity}"/>
+                    <!-- Brand mark: a serif "R" (Palatino, the app's serif face) instead of the
+                         old activity line-icon. Pinned to Font.Serif so the mark stays serif even
+                         when the user sets the UI font to System. -->
+                    <TextBlock Text="R" Margin="1,0,8,0" VerticalAlignment="Center"
+                               FontFamily="{DynamicResource Font.Serif}"
+                               FontSize="18" FontWeight="Bold"
+                               Foreground="{DynamicResource Brush.Text}"/>
                     <TextBlock Text="{x:Static res:Strings.AppTitle}" VerticalAlignment="Center"
                                FontWeight="SemiBold" FontSize="12.5"
                                Foreground="{DynamicResource Brush.TextMuted}"/>
