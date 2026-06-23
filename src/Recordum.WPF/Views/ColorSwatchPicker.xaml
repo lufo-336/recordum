@@ -5,7 +5,42 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:Recordum.WPF.Views"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:helpers="clr-namespace:Recordum.WPF.Helpers"
              mc:Ignorable="d">
+    <UserControl.Resources>
+        <!-- Carries the picker's current Color into ItemsControl item scope -->
+        <helpers:BindingProxy x:Key="CurrentColorProxy"
+            Data="{Binding Color, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}}"/>
+
+        <!-- Shared swatch style: selection ring when colour == current, muted hover ring -->
+        <Style x:Key="Swatch" TargetType="Border">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="True"/>
+            <Setter Property="Background" Value="{Binding ., Converter={StaticResource HexToBrush}}"/>
+            <Setter Property="AutomationProperties.Name" Value="{Binding .}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Effect">
+                        <Setter.Value><DropShadowEffect Color="#888888" BlurRadius="0" ShadowDepth="0"/></Setter.Value>
+                    </Setter>
+                </Trigger>
+                <DataTrigger Value="True">
+                    <DataTrigger.Binding>
+                        <MultiBinding Converter="{StaticResource ColorEqualsConverter}">
+                            <Binding Path="."/>
+                            <Binding Path="Data" Source="{StaticResource CurrentColorProxy}"/>
+                        </MultiBinding>
+                    </DataTrigger.Binding>
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
     <StackPanel Orientation="Horizontal">
         <!-- Trigger: current color swatch (opens the popup) -->
         <Border x:Name="Trigger" Width="28" Height="28" CornerRadius="4"
@@ -38,10 +73,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="20" Height="20" Margin="2" CornerRadius="3"
-                                            Cursor="Hand" Focusable="True"
-                                            AutomationProperties.Name="{Binding .}"
-                                            Background="{Binding ., Converter={StaticResource HexToBrush}}"
+                                    <Border Style="{StaticResource Swatch}"
                                             MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -60,10 +92,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="20" Height="20" Margin="2" CornerRadius="3"
-                                            Cursor="Hand" Focusable="True"
-                                            AutomationProperties.Name="{Binding .}"
-                                            Background="{Binding ., Converter={StaticResource HexToBrush}}"
+                                    <Border Style="{StaticResource Swatch}"
                                             MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
