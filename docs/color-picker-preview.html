@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — mockup color picker v2</title>
+<style>
+  :root{ --font:"Palatino Linotype","Book Antiqua",Georgia,serif; --mono:"Consolas",monospace; }
+  .light{ --bg:#FFFFFF; --surface:#F7F7F8; --elevated:#FFFFFF; --border:#E4E4E7; --text:#18181B; --muted:#71717A; --accent:#3B82F6; }
+  .dark { --bg:#18181B; --surface:#27272A; --elevated:#27272A; --border:#3F3F46; --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:#1b1b1f;color:#e4e4e7;
+       display:flex;gap:46px;flex-wrap:wrap;justify-content:center;align-items:flex-start;padding:42px 24px 70px}
+  .stage{display:flex;flex-direction:column;gap:14px;align-items:center}
+  .stage h2{font:600 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin:0}
+
+  .pop{width:256px;background:var(--elevated);border:1px solid var(--border);border-radius:8px;
+       padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.22);color:var(--text)}
+  .sv{height:138px;border-radius:6px;border:1px solid var(--border);position:relative;
+      background:linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), var(--accent)}
+  .sv .t{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid #fff;
+         box-shadow:0 0 2px rgba(0,0,0,.6);left:62%;top:24%;transform:translate(-50%,-50%)}
+  .hue{height:15px;margin-top:8px;border-radius:6px;border:1px solid var(--border);position:relative;
+       background:linear-gradient(to right,red,#ff0,#0f0,#0ff,#00f,#f0f,red)}
+  .hue .t{position:absolute;width:6px;height:15px;top:-1px;left:62%;border:2px solid #fff;border-radius:2px;box-shadow:0 0 2px rgba(0,0,0,.6)}
+
+  .lbl{font-size:12px;color:var(--muted);margin:12px 0 5px;display:flex;align-items:center;justify-content:space-between}
+  .add{cursor:pointer;color:var(--accent);font-size:13px;line-height:1}
+
+  .ramp{display:flex;gap:0;border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+  .ramp div{flex:1;height:22px;cursor:pointer}
+
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+  .sw{width:100%;aspect-ratio:1;border-radius:4px;cursor:pointer;position:relative}
+  .row{display:flex;flex-wrap:wrap;gap:5px}
+  .row .sw{width:20px;height:20px;flex:none}
+  /* selected ring + hover ring */
+  .sw.sel{box-shadow:0 0 0 2px var(--elevated), 0 0 0 4px var(--accent)}
+  .sw.hov{box-shadow:0 0 0 2px var(--elevated), 0 0 0 3px var(--muted)}
+  .fav .sw .x{position:absolute;top:-5px;right:-5px;width:13px;height:13px;border-radius:50%;
+              background:var(--elevated);border:1px solid var(--border);color:var(--muted);
+              font:9px/13px system-ui;text-align:center;display:none}
+  .fav .sw.hov .x{display:block}
+
+  .hex{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .hexin{flex:1;display:flex;align-items:center;border-bottom:1px solid var(--border);padding:3px 2px;font-family:var(--mono)}
+  .hexin .h{color:var(--muted);margin-right:1px}
+  .hexin input{border:0;background:transparent;color:var(--text);font-family:var(--mono);font-size:13px;width:100%;outline:none}
+  .prev{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:var(--accent)}
+  .eye{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);
+       display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .eye svg{width:15px;height:15px}
+  .eye svg *{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+  .note{max-width:780px;font:400 12.5px/1.6 system-ui;color:#9ca3af;text-align:center}
+  b{color:#e4e4e7}
+</style>
+</head>
+<body>
+<script>
+  const PAL = ["#fca5a5","#ef4444","#b91c1c","#fdba74","#f97316","#c2410c","#fcd34d","#f59e0b","#b45309",
+    "#bef264","#84cc16","#4d7c0f","#6ee7b7","#10b981","#047857","#67e8f9","#06b6d4","#0e7490",
+    "#93c5fd","#3b82f6","#1d4ed8","#a5b4fc","#6366f1","#4338ca","#c4b5fd","#8b5cf6","#6d28d9",
+    "#f0abfc","#d946ef","#a21caf","#f9a8d4","#ec4899","#be185d","#cbd5e1","#94a3b8","#475569"];
+  const CUR = "#3b82f6";
+  const RAMP = ["#dbeafe","#93c5fd","#60a5fa","#3b82f6","#2563eb","#1d4ed8","#1e3a8a"];
+  const REC = ["#10b981","#f59e0b","#ec4899","#8b5cf6"];
+  const FAV = ["#ef4444","#3b82f6","#84cc16"];
+  function grid(){
+    // 3 rows: lights (i%3==0), mids (==1), darks (==2) → 12 hue columns
+    let rows=[[],[],[]];
+    PAL.forEach((c,i)=>rows[i%3].push(c));
+    return rows.flat().map((c,n)=>{
+      const sel = c.toLowerCase()===CUR ? ' sel' : '';
+      const hov = (n===7)?' hov':'';
+      return `<div class="sw${sel}${hov}" style="background:${c}"></div>`;
+    }).join('');
+  }
+  function strip(arr,fav){
+    return arr.map((c,n)=>{
+      const sel = c.toLowerCase()===CUR?' sel':'';
+      const hov = (fav&&n===0)?' hov':'';
+      return `<div class="sw${sel}${hov}" style="background:${c}">${fav?'<span class="x">×</span>':''}</div>`;
+    }).join('');
+  }
+  function pop(){
+    return `
+      <div class="sv"><div class="t"></div></div>
+      <div class="hue"><div class="t"></div></div>
+
+      <div class="lbl">Tonalità</div>
+      <div class="ramp">${RAMP.map(c=>`<div style="background:${c}"></div>`).join('')}</div>
+
+      <div class="lbl">Palette</div>
+      <div class="grid">${grid()}</div>
+
+      <div class="lbl">Recenti</div>
+      <div class="row">${strip(REC,false)}</div>
+
+      <div class="lbl">Preferiti <span class="add">+ aggiungi</span></div>
+      <div class="row fav">${strip(FAV,true)}</div>
+
+      <div class="hex">
+        <div class="hexin"><span class="h">#</span><input value="3b82f6"></div>
+        <div class="prev"></div>
+        <div class="eye" title="Contagocce">
+          <svg viewBox="0 0 24 24"><path d="M11 7l6 6"/><path d="M4 20l4-1 9.5-9.5a2.1 2.1 0 0 0-3-3L5 13l-1 4z"/></svg>
+        </div>
+      </div>`;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('.pop').forEach(p=>p.innerHTML=pop());
+  });
+</script>
+
+  <div class="stage light"><h2>Light</h2><div class="pop"></div></div>
+  <div class="stage dark"><h2>Dark</h2><div class="pop"></div></div>
+
+  <p class="note">Mockup del popup v2. <b>Selezione</b>: anello accento sullo swatch del colore corrente
+     (qui il blu in palette + nei recenti). <b>Hover</b>: anello grigio (qui un arancio in palette, il
+     primo recente/preferito). <b>Tonalità</b>: ramp chiare→scure del colore scelto. <b>Preferiti</b>:
+     fila pinnata con "+ aggiungi" e ✕ su hover. <b>Hex</b> con "#" fisso + anteprima. <b>Contagocce</b>
+     in basso a destra. Popup nella nuova famiglia (raggio 8 + ombra).</p>
+</body>
+</html>
