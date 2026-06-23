@@ -141,6 +141,7 @@ Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegu
 - [ ] **CR13**: registra una serie con **sola durata** (es. 1:30) → in Cronologia/Records la riga mostra "Tempo: 1:30", non vuota.
 - [ ] **CR20**: Backup → "Sfoglia" → nome file suggerito `recordum-AAAAMMGG-hhmm.recbak` con timestamp corrente.
 - [ ] **CR22**: year-heatmap di un bisestile col bordo-settimana (es. 2028 cultura domenica-prima / 2012/2040 lunedì-prima) → il **31 dic** è presente nella griglia.
+- [ ] **R-contextMenu** (menù tasto-destro): click destro su una riga habit → pannello arrotondato con ombra, **niente colonna-icone grigia**, hover accento tenue, submenu "Fissa" si apre col chevron. **Controllo critico**: gli **angoli del popup sono trasparenti** (no rettangolo bianco/nero dietro il raggio) — se non lo sono, è il `HasDropShadow`/`AllowsTransparency` del popup. Light **e** dark. Riferimento look: `docs/context-menu-preview.html`.
 
 **Altro:**
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).

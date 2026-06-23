@@ -404,22 +404,129 @@
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     </Style>
 
-    <!-- Menus. -->
+    <!-- Menus. Themed flat chrome (Phase 4 polish): the default Aero ContextMenu/MenuItem
+         template shows a grey icon gutter, square corners, a heavy border and a system-blue
+         hover that reads as dated. We replace it with a rounded floating panel (soft shadow),
+         no icon gutter, and a quiet accent-tinted hover. Every app menu is a ContextMenu, so a
+         MenuItem only ever takes the SubmenuItem (leaf) or SubmenuHeader (has submenu) role —
+         one shared item template covers both; the chevron + child Popup only light up for a
+         header. -->
 
     <Style TargetType="{x:Type Menu}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="Background" Value="Transparent"/>
     </Style>
 
+    <!-- One menu row: a full-width rounded item that fills with a soft accent tint on hover or
+         keyboard focus. The tint is a separate layer so the label stays crisp. A SubmenuHeader
+         also hosts the child Popup (same rounded panel); a leaf never opens it. -->
+    <ControlTemplate x:Key="Menu.Item" TargetType="{x:Type MenuItem}">
+        <Border x:Name="Root" Background="Transparent" CornerRadius="5" SnapsToDevicePixels="True">
+            <Grid>
+                <Border x:Name="HoverFill" CornerRadius="5" Background="{DynamicResource Brush.Accent}" Opacity="0"/>
+                <Grid Margin="10,7">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Optional icon: collapses when null, so there is no reserved gutter. -->
+                    <ContentPresenter x:Name="Icon" Grid.Column="0" Content="{TemplateBinding Icon}"
+                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="True"
+                                      VerticalAlignment="Center"/>
+                    <!-- Keyboard gesture text (muted); collapses when empty. -->
+                    <TextBlock x:Name="Gesture" Grid.Column="2" Text="{TemplateBinding InputGestureText}"
+                               Foreground="{DynamicResource Brush.TextMuted}" Margin="24,0,0,0"
+                               VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}"/>
+                    <!-- Submenu chevron (Lucide-style stroke); only a SubmenuHeader shows it. -->
+                    <Path x:Name="Chevron" Grid.Column="2" Visibility="Collapsed" Stretch="Uniform"
+                          Width="5" Height="9" Margin="24,0,0,0" VerticalAlignment="Center"
+                          Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                          Data="M0,0 L5,5 L0,10"/>
+                </Grid>
+                <!-- Child items: same rounded floating panel, opened to the right. -->
+                <Popup x:Name="SubMenuPopup" Placement="Right" HorizontalOffset="-3" VerticalOffset="-5"
+                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                       AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                    <Border Margin="8" Background="Transparent">
+                        <Border Background="{DynamicResource Brush.SurfaceElevated}"
+                                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                CornerRadius="8" Padding="4" SnapsToDevicePixels="True">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.20" BlurRadius="18"
+                                                  ShadowDepth="3" Direction="270"/>
+                            </Border.Effect>
+                            <ItemsPresenter/>
+                        </Border>
+                    </Border>
+                </Popup>
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="Icon" Value="{x:Null}">
+                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
+            </Trigger>
+            <Trigger Property="InputGestureText" Value="">
+                <Setter TargetName="Gesture" Property="Visibility" Value="Collapsed"/>
+            </Trigger>
+            <Trigger Property="Role" Value="SubmenuHeader">
+                <Setter TargetName="Chevron" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="Gesture" Property="Visibility" Value="Collapsed"/>
+            </Trigger>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="HoverFill" Property="Opacity" Value="0.14"/>
+                <Setter TargetName="Chevron" Property="Stroke" Value="{DynamicResource Brush.Accent}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
     <Style TargetType="{x:Type MenuItem}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
-        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template" Value="{StaticResource Menu.Item}"/>
+    </Style>
+
+    <!-- Quiet 1px separator instead of the sunken 3D default. -->
+    <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Separator}">
+                    <Border Height="1" Margin="6,5" Background="{DynamicResource Brush.Border}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type ContextMenu}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
-        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSize.Body}"/>
+        <Setter Property="HasDropShadow" Value="True"/>
+        <Setter Property="MinWidth" Value="184"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ContextMenu}">
+                    <!-- Outer transparent margin gives the drop shadow room to bleed. -->
+                    <Border Margin="8" Background="Transparent">
+                        <Border Background="{DynamicResource Brush.SurfaceElevated}"
+                                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                CornerRadius="8" Padding="4" SnapsToDevicePixels="True">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.20" BlurRadius="18"
+                                                  ShadowDepth="3" Direction="270"/>
+                            </Border.Effect>
+                            <ItemsPresenter/>
+                        </Border>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Tooltips. -->

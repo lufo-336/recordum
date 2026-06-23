@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Recordum — anteprima menù contestuali (tasto destro)</title>
+<style>
+  /* Token mirror of Tokens.xaml / Light.xaml / Dark.xaml */
+  :root{
+    --font: "Palatino Linotype","Book Antiqua",Georgia,serif;
+    --fs-body:14px; --fs-small:12px;
+  }
+  .light{
+    --bg:#FFFFFF; --surface:#F7F7F8; --elevated:#FFFFFF; --border:#E4E4E7;
+    --text:#18181B; --muted:#71717A; --accent:#3B82F6;
+  }
+  .dark{
+    --bg:#18181B; --surface:#18181B; --elevated:#27272A; --border:#3F3F46;
+    --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:#0b0b0d;color:#e4e4e7;
+       display:flex;gap:40px;flex-wrap:wrap;justify-content:center;padding:48px 24px 80px}
+  .stage{display:flex;flex-direction:column;gap:18px;align-items:center}
+  .stage h2{font:600 13px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;
+            color:#9ca3af;margin:0}
+  .canvas{width:520px;border-radius:14px;padding:40px;display:flex;gap:36px;
+          justify-content:center;flex-wrap:wrap;background:var(--bg);border:1px solid var(--border)}
+
+  /* ── Menu panel (mirrors the ContextMenu template) ── */
+  .menu{
+    min-width:184px; background:var(--elevated); border:1px solid var(--border);
+    border-radius:8px; padding:4px; color:var(--text);
+    font-size:var(--fs-body); position:relative;
+    box-shadow:0 3px 18px rgba(0,0,0,.20);
+  }
+  .item{
+    position:relative; border-radius:5px; padding:7px 10px; cursor:default;
+    display:flex; align-items:center; gap:8px; white-space:nowrap; user-select:none;
+  }
+  .item .label{flex:1}
+  .item .chev{width:5px;height:9px;flex:none}
+  .item .chev path{fill:none;stroke:var(--muted);stroke-width:1.5;
+                   stroke-linecap:round;stroke-linejoin:round}
+  /* soft accent-tinted hover; label stays crisp */
+  .item.hover{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  .item.hover .chev path{stroke:var(--accent)}
+  .item.disabled{color:var(--muted);opacity:.55}
+  .sep{height:1px;margin:5px 6px;background:var(--border)}
+
+  /* the open submenu, floated beside its parent */
+  .submenu{position:absolute;left:calc(100% - 3px);top:42px}
+
+  .note{max-width:520px;font:400 13px/1.6 system-ui;color:#9ca3af;text-align:center}
+  .before{filter:saturate(.4)}
+  /* "before": the dated Windows default, faked for contrast */
+  .winmenu{min-width:184px;background:#f2f2f2;border:1px solid #b0b0b0;color:#111;
+           font:14px "Segoe UI",sans-serif;box-shadow:2px 2px 3px rgba(0,0,0,.25)}
+  .winmenu .wi{display:flex;align-items:center;padding:5px 0}
+  .winmenu .wgutter{width:28px;background:#e8e8e8;border-right:1px solid #dcdcdc;
+                    align-self:stretch;margin-right:8px}
+  .winmenu .wi.sel{background:#cfe5ff;border:1px solid #9cc6f5}
+  .winmenu .wsep{height:0;border-top:1px solid #d2d2d2;margin:3px 0 3px 28px}
+</style>
+</head>
+<body>
+
+  <div class="stage light">
+    <h2>Dopo — Light</h2>
+    <div class="canvas">
+      <!-- habit row menu, with the Pin submenu open and Archive hovered -->
+      <div class="menu">
+        <div class="item"><span class="label">Rinomina</span></div>
+        <div class="item hover">
+          <span class="label">Fissa</span>
+          <svg class="chev" viewBox="0 0 5 10"><path d="M0,0 L5,5 L0,10"/></svg>
+        </div>
+        <div class="item"><span class="label">Archivia</span></div>
+        <div class="sep"></div>
+        <div class="item"><span class="label">Elimina</span></div>
+        <div class="item disabled"><span class="label">Elimina definitivamente</span></div>
+
+        <!-- submenu of "Fissa" -->
+        <div class="menu submenu">
+          <div class="item"><span class="label">Nessuno</span></div>
+          <div class="item hover"><span class="label">Locale</span></div>
+          <div class="item"><span class="label">Globale</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage dark">
+    <h2>Dopo — Dark</h2>
+    <div class="canvas">
+      <div class="menu">
+        <div class="item"><span class="label">Crea backup…</span></div>
+        <div class="item hover"><span class="label">Ripristina da file…</span></div>
+        <div class="sep"></div>
+        <div class="item"><span class="label">Cronologia backup</span></div>
+      </div>
+      <div class="menu">
+        <div class="item"><span class="label">Rinomina</span></div>
+        <div class="item">
+          <span class="label">Fissa</span>
+          <svg class="chev" viewBox="0 0 5 10"><path d="M0,0 L5,5 L0,10"/></svg>
+        </div>
+        <div class="item hover"><span class="label">Archivia</span></div>
+        <div class="sep"></div>
+        <div class="item"><span class="label">Elimina</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <h2>Prima — default Windows</h2>
+    <div class="canvas before" style="--bg:#deded6;--border:#b8b8b8">
+      <div class="winmenu">
+        <div class="wi"><div class="wgutter"></div>Rinomina</div>
+        <div class="wi"><div class="wgutter"></div>Fissa ▸</div>
+        <div class="wi sel"><div class="wgutter"></div>Archivia</div>
+        <div class="wsep"></div>
+        <div class="wi"><div class="wgutter"></div>Elimina</div>
+      </div>
+    </div>
+    <p class="note">Il default mostra la colonna-icone grigia inutile, angoli squadrati,
+       bordo spesso e l'highlight blu di sistema. Il nuovo template toglie la colonna,
+       arrotonda il pannello, aggiunge un'ombra morbida e usa un riempimento accento al 14%.</p>
+  </div>
+
+</body>
+</html>

@@ -55,7 +55,13 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Fix collaterale**: il progetto test WPF **non compilava** dalla sessione `3497021` (il costruttore di `SettingsViewModel` aveva guadagnato `IAppFontService` ma 2 file di test non erano stati aggiornati). Creato `FakeAppFontService`, aggiornati i 4 siti → `Recordum.WPF.Tests` ora **compila** (`-p:EnableWindowsTargeting=true`).
 - I test WPF sono `net10.0-windows` → **compile-verified su Mac, RED→GREEN + verifica visiva da fare sulla VM**.
 
-**Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22; CR8 (regen snapshot).
+**Quarto giro — R-contextMenu: restyle menù tasto-destro** (richiesta utente, compile-only):
+- **Problema**: `ContextMenu`/`MenuItem` avevano **solo setter di colore**, nessun `ControlTemplate` → resa col default Aero di Windows (colonna-icone grigia inutile, angoli squadrati, bordo spesso, hover blu di sistema = look datato).
+- **Fix** (`Resources/BaseStyles.xaml`): template tematizzati. Pannello flottante arrotondato (raggio 8) su `Brush.SurfaceElevated` + **ombra morbida** (`DropShadowEffect`); **niente colonna-icone**; righe raggio 5 con hover/focus = **riempimento `Brush.Accent` al 14%** su layer separato (testo nitido); submenu con chevron Lucide (accento su hover) nello stesso pannello; separatori 1px (`MenuItem.SeparatorStyleKey`) invece della linea 3D. Tutti i menù app sono `ContextMenu` → ruoli `SubmenuItem`/`SubmenuHeader`, un solo template `Menu.Item` con `Popup` condiviso.
+- **Anteprima approvata dall'utente**: `docs/context-menu-preview.html` (light+dark, submenu aperto, confronto col default). Build WPF verde.
+- **Da verificare a vista sulla VM**: in particolare la **trasparenza degli angoli del popup** (`HasDropShadow=True` deve mantenere `AllowsTransparency` sul popup interno) e l'apertura submenu.
+
+**Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---
 
