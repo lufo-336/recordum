@@ -4,6 +4,7 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
@@ -134,6 +135,9 @@ public sealed partial class CompletionListViewModel : ObservableObject
         if (m.ScaleLabels is { Count: > 0 } labels && v.ValueInteger is { } idx)
             return idx >= 0 && idx < labels.Count ? labels[(int)idx] : idx.ToString(CultureInfo.CurrentCulture);
         if (v.ValueText is { } t) return t;
+        // Duration metrics store ValueSeconds only; without this branch a series with just a time
+        // (e.g. 1:30) rendered as a blank field in Cronologia/Records despite being saved (CR13).
+        if (v.ValueSeconds is { } secs) return DurationFormat.Format(secs);
         var unit = m.Unit is { } u ? " " + u : string.Empty;
         if (v.ValueDecimal is { } d) return d.ToString(CultureInfo.CurrentCulture) + unit;
         if (v.ValueInteger is { } i) return i.ToString(CultureInfo.CurrentCulture) + unit;

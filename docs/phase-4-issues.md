@@ -48,7 +48,14 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **CR6** `triaged`→**WONTFIX proposto**: interpretazione dubbia (Counter è la riclassificazione voluta per resistance con metrica misurata), nessun dato first-party colpito, non fixabile su Mac né a posteriori.
 - `HabitTemplateServiceTests` 9/9 verdi (osx-arm64).
 
-**Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher), verifica visiva CR5, CR8 (regen snapshot).
+**Terzo giro — CR13/CR20/CR22 (WPF) + fix compile test pre-esistente** (stessa sessione):
+- **CR13** `fixed` (compile-only): ramo `Seconds` in `CompletionListViewModel.FormatValue` → durate visibili in Cronologia.
+- **CR20** `fixed` (compile-only): `IClock` iniettato in `BackupDialogViewModel` (no più `DateTime.UtcNow`).
+- **CR22** `fixed` (compile-only): year-heatmap a 54 settimane (era 53) → il 31 dic non sparisce più nei bisestili col bordo-settimana. L'ExportEngine **non** condivideva il bug (finestra rolling, non anno-solare).
+- **Fix collaterale**: il progetto test WPF **non compilava** dalla sessione `3497021` (il costruttore di `SettingsViewModel` aveva guadagnato `IAppFontService` ma 2 file di test non erano stati aggiornati). Creato `FakeAppFontService`, aggiornati i 4 siti → `Recordum.WPF.Tests` ora **compila** (`-p:EnableWindowsTargeting=true`).
+- I test WPF sono `net10.0-windows` → **compile-verified su Mac, RED→GREEN + verifica visiva da fare sulla VM**.
+
+**Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22; CR8 (regen snapshot).
 
 ---
 
@@ -87,7 +94,7 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: `GetDailyMagnitudeAsync` per `HabitType.State` usa il valore numerico della metrica primaria, poi `if (mag > 0) result.Add(...)`. Con una scala **0-based** (es. NRS dolore, valore più basso = 0) il giorno dà `mag=0` ed è escluso → cella calendario vuota pur con registrazione. Counter/Resistance hanno floor `Math.Max(1,…)`, Action/Journal `Count()≥1`; solo State è vulnerabile. Distinguere "nessuna registrazione" da "valore 0".
 
 ### CR6. CounterReclassV210 riclassifica resistance a metriche miste
-- **Stato**: `triaged` — **proposto WONTFIX** (decisione utente) · gravità **bassa** (declassata da media)
+- **Stato**: `wontfix` (confermato utente 2026-06-23) · gravità **bassa** (declassata da media)
 - **Triage 2026-06-23 cont.**: (1) **interpretazione dubbia** — per la grammatica multivalue una resistance con *qualsiasi* metrica misurata (Integer/Decimal/Seconds) è una "serie" → Counter è la riclassificazione **voluta**; "scale-only resistances stay" significa metriche *esclusivamente* scala, e una resistance scala+misurata non è scale-only. Non è chiaro che sia un bug. (2) **Nessun dato first-party colpito**: l'unico template Resistance ("Stop smoking") ha `metrics:[]`; il set teorico (resistance con scala **e** misurata) è solo da vecchio builder utente. (3) **Non fixabile su Mac né a posteriori**: migrazione già applicata (editarla è bloccato/inutile); una forward-migration correttiva richiede `dotnet ef` (VM) e **non può distinguere** un Counter creato nativamente da uno riclassato. → Raccomando **WONTFIX**; eventuale forward-migration solo se emergono dati reali colpiti.
 - **Dove**: `src/Recordum.Data/Migrations/20260613210206_CounterReclassV210.cs:19`
 - **Cosa**: il subquery matcha **per riga di metrica**: una resistance con sia metrica scala sia misurata entra in `id IN (...)` per la seconda → l'intero habit diventa Counter. Down irreversibile.
@@ -134,9 +141,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 > Delta `fase-4-polish` (~3.700 righe, 69 VM + behaviors). Review multi-agente recall-biased; i CONFIRMED sotto sono stati verificati leggendo il codice.
 
 ### CR13. Metriche durata invisibili nelle liste registrazioni (CONFIRMED)
-- **Stato**: `reported` · gravità **media (dato visibile mancante)**
-- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/CompletionListViewModel.cs` (`FormatValue`) ↔ `…/QuickAdd/SeriesCellViewModel.cs:110` (`BuildValue` scrive `ValueSeconds`)
-- **Cosa**: `FormatValue` controlla ScaleLabels/ValueText/ValueDecimal/ValueInteger ma **non `ValueSeconds`** → una serie con sola durata (es. 1:30) appare con riga vuota in Cronologia/Records. Dato salvato ma invisibile. Aggiungere il ramo Seconds (riusare `DurationFormat.Format`).
+- **Stato**: `fixed` (2026-06-23 cont.) — **compile-only su Mac, run+verifica VM** · gravità **media (dato visibile mancante)**
+- **Fix**: aggiunto il ramo `Seconds` in `FormatValue` (`if (v.ValueSeconds is { } secs) return DurationFormat.Format(secs);`) + `using Recordum.WPF.Formatting`. Una serie con sola durata ora mostra "1:30". Test `LoadDayAsync_renders_a_duration_field_value` (compila su Mac; **da eseguire sulla VM** — i test WPF sono `net10.0-windows`).
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/CompletionListViewModel.cs` (`FormatValue`)
+- **Cosa**: `FormatValue` controlla ScaleLabels/ValueText/ValueDecimal/ValueInteger ma **non `ValueSeconds`** → una serie con sola durata (es. 1:30) appare con riga vuota in Cronologia/Records. Dato salvato ma invisibile.
 
 ### CR14. `HabitEditorViewModel.LoadAsync` senza generation guard → stato misto/salvataggio su habit sbagliato (CONFIRMED)
 - **Stato**: `reported` · gravità **media (integrità)**
@@ -169,9 +177,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: handler `OnModeChanged`/`OnSelectedPeriodChanged` fanno `_ = ReloadAsync()` sovrapponibili; toggle rapido Giorno↔Periodo può lasciare in lista i risultati della query più vecchia.
 
 ### CR20. `BackupDialogViewModel` usa `DateTime.UtcNow` diretto (CONFIRMED, convenzioni)
-- **Stato**: `reported` · gravità **bassa (convenzioni)**
-- **Dove**: `src/Recordum.WPF/ViewModels/Backup/BackupDialogViewModel.cs:34`
-- **Cosa**: nome file backup da `DateTime.UtcNow`. CLAUDE.md §4: «Mai DateTime.UtcNow/Now diretti. Tutto via IClock/TimeProvider.» Iniettare `IClock`.
+- **Stato**: `fixed` (2026-06-23 cont.) — **compile-only su Mac, run VM** · gravità **bassa (convenzioni)**
+- **Fix**: iniettato `IClock clock` nel costruttore; `Browse` usa `clock.UtcNow.UtcDateTime` per il nome file. DI invariato (AddTransient risolve `IClock`). `FakeBackupSaveFileDialog` ora cattura `LastSuggestedName`; test `Browse_derives_the_default_filename_from_the_injected_clock_not_DateTime_UtcNow` (compila su Mac, run VM). Aggiornate le 3 costruzioni esistenti del VM nei test.
+- **Dove**: `src/Recordum.WPF/ViewModels/Backup/BackupDialogViewModel.cs`
+- **Cosa**: nome file backup da `DateTime.UtcNow`. CLAUDE.md §4: «Mai DateTime.UtcNow/Now diretti. Tutto via IClock/TimeProvider.»
 
 ### CR21. QuickAdd: eccezioni grezze in UI + duplicazione
 - **Stato**: `reported` · gravità **bassa (convenzioni/UX/reuse)**
@@ -179,9 +188,11 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: `ErrorMessage = ex.Message` → stringa non localizzata (es. "UNIQUE constraint failed") mostrata all'utente (viola §8 .resx); usare messaggio localizzato + log. Inoltre `ToggleChrono` e lo skeleton Save sono duplicati tra le 3 VM → estrarre base condivisa.
 
 ### CR22. Heatmap anno perde il 31 dic di un bisestile che inizia di domenica (CONFIRMED)
-- **Stato**: `reported` · gravità **bassa (raro, display)**
-- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/Calendar/CalendarNavigatorViewModel.cs:159-175` (griglia fissa 371 celle)
-- **Cosa**: con `leading==6` (Jan 1 di domenica in anno bisestile, es. 2012/2040) l'ultima cella è `jan1+364 < 31 dic = jan1+365` → il 31 dic non è renderizzato; un completamento/nota quel giorno sparisce dalla heatmap. Stessa assunzione 371 condivisa con l'ExportEngine. Usare 54 settimane.
+- **Stato**: `fixed` (2026-06-23 cont.) — **compile-only su Mac, run VM** · gravità **bassa (raro, display)**
+- **Fix**: `BuildYearHeatmap` ora costruisce **54 settimane** (378 celle) invece di 53/371 — con `leading==6` in un bisestile l'ultima cella è `jan1+371 ≥ 31 dic`. Aggiornati i doc-comment (Cells 378, YearWeeks 54). Test esistente aggiornato a 54/378 + nuovo `YearHeatmap_includes_Dec_31_of_a_leap_year_whose_Jan1_is_on_the_week_edge` (sceglie l'anno bisestile col bordo-settimana per la cultura corrente → deterministico). Compila su Mac, run VM.
+- **Nota**: l'**ExportEngine NON condivide il bug** — il suo heatmap è una **finestra rolling di 53 settimane fino a oggi** (`ExportQueryService`: `anchor = mondayOfTodayWeek - 52*7`), non una griglia anno-solare Jan1→Dec31. Il cross-reference del CR era impreciso. Nessun cambio a `HeatmapImageRenderer`.
+- **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/Calendar/CalendarNavigatorViewModel.cs` (`BuildYearHeatmap`)
+- **Cosa**: con `leading==6` (Jan 1 sull'ultima colonna della settimana in anno bisestile, es. 2028 cultura domenica-prima / 2012-2040 lunedì-prima) l'ultima cella era `jan1+364 < 31 dic = jan1+365` → il 31 dic non renderizzato.
 
 ### CR23. `HabitEditorViewModel.OnColorChanged` inquina la MRU colori a ogni tasto
 - **Stato**: `reported` · gravità **bassa**

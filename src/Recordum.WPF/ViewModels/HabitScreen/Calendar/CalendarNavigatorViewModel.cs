@@ -58,13 +58,13 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
     private DateOnly _weekAnchor;
 
     /// <summary>Flat day cells: the Week + Month grids, and (when <see cref="YearAsHeatmap"/>) the Year
-    /// heatmap's 371 cells. Empty in the Year mini-months view.</summary>
+    /// heatmap's 378 cells. Empty in the Year mini-months view.</summary>
     public ObservableCollection<CalendarDayCellViewModel> Cells { get; } = [];
 
     /// <summary>The twelve month blocks of the Year mini-months view. Empty otherwise.</summary>
     public ObservableCollection<CalendarMonthBlockViewModel> MonthBlocks { get; } = [];
 
-    /// <summary>The Year heatmap grouped into 53 week-columns (same cell instances as <see cref="Cells"/>),
+    /// <summary>The Year heatmap grouped into 54 week-columns (same cell instances as <see cref="Cells"/>),
     /// so a horizontal stack of vertical columns renders a GitHub-style grid. Empty unless Year + heatmap.</summary>
     public ObservableCollection<IReadOnlyList<CalendarDayCellViewModel>> YearWeeks { get; } = [];
 
@@ -156,8 +156,10 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         }
     }
 
-    /// <summary>Year heatmap: 371 cells (53 weeks × 7) from the week boundary on/before Jan 1, grouped into
-    /// week-columns for a GitHub-style render. <see cref="Cells"/> and <see cref="YearWeeks"/> share instances.</summary>
+    /// <summary>Year heatmap: 378 cells (54 weeks × 7) from the week boundary on/before Jan 1, grouped into
+    /// week-columns for a GitHub-style render. 54 (not 53) weeks so Dec 31 is always covered: when Jan 1
+    /// falls on the last weekday of the column (leading == 6) in a leap year, 53 weeks stop at Dec 30 and
+    /// drop the 31st (CR22). <see cref="Cells"/> and <see cref="YearWeeks"/> share instances.</summary>
     private void BuildYearHeatmap(int year)
     {
         MonthBlocks.Clear();
@@ -167,7 +169,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         int firstDow = (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
         int leading = ((int)jan1.DayOfWeek - firstDow + 7) % 7;
         var start = jan1.AddDays(-leading);
-        for (int w = 0; w < 53; w++)
+        for (int w = 0; w < 54; w++)
         {
             var week = new List<CalendarDayCellViewModel>(7);
             for (int d = 0; d < 7; d++)

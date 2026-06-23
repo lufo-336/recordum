@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Backup;
 using Recordum.WPF.Services;
 
@@ -7,7 +8,7 @@ namespace Recordum.WPF.ViewModels.Backup;
 
 public enum PassphraseStrength { None, Weak, Ok, Strong }
 
-public sealed partial class BackupDialogViewModel(IBackupService backup, IBackupSaveFileDialog saveDialog) : ObservableObject
+public sealed partial class BackupDialogViewModel(IBackupService backup, IBackupSaveFileDialog saveDialog, IClock clock) : ObservableObject
 {
     [ObservableProperty] private string _destination = string.Empty;
     [ObservableProperty] private string _passphrase = string.Empty;
@@ -31,7 +32,7 @@ public sealed partial class BackupDialogViewModel(IBackupService backup, IBackup
     [RelayCommand]
     private void Browse()
     {
-        var path = saveDialog.Prompt($"recordum-{DateTime.UtcNow:yyyyMMdd-HHmm}.recbak", "Recordum backup (*.recbak)|*.recbak");
+        var path = saveDialog.Prompt($"recordum-{clock.UtcNow.UtcDateTime:yyyyMMdd-HHmm}.recbak", "Recordum backup (*.recbak)|*.recbak");
         if (!string.IsNullOrWhiteSpace(path)) Destination = path;
     }
 

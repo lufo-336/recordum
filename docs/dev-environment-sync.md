@@ -128,3 +128,19 @@ Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegu
 - [ ] Input coerenti **underline**: TextBox, `PasswordBox` (backup/restore/impostazioni), preview note.
 - [ ] Tutta l'app in **Palatino**; numeri (timer/diagnostica) restano monospace.
 - [ ] **Impostazioni → Aspetto → Font**: System ↔ Serif (Palatino) → app **e** diario cambiano a caldo; riavvio → scelta persistita (`ui.font`).
+
+### ✅ Checklist verifica sulla VM — continuazione 2026-06-23 (commit `fe6cb9d`, `37a2fd5`)
+**Test (poi segna `verified-fixed` in `phase-4-issues.md`):**
+- [ ] `dotnet test tests/Recordum.Data.Tests` completo verde **inclusi** i 17 Backup/Security (su Mac falliscono per DPAPI/SQLCipher Windows-only).
+- [ ] `dotnet test tests/Recordum.WPF.Tests` verde — **prima esecuzione** dopo il fix di compilazione (`FakeAppFontService`); il progetto non compilava dalla `3497021`.
+
+**Data (verificato su Mac, riconferma su VM):** CR5/CR7/CR9/CR10/CR11 — già verdi su `osx-arm64`.
+
+**WPF — verifica visiva + run test (compile-only su Mac):**
+- [ ] **CR5**: habit **State** con scala 0-based, registra il valore **0** → la cella calendario **appare** (tinta presenza minima + numero "0"), non vuota; un giorno con sola nota resta senza tinta.
+- [ ] **CR13**: registra una serie con **sola durata** (es. 1:30) → in Cronologia/Records la riga mostra "Tempo: 1:30", non vuota.
+- [ ] **CR20**: Backup → "Sfoglia" → nome file suggerito `recordum-AAAAMMGG-hhmm.recbak` con timestamp corrente.
+- [ ] **CR22**: year-heatmap di un bisestile col bordo-settimana (es. 2028 cultura domenica-prima / 2012/2040 lunedì-prima) → il **31 dic** è presente nella griglia.
+
+**Altro:**
+- [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).

@@ -12,7 +12,7 @@ public class SettingsViewModelTests
     public async Task Initialize_reflects_current_theme_mode()
     {
         var theme = new FakeThemeService { CurrentMode = ThemeMode.Dark, EffectiveTheme = ThemeMode.Dark };
-        var sut = new SettingsViewModel(theme);
+        var sut = new SettingsViewModel(theme, new FakeAppFontService());
 
         await sut.InitializeAsync();
 
@@ -23,7 +23,7 @@ public class SettingsViewModelTests
     public async Task Initialize_does_not_call_SetModeAsync()
     {
         var theme = new FakeThemeService { CurrentMode = ThemeMode.Light };
-        var sut = new SettingsViewModel(theme);
+        var sut = new SettingsViewModel(theme, new FakeAppFontService());
 
         await sut.InitializeAsync();
 
@@ -34,7 +34,7 @@ public class SettingsViewModelTests
     public async Task Changing_ThemeMode_calls_service()
     {
         var theme = new FakeThemeService();
-        var sut = new SettingsViewModel(theme);
+        var sut = new SettingsViewModel(theme, new FakeAppFontService());
         await sut.InitializeAsync();
 
         sut.ThemeMode = ThemeMode.Light;

@@ -12,7 +12,7 @@ public class SettingsWindowViewModelTests
 {
     private static SettingsWindowViewModel CreateSut()
         => new(
-            new SettingsViewModel(new FakeThemeService()),
+            new SettingsViewModel(new FakeThemeService(), new FakeAppFontService()),
             new GeneralSettingsViewModel(new FakeAppSettingService()),
             new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner()),
             new DiagnosticInfoViewModel(

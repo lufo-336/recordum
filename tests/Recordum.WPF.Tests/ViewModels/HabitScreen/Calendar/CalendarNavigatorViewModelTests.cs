@@ -234,7 +234,7 @@ public class CalendarNavigatorViewModelTests
     }
 
     [Fact]
-    public async Task YearHeatmap_toggle_builds_371_week_grouped_cells()
+    public async Task YearHeatmap_toggle_builds_378_week_grouped_cells()
     {
         var sut = NewSut(out _);
         await sut.LoadAsync(2026, 6, selected: null);
@@ -243,10 +243,28 @@ public class CalendarNavigatorViewModelTests
         await sut.SetYearHeatmapCommand.ExecuteAsync(true);
 
         sut.YearAsHeatmap.Should().BeTrue();
-        sut.YearWeeks.Should().HaveCount(53);
+        sut.YearWeeks.Should().HaveCount(54); // 54 (not 53) so Dec 31 is always covered — CR22
         sut.YearWeeks.Should().OnlyContain(w => w.Count == 7);
-        sut.Cells.Should().HaveCount(371);
+        sut.Cells.Should().HaveCount(378);
         sut.MonthBlocks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task YearHeatmap_includes_Dec_31_of_a_leap_year_whose_Jan1_is_on_the_week_edge()
+    {
+        // CR22: with 53 weeks, a leap year whose Jan 1 sits on the last column of the week (leading==6)
+        // dropped Dec 31 (last cell = Jan1+364 < Dec 31 = Jan1+365). Pick such a year for the current
+        // culture and assert the 31st is rendered.
+        int firstDow = (int)System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        int year = Enumerable.Range(2012, 60).First(y =>
+            DateTime.IsLeapYear(y) && (((int)new DateOnly(y, 1, 1).DayOfWeek - firstDow + 7) % 7) == 6);
+
+        var sut = NewSut(out _);
+        await sut.LoadAsync(year, 6, selected: null);
+        await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
+        await sut.SetYearHeatmapCommand.ExecuteAsync(true);
+
+        sut.Cells.Should().Contain(c => c.Date == new DateOnly(year, 12, 31));
     }
 
     [Fact]

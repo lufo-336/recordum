@@ -193,6 +193,33 @@ public class CompletionListViewModelTests
         sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Mood: Neutral");
     }
 
+    [WpfFact]
+    public async Task LoadDayAsync_renders_a_duration_field_value()
+    {
+        // CR13: a series with only a duration (ValueSeconds) used to show a blank field because
+        // FormatValue had no Seconds branch. 90s must render as "1:30" via DurationFormat.
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var timeId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = timeId, HabitNodeId = habit, Name = "Time", Type = MetricType.Seconds, SortOrder = 0 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue> { new() { MetricDefinitionId = timeId, SeriesIndex = 0, ValueSeconds = 90 } },
+        };
+
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
+        await sut.LoadDayAsync(habit, day);
+
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Time: 1:30");
+    }
+
     [Fact]
     public async Task Journal_rows_show_paired_note_body_and_hide_inline_edit()
     {
