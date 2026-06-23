@@ -89,6 +89,11 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
 - **Fix** (`BaseStyles.xaml`): la scrollbar era già flat (Fase C) ma **piatta**: thumb `Brush.Border` faint, nessun hover, nessun min-size (poteva rimpicciolirsi all'infinito su liste lunghe). Aggiunto: `Thumb MinHeight/MinWidth 28` (non collassa); thumb a riposo pillola sottile (`Brush.Border`, margin 3 → ~4px) che su **hover/drag** si **scurisce** (`Brush.TextMuted`) e **allarga** (margin 2 → ~6px). Anteprima `docs/scrollbar-preview.html`.
 
+### R-tabStrip — intestazioni tab workspace (compile-only)
+- **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
+- **Fix** (`WorkspaceView.xaml`): tab con **angoli superiori arrotondati** (`CornerRadius="6,6,0,0"` sul riempimento hover/selezione, padding 12,6) — prima erano riquadri squadrati; l'underline accento 2px sulla tab attiva resta. La **chiusura** ora è un'**icona X Lucide** (Path inline `M0,0 L9,9 M9,0 L0,9`, hover-tint dal chrome Button implicito) invece del glifo grezzo "✕". **Pin/preview invariati** (semantica non toccata). Anteprima `docs/tabstrip-preview.html`.
+- **Non fatto** (scelta): muting delle tab inattive — il `Foreground` locale sul titolo vince sui trigger di Style (precedenza WPF), richiederebbe un refactor del title style col rischio di rompere il comportamento preview.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---

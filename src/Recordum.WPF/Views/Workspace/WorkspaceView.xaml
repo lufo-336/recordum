@@ -43,11 +43,14 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
+                                <!-- Softer tab: rounded top corners on the hover/selected fill; the
+                                     2px accent bottom border stays as the active-tab underline. -->
                                 <Border x:Name="Chrome"
                                         Background="Transparent"
                                         BorderBrush="Transparent"
                                         BorderThickness="0,0,0,2"
-                                        Padding="10,5">
+                                        CornerRadius="6,6,0,0"
+                                        Padding="12,6">
                                     <ContentPresenter VerticalAlignment="Center"/>
                                 </Border>
                                 <ControlTemplate.Triggers>
@@ -107,16 +110,21 @@
                                 </Path.Style>
                             </Path>
                         </Button>
-                        <Button Content="✕"
-                                Margin="6,0,0,0"
-                                Padding="3,0"
-                                FontSize="11"
+                        <!-- Close: a Lucide-style X icon (the implicit Button chrome gives the hover
+                             tint) instead of a raw ✕ glyph. -->
+                        <Button Margin="6,0,0,0"
+                                Padding="3"
+                                Width="20" Height="20"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{DynamicResource Brush.TextMuted}"
                                 ToolTip="{x:Static res:Strings.Workspace_CloseTab}"
                                 Command="{Binding DataContext.CloseTabCmdCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                CommandParameter="{Binding}"/>
+                                CommandParameter="{Binding}">
+                            <Path Width="9" Height="9" Stretch="Uniform"
+                                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M0,0 L9,9 M9,0 L0,9"/>
+                        </Button>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>

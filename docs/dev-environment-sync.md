@@ -150,6 +150,7 @@ Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegu
 - [ ] **R-columnSplitter**: con 2+ colonne aperte, il divisore a riposo è solo la **hairline** (non più la barra grigia 4px); passandoci sopra compare una **barra accento** sottile, piena mentre trascini; il resize funziona ancora. Rif: `docs/column-splitter-preview.html`.
 - [ ] **R-emptyState**: Home senza abitudini (Attive/Archiviate/Cestino) → **icona line + titolo** centrati, icona diversa per tab (Sprout/Moon/Sparkles); workspace senza tab → BookOpen + testo. Light+dark. Rif: `docs/empty-state-preview.html`.
 - [ ] **R-scrollbar**: in una lista lunga (es. albero Home, colonna Cronologia) il thumb a riposo è sottile/tenue, **non sparisce** mai (min-size); passandoci sopra/trascinando si **scurisce e allarga**. Light+dark. Rif: `docs/scrollbar-preview.html`.
+- [ ] **R-tabStrip**: apri 2+ tab nel workspace → angoli superiori **arrotondati**, underline accento sulla tab attiva, chiusura come **icona X** (non più "✕"); pin/preview funzionano come prima. Light+dark. Rif: `docs/tabstrip-preview.html`.
 
 **Altro:**
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).
