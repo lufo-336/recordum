@@ -16,27 +16,48 @@ App lanciata via skill `run` (build win-x64 verde). Aree da controllare a scherm
 5. **Basics**: 5 tipi habit, registrazione, calendario/heatmap, streak, gruppi, note.
 6. **UX/theming** — cosa non sembra "da v1.0".
 
+## Stato al 2026-06-23 — CR1–CR4 chiusi + appearance pass (font Palatino), sessione da macOS
+
+Sessione svolta da Mac (vincoli e checklist di verifica VM: `docs/dev-environment-sync.md` §"Log sessione 2026-06-23"). 3 commit su `fase-4-polish`.
+
+**Sicurezza / perdita-dati — CR1–CR4 `fixed` (commit `24c0e60`)**: restore atomico + rollback (CR1), guard `schema_version` reale letto dal DB con confronto major.minor (CR2), bound sui parametri Argon2id non fidati + cap anti zip-bomb (CR3), shred dei temp in chiaro (CR4). Nuovi helper `SchemaVersionGuard`, `SecureWipe`. Test `SchemaVersionGuardTests` + casi CR3 di `AesGcmBackupCipherTests` verdi (eseguiti via `osx-arm64`). **Restano da `verified-fixed` sulla VM**: suite Data completa + restore-corrotto-a-metà (CR1) + reject schema più recente (CR2). Vedi le righe CR1–CR4 qui sotto.
+
+**Appearance pass — `fixed` (commit `3497021`), verifica visiva VM**:
+- **Editor diario** (Toast UI/WebView2): segue il tema app **a caldo** (tripwire `SetResourceReference` su `Brush.Surface`) e ora anche il **font** (secondo tripwire su `Font.Default` + push C#); superficie di scrittura in **serif**. Chiude il sotto-bucket "tema editor" di **B2**.
+- **R7. Rinnovamento textbox — `fixed`**: lo stile implicito underline (Obsidian-like) era già su `TextBox`; allineati i due residui — **`PasswordBox`** (Impostazioni/Backup/Restore) e il **preview read-only di `NotesTabView`**. I 4 campi volutamente borderless (titolo/descrizione editor, inline settings) restano per scelta. Audit: 44 TextBox → 39 ereditano l'underline, 5 con override locale (4 voluti + NotesTabView ora sistemato). Disegno di riferimento: `docs/diario-ui-preview.html` §2 ("vale per tutte").
+- **R8. Font UI Palatino + switcher — `fixed`**: font classico/serif richiesto dall'utente. `Tokens.xaml` → `Font.System`/`Font.Serif`/`Font.Default`; `Window`/`Page` lo ereditano (DynamicResource); `Consolas` (timer/diagnostica) resta monospace. **Switch utente** in **Impostazioni → Aspetto** via `AppFontService` (mirror di `ThemeService`: persiste `ui.font`, default Serif, evento `FontChanged` → `App.ApplyFont`). Il diario segue via push. Test `AppFontServiceTests` (compile-only su Mac; run su VM).
+
+**AppSetting nuovo**: `ui.font` (runtime, non seedato, come `theme.mode`) — non cambia il conteggio dei seed.
+
+**Anteprime browser** (per giudicare il look lato Mac, non sono UI spedita): `docs/editor-theme-preview.html`, `docs/font-preview.html`, `docs/diario-ui-preview.html`.
+
+---
+
 ## Code review 2026-06-19 — sottosistema 1: Data layer
 
 > Review mirata (multi-agente, recall-biased) sul codice scritto a mano in `src/Recordum.Data` (backup/restore, migrazioni, services) — diff `fase-4-polish` vs `main`, esclusi i file EF generati. Parte di un giro di review per sottosistema (ordine: 1. Data layer ✓ → 2. motore streak → builder/altri). Tutti `reported`, da triagiare/fixare.
 
 ### CR1. Restore non atomico → distruzione del DB se il re-encrypt fallisce
-- **Stato**: `reported` · gravità **alta (perdita dati)**
+- **Stato**: `fixed` (commit `24c0e60`, 2026-06-23) — **runtime verify VM** · gravità **alta (perdita dati)**
+- **Fix (working tree, non committato)**: `RestoreAsync` costruisce DB+attachment in un'area di **staging** accanto ai target e fa lo **swap atomico** (`CommitSwap`) tenendo copie `.old` da cui fa **rollback** se la sostituzione fallisce a metà; lo snapshot pre-restore resta come rete finale. Build verde. **Da verificare a runtime sulla VM** (swap file + re-encrypt SQLCipher: non eseguibile su macOS).
 - **Dove**: `src/Recordum.Data/Backup/RestoreService.cs:93`
 - **Cosa**: `RestoreAsync` fa `File.Delete(dbPath)` + cancella gli attachment (93-95) e *poi* chiama `ReEncryptDbAsync` (100). Se il dump plaintext è corrotto/troncato, disco pieno, o crash in mezzo → DB live perso e nuovo assente/parziale. Lo snapshot pre-restore esiste ma **non viene ripristinato in automatico** sul fallimento. Manca swap atomico (scrivi su temp → rename) e rollback dello snapshot.
 
 ### CR2. Guard di compatibilità restore inefficace (costante stale + confronto solo major)
-- **Stato**: `reported` · gravità **alta**
+- **Stato**: `fixed` (commit `24c0e60`, 2026-06-23) · gravità **alta**
+- **Fix**: la guard legge lo `schema_version` **reale dal DB vivo** via `dbFactory` (`GetCurrentSchemaVersionAsync`, niente più costante "2.7") e confronta major.minor **numericamente** (`SchemaVersionGuard`: "2.10" > "2.7"). Unit test `SchemaVersionGuardTests` verdi (7 casi, eseguiti su osx-arm64).
 - **Dove**: `src/Recordum.Data/Backup/RestoreService.cs:21,39,140`
 - **Cosa**: `CurrentSchemaVersion = "2.7"` hardcoded mentre lo schema reale è 2.10; `CompareMajor` confronta solo il major. La guard non scatta mai per i 2.x e non rifiuterebbe un backup con schema-minore più recente → EF mapping failure / perdita dati invece del messaggio "Update Recordum to restore it". Leggere lo schema_version reale e confrontare major.minor.
 
 ### CR3. Input backup non fidato senza bound → DoS all'apertura
-- **Stato**: `reported` · gravità **alta (sicurezza)**
+- **Stato**: `fixed` (commit `24c0e60`, 2026-06-23) · gravità **alta (sicurezza)**
+- **Fix**: `AesGcmBackupCipher.DecryptAsync` **limita** i parametri Argon2id non fidati (mem ≤1 GiB, iters ≤24, parallel ≤8) **prima** di derivare, e legge il ciphertext con cap a 2 GiB; `BackupArchiveReader` estrae DB/attachment con cap cumulativo 4 GiB (anti zip-bomb). Unit test CR3 (header forgiato → `invalid_format`) verdi su osx-arm64.
 - **Dove**: `src/Recordum.Data/Backup/AesGcmBackupCipher.cs:78,121` (+ `:85`)
 - **Cosa**: `DecryptAsync` legge i parametri Argon2id (`memMib` fino a 65535, `iters`, `parallel`) dall'header non fidato → `MemorySize = memMib*1024` ⇒ ~64 GiB allocati aprendo un `.recbak` malevolo (già in `PreviewAsync`). In più ciphertext interamente in RAM + entry ZIP estratte senza tetto (bomba di decompressione). Mancano bound su parametri/dimensioni da fonte esterna. *(OK invece: nonce random, nessun riuso GCM, tag verificato.)*
 
 ### CR4. Dump DB in chiaro non distrutto (resta recuperabile)
-- **Stato**: `reported` · gravità **media (sicurezza)**
+- **Stato**: `fixed` (commit `24c0e60`, 2026-06-23) — **runtime verify VM** · gravità **media (sicurezza)**
+- **Fix (working tree, non committato)**: il dump in chiaro (`tempPlainDb`) e lo zip decifrato (`tempZip`) sono **shreddati** (`SecureWipe`, overwrite-zeri + unlink, condiviso con `BackupService.ShredDirectory`) invece di `File.Delete`. Build verde. **Da verificare a runtime sulla VM**.
 - **Dove**: `src/Recordum.Data/Backup/RestoreService.cs:105`
 - **Cosa**: `tempPlainDb` è copia in chiaro dell'intero DB in `%TEMP%`; rimosso con `File.Delete` (solo unlink). `BackupService` usa `ShredDirectory`, il restore no → DB decifrato forense-recuperabile dopo ogni ripristino. Usare lo stesso shred del backup.
 
@@ -616,12 +637,13 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 </details>
 
 ### B2. Costumizzazione note "non funziona particolarmente bene"
-- **Stato**: `reported` (2026-05-29 utente)
+- **Stato**: `in-progress` (sotto-bucket "tema editor", 2026-06-23, working tree non committato)
+- **Editor theming (working tree)**: l'editor Toast UI ora segue il tema app. `editor.html` ha override CSS completi (chrome/toolbar/superficie/source-mode/mode-switch/popup) su variabili `--rec-*`; `editor.js` ha un handler `setTheme`; `MarkdownEditorControl.PushThemeToEditor` invia le brush sul `ready` **e** — da oggi — sul **cambio tema a caldo** (tripwire `SetResourceReference` su `Brush.Surface`). Anteprima browser fedele in `docs/editor-theme-preview.html` (Toast UI reale + toggle dark/light). Build WPF verde (`EnableWindowsTargeting`). **Da verificare a schermo** (Mac via preview, o app sulla VM).
 - **Sintomo**: vago — formattazione markdown nell'editor non si comporta come atteso.
 - **Info da raccogliere**: screenshot di un caso specifico (es. "scrivo `**bold**`, vedo `**bold**` invece di **bold**"). Questa è la differenza fra mode WYSIWYG e mode Markdown source.
 - **Possibili sotto-bucket**:
   - Toolbar Toast UI ridotta non ha `table`/`task`/`image`/`source-view` toggle.
-  - Tema dell'editor: Toast UI usa il suo CSS, non rispetta il dark/light di Recordum.
+  - Tema dell'editor: Toast UI usa il suo CSS, non rispetta il dark/light di Recordum. → **affrontato** (vedi "Editor theming" sopra; verifica visiva pendente).
   - Preview/edit toggle nel WYSIWYG.
 
 ### B3. "Tante altre cose non funzionano"

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recordum — anteprima font (serif classico)</title>
+  <style>
+    :root{
+      --bg:#09090B; --surface:#18181B; --elev:#27272A; --border:#3F3F46;
+      --text:#FAFAFA; --muted:#A1A1AA; --accent:#60A5FA;
+      /* font UI selezionabile (default: attuale sans) */
+      --ui:-apple-system,"Segoe UI",system-ui,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--ui)}
+
+    /* switcher */
+    #bar{position:sticky;top:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+         padding:10px 16px;background:#000;border-bottom:1px solid var(--border);font-family:-apple-system,"Segoe UI",sans-serif;}
+    #bar b{font-size:13px;margin-right:6px}
+    #bar button{font:inherit;font-size:13px;padding:5px 12px;border-radius:6px;border:1px solid #555;background:#1d1d20;color:#e5e5e5;cursor:pointer}
+    #bar button.on{border-color:var(--accent);color:#fff;background:#23252b}
+    #bar .map{margin-left:auto;color:#888;font-size:12px}
+
+    /* UI mock — tutto eredita --ui tranne dove segnato monospace */
+    .wrap{max-width:980px;margin:0 auto;padding:26px 20px 60px}
+    h1{font-size:26px;margin:0 0 2px;font-weight:600}
+    .sub{color:var(--muted);margin:0 0 26px}
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:0 0 20px}
+    .panel h2{font-size:16px;margin:0 0 14px;font-weight:600}
+    .row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+    .row:last-child{border-bottom:none}
+    .bar4{width:4px;height:30px;border-radius:2px;flex:0 0 auto}
+    .name{flex:1;font-size:15px}
+    .meta{color:var(--muted);font-size:13px}
+    .streak{font-family:Consolas,"SF Mono",monospace;color:var(--muted);font-size:13px} /* numeri = monospace, NON cambia */
+    .body{line-height:1.65;font-size:15px;max-width:64ch}
+    .body .muted{color:var(--muted)}
+    label{display:block;font-size:12px;color:var(--muted);margin:14px 0 5px}
+    input.tb{width:100%;background:transparent;border:0;border-bottom:1px solid var(--border);
+             color:var(--text);font-family:inherit;font-size:14px;padding:7px 2px;outline:none}
+    input.tb:focus{border-bottom-color:var(--accent)}
+    .btns{margin-top:16px;display:flex;gap:8px}
+    button.app{font:inherit;font-size:14px;padding:7px 14px;border-radius:5px;border:1px solid var(--border);
+               background:var(--elev);color:var(--text);cursor:pointer}
+    button.app.primary{background:var(--accent);border-color:var(--accent);color:#06121f;font-weight:600}
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <b>Font UI:</b>
+    <button data-f="sys" class="on">Sistema (attuale)</button>
+    <button data-f="georgia">Georgia</button>
+    <button data-f="palatino">Palatino</button>
+    <button data-f="hybrid">Ibrido (titoli serif)</button>
+    <span class="map" id="map">mappatura Windows: —</span>
+  </div>
+
+  <div class="wrap">
+    <h1>Recordum</h1>
+    <p class="sub">Record your existence — anteprima del font dell'interfaccia. I numeri (streak, timer) restano monospace e non cambiano.</p>
+
+    <div class="panel">
+      <h2>Le tue abitudini</h2>
+      <div class="row"><div class="bar4" style="background:#60A5FA"></div><div class="name">Corsa mattutina</div><div class="meta">azione · oggi</div><div class="streak">12 gg</div></div>
+      <div class="row"><div class="bar4" style="background:#a855f7"></div><div class="name">Scrittura del diario</div><div class="meta">journal</div><div class="streak">5 gg</div></div>
+      <div class="row"><div class="bar4" style="background:#22c55e"></div><div class="name">Lettura — 30 minuti</div><div class="meta">counter · sessione</div><div class="streak">41 gg</div></div>
+      <div class="row"><div class="bar4" style="background:#f59e0b"></div><div class="name">Astinenza da zucchero</div><div class="meta">resistance</div><div class="streak">3 gg</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Una superficie di testo</h2>
+      <p class="body">Recordum rifiuta la riduzione <em>fatto / non fatto</em>: serve a chi traccia salute cronica,
+      allenamento, scrittura, astinenza. La complessità nasce per <strong>composizione</strong> — gruppi di
+      abitudini semplici — mai con opzioni gonfiate sul singolo elemento.
+      <span class="muted">Questo paragrafo è il banco di prova vero per un serif: leggilo e senti se è gradevole o pesante.</span></p>
+
+      <label>Nome dell'abitudine</label>
+      <input class="tb" value="Scrittura del diario">
+      <label>Descrizione</label>
+      <input class="tb" placeholder="Una nota sull'abitudine…">
+
+      <div class="btns">
+        <button class="app primary">Salva</button>
+        <button class="app">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FONTS = {
+      sys:      { css: '-apple-system,"Segoe UI",system-ui,sans-serif',                 win: 'Segoe UI (attuale)' },
+      georgia:  { css: 'Georgia,"Times New Roman",serif',                                win: 'Georgia' },
+      palatino: { css: '"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif',      win: 'Palatino Linotype' },
+      hybrid:   { css: '-apple-system,"Segoe UI",system-ui,sans-serif',                  win: 'corpo sans + titoli serif' }
+    };
+    const root = document.documentElement.style;
+    const map = document.getElementById('map');
+    function setFont(key){
+      const f = FONTS[key];
+      root.setProperty('--ui', f.css);
+      // ibrido: corpo sans, ma titoli/heading in serif
+      const serifHead = key === 'hybrid' ? '"Palatino Linotype",Palatino,Georgia,serif' : 'inherit';
+      document.querySelectorAll('h1,h2').forEach(h => h.style.fontFamily = serifHead);
+      map.textContent = 'mappatura Windows: ' + f.win;
+      document.querySelectorAll('#bar button').forEach(b => b.classList.toggle('on', b.dataset.f === key));
+    }
+    document.querySelectorAll('#bar button').forEach(b => b.onclick = () => setFont(b.dataset.f));
+    setFont('sys');
+  </script>
+</body>
+</html>

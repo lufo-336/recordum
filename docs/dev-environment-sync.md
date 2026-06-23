@@ -1,0 +1,130 @@
+# Sincronizzazione ambiente Claude Code — VM ↔ Mac
+
+> **Nota operativa interna** (non è codice né stringa utente). Serve a tenere allineati i due ambienti da cui si lavora a Recordum con Claude Code. Questo file **viaggia via git**, quindi è leggibile da entrambe le macchine. Tienilo aggiornato come fonte di verità sullo stato degli ambienti.
+
+## Contesto
+
+- **Primario — VM Windows**: `C:\Users\luca.foglia\Documents\recordum` (PowerShell, `taskkill`, RID `win-x64`).
+- **Secondario — Mac**: `/Users/lucafoglia/Desktop/recordum` (usato quando la VM non è raggiungibile).
+- Esiste anche una copia su **Google Drive** (`.../Other computers/Il mio PC/Documents/recordum`).
+
+## Cosa viaggia da solo, via git ✓
+
+Già allineato automaticamente su entrambe le macchine al `pull`:
+
+- `.claude/settings.json` (permessi base + wiring dei 4 hook guardrail)
+- `.claude/hooks/*.js` (guard-main, guard-userdata, guard-generated, stop-dirty)
+- `.claude/skills/run/` (skill di progetto)
+- `CLAUDE.md`, `docs/`, e questo file
+
+## Cosa NON viaggia — machine-local, va replicato a mano ✗
+
+Vive in `~/.claude/` (o `%USERPROFILE%\.claude\`), fuori dal repo:
+
+- **Plugin abilitati** (`~/.claude/plugins/`, `~/.claude.json`)
+- **Memorie di progetto** (`~/.claude/projects/<hash>/memory/`)
+- **`.claude/settings.local.json`** (gitignored; permessi per-utente — quelli Windows `PowerShell(...)`/`taskkill`/`C:\` sono inutili su Mac e viceversa, **non serve sincronizzarli**)
+- Eventuali **sub-agent** (`~/.claude/agents/`), **MCP server**, **skill a livello utente** (`~/.claude/skills/`)
+
+---
+
+## ⬇️ DA COMPILARE DALLA VM — report dello stato
+
+La prossima volta che sei sulla VM, esegui questi comandi e incolla l'output nella sezione "Output VM" qui sotto (o passali in chat a Claude). Servono a sapere **cosa hai sulla VM che qui manca**, così riconcilio.
+
+```powershell
+claude plugin list                 # 1) plugin installati + versioni + enabled/disabled
+claude plugin marketplace list     # 2) marketplace registrati
+claude mcp list                    # 3) MCP server configurati (atteso: nessuno)
+dir %USERPROFILE%\.claude\agents          # 4) sub-agent custom (atteso: nessuno)
+dir %USERPROFILE%\.claude\skills          # 5) skill a livello utente
+dir %USERPROFILE%\.claude\projects        # 6) trova la cartella "recordum" e guarda dentro \memory
+```
+
+**Domande a cui rispondere:**
+
+1. Il **set di plugin** della VM coincide con quello del Mac (vedi "Stato noto — Mac": superpowers, feature-dev, code-simplifier, claude-md-management, code-review, frontend-design, context7)? Ce ne sono **in più** (es. hookify, altri marketplace) o **in meno**?
+2. Ci sono **sub-agent custom** (file in `\.claude\agents\`), **MCP server** aggiuntivi o **skill utente** standalone che qui non ho trovato?
+3. Quali **memorie** ci sono in `…\projects\<recordum>\memory\`? Se sono utili, esportale (vedi sotto).
+
+### Output VM (incolla qui)
+
+> _(da compilare alla prossima sessione sulla VM)_
+
+---
+
+## Stato noto — Mac (aggiornato 2026-06-23)
+
+**Plugin installati** — tutti da marketplace `claude-plugins-official`, scope user, enabled. Questo è il **set di riferimento** da replicare sulla VM:
+
+| Plugin | Versione | Porta |
+|---|---|---|
+| `superpowers` | **6.0.3** | 14 skill (brainstorming, writing-plans, executing-plans, subagent-driven-development, TDD, finishing-a-development-branch, verification-before-completion, systematic-debugging, requesting/receiving-code-review, using-git-worktrees, using-superpowers, writing-skills, dispatching-parallel-agents) + 1 hook SessionStart |
+| `feature-dev` | unknown | skill `feature-dev` + 3 agent (`code-architect`, `code-explorer`, `code-reviewer`) |
+| `code-simplifier` | 1.0.0 | 1 agent (`code-simplifier`) |
+| `claude-md-management` | 1.0.0 | 2 skill (`claude-md-improver`, `revise-claude-md`) |
+| `code-review` | unknown | skill `code-review` |
+| `frontend-design` | unknown | skill `frontend-design` |
+| `context7` | unknown | **1 MCP server** (`context7`, lookup docs librerie) |
+
+| Voce | Stato Mac |
+|---|---|
+| Marketplace | `claude-plugins-official` |
+| Sub-agent custom (file propri) | nessuno — gli agent sopra sono forniti dai plugin |
+| MCP server | `context7` (via plugin `context7`); nessun altro configurato a mano |
+| Skill utente standalone | nessuna — solo quelle dei plugin + `run` di progetto (via git) |
+| Memorie | ricostruite da zero — solo `dev-environment`; le storiche restano sulla VM |
+
+> Le skill/agent dei plugin si caricano **al riavvio sessione** (o con `/reload-plugins`). `context7` richiede una sessione nuova per agganciare l'MCP.
+
+## ✅ Checklist allineamento (quando manca qualcosa)
+
+- [ ] **Allinea il set di plugin** (vedi tabella sopra). Per replicare l'intero set su una macchina che parte da zero, poi `/reload-plugins` o riavvio:
+  ```bash
+  for p in superpowers feature-dev code-simplifier claude-md-management code-review frontend-design context7; do
+    claude plugin install "$p@claude-plugins-official"
+  done
+  ```
+- [ ] **superpowers è il requisito hard** (pin **v6.0.3**): tutto il flusso `docs/superpowers/*` (plans, specs, brainstorming, TDD, subagent-driven-development) ne dipende. Gli altri 6 sono comodità di sviluppo, allineali se vuoi parità piena.
+- [ ] **`context7`** porta un MCP server: dopo l'install serve una **sessione nuova** perché si agganci; potrebbe chiedere configurazione/chiave al primo uso.
+- [ ] **Memorie utili** → non viaggiano via git. Per condividerle: copiare i `.md` da `~/.claude/projects/<recordum>/memory/` e tenerli in un punto condiviso (es. allegarli a questo file o a `docs/`), poi reimportarli sull'altra macchina.
+- [ ] **`settings.local.json`** → NON sincronizzare i permessi cross-OS (PowerShell/`C:\` ↔ bash/`/Users`). Ogni macchina accumula i suoi.
+- [ ] Dopo ogni `pull`, gli **hook guardrail** e la skill `run` sono già aggiornati (via git): nessuna azione.
+
+## Procedura "appena arrivo sull'altra macchina"
+
+1. `git pull` (allinea repo, hook, skill `run`, questo file).
+2. `claude plugin list` → se manca `superpowers`, installalo e riavvia.
+3. Dai un'occhiata all'**Output VM** qui sopra per vedere se è emerso altro da replicare.
+
+---
+
+## Log sessione 2026-06-23 (da macOS) — handoff per la VM
+
+Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegui la **checklist di verifica** qui sotto — su macOS NON si eseguono né la WPF né i test SQLCipher, quindi tutta la verifica runtime/visiva è da fare sulla VM.
+
+### Cosa è arrivato (commit)
+- **`24c0e60` fix(data): CR1–CR4** — restore atomico + rollback (CR1), guard `schema_version` reale con confronto major.minor (CR2), bound sui parametri Argon2id non fidati + cap anti zip-bomb (CR3), shred dei temp in chiaro (CR4). Nuovi helper `SchemaVersionGuard`, `SecureWipe`.
+- **`3497021` feat(wpf): appearance pass** — editor diario tematizzato (segue tema light/dark **a caldo**) + diario in **serif**; input minimal **underline** (TextBox già fatto, ora anche `PasswordBox` + preview `NotesTabView`); **font Palatino** app-wide (`Tokens.Font.Default` + `Window/Page`); **setting font utente** (`AppFontService`, persiste `ui.font`, default Serif) in **Impostazioni → Aspetto**; editor che segue il font via push C#.
+- **docs** (questo commit) — questo log + `phase-4-issues.md` + `CLAUDE.md` + anteprime browser.
+
+### Vincoli macOS scoperti (utili a ogni futura sessione Mac)
+- **WPF non gira su macOS** e non builda di default. Solo *compile-check*: `dotnet build src/Recordum.WPF/Recordum.WPF.csproj -p:EnableWindowsTargeting=true`. Eseguire/vedere l'app = solo VM.
+- **Test `Recordum.Data` su Mac**: RID pinnato `win-x64` → il runner x64 non parte su arm64. Per girarli su Mac forza l'arch: `dotnet test tests/Recordum.Data.Tests -p:RuntimeIdentifier=osx-arm64` (i test crypto/managed passano; quelli che aprono SQLCipher possono comunque richiedere la VM). I test **`Recordum.WPF.Tests` NON girano su Mac** (WPF assente) — solo compile-check con `EnableWindowsTargeting`.
+- **CRLF**: il working tree Mac è CRLF, il repo è LF. Fix locale (solo Mac, non committato): `git config core.autocrlf input` → spariscono i diff fantasma. Niente da fare sulla VM.
+- **UI non visibile da Mac** → anteprime browser (aprile con `open <file>`): `docs/editor-theme-preview.html` (editor tematizzato + toggle dark/light + diario serif), `docs/font-preview.html` (confronto font su UI finta), `docs/diario-ui-preview.html` (mockup textbox/diario). Il check definitivo resta nell'app sulla VM.
+
+### ✅ Checklist verifica sulla VM
+**Data / sicurezza (CR1–CR4) — poi segna `verified-fixed` in `phase-4-issues.md`:**
+- [ ] `dotnet test tests/Recordum.Data.Tests` completo verde.
+- [ ] **CR1**: restore di un `.recbak` interrotto/corrotto a metà → il DB live **sopravvive** (rollback), non sparisce.
+- [ ] **CR2**: restore di un backup con `schema_version` più recente del build → messaggio "Update Recordum…", niente crash EF.
+- [ ] **CR3**: `.recbak` con header malevolo (memMib enorme) → `invalid_format`, nessuna alloc mostruosa.
+- [ ] **CR4**: dopo un restore, `%TEMP%` non contiene un DB in chiaro recuperabile.
+
+**Appearance / font (visivo):**
+- [ ] `dotnet test tests/Recordum.WPF.Tests` (incl. `AppFontServiceTests`) verde.
+- [ ] Editor diario: cambia tema light↔dark **a editor aperto** → si ri-tematizza a caldo; testo del diario in **serif**.
+- [ ] Input coerenti **underline**: TextBox, `PasswordBox` (backup/restore/impostazioni), preview note.
+- [ ] Tutta l'app in **Palatino**; numeri (timer/diagnostica) restano monospace.
+- [ ] **Impostazioni → Aspetto → Font**: System ↔ Serif (Palatino) → app **e** diario cambiano a caldo; riavvio → scelta persistita (`ui.font`).

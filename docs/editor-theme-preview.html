@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recordum — anteprima editor Markdown tematizzato</title>
+  <link rel="stylesheet" href="../src/Recordum.WPF/Resources/EditorAssets/toast-ui-editor.min.css">
+  <style>
+    /* ===== harness chrome (NON fa parte dell'app) ===== */
+    body { margin:0; font-family:-apple-system,"Segoe UI",sans-serif; }
+    #bar { display:flex; gap:10px; align-items:center; padding:8px 14px; font-size:13px;
+           background:#000; color:#e5e5e5; border-bottom:1px solid #333; }
+    #bar strong { font-size:13px; }
+    #bar button { font:inherit; padding:4px 12px; border-radius:6px; border:1px solid #555;
+                  background:#1d1d20; color:#e5e5e5; cursor:pointer; }
+    #bar button:hover { background:#2a2a2e; }
+    #bar .note { color:#888; margin-left:auto; }
+
+    /* ===== SPECCHIO del <style> di editor.html — tenere in sync con quel file ===== */
+    :root{
+      --rec-bg:#18181B; --rec-text:#FAFAFA; --rec-muted:#A1A1AA;
+      --rec-border:#3F3F46; --rec-accent:#60A5FA; --rec-elev:#27272A;
+      --rec-icon-invert:0.7;
+      --rec-font:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;  /* diario in Palatino */
+    }
+    html, body { height:100%; }
+    #editor { height: calc(100vh - 42px); background:var(--rec-bg); font-family:var(--rec-font); }
+
+    .toastui-editor-defaultUI{ border:0 !important; background:var(--rec-bg) !important; }
+    .toastui-editor-defaultUI .toastui-editor-toolbar,
+    .toastui-editor-defaultUI-toolbar{ background:var(--rec-bg) !important; border:0 !important;
+        border-bottom:1px solid var(--rec-border) !important; }
+    .toastui-editor-toolbar-group{ background:transparent !important; }
+    .toastui-editor-toolbar-divider{ background-color:var(--rec-border) !important; }
+    .toastui-editor-defaultUI-toolbar button,
+    .toastui-editor-toolbar-icons{ border:0 !important; background-color:transparent !important;
+        filter:invert(var(--rec-icon-invert)); border-radius:5px; }
+    .toastui-editor-defaultUI-toolbar button:hover,
+    .toastui-editor-toolbar-icons:hover{ background-color:var(--rec-elev) !important; filter:invert(var(--rec-icon-invert)); }
+
+    .toastui-editor-main,
+    .toastui-editor-md-container, .toastui-editor-ww-container,
+    .toastui-editor-md-mode .toastui-editor-md-container,
+    .toastui-editor-defaultUI .ProseMirror{ background:var(--rec-bg) !important; color:var(--rec-text) !important; }
+    .toastui-editor-contents{ color:var(--rec-text) !important; font-family:var(--rec-font) !important; }
+    .toastui-editor-contents *{ border-color:var(--rec-border) !important; }
+    .toastui-editor-contents p, .toastui-editor-contents li,
+    .toastui-editor-contents h1, .toastui-editor-contents h2, .toastui-editor-contents h3,
+    .toastui-editor-contents h4, .toastui-editor-contents h5, .toastui-editor-contents h6,
+    .toastui-editor-contents strong, .toastui-editor-contents em{ color:var(--rec-text) !important; }
+    .toastui-editor-contents h1, .toastui-editor-contents h2{ border-bottom-color:var(--rec-border) !important; }
+    .ProseMirror{ caret-color:var(--rec-accent) !important; }
+    .toastui-editor-contents a{ color:var(--rec-accent) !important; }
+    .toastui-editor-contents blockquote{ border-left-color:var(--rec-border) !important; color:var(--rec-muted) !important; }
+    .toastui-editor-contents code,
+    .toastui-editor-contents pre{ background:var(--rec-elev) !important; color:var(--rec-text) !important; }
+    .toastui-editor-contents-placeholder,
+    .ProseMirror .placeholder{ color:var(--rec-muted) !important; }
+
+    .toastui-editor-md-preview{ background:var(--rec-bg) !important; }
+    .toastui-editor-md-splitter{ background:var(--rec-border) !important; }
+    .CodeMirror, .toastui-editor .CodeMirror{ background:var(--rec-bg) !important; color:var(--rec-text) !important; }
+
+    .toastui-editor-mode-switch{ background:var(--rec-bg) !important; border-top:1px solid var(--rec-border) !important; }
+    .toastui-editor-mode-switch .tab-item{ background:var(--rec-bg) !important; color:var(--rec-muted) !important;
+        border-color:var(--rec-border) !important; }
+    .toastui-editor-mode-switch .tab-item.active{ color:var(--rec-text) !important; background:var(--rec-elev) !important; }
+
+    .toastui-editor-tabs .tab-item{ background:var(--rec-bg) !important; color:var(--rec-muted) !important; border-color:var(--rec-border) !important; }
+    .toastui-editor-tabs .tab-item.active{ color:var(--rec-text) !important; }
+
+    .toastui-editor-popup, .toastui-editor-popup-body,
+    .toastui-editor-dropdown-toolbar, .toastui-editor-context-menu{
+        background:var(--rec-elev) !important; color:var(--rec-text) !important; border-color:var(--rec-border) !important; }
+    .toastui-editor-popup input[type=text]{ background:var(--rec-bg) !important; color:var(--rec-text) !important;
+        border:1px solid var(--rec-border) !important; }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <strong>Editor Markdown — anteprima tema</strong>
+    <button id="dark">Dark</button>
+    <button id="light">Light</button>
+    <span class="note">Toast UI reale + CSS di editor.html. Il check definitivo resta nell'app (VM).</span>
+  </div>
+  <div id="editor"></div>
+
+  <script src="../src/Recordum.WPF/Resources/EditorAssets/toast-ui-editor.min.js"></script>
+  <script>
+    // Stessa config di editor.js.
+    const editor = new toastui.Editor({
+      el: document.querySelector('#editor'),
+      height: '100%',
+      initialEditType: 'wysiwyg',
+      previewStyle: 'tab',
+      usageStatistics: false,
+      toolbarItems: [
+        ['heading', 'bold', 'italic', 'strike'],
+        ['ul', 'ol', 'task'],
+        ['hr', 'quote'],
+        ['table', 'code', 'codeblock'],
+        ['link']
+      ],
+      initialValue: [
+        '# Diario',
+        '',
+        'Un **paragrafo** con _enfasi_, un [link](https://example.com) e `codice inline`.',
+        '',
+        '> Una citazione, per vedere il bordo e il muted.',
+        '',
+        '- [ ] una task da fare',
+        '- [x] una task fatta',
+        '',
+        '```js',
+        'const recordum = "record your existence";',
+        '```',
+        '',
+        '| Colonna | Valore |',
+        '| --- | --- |',
+        '| esempio | 42 |'
+      ].join('\n')
+    });
+
+    // Specchio di MarkdownEditorControl.PushThemeToEditor: dark = Dark.xaml, light = Light.xaml.
+    const THEMES = {
+      dark:  { bg:'#18181B', text:'#FAFAFA', muted:'#A1A1AA', border:'#3F3F46', accent:'#60A5FA', elev:'#27272A', dark:true },
+      light: { bg:'#F7F7F8', text:'#18181B', muted:'#71717A', border:'#E4E4E7', accent:'#3B82F6', elev:'#FFFFFF', dark:false }
+    };
+    function applyTheme(v) {  // === stesso mapping del case 'setTheme' di editor.js ===
+      const r = document.documentElement.style;
+      r.setProperty('--rec-bg', v.bg);
+      r.setProperty('--rec-text', v.text);
+      r.setProperty('--rec-muted', v.muted);
+      r.setProperty('--rec-border', v.border);
+      r.setProperty('--rec-accent', v.accent);
+      r.setProperty('--rec-elev', v.elev);
+      r.setProperty('--rec-icon-invert', v.dark ? '0.7' : '0');
+      document.body.style.background = v.bg;
+    }
+    document.getElementById('dark').onclick = () => applyTheme(THEMES.dark);
+    document.getElementById('light').onclick = () => applyTheme(THEMES.light);
+    applyTheme(THEMES.dark);
+  </script>
+</body>
+</html>

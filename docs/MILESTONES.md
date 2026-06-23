@@ -271,6 +271,17 @@ Suite a fine sessione: **WPF 335 / Data 296 verdi**.
 
 **Aperti**: B6b template personalizzato (feature, richiede design); rifiniture minori (picker scala, layout scala State, "+" su State già selezionata); nav-model. In attesa del report visivo dell'utente.
 
+### Avanzamento 2026-06-23 (da macOS)
+
+> Dettaglio per-finding in `docs/phase-4-issues.md` §"Stato al 2026-06-23"; vincoli build/test e checklist di verifica VM in `docs/dev-environment-sync.md` §"Log sessione 2026-06-23".
+
+3 commit su `fase-4-polish`:
+- **`24c0e60`** — chiusi i 4 findings sicurezza/perdita-dati **CR1–CR4** (backup/restore, Data layer): restore atomico + rollback (CR1), guard `schema_version` reale con confronto major.minor (CR2), bound sui parametri Argon2id non fidati + cap anti zip-bomb (CR3), shred dei temp in chiaro (CR4). Nuovi helper `SchemaVersionGuard`/`SecureWipe`. Test `SchemaVersionGuardTests` + casi CR3 verdi (osx-arm64).
+- **`3497021`** — **appearance pass**: editor diario tematizzato (segue tema **e** font a caldo via tripwire `SetResourceReference`) + diario serif; input minimal **underline** esteso a `PasswordBox` e preview `NotesTabView`; **font UI Palatino** (`Tokens.Font.Default` ereditato da `Window/Page`; `Consolas` resta monospace) con **switch utente** in Impostazioni → Aspetto — nuovo `AppFontService` (mirror di `ThemeService`, AppSetting `ui.font`, default Serif); il diario segue il font via push C#.
+- **docs** — questo log + tracker + `CLAUDE.md` + anteprime browser.
+
+Sessione su macOS: tutto **compila** (`-p:EnableWindowsTargeting=true`) ma WPF/SQLCipher non eseguono lì → suite test runtime + restore-corrotto + verifica visiva **in sospeso sulla VM**.
+
 ### Bug e rifinitura aperti
 
 Vedi `docs/phase-4-issues.md` per il tracker triagato (`reported / verified / triaged / in-progress / fixed / verified-fixed`).
