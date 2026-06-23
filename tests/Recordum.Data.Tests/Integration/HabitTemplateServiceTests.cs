@@ -193,11 +193,34 @@ public class HabitTemplateServiceTests
         segments[1].IsRest.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task InstantiateAsync_goal_inherits_the_habit_name_not_a_hardcoded_default()
+    {
+        // CR9: the goal's name must never fall back to a hardcoded English "Goal". When the payload
+        // omits the node name, the effective habit name (the template name) is used instead.
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Meditate", IsOfficial = true,
+                PayloadJson = "{\"node\":{\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7c5cff\"},\"goal\":{\"target\":1,\"period_type\":\"Open\"}}",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var svc = CreateSut(fx);
+        var newId = await svc.InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var goal = await db2.Goals.SingleAsync(g => g.HabitNodeId == newId);
+        goal.Name.Should().Be("Meditate");
+    }
+
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),
         new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
-        new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance),
-        new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance),
         NullLogger<HabitTemplateService>.Instance);
 }

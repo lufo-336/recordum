@@ -15,8 +15,6 @@ public sealed class HabitTemplateService(
     IPluginContext pluginContext,
     IHabitNodeService nodes,
     IHabitConfigService configs,
-    IMetricDefinitionService metrics,
-    IGoalService goals,
     ILogger<HabitTemplateService> logger) : IHabitTemplateService
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
@@ -106,26 +104,29 @@ public sealed class HabitTemplateService(
                 if (c.TimerMode == Recordum.Core.Enums.TimerMode.Session) c.SessionBaseTimer = true;
             }, ct);
 
-            await MaterializeMetricsSegmentsGoalAsync(newId, payload, ct);
+            await MaterializeMetricsSegmentsGoalAsync(newId, node.Name, payload, ct);
         }
 
         return newId;
     }
 
-    // Materializes the rich parts of a template payload that node + config alone drop:
-    // metrics (with unit / scale resolved by code, and the scale's labels snapshotted
-    // onto the metric so the State quick-add shows them), segments, and the goal.
-    private async Task MaterializeMetricsSegmentsGoalAsync(Guid habitId, TemplatePayload payload, CancellationToken ct)
+    // Materializes the rich parts of a template payload that node + config alone drop: metrics (with
+    // unit / scale resolved by code, and the scale's labels snapshotted onto the metric so the State
+    // quick-add shows them), segments, and the goal. Single DbContext + transaction so the whole
+    // instantiation tail is one connection open instead of N+3 (CR7) — same pattern as
+    // ComposedHabitService; the timestamp/provenance interceptor still fires on SaveChanges.
+    private async Task MaterializeMetricsSegmentsGoalAsync(Guid habitId, string habitName, TemplatePayload payload, CancellationToken ct)
     {
-        Dictionary<string, Guid> unitsByCode;
-        Dictionary<string, (Guid Id, string? Labels)> scalesByCode;
-        await using (var db = await dbFactory.CreateDbContextAsync(ct))
-        {
-            unitsByCode = await db.UnitsOfMeasure.AsNoTracking()
-                .ToDictionaryAsync(u => u.Code, u => u.Id, StringComparer.OrdinalIgnoreCase, ct);
-            scalesByCode = await db.ScaleTemplates.AsNoTracking()
-                .ToDictionaryAsync(s => s.Code, s => (s.Id, (string?)s.LabelsJson), StringComparer.OrdinalIgnoreCase, ct);
-        }
+        if (payload.Metrics is not { Count: > 0 } && payload.Segments is not { Count: > 0 } && payload.Goal is null)
+            return;
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+        var unitsByCode = await db.UnitsOfMeasure.AsNoTracking()
+            .ToDictionaryAsync(u => u.Code, u => u.Id, StringComparer.OrdinalIgnoreCase, ct);
+        var scalesByCode = await db.ScaleTemplates.AsNoTracking()
+            .ToDictionaryAsync(s => s.Code, s => (Id: s.Id, Labels: (string?)s.LabelsJson), StringComparer.OrdinalIgnoreCase, ct);
 
         Guid? firstMetricId = null;
         if (payload.Metrics is { Count: > 0 })
@@ -144,8 +145,9 @@ public sealed class HabitTemplateService(
                 }
                 Guid? unitId = m.Unit is { } uc && unitsByCode.TryGetValue(uc, out var u) ? u : null;
 
-                var metricId = await metrics.CreateAsync(new MetricDefinition
+                var metric = new MetricDefinition
                 {
+                    Id = Guid.NewGuid(),
                     HabitNodeId = habitId,
                     Name = m.Name!,
                     Type = ParseEnum(m.Type, MetricType.Integer),
@@ -153,14 +155,14 @@ public sealed class HabitTemplateService(
                     UnitOfMeasureId = unitId,
                     ScaleTemplateId = scaleId,
                     LabelsJson = labels,
-                }, ct);
-                firstMetricId ??= metricId;
+                };
+                db.MetricDefinitions.Add(metric);
+                firstMetricId ??= metric.Id;
             }
         }
 
         if (payload.Segments is { Count: > 0 })
         {
-            await using var db = await dbFactory.CreateDbContextAsync(ct);
             foreach (var s in payload.Segments)
             {
                 if (string.IsNullOrWhiteSpace(s.Name)) continue;
@@ -174,20 +176,23 @@ public sealed class HabitTemplateService(
                     Color = s.Color,
                 });
             }
-            await db.SaveChangesAsync(ct);
         }
 
         if (payload.Goal is { } g)
         {
-            await goals.CreateAsync(new Goal
+            db.Goals.Add(new Goal
             {
+                Id = Guid.NewGuid(),
                 HabitNodeId = habitId,
-                Name = payload.Node?.Name ?? "Goal",
+                Name = habitName, // the goal belongs to the habit; never a hardcoded literal (CR9)
                 MetricDefinitionId = firstMetricId,
                 TargetValue = g.Target,
                 PeriodType = ParseEnum(g.PeriodType, GoalPeriodType.Open),
-            }, ct);
+            });
         }
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
     }
 
     private static TemplatePayload ParsePayload(string json)

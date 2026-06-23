@@ -40,7 +40,15 @@ Sessione da Mac (VM non accessibile). Triage dei CR Data-layer: **i numeri di ri
 - **CR11** `fixed` (ancoraggio a `createdDate` + filtro `End>=fromDate`; 7/7 verdi). Si è rivelato **non solo latente**: tocca `ExportQueryService.BuildSummaryAsync`.
 - **CR8** `triaged`→**VM**: il fix richiede rigenerare il ModelSnapshot (`dotnet ef`, non su Mac); impatto runtime zero.
 
-Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Windows-only, `PlatformNotSupportedException`, pre-esistenti). Aree toccate tutte verdi. **Da fare sulla VM**: suite Data completa (incl. i 17), verifica visiva CR5, + CR8 (snapshot). Non ancora committato.
+Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Windows-only, `PlatformNotSupportedException`, pre-esistenti). Aree toccate tutte verdi. Primo commit `fe6cb9d`.
+
+**Secondo giro — CR6/CR7/CR9** (stessa sessione):
+- **CR7** `fixed`: `MaterializeMetricsSegmentsGoalAsync` su singolo context+transazione (da N+3 a 1), rimossi 2 servizi inutilizzati dal costruttore.
+- **CR9** `fixed`: goal eredita il nome dell'habit invece del literal "Goal" (Data layer senza `.resx`, ereditare è la via pulita).
+- **CR6** `triaged`→**WONTFIX proposto**: interpretazione dubbia (Counter è la riclassificazione voluta per resistance con metrica misurata), nessun dato first-party colpito, non fixabile su Mac né a posteriori.
+- `HabitTemplateServiceTests` 9/9 verdi (osx-arm64).
+
+**Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher), verifica visiva CR5, CR8 (regen snapshot).
 
 ---
 
@@ -79,14 +87,16 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: `GetDailyMagnitudeAsync` per `HabitType.State` usa il valore numerico della metrica primaria, poi `if (mag > 0) result.Add(...)`. Con una scala **0-based** (es. NRS dolore, valore più basso = 0) il giorno dà `mag=0` ed è escluso → cella calendario vuota pur con registrazione. Counter/Resistance hanno floor `Math.Max(1,…)`, Action/Journal `Count()≥1`; solo State è vulnerabile. Distinguere "nessuna registrazione" da "valore 0".
 
 ### CR6. CounterReclassV210 riclassifica resistance a metriche miste
-- **Stato**: `reported` · gravità **media (dati, irreversibile)**
+- **Stato**: `triaged` — **proposto WONTFIX** (decisione utente) · gravità **bassa** (declassata da media)
+- **Triage 2026-06-23 cont.**: (1) **interpretazione dubbia** — per la grammatica multivalue una resistance con *qualsiasi* metrica misurata (Integer/Decimal/Seconds) è una "serie" → Counter è la riclassificazione **voluta**; "scale-only resistances stay" significa metriche *esclusivamente* scala, e una resistance scala+misurata non è scale-only. Non è chiaro che sia un bug. (2) **Nessun dato first-party colpito**: l'unico template Resistance ("Stop smoking") ha `metrics:[]`; il set teorico (resistance con scala **e** misurata) è solo da vecchio builder utente. (3) **Non fixabile su Mac né a posteriori**: migrazione già applicata (editarla è bloccato/inutile); una forward-migration correttiva richiede `dotnet ef` (VM) e **non può distinguere** un Counter creato nativamente da uno riclassato. → Raccomando **WONTFIX**; eventuale forward-migration solo se emergono dati reali colpiti.
 - **Dove**: `src/Recordum.Data/Migrations/20260613210206_CounterReclassV210.cs:19`
-- **Cosa**: il subquery matcha **per riga di metrica**: una resistance con sia metrica scala sia misurata (Integer/Decimal/Seconds) entra in `id IN (...)` per la seconda → l'intero habit diventa Counter, contro l'intento del commento ("scale-only resistances stay"). Down irreversibile → perdita semantica silenziosa. Edge case (resistance multi-metrica) ma migrazione già applicata.
+- **Cosa**: il subquery matcha **per riga di metrica**: una resistance con sia metrica scala sia misurata entra in `id IN (...)` per la seconda → l'intero habit diventa Counter. Down irreversibile.
 
 ### CR7. Materializzazione template = N+3 aperture di connessione (hazard SQLITE_BUSY)
-- **Stato**: `reported` · gravità **bassa (efficienza/robustezza)**
-- **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs:1287`
-- **Cosa**: `MaterializeMetricsSegmentsGoalAsync` apre un context per i lookup, poi `metrics.CreateAsync` per ogni metrica (ciascuna apre+salva il suo context), poi context per i segmenti, poi `goals.CreateAsync`. Ogni apertura ri-esegue `PRAGMA key` → stesso hazard SQLITE_BUSY già noto. `ComposedHabitService` lo fa in singola transazione: replicare quel pattern.
+- **Stato**: `fixed` (2026-06-23 cont.) — verificato (osx-arm64) · gravità **bassa (efficienza/robustezza)**
+- **Fix**: `MaterializeMetricsSegmentsGoalAsync` riscritto su **singolo `DbContext` + transazione** (pattern `ComposedHabitService`): un unico lookup units/scales, le metriche/segmenti/goal aggiunti direttamente con `Id` pre-assegnati e una sola `SaveChanges`+`Commit`. Da N+3 aperture a 1. Rimossi `IMetricDefinitionService`/`IGoalService` dal costruttore (ora inutilizzati; DI invariato). L'interceptor timestamp/provenance scatta comunque sulla SaveChanges. `HabitTemplateServiceTests` 9/9 verdi (materializzazione metrica-scala/unità-goal/segmenti coperta).
+- **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs` (`MaterializeMetricsSegmentsGoalAsync`; era indicato `:1287`, riga stale)
+- **Cosa**: apriva un context per i lookup, poi `metrics.CreateAsync` per ogni metrica (ciascuna apre+salva), poi context per i segmenti, poi `goals.CreateAsync`. Ogni apertura ri-esegue `PRAGMA key` → hazard SQLITE_BUSY (già attutito da `busy_timeout`, ora eliminato alla radice).
 
 ### CR8. Seed `schema_version = "2.9"` stale rispetto a HEAD (2.11)
 - **Stato**: `triaged` — **rimandato alla VM** (serve `dotnet ef`) · gravità **bassa**
@@ -94,9 +104,10 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Triage 2026-06-23 cont.**: il valore `2.9` è in `HasData` → finisce nel **ModelSnapshot** (`RecordumDbContextModelSnapshot.cs:262`). `InitialSchema` semina `2.3` (riga 678); fu bumpato a `2.9` con `NoteHistoryV29` ma `CounterReclassV210`/`NoteCategoryV211` hanno bumpato solo via `UpdateData`, lasciando il costante a `2.9` mentre **HEAD reale è 2.11** (`NoteCategoryV211`, non 2.10 come dice CR/CLAUDE.md). **Impatto runtime = zero**: il guard CR2 legge lo `schema_version` reale dal DB vivo. Allinearlo richiede rigenerare lo snapshot (`dotnet ef migrations add`), non installato su Mac e file sotto guardrail → **da fare sulla VM**.
 
 ### CR9. Stringa "Goal" hardcoded (viola regola .resx)
-- **Stato**: `reported` · gravità **bassa (convenzioni)**
-- **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs:1349`
-- **Cosa**: `Name = payload.Node?.Name ?? "Goal"`. CLAUDE.md §8: «Stringhe utente in .resx … Niente hardcoded.» Default non localizzabile.
+- **Stato**: `fixed` (2026-06-23 cont.) — verificato (osx-arm64) · gravità **bassa (convenzioni)**
+- **Fix**: eliminato il literal. `MaterializeMetricsSegmentsGoalAsync` riceve ora il nome risolto dell'habit (`node.Name`, già `payload.Node?.Name ?? tmpl.Name`) e lo usa come nome del goal — il goal appartiene all'habit, quindi ne eredita il nome (default sensato, mai una stringa inglese fissa). Nota: il Data layer **non ha `.resx`** (verificato: nessun resource in `Recordum.Data`/`Recordum.Core`), quindi localizzare lì non era un'opzione pulita; ereditare il nome è la soluzione corretta. Test `InstantiateAsync_goal_inherits_the_habit_name_not_a_hardcoded_default` verde.
+- **Dove**: `src/Recordum.Data/Services/HabitTemplateService.cs` (`MaterializeMetricsSegmentsGoalAsync`; era indicato `:1349`, riga stale)
+- **Cosa**: `Name = payload.Node?.Name ?? "Goal"`. CLAUDE.md §8: «Stringhe utente in .resx … Niente hardcoded.» Il fallback scattava solo con `Node.Name` assente.
 
 ### CR10. `MoveAndReorderAsync` duplica la validazione di `MoveAsync`
 - **Stato**: `fixed` (2026-06-23 cont.) — verificato (osx-arm64) · gravità **bassa (manutenibilità)**
