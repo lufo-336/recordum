@@ -7,7 +7,6 @@ using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Backup;
 
-#pragma warning disable CS9113   // dbFactory reserved for future schema-version checks; both params kept for API symmetry
 public sealed class RestoreService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IDbKeyProvider keyProvider,
@@ -18,7 +17,9 @@ public sealed class RestoreService(
     IPluginManager plugins,
     IClock clock) : IRestoreService
 {
-    private const string CurrentSchemaVersion = "2.7";
+    // CR2: fallback only if the live DB somehow has no schema_version row; the real current
+    // version is read from the DB at runtime (see GetCurrentSchemaVersionAsync).
+    private const string FallbackSchemaVersion = "2.10";
 
     public async Task<RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default)
     {
@@ -36,7 +37,8 @@ public sealed class RestoreService(
 
             var manifest = await reader.ReadManifestAsync(tempZip, ct).ConfigureAwait(false);
 
-            if (CompareMajor(manifest.SchemaVersion, CurrentSchemaVersion) > 0)
+            var currentSchema = await GetCurrentSchemaVersionAsync(ct).ConfigureAwait(false);
+            if (SchemaVersionGuard.IsNewer(manifest.SchemaVersion, currentSchema))
                 throw new RestoreException("incompatible_schema",
                     $"Backup was created by Recordum {manifest.AppVersion} (schema {manifest.SchemaVersion}). Update Recordum to restore it.");
 
@@ -77,10 +79,17 @@ public sealed class RestoreService(
         // 2. Drain connection pool so we can replace the DB file
         SqliteConnection.ClearAllPools();
 
-        // 3. Decrypt to temp zip and extract
+        // 3. Decrypt + extract into a STAGING area, re-encrypt there, then swap atomically (CR1).
+        //    The live DB and attachments are not touched until both new copies are fully built.
         var tempZip = Path.Combine(Path.GetTempPath(), $"recordum-rs-{Guid.NewGuid():N}.zip");
         var tempPlainDb = Path.Combine(Path.GetTempPath(), $"recordum-rs-{Guid.NewGuid():N}.db");
         var dbPath = paths.DatabasePath;
+        var attachDir = paths.AttachmentsDirectory;
+        // Stage NEXT TO the targets so the final move is an atomic same-volume rename.
+        var stagedDb = Path.Combine(Path.GetDirectoryName(dbPath)!, $".restore-new-{Guid.NewGuid():N}.db");
+        var stagedAttach = Path.Combine(
+            Path.GetDirectoryName(attachDir.TrimEnd(Path.DirectorySeparatorChar))!,
+            $".restore-new-attach-{Guid.NewGuid():N}");
         try
         {
             await using (var src = File.OpenRead(sourcePath))
@@ -88,21 +97,28 @@ public sealed class RestoreService(
                 await cipher.DecryptAsync(src, dst, passphrase, ct).ConfigureAwait(false);
 
             await reader.ExtractDbAsync(tempZip, tempPlainDb, ct).ConfigureAwait(false);
+            await reader.ExtractAttachmentsAsync(tempZip, stagedAttach, ct).ConfigureAwait(false);
 
-            // Clear current DB and attachments
-            if (File.Exists(dbPath)) File.Delete(dbPath);
-            if (Directory.Exists(paths.AttachmentsDirectory))
-                foreach (var f in Directory.EnumerateFiles(paths.AttachmentsDirectory)) File.Delete(f);
-            await reader.ExtractAttachmentsAsync(tempZip, paths.AttachmentsDirectory, ct).ConfigureAwait(false);
+            // Re-encrypt the plain DB into the staging file (NOT over the live DB).
+            using (var key = await keyProvider.GetKeyAsync(ct).ConfigureAwait(false))
+                await ReEncryptDbAsync(tempPlainDb, stagedDb, key.RawKey).ConfigureAwait(false);
 
-            // 4. Re-encrypt the plain DB with the current cipher key
-            using var key = await keyProvider.GetKeyAsync(ct).ConfigureAwait(false);
-            await ReEncryptDbAsync(tempPlainDb, dbPath, key.RawKey).ConfigureAwait(false);
+            // 4. Commit: swap staged → live, keeping the old copies aside for rollback (CR1).
+            CommitSwap(dbPath, stagedDb, attachDir, stagedAttach);
+        }
+        catch
+        {
+            // Staging or commit-rollback failed: the live DB/attachments are intact, and the
+            // pre-restore snapshot remains as the ultimate safety net.
+            try { if (File.Exists(stagedDb)) File.Delete(stagedDb); } catch { }
+            try { if (Directory.Exists(stagedAttach)) Directory.Delete(stagedAttach, recursive: true); } catch { }
+            throw;
         }
         finally
         {
-            try { if (File.Exists(tempZip)) File.Delete(tempZip); } catch { }
-            try { if (File.Exists(tempPlainDb)) File.Delete(tempPlainDb); } catch { }
+            // CR4: these temp artifacts hold PLAINTEXT DB data — shred, don't just unlink.
+            SecureWipe.DeleteFile(tempPlainDb);
+            SecureWipe.DeleteFile(tempZip);
         }
 
         // 5. Plugin reconciliation
@@ -137,10 +153,68 @@ public sealed class RestoreService(
         }
     }
 
-    private static int CompareMajor(string a, string b)
+    // CR2: the real schema version this build supports = the value the live (migrated) DB carries.
+    private async Task<string> GetCurrentSchemaVersionAsync(CancellationToken ct)
     {
-        _ = int.TryParse(a.Split('.').FirstOrDefault(), out var aMaj);
-        _ = int.TryParse(b.Split('.').FirstOrDefault(), out var bMaj);
-        return aMaj.CompareTo(bMaj);
+        await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        var version = await db.AppSettings
+            .Where(a => a.Key == "schema_version")
+            .Select(a => a.Value)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        return string.IsNullOrWhiteSpace(version) ? FallbackSchemaVersion : version;
+    }
+
+    // CR1: atomically replace the live DB + attachments with the staged copies, keeping the previous
+    // copies aside so a mid-swap failure rolls back instead of leaving a half-restored state.
+    private static void CommitSwap(string dbPath, string stagedDb, string attachDir, string stagedAttach)
+    {
+        string? dbOld = null;
+        string? attachOld = null;
+        try
+        {
+            if (File.Exists(dbPath))
+            {
+                dbOld = dbPath + ".old";
+                if (File.Exists(dbOld)) File.Delete(dbOld);
+                File.Move(dbPath, dbOld);
+            }
+            File.Move(stagedDb, dbPath);
+
+            if (Directory.Exists(attachDir))
+            {
+                attachOld = attachDir.TrimEnd(Path.DirectorySeparatorChar) + ".old";
+                if (Directory.Exists(attachOld)) Directory.Delete(attachOld, recursive: true);
+                Directory.Move(attachDir, attachOld);
+            }
+            Directory.Move(stagedAttach, attachDir);
+        }
+        catch
+        {
+            // Roll back to the state we found before the swap.
+            try
+            {
+                if (dbOld is not null && File.Exists(dbOld))
+                {
+                    if (File.Exists(dbPath)) File.Delete(dbPath);
+                    File.Move(dbOld, dbPath);
+                }
+            }
+            catch { /* best-effort rollback; the pre-restore snapshot is the backstop */ }
+            try
+            {
+                if (attachOld is not null && Directory.Exists(attachOld))
+                {
+                    if (Directory.Exists(attachDir)) Directory.Delete(attachDir, recursive: true);
+                    Directory.Move(attachOld, attachDir);
+                }
+            }
+            catch { /* best-effort rollback */ }
+            throw;
+        }
+
+        // Success: drop the superseded copies.
+        try { if (dbOld is not null && File.Exists(dbOld)) File.Delete(dbOld); } catch { }
+        try { if (attachOld is not null && Directory.Exists(attachOld)) Directory.Delete(attachOld, recursive: true); } catch { }
     }
 }

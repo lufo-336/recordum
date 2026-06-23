@@ -12,6 +12,10 @@ public sealed class BackupArchiveReader
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    // CR3: a malicious .recbak is an untrusted zip — cap how many bytes we will write out for the
+    // restored DB and (cumulatively) for attachments, so a decompression bomb cannot fill the disk.
+    private const long MaxExtractBytes = 4L * 1024 * 1024 * 1024;  // 4 GiB
+
     public async Task<BackupManifest> ReadManifestAsync(string zipPath, CancellationToken ct = default)
     {
         using var zip = ZipFile.OpenRead(zipPath);
@@ -32,22 +36,40 @@ public sealed class BackupArchiveReader
             ?? throw new RestoreException("invalid_format", "db/recordum.db missing");
         await using var src = entry.Open();
         await using var dst = File.Create(destinationFile);
-        await src.CopyToAsync(dst, ct).ConfigureAwait(false);
+        await CopyBoundedAsync(src, dst, MaxExtractBytes, ct).ConfigureAwait(false);
     }
 
     public async Task ExtractAttachmentsAsync(string zipPath, string destinationDir, CancellationToken ct = default)
     {
         Directory.CreateDirectory(destinationDir);
         using var zip = ZipFile.OpenRead(zipPath);
+        var remaining = MaxExtractBytes;
         foreach (var entry in zip.Entries)
         {
             if (!entry.FullName.StartsWith("attachments/", StringComparison.Ordinal)) continue;
             if (entry.FullName.EndsWith('/')) continue;
-            var name = Path.GetFileName(entry.FullName);
+            var name = Path.GetFileName(entry.FullName);  // flatten: also defeats zip-slip path traversal
             var dst = Path.Combine(destinationDir, name);
             await using var src = entry.Open();
             await using var fs = File.Create(dst);
-            await src.CopyToAsync(fs, ct).ConfigureAwait(false);
+            remaining -= await CopyBoundedAsync(src, fs, remaining, ct).ConfigureAwait(false);
         }
+    }
+
+    // CR3: copy at most <paramref name="maxBytes"/> from an untrusted zip entry, returning the count
+    // copied so callers can enforce a cumulative budget across many entries.
+    private static async Task<long> CopyBoundedAsync(Stream src, Stream dst, long maxBytes, CancellationToken ct)
+    {
+        var buffer = new byte[81920];
+        long total = 0;
+        int read;
+        while ((read = await src.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+        {
+            total += read;
+            if (total > maxBytes)
+                throw new RestoreException("invalid_format", "Backup archive exceeds the maximum supported size.");
+            await dst.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
+        }
+        return total;
     }
 }

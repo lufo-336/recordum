@@ -70,6 +70,40 @@ public class AesGcmBackupCipherTests
     }
 
     [Fact]
+    public async Task Decrypt_rejects_out_of_range_kdf_memory()  // CR3
+    {
+        var cipher = new AesGcmBackupCipher();
+        using var encrypted = new MemoryStream();
+        await cipher.EncryptAsync(new MemoryStream(Encoding.UTF8.GetBytes("z")), encrypted, Pass);
+
+        var bytes = encrypted.ToArray();
+        // Header offset 9..10 = Argon2id memory (MiB, UInt16 BE). Forge ~64 GiB (65535 MiB).
+        bytes[9] = 0xFF;
+        bytes[10] = 0xFF;
+
+        using var decrypted = new MemoryStream();
+        var ex = await Assert.ThrowsAsync<RestoreException>(
+            () => cipher.DecryptAsync(new MemoryStream(bytes), decrypted, Pass));
+        ex.Code.Should().Be("invalid_format");  // rejected BEFORE the giant allocation
+    }
+
+    [Fact]
+    public async Task Decrypt_rejects_out_of_range_kdf_iterations()  // CR3
+    {
+        var cipher = new AesGcmBackupCipher();
+        using var encrypted = new MemoryStream();
+        await cipher.EncryptAsync(new MemoryStream(Encoding.UTF8.GetBytes("z")), encrypted, Pass);
+
+        var bytes = encrypted.ToArray();
+        bytes[11] = 0xFF;  // header offset 11 = iterations (byte); 255 >> MaxIters
+
+        using var decrypted = new MemoryStream();
+        var ex = await Assert.ThrowsAsync<RestoreException>(
+            () => cipher.DecryptAsync(new MemoryStream(bytes), decrypted, Pass));
+        ex.Code.Should().Be("invalid_format");
+    }
+
+    [Fact]
     public async Task Larger_payload_roundtrips()
     {
         var rng = new Random(42);

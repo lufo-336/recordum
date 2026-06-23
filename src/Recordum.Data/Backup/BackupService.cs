@@ -178,30 +178,6 @@ public sealed class BackupService(
         }
     }
 
-    private static void ShredDirectory(string dir)
-    {
-        if (!Directory.Exists(dir)) return;
-        try
-        {
-            foreach (var f in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
-            {
-                try
-                {
-                    var fi = new FileInfo(f);
-                    using var fs = File.Open(f, FileMode.Open, FileAccess.Write);
-                    var zero = new byte[Math.Min(fi.Length, 65_536)];
-                    var remaining = fi.Length;
-                    while (remaining > 0)
-                    {
-                        var n = (int)Math.Min(zero.Length, remaining);
-                        fs.Write(zero, 0, n);
-                        remaining -= n;
-                    }
-                }
-                catch { }
-            }
-            Directory.Delete(dir, recursive: true);
-        }
-        catch { }
-    }
+    // Secure-wipe shared with RestoreService (see SecureWipe).
+    private static void ShredDirectory(string dir) => SecureWipe.DeleteDirectory(dir);
 }

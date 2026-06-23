@@ -17,6 +17,15 @@ public sealed class AesGcmBackupCipher : IBackupCipher
     private const int TagLen = 16;
     private const int KeyLen = 32;
 
+    // CR3: the KDF parameters and ciphertext length below come from an UNTRUSTED header.
+    // Our own writer uses memMib=64, iters=4, parallel=2; these ceilings leave head-room for
+    // future hardening while blocking a malicious .recbak from forcing a ~64 GiB Argon2id
+    // allocation (DoS) or buffering an unbounded ciphertext into memory.
+    private const int MaxMemMib = 1024;          // 1 GiB ceiling on Argon2id memory
+    private const byte MaxIters = 24;
+    private const byte MaxParallel = 8;
+    private const long MaxCipherTextBytes = 2L * 1024 * 1024 * 1024;  // 2 GiB hard cap
+
     public async Task EncryptAsync(Stream input, Stream output, string passphrase, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -81,9 +90,15 @@ public sealed class AesGcmBackupCipher : IBackupCipher
         var salt = header.AsSpan(13, SaltLen).ToArray();
         var nonce = header.AsSpan(13 + SaltLen, NonceLen).ToArray();
 
-        using var ms = new MemoryStream();
-        await input.CopyToAsync(ms, ct).ConfigureAwait(false);
-        var rest = ms.ToArray();
+        // CR3: bound the untrusted KDF parameters BEFORE deriving (and thus allocating) anything.
+        if (memMib is < 8 or > MaxMemMib)
+            throw new RestoreException("invalid_format", "Backup KDF memory parameter out of range.");
+        if (iters is < 1 or > MaxIters)
+            throw new RestoreException("invalid_format", "Backup KDF iteration parameter out of range.");
+        if (parallel is < 1 or > MaxParallel)
+            throw new RestoreException("invalid_format", "Backup KDF parallelism parameter out of range.");
+
+        var rest = await ReadAllBoundedAsync(input, MaxCipherTextBytes, ct).ConfigureAwait(false);
         if (rest.Length < TagLen)
             throw new RestoreException("invalid_format", "Truncated backup.");
 
@@ -121,5 +136,21 @@ public sealed class AesGcmBackupCipher : IBackupCipher
             MemorySize = memMib * 1024,
         };
         return await argon.GetBytesAsync(KeyLen).ConfigureAwait(false);
+    }
+
+    // CR3: read an untrusted stream fully but refuse to buffer more than <paramref name="maxBytes"/>,
+    // so an oversized .recbak cannot exhaust memory before the tag is even checked.
+    private static async Task<byte[]> ReadAllBoundedAsync(Stream input, long maxBytes, CancellationToken ct)
+    {
+        using var ms = new MemoryStream();
+        var buffer = new byte[81920];
+        int read;
+        while ((read = await input.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+        {
+            if (ms.Length + read > maxBytes)
+                throw new RestoreException("invalid_format", "Backup exceeds the maximum supported size.");
+            ms.Write(buffer, 0, read);
+        }
+        return ms.ToArray();
     }
 }
