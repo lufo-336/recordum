@@ -244,12 +244,14 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: con `leading==6` (Jan 1 sull'ultima colonna della settimana in anno bisestile, es. 2028 cultura domenica-prima / 2012-2040 lunedì-prima) l'ultima cella era `jan1+364 < 31 dic = jan1+365` → il 31 dic non renderizzato.
 
 ### CR23. `HabitEditorViewModel.OnColorChanged` inquina la MRU colori a ogni tasto
-- **Stato**: `reported` · gravità **bassa**
+- **Stato**: `fixed` (2026-06-24, commit `6e760d1`) — compile-only su Mac · gravità **bassa**
+- **Fix**: nuovo `DebouncedColorRecorder` (in `Services/`) — registra nel MRU solo il colore **assestato** dopo un breve periodo di quiete, cancellando gli intermedi. `HabitEditorViewModel.OnColorChanged` e `NotesSectionViewModel.OnNoteMarkerColorChanged` ora fanno `Record(value)` invece di `AddAsync` a ogni cambio (il builder aggiungeva già al commit/Launch, invariato). Test `DebouncedColorRecorderTests`.
 - **Dove**: `src/Recordum.WPF/ViewModels/HabitEditor/HabitEditorViewModel.cs` (`OnColorChanged`)
 - **Cosa**: `_recentColors.AddAsync` su ogni colore valido (anche intermedi mentre si digita l'hex), fire-and-forget. MRU riempita di colori transitori, condivisa con builder e picker note. Salvare solo sul commit.
 
 ### CR24. `LoadMarkersAsync`: 2×N query sequenziali per mese (perf)
-- **Stato**: `reported` · gravità **bassa (perf)**
+- **Stato**: `fixed` (2026-06-24, commit `68f3c89`) — compile-only su Mac · gravità **bassa (perf)**
+- **Fix**: le due query per-mese (magnitudine + conteggi note) di tutti i mesi del range partono **concorrenti** (ognuna apre la propria connessione SQLite; i reader non si bloccano) e si assemblano dopo un singolo `Task.WhenAll`, invece di 2×N await sequenziali rieseguiti a ogni completamento/nota.
 - **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/HabitScreenViewModel.cs` (`LoadMarkersAsync`)
 - **Cosa**: per ogni mese del range due `await` DB sequenziali (`GetDailyMagnitudeAsync` + `ListNoteCountsInMonthAsync`), ri-eseguiti a ogni completamento/nota via `Calendar.JumpAsync`. Contro il budget home <500ms. Parallelizzare (`Task.WhenAll`) o query a range unica.
 
