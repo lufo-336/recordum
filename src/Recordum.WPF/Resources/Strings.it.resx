@@ -1140,6 +1140,12 @@
   <data name="ColorPicker.Shades" xml:space="preserve">
     <value>Tonalità</value>
   </data>
+  <data name="ColorPicker.Favorites" xml:space="preserve">
+    <value>Preferiti</value>
+  </data>
+  <data name="ColorPicker.AddFavorite" xml:space="preserve">
+    <value>+ Aggiungi</value>
+  </data>
   <data name="IconPicker.SearchPrompt" xml:space="preserve">
     <value>Cerca icone</value>
   </data>

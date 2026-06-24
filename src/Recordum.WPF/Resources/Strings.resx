@@ -1158,6 +1158,12 @@ Details: {0}</value>
   <data name="ColorPicker.Shades" xml:space="preserve">
     <value>Shades</value>
   </data>
+  <data name="ColorPicker.Favorites" xml:space="preserve">
+    <value>Favorites</value>
+  </data>
+  <data name="ColorPicker.AddFavorite" xml:space="preserve">
+    <value>+ Add</value>
+  </data>
   <data name="IconPicker.SearchPrompt" xml:space="preserve">
     <value>Search icons</value>
   </data>

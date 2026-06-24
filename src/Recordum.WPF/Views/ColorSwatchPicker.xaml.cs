@@ -94,6 +94,42 @@ public partial class ColorSwatchPicker : UserControl
 
     private void RefreshHasRecentColors() => HasRecentColors = RecentColors?.Any() == true;
 
+    public static readonly DependencyProperty FavoriteColorsProperty = DependencyProperty.Register(
+        nameof(FavoriteColors),
+        typeof(IEnumerable<string>),
+        typeof(ColorSwatchPicker),
+        new PropertyMetadata(System.Array.Empty<string>()));
+
+    public IEnumerable<string> FavoriteColors
+    {
+        get => (IEnumerable<string>)GetValue(FavoriteColorsProperty);
+        set => SetValue(FavoriteColorsProperty, value);
+    }
+
+    public static readonly DependencyProperty AddFavoriteCommandProperty = DependencyProperty.Register(
+        nameof(AddFavoriteCommand),
+        typeof(System.Windows.Input.ICommand),
+        typeof(ColorSwatchPicker),
+        new PropertyMetadata(null));
+
+    public System.Windows.Input.ICommand? AddFavoriteCommand
+    {
+        get => (System.Windows.Input.ICommand?)GetValue(AddFavoriteCommandProperty);
+        set => SetValue(AddFavoriteCommandProperty, value);
+    }
+
+    public static readonly DependencyProperty RemoveFavoriteCommandProperty = DependencyProperty.Register(
+        nameof(RemoveFavoriteCommand),
+        typeof(System.Windows.Input.ICommand),
+        typeof(ColorSwatchPicker),
+        new PropertyMetadata(null));
+
+    public System.Windows.Input.ICommand? RemoveFavoriteCommand
+    {
+        get => (System.Windows.Input.ICommand?)GetValue(RemoveFavoriteCommandProperty);
+        set => SetValue(RemoveFavoriteCommandProperty, value);
+    }
+
     public ColorSwatchPicker()
     {
         InitializeComponent();

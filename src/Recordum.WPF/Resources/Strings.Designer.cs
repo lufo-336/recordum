@@ -418,6 +418,8 @@ public static class Strings
     // Color picker
     public static string ColorPicker_Recent => Get("ColorPicker.Recent");
     public static string ColorPicker_Shades => Get("ColorPicker.Shades");
+    public static string ColorPicker_Favorites => Get("ColorPicker.Favorites");
+    public static string ColorPicker_AddFavorite => Get("ColorPicker.AddFavorite");
 
     // Icon picker
     public static string IconPicker_SearchPrompt => Get("IconPicker.SearchPrompt");
