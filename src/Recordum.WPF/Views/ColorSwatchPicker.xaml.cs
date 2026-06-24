@@ -130,6 +130,18 @@ public partial class ColorSwatchPicker : UserControl
         set => SetValue(RemoveFavoriteCommandProperty, value);
     }
 
+    public static readonly DependencyProperty EyedropperCommandProperty = DependencyProperty.Register(
+        nameof(EyedropperCommand),
+        typeof(System.Windows.Input.ICommand),
+        typeof(ColorSwatchPicker),
+        new PropertyMetadata(null));
+
+    public System.Windows.Input.ICommand? EyedropperCommand
+    {
+        get => (System.Windows.Input.ICommand?)GetValue(EyedropperCommandProperty);
+        set => SetValue(EyedropperCommandProperty, value);
+    }
+
     public ColorSwatchPicker()
     {
         InitializeComponent();

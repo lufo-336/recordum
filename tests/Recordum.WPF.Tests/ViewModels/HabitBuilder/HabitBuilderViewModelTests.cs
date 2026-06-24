@@ -22,7 +22,8 @@ public class HabitBuilderViewModelTests
         return new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
                refData ?? new FakeReferenceData(), new FakeClock(),
                recentColors ?? new RecentColorStore(settings),
-               new FavoriteColorStore(settings));
+               new FavoriteColorStore(settings),
+               new FakeScreenColorPicker());
     }
 
     // Alias for plan compatibility — same as NewSut()

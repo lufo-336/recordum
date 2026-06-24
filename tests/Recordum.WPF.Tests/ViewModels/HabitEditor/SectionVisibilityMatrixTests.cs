@@ -37,7 +37,8 @@ public class SectionVisibilityMatrixTests
             fakeSettings,
             new FakeReferenceData(),
             new RecentColorStore(fakeSettings),
-            new FavoriteColorStore(fakeSettings));
+            new FavoriteColorStore(fakeSettings),
+            new FakeScreenColorPicker());
 
         var applicable = new List<string> { "L1" };
         if (sut.Scheduling.IsApplicable(node, habit)) applicable.Add("Scheduling");

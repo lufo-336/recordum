@@ -11,6 +11,7 @@
                              RecentColors="{Binding RecentColors}"
                              FavoriteColors="{Binding FavoriteColors}"
                              AddFavoriteCommand="{Binding AddFavoriteCommand}"
-                             RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"/>
+                             RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"
+                             EyedropperCommand="{Binding EyedropCommand}"/>
     </StackPanel>
 </UserControl>

@@ -46,7 +46,8 @@ public class HabitScreenViewModelTests
         var editor = new Recordum.WPF.ViewModels.HabitEditor.HabitEditorViewModel(
             nodes, configs, goals, metrics, new FakeNotificationService(), new FakeTagService(),
             settings, new FakeReferenceData(), new Recordum.WPF.Services.RecentColorStore(settings),
-            new Recordum.WPF.Services.FavoriteColorStore(settings));
+            new Recordum.WPF.Services.FavoriteColorStore(settings),
+            new FakeScreenColorPicker());
         return new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteSvc, goals, new IntensityRampResolver(),

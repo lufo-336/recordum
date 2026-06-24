@@ -107,6 +107,7 @@
                                              FavoriteColors="{Binding FavoriteColors}"
                                              AddFavoriteCommand="{Binding AddFavoriteCommand}"
                                              RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"
+                                             EyedropperCommand="{Binding EyedropCommand}"
                                              HorizontalAlignment="Left"/>
                     </StackPanel>
 

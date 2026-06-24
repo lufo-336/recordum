@@ -75,7 +75,8 @@
                                          RecentColors="{Binding RecentColors}"
                                          FavoriteColors="{Binding FavoriteColors}"
                                          AddFavoriteCommand="{Binding AddFavoriteCommand}"
-                                         RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"/>
+                                         RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"
+                                         EyedropperCommand="{Binding EyedropCommand}"/>
                     <v:IconPicker Margin="8,0,0,0"
                                   Icon="{Binding Icon, Mode=TwoWay}"/>
                 </StackPanel>

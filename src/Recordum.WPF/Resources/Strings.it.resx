@@ -1146,6 +1146,9 @@
   <data name="ColorPicker.AddFavorite" xml:space="preserve">
     <value>+ Aggiungi</value>
   </data>
+  <data name="ColorPicker.Eyedropper" xml:space="preserve">
+    <value>Preleva dallo schermo</value>
+  </data>
   <data name="IconPicker.SearchPrompt" xml:space="preserve">
     <value>Cerca icone</value>
   </data>

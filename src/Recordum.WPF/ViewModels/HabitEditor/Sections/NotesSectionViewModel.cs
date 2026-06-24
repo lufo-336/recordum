@@ -14,7 +14,7 @@ namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 /// Currently exposes the calendar note-marker color (the colored corner on a day cell).
 /// Persists via <see cref="IHabitConfigService.UpsertAsync"/> like the other config sections.
 /// </summary>
-public sealed partial class NotesSectionViewModel(IHabitConfigService configs, IRecentColorStore recentColors, IFavoriteColorStore favoriteColors) : SectionViewModelBase
+public sealed partial class NotesSectionViewModel(IHabitConfigService configs, IRecentColorStore recentColors, IFavoriteColorStore favoriteColors, IScreenColorPicker screenPicker) : SectionViewModelBase
 {
     /// <summary>Default amber marker color used when the habit has no override.</summary>
     public const string DefaultNoteMarkerColor = "#e0b341";
@@ -24,6 +24,7 @@ public sealed partial class NotesSectionViewModel(IHabitConfigService configs, I
     private readonly IHabitConfigService _configs = configs;
     private readonly IRecentColorStore _recentColors = recentColors;
     private readonly IFavoriteColorStore _favoriteColors = favoriteColors;
+    private readonly IScreenColorPicker _screenPicker = screenPicker;
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
@@ -76,6 +77,13 @@ public sealed partial class NotesSectionViewModel(IHabitConfigService configs, I
         if (string.IsNullOrWhiteSpace(hex)) return;
         await _favoriteColors.RemoveAsync(hex).ConfigureAwait(true);
         await ReloadFavoritesAsync().ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task EyedropAsync()
+    {
+        var picked = await _screenPicker.PickAsync().ConfigureAwait(true);
+        if (!string.IsNullOrWhiteSpace(picked)) NoteMarkerColor = picked;
     }
 
     private async Task ReloadFavoritesAsync()

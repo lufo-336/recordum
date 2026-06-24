@@ -23,11 +23,12 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private readonly IClock _clock;
     private readonly IRecentColorStore _recentColors;
     private readonly IFavoriteColorStore _favoriteColors;
+    private readonly IScreenColorPicker _screenPicker;
     private Guid? _parentId;
 
     public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates,
         IReferenceDataQueryService refData, IClock clock, IRecentColorStore recentColors,
-        IFavoriteColorStore favoriteColors)
+        IFavoriteColorStore favoriteColors, IScreenColorPicker screenPicker)
     {
         _composed = composed;
         _templates = templates;
@@ -35,6 +36,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         _clock = clock;
         _recentColors = recentColors;
         _favoriteColors = favoriteColors;
+        _screenPicker = screenPicker;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -156,6 +158,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(hex)) return;
         await _favoriteColors.RemoveAsync(hex, ct).ConfigureAwait(true);
         await ReloadFavoritesAsync(ct).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task EyedropAsync()
+    {
+        var picked = await _screenPicker.PickAsync().ConfigureAwait(true);
+        if (!string.IsNullOrWhiteSpace(picked)) Color = picked;
     }
 
     private async Task ReloadFavoritesAsync(CancellationToken ct = default)

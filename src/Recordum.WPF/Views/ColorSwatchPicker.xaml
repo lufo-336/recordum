@@ -157,6 +157,16 @@
                             <Border Width="24" Height="24" Margin="8,0,0,0" CornerRadius="5"
                                     BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
                                     Background="{Binding Color, Converter={StaticResource HexToBrush}}"/>
+                            <Button Width="30" Height="30" Margin="8,0,0,0" Padding="0"
+                                    Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                    ToolTip="{x:Static res:Strings.ColorPicker_Eyedropper}"
+                                    Visibility="{Binding EyedropperCommand, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}, Converter={StaticResource NullToVisibility}}"
+                                    Command="{Binding EyedropperCommand, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}}">
+                                <Path Width="15" Height="15" Stretch="Uniform"
+                                      Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                      Data="M11 7l6 6 M4 20l4-1 9.5-9.5a2.1 2.1 0 0 0-3-3L5 13l-1 4z"/>
+                            </Button>
                         </StackPanel>
                     </StackPanel>
                 </Border>

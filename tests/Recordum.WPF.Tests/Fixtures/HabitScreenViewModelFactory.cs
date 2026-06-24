@@ -43,7 +43,8 @@ public static class HabitScreenViewModelFactory
         var bus = new FakeEventBus();
         var editor = new HabitEditorViewModel(
             nodes, configService, goals, metrics, new FakeNotificationService(), new FakeTagService(),
-            settings, new FakeReferenceData(), new RecentColorStore(settings), new FavoriteColorStore(settings));
+            settings, new FakeReferenceData(), new RecentColorStore(settings), new FavoriteColorStore(settings),
+            new FakeScreenColorPicker());
 
         var vm = new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeReferenceData(), configService,

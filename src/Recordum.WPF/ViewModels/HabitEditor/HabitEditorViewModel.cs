@@ -28,6 +28,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     private readonly IHabitConfigService _configs;
     private readonly IRecentColorStore _recentColors;
     private readonly IFavoriteColorStore _favoriteColors;
+    private readonly IScreenColorPicker _screenPicker;
     private readonly IEventBus? _events;
     private bool _loading;
 
@@ -87,6 +88,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IReferenceDataQueryService refData,
         IRecentColorStore recentColors,
         IFavoriteColorStore favoriteColors,
+        IScreenColorPicker? screenPicker = null,
         IEventBus? events = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
@@ -97,6 +99,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         _configs = configs;
         _recentColors = recentColors;
         _favoriteColors = favoriteColors;
+        _screenPicker = screenPicker ?? new NullScreenColorPicker();
         _events = events;
 
         Scheduling = new SchedulingSectionViewModel(configs);
@@ -106,7 +109,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Scales = new ScalesSectionViewModel(metrics, refData);
         Goal = new GoalSectionViewModel(goals);
         Notifications = new NotificationsSectionViewModel(notifications);
-        Notes = new NotesSectionViewModel(configs, recentColors, favoriteColors);
+        Notes = new NotesSectionViewModel(configs, recentColors, favoriteColors, _screenPicker);
         Tags = new TagsSectionViewModel(tags);
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
@@ -334,6 +337,13 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         await ReloadFavoritesAsync(ct).ConfigureAwait(true);
     }
 
+    [RelayCommand]
+    private async Task EyedropAsync()
+    {
+        var picked = await _screenPicker.PickAsync().ConfigureAwait(true);
+        if (!string.IsNullOrWhiteSpace(picked)) Color = picked;
+    }
+
     private async Task ReloadFavoritesAsync(CancellationToken ct = default)
     {
         FavoriteColors.Clear();
@@ -358,4 +368,10 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             HeaderStatus = EditorStatus.Error;
         }
     }
+}
+
+/// <summary>No-op fallback used when <see cref="IScreenColorPicker"/> is not registered (e.g. in tests).</summary>
+file sealed class NullScreenColorPicker : IScreenColorPicker
+{
+    public System.Threading.Tasks.Task<string?> PickAsync() => System.Threading.Tasks.Task.FromResult<string?>(null);
 }
