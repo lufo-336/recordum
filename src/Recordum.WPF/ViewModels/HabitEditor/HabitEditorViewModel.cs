@@ -88,18 +88,19 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IReferenceDataQueryService refData,
         IRecentColorStore recentColors,
         IFavoriteColorStore favoriteColors,
-        IScreenColorPicker? screenPicker = null,
+        IScreenColorPicker screenPicker,
         IEventBus? events = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(configs);
         ArgumentNullException.ThrowIfNull(recentColors);
         ArgumentNullException.ThrowIfNull(favoriteColors);
+        ArgumentNullException.ThrowIfNull(screenPicker);
         _nodes = nodes;
         _configs = configs;
         _recentColors = recentColors;
         _favoriteColors = favoriteColors;
-        _screenPicker = screenPicker ?? new NullScreenColorPicker();
+        _screenPicker = screenPicker;
         _events = events;
 
         Scheduling = new SchedulingSectionViewModel(configs);
@@ -368,10 +369,4 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             HeaderStatus = EditorStatus.Error;
         }
     }
-}
-
-/// <summary>No-op fallback used when <see cref="IScreenColorPicker"/> is not registered (e.g. in tests).</summary>
-file sealed class NullScreenColorPicker : IScreenColorPicker
-{
-    public System.Threading.Tasks.Task<string?> PickAsync() => System.Threading.Tasks.Task.FromResult<string?>(null);
 }
