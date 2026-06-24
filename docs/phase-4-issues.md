@@ -211,17 +211,20 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: `HabitNodeNotFoundException`/`AlreadySoftDeleted` (parent rimosso da reload/cleanup concorrente) sfuggono dall'`async void` → crash. try/catch completo in `ApplyDropAsync`/`TryBulkMoveAsync`.
 
 ### CR17. Zona di drop calcolata sul sotto-elemento, non sulla card riga
-- **Stato**: `reported` · gravità **bassa (fragilità)** — verifica visiva da fare (drag già "funziona alla grande" lato utente)
+- **Stato**: `fixed` (2026-06-24, commit `885942e`) — verifica visiva VM · gravità **bassa (fragilità)**
+- **Fix**: `OnDragOver` usa `FindRowCard` (la stessa card del ghost) e calcola la zona Before/Onto/After sull'altezza della card, non su `e.OriginalSource` (spesso un figlio).
 - **Dove**: `src/Recordum.WPF/Behaviors/TreeDragDropBehavior.cs` (`ResolveZone`/`OnDragOver`)
 - **Cosa**: il bordo Before/Onto/After deriva da `e.OriginalSource.ActualHeight` (spesso un figlio: testo/sparkline), non dalla card; il rapporto Y/altezza non mappa il vero terzo della riga → indicatore/SortOrder potenzialmente errati. Il ghost usa già `FindRowCard`: applicarlo anche alla zona.
 
 ### CR18. `HomeViewModel`: reload fire-and-forget senza generation guard
-- **Stato**: `reported` · gravità **bassa**
+- **Stato**: `fixed` (2026-06-24, commit `885942e`) · gravità **bassa**
+- **Fix**: token `_reloadGeneration` in `ReloadPreservingSelectionAsync`: un reload superato fa bail prima di riapplicare la selezione (come HabitScreen/Detail).
 - **Dove**: `src/Recordum.WPF/ViewModels/HomeViewModel.cs` (`ReloadPreservingSelectionAsync`/`OnRowChanged`)
 - **Cosa**: eventi bus sovrapposti possono interlacciare due `Rebuild` sulla stessa `Rows` (duplicati transitori, handler doppi). HabitScreen/Detail hanno il guard; Home no.
 
 ### CR19. `HabitRecordsViewModel`: cambio periodo/modalità senza guard
-- **Stato**: `reported` · gravità **bassa**
+- **Stato**: `fixed` (2026-06-24, commit `885942e`) · gravità **bassa**
+- **Fix**: `CancellationTokenSource` per-reload (cancella il precedente; i metodi già passano `ct` alle query) → un toggle rapido Giorno↔Periodo non lascia risultati stantii. VM ora `IDisposable` (disposto da HabitScreenViewModel).
 - **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/HabitRecordsViewModel.cs`
 - **Cosa**: handler `OnModeChanged`/`OnSelectedPeriodChanged` fanno `_ = ReloadAsync()` sovrapponibili; toggle rapido Giorno↔Periodo può lasciare in lista i risultati della query più vecchia.
 
@@ -232,7 +235,8 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: nome file backup da `DateTime.UtcNow`. CLAUDE.md §4: «Mai DateTime.UtcNow/Now diretti. Tutto via IClock/TimeProvider.»
 
 ### CR21. QuickAdd: eccezioni grezze in UI + duplicazione
-- **Stato**: `reported` · gravità **bassa (convenzioni/UX/reuse)**
+- **Stato**: `fixed` (2026-06-24, commit `04522ea`) · gravità **bassa (convenzioni/UX/reuse)**
+- **Fix**: helper `SetUnexpectedError` su `QuickAddViewModelBase` (trace + stringa localizzata `QuickAdd.Error.Unexpected`) usato dalle 3 catch — niente più messaggi EF/SQLite grezzi in UI. `ToggleChrono` + stato chrono duplicati estratti in `SeriesQuickAddViewModelBase` (esteso da Measured/CounterSeries; CounterTap resta sulla base). Test `Save_failure_shows_a_localized_message_not_the_raw_exception`.
 - **Dove**: `…/QuickAdd/MeasuredQuickAddViewModel.cs`, `CounterSeriesQuickAddViewModel.cs`, `CounterTapQuickAddViewModel.cs`
 - **Cosa**: `ErrorMessage = ex.Message` → stringa non localizzata (es. "UNIQUE constraint failed") mostrata all'utente (viola §8 .resx); usare messaggio localizzato + log. Inoltre `ToggleChrono` e lo skeleton Save sono duplicati tra le 3 VM → estrarre base condivisa.
 
