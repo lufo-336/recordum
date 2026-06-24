@@ -542,47 +542,61 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private async void OnCompletionEvent(EventEnvelope envelope)
     {
-        if (Node is null) return;
-        var habitId = envelope.Payload switch
+        // async void bus handler: swallow + trace transient failures so an event reaction can never
+        // surface as an unobserved exception → DispatcherUnhandledException → crash (CR15).
+        try
         {
-            CompletionRecordedPayload r => r.HabitNodeId,
-            CompletionUpdatedPayload u => u.HabitNodeId,
-            CompletionDeletedPayload d => d.HabitNodeId,
-            _ => Guid.Empty,
-        };
-        if (habitId != Node.Id) return;
-        await Task.WhenAll(
-            CompletionList.LoadAsync(Node.Id),
-            Records.ReloadAsync(),
-            Calendar.JumpAsync())
-            .ConfigureAwait(true);
+            if (Node is null) return;
+            var habitId = envelope.Payload switch
+            {
+                CompletionRecordedPayload r => r.HabitNodeId,
+                CompletionUpdatedPayload u => u.HabitNodeId,
+                CompletionDeletedPayload d => d.HabitNodeId,
+                _ => Guid.Empty,
+            };
+            if (habitId != Node.Id) return;
+            await Task.WhenAll(
+                CompletionList.LoadAsync(Node.Id),
+                Records.ReloadAsync(),
+                Calendar.JumpAsync())
+                .ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCompletionEvent failed: {ex}"); }
     }
 
     private async void OnNoteEvent(EventEnvelope envelope)
     {
-        if (Node is null) return;
-        var habitId = envelope.Payload switch
+        try
         {
-            NoteCreatedPayload c => c.HabitNodeId,
-            NoteUpdatedPayload u => u.HabitNodeId,
-            NoteDeletedPayload d => d.HabitNodeId,
-            _ => Guid.Empty,
-        };
-        if (habitId != Node.Id) return;
-        await Calendar.JumpAsync().ConfigureAwait(true);
+            if (Node is null) return;
+            var habitId = envelope.Payload switch
+            {
+                NoteCreatedPayload c => c.HabitNodeId,
+                NoteUpdatedPayload u => u.HabitNodeId,
+                NoteDeletedPayload d => d.HabitNodeId,
+                _ => Guid.Empty,
+            };
+            if (habitId != Node.Id) return;
+            await Calendar.JumpAsync().ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnNoteEvent failed: {ex}"); }
     }
 
     // A habit edit in Configura (name/color/icon) must reflect live in the open workspace:
     // refresh the cached node and recolor the calendar markers.
     private async void OnHabitUpdatedEvent(EventEnvelope envelope)
     {
-        if (Node is null || envelope.Payload is not HabitUpdatedPayload p || p.HabitNodeId != Node.Id) return;
-        var refreshed = await _nodes.GetAsync(Node.Id).ConfigureAwait(true);
-        if (refreshed is null || Node is null || refreshed.Id != Node.Id) return;
-        Node = refreshed;
-        OnPropertyChanged(nameof(Name));
-        Calendar.CompletedColorHex = refreshed.Color;
-        await Calendar.JumpAsync().ConfigureAwait(true);
+        try
+        {
+            if (Node is null || envelope.Payload is not HabitUpdatedPayload p || p.HabitNodeId != Node.Id) return;
+            var refreshed = await _nodes.GetAsync(Node.Id).ConfigureAwait(true);
+            if (refreshed is null || Node is null || refreshed.Id != Node.Id) return;
+            Node = refreshed;
+            OnPropertyChanged(nameof(Name));
+            Calendar.CompletedColorHex = refreshed.Color;
+            await Calendar.JumpAsync().ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitUpdatedEvent failed: {ex}"); }
     }
 
     private async Task<CalendarMarkers> LoadMarkersAsync(DateOnly from, DateOnly to, CancellationToken ct)
@@ -671,12 +685,16 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private async void OnCalendarDateSelected(object? sender, DateOnly date)
     {
-        if (QuickAdd is not null)
-            QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
-        Notes.SetCalendarDay(date);
-        await DayNote.LoadDayAsync(date).ConfigureAwait(true);
-        await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
-        if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);
+        try
+        {
+            if (QuickAdd is not null)
+                QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
+            Notes.SetCalendarDay(date);
+            await DayNote.LoadDayAsync(date).ConfigureAwait(true);
+            await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
+            if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCalendarDateSelected failed: {ex}"); }
     }
 
     private async Task PushDaySummaryAsync(DateOnly date, CancellationToken ct)

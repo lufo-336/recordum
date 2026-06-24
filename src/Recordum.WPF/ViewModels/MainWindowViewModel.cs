@@ -136,9 +136,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     private async void OnHomePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(HomeViewModel.SelectedRow)) return;
-        if (Home.SelectedRow is not { } row) { Workspace.ActivatePanoramica(); return; }
-        await Workspace.OpenSubjectAsync(row.HabitNodeId, KindOf(row), row.Name).ConfigureAwait(true);
+        // async void event handler: a transient failure (e.g. a DB hiccup) must not escape as an
+        // unobserved exception → DispatcherUnhandledException → crash (CR15).
+        try
+        {
+            if (e.PropertyName != nameof(HomeViewModel.SelectedRow)) return;
+            if (Home.SelectedRow is not { } row) { Workspace.ActivatePanoramica(); return; }
+            await Workspace.OpenSubjectAsync(row.HabitNodeId, KindOf(row), row.Name).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHomePropertyChanged failed: {ex}"); }
     }
 
     private static WorkspaceTabKind KindOf(HomeRowViewModel row)
@@ -148,17 +154,25 @@ public sealed partial class MainWindowViewModel : ObservableObject
     // the subject in the workspace to keep it from being replaced by the next preview.
     private async void OnHabitActivationRequested(object? sender, Guid habitNodeId)
     {
-        var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == habitNodeId);
-        if (row is null) return;
-        await Workspace.OpenSubjectAsync(habitNodeId, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+        try
+        {
+            var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == habitNodeId);
+            if (row is null) return;
+            await Workspace.OpenSubjectAsync(habitNodeId, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitActivationRequested failed: {ex}"); }
     }
 
     // New group from ＋Nuova▾: open it as a pinned tab (Configura auto-opens per-tab in Task 2).
     private async void OnHomeGroupCreated(object? sender, Guid id)
     {
-        var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == id);
-        if (row is null) return;
-        await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+        try
+        {
+            var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == id);
+            if (row is null) return;
+            await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHomeGroupCreated failed: {ex}"); }
     }
 
     [RelayCommand]
@@ -167,8 +181,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     // A tab asked to export its subject: resolve the display name from its Home row.
     private async void OnWorkspaceExportRequested(object? sender, Guid subjectId)
     {
-        var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == subjectId);
-        await _exportLauncher.ShowForHabitAsync(subjectId, row?.Name ?? string.Empty).ConfigureAwait(true);
+        try
+        {
+            var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == subjectId);
+            await _exportLauncher.ShowForHabitAsync(subjectId, row?.Name ?? string.Empty).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnWorkspaceExportRequested failed: {ex}"); }
     }
 
     [RelayCommand]
