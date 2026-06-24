@@ -193,17 +193,20 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: `FormatValue` controlla ScaleLabels/ValueText/ValueDecimal/ValueInteger ma **non `ValueSeconds`** → una serie con sola durata (es. 1:30) appare con riga vuota in Cronologia/Records. Dato salvato ma invisibile.
 
 ### CR14. `HabitEditorViewModel.LoadAsync` senza generation guard → stato misto/salvataggio su habit sbagliato (CONFIRMED)
-- **Stato**: `reported` · gravità **media (integrità)**
+- **Stato**: `fixed` (2026-06-24, commit `90c92c4`) — compile-only su Mac, run VM · gravità **media (integrità)**
+- **Fix**: token `_loadGeneration` (mirror di `HabitScreenViewModel`): ogni `LoadAsync` lo bumpa e fa **bail** se superato — prima di assegnare `Node`, prima di caricare le sezioni, prima di finalizzare; il `finally` azzera `_loading` solo se ancora corrente. Test `LoadAsync_deselect_during_an_in_flight_load_does_not_throw_or_clobber`.
 - **Dove**: `src/Recordum.WPF/ViewModels/HabitEditor/HabitEditorViewModel.cs:181`
 - **Cosa**: `LoadAsync` setta `_loading` ma non ha token di generazione (HabitScreen sì). Con Configura aperta e cambio rapido di habit i load si interlacciano: sezioni miste A/B, `Node` = ultimo writer, edit successivo persiste sul Node corrente potenzialmente errato. Aggiungere generation guard come in `HabitScreenViewModel`.
 
 ### CR15. Handler `async void` non protetti → crash su errore transitorio
-- **Stato**: `reported` · gravità **media (robustezza)**
+- **Stato**: `fixed` (2026-06-24, commit `cc85c4d`) — compile-only su Mac · gravità **media (robustezza)**
+- **Fix**: gli 8 handler `async void` (4 in `MainWindowViewModel`, 4 in `HabitScreenViewModel`) ora hanno il corpo in `try/catch` che traccia (`Debug.WriteLine`) e ingoia — un errore transitorio reagendo a un evento non diventa più un'eccezione non osservata → `DispatcherUnhandledException` → crash. Niente ILogger nei costruttori (l'app non logga nei VM).
 - **Dove**: `src/Recordum.WPF/ViewModels/MainWindowViewModel.cs` (OnHomePropertyChanged + 3 handler) · `…/HabitScreen/HabitScreenViewModel.cs` (handler bus/calendario)
 - **Cosa**: `await` su chiamate DB/launcher senza try/catch in handler `async void`. Errore SQLite transitorio reagendo a un evento → eccezione non osservata → `DispatcherUnhandledException` → crash. Avvolgere in try/catch con logging.
 
 ### CR16. Drag-drop: cattura solo `CyclicHabitNodeMoveException` → altre eccezioni crashano
-- **Stato**: `reported` · gravità **media (crash su gesto)** — *era follow-up sotto R-dragReorder, promosso a CR*
+- **Stato**: `fixed` (2026-06-24, commit `d0e1e93`) — compile-only su Mac, run VM · gravità **media (crash su gesto)** — *era follow-up sotto R-dragReorder, promosso a CR*
+- **Fix**: le due catch (`ApplyDropAsync` single-row + `TryBulkMoveAsync` per-riga) ora coprono anche `HabitNodeNotFoundException`/`HabitNodeAlreadySoftDeletedException` (nodo/parent rimosso da reload/cleanup concorrente) → drop diventa no-op invece di crashare dall'`async void OnDrop`. Test `ApplyDropAsync_does_not_throw_when_the_dragged_node_vanished`.
 - **Dove**: `src/Recordum.WPF/Behaviors/TreeDragDropBehavior.cs` (`OnDrop`) → `HomeViewModel.ApplyDropAsync` / `TryBulkMoveAsync`
 - **Cosa**: `HabitNodeNotFoundException`/`AlreadySoftDeleted` (parent rimosso da reload/cleanup concorrente) sfuggono dall'`async void` → crash. try/catch completo in `ApplyDropAsync`/`TryBulkMoveAsync`.
 
