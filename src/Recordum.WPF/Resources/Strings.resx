@@ -551,6 +551,9 @@ Details: {0}</value>
   <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
     <value>At least one value is required.</value>
   </data>
+  <data name="QuickAdd.Error.Unexpected" xml:space="preserve">
+    <value>Couldn't save. Please try again.</value>
+  </data>
   <data name="HabitScreen.Tab.Completion" xml:space="preserve">
     <value>Completion</value>
   </data>

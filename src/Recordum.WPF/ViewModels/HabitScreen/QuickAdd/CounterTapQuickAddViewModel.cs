@@ -42,7 +42,7 @@ public sealed partial class CounterTapQuickAddViewModel(ICompletionService compl
             UndoLastCommand.NotifyCanExecuteChanged();
             OnSaved(id);
         }
-        catch (Exception ex) { ErrorMessage = ex.Message; }
+        catch (Exception ex) { SetUnexpectedError(ex); }
         finally { IsSaving = false; }
     }
 

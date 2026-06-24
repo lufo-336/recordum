@@ -533,6 +533,9 @@
   <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
     <value>È richiesto almeno un valore.</value>
   </data>
+  <data name="QuickAdd.Error.Unexpected" xml:space="preserve">
+    <value>Salvataggio non riuscito. Riprova.</value>
+  </data>
   <data name="HabitScreen.Tab.Completion" xml:space="preserve">
     <value>Cronologia</value>
   </data>

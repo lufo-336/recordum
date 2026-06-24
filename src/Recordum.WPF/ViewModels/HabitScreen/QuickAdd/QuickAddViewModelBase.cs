@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
@@ -29,6 +30,14 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
     public abstract Task SaveAsync(CancellationToken ct = default);
 
     protected void OnSaved(Guid completionId) => CompletionSaved?.Invoke(this, completionId);
+
+    /// <summary>Shows a localized message for an unexpected save failure and traces the real exception,
+    /// so a raw EF/SQLite message (e.g. "UNIQUE constraint failed") never leaks into the UI (CR21).</summary>
+    protected void SetUnexpectedError(Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"QuickAdd save failed: {ex}");
+        ErrorMessage = Strings.QuickAdd_Error_Unexpected;
+    }
 
     /// <summary>Builds (timestamp, isRetroactive) for the current CompletionDate vs clock.Today.</summary>
     protected (DateTime Timestamp, long Ms, bool IsRetroactive) ResolveCompletionTimestamp()

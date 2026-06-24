@@ -15,38 +15,15 @@ public sealed partial class MeasuredQuickAddViewModel(
     IMetricDefinitionService metrics,
     IReferenceDataQueryService refData,
     IClock clock,
-    IActiveTimerService timers) : QuickAddViewModelBase(completions, clock)
+    IActiveTimerService timers) : SeriesQuickAddViewModelBase(completions, clock, timers)
 {
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;
-    private readonly IActiveTimerService _timers = timers;
 
     [ObservableProperty] private SeriesRowViewModel _row = new(Array.Empty<MetricDefinition>());
     [ObservableProperty] private string? _notes;
-    [ObservableProperty] private bool _chronoRunning;
-    private SeriesCellViewModel? _chronoCell;
 
-    /// <summary>Per-cell stopwatch: start runs an active_timer (Stopwatch); stop pours the elapsed
-    /// seconds into the duration cell WITHOUT recording a completion (spec multivalue §4.1, §8).</summary>
-    [RelayCommand]
-    private async Task ToggleChrono(SeriesCellViewModel? cell, CancellationToken ct)
-    {
-        if (Node is null || cell is null || !cell.IsDuration) return;
-        if (!ChronoRunning)
-        {
-            if (await _timers.GetActiveAsync(Node.Id, ct).ConfigureAwait(true) is not null) return;
-            await _timers.StartAsync(Node.Id, TimerMode.Stopwatch, ct).ConfigureAwait(true);
-            _chronoCell = cell;
-            ChronoRunning = true;
-        }
-        else
-        {
-            var secs = await _timers.StopWithoutRecordingAsync(Node.Id, ct).ConfigureAwait(true);
-            (_chronoCell ?? cell).SetDurationSeconds(secs);
-            _chronoCell = null;
-            ChronoRunning = false;
-        }
-    }
+    // _timers, ChronoRunning and ToggleChrono live in SeriesQuickAddViewModelBase (CR21).
 
     public async Task LoadMetricsAsync(CancellationToken ct = default)
     {
@@ -92,7 +69,7 @@ public sealed partial class MeasuredQuickAddViewModel(
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            SetUnexpectedError(ex);
         }
         finally
         {

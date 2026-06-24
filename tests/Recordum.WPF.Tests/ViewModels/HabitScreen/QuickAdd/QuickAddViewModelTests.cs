@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 using Xunit;
@@ -350,6 +351,19 @@ public class CounterTapQuickAddViewModelTests
             Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter },
         };
         return (vm, cs, clock);
+    }
+
+    [Fact]
+    public async Task Save_failure_shows_a_localized_message_not_the_raw_exception()
+    {
+        // CR21: a raw EF/SQLite error (e.g. "UNIQUE constraint failed") must never leak into the UI.
+        var (vm, completions, _) = CreateCounterTapVm();
+        completions.NextException = new InvalidOperationException("UNIQUE constraint failed");
+
+        await vm.TapCommand.ExecuteAsync(null);
+
+        vm.ErrorMessage.Should().Be(Strings.QuickAdd_Error_Unexpected);
+        vm.ErrorMessage.Should().NotContain("UNIQUE");
     }
 
     [Fact]
