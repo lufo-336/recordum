@@ -33,6 +33,27 @@ public class HabitEditorViewModelTests
     }
 
     [Fact]
+    public async Task LoadAsync_deselect_during_an_in_flight_load_does_not_throw_or_clobber()
+    {
+        // CR14: editing the configured habit and switching fires overlapping loads. A stale load that
+        // resumes after a deselect must bail (generation guard) — never re-apply its Node or finalize.
+        var id = Guid.NewGuid();
+        _nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "A", Color = "#aaaaaa" };
+        var gate = new TaskCompletionSource();
+        _configs.GetGate = () => gate.Task;
+        var sut = CreateSut();
+
+        var loadingA = sut.LoadAsync(id);  // sets Node, then blocks inside _configs.GetAsync
+        await sut.LoadAsync(null);         // deselect mid-flight → Node null, generation bumped
+        gate.SetResult();                  // release the superseded load
+        var act = async () => await loadingA;
+
+        await act.Should().NotThrowAsync();
+        sut.Node.Should().BeNull();
+        sut.HasNode.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Changing_color_publishes_HabitUpdated_so_views_refresh_live()
     {
         var id = Guid.NewGuid();

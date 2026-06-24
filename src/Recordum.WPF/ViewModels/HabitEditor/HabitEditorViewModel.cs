@@ -31,6 +31,9 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     private readonly IScreenColorPicker _screenPicker;
     private readonly IEventBus? _events;
     private bool _loading;
+    // Bumped each LoadAsync; a load that finds it superseded bails before mutating shared state, so
+    // rapidly switching the configured habit can't interleave two loads into a mixed editor (CR14).
+    private int _loadGeneration;
 
     [ObservableProperty] private HabitNode? _node;
     [ObservableProperty] private string _name = string.Empty;
@@ -190,6 +193,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     public async Task LoadAsync(Guid? habitNodeId, CancellationToken ct = default)
     {
+        var generation = ++_loadGeneration;
         _loading = true;
         try
         {
@@ -201,6 +205,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             }
 
             var node = await _nodes.GetAsync(habitNodeId.Value, ct);
+            if (generation != _loadGeneration) return; // superseded by a newer load/deselect
             Node = node;
             if (node is null)
             {
@@ -216,6 +221,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             SelectedHabitType = node.HabitType;
 
             var cfg = await _configs.GetAsync(node.Id, ct);
+            if (generation != _loadGeneration) return; // a newer load won the race before we touched the sections
             await Scheduling.LoadAsync(node, cfg);
             await Streak.LoadAsync(node, cfg);
             await Timer.LoadAsync(node, cfg);
@@ -234,6 +240,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             RecentColors.Clear();
             foreach (var c in await _recentColors.GetAsync(ct).ConfigureAwait(true)) RecentColors.Add(c);
             await ReloadFavoritesAsync(ct).ConfigureAwait(true);
+            if (generation != _loadGeneration) return; // bail before finalizing a stale load
 
             HeaderStatus = EditorStatus.Idle;
             HeaderError = null;
@@ -241,7 +248,8 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         }
         finally
         {
-            _loading = false;
+            // Only the current load owns _loading — a superseded one must not clear it for the newer load.
+            if (generation == _loadGeneration) _loading = false;
         }
     }
 
