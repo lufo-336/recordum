@@ -23,6 +23,7 @@ public sealed partial class NotesSectionViewModel(IHabitConfigService configs, I
 
     private readonly IHabitConfigService _configs = configs;
     private readonly IRecentColorStore _recentColors = recentColors;
+    private readonly DebouncedColorRecorder _recordColor = new(recentColors);
     private readonly IFavoriteColorStore _favoriteColors = favoriteColors;
     private readonly IScreenColorPicker _screenPicker = screenPicker;
     private bool _loading;
@@ -60,7 +61,7 @@ public sealed partial class NotesSectionViewModel(IHabitConfigService configs, I
     {
         if (_loading || NodeId == Guid.Empty) return;
         _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => c.NoteMarkerColor = value).AsTask());
-        _ = _recentColors.AddAsync(value);
+        _recordColor.Record(value); // debounced: only the settled colour reaches the recents MRU (CR23)
     }
 
     [RelayCommand]

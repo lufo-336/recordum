@@ -27,6 +27,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     private readonly IHabitNodeService _nodes;
     private readonly IHabitConfigService _configs;
     private readonly IRecentColorStore _recentColors;
+    private readonly DebouncedColorRecorder _recordColor;
     private readonly IFavoriteColorStore _favoriteColors;
     private readonly IScreenColorPicker _screenPicker;
     private readonly IEventBus? _events;
@@ -102,6 +103,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         _nodes = nodes;
         _configs = configs;
         _recentColors = recentColors;
+        _recordColor = new DebouncedColorRecorder(recentColors);
         _favoriteColors = favoriteColors;
         _screenPicker = screenPicker;
         _events = events;
@@ -296,7 +298,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             return;
         }
         _ = ApplyHeaderAsync(() => _nodes.UpdateAsync(Node.Id, n => n.Color = value).AsTask());
-        _ = _recentColors.AddAsync(value);
+        _recordColor.Record(value); // debounced: only the settled colour reaches the recents MRU (CR23)
     }
 
     partial void OnIconChanged(string? value)
