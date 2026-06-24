@@ -168,6 +168,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IExportDialogLauncher, WpfExportDialogLauncher>();
         services.AddTransient<ExportDialogViewModel>();
         services.AddSingleton<IClipboard, WpfClipboard>();
+        services.AddSingleton<IScreenColorPicker, ScreenColorPicker>();
         services.AddTransient<DiagnosticInfoViewModel>();
 
         // Backup / Restore.
