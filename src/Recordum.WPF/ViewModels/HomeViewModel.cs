@@ -204,7 +204,8 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         foreach (var id in ids)
         {
             try { await _nodes.MoveAsync(id, newParentId); }
-            catch (CyclicHabitNodeMoveException) { /* skip, like the single-row path */ }
+            catch (Exception ex) when (ex is CyclicHabitNodeMoveException or HabitNodeNotFoundException or HabitNodeAlreadySoftDeletedException)
+            { /* skip this row: cyclic, or the node/parent vanished from a concurrent reload/cleanup (CR16) */ }
         }
         ClearSelection();
         await LoadAsync();
@@ -225,8 +226,11 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         {
             await _nodes.MoveAndReorderAsync(src.HabitNodeId, plan.Parent, plan.Anchor, plan.PlaceAfter);
         }
-        catch (CyclicHabitNodeMoveException)
+        catch (Exception ex) when (ex is CyclicHabitNodeMoveException or HabitNodeNotFoundException or HabitNodeAlreadySoftDeletedException)
         {
+            // Cyclic move, or the dragged node / target parent was removed by a concurrent reload or
+            // cleanup between the drag and the drop — the drop is a no-op instead of crashing the
+            // process out of the async-void OnDrop handler (CR16).
             return;
         }
 

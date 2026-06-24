@@ -34,6 +34,24 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task ApplyDropAsync_does_not_throw_when_the_dragged_node_vanished()
+    {
+        // CR16: a concurrent reload/cleanup can remove the dragged node or its target parent between
+        // the drag and the drop. MoveAndReorderAsync then throws HabitNodeNotFound/AlreadySoftDeleted;
+        // the async-void OnDrop must not let that crash the app — the drop is a no-op.
+        _query.HomeRows.Add(SampleRow(name: "Run"));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        var src = sut.Rows[0];
+        _nodes.NextException = new Recordum.Core.Errors.HabitNodeNotFoundException(System.Guid.NewGuid());
+
+        var act = async () => await sut.ApplyDropAsync(
+            src, new Recordum.WPF.Behaviors.TreeDragDropBehavior.DropPlan(null, null, false));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
     public async Task SwitchTab_to_Archived_re_queries_and_filters()
     {
         _query.HomeRows.Add(SampleRow(name: "Live"));
