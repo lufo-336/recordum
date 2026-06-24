@@ -417,6 +417,7 @@ public static class Strings
 
     // Color picker
     public static string ColorPicker_Recent => Get("ColorPicker.Recent");
+    public static string ColorPicker_Shades => Get("ColorPicker.Shades");
 
     // Icon picker
     public static string IconPicker_SearchPrompt => Get("IconPicker.SearchPrompt");

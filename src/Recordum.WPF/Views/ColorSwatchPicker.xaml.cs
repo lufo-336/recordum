@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
@@ -35,12 +36,21 @@ public partial class ColorSwatchPicker : UserControl
         nameof(Color),
         typeof(string),
         typeof(ColorSwatchPicker),
-        new FrameworkPropertyMetadata("#808080", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+        new FrameworkPropertyMetadata("#808080", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnColorChanged));
 
     public string Color
     {
         get => (string)GetValue(ColorProperty);
         set => SetValue(ColorProperty, value);
+    }
+
+    public ObservableCollection<string> Shades { get; } = new();
+
+    private static void OnColorChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var self = (ColorSwatchPicker)d;
+        self.Shades.Clear();
+        foreach (var c in Services.ShadeRamp.For((string)e.NewValue)) self.Shades.Add(c);
     }
 
     public static readonly DependencyProperty RecentColorsProperty = DependencyProperty.Register(

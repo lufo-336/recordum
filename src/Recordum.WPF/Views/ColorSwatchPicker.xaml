@@ -66,6 +66,23 @@
                         <!-- Visual HSV picker (square + hue strip) so users can pick any color, not just type hex -->
                         <local:HsvColorPicker Color="{Binding Color, Mode=TwoWay}" HorizontalAlignment="Center"/>
 
+                        <!-- Shade ramp: tonal row computed from current colour -->
+                        <TextBlock Text="{x:Static res:Strings.ColorPicker_Shades}" Margin="0,12,0,4"
+                                   FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <ItemsControl ItemsSource="{Binding Shades, RelativeSource={RelativeSource AncestorType={x:Type local:ColorSwatchPicker}}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Height="22" CornerRadius="0" Cursor="Hand" Focusable="True"
+                                            Background="{Binding ., Converter={StaticResource HexToBrush}}"
+                                            AutomationProperties.Name="{Binding .}"
+                                            MouseLeftButtonUp="OnSwatchClick" KeyDown="OnSwatchKeyDown"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
                         <!-- Palette grid: 3 swatches per hue column, 12 columns -->
                         <ItemsControl x:Name="PaletteItems" Margin="0,12,0,0" ItemsSource="{Binding Source={x:Static local:ColorSwatchPicker.Palette}}">
                             <ItemsControl.ItemsPanel>
