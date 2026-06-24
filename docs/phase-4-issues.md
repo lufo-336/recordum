@@ -179,7 +179,8 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: se chiamato con `fromDate` dopo l'ultima ricaduta, `length` conta solo dentro [start,toDate]. Calcolare il `length` dall'ultima ricaduta reale.
 
 ### CR12. `CurrentLength` numerico stale subito dopo una ricaduta in giornata (cosmetico)
-- **Stato**: `reported` · gravità **bassa (cosmetico)**
+- **Stato**: `fixed` (2026-06-24, commit `27c2ad6`) · gravità **bassa (cosmetico)**
+- **Fix**: la selezione della run corrente richiede ora `BreakReason is null` (solo la run aperta è corrente) — una run chiusa da una ricaduta in giornata non alimenta più `CurrentLength`. Test `A_lapse_closed_run_ending_yesterday_does_not_feed_CurrentLength`.
 - **Dove**: `src/Recordum.WPF/ViewModels/HabitScreen/Detail/StreakSummaryViewModel.cs` (selezione `current` + `CurrentLength`)
 - **Cosa**: ricaduta *oggi* → headline corretto ("appena ora" via elapsed), ma `CurrentLength` resta sul run che finisce ieri (clausola `r.End == today.AddDays(-1)`). Innocuo finché `CurrentLength` non è mostrato per Resistance; verificare il binding del timeline.
 
