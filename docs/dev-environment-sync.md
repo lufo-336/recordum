@@ -152,5 +152,14 @@ Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegu
 - [ ] **R-scrollbar**: in una lista lunga (es. albero Home, colonna Cronologia) il thumb a riposo è sottile/tenue, **non sparisce** mai (min-size); passandoci sopra/trascinando si **scurisce e allarga**. Light+dark. Rif: `docs/scrollbar-preview.html`.
 - [ ] **R-tabStrip**: apri 2+ tab nel workspace → angoli superiori **arrotondati**, underline accento sulla tab attiva, chiusura come **icona X** (non più "✕"); pin/preview funzionano come prima. Light+dark. Rif: `docs/tabstrip-preview.html`.
 
+### ✅ Color Picker v2 (R-colorPicker) — verifica sulla VM
+Apri il color picker (editor habit / builder / colore note). Mockup di riferimento: `docs/color-picker-preview.html`.
+- [ ] **Test**: `dotnet test tests/Recordum.WPF.Tests` → verdi i nuovi `ShadeRampTests`, `ColorEqualsConverterTests`, `FavoriteColorStoreTests`, `NotesSectionViewModelTests.AddFavorite_then_load_exposes_the_color`.
+- [ ] **Polish**: popup arrotondato con ombra (famiglia menù); SV/hue arrotondati; campo hex con "#" fisso + anteprima.
+- [ ] **F1 selezione**: lo swatch del colore corrente ha l'**anello accento**; hover su un altro = anello grigio (`TextMuted`).
+- [ ] **F2 tonalità**: la riga "Tonalità" mostra 7 sfumature chiare→scure del colore scelto; cliccarne una lo imposta.
+- [ ] **F4 preferiti**: "+ Aggiungi" appunta il colore corrente; ✕ lo rimuove; persiste al riavvio (AppSetting `ui.favorite_colors`, max 12). Funziona in editor, builder e colore note.
+- [ ] **F3 contagocce**: il bottone apre un overlay full-screen; clic su un punto qualsiasi → campiona quel colore; Esc/click destro annulla. (Win32, verificabile SOLO qui.)
+
 **Altro:**
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).

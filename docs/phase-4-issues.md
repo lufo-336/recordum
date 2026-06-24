@@ -94,6 +94,13 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Fix** (`WorkspaceView.xaml`): tab con **angoli superiori arrotondati** (`CornerRadius="6,6,0,0"` sul riempimento hover/selezione, padding 12,6) — prima erano riquadri squadrati; l'underline accento 2px sulla tab attiva resta. La **chiusura** ora è un'**icona X Lucide** (Path inline `M0,0 L9,9 M9,0 L0,9`, hover-tint dal chrome Button implicito) invece del glifo grezzo "✕". **Pin/preview invariati** (semantica non toccata). Anteprima `docs/tabstrip-preview.html`.
 - **Non fatto** (scelta): muting delle tab inattive — il `Foreground` locale sul titolo vince sui trigger di Style (precedenza WPF), richiederebbe un refactor del title style col rischio di rompere il comportamento preview.
 
+### R-colorPicker — Color Picker v2 (feature, brainstorm→spec→plan→subagent-driven)
+- **Stato**: `fixed` (compile-only su Mac; logica testata ma test eseguibili solo VM; contagocce VM-only) · feature richiesta utente
+- **Spec**: `docs/superpowers/specs/2026-06-23-color-picker-v2-design.md` · **Piano**: `docs/superpowers/plans/2026-06-23-color-picker-v2.md` · **Mockup approvato**: `docs/color-picker-preview.html`. Eseguito subagent-driven, 10 task, review per-task (controller) + **review finale whole-branch** (verdict: ready to merge, nessun Critical/Important; 2 minor cleanup applicati). Commit `505cdc9`→`e953e89`.
+- **Cosa** (tutto in `ColorSwatchPicker`, ereditato da editor/builder/note): **polish** (popup nella famiglia flottante raggio 8+ombra, SV/hue arrotondati, hex con "#" via `HexDigitsConverter`); **F1 anello selezione** (swatch col colore corrente, `ColorEqualsConverter`+`BindingProxy`) + hover ring `TextMuted`; **F2 ramp tonale** (`ShadeRamp.For` puro, riga ricalcolata sul cambio `Color`); **F4 preferiti** (`IFavoriteColorStore` AppSetting `ui.favorite_colors` cap 12 add/remove + 3 DP + "+ aggiungi"/✕ + wiring nei 3 VM); **F3 contagocce** (`IScreenColorPicker`/`ScreenColorPicker` Win32 isolato, bottone nascosto se non bindato).
+- **Test (compile-only su Mac, run VM)**: `ShadeRampTests`, `ColorEqualsConverterTests`, `FavoriteColorStoreTests`, `NotesSectionViewModelTests.AddFavorite_…` + `FakeScreenColorPicker`.
+- **Nota build**: aggiungere una stringa richiede **3 edit** (`Strings.resx` + `Strings.it.resx` + proprietà manuale in `Strings.Designer.cs`, `Get("Key.Name")`) — niente ResX code-gen in questo progetto.
+
 **Da fare sulla VM**: suite Data completa (incl. i 17 DPAPI/SQLCipher) + **suite WPF completa** (mai eseguita dalla rottura `3497021`); verifica visiva CR5 (cella State-0) + CR13/CR20/CR22 + **R-contextMenu** (menù tasto-destro, angoli popup); CR8 (regen snapshot).
 
 ---
