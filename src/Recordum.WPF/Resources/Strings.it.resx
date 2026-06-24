@@ -161,7 +161,10 @@
     <value>Caricamento…</value>
   </data>
   <data name="Home.Empty.Active" xml:space="preserve">
-    <value>Nessuna abitudine. La creazione arriva nella milestone 3.4.</value>
+    <value>Ancora nessuna abitudine — pianta la prima.</value>
+  </data>
+  <data name="Home.Empty.NewHabit" xml:space="preserve">
+    <value>Crea la prima abitudine</value>
   </data>
   <data name="Home.Empty.Archived" xml:space="preserve">
     <value>Niente in archivio.</value>

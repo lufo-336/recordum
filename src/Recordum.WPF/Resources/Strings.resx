@@ -179,7 +179,10 @@ Details: {0}</value>
     <value>Loading…</value>
   </data>
   <data name="Home.Empty.Active" xml:space="preserve">
-    <value>No habits yet. Habit creation arrives in milestone 3.4.</value>
+    <value>No habits yet — plant your first one.</value>
+  </data>
+  <data name="Home.Empty.NewHabit" xml:space="preserve">
+    <value>Create your first habit</value>
   </data>
   <data name="Home.Empty.Archived" xml:space="preserve">
     <value>Nothing archived.</value>

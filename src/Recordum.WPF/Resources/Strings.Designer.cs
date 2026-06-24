@@ -151,6 +151,7 @@ public static class Strings
     // Loading / empty / error states
     public static string Home_Loading => Get("Home.Loading");
     public static string Home_Empty_Active => Get("Home.Empty.Active");
+    public static string Home_Empty_NewHabit => Get("Home.Empty.NewHabit");
     public static string Home_Empty_Archived => Get("Home.Empty.Archived");
     public static string Home_Empty_Trash => Get("Home.Empty.Trash");
     public static string Home_Error_Generic => Get("Home.Error.Generic");

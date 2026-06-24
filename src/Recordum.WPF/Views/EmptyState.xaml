@@ -42,5 +42,42 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
+
+        <!-- Primary CTA — only on the Active tab (creating a habit has no meaning in Archived/Trash).
+             Binds to the Home VM's OpenNewHabitCommand (same action as the ＋ menu). -->
+        <Button Margin="0,20,0,0" HorizontalAlignment="Center" Cursor="Hand"
+                Command="{Binding OpenNewHabitCommand}"
+                Content="{x:Static res:Strings.Home_Empty_NewHabit}">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.OnAccent}"/>
+                    <Setter Property="Padding" Value="16,8"/>
+                    <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bd" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                        Background="{DynamicResource Brush.Accent}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bd" Property="Opacity" Value="0.9"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Archived}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static vm:HomeTab.Trash}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
     </StackPanel>
 </UserControl>
