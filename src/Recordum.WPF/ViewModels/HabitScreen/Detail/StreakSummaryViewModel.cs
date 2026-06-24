@@ -35,7 +35,10 @@ public sealed partial class StreakSummaryViewModel(
         LongestLength = longest?.Length ?? 0;
         LongestStartedOn = longest?.Start;
 
-        var current = allTime.FirstOrDefault(r => r.End == today || r.End == today.AddDays(-1));
+        // Only the open run (BreakReason == null) counts as current: a run ending yesterday that a
+        // same-day lapse already closed must not keep feeding a stale CurrentLength (CR12).
+        var current = allTime.FirstOrDefault(
+            r => (r.End == today || r.End == today.AddDays(-1)) && r.BreakReason is null);
         CurrentLength = current?.Length ?? 0;
         IsEmpty = allTime.Count == 0;
 

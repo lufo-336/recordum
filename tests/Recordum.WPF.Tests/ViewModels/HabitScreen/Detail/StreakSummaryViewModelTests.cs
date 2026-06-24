@@ -38,6 +38,23 @@ public sealed class StreakSummaryViewModelTests
     }
 
     [Fact]
+    public async Task A_lapse_closed_run_ending_yesterday_does_not_feed_CurrentLength()
+    {
+        // CR12: a same-day lapse closes the run ending yesterday (BreakReason.Lapse); it must not keep
+        // CurrentLength on that stale run — the current clean streak is 0 until a new clean day.
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var aggr = new FakeStreakAggregator();
+        aggr.Runs.Add(new StreakRun(today.AddDays(-10), today.AddDays(-1), 10,
+            IsCurrent: true, BreakReason: StreakBreakReason.Lapse));
+
+        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance, CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
+
+        Assert.Equal(0, vm.CurrentLength);
+    }
+
+    [Fact]
     public async Task Current_zero_when_last_active_day_more_than_one_day_ago()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
