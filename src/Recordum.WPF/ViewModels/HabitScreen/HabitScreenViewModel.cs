@@ -607,15 +607,24 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var magByDate = new Dictionary<DateOnly, decimal>();
         var noteByDate = new Dictionary<DateOnly, int>();
 
-        var cursor = new DateOnly(from.Year, from.Month, 1);
         var last = new DateOnly(to.Year, to.Month, 1);
-        while (cursor <= last)
+
+        // Fire every month's two queries concurrently (each opens its own SQLite connection; readers
+        // don't block readers) instead of 2×N sequential awaits, so re-running this on each
+        // completion/note stays inside the home perf budget (CR24).
+        var monthTasks = new List<(Task<IReadOnlyList<Recordum.Core.Abstractions.Services.Dtos.DailyMagnitude>> Mags,
+                                   Task<IReadOnlyList<Recordum.Core.Abstractions.Services.Dtos.DayNoteCount>> Notes)>();
+        for (var cursor = new DateOnly(from.Year, from.Month, 1); cursor <= last; cursor = cursor.AddMonths(1))
         {
-            var mags = await _completions.GetDailyMagnitudeAsync(node.Id, cursor.Year, cursor.Month, ct).ConfigureAwait(true);
-            var notes = await _noteService.ListNoteCountsInMonthAsync(node.Id, cursor.Year, cursor.Month, ct).ConfigureAwait(true);
-            foreach (var m in mags) magByDate[m.Date] = m.Magnitude;
-            foreach (var n in notes) noteByDate[n.Date] = n.Count;
-            cursor = cursor.AddMonths(1);
+            monthTasks.Add((
+                _completions.GetDailyMagnitudeAsync(node.Id, cursor.Year, cursor.Month, ct).AsTask(),
+                _noteService.ListNoteCountsInMonthAsync(node.Id, cursor.Year, cursor.Month, ct).AsTask()));
+        }
+        await Task.WhenAll(monthTasks.SelectMany(t => new Task[] { t.Mags, t.Notes })).ConfigureAwait(true);
+        foreach (var (magsTask, notesTask) in monthTasks)
+        {
+            foreach (var m in magsTask.Result) magByDate[m.Date] = m.Magnitude;
+            foreach (var n in notesTask.Result) noteByDate[n.Date] = n.Count;
         }
 
         var rangeMax = magByDate.Count > 0 ? magByDate.Values.Max() : 0m;
