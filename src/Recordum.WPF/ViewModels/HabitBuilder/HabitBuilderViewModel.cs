@@ -22,16 +22,19 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private readonly IReferenceDataQueryService _refData;
     private readonly IClock _clock;
     private readonly IRecentColorStore _recentColors;
+    private readonly IFavoriteColorStore _favoriteColors;
     private Guid? _parentId;
 
     public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates,
-        IReferenceDataQueryService refData, IClock clock, IRecentColorStore recentColors)
+        IReferenceDataQueryService refData, IClock clock, IRecentColorStore recentColors,
+        IFavoriteColorStore favoriteColors)
     {
         _composed = composed;
         _templates = templates;
         _refData = refData;
         _clock = clock;
         _recentColors = recentColors;
+        _favoriteColors = favoriteColors;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -45,6 +48,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <summary>Recently picked habit colors, loaded from <see cref="IRecentColorStore"/> during
     /// <see cref="InitializeAsync"/>. Bound to the <c>ColorSwatchPicker.RecentColors</c> DP.</summary>
     public ObservableCollection<string> RecentColors { get; } = new();
+
+    /// <summary>User-pinned favourite colours (bound to ColorSwatchPicker.FavoriteColors).</summary>
+    public ObservableCollection<string> FavoriteColors { get; } = new();
 
     /// <summary>Units offered for a Time field (hours / minutes / seconds). A Time field's unit is
     /// optional — unlike Quantity it does not gate <see cref="CanLaunch"/> — but picking one makes
@@ -64,6 +70,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         foreach (var u in AvailableUnits.Where(u => TimeUnitCodes.Contains(u.Code))) AvailableTimeUnits.Add(u);
         RecentColors.Clear();
         foreach (var c in await _recentColors.GetAsync(ct).ConfigureAwait(true)) RecentColors.Add(c);
+        await ReloadFavoritesAsync(ct).ConfigureAwait(true);
     }
 
     [ObservableProperty] private string _name = string.Empty;
@@ -134,6 +141,28 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     partial void OnNameChanged(string value) { TemplateSaved = false; RaiseLaunchState(); }
     partial void OnColorChanged(string value) => TemplateSaved = false;
     partial void OnIconChanged(string? value) => TemplateSaved = false;
+
+    [RelayCommand]
+    private async Task AddFavoriteAsync(string? hex, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        await _favoriteColors.AddAsync(hex, ct).ConfigureAwait(true);
+        await ReloadFavoritesAsync(ct).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task RemoveFavoriteAsync(string? hex, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        await _favoriteColors.RemoveAsync(hex, ct).ConfigureAwait(true);
+        await ReloadFavoritesAsync(ct).ConfigureAwait(true);
+    }
+
+    private async Task ReloadFavoritesAsync(CancellationToken ct = default)
+    {
+        FavoriteColors.Clear();
+        foreach (var c in await _favoriteColors.GetAsync(ct).ConfigureAwait(true)) FavoriteColors.Add(c);
+    }
 
     private void Recompute()
     {

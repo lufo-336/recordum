@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -26,6 +27,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     private readonly IHabitNodeService _nodes;
     private readonly IHabitConfigService _configs;
     private readonly IRecentColorStore _recentColors;
+    private readonly IFavoriteColorStore _favoriteColors;
     private readonly IEventBus? _events;
     private bool _loading;
 
@@ -65,6 +67,9 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     /// <see cref="LoadAsync"/>. Bound to the <c>ColorSwatchPicker.RecentColors</c> DP.</summary>
     public ObservableCollection<string> RecentColors { get; } = new();
 
+    /// <summary>User-pinned favourite colours (bound to ColorSwatchPicker.FavoriteColors).</summary>
+    public ObservableCollection<string> FavoriteColors { get; } = new();
+
     /// <summary>
     /// Ordered list of sections to render in the editor pane. DataSource is intentionally excluded
     /// (it is an internal/config-level section handled separately).
@@ -81,14 +86,17 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IAppSettingService appSettings,
         IReferenceDataQueryService refData,
         IRecentColorStore recentColors,
+        IFavoriteColorStore favoriteColors,
         IEventBus? events = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(configs);
         ArgumentNullException.ThrowIfNull(recentColors);
+        ArgumentNullException.ThrowIfNull(favoriteColors);
         _nodes = nodes;
         _configs = configs;
         _recentColors = recentColors;
+        _favoriteColors = favoriteColors;
         _events = events;
 
         Scheduling = new SchedulingSectionViewModel(configs);
@@ -98,7 +106,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Scales = new ScalesSectionViewModel(metrics, refData);
         Goal = new GoalSectionViewModel(goals);
         Notifications = new NotificationsSectionViewModel(notifications);
-        Notes = new NotesSectionViewModel(configs, recentColors);
+        Notes = new NotesSectionViewModel(configs, recentColors, favoriteColors);
         Tags = new TagsSectionViewModel(tags);
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
@@ -221,6 +229,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
             RecentColors.Clear();
             foreach (var c in await _recentColors.GetAsync(ct).ConfigureAwait(true)) RecentColors.Add(c);
+            await ReloadFavoritesAsync(ct).ConfigureAwait(true);
 
             HeaderStatus = EditorStatus.Idle;
             HeaderError = null;
@@ -307,6 +316,28 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     {
         foreach (var s in Sections)
             s.IsVisible = s.IsApplicable(SelectedNodeType, SelectedHabitType);
+    }
+
+    [RelayCommand]
+    private async Task AddFavoriteAsync(string? hex, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        await _favoriteColors.AddAsync(hex, ct).ConfigureAwait(true);
+        await ReloadFavoritesAsync(ct).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task RemoveFavoriteAsync(string? hex, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        await _favoriteColors.RemoveAsync(hex, ct).ConfigureAwait(true);
+        await ReloadFavoritesAsync(ct).ConfigureAwait(true);
+    }
+
+    private async Task ReloadFavoritesAsync(CancellationToken ct = default)
+    {
+        FavoriteColors.Clear();
+        foreach (var c in await _favoriteColors.GetAsync(ct).ConfigureAwait(true)) FavoriteColors.Add(c);
     }
 
     private async Task ApplyHeaderAsync(Func<Task> persist)

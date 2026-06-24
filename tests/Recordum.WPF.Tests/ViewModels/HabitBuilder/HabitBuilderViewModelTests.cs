@@ -17,9 +17,13 @@ public class HabitBuilderViewModelTests
         IHabitTemplateService? templates = null,
         IReferenceDataQueryService? refData = null,
         IRecentColorStore? recentColors = null)
-        => new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
+    {
+        var settings = new FakeAppSettingService();
+        return new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
                refData ?? new FakeReferenceData(), new FakeClock(),
-               recentColors ?? new RecentColorStore(new FakeAppSettingService()));
+               recentColors ?? new RecentColorStore(settings),
+               new FavoriteColorStore(settings));
+    }
 
     // Alias for plan compatibility — same as NewSut()
     private static HabitBuilderViewModel CreateVm() => NewSut();

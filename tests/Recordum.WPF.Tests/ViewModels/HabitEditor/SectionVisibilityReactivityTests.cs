@@ -28,7 +28,8 @@ public class SectionVisibilityReactivityTests
             new FakeTagService(),
             fakeSettings,
             new FakeReferenceData(),
-            new RecentColorStore(fakeSettings));
+            new RecentColorStore(fakeSettings),
+            new FavoriteColorStore(fakeSettings));
     }
 
     private static (HabitEditorViewModel Sut, Guid Id) Load(NodeType node, HabitType? habit)

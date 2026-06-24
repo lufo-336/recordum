@@ -8,6 +8,9 @@
         <TextBlock Text="{x:Static res:Strings.Editor_Config_NoteColor}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <v:ColorSwatchPicker Margin="0,4,0,0" HorizontalAlignment="Left"
                              Color="{Binding NoteMarkerColor, Mode=TwoWay}"
-                             RecentColors="{Binding RecentColors}"/>
+                             RecentColors="{Binding RecentColors}"
+                             FavoriteColors="{Binding FavoriteColors}"
+                             AddFavoriteCommand="{Binding AddFavoriteCommand}"
+                             RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"/>
     </StackPanel>
 </UserControl>

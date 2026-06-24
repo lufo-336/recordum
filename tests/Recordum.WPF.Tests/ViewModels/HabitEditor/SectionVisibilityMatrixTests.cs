@@ -36,7 +36,8 @@ public class SectionVisibilityMatrixTests
             new FakeTagService(),
             fakeSettings,
             new FakeReferenceData(),
-            new RecentColorStore(fakeSettings));
+            new RecentColorStore(fakeSettings),
+            new FavoriteColorStore(fakeSettings));
 
         var applicable = new List<string> { "L1" };
         if (sut.Scheduling.IsApplicable(node, habit)) applicable.Add("Scheduling");

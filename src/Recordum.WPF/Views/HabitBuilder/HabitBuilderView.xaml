@@ -104,6 +104,9 @@
                                    Margin="0,0,0,2"/>
                         <v:ColorSwatchPicker Color="{Binding Color, Mode=TwoWay}"
                                              RecentColors="{Binding RecentColors}"
+                                             FavoriteColors="{Binding FavoriteColors}"
+                                             AddFavoriteCommand="{Binding AddFavoriteCommand}"
+                                             RemoveFavoriteCommand="{Binding RemoveFavoriteCommand}"
                                              HorizontalAlignment="Left"/>
                     </StackPanel>
 
