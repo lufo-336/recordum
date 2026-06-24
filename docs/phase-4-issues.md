@@ -83,7 +83,7 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 ### R-emptyState — stati vuoti con icona + titolo (compile-only)
 - **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
 - **Fix**: gli empty-state erano **una sola riga grigia** al 60% opacità. **`EmptyState.xaml`** (Home) ora è una composizione centrata **icona line + titolo**, con icona e testo per-tab via DataTrigger su `ActiveTab`: Attive → `Icon.Sprout` ("pianta un seme"), Archiviate → `Icon.Moon`, Cestino → `Icon.Sparkles`. **`WorkspaceView.xaml`** welcome allineato allo stesso pattern (`Icon.BookOpen` + testo). Nessuna nuova stringa (riuso `Home_Empty_*` / `Workspace_Empty`). Anteprima `docs/empty-state-preview.html`.
-- **Possibile next**: una CTA "Nuova abitudine" nell'empty-state Attive (richiede un command nel Home VM raggiungibile da qui) — non incluso per ora.
+- **CTA aggiunta** (commit `ef9048f`): l'empty-state **Attive** ora ha un pulsante accento **"Crea la prima abitudine"** (bind `OpenNewHabitCommand` del Home VM; nascosto su Archiviate/Cestino). Corretta anche la copy **datata** `Home.Empty.Active` (EN+IT dicevano ancora "habit creation arrives in milestone 3.4", da tempo spedita) → "Ancora nessuna abitudine — pianta la prima." Nuova stringa `Home.Empty.NewHabit` (3 edit: resx EN/IT + Designer).
 
 ### R-scrollbar — stato hover + min-size (compile-only)
 - **Stato**: `fixed` (compile-only su Mac, verifica VM) · gravità rifinitura
