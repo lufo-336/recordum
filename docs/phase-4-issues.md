@@ -105,9 +105,11 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 
 ---
 
-## Code review 2026-06-19 — sottosistema 1: Data layer
+## Code review 2026-06-19 — findings CR1–CR24
 
-> Review mirata (multi-agente, recall-biased) sul codice scritto a mano in `src/Recordum.Data` (backup/restore, migrazioni, services) — diff `fase-4-polish` vs `main`, esclusi i file EF generati. Parte di un giro di review per sottosistema (ordine: 1. Data layer ✓ → 2. motore streak → builder/altri). Tutti `reported`, da triagiare/fixare.
+> **STATO AL 2026-06-24 — backlog chiuso: 22/24 `fixed`.** `wontfix`: **CR6** (reclass resistance — interpretazione dubbia, zero dati first-party). `triaged`→VM: **CR8** (riallineare seed `schema_version` a 2.11 via `dotnet ef`, impatto runtime zero). Nessun `reported` residuo. Tutti i fix WPF sono **compile-verified su Mac**; i test (WPF `net10.0-windows` + Data DPAPI/SQLCipher) **girano sulla VM** — vedi checklist in `docs/dev-environment-sync.md`. Le righe per-CR qui sotto hanno il commit del fix.
+>
+> Review mirata (multi-agente, recall-biased) su `fase-4-polish` vs `main`, esclusi i file EF generati, per sottosistema (1. Data layer → 2. motore streak → 3. ViewModels WPF/behaviors).
 
 ### CR1. Restore non atomico → distruzione del DB se il re-encrypt fallisce
 - **Stato**: `fixed` (commit `24c0e60`, 2026-06-23) — **runtime verify VM** · gravità **alta (perdita dati)**

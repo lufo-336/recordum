@@ -99,9 +99,9 @@ dir %USERPROFILE%\.claude\projects        # 6) trova la cartella "recordum" e gu
 
 ---
 
-## Log sessione 2026-06-23 (da macOS) — handoff per la VM
+## Log sessione 2026-06-23 → 2026-06-24 (da macOS) — handoff per la VM
 
-Lavoro committato su `fase-4-polish` (3 commit). Sulla VM: `git pull`, poi esegui la **checklist di verifica** qui sotto — su macOS NON si eseguono né la WPF né i test SQLCipher, quindi tutta la verifica runtime/visiva è da fare sulla VM.
+Lunga sessione da Mac su `fase-4-polish` (dal commit `24c0e60` fino a `60ead30`+docs): chiusura quasi totale del backlog code-review (CR1–CR24, vedi `phase-4-issues.md` §"Code review 2026-06-19"), un'ampia **passata di rifinitura UI** (menù/dropdown/tooltip/slider/splitter/scrollbar/tabstrip/empty-state/simbolo R + scroll colonne ibrido), e la **feature Color Picker v2** (spec→plan→subagent-driven). Sulla VM: `git pull`, poi esegui **tutte le checklist qui sotto** — su macOS NON girano né la WPF né i test SQLCipher/DPAPI, quindi ogni verifica runtime/visiva e l'intera suite test sono da fare sulla VM. (Manca ancora un remote git: il push è da configurare.)
 
 ### Cosa è arrivato (commit)
 - **`24c0e60` fix(data): CR1–CR4** — restore atomico + rollback (CR1), guard `schema_version` reale con confronto major.minor (CR2), bound sui parametri Argon2id non fidati + cap anti zip-bomb (CR3), shred dei temp in chiaro (CR4). Nuovi helper `SchemaVersionGuard`, `SecureWipe`.
@@ -161,5 +161,19 @@ Apri il color picker (editor habit / builder / colore note). Mockup di riferimen
 - [ ] **F4 preferiti**: "+ Aggiungi" appunta il colore corrente; ✕ lo rimuove; persiste al riavvio (AppSetting `ui.favorite_colors`, max 12). Funziona in editor, builder e colore note.
 - [ ] **F3 contagocce**: il bottone apre un overlay full-screen; clic su un punto qualsiasi → campiona quel colore; Esc/click destro annulla. (Win32, verificabile SOLO qui.)
 
+### ✅ Robustezza/perf/convenzioni 2026-06-24 (CR12, CR14–CR19, CR21, CR23, CR24) — verifica sulla VM
+Per lo più non-visivi: si verificano eseguendo la **suite test WPF completa** (mai girata interamente da quando ho riparato la build dei test). `dotnet test tests/Recordum.WPF.Tests` → verdi in particolare:
+- `HabitEditorViewModelTests.LoadAsync_deselect_during_an_in_flight_load_does_not_throw_or_clobber` (CR14)
+- `HomeViewModelTests.ApplyDropAsync_does_not_throw_when_the_dragged_node_vanished` (CR16)
+- `DebouncedColorRecorderTests` (CR23) — *timing-based, margini generosi; se flaky rilancia*
+- `QuickAddViewModelTests.Save_failure_shows_a_localized_message_not_the_raw_exception` (CR21)
+- `StreakSummaryViewModelTests.A_lapse_closed_run_ending_yesterday_does_not_feed_CurrentLength` (CR12)
+
+Spot-check a vista:
+- [ ] **CR17** drag-drop: l'indicatore Before/Onto/After segue i terzi reali della riga (anche trascinando sopra testo/sparkline).
+- [ ] **CR21** QuickAdd: forzare un errore di salvataggio → messaggio **localizzato** ("Salvataggio non riuscito. Riprova."), mai testo EF/SQLite grezzo.
+- [ ] **CR-emptyCTA** Home senza abitudini (tab Attive) → pulsante accento **"Crea la prima abitudine"** apre il flusso; nascosto su Archiviate/Cestino.
+
 **Altro:**
+- [ ] **Suite completa**: `dotnet test tests/Recordum.Data.Tests` (i 17 DPAPI/SQLCipher Windows-only) **+** `dotnet test tests/Recordum.WPF.Tests` (tutta — net10.0-windows, mai eseguita su Mac).
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).
