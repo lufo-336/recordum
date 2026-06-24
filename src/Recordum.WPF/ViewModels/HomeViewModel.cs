@@ -337,10 +337,16 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         }
     }
 
+    private int _reloadGeneration;
     private async Task ReloadPreservingSelectionAsync()
     {
+        // Overlapping bus events (completion/note/habit) fire fire-and-forget reloads. Without a guard
+        // two reloads interleave Rebuild + selection on the same Rows; the stale one must not re-apply
+        // its selection over the newer reload's result (CR18 — HabitScreen/Detail already do this).
+        var generation = ++_reloadGeneration;
         var keep = _selectedIds.ToList();
         await LoadAsync();
+        if (generation != _reloadGeneration) return;
         _selectedIds.Clear();
         foreach (var id in keep.Where(id => Rows.Any(r => r.HabitNodeId == id)))
             _selectedIds.Add(id);

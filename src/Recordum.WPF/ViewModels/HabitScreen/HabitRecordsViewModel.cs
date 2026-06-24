@@ -11,11 +11,12 @@ public enum EntriesRecordsMode { Giorno, Periodo }
 /// <summary>Incapsula il pannello "Registrazioni" della colonna Cronologia: modalità (Giorno/Periodo),
 /// filtro periodo e la <see cref="CompletionListViewModel"/> interna. Tiene il concern fuori dalla
 /// già-grande HabitScreenViewModel.</summary>
-public sealed partial class HabitRecordsViewModel : ObservableObject
+public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposable
 {
     private readonly IClock _clock;
     private Guid? _nodeId;
     private DateOnly? _calendarDay;
+    private CancellationTokenSource? _reloadCts;
 
     public CompletionListViewModel Records { get; }
 
@@ -62,14 +63,31 @@ public sealed partial class HabitRecordsViewModel : ObservableObject
             ? (_calendarDay is { } d ? ShowDayAsync(d, ct) : Task.CompletedTask)
             : ApplyPeriodAsync(ct);
 
-    partial void OnModeChanged(EntriesRecordsMode value) => _ = ReloadAsync();
-    partial void OnSelectedPeriodChanged(EntriesPeriod value) { if (Mode == EntriesRecordsMode.Periodo) _ = ApplyPeriodAsync(); }
+    partial void OnModeChanged(EntriesRecordsMode value) => StartReload(ReloadAsync);
+    partial void OnSelectedPeriodChanged(EntriesPeriod value) { if (Mode == EntriesRecordsMode.Periodo) StartReload(ApplyPeriodAsync); }
     partial void OnCustomFromChanged(DateOnly? value) => ReloadIfCustom();
     partial void OnCustomToChanged(DateOnly? value) => ReloadIfCustom();
 
     private void ReloadIfCustom()
     {
         if (Mode == EntriesRecordsMode.Periodo && SelectedPeriod == EntriesPeriod.Personalizzato)
-            _ = ApplyPeriodAsync();
+            StartReload(ApplyPeriodAsync);
     }
+
+    // A rapid Giorno↔Periodo / period toggle fires overlapping fire-and-forget reloads; cancel the
+    // previous one so a slower stale query can't overwrite the list with old results (CR19).
+    private void StartReload(Func<CancellationToken, Task> work)
+    {
+        _reloadCts?.Cancel();
+        var cts = _reloadCts = new CancellationTokenSource();
+        _ = RunGuardedAsync(work, cts.Token);
+    }
+
+    private static async Task RunGuardedAsync(Func<CancellationToken, Task> work, CancellationToken ct)
+    {
+        try { await work(ct).ConfigureAwait(true); }
+        catch (OperationCanceledException) { /* superseded by a newer mode/period change */ }
+    }
+
+    public void Dispose() => _reloadCts?.Dispose();
 }

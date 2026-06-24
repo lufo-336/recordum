@@ -152,11 +152,13 @@ public static class TreeDragDropBehavior
     private static void OnDragOver(object sender, DragEventArgs e)
     {
         if (e.Data.GetData(typeof(HomeRowViewModel)) is HomeRowViewModel src
-            && e.OriginalSource is FrameworkElement fe
-            && fe.DataContext is HomeRowViewModel row
+            && sender is ItemsControl ic
+            && FindRowCard(e.OriginalSource as DependencyObject, ic) is { DataContext: HomeRowViewModel row } card
             && !ReferenceEquals(row, src))
         {
-            var zone = ResolveZone(e.GetPosition(fe).Y / Math.Max(1, fe.ActualHeight));
+            // Zone from the row CARD, not whatever child (text / sparkline) raised the event, so the
+            // Before/Onto/After thirds map to the real row height — same card the ghost uses (CR17).
+            var zone = ResolveZone(e.GetPosition(card).Y / Math.Max(1, card.ActualHeight));
             if (zone == DropZone.Onto && row.IsGroup)
                 SetIndicator(row, isGroupTarget: true, RowDropEdge.None);
             else

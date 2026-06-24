@@ -430,6 +430,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Calendar.SelectedDateChanged -= OnCalendarDateSelected;
         Notes.Dispose();
         Detail.Dispose();
+        Records.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
         _subscriptions.Clear();
     }
