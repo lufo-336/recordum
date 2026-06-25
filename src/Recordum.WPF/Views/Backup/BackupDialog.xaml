@@ -6,7 +6,8 @@
         Title="{x:Static res:Strings.Backup_Create_Title}"
         Width="520" Height="320" WindowStartupLocation="CenterOwner"
         FontFamily="{DynamicResource Font.Default}"
-        Background="{DynamicResource Brush.Background}">
+        Background="{DynamicResource Brush.Background}"
+        Style="{StaticResource Recordum.ChromedWindow}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

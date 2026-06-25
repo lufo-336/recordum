@@ -10,10 +10,10 @@
         Title="{x:Static res:Strings.HabitTemplatePicker_Title}"
         Width="520" Height="640"
         ResizeMode="NoResize"
-        WindowStyle="ToolWindow"
         WindowStartupLocation="CenterOwner"
         FontFamily="{DynamicResource Font.Default}"
-        Background="{DynamicResource Brush.Surface}">
+        Background="{DynamicResource Brush.Surface}"
+        Style="{StaticResource Recordum.ChromedWindow}">
     <Window.Resources>
         <!-- Shared full-width option button, used by the pinned Actions and the Predefined templates. -->
         <DataTemplate x:Key="OptionButtonTemplate" DataType="{x:Type vm:PickerOption}">

@@ -11,6 +11,7 @@
                 <ResourceDictionary Source="Resources/Light.xaml"/>
                 <ResourceDictionary Source="Resources/Icons.xaml"/>
                 <ResourceDictionary Source="Resources/BaseStyles.xaml"/>
+                <ResourceDictionary Source="Resources/WindowChromeStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <conv:HexToBrushConverter x:Key="HexToBrush"/>

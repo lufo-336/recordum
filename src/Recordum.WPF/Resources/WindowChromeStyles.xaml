@@ -1,0 +1,129 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrl="clr-namespace:Recordum.WPF.Controls"
+                    xmlns:sw="clr-namespace:System.Windows;assembly=PresentationFramework">
+
+    <!-- Caption-bar glyph: a thin line icon in the theme text colour. -->
+    <Style x:Key="Chrome.CaptionIcon" TargetType="Path">
+        <Setter Property="Width" Value="11"/>
+        <Setter Property="Height" Value="11"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="Stroke" Value="{DynamicResource Brush.Text}"/>
+        <Setter Property="StrokeThickness" Value="1.4"/>
+    </Style>
+
+    <!-- Flat caption button (min / max / restore). -->
+    <Style x:Key="Chrome.CaptionButton" TargetType="Button">
+        <Setter Property="Width" Value="46"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Close gets the conventional red hover. -->
+    <Style x:Key="Chrome.CaptionCloseButton" TargetType="Button" BasedOn="{StaticResource Chrome.CaptionButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#c42b1c"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Shared dark window chrome. Apply with Style="{StaticResource Recordum.ChromedWindow}" on any
+         child Window so it matches MainWindow instead of the native white title bar. Min/Max show per
+         ResizeMode (NoResize → close only; CanMinimize → no maximize). The ChromeWindow behavior wires
+         the caption buttons to the system commands. -->
+    <Style x:Key="Recordum.ChromedWindow" TargetType="Window">
+        <Setter Property="ctrl:ChromeWindow.Active" Value="True"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+        <Setter Property="WindowChrome.WindowChrome">
+            <Setter.Value>
+                <WindowChrome CaptionHeight="36" ResizeBorderThickness="6"
+                              GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Window">
+                    <Border x:Name="LayoutRoot" Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                        <DockPanel>
+                            <!-- Title bar -->
+                            <Border DockPanel.Dock="Top" Height="36" Background="{DynamicResource Brush.Surface}"
+                                    BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
+                                <Grid>
+                                    <TextBlock Text="{TemplateBinding Title}" Margin="12,0,0,0"
+                                               VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12.5"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button x:Name="MinBtn" Style="{StaticResource Chrome.CaptionButton}"
+                                                Command="{x:Static sw:SystemCommands.MinimizeWindowCommand}"
+                                                AutomationProperties.Name="Minimize">
+                                            <Path Style="{StaticResource Chrome.CaptionIcon}" Data="M5 12h14"/>
+                                        </Button>
+                                        <Button x:Name="MaxBtn" Style="{StaticResource Chrome.CaptionButton}"
+                                                Command="{x:Static sw:SystemCommands.MaximizeWindowCommand}"
+                                                AutomationProperties.Name="Maximize">
+                                            <Path x:Name="MaxIcon" Style="{StaticResource Chrome.CaptionIcon}" Data="M5 5h14v14H5z"/>
+                                        </Button>
+                                        <Button x:Name="CloseBtn" Style="{StaticResource Chrome.CaptionCloseButton}"
+                                                Command="{x:Static sw:SystemCommands.CloseWindowCommand}"
+                                                AutomationProperties.Name="Close">
+                                            <Path Style="{StaticResource Chrome.CaptionIcon}" Data="M6 6l12 12 M18 6L6 18"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <!-- Window content -->
+                            <AdornerDecorator>
+                                <ContentPresenter/>
+                            </AdornerDecorator>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Maximized overflows the work area by the resize border; inset to compensate
+                             and swap the maximize glyph + command for restore. -->
+                        <Trigger Property="WindowState" Value="Maximized">
+                            <Setter TargetName="LayoutRoot" Property="Margin" Value="7"/>
+                            <Setter TargetName="MaxIcon" Property="Data" Value="M8 5h11v11 M5 8h11v11H5z"/>
+                            <Setter TargetName="MaxBtn" Property="Command" Value="{x:Static sw:SystemCommands.RestoreWindowCommand}"/>
+                        </Trigger>
+                        <!-- Caption-button availability follows ResizeMode. -->
+                        <Trigger Property="ResizeMode" Value="NoResize">
+                            <Setter TargetName="MinBtn" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="MaxBtn" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="ResizeMode" Value="CanMinimize">
+                            <Setter TargetName="MaxBtn" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

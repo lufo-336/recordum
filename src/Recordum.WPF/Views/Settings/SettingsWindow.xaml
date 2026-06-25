@@ -11,7 +11,8 @@
         Width="760" Height="540" MinWidth="640" MinHeight="440"
         WindowStartupLocation="CenterOwner"
         FontFamily="{DynamicResource Font.Default}"
-        Background="{DynamicResource Brush.Background}">
+        Background="{DynamicResource Brush.Background}"
+        Style="{StaticResource Recordum.ChromedWindow}">
     <Window.Resources>
         <!-- Appearance: theme picker (ported from the late SettingsPopup). -->
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
