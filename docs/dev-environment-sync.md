@@ -47,9 +47,30 @@ dir %USERPROFILE%\.claude\projects        # 6) trova la cartella "recordum" e gu
 2. Ci sono **sub-agent custom** (file in `\.claude\agents\`), **MCP server** aggiuntivi o **skill utente** standalone che qui non ho trovato?
 3. Quali **memorie** ci sono in `…\projects\<recordum>\memory\`? Se sono utili, esportale (vedi sotto).
 
-### Output VM (incolla qui)
+### Output VM (compilato 2026-06-25)
 
-> _(da compilare alla prossima sessione sulla VM)_
+**Plugin installati sulla VM** — tutti da `claude-plugins-official`, scope user, enabled:
+
+| Plugin | Versione VM | vs Mac |
+|---|---|---|
+| `superpowers` | **6.0.3** | = |
+| `claude-md-management` | 1.0.0 | = |
+| `code-review` | unknown | = |
+| `context7` | unknown | = (MCP connesso) |
+| `frontend-design` | unknown | = |
+| `figma` | **2.2.68** | **solo VM** (porta skill figma-* + 1 MCP server) |
+| `feature-dev` | — | **MANCA sulla VM** (Mac ce l'ha: agent `code-architect`/`code-explorer`/`code-reviewer`) |
+| `code-simplifier` | — | **MANCA sulla VM** (Mac ce l'ha: agent `code-simplifier`) |
+
+- **Marketplace**: solo `claude-plugins-official` (= Mac).
+- **MCP**: `plugin:context7:context7` ✔ connesso. `figma` + `claude.ai Google Drive/Calendar/Gmail` compaiono come *Needs authentication* — sono MCP forniti dal plugin figma / da claude.ai, **non** configurati a mano.
+- **Sub-agent custom** (`%USERPROFILE%\.claude\agents`): cartella **assente** → nessuno (= Mac; gli agent vengono dai plugin).
+- **Skill utente standalone** (`%USERPROFILE%\.claude\skills`): cartella **assente** → nessuna (= Mac; solo quelle dei plugin + `run` via git).
+- **Memorie** (`…\projects\C--Users-luca-foglia-Documents-recordum\memory\`): set storico **completo** (20 file: `MEMORY.md` + 19 memorie milestone/feature/strategia). Sono quelle che "restano sulla VM" da nota Mac.
+
+**Riconciliazione — divergenze da decidere:**
+1. **`feature-dev`** e **`code-simplifier`** mancano sulla VM. Sono comodità di sviluppo (non requisito hard come superpowers). Installabili con `claude plugin install feature-dev@claude-plugins-official` e idem `code-simplifier`, poi `/reload-plugins`. Da fare solo se si vuole parità piena.
+2. **`figma`** (2.2.68) è solo sulla VM. Decidere se replicarlo sul Mac o se è intenzionalmente VM-only.
 
 ---
 
