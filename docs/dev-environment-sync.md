@@ -198,3 +198,21 @@ Spot-check a vista:
 **Altro:**
 - [ ] **Suite completa**: `dotnet test tests/Recordum.Data.Tests` (i 17 DPAPI/SQLCipher Windows-only) **+** `dotnet test tests/Recordum.WPF.Tests` (tutta — net10.0-windows, mai eseguita su Mac).
 - [ ] **CR8** (opzionale): `dotnet ef migrations add` per riallineare il seed `schema_version`/ModelSnapshot a **2.11** (oggi il costante è `2.9`; impatto runtime zero, è solo igiene).
+
+---
+
+## Log sessione 2026-06-25 (da VM Windows) — prima sessione VM dopo Mac
+
+Eseguita **sulla VM** (qui WPF e SQLCipher girano davvero). 7 commit su `fase-4-polish` (`f43b6ee` → `11fb675`). Dettaglio in `phase-4-issues.md` §"Stato al 2026-06-25".
+
+**Suite test — eseguita per la prima volta intera sulla VM, verde**: `Recordum.Data.Tests` **356/356** (inclusi i 17 DPAPI/SQLCipher prima Windows-only-falliti su Mac) + `Recordum.WPF.Tests` **651/651**. Quindi le checklist "test" delle sessioni Mac 2026-06-23/24 qui sopra sono ✅ **fatte**. L'unico bug emerso al primo run reale era un test sbagliato (`ShadeRampTests`, regex hex troppo stretto → reso case-insensitive, commit `165d114`).
+
+**Verificato a schermo dall'utente sulla VM (→ `verified-fixed`):**
+- **Zen focus** (`1d8f2f7`), **font Palatino su tutte le finestre** (`0ada297`), **slider a tappe + scala 1-based** (`c94f222`), **scrollbar sottili overlay auto-hide** (`11fb675`).
+- Due gotcha WPF utili per il futuro: (1) gli **stili impliciti non si applicano alle sottoclassi** (Window→MainWindow) — il `FontFamily` va messo sul root di ogni Window; (2) la **ScrollBar ha un `MinWidth` effettivo ~16px** che ri-clampa `Width` → per una scrollbar sottile serve `MinWidth=0` locale + ScrollViewer ritemplate-ato in overlay.
+
+**Ambiente plugin**: installati sulla VM anche `feature-dev` + `code-simplifier` (+ `skill-creator`); ora la VM ha tutto il set Mac **più** `figma`/`skill-creator`. (Sezione "Output VM" sopra aggiornata 2026-06-25.) Usato un subagent (`general-purpose`) per il retemplate dello ScrollViewer.
+
+**Ancora da fare sulla VM** (resta dalla lista Mac, non ancora ripassato a video): sweep visivo R-* accumulato (context menu, combo, tooltip, splitter, empty-state, tabstrip, brand mark, column-scroll, Color Picker v2 F1–F4), CR5/CR13/CR20/CR22 a schermo, restore corrotto runtime (CR1–CR4), e **CR8** (regen ModelSnapshot a 2.11). **Nota dati**: le registrazioni State già nel DB locale sono 0-based → sfasate di 1 col nuovo encoding; per una verifica pulita conviene `--clean` (skill `run`) o re-registrare.
+
+**Push**: ancora nessun remote git configurato — i commit restano locali sulla VM. Da decidere come allinearli al Mac (push o copia).

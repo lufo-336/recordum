@@ -16,6 +16,22 @@ App lanciata via skill `run` (build win-x64 verde). Aree da controllare a scherm
 5. **Basics**: 5 tipi habit, registrazione, calendario/heatmap, streak, gruppi, note.
 6. **UX/theming** — cosa non sembra "da v1.0".
 
+## Stato al 2026-06-25 — prima sessione sulla VM dopo Mac: suite verde + font/scrollbar/slider/zen
+
+Prima sessione **sulla VM Windows** dopo il blocco di lavoro da Mac. 7 commit su `fase-4-polish` (`f43b6ee` → `11fb675`).
+
+**Suite test — prima esecuzione completa sulla VM (verde)**: `Recordum.Data.Tests` **356/356** (inclusi i 17 DPAPI/SQLCipher Windows-only che su Mac fallivano per forza) + `Recordum.WPF.Tests` **651/651**. Questo **conferma sulla VM** i CR non-visivi chiusi da Mac compile-only: CR1–CR4 (test sicurezza/restore), CR5/CR7/CR9/CR10/CR11/CR12/CR14/CR16/CR21/CR23/CR24 e i test data layer. Restano da `verified-fixed` solo le verifiche **runtime/visive** (restore corrotto a video, e gli spot-check UI sotto).
+
+**Bug trovato al primo run reale (`fixed`, commit `165d114`)**: `ShadeRampTests` pretendeva hex minuscolo con regex troppo stretto, ma `HsvColor.ToHex` emette maiuscolo canonico (richiesto da `HsvColorTests`); confronti colore sono `OrdinalIgnoreCase` → solo cosmetico. Regex reso case-insensitive.
+
+**Feature/rifiniture nuove (tutte `fixed`, build+suite verdi):**
+- **Zen focus** (`1d8f2f7`) — **VERIFIED-FIXED** dall'utente. Il bottone ⤢ ora è un focus a livello di workspace: nasconde sidebar Home + splitter + tab strip, il pannello riempie la finestra (era solo column-focus dentro l'abitudine → l'utente lo riteneva inutile). Nuovo `WorkspaceViewModel.IsFocusZen` che segue lo screen attivo; 5 test. Esc / bottone in-pannello escono.
+- **Font UI applicato a tutte le finestre** (`0ada297`) — **VERIFIED-FIXED**. Gli stili impliciti WPF matchano il tipo esatto, **non le sottoclassi**: lo stile implicito `Window` (con `FontFamily=Font.Default`) non raggiungeva `MainWindow`/`SettingsWindow`/dialog (derivati) → l'app rendeva in Segoe, non Palatino, malgrado R8. Aggiunto `FontFamily="{DynamicResource Font.Default}"` sul root dei 6 Window. Chiude il "font non Palatino" segnalato a schermo.
+- **Slider a tappe + scala State 1-based** (`c94f222`) — **VERIFIED-FIXED**. La scala State passa da bottoni a uno **slider a tappe** con valore corrente sopra + tick/label per ogni passo (label o numeri). La **prima tappa è selezionata di default** (lo slider non poteva selezionare la posizione 0 → Salva dava "richiesto almeno un valore"). **Codifica ora 1-based**: passo i → valore i+1 (prima tappa = 1, mai 0) su slider, calendario e Cronologia; lettori (`CompletionListViewModel`, `DaySummaryFormatter`) e seeder aggiornati. ⚠️ le registrazioni State **già nel DB** sono 0-based → sfasate di 1 finché non si reimposta lo stato locale.
+- **Scrollbar sottili overlay auto-hide** (`11fb675`) — **VERIFIED-FIXED** (Obsidian-style). Lo stile `ScrollBar` si applicava ma `Width` non aveva effetto: il template default dello ScrollViewer riserva una colonna e la ScrollBar ha un **`MinWidth` effettivo ~16px** che ri-clampa `Width`. Fix strutturale: **ScrollViewer ritemplate-ato** (bar in overlay, niente colonna) + `Width=6`/`MinWidth=0` **locale** sulle bar + **auto-hide** (Opacity 0 a riposo, fade-in su hover). Subagent-assisted per il retemplate dello ScrollViewer; causa radice (`MinWidth`) trovata con diagnostica a colori (rosso=bar, verde=thumb).
+
+**Ancora aperto sulla VM**: sweep visivo accumulato dalle sessioni Mac non ancora ripassato (R-contextMenu, R-comboDropdown, R-tooltip, R-columnSplitter, R-emptyState, R-tabStrip, R-brandMark, R-slider→ora sostituito, R-columnScroll, Color Picker v2 F1–F4, CR5/CR13/CR20/CR22 a video) + restore corrotto runtime (CR1/CR2/CR3/CR4) + **CR8** (regen ModelSnapshot a 2.11).
+
 ## Stato al 2026-06-23 — CR1–CR4 chiusi + appearance pass (font Palatino), sessione da macOS
 
 Sessione svolta da Mac (vincoli e checklist di verifica VM: `docs/dev-environment-sync.md` §"Log sessione 2026-06-23"). 3 commit su `fase-4-polish`.
