@@ -12,6 +12,7 @@
         ResizeMode="NoResize"
         WindowStyle="ToolWindow"
         WindowStartupLocation="CenterOwner"
+        FontFamily="{DynamicResource Font.Default}"
         Background="{DynamicResource Brush.Surface}">
     <Window.Resources>
         <!-- Shared full-width option button, used by the pinned Actions and the Predefined templates. -->

@@ -4,6 +4,7 @@
         xmlns:res="clr-namespace:Recordum.WPF.Resources"
         Title="{x:Static res:Strings.Restore_Title}"
         Width="560" Height="440" WindowStartupLocation="CenterOwner"
+        FontFamily="{DynamicResource Font.Default}"
         Background="{DynamicResource Brush.Background}">
     <Grid Margin="16">
         <Grid.RowDefinitions>

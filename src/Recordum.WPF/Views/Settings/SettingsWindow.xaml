@@ -10,6 +10,7 @@
         Title="{x:Static res:Strings.Settings_Title}"
         Width="760" Height="540" MinWidth="640" MinHeight="440"
         WindowStartupLocation="CenterOwner"
+        FontFamily="{DynamicResource Font.Default}"
         Background="{DynamicResource Brush.Background}">
     <Window.Resources>
         <!-- Appearance: theme picker (ported from the late SettingsPopup). -->
