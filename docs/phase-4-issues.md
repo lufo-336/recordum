@@ -20,10 +20,29 @@ App lanciata via skill `run` (build win-x64 verde). Aree da controllare a scherm
 
 Fonte: `obsidian_og/Resoconto Recordum.md` (15 screenshot annotati). Primo giro reale dell'autore a schermo. Tutti `reported`, da triare/eseguire. Divisi in **visivi rapidi** (no decisione) e **design/comportamento** (richiedono scelta o brainstorm).
 
+### Stato fine sessione 2026-06-25 (handoff)
+
+**Branch** `fase-4-polish`. Commit di questa sessione, in ordine:
+1. `1aebe37` feat: **☰ toggle striscia icone** (non più albero Home) — VERIFIED-FIXED. *(Prima parte di sessione: ripristinato il sizing colonne dopo una regressione dell'esperimento di animazione sidebar, vedi `R-ribbonSlide` rinviato sotto.)*
+2. `3c45f9a` feat: **glifo pin** sulla riga abitudine — VERIFIED-FIXED.
+3. `ce3573e` feat: **U1 chrome scura riutilizzabile** sulle 5 finestre figlie — VERIFIED-FIXED.
+4. `0668462` fix: **U2 dropdown ordinamento** nitido + chevron in colonna dedicata — VERIFIED-FIXED.
+5. *(checkpoint)* **U3 slider scala** allineamento label↔thumb — **build pulita, NON verificato a schermo** (utente ha chiuso). Vedi voce U3.
+
+**Da VERIFICARE alla prossima apertura** (priorità):
+- **U3** allineamento slider a ogni step (Mood, Sleep quality) — è l'unico non visto a schermo di questa sessione.
+- **Residuo U1**: la finestra **Esporta** mostrava **checkbox blu nativi** + corpo molto nero — controllare se lo stile flat dell'app si applica ora che la finestra ha la chrome scura; se no, è un sotto-task (forse uno stile CheckBox non risolto in quella finestra/DataTemplate).
+
+**Da FARE (resoconto, non iniziati)**: U4 (numero centrato nel cerchio heatmap), U5 (toolbar "Modelli predefiniti" da spostare a sinistra), U6 (quadratini Home type-aware — design), U7 (Food diary veloce+foto — design), U8 (Sleep: tasto "1", serie opzionale, unità tempo — design; nota: riusa lo slider di U3), U9 (Stop smoking = cronometro astinenza, = B-abstinence — design/feature), U10 (Morning routine landing — chiarimento). Vedi sotto per dettaglio.
+
+**Suite test**: non rieseguita in questa sessione (modifiche solo WPF/XAML + un VM). Da lanciare prima di considerare chiusi: `dotnet test` Data+WPF (la `SeriesCellViewModel` ha un campo nuovo `ScalePoints`; nessun test rotto atteso ma da confermare).
+
+**Altro rinviato** (non dal resoconto): **R-ribbonSlide** (slide morbido del toggle striscia icone) — vedi sezione "Rinviato esplicitamente (2026-06-25)" più sotto; l'helper `GridLengthAnimation` è in `…/scratchpad/wip-sidebar-anim/`.
+
 **Visivi rapidi (no decisione di design):**
 - **U1 — chrome nativo sulle finestre figlie** · **VERIFIED-FIXED** (2026-06-25, "sembra tutto ok"). Impostazioni, dialog "Nuova abitudine da modello", "Crea backup", "Ripristina", "Esporta" usavano la **barra titolo nativa bianca + pulsanti finestra nativi** → incoerente con la custom chrome scura di `MainWindow`. **Fix**: chrome scura **riutilizzabile** — nuovo behavior `Controls/ChromeWindow.cs` (cabla i caption button ai `SystemCommands`) + stile `Recordum.ChromedWindow` con `ControlTemplate` condiviso (`Resources/WindowChromeStyles.xaml`, merge in App.xaml), applicato alle 5 finestre con `Style="{StaticResource Recordum.ChromedWindow}"`. Min/Max seguono `ResizeMode` (NoResize→solo ✕; CanResize→min/max/close); rimosso `WindowStyle="ToolWindow"` dal picker. ⚠️ **Residuo da controllare**: il **checkbox nativo blu** dell'Esporta e il "corpo troppo nero" — se l'Esporta mostra ancora checkbox blu, manca lo stile flat in quella finestra (sotto-task aperto).
 - **U2 — dropdown ordinamento sfocato + freccia spuria** · **VERIFIED-FIXED** (2026-06-25). Due cause distinte in `BaseStyles.xaml`: (1) **sfocato** — il `DropShadowEffect` era sul bordo che conteneva anche gli item → WPF rendeva il sottoalbero in un bitmap intermedio = testo soft; spostato su un layer-ombra dedicato (senza testo) + tolto `PopupAnimation="Slide"`. (2) **freccia spuria** — il chevron stava in una colonna *dentro il toggle*, e con valori corti il `ContentPresenter` del testo (disegnato sopra) ne copriva la metà sinistra lasciando spuntare un "/" accanto alla parola; portato il chevron in una **colonna dedicata del template ComboBox** (testo col 0, chevron col 1 da 22px) + cambiato il triangolo pieno in **chevron a linea** (coerenza Lucide). Stessa `DropShadowEffect`-su-testo resta in ContextMenu/ToolTip: applicare il layer-ombra anche lì se risultano soft (non segnalato finora).
-- **U3 — slider scala: pallino non allineato alle label** · rifinitura, **ricorrente su tutte le scale**. Il thumb non cade sotto la sua etichetta (Mood: thumb a sinistra di "Low"; Sleep quality: thumb a sinistra di "Fair"). "neutral"/centro sembra ok. Allineare geometria tick/label dello slider a tappe.
+- **U3 — slider scala: pallino non allineato alle label** · **IMPLEMENTATO, da VERIFICARE a schermo** (build pulita, commit checkpoint; l'utente ha chiuso prima della verifica). Causa: le label stavano in `UniformGrid` di N celle (centri a (i+0.5)/N) ma i fermi del thumb cadono su **N−1 intervalli** → combaciavano solo al centro ("Neutral" ok). **Fix**: nuovo `ScalePoint(Label, Fraction)` + lista `ScalePoints` in `SeriesCellViewModel` (Fraction = i/(N−1)); in `HabitScreen.xaml` le label passano da UniformGrid a un **Grid a cella singola** dove ogni label (tick+testo) è centrata sul fermo reale del thumb `8 + (W−16)·Fraction` via nuovo `ScaleLabelOffsetConverter` (thumb=16px → inset 8; auto-centratura indipendente dalla larghezza testo). **Da controllare**: allineamento a ogni step (estremi Very low/Very good e intermedi Low/Good/Fair), che gli estremi non sborbino troppo, e che con scale grandi (>12 step, niente reference points) nulla si rompa. Stesso slider è usato anche in U8 (Sleep quality).
 - **U4 — numero non centrato nel cerchio del giorno (heatmap)** · rifinitura minore. Il badge valore ("4") nel cerchio del giorno acceso è scentrato.
 - **U5 — toolbar "Modelli predefiniti" si sovrappone** · rifinitura minore. In "Crea nuova abitudine" la toolbar/chevron dei modelli si sovrappone ai riquadri → spostare leggermente a sinistra.
 

@@ -43,6 +43,7 @@
             <conv:DateOnlyToDateTimeConverter x:Key="DateOnlyToDateTime"/>
             <conv:HexDigitsConverter x:Key="HexDigitsConverter"/>
             <conv:ColorEqualsConverter x:Key="ColorEqualsConverter"/>
+            <conv:ScaleLabelOffsetConverter x:Key="ScaleLabelOffset"/>
 
             <!-- Enum value sources for editor-section ComboBoxes. Global so section
                  views (instantiated via DataTemplate, not yet in the visual tree)

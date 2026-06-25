@@ -10,6 +10,11 @@ namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 /// <summary>Scale range + labels resolved for a scale cell. Labels may be empty (slider with bare numbers).</summary>
 public sealed record ScaleInfo(int Min, int Max, IReadOnlyList<string> Labels);
 
+/// <summary>One stepped-slider caption with its position along the track as a 0..1 fraction
+/// (0 = first step / left thumb stop, 1 = last). Lets the captions sit exactly under the thumb
+/// stops, which fall on (N-1) intervals — not the N cell-centres a uniform grid would give.</summary>
+public sealed record ScalePoint(string Label, double Fraction);
+
 /// <summary>Input cell for one <see cref="MetricDefinition"/> in a recording row. Kind-aware:
 /// measured (numeric + unit), scale (labelled selector or slider), or free text.</summary>
 public sealed partial class SeriesCellViewModel : ObservableObject
@@ -37,6 +42,10 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     /// <summary>Caption under each step of the stepped slider: the scale's text labels, or its bare numbers
     /// when it has none (e.g. a 1–10 scale). Empty for non-scale cells.</summary>
     public IReadOnlyList<string> ReferencePoints { get; } = [];
+
+    /// <summary>The reference points with their track fraction, so each caption can be centred on its
+    /// thumb stop instead of a uniform-grid cell centre (which only lined up at the middle step).</summary>
+    public IReadOnlyList<ScalePoint> ScalePoints { get; } = [];
 
     [ObservableProperty] private long? _integerValue;
     [ObservableProperty] private decimal? _decimalValue;
@@ -91,6 +100,10 @@ public sealed partial class SeriesCellViewModel : ObservableObject
             ReferencePoints = scale.Labels.Count > 0
                 ? scale.Labels
                 : Enumerable.Range(1, StepCount).Select(n => n.ToString(CultureInfo.CurrentCulture)).ToList();
+            var lastStep = Math.Max(1, StepCount - 1);
+            ScalePoints = ReferencePoints
+                .Select((label, i) => new ScalePoint(label, StepCount > 1 ? (double)i / lastStep : 0d))
+                .ToList();
             // A slider always rests on a step, so the first one is selected by default: the thumb's
             // position is a real value (the first step is otherwise unreachable — you can't drag onto
             // where the thumb already sits), so a straight Save records it instead of "no value".
