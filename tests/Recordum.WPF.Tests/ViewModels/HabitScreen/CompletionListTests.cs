@@ -184,7 +184,7 @@ public class CompletionListViewModelTests
         {
             Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
             CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
-            Values = new List<CompletionValue> { new() { MetricDefinitionId = moodId, SeriesIndex = 0, ValueInteger = 1 } }, // index 1 = Neutral
+            Values = new List<CompletionValue> { new() { MetricDefinitionId = moodId, SeriesIndex = 0, ValueInteger = 2 } }, // 1-based value 2 = Neutral
         };
 
         var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());

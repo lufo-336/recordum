@@ -33,28 +33,41 @@ public class SeriesCellViewModelTests
     }
 
     [Fact]
-    public void Scale_cell_builds_zero_based_index_value()
+    public void Scale_cell_builds_one_based_value()
     {
         var info = new ScaleInfo(1, 5, new[] { "Bad", "Meh", "Ok", "Good", "Great" });
         var cell = new SeriesCellViewModel(Scale(), scale: info);
 
         cell.Kind.Should().Be(MetricInputKind.Scale);
         cell.StepCount.Should().Be(5);
-        cell.UseSlider.Should().BeFalse();
-        cell.BuildValue(0).Should().BeNull(); // nothing selected yet
+        cell.ShowReferencePoints.Should().BeTrue();                       // small scale → caption every step
+        cell.ReferencePoints.Should().Equal("Bad", "Meh", "Ok", "Good", "Great");
+        cell.SelectedScaleIndex.Should().Be(0);                           // first step selected by default
+        cell.BuildValue(0)!.ValueInteger.Should().Be(1);                  // 1-based: first step records 1, not 0
 
         cell.SelectedScaleIndex = 3;
-        cell.BuildValue(0)!.ValueInteger.Should().Be(3); // 0-based, preserves State encoding
+        cell.BuildValue(0)!.ValueInteger.Should().Be(4); // 1-based: step index 3 → value 4
     }
 
     [Fact]
-    public void Scale_with_more_than_ten_steps_uses_slider()
+    public void Labelless_scale_uses_its_bare_numbers_as_reference_points()
+    {
+        var info = new ScaleInfo(1, 10, Array.Empty<string>());
+        var cell = new SeriesCellViewModel(Scale(), scale: info);
+
+        cell.StepCount.Should().Be(10);
+        cell.ShowReferencePoints.Should().BeTrue();
+        cell.ReferencePoints.Should().Equal("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+    }
+
+    [Fact]
+    public void A_large_scale_hides_per_step_captions()
     {
         var info = new ScaleInfo(1, 100, Array.Empty<string>());
         var cell = new SeriesCellViewModel(Scale(), scale: info);
 
         cell.StepCount.Should().Be(100);
-        cell.UseSlider.Should().BeTrue();
+        cell.ShowReferencePoints.Should().BeFalse();                      // too many to caption
         cell.SliderMax.Should().Be(99);
     }
 }

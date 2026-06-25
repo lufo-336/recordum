@@ -85,7 +85,7 @@ public class MeasuredQuickAddViewModelTests
         await sut.SaveAsync();
 
         cs.LastValues.Should().ContainSingle();
-        cs.LastValues![0].ValueInteger.Should().Be(3);
+        cs.LastValues![0].ValueInteger.Should().Be(4); // 1-based: step index 3 → value 4
     }
 
     [WpfFact]

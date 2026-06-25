@@ -16,8 +16,8 @@ public class DaySummaryFormatterTests
         => DaySummaryFormatter.Label(HabitType.Counter, 4m, null, null).Should().Be("4");
 
     [Fact]
-    public void State_maps_the_value_to_the_scale_label()
-        => DaySummaryFormatter.Label(HabitType.State, 2m, null, new[] { "Bad", "Ok", "Good" }).Should().Be("Good");
+    public void State_maps_the_one_based_value_to_the_scale_label()
+        => DaySummaryFormatter.Label(HabitType.State, 3m, null, new[] { "Bad", "Ok", "Good" }).Should().Be("Good");
 
     [Fact]
     public void State_out_of_range_falls_back_to_the_number()

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -22,10 +23,20 @@ public sealed partial class SeriesCellViewModel : ObservableObject
 
     // Scale-only
     public IReadOnlyList<string> ScaleLabels { get; } = [];
-    public int ScaleMin { get; }
     public int StepCount { get; }
-    public bool UseSlider { get; }
     public int SliderMax => Math.Max(0, StepCount - 1);
+
+    /// <summary>Above this step count the stepped slider drops the per-step captions (they would not fit)
+    /// and shows only the current value; at or below it every step gets a labelled reference point.</summary>
+    private const int MaxReferencePoints = 12;
+
+    /// <summary>True when the stepped slider can caption every step (small scales: a 1–10 stress level, a
+    /// 5-point mood). Larger scales fall back to a bare slider + current-value label.</summary>
+    public bool ShowReferencePoints => Kind == MetricInputKind.Scale && StepCount <= MaxReferencePoints;
+
+    /// <summary>Caption under each step of the stepped slider: the scale's text labels, or its bare numbers
+    /// when it has none (e.g. a 1–10 scale). Empty for non-scale cells.</summary>
+    public IReadOnlyList<string> ReferencePoints { get; } = [];
 
     [ObservableProperty] private long? _integerValue;
     [ObservableProperty] private decimal? _decimalValue;
@@ -46,8 +57,8 @@ public sealed partial class SeriesCellViewModel : ObservableObject
 
     public void SetDurationSeconds(int seconds) => DurationText = DurationFormat.Format(seconds);
 
-    /// <summary>Label for the current slider position (falls back to the scale value when a step has no
-    /// label), so the slider reads "Good" instead of a bare 0-based index. Empty when nothing is picked.</summary>
+    /// <summary>Label for the current slider position (falls back to the 1-based step number when a step
+    /// has no label), so the slider reads "Good" instead of a bare number. Empty when nothing is picked.</summary>
     public string SelectedScaleLabel
     {
         get
@@ -55,7 +66,7 @@ public sealed partial class SeriesCellViewModel : ObservableObject
             if (SelectedScaleIndex is not { } i) return string.Empty;
             return i >= 0 && i < ScaleLabels.Count
                 ? ScaleLabels[i]
-                : (ScaleMin + i).ToString(CultureInfo.CurrentCulture);
+                : (i + 1).ToString(CultureInfo.CurrentCulture);
         }
     }
 
@@ -75,9 +86,15 @@ public sealed partial class SeriesCellViewModel : ObservableObject
         if (Kind == MetricInputKind.Scale && scale is not null)
         {
             ScaleLabels = scale.Labels;
-            ScaleMin = scale.Min;
             StepCount = scale.Labels.Count > 0 ? scale.Labels.Count : Math.Max(1, scale.Max - scale.Min + 1);
-            UseSlider = StepCount > 10;
+            // Scales are 1-based for the user: step i records value i+1, so the first step is 1 (never 0).
+            ReferencePoints = scale.Labels.Count > 0
+                ? scale.Labels
+                : Enumerable.Range(1, StepCount).Select(n => n.ToString(CultureInfo.CurrentCulture)).ToList();
+            // A slider always rests on a step, so the first one is selected by default: the thumb's
+            // position is a real value (the first step is otherwise unreachable — you can't drag onto
+            // where the thumb already sits), so a straight Save records it instead of "no value".
+            SelectedScaleIndex = 0;
         }
     }
 
@@ -88,7 +105,7 @@ public sealed partial class SeriesCellViewModel : ObservableObject
         {
             case MetricInputKind.Scale:
                 if (SelectedScaleIndex is null) return null;
-                v.ValueInteger = SelectedScaleIndex; // 0-based, preserves StateQuickAdd encoding
+                v.ValueInteger = SelectedScaleIndex.Value + 1; // 1-based: first step records 1, not 0
                 return v;
             case MetricInputKind.Text:
                 if (string.IsNullOrWhiteSpace(TextValue)) return null;

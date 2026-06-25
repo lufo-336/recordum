@@ -246,7 +246,7 @@ public sealed class DemoDataSeeder(
     {
         var v = new CompletionValue { MetricDefinitionId = def.Id, SeriesIndex = seriesIndex };
         bool isScale = def.ScaleTemplateId is not null || def.LabelsJson is not null;
-        if (isScale) v.ValueInteger = WeightedMood() - 1;                       // 0-based index
+        if (isScale) v.ValueInteger = WeightedMood();                          // 1-based scale value
         else switch (def.Type)
         {
             case MetricType.Seconds: v.ValueSeconds = 20 + _rng.Next(0, 100) + (int)(progress * 30); break;

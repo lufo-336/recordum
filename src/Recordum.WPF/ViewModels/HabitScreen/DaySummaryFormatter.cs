@@ -26,8 +26,8 @@ public static class DaySummaryFormatter
     private static string? ScaleLabel(decimal mag, IReadOnlyList<string>? labels)
     {
         if (labels is not { Count: > 0 }) return null;
-        var idx = (int)mag;
-        return idx >= 0 && idx < labels.Count ? labels[idx] : null;
+        var val = (int)mag; // 1-based scale value
+        return val >= 1 && val <= labels.Count ? labels[val - 1] : null;
     }
 
     private static string FormatMag(decimal mag) =>

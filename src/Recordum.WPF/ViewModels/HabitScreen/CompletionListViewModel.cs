@@ -131,9 +131,9 @@ public sealed partial class CompletionListViewModel : ObservableObject
 
     private static string? FormatValue(CompletionValue v, MetricDisplay m)
     {
-        // Scale → label at the 0-based stored index (falls back to the bare number).
-        if (m.ScaleLabels is { Count: > 0 } labels && v.ValueInteger is { } idx)
-            return idx >= 0 && idx < labels.Count ? labels[(int)idx] : idx.ToString(CultureInfo.CurrentCulture);
+        // Scale → label at the 1-based stored value (falls back to the bare number).
+        if (m.ScaleLabels is { Count: > 0 } labels && v.ValueInteger is { } val)
+            return val >= 1 && val <= labels.Count ? labels[(int)val - 1] : val.ToString(CultureInfo.CurrentCulture);
         if (v.ValueText is { } t) return t;
         // Duration metrics store ValueSeconds only; without this branch a series with just a time
         // (e.g. 1:30) rendered as a blank field in Cronologia/Records despite being saved (CR13).
