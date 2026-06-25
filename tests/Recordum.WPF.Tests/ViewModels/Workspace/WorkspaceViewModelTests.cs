@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
+using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.Workspace;
 using Xunit;
 
@@ -412,5 +413,70 @@ public class WorkspaceViewModelTests
         sut.Dispose();
 
         screens.Scopes.Should().OnlyContain(s => s.Disposed);
+    }
+
+    // Focus "zen" mode (workspace level): when the active tab's screen has a focused column,
+    // the shell hides the sidebar + tab strip so the panel fills the window (spec §3.6, escalated
+    // from column-focus to a workspace-wide focus per the author's intent).
+
+    [Fact]
+    public void IsFocusZen_is_false_when_no_tab_is_active()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+
+        sut.IsFocusZen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Focusing_the_active_screen_turns_zen_on_and_raises_change()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa");
+        using var monitor = sut.Monitor();
+
+        sut.ActiveSubjectTab!.Screen.FocusedColumn = HabitColumn.Note;
+
+        sut.IsFocusZen.Should().BeTrue();
+        monitor.Should().RaisePropertyChangeFor(x => x.IsFocusZen);
+    }
+
+    [Fact]
+    public async Task Exiting_focus_on_the_active_screen_turns_zen_off()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "Corsa");
+        sut.ActiveSubjectTab!.Screen.FocusedColumn = HabitColumn.Note;
+
+        sut.ActiveSubjectTab!.Screen.FocusedColumn = null;
+
+        sut.IsFocusZen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Switching_tabs_retargets_zen_to_the_new_active_screen()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        var a = sut.ActiveSubjectTab!;
+        a.Screen.FocusedColumn = HabitColumn.Note;            // tab A is focused
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "B", pin: true);  // active = B, not focused
+
+        sut.IsFocusZen.Should().BeFalse();                    // B is not focused
+
+        sut.ActivateTab(a);
+        sut.IsFocusZen.Should().BeTrue();                     // back on focused A
+    }
+
+    [Fact]
+    public async Task A_background_tabs_focus_does_not_drive_zen()
+    {
+        var (sut, _) = WorkspaceViewModelFactory.Create();
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "A", pin: true);
+        var a = sut.ActiveSubjectTab!;
+        await sut.OpenSubjectAsync(Guid.NewGuid(), WorkspaceTabKind.Habit, "B", pin: true);  // active = B
+
+        a.Screen.FocusedColumn = HabitColumn.Note;            // focus the *inactive* tab A
+
+        sut.IsFocusZen.Should().BeFalse();                    // only the active tab drives zen
     }
 }

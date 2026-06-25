@@ -24,6 +24,7 @@
                  x:Name="TabStrip"
                  ItemsSource="{Binding Tabs}"
                  SelectedItem="{Binding ActiveSubjectTab, Mode=TwoWay}"
+                 Visibility="{Binding IsFocusZen, Converter={StaticResource InvBoolToVisible}}"
                  MouseDoubleClick="OnTabStripDoubleClick"
                  Background="{DynamicResource Brush.Background}"
                  BorderBrush="{DynamicResource Brush.Border}"

@@ -17,6 +17,7 @@
         Width="1280" Height="760"
         WindowStartupLocation="CenterScreen"
         PreviewKeyDown="OnWindowPreviewKeyDown"
+        FontFamily="{DynamicResource Font.Default}"
         Background="{DynamicResource Brush.Background}">
     <!-- Custom chrome: dark title bar that blends with the theme. CaptionHeight gives drag /
          double-click-maximize on the 36px bar; ResizeBorderThickness keeps native resize + snap;
@@ -160,6 +161,7 @@
                                     <Binding Path="Workspace.IsPanoramicaActive"/>
                                     <Binding Path="Workspace.SidebarCollapsed"/>
                                     <Binding Path="Workspace.SidebarWidth"/>
+                                    <Binding Path="Workspace.IsFocusZen"/>
                                 </MultiBinding>
                             </ColumnDefinition.Width>
                         </ColumnDefinition>
@@ -182,6 +184,7 @@
                             <MultiBinding Converter="{StaticResource SidebarSplitterVisibility}">
                                 <Binding Path="Workspace.IsPanoramicaActive"/>
                                 <Binding Path="Workspace.SidebarCollapsed"/>
+                                <Binding Path="Workspace.IsFocusZen"/>
                             </MultiBinding>
                         </GridSplitter.Visibility>
                     </GridSplitter>

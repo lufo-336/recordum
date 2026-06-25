@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
+using Recordum.WPF.ViewModels.HabitScreen;
 
 namespace Recordum.WPF.ViewModels.Workspace;
 
@@ -25,12 +27,32 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPanoramicaActive))]
+    [NotifyPropertyChangedFor(nameof(IsFocusZen))]
     private SubjectTabViewModel? _activeSubjectTab;
 
     [ObservableProperty] private bool _sidebarCollapsed;
     [ObservableProperty] private double _sidebarWidth = DefaultSidebarWidth;
 
     public bool IsPanoramicaActive => ActiveSubjectTab is null;
+
+    /// <summary>True when the active tab's screen has a column focused. The shell hides the sidebar +
+    /// tab strip so the focused panel fills the window — a workspace-level "zen" focus (spec §3.6,
+    /// escalated from per-column focus to the whole shell). Session-only; only the *active* tab drives it.</summary>
+    public bool IsFocusZen => ActiveSubjectTab?.Screen.IsFocusActive == true;
+
+    // Keep IsFocusZen in sync with the active screen's focus toggle: follow only the active tab's
+    // screen, re-pointing the subscription whenever the active tab changes.
+    partial void OnActiveSubjectTabChanged(SubjectTabViewModel? oldValue, SubjectTabViewModel? newValue)
+    {
+        if (oldValue is not null) oldValue.Screen.PropertyChanged -= OnActiveScreenPropertyChanged;
+        if (newValue is not null) newValue.Screen.PropertyChanged += OnActiveScreenPropertyChanged;
+    }
+
+    private void OnActiveScreenPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HabitScreenViewModel.IsFocusActive))
+            OnPropertyChanged(nameof(IsFocusZen));
+    }
 
     /// <summary>Raised when a tab asks to export its subject (bubbled from the tab's screen).</summary>
     public event EventHandler<Guid>? ExportRequested;
@@ -229,6 +251,7 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _disposed = true;   // set before clearing Tabs: the CollectionChanged → SaveStateAsync must no-op
+        if (ActiveSubjectTab is not null) ActiveSubjectTab.Screen.PropertyChanged -= OnActiveScreenPropertyChanged;
         foreach (var tab in Tabs) tab.Dispose();
         Tabs.Clear();
         _saveGate.Dispose();
