@@ -23,6 +23,7 @@
             <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <!-- Habit icon (Lucide), tinted with the habit color; collapses when no resolvable icon. -->
@@ -32,7 +33,15 @@
                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                       Data="{Binding Icon, Converter={StaticResource IconKeyToGeometry}}"
                       Visibility="{Binding Data, RelativeSource={RelativeSource Self}, Converter={StaticResource NullToVisibility}}" />
-                <Grid Grid.Column="1" VerticalAlignment="Center">
+                <!-- Pin glyph beside the symbol when the habit is pinned (Local or Global). -->
+                <Path Grid.Column="1" Width="12" Height="12" Margin="0,0,6,0"
+                      Stretch="Uniform" VerticalAlignment="Center"
+                      Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Data="{StaticResource Icon.Pin}"
+                      ToolTip="{x:Static res:Strings.Home_ContextMenu_Pin}"
+                      Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisible}}" />
+                <Grid Grid.Column="2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Name}"
                                FontSize="{StaticResource FontSize.Body}"
                                Foreground="{DynamicResource Brush.Text}"

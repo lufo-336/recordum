@@ -66,7 +66,12 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public int IndentLevel { get; }
 
     [ObservableProperty] private string _name = string.Empty;
-    [ObservableProperty] private PinScope _pinScope;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPinned))]
+    private PinScope _pinScope;
+
+    /// <summary>True when the habit is pinned (Local or Global) — drives the row's pin glyph.</summary>
+    public bool IsPinned => PinScope != PinScope.None;
     [ObservableProperty] private bool _isArchived;
     [ObservableProperty] private bool _isExpanded = true;
     [ObservableProperty] private bool _isRenaming;
