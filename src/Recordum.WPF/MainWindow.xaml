@@ -103,10 +103,10 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,12,0">
                     <Button Width="32" Height="28" Margin="0,0,6,0"
                             Style="{StaticResource Caption.Button}"
-                            Command="{Binding Workspace.ToggleSidebarCommand}"
+                            Command="{Binding ToggleRibbonCommand}"
                             WindowChrome.IsHitTestVisibleInChrome="True"
-                            ToolTip="{x:Static res:Strings.Workspace_ToggleSidebar}"
-                            AutomationProperties.Name="{x:Static res:Strings.Workspace_ToggleSidebar}">
+                            ToolTip="{x:Static res:Strings.Workspace_ToggleRibbon}"
+                            AutomationProperties.Name="{x:Static res:Strings.Workspace_ToggleRibbon}">
                         <Path Style="{StaticResource Caption.Icon}" Data="M4 6h16 M4 12h16 M4 18h16"/>
                     </Button>
                     <!-- Brand mark: a serif "R" (Palatino, the app's serif face) instead of the
@@ -143,11 +143,13 @@
         <!-- Content: icon ribbon | workspaces -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="44"/>
+                <!-- Auto so the column shrinks to 0 when the ribbon is hidden by the ☰ toggle. -->
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <v:WorkspaceRibbon Grid.Column="0"/>
+            <v:WorkspaceRibbon Grid.Column="0"
+                               Visibility="{Binding RibbonCollapsed, Converter={StaticResource InvBoolToVisible}}"/>
 
             <!-- Workspaces: Home panes OR Charts OR Backup history -->
             <Grid Grid.Column="1">

@@ -764,6 +764,9 @@
   <data name="Workspace.ToggleSidebar" xml:space="preserve">
     <value>Mostra/nascondi barra laterale</value>
   </data>
+  <data name="Workspace.ToggleRibbon" xml:space="preserve">
+    <value>Mostra/nascondi barra di navigazione</value>
+  </data>
   <data name="Charts.New" xml:space="preserve">
     <value>Nuovo grafico</value>
   </data>

@@ -35,6 +35,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public bool IsChartsWorkspace => CurrentWorkspace == AppWorkspace.Charts;
     public bool IsBackupHistoryWorkspace => CurrentWorkspace == AppWorkspace.BackupHistory;
 
+    /// <summary>Hides the left icon ribbon (the 44px Home/Charts/Backup strip). Toggled by the
+    /// title-bar ☰. Independent of the Home-tree sidebar collapse (<see cref="WorkspaceViewModel.SidebarCollapsed"/>),
+    /// which the ⌂ ribbon icon still drives.</summary>
+    [ObservableProperty] private bool _ribbonCollapsed;
+
     public MainWindowViewModel(
         HomeViewModel home,
         IAppSettingService appSettings,
@@ -100,6 +105,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
         Workspace.ToggleSidebar();
     }
+
+    /// <summary>Title-bar ☰: show/hide the left icon ribbon.</summary>
+    [RelayCommand]
+    private void ToggleRibbon() => RibbonCollapsed = !RibbonCollapsed;
 
     [RelayCommand]
     private async Task ShowChartsAsync()

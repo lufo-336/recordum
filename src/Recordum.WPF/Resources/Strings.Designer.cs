@@ -96,6 +96,7 @@ public static class Strings
     public static string Workspace_PinTab => Get("Workspace.PinTab");
     public static string Workspace_Empty => Get("Workspace.Empty");
     public static string Workspace_ToggleSidebar => Get("Workspace.ToggleSidebar");
+    public static string Workspace_ToggleRibbon => Get("Workspace.ToggleRibbon");
     public static string Notes_History_Current => Get("Notes.History.Current");
     public static string Notes_History => Get("Notes.History");
     public static string Notes_History_Back => Get("Notes.History.Back");

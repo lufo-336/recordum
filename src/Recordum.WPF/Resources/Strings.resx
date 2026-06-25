@@ -782,6 +782,9 @@ Details: {0}</value>
   <data name="Workspace.ToggleSidebar" xml:space="preserve">
     <value>Toggle sidebar</value>
   </data>
+  <data name="Workspace.ToggleRibbon" xml:space="preserve">
+    <value>Toggle navigation bar</value>
+  </data>
   <data name="Charts.New" xml:space="preserve">
     <value>New chart</value>
   </data>
