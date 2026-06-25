@@ -12,7 +12,8 @@ public class ShadeRampTests
         var ramp = ShadeRamp.For("#3b82f6");
 
         ramp.Should().HaveCount(7);
-        ramp.Should().OnlyContain(c => System.Text.RegularExpressions.Regex.IsMatch(c, "^#[0-9a-f]{6}$"));
+        // HsvColor.ToHex emits canonical uppercase (#RRGGBB, enforced by HsvColorTests); accept either case.
+        ramp.Should().OnlyContain(c => System.Text.RegularExpressions.Regex.IsMatch(c, "^#[0-9a-fA-F]{6}$"));
 
         // Value (brightness) strictly decreases lightest -> darkest.
         var vs = ramp.Select(c => HsvColor.FromHex(c)!.Value.V).ToList();
