@@ -426,8 +426,65 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
     </Style>
 
+    <!-- Flat Expander: the default Aero template draws a system-blue circled arrow that clashes with
+         the option tiles (U5). Replace it with a full-width header row — content left, a quiet Lucide
+         chevron right that rotates down when open — and the content below. Used by the template picker
+         and the habit-editor section host. -->
     <Style TargetType="{x:Type Expander}">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Expander}">
+                    <DockPanel>
+                        <ToggleButton DockPanel.Dock="Top" Cursor="Hand"
+                                      HorizontalContentAlignment="Stretch"
+                                      Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent" Padding="0,4" SnapsToDevicePixels="True">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ContentPresenter Grid.Column="0" VerticalAlignment="Center"
+                                                              RecognizesAccessKey="True"/>
+                                            <Path x:Name="Chevron" Grid.Column="1" Width="9" Height="6"
+                                                  Stretch="Uniform" VerticalAlignment="Center" Margin="8,0,2,0"
+                                                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                  StrokeLineJoin="Round" Data="M0,0 L5,5 L10,0"
+                                                  RenderTransformOrigin="0.5,0.5">
+                                                <Path.RenderTransform><RotateTransform Angle="0"/></Path.RenderTransform>
+                                            </Path>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Chevron" Property="RenderTransform">
+                                                <Setter.Value><RotateTransform Angle="180"/></Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Chevron" Property="Stroke" Value="{DynamicResource Brush.Accent}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter x:Name="ExpandSite" DockPanel.Dock="Bottom"
+                                          Focusable="False" Visibility="Collapsed"/>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Menus. Themed flat chrome (Phase 4 polish): the default Aero ContextMenu/MenuItem
