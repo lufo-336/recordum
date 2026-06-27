@@ -18,7 +18,9 @@ Sessione **sulla VM** (`WSA-2527-04`), app lanciata e verificata a schermo dall'
 
 **U1 residuo — finestra Esporta** (`15ae730`, **verified-fixed**, "Esporta è perfetto"): i checkbox erano già flat (l'accento `#60A5FA` ingannava); il vero problema era una **fascia nera a destra** = `SizeToContent="WidthAndHeight"` + `WindowChrome` che gonfia la larghezza non-client. Risolto con `Width` fissa + `SizeToContent="Height"` (come gli altri dialog chromed). Bonus: tematizzato `.toastui-editor-md-tab-container` nell'editor (striscia bianca residua accanto ai tab Write/Preview).
 
-**Ancora aperti dal resoconto 2026-06-25**: **U4** (centratura badge nel cerchio heatmap — a schermo sembrava ~ok, da rifinire), **U5** (toolbar "Modelli predefiniti" → confermato a schermo che stona; il fix template flat dell'Expander non è ancora stato fatto), **U6–U10** (design: quadratini Home type-aware, Food diary veloce, Sleep tracker, Stop smoking=astinenza, Morning routine). Più lo sweep R-* accumulato e **CR8** (regen ModelSnapshot a 2.11).
+**U5 — Expander "Modelli predefiniti"** (`4573434`, **verified-fixed**, "perfetto"): lo stile `Expander` implicito era ancora Aero (freccia blu circolare che stonava sui riquadri). Ri-templato piatto: header full-width + chevron Lucide che ruota, contenuto sotto. Condiviso col section-host dell'editor abitudini (verificato che non regredisce). Bonus stessa sessione (`dc3bb20`, **verified-fixed**): scrollbar del picker spostata in un **canale a destra** (ScrollViewer full-bleed + margine 16 sul contenuto) e **chrome scura sulla finestra "Nuova abitudine"** (il builder è creato in codice in `WpfHabitBuilderLauncher` → applicato `Recordum.ChromedWindow` + Brush.Background + Font.Default; prima aveva la barra titolo nativa bianca).
+
+**Ancora aperti dal resoconto 2026-06-25**: **U4** (centratura badge nel cerchio heatmap — a schermo sembrava ~ok, da rifinire), **U6–U10** (design: quadratini Home type-aware, Food diary veloce, Sleep tracker, Stop smoking=astinenza, Morning routine). Più lo sweep R-* accumulato e **CR8** (regen ModelSnapshot a 2.11).
 
 ## Verifica visiva v1.0 — in attesa di resoconto utente (2026-06-19)
 
