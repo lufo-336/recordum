@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Web.WebView2.Core;
 using Recordum.WPF.Diagnostics;
 
@@ -34,6 +35,18 @@ public sealed class WebView2Availability : IWebView2Availability
 #pragma warning restore CA1031
     }
 
+    // Explicit, writable user-data folder under %LocalAppData%\Recordum (same root as the DB,
+    // logs and backups). Passing null lets WebView2 default the folder to the *host executable's*
+    // directory — which is the install dir for a deployed app (e.g. Program Files), or
+    // C:\Program Files\dotnet\ when launched via `dotnet run`. Both are read-only, so CreateAsync
+    // throws E_ACCESSDENIED and we wrongly degrade to the plain-text fallback even though the
+    // WebView2 Runtime is installed. Anchoring the folder to LocalAppData fixes both cases.
+    private static string UserDataFolder()
+    {
+        var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(appData, "Recordum", "WebView2");
+    }
+
     // CoreWebView2Environment.CreateAsync() must run on an STA thread with a running
     // message pump: its async COM completion is delivered via a window message. The
     // app reaches this probe deep inside ApplicationInitializer's ConfigureAwait(false)
@@ -42,13 +55,15 @@ public sealed class WebView2Availability : IWebView2Availability
     // installed. Marshal onto the WPF UI Dispatcher so it runs on the correct thread.
     private static Task<CoreWebView2Environment> CreateEnvironmentAsync()
     {
+        var userDataFolder = UserDataFolder();
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher is null || dispatcher.CheckAccess())
         {
             // No WPF Application (unit tests) or already on the UI thread — call directly.
-            return CoreWebView2Environment.CreateAsync();
+            return CoreWebView2Environment.CreateAsync(null, userDataFolder, null);
         }
 
-        return dispatcher.InvokeAsync(() => CoreWebView2Environment.CreateAsync()).Task.Unwrap();
+        return dispatcher.InvokeAsync(
+            () => CoreWebView2Environment.CreateAsync(null, userDataFolder, null)).Task.Unwrap();
     }
 }
