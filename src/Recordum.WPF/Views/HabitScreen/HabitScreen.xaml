@@ -280,13 +280,15 @@
                         <TextBlock Text="{Binding SelectedScaleLabel}" HorizontalAlignment="Center"
                                    Margin="0,0,0,2" FontWeight="SemiBold"
                                    Foreground="{DynamicResource Brush.Accent}"/>
+                        <!-- No TargetNullValue: it is bidirectional, so a thumb resting at 0 (== the null
+                             sentinel) would write null back to SelectedScaleIndex and the first step would
+                             fail to save ("value required"). The VM seeds index 0, so the slider is never null. -->
                         <Slider Minimum="0" Maximum="{Binding SliderMax}"
-                                Value="{Binding SelectedScaleIndex, TargetNullValue=0}"
+                                Value="{Binding SelectedScaleIndex}"
                                 IsSnapToTickEnabled="True" TickFrequency="1"/>
-                        <!-- Reference points: tick + caption centred on each thumb stop (small scales only).
-                             A single-cell Grid panel lets every caption render at the same origin and then
-                             slide to its stop via the offset converter, so they line up with the thumb at
-                             every step (a uniform grid only matched at the middle). -->
+                        <!-- Step ticks: one per stop, slid onto its thumb position via the offset converter
+                             (a single-cell Grid lets each tick render at the same origin then translate).
+                             Captions are NOT per-tick — worded labels centred on every stop collide. -->
                         <ItemsControl ItemsSource="{Binding ScalePoints}" Margin="0,3,0,0"
                                       Visibility="{Binding ShowReferencePoints, Converter={StaticResource BoolToVisible}}">
                             <ItemsControl.ItemsPanel>
@@ -294,28 +296,31 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <StackPanel HorizontalAlignment="Left">
-                                        <StackPanel.RenderTransform>
-                                            <TranslateTransform>
-                                                <TranslateTransform.X>
-                                                    <MultiBinding Converter="{StaticResource ScaleLabelOffset}">
-                                                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
-                                                        <Binding Path="Fraction"/>
-                                                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
-                                                    </MultiBinding>
-                                                </TranslateTransform.X>
-                                            </TranslateTransform>
-                                        </StackPanel.RenderTransform>
-                                        <Border Width="1" Height="4" HorizontalAlignment="Center"
-                                                Background="{DynamicResource Brush.Border}"/>
-                                        <TextBlock Text="{Binding Label}" Margin="2,2,2,0"
-                                                   HorizontalAlignment="Center" TextAlignment="Center"
-                                                   FontSize="{StaticResource FontSize.Small}"
-                                                   Foreground="{DynamicResource Brush.TextMuted}"/>
-                                    </StackPanel>
+                                    <Border Width="1" Height="4" HorizontalAlignment="Left"
+                                            Background="{DynamicResource Brush.Border}">
+                                        <Border.Margin>
+                                            <MultiBinding Converter="{StaticResource ScaleLabelOffset}">
+                                                <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                                                <Binding Path="Fraction"/>
+                                                <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
+                                            </MultiBinding>
+                                        </Border.Margin>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <!-- Endpoint captions only: min at the left stop, max at the right (inset 8px = the
+                             thumb radius). The accent caption above names the current step as the thumb moves,
+                             so the in-between steps never need a (colliding) label here. -->
+                        <Grid Margin="8,1,8,0"
+                              Visibility="{Binding ShowReferencePoints, Converter={StaticResource BoolToVisible}}">
+                            <TextBlock Text="{Binding ScaleMinLabel}" HorizontalAlignment="Left"
+                                       FontSize="{StaticResource FontSize.Small}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"/>
+                            <TextBlock Text="{Binding ScaleMaxLabel}" HorizontalAlignment="Right"
+                                       FontSize="{StaticResource FontSize.Small}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"/>
+                        </Grid>
                     </StackPanel>
                 </Grid>
                 <!-- Per-cell stopwatch (duration cells only). Reaches ToggleChronoCommand on the hosting

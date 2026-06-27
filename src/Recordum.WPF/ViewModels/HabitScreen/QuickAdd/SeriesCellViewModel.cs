@@ -43,9 +43,14 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     /// when it has none (e.g. a 1–10 scale). Empty for non-scale cells.</summary>
     public IReadOnlyList<string> ReferencePoints { get; } = [];
 
-    /// <summary>The reference points with their track fraction, so each caption can be centred on its
+    /// <summary>The reference points with their track fraction, so each tick can be centred on its
     /// thumb stop instead of a uniform-grid cell centre (which only lined up at the middle step).</summary>
     public IReadOnlyList<ScalePoint> ScalePoints { get; } = [];
+
+    /// <summary>End-of-scale captions. Only the two extremes are labelled under the slider (worded
+    /// labels centred on every stop collide); the accent caption above names the current step live.</summary>
+    public string ScaleMinLabel => ReferencePoints.Count > 0 ? ReferencePoints[0] : string.Empty;
+    public string ScaleMaxLabel => ReferencePoints.Count > 0 ? ReferencePoints[^1] : string.Empty;
 
     [ObservableProperty] private long? _integerValue;
     [ObservableProperty] private decimal? _decimalValue;
