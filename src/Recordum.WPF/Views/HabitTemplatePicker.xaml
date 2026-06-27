@@ -37,9 +37,11 @@
             </Button>
         </DataTemplate>
     </Window.Resources>
-    <Grid Margin="16">
+    <!-- ScrollViewer spans full width so the overlay scrollbar rides the window edge; the content
+         keeps a 16px margin, leaving a clear gutter to its right instead of sitting over the tiles. -->
+    <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+            <StackPanel Margin="16">
 
                 <!-- Primary actions: always visible, outside the collapsible sections. -->
                 <ItemsControl ItemsSource="{Binding Actions}" ItemTemplate="{StaticResource OptionButtonTemplate}"/>

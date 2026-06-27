@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.WPF.ViewModels.HabitBuilder;
 using Recordum.WPF.Views.HabitBuilder;
@@ -29,6 +30,12 @@ public sealed class WpfHabitBuilderLauncher(IServiceProvider services) : IHabitB
             Owner = Application.Current?.MainWindow,
             Content = view,
         };
+        // Built in code, so the shared dark chrome (applied via XAML on the other dialogs) has to be
+        // wired here too — otherwise this window keeps the native white title bar (U1 uniformity).
+        if (Application.Current?.TryFindResource("Recordum.ChromedWindow") is Style chrome)
+            window.Style = chrome;
+        window.SetResourceReference(Control.BackgroundProperty, "Brush.Background");
+        window.SetResourceReference(Control.FontFamilyProperty, "Font.Default");
 
         void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
