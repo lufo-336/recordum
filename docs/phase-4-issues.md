@@ -6,6 +6,20 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Stato al 2026-06-28 — sessione VM: WebView2 ripristinato + U3/U1 chiusi a schermo
+
+Sessione **sulla VM** (`WSA-2527-04`), app lanciata e verificata a schermo dall'autore. **Suite verde**: `Recordum.Data.Tests` **356/356** + `Recordum.WPF.Tests` **651/651** (dopo i fix, nessuna regressione). 3 commit di codice (`cb92fed` → `15ae730`) + ADR/test-gate (`a795450`).
+
+**Scoperto e chiuso — editor diario (WebView2) era ROTTO sulla VM** (`cb92fed`, **verified-fixed**): il banner "Runtime WebView2 richiesto" appariva *malgrado il runtime installato* (`pv=149.0.4022.98`). Causa: `CoreWebView2Environment.CreateAsync()` senza cartella esplicita mette la user-data folder accanto all'eseguibile del processo → sotto `dotnet run`/`UseAppHost=false` è `C:\Program Files\dotnet\` (read-only) → `E_ACCESSDENIED` → fallback testo. **Stesso hazard per un utente che installa in Program Files.** Fix: cartella esplicita `%LocalAppData%\Recordum\WebView2`. L'editor markdown ricco ora carica.
+
+**U3 — slider scala** (`cdfb748`, **verified-fixed**, "ottima la scala così!"): due difetti distinti emersi a schermo dopo il checkpoint `7d0b6a6`.
+1. *Non si poteva salvare il primo step*: il binding `Value` aveva `TargetNullValue=0` — è **bidirezionale**, quindi il thumb a riposo su 0 riscriveva `null` su `SelectedScaleIndex` → `BuildValue` ritornava null → "richiesto almeno un valore". Tolto (la VM semina già index 0).
+2. *Le etichette testuali si accavallavano* ("Very lowLow"): centrare parole su ogni fermo è impossibile. Inoltre il fix offset del checkpoint **non funzionava affatto** — il `MultiBinding` stava su un `TranslateTransform` (Freezable) dove `RelativeSource` non risolve → `hostWidth=0` → tutte le label impilate. Riscritto: l'offset converter ora torna un `Thickness` su `Margin` (FrameworkElement, RelativeSource risolve) + clamp; e il layout è **tick per ogni step + etichette solo agli estremi** (min sx / max dx), col valore corrente già mostrato sopra in accento.
+
+**U1 residuo — finestra Esporta** (`15ae730`, **verified-fixed**, "Esporta è perfetto"): i checkbox erano già flat (l'accento `#60A5FA` ingannava); il vero problema era una **fascia nera a destra** = `SizeToContent="WidthAndHeight"` + `WindowChrome` che gonfia la larghezza non-client. Risolto con `Width` fissa + `SizeToContent="Height"` (come gli altri dialog chromed). Bonus: tematizzato `.toastui-editor-md-tab-container` nell'editor (striscia bianca residua accanto ai tab Write/Preview).
+
+**Ancora aperti dal resoconto 2026-06-25**: **U4** (centratura badge nel cerchio heatmap — a schermo sembrava ~ok, da rifinire), **U5** (toolbar "Modelli predefiniti" → confermato a schermo che stona; il fix template flat dell'Expander non è ancora stato fatto), **U6–U10** (design: quadratini Home type-aware, Food diary veloce, Sleep tracker, Stop smoking=astinenza, Morning routine). Più lo sweep R-* accumulato e **CR8** (regen ModelSnapshot a 2.11).
+
 ## Verifica visiva v1.0 — in attesa di resoconto utente (2026-06-19)
 
 App lanciata via skill `run` (build win-x64 verde). Aree da controllare a schermo, da consolidare nel "resoconto stato app" (agenda punto 3) e da triare contro i CR:
