@@ -63,9 +63,13 @@
         border-color:var(--rec-border) !important; }
     .toastui-editor-mode-switch .tab-item.active{ color:var(--rec-text) !important; background:var(--rec-elev) !important; }
 
-    /* --- tab-style preview header (previewStyle: tab) --- */
+    /* --- tab-style preview header (previewStyle: tab): the Write|Preview bar. Theme the wrapper
+           (md-tab-container), the inner tab strip, and the active tab's *background* too, else they
+           render on Toast UI's default white (a white strip leaks beside the first tab otherwise). --- */
+    .toastui-editor-md-tab-container{ background:var(--rec-bg) !important; border-bottom:1px solid var(--rec-border) !important; }
+    .toastui-editor-tabs{ background:var(--rec-bg) !important; }
     .toastui-editor-tabs .tab-item{ background:var(--rec-bg) !important; color:var(--rec-muted) !important; border-color:var(--rec-border) !important; }
-    .toastui-editor-tabs .tab-item.active{ color:var(--rec-text) !important; }
+    .toastui-editor-tabs .tab-item.active{ color:var(--rec-text) !important; background:var(--rec-elev) !important; border-color:var(--rec-border) !important; }
 
     /* --- popups (link/table/heading dropdowns) --- */
     .toastui-editor-popup, .toastui-editor-popup-body,
