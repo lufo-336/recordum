@@ -216,3 +216,26 @@ Eseguita **sulla VM** (qui WPF e SQLCipher girano davvero). 7 commit su `fase-4-
 **Ancora da fare sulla VM** (resta dalla lista Mac, non ancora ripassato a video): sweep visivo R-* accumulato (context menu, combo, tooltip, splitter, empty-state, tabstrip, brand mark, column-scroll, Color Picker v2 F1–F4), CR5/CR13/CR20/CR22 a schermo, restore corrotto runtime (CR1–CR4), e **CR8** (regen ModelSnapshot a 2.11). **Nota dati**: le registrazioni State già nel DB locale sono 0-based → sfasate di 1 col nuovo encoding; per una verifica pulita conviene `--clean` (skill `run`) o re-registrare.
 
 **Push**: ancora nessun remote git configurato — i commit restano locali sulla VM. Da decidere come allinearli al Mac (push o copia).
+
+---
+
+## Log sessione 2026-06-27 (da copia Google Drive `G:\…`) — handoff per la VM
+
+Sessione breve aperta sulla **terza postazione**: la copia su **Google Drive File Stream** (`G:\Altri computer\Il mio PC\Documents\recordum`), non VM né Mac. Git coerente (HEAD `7d0b6a6` discende linearmente da `11fb675` della VM 2026-06-25; working tree pulito; nessun remote). Plugin a posto: set di riferimento completo, `superpowers` **6.0.3**.
+
+### ⚠️ Limite scoperto: NON si builda/avvia l'app WPF sul disco Google Drive
+- `dotnet build` del progetto WPF fallisce su `CreateAppHost`: `System.IO.IOException: …file la cui sezione mappata dall'utente è aperta`. Causa: **GoogleDriveFS** tiene una sezione memory-mapped sull'`.exe` di output → collide con la patch dell'apphost. Nessuna istanza di Recordum era in esecuzione: è il filesystem virtuale.
+- **Le librerie e i test invece compilano e girano** su Drive: i progetti di test sono librerie (niente apphost). La suite WPF si lancia con **`-p:UseAppHost=false`** per saltare lo step che fallisce.
+- **Conseguenza**: tutto il backlog **visivo** (run dell'app: U3, residuo U1 Esporta, U4, U5, sweep R-*, restore corrotto a video) **non è eseguibile dalla copia Drive**. Va fatto su VM (o da un clone locale fuori da Drive). Decisione utente in questa sessione: **si prosegue sulla VM**.
+
+### ✅ Fatto in questa sessione (no run dell'app)
+- **Gate test della serie U** (era l'unico "da lanciare" dell'handoff 2026-06-25): **`Recordum.Data.Tests` 356/356** + **`Recordum.WPF.Tests` 651/651** verdi. Unico fail nella run completa = `BackupSchedulerHostTests.Initialize_runs_first_due_check_after_initial_delay`, **flake da timing** (verde 2/2 isolato; margini stretti + Drive lento). Il campo nuovo `ScalePoints` (U3) non rompe nulla. Registrato anche in `phase-4-issues.md` (handoff 2026-06-25).
+- **ADR 0001** — `docs/decisions/0001-ui-framework-wpf-over-avalonia.md`: registrato il razionale "perché WPF e non Avalonia" (non era scritto da nessuna parte). In breve: strategia *UI nativa per piattaforma + Core condiviso*, niente desktop cross-OS → il vantaggio di Avalonia non serve; WPF vince su WebView2/maturità/continuità.
+
+### ▶️ Da riprendere sulla VM (priorità invariata, ora che i test sono verdi)
+1. **U3** a schermo (allineamento label↔thumb slider scala: Mood/Sleep quality; estremi che non sborbino; scale >12 step).
+2. **Residuo U1**: finestra **Esporta** — checkbox blu nativi + corpo troppo scuro: verificare se lo stile flat si applica ora che ha la chrome scura; se no, sotto-task stile CheckBox in quella finestra.
+3. **U4** (numero centrato nel cerchio heatmap) e **U5** (toolbar "Modelli predefiniti" da spostare a sinistra) — rifiniture minori, no design.
+4. Poi sweep visivo R-* accumulato + CR5/CR13/CR20/CR22 + restore corrotto runtime (CR1–CR4) + **CR8** (regen ModelSnapshot a 2.11), come da handoff 2026-06-25.
+
+> **Promemoria sync**: nessun remote git. Questi commit/doc viaggiano alla VM **solo via sincronizzazione file di Drive** (incluso `.git`) — fragile. Per evitare conflitti di working tree, far sincronizzare Drive **a tree pulito** prima di lavorare sulla VM. La configurazione di un remote vero resta consigliata e aperta.

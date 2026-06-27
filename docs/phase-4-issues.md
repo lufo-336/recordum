@@ -35,7 +35,7 @@ Fonte: `obsidian_og/Resoconto Recordum.md` (15 screenshot annotati). Primo giro 
 
 **Da FARE (resoconto, non iniziati)**: U4 (numero centrato nel cerchio heatmap), U5 (toolbar "Modelli predefiniti" da spostare a sinistra), U6 (quadratini Home type-aware — design), U7 (Food diary veloce+foto — design), U8 (Sleep: tasto "1", serie opzionale, unità tempo — design; nota: riusa lo slider di U3), U9 (Stop smoking = cronometro astinenza, = B-abstinence — design/feature), U10 (Morning routine landing — chiarimento). Vedi sotto per dettaglio.
 
-**Suite test**: non rieseguita in questa sessione (modifiche solo WPF/XAML + un VM). Da lanciare prima di considerare chiusi: `dotnet test` Data+WPF (la `SeriesCellViewModel` ha un campo nuovo `ScalePoints`; nessun test rotto atteso ma da confermare).
+**Suite test**: ✓ **rieseguita 2026-06-27** (copia Drive, Windows) — `Recordum.Data.Tests` **356/356**, `Recordum.WPF.Tests` **651/651** (un solo `BackupSchedulerHostTests` flake da timing nella run completa, verde 2/2 isolato). Il campo nuovo `ScalePoints` (U3) non ha rotto nulla. Nota build: la suite WPF è stata lanciata con `-p:UseAppHost=false` perché su Google Drive File Stream la creazione dell'apphost `.exe` fallisce (`CreateAppHost` IOException su file con sezione mappata da DriveFS) — vedi handoff ambiente 2026-06-27 in `dev-environment-sync.md`.
 
 **Altro rinviato** (non dal resoconto): **R-ribbonSlide** (slide morbido del toggle striscia icone) — vedi sezione "Rinviato esplicitamente (2026-06-25)" più sotto; l'helper `GridLengthAnimation` è in `…/scratchpad/wip-sidebar-anim/`.
 
