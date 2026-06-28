@@ -10,7 +10,7 @@ using Recordum.WPF.Resources;
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
 public sealed partial class StreakSummaryViewModel(
-    IStreakAggregator aggregator, ICompletionService completions, IClock clock) : ObservableObject
+    IStreakAggregator aggregator, IAbstinenceService abstinence, IClock clock) : ObservableObject
 {
     [ObservableProperty] private int _currentLength;
     [ObservableProperty] private int _longestLength;
@@ -45,17 +45,14 @@ public sealed partial class StreakSummaryViewModel(
         if (node.HabitType == HabitType.Resistance)
         {
             RunsCaption = Strings.Detail_Streak_Lapses90;
+            var state = await abstinence.GetStateAsync(node.Id, ct).ConfigureAwait(true);
+            CurrentDisplay = state.Status == AbstinenceStatus.Abstaining && state.CurrentStartedAtMs is { } sMs
+                ? DurationFormat.FormatElapsed(clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(sMs))
+                : Strings.Abstinence_NotStarted;
 
-            // Current streak = fine-precision elapsed since the last lapse instant (or creation).
-            var last = await completions.ListByHabitAsync(node.Id, take: 1, ct: ct).ConfigureAwait(true);
-            var cleanSince = last.Count > 0
-                ? DateTimeOffset.FromUnixTimeMilliseconds(last[0].CompletedAtMs)
-                : new DateTimeOffset(node.CreatedAt, TimeSpan.Zero);
-            CurrentDisplay = DurationFormat.FormatElapsed(clock.UtcNow - cleanSince);
-
-            // Third stat = number of lapse days in the last 90 days.
-            var heat90 = await completions.GetHeatmapAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
-            RunsLast90Days = heat90.Count(c => c.Count > 0);
+            var periods90 = await abstinence.ListPeriodsAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
+            RunsLast90Days = periods90.Count(p => p.EndedAtMs is { } e
+                && DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(e).UtcDateTime) >= today.AddDays(-89));
         }
         else
         {

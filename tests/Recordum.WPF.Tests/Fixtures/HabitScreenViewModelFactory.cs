@@ -50,8 +50,8 @@ public static class HabitScreenViewModelFactory
             nodes, completions, timers, metrics, new FakeReferenceData(), configService,
             noteService, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            clock, bus, new FakeWebView2Availability(), settings, editor, new FakeHabitTreeQueryService(),
-            new FakeDiaryService());
+            new FakeAbstinenceService(), clock, bus, new FakeWebView2Availability(), settings, editor,
+            new FakeHabitTreeQueryService(), new FakeDiaryService());
 
         notes = noteService;
         configs = configService;

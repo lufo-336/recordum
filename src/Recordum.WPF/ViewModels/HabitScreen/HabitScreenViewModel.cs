@@ -371,6 +371,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IStreakAggregator streaks,
         ITrendQueryService trend,
         IHourlyDistributionQueryService hourly,
+        IAbstinenceService abstinence,
         IClock clock,
         IEventBus events,
         IWebView2Availability availability,
@@ -411,7 +412,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
-        Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, clock, events);
+        Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, abstinence, clock, events);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, clock);
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;

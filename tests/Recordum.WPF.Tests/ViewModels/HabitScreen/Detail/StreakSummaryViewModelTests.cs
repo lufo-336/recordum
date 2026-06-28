@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
-using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
@@ -14,7 +13,7 @@ public sealed class StreakSummaryViewModelTests
     [Fact]
     public async Task Empty_streaks_sets_IsEmpty_true()
     {
-        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeCompletionService(), new FakeClock());
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeAbstinenceService(), new FakeClock());
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow });
 
         Assert.True(vm.IsEmpty);
@@ -31,7 +30,7 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-4), today, 5));
 
-        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
 
         Assert.Equal(5, vm.CurrentLength);
@@ -48,7 +47,7 @@ public sealed class StreakSummaryViewModelTests
         aggr.Runs.Add(new StreakRun(today.AddDays(-10), today.AddDays(-1), 10,
             IsCurrent: true, BreakReason: StreakBreakReason.Lapse));
 
-        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance, CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
 
         Assert.Equal(0, vm.CurrentLength);
@@ -62,7 +61,7 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-10), today.AddDays(-3), 8));
 
-        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
 
         Assert.Equal(0, vm.CurrentLength);
@@ -76,16 +75,12 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-770), today, 771)); // 771 days = 2y 41d
         var nodeId = Guid.NewGuid();
-        var completions = new FakeCompletionService();
-        // last lapse was exactly 771 days ago → FormatElapsed gives "2a 41g"
-        var lastLapse = clock.UtcNow.AddDays(-771);
-        completions.Store[Guid.NewGuid()] = new Completion
-        {
-            HabitNodeId = nodeId, CompletedAt = lastLapse.UtcDateTime,
-            CompletedAtMs = lastLapse.ToUnixTimeMilliseconds(),
-        };
+        var abstinence = new FakeAbstinenceService();
+        // abstaining since exactly 771 days ago → FormatElapsed gives "2a 41g"
+        var currentStart = clock.UtcNow.AddDays(-771);
+        abstinence.States[nodeId] = new AbstinenceState(AbstinenceStatus.Abstaining, currentStart.ToUnixTimeMilliseconds(), null);
 
-        var vm = new StreakSummaryViewModel(aggr, completions, clock);
+        var vm = new StreakSummaryViewModel(aggr, abstinence, clock);
         await vm.LoadAsync(new HabitNode
         {
             Id = nodeId,
@@ -104,7 +99,7 @@ public sealed class StreakSummaryViewModelTests
         var aggr = new FakeStreakAggregator();
         aggr.Runs.Add(new StreakRun(today.AddDays(-11), today, 12));
 
-        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
         await vm.LoadAsync(new HabitNode
         {
             Id = Guid.NewGuid(),
@@ -123,12 +118,91 @@ public sealed class StreakSummaryViewModelTests
         aggr.Runs.Add(new StreakRun(new DateOnly(2025, 1, 1), new DateOnly(2025, 1, 14), 14));
         aggr.Runs.Add(new StreakRun(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 5), 5));
 
-        var vm = new StreakSummaryViewModel(aggr, new FakeCompletionService(), clock);
+        var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) });
 
         Assert.Equal(14, vm.LongestLength);
         Assert.Equal(new DateOnly(2025, 1, 1), vm.LongestStartedOn);
     }
+
+    // ── New TDD tests from brief (Task-7) ──────────────────────────────────
+
+    /// <summary>Brief test (a): Resistance + Abstaining → CurrentDisplay == FormatElapsed; RunsCaption == Lapses90.</summary>
+    [Fact]
+    public async Task Resistance_abstaining_shows_elapsed_from_current_start()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 28, 10, 0, 0, TimeSpan.Zero));
+        var nodeId = Guid.NewGuid();
+        var currentStart = clock.UtcNow.AddDays(-5); // 5 days ago
+        var abstinence = new FakeAbstinenceService();
+        abstinence.States[nodeId] = new AbstinenceState(AbstinenceStatus.Abstaining, currentStart.ToUnixTimeMilliseconds(), null);
+
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
+        await vm.LoadAsync(new HabitNode
+        {
+            Id = nodeId,
+            HabitType = HabitType.Resistance,
+            CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
+        });
+
+        var expectedElapsed = Recordum.WPF.Formatting.DurationFormat.FormatElapsed(clock.UtcNow - currentStart);
+        vm.CurrentDisplay.Should().Be(expectedElapsed);
+        vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
+    }
+
+    /// <summary>Brief test (b): Resistance + Relapsed/NotStarted → CurrentDisplay == Abstinence_NotStarted.</summary>
+    [Fact]
+    public async Task Resistance_not_abstaining_shows_not_started_state()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 28, 10, 0, 0, TimeSpan.Zero));
+        var nodeId = Guid.NewGuid();
+        var abstinence = new FakeAbstinenceService();
+        abstinence.States[nodeId] = new AbstinenceState(AbstinenceStatus.Relapsed, null, clock.UtcNow.AddDays(-1).ToUnixTimeMilliseconds());
+
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
+        await vm.LoadAsync(new HabitNode
+        {
+            Id = nodeId,
+            HabitType = HabitType.Resistance,
+            CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
+        });
+
+        vm.CurrentDisplay.Should().Be(Recordum.WPF.Resources.Strings.Abstinence_NotStarted);
+    }
+
+    /// <summary>Brief test (c): RunsLast90Days == number of periods closed in the last 90 days.</summary>
+    [Fact]
+    public async Task Resistance_lapses90_counts_closed_periods_in_window()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 28, 0, 0, 0, TimeSpan.Zero));
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var nodeId = Guid.NewGuid();
+        var abstinence = new FakeAbstinenceService();
+        var t = clock.UtcNow;
+        abstinence.Periods[nodeId] =
+        [
+            // closed 10 days ago — inside window
+            new AbstinencePeriod { HabitNodeId = nodeId, StartedAtMs = t.AddDays(-20).ToUnixTimeMilliseconds(), EndedAtMs = t.AddDays(-10).ToUnixTimeMilliseconds() },
+            // closed 50 days ago — inside window
+            new AbstinencePeriod { HabitNodeId = nodeId, StartedAtMs = t.AddDays(-60).ToUnixTimeMilliseconds(), EndedAtMs = t.AddDays(-50).ToUnixTimeMilliseconds() },
+            // closed 100 days ago — outside 90-day window
+            new AbstinencePeriod { HabitNodeId = nodeId, StartedAtMs = t.AddDays(-110).ToUnixTimeMilliseconds(), EndedAtMs = t.AddDays(-100).ToUnixTimeMilliseconds() },
+            // still open (EndedAtMs == null) — does not count as a closed lapse
+            new AbstinencePeriod { HabitNodeId = nodeId, StartedAtMs = t.AddDays(-5).ToUnixTimeMilliseconds(), EndedAtMs = null },
+        ];
+
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
+        await vm.LoadAsync(new HabitNode
+        {
+            Id = nodeId,
+            HabitType = HabitType.Resistance,
+            CreatedAt = clock.UtcNow.AddDays(-200).UtcDateTime,
+        });
+
+        vm.RunsLast90Days.Should().Be(2);
+    }
+
+    // ── WpfFact tests (require STA thread) ─────────────────────────────────
 
     [WpfFact]
     public async Task Resistance_current_shows_elapsed_since_last_lapse()
@@ -140,13 +214,10 @@ public sealed class StreakSummaryViewModelTests
             Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
             Name = "no smoking", CreatedAt = today.AddDays(-100).UtcDateTime,
         };
-        var completions = new FakeCompletionService();
-        var lastLapse = today.AddDays(-3).AddHours(-6); // 3d 6h ago
-        completions.Store[Guid.NewGuid()] = new Completion
-        {
-            HabitNodeId = node.Id, CompletedAt = lastLapse.UtcDateTime, CompletedAtMs = lastLapse.ToUnixTimeMilliseconds(),
-        };
-        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), completions, clock);
+        var abstinence = new FakeAbstinenceService();
+        var currentStart = today.AddDays(-3).AddHours(-6); // 3d 6h ago
+        abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, currentStart.ToUnixTimeMilliseconds(), null);
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
         await vm.LoadAsync(node);
 
@@ -154,8 +225,9 @@ public sealed class StreakSummaryViewModelTests
     }
 
     [WpfFact]
-    public async Task Resistance_never_lapsed_counts_from_creation()
+    public async Task Resistance_abstaining_since_creation_shows_elapsed()
     {
+        // If the user started abstaining at creation, CurrentDisplay shows elapsed since then.
         var today = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var clock = new FakeClock(today);
         var node = new HabitNode
@@ -163,7 +235,9 @@ public sealed class StreakSummaryViewModelTests
             Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
             Name = "no smoking", CreatedAt = today.AddDays(-10).UtcDateTime,
         };
-        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeCompletionService(), clock);
+        var abstinence = new FakeAbstinenceService();
+        abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, today.AddDays(-10).ToUnixTimeMilliseconds(), null);
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
         await vm.LoadAsync(node);
 
@@ -171,7 +245,25 @@ public sealed class StreakSummaryViewModelTests
     }
 
     [WpfFact]
-    public async Task Resistance_caption_is_lapses_and_counts_lapse_days_in_90()
+    public async Task Resistance_not_started_shows_not_started_string()
+    {
+        // NotStarted (no abstinence state at all) → CurrentDisplay = Abstinence_NotStarted.
+        var today = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
+        var clock = new FakeClock(today);
+        var node = new HabitNode
+        {
+            Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
+            Name = "no smoking", CreatedAt = today.AddDays(-10).UtcDateTime,
+        };
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeAbstinenceService(), clock);
+
+        await vm.LoadAsync(node);
+
+        vm.CurrentDisplay.Should().Be(Recordum.WPF.Resources.Strings.Abstinence_NotStarted);
+    }
+
+    [WpfFact]
+    public async Task Resistance_caption_is_lapses_and_counts_closed_periods_in_90()
     {
         var today = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var clock = new FakeClock(today);
@@ -180,13 +272,13 @@ public sealed class StreakSummaryViewModelTests
             Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance,
             Name = "no smoking", CreatedAt = today.AddDays(-100).UtcDateTime,
         };
-        var completions = new FakeCompletionService();
-        completions.HeatmapByHabit[node.Id] = new[]
-        {
-            new HeatmapCell(DateOnly.FromDateTime(today.AddDays(-10).UtcDateTime), 1, 0),
-            new HeatmapCell(DateOnly.FromDateTime(today.AddDays(-40).UtcDateTime), 2, 0),
-        };
-        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), completions, clock);
+        var abstinence = new FakeAbstinenceService();
+        abstinence.Periods[node.Id] =
+        [
+            new AbstinencePeriod { HabitNodeId = node.Id, StartedAtMs = today.AddDays(-20).ToUnixTimeMilliseconds(), EndedAtMs = today.AddDays(-10).ToUnixTimeMilliseconds() },
+            new AbstinencePeriod { HabitNodeId = node.Id, StartedAtMs = today.AddDays(-50).ToUnixTimeMilliseconds(), EndedAtMs = today.AddDays(-40).ToUnixTimeMilliseconds() },
+        ];
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
         await vm.LoadAsync(node);
 

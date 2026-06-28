@@ -22,6 +22,7 @@ public sealed class DetailViewModelTests
             new FakeMetricDefinitionService(),
             new IntensityRampResolver(),
             new FakeHabitConfigService(),
+            new FakeAbstinenceService(),
             new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero)),
             bus);
     }
