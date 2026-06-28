@@ -266,7 +266,7 @@ public sealed class DemoDataSeeder(
             (start: Ms(today.AddDays(-90), 9), end: (long?)Ms(today.AddDays(-67), 19)),
             (start: Ms(today.AddDays(-66), 9), end: (long?)Ms(today.AddDays(-40), 19)),
             (start: Ms(today.AddDays(-39), 9), end: (long?)Ms(today.AddDays(-21), 19)),
-            (start: Ms(today.AddDays(-21), 9), end: (long?)null), // OPEN: current clean run
+            (start: Ms(today.AddDays(-20), 9), end: (long?)null), // OPEN: current clean run (1-day gap after the -21 lapse)
         };
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         foreach (var p in periods)
