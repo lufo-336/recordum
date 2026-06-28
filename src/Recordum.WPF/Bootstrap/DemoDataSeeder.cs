@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Data;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -20,7 +22,8 @@ public sealed class DemoDataSeeder(
     ITagService tags,
     IAppSettingService settings,
     IHabitTreeQueryService tree,
-    IClock clock)
+    IClock clock,
+    IDbContextFactory<RecordumDbContext> dbFactory)
 {
     private const string MarkerKey = "dev.demo_seeded";
     private const int Days = 100;
@@ -101,7 +104,6 @@ public sealed class DemoDataSeeder(
         var mMinuti = await MetricAsync(allenamento, "Minuti", ct).ConfigureAwait(false);
         var mBicchieri = await MetricAsync(acqua, "Bicchieri", ct).ConfigureAwait(false);
         var mPagine = await MetricAsync(lettura, "Pagine", ct).ConfigureAwait(false);
-        var mSigarette = await MetricAsync(nienteFumo, "Sigarette", ct).ConfigureAwait(false);
         var mUmore = await metrics.CreateAsync(new MetricDefinition
         {
             HabitNodeId = mood,
@@ -143,10 +145,8 @@ public sealed class DemoDataSeeder(
                     .ConfigureAwait(false);
         }
 
-        // "Niente fumo" abstinence: record only relapses (rare). Clean streak = time since the last
-        // one. Latest ~3 weeks ago → a multi-week clean streak with a couple of lapse markers.
-        foreach (var lapseAgo in new[] { 67, 40, 21 })
-            await ValueAsync(nienteFumo, mSigarette, _rng.Next(1, 4), today.AddDays(-lapseAgo), 18, 20, ct).ConfigureAwait(false);
+        // "Niente fumo" abstinence: 3 closed periods + 1 open → live ~3-week clean timer + relapse markers.
+        await SeedAbstinencePeriodsAsync(nienteFumo, today, ct).ConfigureAwait(false);
 
         // ---- notes: a couple of general ones + scattered day notes ----
         await notes.CreateAsync(new Note { HabitNodeId = allenamento, BodyMd = "Programma del trainer: 3 sessioni a settimana, focus gambe il venerdì." }, ct).ConfigureAwait(false);
@@ -206,9 +206,6 @@ public sealed class DemoDataSeeder(
                 case HabitType.Counter when defs.Count > 0 && Chance(0.72):
                     await SeriesDayAsync(row.HabitNodeId, defs, _rng.Next(1, 5), progress, day, ct).ConfigureAwait(false);
                     break;
-                case HabitType.Resistance when Chance(0.12): // lapses/episodes, rare
-                    await SeriesDayAsync(row.HabitNodeId, defs, 1, progress, day, ct).ConfigureAwait(false);
-                    break;
                 case HabitType.State when defs.Count > 0 && Chance(0.85):
                     await ValueAsync(row.HabitNodeId, defs[0].Id, WeightedMood(), day, 20, 22, ct).ConfigureAwait(false);
                     break;
@@ -254,6 +251,33 @@ public sealed class DemoDataSeeder(
             default: v.ValueInteger = (int)(12 + progress * 20) + _rng.Next(0, 14); break;
         }
         return v;
+    }
+
+    private async Task SeedAbstinencePeriodsAsync(Guid habitId, DateOnly today, CancellationToken ct)
+    {
+        long Ms(DateOnly day, int hour)
+        {
+            var at = day.ToDateTime(new TimeOnly(hour, 0));
+            return new DateTimeOffset(at, clock.LocalTimeZone.GetUtcOffset(at)).ToUnixTimeMilliseconds();
+        }
+        // 3 closed periods + 1 OPEN started ~3 weeks ago → live multi-week clean timer + relapse markers.
+        var periods = new[]
+        {
+            (start: Ms(today.AddDays(-90), 9), end: (long?)Ms(today.AddDays(-67), 19)),
+            (start: Ms(today.AddDays(-66), 9), end: (long?)Ms(today.AddDays(-40), 19)),
+            (start: Ms(today.AddDays(-39), 9), end: (long?)Ms(today.AddDays(-21), 19)),
+            (start: Ms(today.AddDays(-21), 9), end: (long?)null), // OPEN: current clean run
+        };
+        await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        foreach (var p in periods)
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = p.start,
+                EndedAtMs = p.end,
+            });
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     private bool Chance(double p) => _rng.NextDouble() < p;
