@@ -6,8 +6,10 @@ using Recordum.Core.Abstractions;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Calendar;
 
-/// <summary>Presentation-ready marker per un giorno (il host calcola tint/numero/note).</summary>
-public sealed record CalendarDayMarker(DateOnly Date, int TintStep, string? Number, int NoteCount);
+/// <summary>Presentation-ready marker per un giorno (il host calcola tint/numero/note).
+/// <para><see cref="TintColorHex"/> overrides the navigator's <see cref="CalendarNavigatorViewModel.CompletedColorHex"/>
+/// for this specific day (e.g. danger red on a lapse day). Null = fall back to the habit color.</para></summary>
+public sealed record CalendarDayMarker(DateOnly Date, int TintStep, string? Number, int NoteCount, string? TintColorHex = null);
 
 /// <summary>Day-markers for a date range, supplied by the host.</summary>
 public sealed record CalendarMarkers(IReadOnlyList<CalendarDayMarker> Days);
@@ -237,6 +239,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         {
             if (byDate.TryGetValue(cell.Date, out var m))
             {
+                cell.TintColorHex = m.TintColorHex ?? CompletedColorHex;
                 cell.TintStep = m.TintStep;
                 cell.Number = m.Number;
                 cell.NoteCount = m.NoteCount;

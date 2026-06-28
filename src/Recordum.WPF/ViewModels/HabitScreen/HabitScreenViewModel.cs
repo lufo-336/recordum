@@ -625,6 +625,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var node = Node;
         if (node is null) return new CalendarMarkers([]);
 
+        if (node.HabitType == HabitType.Resistance)
+            return await BuildAbstinenceMarkersAsync(node, from, to, ct).ConfigureAwait(true);
+
         var magByDate = new Dictionary<DateOnly, decimal>();
         var noteByDate = new Dictionary<DateOnly, int>();
 
@@ -662,6 +665,81 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             var noteCount = noteByDate.TryGetValue(date, out var nc) ? nc : 0;
             days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, rangeMax, hasCompletion), NumberFor(type, mag, hasCompletion), noteCount));
         }
+        return new CalendarMarkers(days);
+    }
+
+    /// <summary>Calendar marker builder for <see cref="HabitType.Resistance"/> habits. Derives day colors
+    /// from <see cref="IAbstinenceService.ListPeriodsAsync"/> instead of the completion heatmap (which is
+    /// always empty for Resistance in the new explicit-state model).</summary>
+    /// <remarks>
+    /// Classification per day in [from, to]:
+    /// <list type="bullet">
+    ///   <item>clean day (inside a period, not the closed end-day) → habit color + TintStep 3</item>
+    ///   <item>lapse day (== a closed period's end-day) → danger hex + TintStep 4</item>
+    ///   <item>gap day (after first period's start, not in any period, not future) → danger hex + TintStep 1</item>
+    ///   <item>before first period / future → no marker</item>
+    /// </list>
+    /// Pauses are NOT reflected in calendar tinting (the streak engine still freezes streaks during pauses;
+    /// only this coloring ignores them). Tracked as a known minor for a future improvement.
+    /// </remarks>
+    private async Task<CalendarMarkers> BuildAbstinenceMarkersAsync(
+        HabitNode node, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var periods = await _abstinence.ListPeriodsAsync(node.Id, from, to, ct).ConfigureAwait(true);
+        var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
+
+        // Resolve danger color from the WPF resource dictionary (null in headless/unit-test context).
+        const string FallbackDangerHex = "#FFF87171";
+        var dangerHex = FallbackDangerHex;
+        var dangerBrush = System.Windows.Application.Current?.TryFindResource("Brush.Danger")
+            as System.Windows.Media.SolidColorBrush;
+        if (dangerBrush is not null)
+            dangerHex = dangerBrush.Color.ToString(System.Globalization.CultureInfo.InvariantCulture); // #AARRGGBB e.g. "#FFF87171"
+
+        if (periods.Count == 0) return new CalendarMarkers([]);
+
+        // Convert raw timestamps to date-range tuples.
+        var dayPeriods = periods
+            .Select(p => (
+                StartDay: DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime),
+                EndDay: p.EndedAtMs.HasValue
+                    ? DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.EndedAtMs.Value).UtcDateTime)
+                    : today,
+                IsClosed: p.EndedAtMs.HasValue))
+            .ToList();
+
+        var firstStart = dayPeriods.Min(p => p.StartDay);
+
+        var days = new List<CalendarDayMarker>();
+        for (var day = from; day <= to; day = day.AddDays(1))
+        {
+            if (day > today) continue; // future days → no marker
+
+            // Find the first period that contains this day.
+            bool found = false;
+            (DateOnly StartDay, DateOnly EndDay, bool IsClosed) hit = default;
+            foreach (var p in dayPeriods)
+            {
+                if (p.StartDay <= day && day <= p.EndDay) { hit = p; found = true; break; }
+            }
+
+            if (found)
+            {
+                if (hit.IsClosed && day == hit.EndDay)
+                    // Lapse day: end of a closed period → danger color, full intensity.
+                    days.Add(new CalendarDayMarker(day, TintStep: 4, Number: null, NoteCount: 0, TintColorHex: dangerHex));
+                else
+                    // Clean day: inside a period (not the lapse end) → habit color (null = CompletedColorHex).
+                    days.Add(new CalendarDayMarker(day, TintStep: 3, Number: null, NoteCount: 0, TintColorHex: null));
+            }
+            else if (day > firstStart)
+            {
+                // Gap day: after the first period started, not covered by any period → faint danger tint.
+                days.Add(new CalendarDayMarker(day, TintStep: 1, Number: null, NoteCount: 0, TintColorHex: dangerHex));
+            }
+            // else: before the first period's start → no marker (cell stays blank).
+        }
+
         return new CalendarMarkers(days);
     }
 
