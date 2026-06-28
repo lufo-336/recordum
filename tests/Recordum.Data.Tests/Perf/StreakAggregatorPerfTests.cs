@@ -95,9 +95,10 @@ public sealed class StreakAggregatorPerfTests
         var graceRec = new GraceDayStreakRecoveryPolicy();
         var manualRec = new ManualStreakRecoveryPolicy();
         var retroRec = new RetroactiveStreakRecoveryPolicy();
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
         return new SchedulingAwareStreakAggregator(
             nodes, configs, completions, pauses, scheduler,
             dailyEval, weeklyEval, occEval, bothEval,
-            noneRec, graceRec, manualRec, retroRec, fx.Clock);
+            noneRec, graceRec, manualRec, retroRec, abstinence, fx.Clock);
     }
 }

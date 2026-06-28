@@ -95,6 +95,7 @@ public static class ServiceRegistrar
         services.AddScoped<IExportTemplateService, ExportTemplateService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<IStreakPauseService, StreakPauseService>();
+        services.AddScoped<IAbstinenceService, Data.Services.AbstinenceService>();
         services.AddScoped<IStreakService, StreakService>();
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();

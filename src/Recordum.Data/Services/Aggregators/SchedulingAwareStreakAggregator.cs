@@ -20,6 +20,7 @@ public sealed class SchedulingAwareStreakAggregator(
     [FromKeyedServices(StreakRecovery.GraceDay)] IStreakRecoveryPolicy graceRec,
     [FromKeyedServices(StreakRecovery.Manual)] IStreakRecoveryPolicy manualRec,
     [FromKeyedServices(StreakRecovery.Retroactive)] IStreakRecoveryPolicy retroRec,
+    IAbstinenceService abstinence,
     IClock clock) : IStreakAggregator
 {
     public async ValueTask<IReadOnlyList<StreakRun>> GetHistoryAsync(
@@ -162,57 +163,46 @@ public sealed class SchedulingAwareStreakAggregator(
         return runs;
     }
 
-    // Abstinence (Resistance) streak: a completion = a lapse. The "streak" is the run of consecutive
-    // clean days (no completion) since the last lapse, or since creation if never lapsed. Pauses are
-    // frozen (neither clean nor lapse). Schedule/mode/recovery do not apply. See spec 2026-06-14.
+    // Abstinence (Resistance): clean runs come from abstinence_period rows. Each period [start, end]
+    // (or [start, today] if open) is a clean run; the gap between a period's end and the next start is
+    // "relapsed, not resumed" and is not counted. Pauses freeze a run (neither clean nor break). The
+    // open period is the current run. Schedule/mode/recovery do not apply. See spec 2026-06-28.
     private async ValueTask<IReadOnlyList<StreakRun>> ComputeAbstinenceAsync(
         HabitNode habitNode, DateOnly fromDate, DateOnly toDate, CancellationToken ct)
     {
         var createdDate = DateOnly.FromDateTime(habitNode.CreatedAt);
-        // Abstinence runs are anchored at creation, never at the query window: a fromDate after the
-        // last lapse must not truncate the current run's length (CR11). Compute over the full life,
-        // then filter the returned runs to those intersecting [fromDate, toDate] below.
-        var start = createdDate;
-        if (start > toDate) return Array.Empty<StreakRun>();
+        var lifeStart = createdDate < fromDate ? createdDate : fromDate; // full life for true lengths (CR11)
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
 
-        var heatmap = await completions.GetHeatmapAsync(habitNode.Id, start, toDate, ct).ConfigureAwait(false);
-        var lapseDays = heatmap.Where(c => c.Count > 0).Select(c => c.Date).ToHashSet();
+        var periods = await abstinence.ListPeriodsAsync(habitNode.Id, lifeStart, toDate, ct).ConfigureAwait(false);
+        if (periods.Count == 0) return Array.Empty<StreakRun>();
+
         var pauseList = await pauses.ListByHabitAsync(habitNode.Id, ct).ConfigureAwait(false);
         bool IsPaused(DateOnly d) => pauseList.Any(p => d >= p.PauseFrom && d <= p.PauseTo);
 
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        int CleanDays(DateOnly s, DateOnly e)
+        {
+            var n = 0;
+            for (var d = s; d <= e; d = d.AddDays(1))
+                if (!IsPaused(d)) n++;
+            return n;
+        }
+
         var runs = new List<StreakRun>();
-        DateOnly? runStart = null;
-        var runEnd = default(DateOnly);
-        var length = 0;
-
-        for (var day = start; day <= toDate; day = day.AddDays(1))
+        foreach (var p in periods)
         {
-            if (IsPaused(day)) continue; // frozen: run stays open, length unchanged
+            var startDay = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime);
+            var isOpen = p.EndedAtMs is null;
+            var endDay = isOpen
+                ? today
+                : DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.EndedAtMs!.Value).UtcDateTime);
+            if (startDay > toDate) continue;
+            if (endDay < startDay) endDay = startDay;
 
-            if (lapseDays.Contains(day))
-            {
-                if (runStart is { } rs)
-                {
-                    runs.Add(new StreakRun(rs, runEnd, length, false, 0, StreakBreakReason.Lapse));
-                    runStart = null; length = 0;
-                }
-                continue;
-            }
-
-            // clean day
-            runStart ??= day;
-            runEnd = day;
-            length++;
+            var length = CleanDays(startDay, endDay);
+            runs.Add(new StreakRun(startDay, endDay, length, isOpen, 0, isOpen ? null : StreakBreakReason.Lapse));
         }
 
-        if (runStart is { } rsFinal)
-        {
-            var isCurrent = runEnd >= today.AddDays(-1);
-            runs.Add(new StreakRun(rsFinal, runEnd, length, isCurrent, 0, null));
-        }
-        // Keep only runs that reach into the requested window; the current/overlapping run still
-        // carries its true full length computed above (CR11).
         return runs.Where(r => r.End >= fromDate).ToList();
     }
 

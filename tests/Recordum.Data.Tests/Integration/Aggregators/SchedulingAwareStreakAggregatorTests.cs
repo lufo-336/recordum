@@ -64,10 +64,11 @@ public sealed class SchedulingAwareStreakAggregatorTests
         var graceRec = new GraceDayStreakRecoveryPolicy();
         var manualRec = new ManualStreakRecoveryPolicy();
         var retroRec = new RetroactiveStreakRecoveryPolicy();
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
         return new SchedulingAwareStreakAggregator(
             nodes, configs, completions, pauses, scheduler,
             dailyEval, weeklyEval, occEval, bothEval,
-            noneRec, graceRec, manualRec, retroRec, fx.Clock);
+            noneRec, graceRec, manualRec, retroRec, abstinence, fx.Clock);
     }
 
     private static async Task SeedCompletionsAsync(DbFixture fx, Guid habitId, DateOnly start, string pattern)
