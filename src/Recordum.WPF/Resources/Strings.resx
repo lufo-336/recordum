@@ -734,6 +734,21 @@ Details: {0}</value>
   <data name="Detail.Streak.Lapses90" xml:space="preserve">
     <value>Lapses (90d)</value>
   </data>
+  <data name="Abstinence.Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Abstinence.Lapse" xml:space="preserve">
+    <value>Relapse</value>
+  </data>
+  <data name="Abstinence.CleanFor" xml:space="preserve">
+    <value>Clean for</value>
+  </data>
+  <data name="Abstinence.RelapsedOn" xml:space="preserve">
+    <value>Relapsed on {0}</value>
+  </data>
+  <data name="Abstinence.NotStarted" xml:space="preserve">
+    <value>Not started</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

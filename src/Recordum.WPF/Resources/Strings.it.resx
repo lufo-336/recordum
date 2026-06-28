@@ -716,6 +716,21 @@
   <data name="Detail.Streak.Lapses90" xml:space="preserve">
     <value>Ricadute (90gg)</value>
   </data>
+  <data name="Abstinence.Start" xml:space="preserve">
+    <value>Inizio</value>
+  </data>
+  <data name="Abstinence.Lapse" xml:space="preserve">
+    <value>Ricaduta</value>
+  </data>
+  <data name="Abstinence.CleanFor" xml:space="preserve">
+    <value>Pulito da</value>
+  </data>
+  <data name="Abstinence.RelapsedOn" xml:space="preserve">
+    <value>Ricaduto il {0}</value>
+  </data>
+  <data name="Abstinence.NotStarted" xml:space="preserve">
+    <value>Non avviata</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

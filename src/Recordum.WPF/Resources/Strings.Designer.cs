@@ -270,6 +270,11 @@ public static class Strings
     public static string Detail_Streak_Longest => Get("Detail.Streak.Longest");
     public static string Detail_Streak_Runs90 => Get("Detail.Streak.Runs90");
     public static string Detail_Streak_Lapses90 => Get("Detail.Streak.Lapses90");
+    public static string Abstinence_Start => Get("Abstinence.Start");
+    public static string Abstinence_Lapse => Get("Abstinence.Lapse");
+    public static string Abstinence_CleanFor => Get("Abstinence.CleanFor");
+    public static string Abstinence_RelapsedOn => Get("Abstinence.RelapsedOn");
+    public static string Abstinence_NotStarted => Get("Abstinence.NotStarted");
     public static string Detail_Streak_Empty => Get("Detail.Streak.Empty");
     public static string Detail_Streak_Days => Get("Detail.Streak.Days");
     public static string Detail_Trend_Range_30d => Get("Detail.Trend.Range.30d");
