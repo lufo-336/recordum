@@ -20,6 +20,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 {
     private readonly IHabitNodeService _nodes;
     private readonly ICompletionService _completions;
+    private readonly IAbstinenceService _abstinence;
     private readonly IDiaryService _diary;
     private readonly IActiveTimerService _timers;
     private readonly INoteService _noteService;
@@ -398,6 +399,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(availability);
         _nodes = nodes;
         _completions = completions;
+        _abstinence = abstinence;
         _diary = diary;
         _timers = timers;
         _noteService = noteService;
@@ -516,7 +518,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
             HabitType.Counter => await BuildCounterQuickAddAsync(ct).ConfigureAwait(true),
-            HabitType.Resistance => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
+            HabitType.Resistance => new AbstinenceQuickAddViewModel(_completions, _abstinence, _clock),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock, _diary),
             HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
             _ => null,
@@ -525,11 +527,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         vm.Node = node;
         switch (vm)
         {
+            case AbstinenceQuickAddViewModel ab: await ab.LoadAsync(ct).ConfigureAwait(true); break;
             case MeasuredQuickAddViewModel mq: await mq.LoadMetricsAsync(ct).ConfigureAwait(true); break;
             case CounterSeriesQuickAddViewModel cs: await cs.LoadMetricsAsync(ct).ConfigureAwait(true); break;
             case CounterTapQuickAddViewModel tap: await tap.LoadDayAsync(ct).ConfigureAwait(true); break;
         }
         QuickAdd = vm;
+        if (vm is AbstinenceQuickAddViewModel abst) abst.Changed += OnAbstinenceChanged;
 
         // Counter splits by shape: bare (no metrics) records single-tap occurrences; with
         // metrics it records valid series rows (spec multivalue §4.1).
@@ -564,6 +568,21 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 .ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCompletionEvent failed: {ex}"); }
+    }
+
+    /// <summary>Abstinence Start/Lapse write no completions so the EventBus never fires; refresh the
+    /// streak summary and calendar markers here instead (CR15 async-void pattern).</summary>
+    private async void OnAbstinenceChanged(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (Node is null) return;
+            await Task.WhenAll(
+                Detail.LoadAsync(Node, CancellationToken.None),
+                Calendar.JumpAsync())
+                .ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceChanged failed: {ex}"); }
     }
 
     private async void OnNoteEvent(EventEnvelope envelope)

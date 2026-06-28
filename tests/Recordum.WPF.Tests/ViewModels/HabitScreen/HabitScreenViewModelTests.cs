@@ -206,7 +206,7 @@ public class HabitScreenViewModelTests
     [Theory]
     [InlineData(HabitType.Action, typeof(ActionQuickAddViewModel))]
     [InlineData(HabitType.Counter, typeof(CounterTapQuickAddViewModel))] // no metrics seeded → bare tap shape
-    [InlineData(HabitType.Resistance, typeof(MeasuredQuickAddViewModel))]
+    [InlineData(HabitType.Resistance, typeof(AbstinenceQuickAddViewModel))]
     [InlineData(HabitType.Journal, typeof(JournalQuickAddViewModel))]
     [InlineData(HabitType.State, typeof(MeasuredQuickAddViewModel))]
     public async Task LoadAsync_picks_correct_QuickAdd_VM_for_HabitType(HabitType type, Type expectedVmType)

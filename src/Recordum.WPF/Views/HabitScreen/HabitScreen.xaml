@@ -378,6 +378,44 @@
             </StackPanel>
         </DataTemplate>
 
+        <!-- Resistance / abstinence: Inizio · Ricaduta + live elapsed timer. -->
+        <DataTemplate x:Key="AbstinenceQuickAddTemplate" DataType="{x:Type qa:AbstinenceQuickAddViewModel}">
+            <StackPanel Margin="12" Orientation="Vertical">
+
+                <!-- Clean-for row: visible only while Abstaining -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10"
+                            Visibility="{Binding CanLapse, Converter={StaticResource BoolToVisible}}">
+                    <TextBlock Text="{x:Static res:Strings.Abstinence_CleanFor}"
+                               Foreground="{DynamicResource Brush.TextMuted}"
+                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding ElapsedDisplay}"
+                               FontSize="20"
+                               Foreground="{DynamicResource Brush.Text}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Relapse date: visible only when a relapse is recorded (RelapsedOn != null) -->
+                <TextBlock Text="{Binding RelapsedOnDisplay}"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           Margin="0,0,0,10"
+                           Visibility="{Binding RelapsedOn, Converter={StaticResource NullToVisibility}}"/>
+
+                <!-- Lapse button (danger affordance): visible when Abstaining -->
+                <Button Content="{x:Static res:Strings.Abstinence_Lapse}"
+                        Command="{Binding LapseCommand}"
+                        HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,6"
+                        Foreground="{DynamicResource Brush.Danger}"
+                        Visibility="{Binding CanLapse, Converter={StaticResource BoolToVisible}}"/>
+
+                <!-- Start / restart button: visible when not Abstaining -->
+                <Button Content="{x:Static res:Strings.Abstinence_Start}"
+                        Command="{Binding StartCommand}"
+                        HorizontalAlignment="Left" Padding="12,6"
+                        Visibility="{Binding CanStart, Converter={StaticResource BoolToVisible}}"/>
+
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="CounterSeriesQuickAddTemplate" DataType="{x:Type qa:CounterSeriesQuickAddViewModel}">
             <StackPanel Margin="12" Orientation="Vertical">
                 <Grid Margin="0,0,0,8">
@@ -622,6 +660,7 @@
 
         <sel:QuickAddTemplateSelector x:Key="QuickAddSelector"
                                       Action="{StaticResource ActionQuickAddTemplate}"
+                                      Abstinence="{StaticResource AbstinenceQuickAddTemplate}"
                                       Measured="{StaticResource MeasuredQuickAddTemplate}"
                                       CounterSeries="{StaticResource CounterSeriesQuickAddTemplate}"
                                       CounterTap="{StaticResource CounterTapQuickAddTemplate}"
