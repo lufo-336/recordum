@@ -157,7 +157,7 @@ public static class ServiceRegistrar
 
         services.AddScoped<IQuickActionHandler, ActionQuickActionHandler>();
         services.AddScoped<IQuickActionHandler, CounterQuickActionHandler>();
-        services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Resistance));
+        services.AddScoped<IQuickActionHandler, AbstinenceQuickActionHandler>();
         services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.Journal));
         services.AddScoped<IQuickActionHandler>(_ => new OpenScreenQuickActionHandler(Core.Enums.HabitType.State));
         services.AddScoped<QuickActionHandlerSelector>();

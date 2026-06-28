@@ -19,10 +19,18 @@ public sealed class FakeAbstinenceService : IAbstinenceService
     }
 
     public Task StartAsync(Guid habitNodeId, CancellationToken ct = default)
-        => Task.CompletedTask;
+    {
+        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        States[habitNodeId] = new AbstinenceState(AbstinenceStatus.Abstaining, nowMs, null);
+        return Task.CompletedTask;
+    }
 
     public Task LapseAsync(Guid habitNodeId, CancellationToken ct = default)
-        => Task.CompletedTask;
+    {
+        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        States[habitNodeId] = new AbstinenceState(AbstinenceStatus.Relapsed, null, nowMs);
+        return Task.CompletedTask;
+    }
 
     public Task<IReadOnlyList<AbstinencePeriod>> ListPeriodsAsync(
         Guid habitNodeId, DateOnly from, DateOnly to, CancellationToken ct = default)
