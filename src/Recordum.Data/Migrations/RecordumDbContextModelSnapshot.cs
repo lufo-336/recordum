@@ -71,6 +71,46 @@ namespace Recordum.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.AbstinencePeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<long?>("EndedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("ended_at_ms");
+
+                    b.Property<Guid>("HabitNodeId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("habit_node_id");
+
+                    b.Property<long>("StartedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("started_at_ms");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
+                    b.HasKey("Id")
+                        .HasName("pk_abstinence_period");
+
+                    b.HasIndex("HabitNodeId", "StartedAtMs")
+                        .HasDatabaseName("ix_abstinence_period_habit_started");
+
+                    b.ToTable("abstinence_period", (string)null);
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.ActiveTimer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -258,8 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 6, 5, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.9"
+                            UpdatedAt = new DateTime(2026, 6, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.12"
                         });
                 });
 
@@ -2037,6 +2077,18 @@ namespace Recordum.Data.Migrations
                         .HasForeignKey("HabitNodeId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_ai_insights_habit_nodes_habit_node_id");
+
+                    b.Navigation("HabitNode");
+                });
+
+            modelBuilder.Entity("Recordum.Core.Models.AbstinencePeriod", b =>
+                {
+                    b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
+                        .WithMany()
+                        .HasForeignKey("HabitNodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_abstinence_period_habit_nodes_habit_node_id");
 
                     b.Navigation("HabitNode");
                 });
