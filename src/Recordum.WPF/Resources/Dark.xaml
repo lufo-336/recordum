@@ -9,6 +9,7 @@
     <SolidColorBrush x:Key="Brush.Accent"            Color="#FF60A5FA"/>
     <SolidColorBrush x:Key="Brush.OnAccent"          Color="#FF09090B"/>
     <SolidColorBrush x:Key="Brush.Success"           Color="#FF4ADE80"/>
+    <SolidColorBrush x:Key="Brush.Danger"            Color="#FFF87171"/>
     <SolidColorBrush x:Key="Brush.HeatmapEmpty"      Color="#FF27272A"/>
     <SolidColorBrush x:Key="Brush.Heatmap.Level0"    Color="#FF27272A"/>
     <SolidColorBrush x:Key="Brush.Heatmap.Level1"    Color="#FF0E4429"/>
