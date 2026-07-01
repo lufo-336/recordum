@@ -87,4 +87,16 @@ public static class DurationFormat
             return string.Create(CultureInfo.InvariantCulture, $"{elapsed.Minutes}m");
         return "appena ora";
     }
+
+    /// <summary>Live stopwatch format for the abstinence clock: seconds always visible.
+    /// "21g 6:14:09" / "6:14:09" / "0:03:07". Days use the same "g" suffix as FormatDays.</summary>
+    public static string FormatStopwatch(TimeSpan elapsed)
+    {
+        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
+        int days = (int)elapsed.TotalDays;
+        int h = elapsed.Hours, m = elapsed.Minutes, s = elapsed.Seconds;
+        return days >= 1
+            ? string.Create(CultureInfo.InvariantCulture, $"{days}g {h}:{m:00}:{s:00}")
+            : string.Create(CultureInfo.InvariantCulture, $"{h}:{m:00}:{s:00}");
+    }
 }

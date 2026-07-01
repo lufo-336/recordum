@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Recordum.WPF.Formatting;
 using Xunit;
 
@@ -32,4 +33,17 @@ public class DurationFormatTests
     [Theory]
     [InlineData(0, "0g")] [InlineData(41, "41g")] [InlineData(365, "1a 0g")] [InlineData(771, "2a 41g")]
     public void FormatsDays(int days, string expected) => Assert.Equal(expected, DurationFormat.FormatDays(days));
+
+    [Theory]
+    [InlineData(0, 0, 0, 0, "0:00:00")]
+    [InlineData(0, 6, 14, 9, "6:14:09")]
+    [InlineData(0, 0, 3, 7, "0:03:07")]
+    [InlineData(21, 6, 14, 9, "21g 6:14:09")]
+    [InlineData(1, 0, 0, 0, "1g 0:00:00")]
+    public void FormatStopwatch_formats_days_h_mm_ss(int d, int h, int m, int s, string expected)
+        => DurationFormat.FormatStopwatch(new TimeSpan(d, h, m, s)).Should().Be(expected);
+
+    [Fact]
+    public void FormatStopwatch_clamps_negative_to_zero()
+        => DurationFormat.FormatStopwatch(TimeSpan.FromSeconds(-5)).Should().Be("0:00:00");
 }
