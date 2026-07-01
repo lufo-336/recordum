@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup>
-    <!-- Licensing: GNU General Public License v3.0 or later. Full text in /LICENSE. -->
+    <!-- Licensing: MIT. Full text in /LICENSE. -->
     <Authors>Luca Foglia</Authors>
-    <Copyright>Copyright (C) 2026 Luca Foglia and Recordum contributors</Copyright>
-    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Luca Foglia</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <LangVersion>13</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

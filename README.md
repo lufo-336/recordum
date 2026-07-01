@@ -131,6 +131,6 @@ conventions.
 
 ## License
 
-Recordum is released under the **GNU General Public License v3.0 (or later)** — SPDX
-`GPL-3.0-or-later`. See [`LICENSE`](LICENSE). In short: you may use, study, share, and modify the
-software, but distributed derivatives must remain under the GPL and keep their source available.
+Recordum is released under the **MIT License** — SPDX `MIT`. See [`LICENSE`](LICENSE). You may use,
+copy, modify, and distribute the software freely, provided the copyright notice and permission notice
+are kept; it comes with no warranty.
