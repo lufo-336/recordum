@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Recordum.Core.Models;
-using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Xunit;
@@ -17,15 +16,28 @@ public class AbstinencePeriodRowViewModelTests
     };
 
     [Fact]
-    public void Closed_period_shows_clean_days_and_relapse()
+    public void Closed_period_shows_elapsed_interval_and_relapse()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero));
         var p = Closed(new DateTime(2026, 5, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 5, 12, 0, 0, 0, DateTimeKind.Utc));
         var sut = new AbstinencePeriodRowViewModel(p, new FakeAbstinenceService(), new FakeConfirmationDialog(), clock);
 
         sut.IsCurrent.Should().BeFalse();
-        sut.DurationDisplay.Should().Be(string.Format(Strings.Abstinence_CleanDays, 3)); // 10,11,12 inclusive
+        sut.DurationDisplay.Should().Be("2g 0:00:00"); // 05-10 00:00 → 05-12 00:00 = exactly 2 days elapsed (interval, not a day count)
         sut.RelapsedOnDisplay.Should().NotBeEmpty();
+        sut.SinceDisplay.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void Closed_same_day_period_shows_hms_interval_not_a_day_count()
+    {
+        // A period started and relapsed the same day must read the actual elapsed time,
+        // not "1 clean day" (the old calendar-day count bug).
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 20, 0, 0, TimeSpan.Zero));
+        var p = Closed(new DateTime(2026, 5, 10, 9, 0, 0, DateTimeKind.Utc), new DateTime(2026, 5, 10, 12, 20, 0, DateTimeKind.Utc));
+        var sut = new AbstinencePeriodRowViewModel(p, new FakeAbstinenceService(), new FakeConfirmationDialog(), clock);
+
+        sut.DurationDisplay.Should().Be("3:20:00"); // 3h 20m
     }
 
     [Fact]

@@ -4,13 +4,15 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
 /// <summary>One abstinence period as a Cronologia record. Open period = live clock + "since {date}";
-/// closed period = "{n} clean days" + "Relapsed on {date}". Delete asks confirmation, then removes.</summary>
+/// closed period = the frozen elapsed interval ("2g 6:14:09" / "3:20:00") + "Relapsed on {date}".
+/// Delete asks confirmation, then removes.</summary>
 public sealed partial class AbstinencePeriodRowViewModel : ObservableObject
 {
     private readonly AbstinencePeriod _period;
@@ -35,6 +37,9 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject
         Action<AbstinencePeriodRowViewModel>? onDeleted = null)
     {
         ArgumentNullException.ThrowIfNull(period);
+        ArgumentNullException.ThrowIfNull(abstinence);
+        ArgumentNullException.ThrowIfNull(confirm);
+        ArgumentNullException.ThrowIfNull(clock);
         _period = period;
         _abstinence = abstinence;
         _confirm = confirm;
@@ -53,10 +58,13 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject
         }
         else
         {
-            var end = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(period.EndedAtMs!.Value).UtcDateTime);
-            int cleanDays = end.DayNumber - start.DayNumber + 1; // inclusive; pauses not subtracted (see spec)
+            var startInstant = DateTimeOffset.FromUnixTimeMilliseconds(period.StartedAtMs);
+            var endInstant = DateTimeOffset.FromUnixTimeMilliseconds(period.EndedAtMs!.Value);
+            var end = DateOnly.FromDateTime(endInstant.UtcDateTime);
+            // The frozen elapsed interval (start→relapse), same stopwatch format as the live clock —
+            // a same-day attempt reads "3:20:00", a multi-day one "2g 6:14:09" (not a calendar-day count).
+            DurationDisplay = DurationFormat.FormatStopwatch(endInstant - startInstant);
 #pragma warning disable CA1863 // Ctor not called repeatedly
-            DurationDisplay = string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_CleanDays, cleanDays);
             RelapsedOnDisplay = string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_RelapsedOn, end.ToString("d", CultureInfo.CurrentCulture));
 #pragma warning restore CA1863
             SinceDisplay = $"{start.ToString("d", CultureInfo.CurrentCulture)} → {end.ToString("d", CultureInfo.CurrentCulture)}";

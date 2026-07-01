@@ -178,11 +178,13 @@
                                 </StackPanel>
                                 <!-- delete button: same inline style as CompletionListViewModel delete -->
                                 <Button Grid.Column="2" Command="{Binding DeleteCommand}"
-                                        Width="28" Height="28"
+                                        Width="28" Height="28" Padding="0"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                         Background="Transparent" BorderThickness="0"
                                         ToolTip="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}"
                                         VerticalAlignment="Top">
-                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="14" TextAlignment="Center"/>
                                 </Button>
                             </Grid>
                         </Border>
