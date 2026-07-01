@@ -69,4 +69,16 @@ public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFac
             .OrderBy(p => p.StartedAtMs)
             .ToListAsync(ct).ConfigureAwait(false);
     }
+
+    public async Task DeletePeriodAsync(Guid periodId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+
+        var period = await db.AbstinencePeriods
+            .FirstOrDefaultAsync(p => p.Id == periodId, ct).ConfigureAwait(false);
+        if (period is null) return; // guard: unknown id
+
+        db.AbstinencePeriods.Remove(period);
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
 }

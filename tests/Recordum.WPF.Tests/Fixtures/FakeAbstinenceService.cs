@@ -47,4 +47,10 @@ public sealed class FakeAbstinenceService : IAbstinenceService
 
         return Task.FromResult(result);
     }
+
+    public Task DeletePeriodAsync(Guid periodId, CancellationToken ct = default)
+    {
+        foreach (var list in Periods.Values) list.RemoveAll(p => p.Id == periodId);
+        return Task.CompletedTask;
+    }
 }

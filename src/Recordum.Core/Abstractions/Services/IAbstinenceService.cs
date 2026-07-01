@@ -23,4 +23,8 @@ public interface IAbstinenceService
     Task<IReadOnlyList<AbstinencePeriod>> ListPeriodsAsync(
         Guid habitNodeId, DateOnly from, DateOnly to, CancellationToken ct = default);
 #pragma warning restore CA1716
+
+    /// <summary>Hard-deletes one abstinence period by id. No-op if it does not exist. Deleting the
+    /// open period reverts the derived state to the previous closed period (Relapsed) or NotStarted.</summary>
+    Task DeletePeriodAsync(Guid periodId, CancellationToken ct = default);
 }

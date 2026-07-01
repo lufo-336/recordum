@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -125,5 +126,66 @@ public class AbstinenceServiceTests
 
         var state = await sut.GetStateAsync(habitId);
         state.Status.Should().Be(AbstinenceStatus.Abstaining);
+    }
+
+    [Fact]
+    public async Task DeletePeriod_removes_a_closed_period_from_history()
+    {
+        // Arrange: start, lapse (1 closed), start again (1 open). Delete the closed one.
+        await using var fx = new DbFixture();
+        var habitId = await SeedResistanceHabit(fx);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+
+        await sut.StartAsync(habitId);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
+        await sut.LapseAsync(habitId);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
+        await sut.StartAsync(habitId);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var closed = await db.AbstinencePeriods.AsNoTracking().FirstAsync(p => p.EndedAtMs != null);
+
+        await sut.DeletePeriodAsync(closed.Id);
+
+        var remaining = await db.AbstinencePeriods.AsNoTracking().ToListAsync();
+        remaining.Should().ContainSingle().Which.EndedAtMs.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeletePeriod_of_open_period_reverts_state_to_previous()
+    {
+        // Arrange: closed period, then an open one. Delete the open -> state falls back to Relapsed.
+        await using var fx = new DbFixture();
+        var habitId = await SeedResistanceHabit(fx);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+
+        await sut.StartAsync(habitId);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
+        await sut.LapseAsync(habitId);
+        ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
+        await sut.StartAsync(habitId);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var open = await db.AbstinencePeriods.AsNoTracking().FirstAsync(p => p.EndedAtMs == null);
+
+        await sut.DeletePeriodAsync(open.Id);
+
+        var state = await sut.GetStateAsync(habitId);
+        state.Status.Should().Be(AbstinenceStatus.Relapsed);
+    }
+
+    [Fact]
+    public async Task DeletePeriod_with_unknown_id_is_noop()
+    {
+        await using var fx = new DbFixture();
+        var habitId = await SeedResistanceHabit(fx);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+
+        await sut.StartAsync(habitId);
+
+        await sut.DeletePeriodAsync(Guid.NewGuid()); // does not throw
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.AbstinencePeriods.CountAsync()).Should().Be(1);
     }
 }
