@@ -749,6 +749,21 @@ Details: {0}</value>
   <data name="Abstinence.NotStarted" xml:space="preserve">
     <value>Not started</value>
   </data>
+  <data name="Abstinence.InProgress" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="Abstinence.CleanDays" xml:space="preserve">
+    <value>{0} clean days</value>
+  </data>
+  <data name="Abstinence.Since" xml:space="preserve">
+    <value>since {0}</value>
+  </data>
+  <data name="Abstinence.DeleteConfirm.Title" xml:space="preserve">
+    <value>Delete record</value>
+  </data>
+  <data name="Abstinence.DeleteConfirm.Message" xml:space="preserve">
+    <value>Delete this abstinence record? This cannot be undone.</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

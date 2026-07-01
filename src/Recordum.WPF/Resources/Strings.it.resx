@@ -731,6 +731,21 @@
   <data name="Abstinence.NotStarted" xml:space="preserve">
     <value>Non avviata</value>
   </data>
+  <data name="Abstinence.InProgress" xml:space="preserve">
+    <value>In corso</value>
+  </data>
+  <data name="Abstinence.CleanDays" xml:space="preserve">
+    <value>{0} giorni puliti</value>
+  </data>
+  <data name="Abstinence.Since" xml:space="preserve">
+    <value>dal {0}</value>
+  </data>
+  <data name="Abstinence.DeleteConfirm.Title" xml:space="preserve">
+    <value>Elimina registrazione</value>
+  </data>
+  <data name="Abstinence.DeleteConfirm.Message" xml:space="preserve">
+    <value>Eliminare questa registrazione d'astinenza? L'operazione non è reversibile.</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

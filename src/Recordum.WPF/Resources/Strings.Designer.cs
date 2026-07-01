@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System.Globalization;
 using System.Resources;
 
@@ -275,6 +275,11 @@ public static class Strings
     public static string Abstinence_CleanFor => Get("Abstinence.CleanFor");
     public static string Abstinence_RelapsedOn => Get("Abstinence.RelapsedOn");
     public static string Abstinence_NotStarted => Get("Abstinence.NotStarted");
+    public static string Abstinence_InProgress => Get("Abstinence.InProgress");
+    public static string Abstinence_CleanDays => Get("Abstinence.CleanDays");
+    public static string Abstinence_Since => Get("Abstinence.Since");
+    public static string Abstinence_DeleteConfirm_Title => Get("Abstinence.DeleteConfirm.Title");
+    public static string Abstinence_DeleteConfirm_Message => Get("Abstinence.DeleteConfirm.Message");
     public static string Detail_Streak_Empty => Get("Detail.Streak.Empty");
     public static string Detail_Streak_Days => Get("Detail.Streak.Days");
     public static string Detail_Trend_Range_30d => Get("Detail.Trend.Range.30d");
