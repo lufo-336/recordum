@@ -50,9 +50,16 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
     public bool CanStart => Status != AbstinenceStatus.Abstaining;
     public bool CanLapse  => Status == AbstinenceStatus.Abstaining;
 
-    public string RelapsedOnDisplay => RelapsedOn is { } d
-        ? $"{Strings.Abstinence_RelapsedOn} {d.ToString("d", CultureInfo.CurrentCulture)}"
-        : string.Empty;
+    public string RelapsedOnDisplay
+    {
+        get
+        {
+            if (RelapsedOn is not { } d) return string.Empty;
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+            return string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_RelapsedOn, d.ToString("d", CultureInfo.CurrentCulture));
+#pragma warning restore CA1863
+        }
+    }
 
     // ---- events ----
 
@@ -89,7 +96,7 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
 
     private void RefreshElapsed()
         => ElapsedDisplay = _startedMs is { } s
-            ? DurationFormat.FormatElapsed(Clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(s))
+            ? DurationFormat.FormatStopwatch(Clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(s))
             : string.Empty;
 
     // ---- commands ----

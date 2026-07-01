@@ -9,9 +9,27 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
-public sealed partial class StreakSummaryViewModel(
-    IStreakAggregator aggregator, IAbstinenceService abstinence, IClock clock) : ObservableObject
+public sealed partial class StreakSummaryViewModel : ObservableObject
 {
+    private readonly IStreakAggregator _aggregator;
+    private readonly IAbstinenceService _abstinence;
+    private readonly IClock _clock;
+    private readonly LiveElapsedClock _liveClock;
+
+    public StreakSummaryViewModel(IStreakAggregator aggregator, IAbstinenceService abstinence, IClock clock)
+    {
+        _aggregator = aggregator;
+        _abstinence = abstinence;
+        _clock = clock;
+        _liveClock = new LiveElapsedClock(clock);
+        // Forward each 1s tick to the bound CurrentDisplay so the Detail streak number stays live.
+        _liveClock.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LiveElapsedClock.Display) && _liveClock.Display.Length > 0)
+                CurrentDisplay = _liveClock.Display;
+        };
+    }
+
     [ObservableProperty] private int _currentLength;
     [ObservableProperty] private int _longestLength;
     [ObservableProperty] private DateOnly? _longestStartedOn;
@@ -19,7 +37,7 @@ public sealed partial class StreakSummaryViewModel(
     [ObservableProperty] private bool _isEmpty;
 
     /// <summary>The big "current streak" number, formatted for display. Resistance habits render
-    /// the elapsed time since the last lapse ("2a 41g"); other types show the plain day count.</summary>
+    /// the live elapsed time since the last lapse (e.g. "2g 6:14:09"); other types show the plain day count.</summary>
     [ObservableProperty] private string _currentDisplay = "0";
 
     /// <summary>Caption for the third stat: "Lapses (90d)" for Resistance, "Runs (90d)" otherwise.</summary>
@@ -28,8 +46,8 @@ public sealed partial class StreakSummaryViewModel(
     public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
-        var allTime = await aggregator.GetHistoryAsync(node.Id, DateOnly.FromDateTime(node.CreatedAt), today, ct).ConfigureAwait(true);
+        var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
+        var allTime = await _aggregator.GetHistoryAsync(node.Id, DateOnly.FromDateTime(node.CreatedAt), today, ct).ConfigureAwait(true);
 
         var longest = allTime.OrderByDescending(r => r.Length).FirstOrDefault();
         LongestLength = longest?.Length ?? 0;
@@ -45,19 +63,26 @@ public sealed partial class StreakSummaryViewModel(
         if (node.HabitType == HabitType.Resistance)
         {
             RunsCaption = Strings.Detail_Streak_Lapses90;
-            var state = await abstinence.GetStateAsync(node.Id, ct).ConfigureAwait(true);
-            CurrentDisplay = state.Status == AbstinenceStatus.Abstaining && state.CurrentStartedAtMs is { } sMs
-                ? DurationFormat.FormatElapsed(clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(sMs))
-                : Strings.Abstinence_NotStarted;
+            var state = await _abstinence.GetStateAsync(node.Id, ct).ConfigureAwait(true);
+            if (state.Status == AbstinenceStatus.Abstaining && state.CurrentStartedAtMs is { } sMs)
+            {
+                _liveClock.Start(sMs);          // computes display now + ticks under a running app
+                CurrentDisplay = _liveClock.Display;
+            }
+            else
+            {
+                _liveClock.Stop();
+                CurrentDisplay = Strings.Abstinence_NotStarted;
+            }
 
-            var periods90 = await abstinence.ListPeriodsAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
+            var periods90 = await _abstinence.ListPeriodsAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
             RunsLast90Days = periods90.Count(p => p.EndedAtMs is { } e
                 && DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(e).UtcDateTime) >= today.AddDays(-89));
         }
         else
         {
             RunsCaption = Strings.Detail_Streak_Runs90;
-            var last90 = await aggregator.GetHistoryAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
+            var last90 = await _aggregator.GetHistoryAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
             RunsLast90Days = last90.Count;
             CurrentDisplay = CurrentLength.ToString(CultureInfo.InvariantCulture);
         }

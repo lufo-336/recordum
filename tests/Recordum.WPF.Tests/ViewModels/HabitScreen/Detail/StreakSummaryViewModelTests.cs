@@ -2,6 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
@@ -68,15 +69,15 @@ public sealed class StreakSummaryViewModelTests
     }
 
     [Fact]
-    public async Task Resistance_current_streak_renders_elapsed_format()
+    public async Task Resistance_current_streak_renders_stopwatch_format()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
         var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
         var aggr = new FakeStreakAggregator();
-        aggr.Runs.Add(new StreakRun(today.AddDays(-770), today, 771)); // 771 days = 2y 41d
+        aggr.Runs.Add(new StreakRun(today.AddDays(-770), today, 771)); // 771 days
         var nodeId = Guid.NewGuid();
         var abstinence = new FakeAbstinenceService();
-        // abstaining since exactly 771 days ago → FormatElapsed gives "2a 41g"
+        // abstaining since exactly 771 days ago → FormatStopwatch gives "771g 0:00:00"
         var currentStart = clock.UtcNow.AddDays(-771);
         abstinence.States[nodeId] = new AbstinenceState(AbstinenceStatus.Abstaining, currentStart.ToUnixTimeMilliseconds(), null);
 
@@ -88,7 +89,7 @@ public sealed class StreakSummaryViewModelTests
             CreatedAt = clock.UtcNow.AddYears(-3).UtcDateTime,
         });
 
-        Assert.Equal("2a 41g", vm.CurrentDisplay);
+        Assert.Equal("771g 0:00:00", vm.CurrentDisplay);
     }
 
     [Fact]
@@ -127,9 +128,9 @@ public sealed class StreakSummaryViewModelTests
 
     // ── New TDD tests from brief (Task-7) ──────────────────────────────────
 
-    /// <summary>Brief test (a): Resistance + Abstaining → CurrentDisplay == FormatElapsed; RunsCaption == Lapses90.</summary>
+    /// <summary>Brief test (a): Resistance + Abstaining → CurrentDisplay == FormatStopwatch; RunsCaption == Lapses90.</summary>
     [Fact]
-    public async Task Resistance_abstaining_shows_elapsed_from_current_start()
+    public async Task Resistance_abstaining_shows_stopwatch_from_current_start()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 6, 28, 10, 0, 0, TimeSpan.Zero));
         var nodeId = Guid.NewGuid();
@@ -145,8 +146,8 @@ public sealed class StreakSummaryViewModelTests
             CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
         });
 
-        var expectedElapsed = Recordum.WPF.Formatting.DurationFormat.FormatElapsed(clock.UtcNow - currentStart);
-        vm.CurrentDisplay.Should().Be(expectedElapsed);
+        var expectedDisplay = Recordum.WPF.Formatting.DurationFormat.FormatStopwatch(clock.UtcNow - currentStart);
+        vm.CurrentDisplay.Should().Be(expectedDisplay);
         vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
     }
 
@@ -205,7 +206,7 @@ public sealed class StreakSummaryViewModelTests
     // ── WpfFact tests (require STA thread) ─────────────────────────────────
 
     [WpfFact]
-    public async Task Resistance_current_shows_elapsed_since_last_lapse()
+    public async Task Resistance_current_shows_stopwatch_since_last_lapse()
     {
         var today = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
         var clock = new FakeClock(today);
@@ -221,13 +222,13 @@ public sealed class StreakSummaryViewModelTests
 
         await vm.LoadAsync(node);
 
-        vm.CurrentDisplay.Should().Be("3g 6h");
+        vm.CurrentDisplay.Should().Be("3g 6:00:00");
     }
 
     [WpfFact]
-    public async Task Resistance_abstaining_since_creation_shows_elapsed()
+    public async Task Resistance_abstaining_since_creation_shows_stopwatch()
     {
-        // If the user started abstaining at creation, CurrentDisplay shows elapsed since then.
+        // If the user started abstaining at creation, CurrentDisplay shows stopwatch format.
         var today = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var clock = new FakeClock(today);
         var node = new HabitNode
@@ -241,7 +242,7 @@ public sealed class StreakSummaryViewModelTests
 
         await vm.LoadAsync(node);
 
-        vm.CurrentDisplay.Should().Be("10g 0h");
+        vm.CurrentDisplay.Should().Be("10g 0:00:00");
     }
 
     [WpfFact]
@@ -284,5 +285,37 @@ public sealed class StreakSummaryViewModelTests
 
         vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
         vm.RunsLast90Days.Should().Be(2);
+    }
+
+    // ── Task-6 TDD tests: live stopwatch in Detail summary ─────────────────
+
+    [Fact]
+    public async Task Resistance_current_display_is_stopwatch_from_start()
+    {
+        // clock "now" minus 1 day 6h as the abstinence start -> "1g 6:00:00"
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
+        var startMs = new DateTimeOffset(2026, 5, 20, 6, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var abstinence = new FakeAbstinenceService();
+        var node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance, Name = "x" };
+        abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, startMs, null);
+        var sut = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
+
+        await sut.LoadAsync(node);
+
+        sut.CurrentDisplay.Should().Be("1g 6:00:00");
+    }
+
+    [Fact]
+    public async Task Resistance_not_abstaining_shows_not_started_and_stops_clock()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
+        var abstinence = new FakeAbstinenceService();
+        var node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance, Name = "x" };
+        abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.NotStarted, null, null);
+        var sut = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
+
+        await sut.LoadAsync(node);
+
+        sut.CurrentDisplay.Should().Be(Strings.Abstinence_NotStarted);
     }
 }
