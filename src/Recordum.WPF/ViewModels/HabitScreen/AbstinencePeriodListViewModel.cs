@@ -8,7 +8,7 @@ namespace Recordum.WPF.ViewModels.HabitScreen;
 
 /// <summary>The Cronologia "Registrazioni" list for a Resistance habit: abstinence periods as rows,
 /// open period pinned first then newest-closed first. Deletion (with confirm) removes the row.</summary>
-public sealed partial class AbstinencePeriodListViewModel : ObservableObject
+public sealed partial class AbstinencePeriodListViewModel : ObservableObject, IDisposable
 {
     private readonly IAbstinenceService _abstinence;
     private readonly IConfirmationDialog _confirm;
@@ -35,6 +35,9 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject
         var periods = await _abstinence.ListPeriodsAsync(
             habitNodeId, from ?? DateOnly.MinValue, to ?? DateOnly.MaxValue, ct).ConfigureAwait(true);
 
+        // Dispose the outgoing rows first: the open-period row owns a running DispatcherTimer that the
+        // dispatcher roots, so a bare Clear() would orphan a still-ticking clock on every reload.
+        foreach (var r in Rows) r.Dispose();
         Rows.Clear();
         var ordered = periods
             .OrderByDescending(p => p.EndedAtMs is null)          // open first
@@ -46,5 +49,12 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject
             Rows.Add(row);
         }
         IsEmpty = Rows.Count == 0;
+    }
+
+    /// <summary>Disposes every row (stopping their live clocks) so no timer survives teardown.</summary>
+    public void Dispose()
+    {
+        foreach (var r in Rows) r.Dispose();
+        Rows.Clear();
     }
 }

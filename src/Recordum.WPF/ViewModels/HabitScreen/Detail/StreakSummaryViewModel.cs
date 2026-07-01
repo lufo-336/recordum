@@ -9,7 +9,7 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
-public sealed partial class StreakSummaryViewModel : ObservableObject
+public sealed partial class StreakSummaryViewModel : ObservableObject, IDisposable
 {
     private readonly IStreakAggregator _aggregator;
     private readonly IAbstinenceService _abstinence;
@@ -81,10 +81,14 @@ public sealed partial class StreakSummaryViewModel : ObservableObject
         }
         else
         {
+            _liveClock.Stop(); // a reused VM switching off Resistance must not keep clobbering CurrentDisplay
             RunsCaption = Strings.Detail_Streak_Runs90;
             var last90 = await _aggregator.GetHistoryAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
             RunsLast90Days = last90.Count;
             CurrentDisplay = CurrentLength.ToString(CultureInfo.InvariantCulture);
         }
     }
+
+    /// <summary>Stops the live clock (and detaches its timer) so the Detail teardown leaks nothing.</summary>
+    public void Dispose() => _liveClock.Dispose();
 }

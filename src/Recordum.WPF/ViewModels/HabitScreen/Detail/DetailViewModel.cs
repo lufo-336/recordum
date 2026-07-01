@@ -118,6 +118,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Trend.RangeChanged -= OnTrendRangeChanged;
+        StreakSummary.Dispose(); // stops the abstinence live clock (its DispatcherTimer)
         foreach (var s in _subs) s.Dispose();
         _subs.Clear();
     }

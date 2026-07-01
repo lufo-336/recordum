@@ -112,5 +112,9 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
         catch (OperationCanceledException) { /* superseded by a newer mode/period change */ }
     }
 
-    public void Dispose() => _reloadCts?.Dispose();
+    public void Dispose()
+    {
+        _reloadCts?.Dispose();
+        Periods.Dispose(); // stops any live period-row clock (its DispatcherTimer)
+    }
 }

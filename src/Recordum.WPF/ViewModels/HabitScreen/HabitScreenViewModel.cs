@@ -436,6 +436,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Calendar.SelectedDateChanged -= OnCalendarDateSelected;
+        _periodList.Changed -= OnAbstinenceChanged;
+        if (QuickAdd is AbstinenceQuickAddViewModel ab) ab.Changed -= OnAbstinenceChanged;
         Notes.Dispose();
         Detail.Dispose();
         Records.Dispose();
@@ -575,17 +577,24 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCompletionEvent failed: {ex}"); }
     }
 
-    /// <summary>Abstinence Start/Lapse write no completions so the EventBus never fires; refresh the
-    /// streak summary and calendar markers here instead (CR15 async-void pattern).</summary>
+    /// <summary>Abstinence Start/Lapse/Delete write no completions so the EventBus never fires; refresh
+    /// everything that reads abstinence state here instead (CR15 async-void pattern): the Detail streak
+    /// summary, the calendar markers, the Cronologia records list (so a just-lapsed period stops showing
+    /// "In corso"), and the quick-add itself (so deleting the open period from the list flips it back to
+    /// "Not started" instead of a stale running clock).</summary>
     private async void OnAbstinenceChanged(object? sender, EventArgs e)
     {
         try
         {
             if (Node is null) return;
-            await Task.WhenAll(
+            var reloads = new List<Task>
+            {
                 Detail.LoadAsync(Node, CancellationToken.None),
-                Calendar.JumpAsync())
-                .ConfigureAwait(true);
+                Calendar.JumpAsync(),
+                Records.ReloadAsync(),
+            };
+            if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync());
+            await Task.WhenAll(reloads).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceChanged failed: {ex}"); }
     }

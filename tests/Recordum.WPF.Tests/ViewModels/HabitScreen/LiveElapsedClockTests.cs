@@ -31,4 +31,18 @@ public class LiveElapsedClockTests
 
         sut.Display.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Dispose_clears_the_display_and_is_idempotent()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
+        var sut = new LiveElapsedClock(clock);
+        sut.Start(clock.UtcNowMs);
+
+        sut.Dispose();
+        var second = () => sut.Dispose();
+
+        sut.Display.Should().BeEmpty();
+        second.Should().NotThrow(); // stopping/detaching an already-disposed clock is safe
+    }
 }

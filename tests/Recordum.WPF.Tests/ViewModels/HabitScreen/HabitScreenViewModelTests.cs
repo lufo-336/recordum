@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Web.WebView2.Core;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Services;
 using Recordum.Core.Enums;
@@ -296,6 +297,35 @@ public class HabitScreenViewModelTests
         cellB.NoteCount.Should().Be(2);
         cellB.HasNote.Should().BeTrue();
         cellB.ShowNoteCount.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Lapse_via_quickadd_refreshes_records_so_open_card_is_no_longer_current()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out var abstinence);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "NoSmoke" };
+        // Open period started before the clock's "today" (2026-05-21) so it intersects today's Giorno view.
+        var startMs = new DateTimeOffset(new DateTime(2026, 5, 20, 12, 0, 0, DateTimeKind.Utc), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        abstinence.Periods[id] = new List<AbstinencePeriod>
+        {
+            new() { Id = Guid.NewGuid(), HabitNodeId = id, StartedAtMs = startMs, EndedAtMs = null },
+        };
+        abstinence.States[id] = new AbstinenceState(AbstinenceStatus.Abstaining, startMs, null);
+
+        await sut.LoadAsync(id);
+        await sut.Records.ShowDayAsync(new DateOnly(2026, 5, 21)); // ensure the records list is loaded for today
+
+        var list = (AbstinencePeriodListViewModel)sut.Records.CurrentList;
+        list.Rows.Should().Contain(r => r.IsCurrent); // "In corso" shown after load
+
+        // Lapse through the quick-add: closes the open period + raises Changed → OnAbstinenceChanged → records reload.
+        var quick = (AbstinenceQuickAddViewModel)sut.QuickAdd!;
+        await quick.LapseCommand.ExecuteAsync(null);
+        await Task.Delay(50); // OnAbstinenceChanged is async void
+
+        list = (AbstinencePeriodListViewModel)sut.Records.CurrentList;
+        list.Rows.Any(r => r.IsCurrent).Should().BeFalse(); // the just-lapsed period no longer shows "In corso"
     }
 
     [Fact]

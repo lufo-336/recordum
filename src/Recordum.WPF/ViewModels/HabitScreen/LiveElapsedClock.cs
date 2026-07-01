@@ -7,8 +7,10 @@ namespace Recordum.WPF.ViewModels.HabitScreen;
 
 /// <summary>A live-ticking elapsed clock: given a start instant, exposes a FormatStopwatch string
 /// refreshed every second. Reusable by the quick-add, the detail streak summary, and the open
-/// period row. The DispatcherTimer is created only under a running WPF app (null in headless tests).</summary>
-public sealed partial class LiveElapsedClock : ObservableObject
+/// period row. The DispatcherTimer is created only under a running WPF app (null in headless tests).
+/// A running DispatcherTimer is rooted by the dispatcher, so owners MUST Stop()/Dispose() the clock
+/// when discarded (on reload or teardown) or it keeps ticking and leaks.</summary>
+public sealed partial class LiveElapsedClock : ObservableObject, IDisposable
 {
     private readonly IClock _clock;
     private readonly DispatcherTimer? _timer;
@@ -22,9 +24,11 @@ public sealed partial class LiveElapsedClock : ObservableObject
         if (System.Windows.Application.Current is not null)
         {
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _timer.Tick += (_, _) => Refresh();
+            _timer.Tick += OnTick;
         }
     }
+
+    private void OnTick(object? sender, EventArgs e) => Refresh();
 
     public void Start(long startedAtMs)
     {
@@ -36,6 +40,18 @@ public sealed partial class LiveElapsedClock : ObservableObject
     public void Stop()
     {
         _timer?.Stop();
+        _startedMs = null;
+        Display = string.Empty;
+    }
+
+    /// <summary>Stops the timer and detaches its handler so the clock (and its owner) can be collected.</summary>
+    public void Dispose()
+    {
+        if (_timer is not null)
+        {
+            _timer.Stop();
+            _timer.Tick -= OnTick;
+        }
         _startedMs = null;
         Display = string.Empty;
     }

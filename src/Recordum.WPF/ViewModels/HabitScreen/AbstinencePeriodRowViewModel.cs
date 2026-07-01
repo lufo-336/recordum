@@ -13,7 +13,7 @@ namespace Recordum.WPF.ViewModels.HabitScreen;
 /// <summary>One abstinence period as a Cronologia record. Open period = live clock + "since {date}";
 /// closed period = the frozen elapsed interval ("2g 6:14:09" / "3:20:00") + "Relapsed on {date}".
 /// Delete asks confirmation, then removes.</summary>
-public sealed partial class AbstinencePeriodRowViewModel : ObservableObject
+public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDisposable
 {
     private readonly AbstinencePeriod _period;
     private readonly IAbstinenceService _abstinence;
@@ -82,4 +82,7 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject
         _onDeleted?.Invoke(this);
         Changed?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Stops the (possibly running) live clock so a discarded row can't keep ticking/leaking.</summary>
+    public void Dispose() => Clock.Dispose();
 }
