@@ -32,6 +32,17 @@ public class HabitScreenViewModelTests
         out FakeClock clock,
         out FakeEventBus bus,
         out FakeNoteService noteSvc)
+        => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out bus, out noteSvc, out _);
+
+    private static HabitScreenViewModel CreateSut(
+        out FakeHabitNodeService nodes,
+        out FakeCompletionService completions,
+        out FakeActiveTimerService timers,
+        out FakeMetricDefinitionService metrics,
+        out FakeClock clock,
+        out FakeEventBus bus,
+        out FakeNoteService noteSvc,
+        out FakeAbstinenceService abstinence)
     {
         nodes = new FakeHabitNodeService();
         completions = new FakeCompletionService();
@@ -40,6 +51,7 @@ public class HabitScreenViewModelTests
         clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
         bus = new FakeEventBus();
         noteSvc = new FakeNoteService();
+        abstinence = new FakeAbstinenceService();
         var configs = new FakeHabitConfigService();
         var goals = new FakeGoalService();
         var settings = new FakeAppSettingService();
@@ -52,7 +64,7 @@ public class HabitScreenViewModelTests
             nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            new FakeAbstinenceService(), clock, bus, new FakeWebView2Availability(true), settings, editor,
+            abstinence, clock, bus, new FakeWebView2Availability(true), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService());
     }
 
@@ -236,31 +248,51 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
-    public async Task Markers_resistance_number_hidden_when_one_series()
+    public async Task Markers_resistance_colors_days_from_abstinence_periods_never_numbers()
     {
-        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out _, out var noteSvc);
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out var abstinence);
         var id = Guid.NewGuid();
         nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "NoSmoke", Color = "#3366cc" };
 
-        // Clock is 2026-05-21 → calendar loads May 2026.
-        var dayA = new DateOnly(2026, 5, 10);
-        var dayB = new DateOnly(2026, 5, 12);
-        completions.MagnitudeByHabit[id] = new[]
+        // Clock is 2026-05-21 → calendar loads May 2026. A closed period 2026-05-08..2026-05-12
+        // makes 05-08..05-11 clean days and 05-12 the lapse day.
+        static long Ms(int y, int m, int d) => new DateTimeOffset(new DateTime(y, m, d, 12, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+        abstinence.Periods[id] = new List<AbstinencePeriod>
         {
-            new DailyMagnitude(dayA, 3m),
-            new DailyMagnitude(dayB, 1m),
+            new() { Id = Guid.NewGuid(), HabitNodeId = id, StartedAtMs = Ms(2026, 5, 8), EndedAtMs = Ms(2026, 5, 12) },
+        };
+
+        await sut.LoadAsync(id);
+
+        var cleanDay = sut.Calendar.Cells.Single(c => c.Date == new DateOnly(2026, 5, 10));
+        cleanDay.Number.Should().BeNull(); // Resistance never shows a count
+        cleanDay.TintStep.Should().Be(3);
+
+        var lapseDay = sut.Calendar.Cells.Single(c => c.Date == new DateOnly(2026, 5, 12));
+        lapseDay.Number.Should().BeNull();
+        lapseDay.TintStep.Should().Be(4); // danger, full intensity
+    }
+
+    [Fact]
+    public async Task Markers_resistance_still_shows_note_badges()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out var noteSvc, out var abstinence);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "NoSmoke", Color = "#3366cc" };
+
+        // Clock is 2026-05-21 → calendar loads May 2026. Open period from 05-01 keeps 05-12 a clean day.
+        var dayB = new DateOnly(2026, 5, 12);
+        abstinence.Periods[id] = new List<AbstinencePeriod>
+        {
+            new() { Id = Guid.NewGuid(), HabitNodeId = id, StartedAtMs = new DateTimeOffset(new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds(), EndedAtMs = null },
         };
         noteSvc.Store[Guid.NewGuid()] = new Note { Id = Guid.NewGuid(), HabitNodeId = id, BodyMd = "a", UpdatedAtMs = 1, TargetDate = dayB };
         noteSvc.Store[Guid.NewGuid()] = new Note { Id = Guid.NewGuid(), HabitNodeId = id, BodyMd = "b", UpdatedAtMs = 2, TargetDate = dayB };
 
         await sut.LoadAsync(id);
 
-        var cellA = sut.Calendar.Cells.Single(c => c.Date == dayA);
-        cellA.Number.Should().Be("3");
-        cellA.TintStep.Should().BeGreaterThanOrEqualTo(1);
-
         var cellB = sut.Calendar.Cells.Single(c => c.Date == dayB);
-        cellB.Number.Should().BeNull(); // resistance magnitude == 1 → number hidden
+        cellB.Number.Should().BeNull();
         cellB.NoteCount.Should().Be(2);
         cellB.HasNote.Should().BeTrue();
         cellB.ShowNoteCount.Should().BeTrue();

@@ -688,6 +688,17 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var periods = await _abstinence.ListPeriodsAsync(node.Id, from, to, ct).ConfigureAwait(true);
         var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
 
+        // Notes still belong on Resistance days (diary/quick notes) even though the coloring is now
+        // period-based, so gather note counts for the visible range and merge them into the markers.
+        var noteByDate = new Dictionary<DateOnly, int>();
+        var noteMonthTasks = new List<Task<IReadOnlyList<Recordum.Core.Abstractions.Services.Dtos.DayNoteCount>>>();
+        var lastMonth = new DateOnly(to.Year, to.Month, 1);
+        for (var cursor = new DateOnly(from.Year, from.Month, 1); cursor <= lastMonth; cursor = cursor.AddMonths(1))
+            noteMonthTasks.Add(_noteService.ListNoteCountsInMonthAsync(node.Id, cursor.Year, cursor.Month, ct).AsTask());
+        await Task.WhenAll(noteMonthTasks).ConfigureAwait(true);
+        foreach (var t in noteMonthTasks)
+            foreach (var n in t.Result) noteByDate[n.Date] = n.Count;
+
         // Resolve danger color from the WPF resource dictionary (null in headless/unit-test context).
         const string FallbackDangerHex = "#FFF87171";
         var dangerHex = FallbackDangerHex;
@@ -696,7 +707,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (dangerBrush is not null)
             dangerHex = dangerBrush.Color.ToString(System.Globalization.CultureInfo.InvariantCulture); // #AARRGGBB e.g. "#FFF87171"
 
-        if (periods.Count == 0) return new CalendarMarkers([]);
+        if (periods.Count == 0)
+        {
+            // No abstinence periods yet, but note-only days must still render their badges.
+            var noteOnly = noteByDate
+                .Where(kv => kv.Value > 0)
+                .Select(kv => new CalendarDayMarker(kv.Key, TintStep: 0, Number: null, NoteCount: kv.Value))
+                .ToList();
+            return new CalendarMarkers(noteOnly);
+        }
 
         // Convert raw timestamps to date-range tuples.
         var dayPeriods = periods
@@ -711,9 +730,21 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var firstStart = dayPeriods.Min(p => p.StartDay);
 
         var days = new List<CalendarDayMarker>();
+        foreach (var noteDate in noteByDate.Keys)
+            if ((noteDate < from || noteDate > to) && noteByDate[noteDate] > 0)
+                days.Add(new CalendarDayMarker(noteDate, TintStep: 0, Number: null, NoteCount: noteByDate[noteDate]));
+
         for (var day = from; day <= to; day = day.AddDays(1))
         {
-            if (day > today) continue; // future days → no marker
+            var noteCount = noteByDate.TryGetValue(day, out var nc) ? nc : 0;
+
+            if (day > today)
+            {
+                // Future days carry no period coloring, but a note badge may still exist.
+                if (noteCount > 0)
+                    days.Add(new CalendarDayMarker(day, TintStep: 0, Number: null, NoteCount: noteCount));
+                continue;
+            }
 
             // Find the first period that contains this day.
             bool found = false;
@@ -727,17 +758,22 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             {
                 if (hit.IsClosed && day == hit.EndDay)
                     // Lapse day: end of a closed period → danger color, full intensity.
-                    days.Add(new CalendarDayMarker(day, TintStep: 4, Number: null, NoteCount: 0, TintColorHex: dangerHex));
+                    days.Add(new CalendarDayMarker(day, TintStep: 4, Number: null, NoteCount: noteCount, TintColorHex: dangerHex));
                 else
                     // Clean day: inside a period (not the lapse end) → habit color (null = CompletedColorHex).
-                    days.Add(new CalendarDayMarker(day, TintStep: 3, Number: null, NoteCount: 0, TintColorHex: null));
+                    days.Add(new CalendarDayMarker(day, TintStep: 3, Number: null, NoteCount: noteCount, TintColorHex: null));
             }
             else if (day > firstStart)
             {
                 // Gap day: after the first period started, not covered by any period → faint danger tint.
-                days.Add(new CalendarDayMarker(day, TintStep: 1, Number: null, NoteCount: 0, TintColorHex: dangerHex));
+                days.Add(new CalendarDayMarker(day, TintStep: 1, Number: null, NoteCount: noteCount, TintColorHex: dangerHex));
             }
-            // else: before the first period's start → no marker (cell stays blank).
+            else if (noteCount > 0)
+            {
+                // Before the first period's start: no coloring, but a note badge still shows.
+                days.Add(new CalendarDayMarker(day, TintStep: 0, Number: null, NoteCount: noteCount));
+            }
+            // else: before the first period's start with no note → no marker (cell stays blank).
         }
 
         return new CalendarMarkers(days);
