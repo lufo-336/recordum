@@ -16,6 +16,19 @@ using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
+/// <summary>
+/// The habit screen: the workspace shell shown for one selected <see cref="Node"/>. It owns the set of
+/// toggleable side-by-side columns (Panoramica, Diario, Cronologia, Dettaglio, Note, Configura),
+/// tracks which are open (persisted per user), and gates each by applicability to the current subject
+/// type (e.g. Diario is journal-only; Panoramica is groups-only) and by focus mode.
+///
+/// <para>It also composes the child column ViewModels (calendar, quick-add, records list, detail,
+/// notes, editor) and keeps them coherent: when a mutation happens — a completion (via the
+/// <see cref="Recordum.Plugins.Contracts.Hosting.IEventBus"/>) or an abstinence Start/Lapse/Delete
+/// (which writes no completion, so it signals through a <c>Changed</c> event) — the relevant columns
+/// are reloaded. This class is large by design (it is the coordinator); the real work lives in the
+/// child ViewModels it owns.</para>
+/// </summary>
 public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 {
     private readonly IHabitNodeService _nodes;

@@ -6,6 +6,24 @@ using Recordum.Core.Models;
 
 namespace Recordum.Data.Services.Aggregators;
 
+/// <summary>
+/// The core streak engine: turns a habit's completion history into a list of <see cref="StreakRun"/>s.
+/// It is "scheduling-aware" because a missed day only breaks a streak when the habit was actually
+/// scheduled that day (via <see cref="IScheduleEvaluator"/>).
+///
+/// <para>The behavior is composed from three orthogonal strategies, each resolved from keyed DI so a
+/// habit's config selects the right one without any <c>switch</c> here:</para>
+/// <list type="bullet">
+///   <item><b>streak mode</b> — how a day "counts" (Daily / Weekly / Occurrences / Both).</item>
+///   <item><b>recovery policy</b> — what a miss does (None breaks immediately; GraceDay tolerates one;
+///   Manual waits for the user; Retroactive lets a late completion heal the gap).</item>
+/// </list>
+///
+/// <para>Two things sit outside that matrix: <b>pauses</b> (<see cref="IStreakPauseService"/>) freeze a
+/// run — paused days are neither clean nor a break — and <b>abstinence</b> (Resistance habits), whose
+/// semantics are inverted (a "completion" is a relapse), so it short-circuits to
+/// <c>ComputeAbstinenceAsync</c>, which reads the <c>abstinence_period</c> rows directly.</para>
+/// </summary>
 public sealed class SchedulingAwareStreakAggregator(
     IHabitNodeService nodes,
     IHabitConfigService configs,

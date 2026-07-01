@@ -6,6 +6,15 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
+/// <summary>
+/// Base for the per-type "quick add" panels shown in the Cronologia column — the fast path for
+/// recording against the currently-selected <see cref="Node"/> on <see cref="CompletionDate"/>.
+/// Each habit type has its own subclass (action tap, counter, measured series, abstinence
+/// Inizio/Ricaduta, journal); the host picks the right one from the habit type and binds it via a
+/// template selector. Subclasses implement <see cref="SaveAsync"/> and raise
+/// <see cref="CompletionSaved"/> so the screen can refresh. Shared here: the target node, the date,
+/// and the saving/error state.
+/// </summary>
 public abstract partial class QuickAddViewModelBase : ObservableObject
 {
     protected ICompletionService Completions { get; }
