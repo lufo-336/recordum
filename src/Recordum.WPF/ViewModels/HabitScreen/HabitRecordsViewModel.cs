@@ -9,7 +9,8 @@ namespace Recordum.WPF.ViewModels.HabitScreen;
 public enum EntriesRecordsMode { Giorno, Periodo }
 
 /// <summary>Incapsula il pannello "Registrazioni" della colonna Cronologia: modalità (Giorno/Periodo),
-/// filtro periodo e la <see cref="CompletionListViewModel"/> interna. Tiene il concern fuori dalla
+/// filtro periodo e la <see cref="CompletionListViewModel"/> interna per habit normali, oppure la
+/// <see cref="AbstinencePeriodListViewModel"/> per habit di tipo Resistance. Tiene il concern fuori dalla
 /// già-grande HabitScreenViewModel.</summary>
 public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposable
 {
@@ -17,26 +18,42 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     private Guid? _nodeId;
     private DateOnly? _calendarDay;
     private CancellationTokenSource? _reloadCts;
+    private bool _isResistance;
 
     public CompletionListViewModel Records { get; }
+    public AbstinencePeriodListViewModel Periods { get; }
+
+    /// <summary>The list currently active: <see cref="AbstinencePeriodListViewModel"/> for Resistance
+    /// habits, <see cref="CompletionListViewModel"/> for all others. Bound to the ContentControl in XAML.</summary>
+    public object CurrentList => _isResistance ? Periods : Records;
+
+    /// <summary>True when the active list has no rows (drives the empty-state TextBlock visibility).</summary>
+    public bool IsEmpty => _isResistance ? Periods.IsEmpty : Records.Rows.Count == 0;
 
     [ObservableProperty] private EntriesRecordsMode _mode = EntriesRecordsMode.Giorno;
     [ObservableProperty] private EntriesPeriod _selectedPeriod = EntriesPeriod.Mese;
     [ObservableProperty] private DateOnly? _customFrom;
     [ObservableProperty] private DateOnly? _customTo;
 
-    public HabitRecordsViewModel(CompletionListViewModel records, IClock clock)
+    public HabitRecordsViewModel(CompletionListViewModel records, AbstinencePeriodListViewModel periods, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(records);
+        ArgumentNullException.ThrowIfNull(periods);
         ArgumentNullException.ThrowIfNull(clock);
         Records = records;
+        Periods = periods;
         _clock = clock;
+        // Keep IsEmpty in sync when the period list changes (rows added/removed via delete).
+        periods.Changed += (_, _) => OnPropertyChanged(nameof(IsEmpty));
     }
 
-    public void SetContext(Guid nodeId, bool isJournal)
+    public void SetContext(Guid nodeId, bool isJournal, bool isResistance = false)
     {
         _nodeId = nodeId;
         Records.IsJournal = isJournal;
+        _isResistance = isResistance;
+        OnPropertyChanged(nameof(CurrentList));
+        OnPropertyChanged(nameof(IsEmpty));
     }
 
     /// <summary>Registra il giorno scelto sul calendario; ricarica la lista solo se si è in modalità Giorno.</summary>
@@ -44,7 +61,11 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     {
         _calendarDay = date;
         if (Mode == EntriesRecordsMode.Giorno && _nodeId is { } id)
-            await Records.LoadDayAsync(id, date, ct).ConfigureAwait(true);
+        {
+            if (_isResistance) await Periods.LoadDayAsync(id, date, ct).ConfigureAwait(true);
+            else await Records.LoadDayAsync(id, date, ct).ConfigureAwait(true);
+        }
+        OnPropertyChanged(nameof(IsEmpty));
     }
 
     /// <summary>Carica i completamenti del periodo selezionato (today da IClock, fuso locale).</summary>
@@ -54,7 +75,9 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
         var today = DateOnly.FromDateTime(
             TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone));
         var (from, to) = EntriesPeriodRange.Resolve(SelectedPeriod, today, CustomFrom, CustomTo);
-        await Records.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);
+        if (_isResistance) await Periods.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);
+        else await Records.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);
+        OnPropertyChanged(nameof(IsEmpty));
     }
 
     /// <summary>Rilancia la modalità corrente (usato dopo un completamento).</summary>

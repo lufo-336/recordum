@@ -29,6 +29,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IHabitConfigService _configs;
     private readonly IClock _clock;
     private readonly IAppSettingService _appSettings;
+    private readonly AbstinencePeriodListViewModel _periodList;
     private readonly List<IDisposable> _subscriptions = [];
 
     // ---- column workspace state (nav-model) ----
@@ -379,12 +380,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IAppSettingService appSettings,
         HabitEditorViewModel editor,
         IHabitTreeQueryService tree,
-        IDiaryService diary)
+        IDiaryService diary,
+        IConfirmationDialog confirmationDialog)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(tree);
         ArgumentNullException.ThrowIfNull(diary);
+        ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(timers);
@@ -411,7 +414,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Editor = editor;
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
-        Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), clock);
+        _periodList = new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock);
+        _periodList.Changed += OnAbstinenceChanged;
+        Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), _periodList, clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, abstinence, clock, events);
@@ -500,7 +505,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
         DayNote.SetContext(node.Id, node.HabitType == HabitType.Journal);
-        Records.SetContext(node.Id, node.HabitType == HabitType.Journal);
+        Records.SetContext(node.Id, node.HabitType == HabitType.Journal, isResistance: node.HabitType == HabitType.Resistance);
         if (Calendar.SelectedDate is { } sel)
         {
             Notes.SetCalendarDay(sel);

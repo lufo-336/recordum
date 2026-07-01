@@ -12,9 +12,11 @@ public class HabitRecordsViewModelTests
     private static (HabitRecordsViewModel sut, FakeCompletionService cs, Guid habit) Build(DateTimeOffset now)
     {
         var cs = new FakeCompletionService();
+        var clock = new FakeClock(now);
         var habit = Guid.NewGuid();
         var list = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
-        var sut = new HabitRecordsViewModel(list, new FakeClock(now));
+        var periods = new AbstinencePeriodListViewModel(new FakeAbstinenceService(), new FakeConfirmationDialog(), clock);
+        var sut = new HabitRecordsViewModel(list, periods, clock);
         sut.SetContext(habit, isJournal: false);
         return (sut, cs, habit);
     }
@@ -87,5 +89,29 @@ public class HabitRecordsViewModelTests
         sut.Mode = EntriesRecordsMode.Giorno;   // torna al giorno memorizzato (1 riga)
         sut.Records.Rows.Should().ContainSingle();
         sut.Records.Rows[0].CompletedAt.Day.Should().Be(17);
+    }
+
+    [Fact]
+    public async Task Resistance_context_routes_records_to_period_list()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 30, 12, 0, 0, TimeSpan.Zero));
+        var habit = Guid.NewGuid();
+        var abstinence = new FakeAbstinenceService();
+        abstinence.Periods[habit] = new List<AbstinencePeriod>
+        {
+            new() { Id = Guid.NewGuid(), HabitNodeId = habit,
+                    StartedAtMs = new DateTimeOffset(new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc), TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                    EndedAtMs = null },
+        };
+        var periods = new AbstinencePeriodListViewModel(abstinence, new FakeConfirmationDialog(), clock);
+        var cs = new FakeCompletionService();
+        var completions = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
+        var sut = new HabitRecordsViewModel(completions, periods, clock);
+
+        sut.SetContext(habit, isJournal: false, isResistance: true);
+        await sut.ApplyPeriodAsync();
+
+        sut.CurrentList.Should().BeSameAs(periods);
+        periods.Rows.Should().ContainSingle();
     }
 }

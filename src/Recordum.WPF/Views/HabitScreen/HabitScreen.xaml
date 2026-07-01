@@ -120,6 +120,77 @@
             </Border>
         </DataTemplate>
 
+        <!-- Cronologia Registrazioni for Resistance habits: abstinence periods as rows.
+             Accent left bar = open period; Danger left bar = closed/relapsed period.
+             Resource substitutions vs brief: InvBoolToVisible (not InverseBoolToVisible),
+             inline button style (no IconButton key in this codebase), FontSize.Body (exists in Tokens.xaml). -->
+        <DataTemplate DataType="{x:Type vm:AbstinencePeriodListViewModel}">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
+                                BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}"
+                                Background="{DynamicResource Brush.Surface}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- left bar: accent (open period) / danger (closed/relapsed) -->
+                                <Border Grid.Column="0" CornerRadius="2" Margin="0,0,10,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource Brush.Danger}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+                                <StackPanel Grid.Column="1">
+                                    <!-- in-progress badge (open period only) -->
+                                    <TextBlock Text="{x:Static res:Strings.Abstinence_InProgress}"
+                                               FontSize="{StaticResource FontSize.Small}"
+                                               Foreground="{DynamicResource Brush.Accent}"
+                                               Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVisible}}"/>
+                                    <!-- live clock (open period) -->
+                                    <TextBlock Text="{Binding Clock.Display}" FontFamily="Consolas"
+                                               FontSize="{StaticResource FontSize.Heading}"
+                                               Foreground="{DynamicResource Brush.Text}"
+                                               Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVisible}}"/>
+                                    <!-- clean-days count (closed period) -->
+                                    <TextBlock Text="{Binding DurationDisplay}"
+                                               FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Brush.Text}"
+                                               Visibility="{Binding IsCurrent, Converter={StaticResource InvBoolToVisible}}"/>
+                                    <!-- date range (both open and closed) -->
+                                    <TextBlock Text="{Binding SinceDisplay}"
+                                               FontSize="{StaticResource FontSize.Small}"
+                                               Foreground="{DynamicResource Brush.TextMuted}"/>
+                                    <!-- relapse date (closed period only) -->
+                                    <TextBlock Text="{Binding RelapsedOnDisplay}"
+                                               FontSize="{StaticResource FontSize.Small}"
+                                               Foreground="{DynamicResource Brush.Danger}"
+                                               Visibility="{Binding IsCurrent, Converter={StaticResource InvBoolToVisible}}"/>
+                                </StackPanel>
+                                <!-- delete button: same inline style as CompletionListViewModel delete -->
+                                <Button Grid.Column="2" Command="{Binding DeleteCommand}"
+                                        Width="28" Height="28"
+                                        Background="Transparent" BorderThickness="0"
+                                        ToolTip="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}"
+                                        VerticalAlignment="Top">
+                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DataTemplate>
+
         <DataTemplate x:Key="ActionQuickAddTemplate" DataType="{x:Type qa:ActionQuickAddViewModel}">
             <StackPanel Margin="12" Orientation="Vertical">
                 <Grid Margin="0,0,0,8">
@@ -1104,8 +1175,8 @@
                                             <TextBlock Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}"
                                                        Foreground="{DynamicResource Brush.TextMuted}"
                                                        FontSize="{StaticResource FontSize.Small}"
-                                                       Visibility="{Binding Records.Records.Rows.Count, Converter={StaticResource ZeroToVisible}}"/>
-                                            <ContentControl Content="{Binding Records.Records}"/>
+                                                       Visibility="{Binding Records.IsEmpty, Converter={StaticResource BoolToVisible}}"/>
+                                            <ContentControl Content="{Binding Records.CurrentList}"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </ScrollViewer>
