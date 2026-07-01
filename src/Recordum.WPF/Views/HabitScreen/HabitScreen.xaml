@@ -699,7 +699,7 @@
                     <Border Padding="12"
                             BorderThickness="0,0,0,1"
                             BorderBrush="{DynamicResource Brush.Border}"
-                            Visibility="{Binding IsHabit, Converter={StaticResource BoolToVisible}}">
+                            Visibility="{Binding ShowCompletionCharts, Converter={StaticResource BoolToVisible}}">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
                                 <Button Content="{x:Static res:Strings.Detail_Trend_Range_30d}"
@@ -719,7 +719,7 @@
                         </StackPanel>
                     </Border>
                     <Border Padding="12"
-                            Visibility="{Binding IsHabit, Converter={StaticResource BoolToVisible}}">
+                            Visibility="{Binding ShowCompletionCharts, Converter={StaticResource BoolToVisible}}">
                         <StackPanel>
                             <TextBlock Text="{x:Static res:Strings.Detail_Hourly_Title}"
                                        Foreground="{DynamicResource Brush.TextMuted}"

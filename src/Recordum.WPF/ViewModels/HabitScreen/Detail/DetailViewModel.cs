@@ -19,6 +19,10 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isGroup;
     [ObservableProperty] private bool _isHabit;
 
+    /// <summary>Completion-based charts (trend + hourly distribution) don't apply to Resistance
+    /// abstinence habits (no completions), so they're hidden for them.</summary>
+    [ObservableProperty] private bool _showCompletionCharts;
+
     public GoalProgressCardViewModel Goal { get; }
     public YearHeatmapViewModel YearHeatmap { get; }
     public StreakSummaryViewModel StreakSummary { get; }
@@ -44,7 +48,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         _goals = goals;
         _configs = configs;
         Goal = new GoalProgressCardViewModel(goals, completions, clock);
-        YearHeatmap = new YearHeatmapViewModel(completions, metrics, ramp, clock);
+        YearHeatmap = new YearHeatmapViewModel(completions, metrics, ramp, abstinence, clock);
         StreakSummary = new StreakSummaryViewModel(streaks, abstinence, clock);
         StreakTimeline = new StreakTimelineViewModel(streaks, clock);
         Trend = new TrendChartViewModel(trend, clock);
@@ -65,6 +69,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         Node = node;
         IsGroup = node.NodeType == NodeType.Group;
         IsHabit = node.NodeType == NodeType.Habit;
+        ShowCompletionCharts = IsHabit && node.HabitType != HabitType.Resistance;
         if (IsGroup)
         {
             await Goal.LoadAsync(node, ct).ConfigureAwait(true);
