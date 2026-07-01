@@ -148,7 +148,7 @@ Dettagli su scheduling, streak modes, recovery, goals, notifications: vedi `Reco
 
 ### Fase 4 — Stabilizzazione → Desktop v1.0 (corrente)
 
-**Branch**: `fase-4-polish` (creato 2026-05-29 da `milestone-3.10b-backup-restore`).
+**Branch**: il lavoro di Fase 4 è stato svolto su `fase-4-polish` (creato 2026-05-29 da `milestone-3.10b-backup-restore`) e **consolidato in `main` il 2026-07-01** per la pubblicazione su GitHub — cronologia completa preservata, tag di backup locale `archive/full-history-2026-07-01`. Da qui in poi: **feature-branch → merge in `main`** (l'hook `guard-main.js` blocca i commit/push diretti su `main` nelle sessioni Claude Code).
 
 **Decisione (freeze 2026-06-16)**: nessuna nuova fase finché il desktop non è una **v1.0 funzionante e gradevole**. Asticella v1.0 = *core solido + UX gradevole + esplorazione dati funzionante* (vedi spec `docs/superpowers/specs/2026-06-19-roadmap-revision-design.md`). **Niente nuove feature.**
 
