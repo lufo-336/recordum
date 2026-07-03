@@ -58,6 +58,9 @@ public sealed class ExportQueryService(
         var fromUtc = new DateTimeOffset(request.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         var toUtc = new DateTimeOffset(request.To.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
+        var metricNames = (await metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
+            .ToDictionary(m => m.Id, m => m.Name);
+
         var completionRows = request.Layout.Completions
             ? (await completions.ListByHabitAsync(node.Id, fromUtc, toUtc, take: null, ct).ConfigureAwait(false))
                 .Select(c =>
@@ -71,7 +74,7 @@ public sealed class ExportQueryService(
                     return new ExportCompletionRow(
                         new DateTimeOffset(DateTime.SpecifyKind(c.CompletedAt, DateTimeKind.Utc), TimeSpan.Zero),
                         value,
-                        null,
+                        primaryValue is null ? null : metricNames.GetValueOrDefault(primaryValue.MetricDefinitionId),
                         c.IsRetroactive);
                 })
                 .ToList()
