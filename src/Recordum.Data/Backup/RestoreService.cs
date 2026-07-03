@@ -157,12 +157,7 @@ public sealed class RestoreService(
     private async Task<string> GetCurrentSchemaVersionAsync(CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
-        var version = await db.AppSettings
-            .Where(a => a.Key == "schema_version")
-            .Select(a => a.Value)
-            .FirstOrDefaultAsync(ct)
-            .ConfigureAwait(false);
-        return string.IsNullOrWhiteSpace(version) ? FallbackSchemaVersion : version;
+        return await DbSchemaVersion.ReadAsync(db, FallbackSchemaVersion, ct).ConfigureAwait(false);
     }
 
     // CR1: atomically replace the live DB + attachments with the staged copies, keeping the previous

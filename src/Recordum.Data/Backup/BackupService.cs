@@ -22,7 +22,7 @@ public sealed class BackupService(
     IClock clock,
     string appVersion) : IBackupService
 {
-    private const string CurrentSchemaVersion = "2.7";
+    private const string FallbackSchemaVersion = "2.7";
 
     public async Task<BackupResult> CreateAsync(string destinationPath, string passphrase, BackupOptions options, CancellationToken ct = default)
     {
@@ -147,8 +147,9 @@ public sealed class BackupService(
             .Select(m => new PluginManifestSnapshot(m.Id, m.Version, true, false))
             .ToArray();
 
+        var schemaVersion = await DbSchemaVersion.ReadAsync(db, FallbackSchemaVersion, ct).ConfigureAwait(false);
         return new BackupManifest(
-            SchemaVersion: CurrentSchemaVersion,
+            SchemaVersion: schemaVersion,
             AppVersion: appVersion,
             CreatedAtUtc: clock.UtcNow.UtcDateTime,
             Kind: kind,
