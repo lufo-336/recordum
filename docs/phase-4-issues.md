@@ -40,13 +40,13 @@
 ### 0.3 Backup/restore runtime (CR1–CR4 finora solo test-verified)
 - **F0-8 — Dialog "Crea backup" opaco: l'autore non è riuscito a creare un backup** (`verified` 2026-07-03, screenshot + codice). Il bottone Crea si abilita solo con passphrase ≥12 char uguale nei due campi (`BackupDialogViewModel.CanRun`:54-58), ma il dialog non comunica nulla: (a) il **secondo PasswordBox non ha etichetta** (è la conferma — nel layout pare un campo misterioso); (b) **nessun hint sul requisito** dei 12 caratteri; (c) l'indicatore di forza mostra l'**enum grezzo non localizzato** ("None"/"Weak"/"Ok"/"Strong"); (d) il bottone disabilitato non spiega perché. UX da rifare (Onda 3 o insieme al blocco backup di Onda 1/4).
 - *Nota autore collegata*: "il backup delle Impostazioni è differente da quello di sinistra" — due superfici backup con modelli diversi (icona ribbon → dialog manuale `.recbak` con passphrase; Impostazioni → auto-backup DPAPI + history). Concetti realmente diversi ma presentazione incoerente: da unificare/spiegare (stessa onda di F0-8).
-- ◐ Backup manuale → restore su stato pulito: backup creato ✓ (con passphrase 12+, dopo F0-8); anteprima del backup sano OK ("Schema: 2.7" → F0-9); **esito del restore vero e proprio da confermare**.
+- ✓ Backup manuale → restore: backup creato ✓ (con passphrase 12+, dopo F0-8); anteprima OK ("Schema: 2.7" → F0-9); **restore completato con dati identici** (screenshot autore 2026-07-03: heatmap, calendario, registrazioni al loro posto). Round-trip CR1/CR4 verificato a video.
 - ✓ Restore di un `.recbak` **corrotto a metà**: testati sia troncato al 50% sia con 64 byte capovolti nel mezzo (2026-07-03, screenshot) — **entrambi rifiutati** in anteprima, bottone Ripristina disabilitato, dati intatti. Comportamento CR1/CR3 corretto. Ma vedi F0-10 sul messaggio.
 
 **Findings 0.3 (`verified` 2026-07-03, screenshot + codice):**
 - **F0-9 — Il manifest del backup stampa uno schema hardcoded "2.7"** · `BackupService.cs:25` `CurrentSchemaVersion = "2.7"` è una costante mai aggiornata: un backup creato oggi da un DB a schema **2.12** viene etichettato 2.7 (l'anteprima lo mostra). Il guard CR2 lato restore legge la versione corrente dal DB reale, ma il **writer** no → l'etichetta è sempre falsa e il confronto "backup più nuovo dell'app" non potrà mai scattare correttamente. Fix: leggere `schema_version` dall'AppSetting al momento del backup (come fa `RestoreService.GetCurrentSchemaVersionAsync`). Gravità **media-alta** (integrità metadati, futuro-proofing).
 - **F0-10 — Errore restore mostrato come codice grezzo** · il dialog mostra "invalid_passphrase" in grigio semi-illeggibile: è `ErrorMessage = ex.Code` (raw, non localizzato) invece del messaggio; e per un file corrotto è anche fuorviante (AES-GCM non distingue passphrase errata da file danneggiato — il messaggio giusto è "passphrase errata **o file danneggiato**", che infatti esiste già in `AesGcmBackupCipher.cs:119` ma non arriva alla UI). Stessa famiglia UX di F0-8.
-- ☐ Restore di un backup con `schema_version` più recente: rifiutato con messaggio chiaro (CR2).
+- ~ Restore di un backup con `schema_version` più recente (CR2): **non testabile a video finché F0-9** (lo stamp hardcoded 2.7 rende impossibile produrre un backup "più nuovo" reale); il guard resta coperto dagli unit test `SchemaVersionGuardTests`. Ritestare a video dopo il fix F0-9.
 - ☐ Auto-backup scheduler: scatta secondo `backup.auto.*`, riga in backup history.
 - ☐ Passphrase opt-in (Argon2id): transizione DPAPI→passphrase e riavvio.
 
@@ -64,7 +64,11 @@
 - ☐ CR13 durate visibili in Cronologia · CR20 date corrette in BackupDialog · CR22 31 dic presente nella year-heatmap · CR5 State valore-0/1-based nel calendario.
 
 ### 0.5 Perf
-- ☐ Home <500ms su dataset realistico (misura: log startup o stopwatch; annotare numero habit/completion del dataset).
+- ✓ Home <500ms: `HomeTreeBudgetTests.GetHomeTreeAsync_p95_under_300ms_on_seeded_dataset` **verde sulla VM** (2026-07-03) — p95 <300ms, dentro il budget. *Nota*: misura data-layer; il render WPF non è strumentato (nessuno Stopwatch nel codice UI) — a percezione l'app è reattiva; strumentare solo se in Onda 4 emergono lentezze su macchine più deboli.
+
+### 0.3-residuo (deferiti con motivo)
+- ~ **Auto-backup scheduler**: scatta ogni `frequency_days=7` — non osservabile in sessione; verificabile guardando lo storico backup in Impostazioni tra qualche giorno d'uso. Coperto da unit test (`BackupSchedulerHost`).
+- ~ **Passphrase opt-in DPAPI→passphrase**: transizione one-shot che ri-cifra il DB — rischiosa da provare a metà sessione di verifica; da testare a parte (con backup fresco in mano) prima dell'Onda 4.
 
 **Esito sessione**: da compilare — ogni voce spuntata con stato; findings nuovi triati sotto.
 
