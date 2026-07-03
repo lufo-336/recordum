@@ -63,6 +63,11 @@
 - ☐ Color Picker v2: anello selezione (F1), ramp tonale (F2), contagocce schermo (F3), preferiti cap 12 (F4).
 - ☐ CR13 durate visibili in Cronologia · CR20 date corrette in BackupDialog · CR22 31 dic presente nella year-heatmap · CR5 State valore-0/1-based nel calendario.
 
+**Esito 0.4 (2026-07-03, screenshot autore)** — sweep sostanzialmente **promosso**: context menu ✓ (pannello arrotondato, niente Aero, submenu chevron), tooltip ✓, sash colonne ✓ ("sembra ok"), Color Picker v2 ✓ (HSV + ramp Tonalità + Preferiti/+Aggiungi + hex + contagocce tutti presenti), tab strip ✓ (pin + X), brand mark ✓, scrollbar ✓. CR22 plausibile (heatmap arriva al bordo destro). Findings nuovi:
+- **F0-11 — Tab Configura: enum grezzi in inglese e layout scheletrico** (`verified`, screenshot). I due ComboBox in testa mostrano i valori raw "Habit"/"Action" (NodeType/HabitType non localizzati né presentati); attorno c'è il vuoto — la riga type/color fluttua su fondo nero con doppia label "Configura". Da incrociare con il pilastro "builder/editor per-tipo" dell'Onda 2 (stessa superficie).
+- **F0-12 — da confermare: banda bianca sulla testata Home** (screenshot col tooltip "Grafici"): l'intera fascia alta (titolo "Recordum", tab Attive/Archiviate/Cestino, +Nuova) appare **bianca** mentre righe e resto restano scuri — mix di temi? Chiedere all'autore se aveva cambiato tema o cosa ha preceduto lo screenshot.
+- **F0-13 — da confermare: "Registrazioni: nessuna registrazione in questo giorno" su un giorno completato** (Camminata, 7/3 verde a calendario, seeder ha una completion alle 7-9): la lista Registrazioni risulta vuota per il giorno selezionato malgrado il giorno sia segnato fatto. Se confermato è un bug della lista records per le action (e CR13 resta non verificabile finché la lista è vuota).
+
 ### 0.5 Perf
 - ✓ Home <500ms: `HomeTreeBudgetTests.GetHomeTreeAsync_p95_under_300ms_on_seeded_dataset` **verde sulla VM** (2026-07-03) — p95 <300ms, dentro il budget. *Nota*: misura data-layer; il render WPF non è strumentato (nessuno Stopwatch nel codice UI) — a percezione l'app è reattiva; strumentare solo se in Onda 4 emergono lentezze su macchine più deboli.
 
