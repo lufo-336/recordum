@@ -26,7 +26,7 @@
 | **Action** | **streak** (`×12`) · fatto-oggi ✓ · nessuna | quadretti pieni/vuoti | ✓ **Segna come fatto** (toggle) · streak · % ultimi 30g · fascia oraria abituale | invariata |
 | **Counter** | **totale oggi** (`22 pg`, con unità) · streak · nessuna | mini-barre altezza-valore (vs max periodo) | **+ Registra** (focus sul modulo) · totale oggi · progresso goal se attivo | §3 |
 | **Resistance** | **cronometro vivo** (`20g 4:12`) · giorni puliti · nessuna | banda continua con strappi alle ricadute | **cronometro grande** (`LiveElapsedClock`) · Inizio/Ricaduta · tentativi (90g) | invariata (U9/U9.1) |
-| **Journal** | **oggi ✓/—** · voci questa settimana · nessuna | punti (giorno con voce/nota) | gesto primario configurabile: **Scrivi la voce di oggi** *oppure* **+ Nota veloce (con foto)** — il template lo imposta (food diary → nota veloce) | editor diario / nota veloce (+ foto da Onda 1b) |
+| **Journal** | **oggi ✓/—** · voci questa settimana · nessuna | punti (giorno con voce/nota) | gesto primario configurabile: **Scrivi la voce di oggi** *oppure* **+ Nota veloce (con foto)** — il template lo pre-imposta (food diary → nota veloce) **e l'utente lo cambia in Configura** (principio "template = composizione salvata": nessuna capability solo-template) | editor diario / nota veloce (+ foto da Onda 1b) |
 | **State** | **valore di oggi** (label scala, es. `Bene`) · media 7g · nessuna | celle colorate dal valore scala (ramp) | slider rapido di oggi · ultimo valore registrato | invariata (slider U3) |
 
 Gruppi: invariati (nessuna fascia/striscia per-tipo; fuori scope).

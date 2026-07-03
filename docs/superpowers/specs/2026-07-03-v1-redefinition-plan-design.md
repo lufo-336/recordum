@@ -12,6 +12,7 @@
 - **Linguaggio visivo attuale consolidato, non ridiscusso.** Palatino + flat scuro + chrome custom + famiglia popup con ombra: il lavoro estetico è portarlo *ovunque* con un audit sistematico, non reinventarlo.
 - **Scope irrinunciabile v1.0** (tutto selezionato dall'autore): casi d'uso template rifiniti (U6/U7/U8/U10), chart/esplorazione dati funzionanti, packaging + primo avvio, foto/allegati nelle note, **builder "Crea nuova abitudine" con anteprima sensata e coerente col tipo** ("perché contatore dovrebbe essere un mero checkbox?").
 - **Fuori scope v1.0** (invariato da CLAUDE.md §7): AI/correlazioni, audit accessibilità completo, web, mobile, sync (→ 1.x / fasi successive).
+- **Principio "template = composizione salvata"** (autore, 2026-07-03): un template non è mai un'esperienza esclusiva fornita dal programma — è una composizione che l'utente deve poter ricostruire da solo (e salvare a sua volta come template) con builder + Configura. Se un template fa X, l'utente può fare X. Corollario del principio di progetto "complessità per composizione"; è il razionale di E16 e della matrice di parità (Onda 2.9) e vincola ogni template futuro. Da riportare in CLAUDE.md §2 al merge di questo piano.
 
 ## 2. Struttura: onde trasversali, verifica prima di costruire
 
@@ -112,7 +113,7 @@ Si rilascia quando ogni riga è ✅ (verificata, non presunta).
 | E13 | Suite test Data+WPF verdi al 100% sulla VM | `dotnet test` | ☐ |
 | E14 | Promemoria minimi funzionanti (toast ad app aperta/tray) | Autore a schermo | ☐ |
 | E15 | Verità core abitudini: checklist Onda 2.9 completata, findings chiusi o esplicitamente rimandati | Sessione di misura + triage | ☐ |
-| E16 | Parità template↔builder: ogni template ufficiale ricostruibile a mano (incluse unità/scale custom) | Matrice spuntata (Onda 2.9) | ☐ |
+| E16 | Principio "template = composizione salvata" rispettato: ogni template ufficiale ricostruibile a mano dall'utente (incluse unità/scale custom, gesto journal, nomi serie) e ogni composizione utente salvabile come template | Matrice spuntata (Onda 2.9) | ☐ |
 
 ## 9. Metodo di lavoro (vincolante)
 
