@@ -114,6 +114,8 @@ Si rilascia quando ogni riga è ✅ (verificata, non presunta).
 | E14 | Promemoria minimi funzionanti (toast ad app aperta/tray) | Autore a schermo | ☐ |
 | E15 | Verità core abitudini: checklist Onda 2.9 completata, findings chiusi o esplicitamente rimandati | Sessione di misura + triage | ☐ |
 | E16 | Principio "template = composizione salvata" rispettato: ogni template ufficiale ricostruibile a mano dall'utente (incluse unità/scale custom, gesto journal, nomi serie) e ogni composizione utente salvabile come template | Matrice spuntata (Onda 2.9) | ☐ |
+| E17 | Aggiornamento sicuro: backup automatico pre-migrazione + percorso upgrade 1.0→1.1 testato (auto-update Velopack incluso) | Test + prova su VM pulita | ☐ |
+| E18 | Impostazioni v1.0 complete: ogni comportamento configurabile ha la sua voce (niente setting nascosti), finestra ristrutturata e a norma di linguaggio | Autore a schermo + inventario spuntato | ☐ |
 
 ## 9. Metodo di lavoro (vincolante)
 
@@ -125,6 +127,19 @@ Chi esegue le onde saranno **sessioni future, anche con modelli diversi (Opus/So
 4. **Decisioni di design solo nei brainstorm con l'autore** (Onda 1b, Onda 2, onboarding). Le esecuzioni non improvvisano UX: se il plan non copre un caso, ci si ferma e si chiede.
 5. **Verifica visiva dell'autore** chiude ogni onda (stato `verified-fixed`), non la sola suite verde.
 
+## 9-bis. Candidati post-v1.0 (parcheggio idee, 2026-07-03)
+
+Idee valutate e **volutamente NON in v1.0** (freeze: niente nuove feature prima del rilascio). Parcheggiate qui perché allineate ai principi; da riprendere in 1.x:
+
+1. **Risparmio calcolato per resistance** — costo/unità configurabile (es. €/giorno di sigarette) → la fascia "Oggi" mostra quanto hai risparmiato dal periodo pulito. Dati già presenti (durata periodi); motivazionale fortissimo, zero gamification.
+2. **Contatore "voglia resistita"** — registrare un craving superato senza ricaduta (composizione: counter affiancato alla resistance, gesto rapido nella fascia Oggi). Trasforma i momenti duri in dati.
+3. **Ricerca globale full-text** su note/diario/nomi habit — SQLite **FTS5** (già nel motore), differenziatore vero per chi scrive tanto.
+4. **Quick capture globale** — hotkey di sistema → mini-finestra "registra/nota veloce" senza aprire l'app; col tray dell'Onda 4 è a un passo.
+5. **Digest settimanale "La tua settimana"** — schermata/export che riusa gli aggregatori esistenti (streak, totali, ora abituale); niente AI.
+6. **Routine ordinata (habit stacking)** — vista sequenziale per un gruppo "routine" (spunti i passi uno dopo l'altro); risposta profonda al caso morning-routine, pura composizione.
+7. **Import** da CSV generico / Loop Habit Tracker — riduce l'attrito di chi migra (assenza già dichiarata in FAQ v1.0).
+8. **"Vacation mode" visibile** — la pausa streak esiste già nel motore: farla emergere in UI (oggi è config nascosta).
+
 ## 10. Stato delle onde (aggiornare qui)
 
 | Onda | Nome | Stato | Note |
@@ -133,6 +148,6 @@ Chi esegue le onde saranno **sessioni future, anche con modelli diversi (Opus/So
 | 1a | Chart funzionanti + export | ☐ **prossima** | Scope da Onda 0: F0-1, F0-2, F0-3, F0-4 (chart/pipeline dati) + F0-5, F0-7 (export) + F0-9 (stamp schema backup, fix piccolo). Brainstorm→spec→plan. |
 | 1b | Allegati foto | ☐ | Brainstorm dedicato; unico item che tocca lo schema |
 | 2 | Esperienza per-tipo | ☐ | Brainstorm unico, poi U6 → U10 → U8 → U7 → builder. Include F0-11 (Configura/enum grezzi) e selezione-vs-completato nel calendario (ex F0-13). |
-| 2.9 | **Verità sul core abitudini** | ☐ | **Aggiunta 2026-07-03** (domanda dell'autore: "siamo sicuri che tutto il core funzioni?"). Sessione di misura stile Onda 0, DOPO l'Onda 2: checklist scheduling (weekly ×N, every X days, monthly) / recovery a schermo (GraceDay, Manual, Retroactive) / pause / goal end-to-end / timer (stopwatch, countdown, session + recovery post-crash) / tag e filtri / cascata reset_time / archivia-cestino-ripristina / **rassegna del catalogo template ufficiali uno per uno** / **matrice di parità template↔builder**. Findings triaged nelle onde 3-4. |
+| 2.9 | **Verità sul core abitudini** | ☐ | **Aggiunta 2026-07-03** (domanda dell'autore: "siamo sicuri che tutto il core funzioni?"). Sessione di misura stile Onda 0, DOPO l'Onda 2: checklist scheduling (weekly ×N, every X days, monthly) / recovery a schermo (GraceDay, Manual, Retroactive) / pause / goal end-to-end / timer (stopwatch, countdown, session + recovery post-crash) / tag e filtri / cascata reset_time / archivia-cestino-ripristina / **rassegna del catalogo template ufficiali uno per uno** / **matrice di parità template↔builder** / **gruppi** (goal di gruppo, aggregazione, esperienza a schermo — esclusi dall'Onda 2 e mai verificati) / **confini temporali** (cambio ora legale, cambio timezone, reset_time a cavallo di mezzanotte — motore testato, esperienza mai). |
 | 3 | Coerenza estetica | ☐ | Dopo la 2.9; include U4 + sweep R-* + F0-8/F0-10 (UX dialog backup/restore) + F0-12 (banda bianca testata Home, da riprodurre) |
 | 4 | Preparazione al pubblico | ☐ | Onboarding, packaging, hardening, security review, beta. Include F0-6 (default EN + selettore lingua), **F0-14 motore notifiche minimo** (decisione autore 2026-07-03: toast Windows ad app aperta/tray — oggi le notifiche si configurano ma nessun motore le fa scattare) e i deferiti 0.3-residuo (auto-backup nel tempo, passphrase opt-in) |

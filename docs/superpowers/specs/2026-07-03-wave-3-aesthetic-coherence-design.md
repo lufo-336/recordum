@@ -20,6 +20,7 @@ Codifica il linguaggio visivo — oggi sparso nei 16 mockup `docs/design/*.html`
 9. **Icone**: Lucide line, mai emoji nella chrome (contenuti utente esclusi).
 10. **Motion**: restrained — transizioni brevi e funzionali, niente bounce.
 11. **Ogni voce va verificata in DARK e in LIGHT.** Il toggle tema (e il font switch) devono aggiornare la superficie a caldo.
+12. **Robustezza di resa** (aggiunta 2026-07-03): scaling DPI **125% e 150%** (chrome custom, popup, testo); risoluzione minima **1366×768** (colonne fill-then-scroll, dialog che non sbordano); **tastiera minima** — Tab order sensato nei dialog, Esc chiude, Invio conferma (l'audit accessibilità completo resta 1.x, ma "usabile senza mouse per le operazioni base" è soglia v1.0).
 
 ## 2. Inventario e audit
 

@@ -38,9 +38,28 @@
 - **Firma**: assente in v1.0 → SmartScreen avviserà al primo avvio: nota in README/user guide ("More info → Run anyway"); dopo il rilascio, candidatura a **SignPath OSS** per la firma gratuita (1.x).
 - Automazione: script di release riproducibile (PowerShell in `build/`) — publish → vpk → checksum; CI GitHub Actions opzionale, non bloccante per v1.0.
 
+## 4-bis. Sicurezza degli aggiornamenti (aggiunta 2026-07-03 — E17)
+
+Con l'auto-update, il percorso upgrade è il rischio dati numero uno:
+- **Backup automatico pre-migrazione**: in `ApplicationInitializer`, se ci sono migrazioni EF pendenti → prima si crea un backup (nuovo `BackupKind.PreMigration` — CHECK del `backup_log.kind` da estendere, migrazione additiva minima o riuso `Auto` con nota; deciderlo nel plan) con la chiave automatica (pattern auto-backup DPAPI), poi si migra. Migrazione fallita → messaggio con percorso del backup e istruzioni.
+- **Test del percorso upgrade**: simulare 1.0→1.1 (DB alla versione N, app alla N+1) incluso il giro Velopack su VM pulita; restore di un backup 1.0 su app 1.1 (il DB ripristinato più vecchio deve migrare al riavvio — verificarlo esplicitamente).
+
+## 4-ter. Impostazioni v1.0 complete (richiesta autore 2026-07-03 — E18)
+
+Revisione **funzionale ed estetica** completa di `SettingsWindow` — con le onde 1-4 le voci raddoppiano e la finestra attuale non è mai stata ripensata:
+- **Struttura**: navigazione a categorie (lista a sinistra, pannello a destra — pattern coerente col workspace):
+  - **Aspetto**: tema (dark/light) · font UI (Serif/System) · lingua (English/Italiano, con nota riavvio).
+  - **Comportamento**: resta nel tray alla chiusura · controlla aggiornamenti (+ "Controlla ora") · promemoria (default globali).
+  - **Dati**: auto-backup (attivo/frequenza/retention/percorso) · storico backup · crea/ripristina backup · esporta · **rimuovi dati d'esempio** (visibile solo se presenti) · apri cartella dati / cartella log.
+  - **Informazioni**: versione + changelog · licenze OSS delle dipendenze · link GitHub/segnala un problema · dichiarazione privacy.
+- **Regola di completezza**: ogni comportamento configurabile dell'app ha la sua voce qui — **niente setting raggiungibili solo via DB/AppSetting nascosto** (inventario AppSetting → voce o motivazione dell'esclusione, in appendice al plan).
+- **Estetica**: a norma di `language-checklist.md` (Onda 3) — chrome, underline, empty-state, dual-theme; ogni voce con etichetta + descrizione breve (una riga, tono sobrio).
+
 ## 5. Hardening macchina pulita
 
 Checklist eseguibile (entra nel plan come task di verifica su VM pulita):
+- **Single instance** (aggiunta 2026-07-03): mutex globale — secondo avvio richiama in primo piano la finestra/tray esistente invece di aprire un secondo processo sullo stesso DB (col tray il doppio avvio diventa probabile).
+- **Handler globale eccezioni non gestite** (aggiunta 2026-07-03): `DispatcherUnhandledException` + `AppDomain.UnhandledException` → log completo + dialog cortese ("Recordum ha incontrato un errore — i tuoi dati sono al sicuro; il log è in …") con scelta continua/chiudi. Il crash muto del chart builder (F0-1) non deve poter accadere per nessun percorso futuro.
 - **Floor OS**: Windows 10 1809+ (toast API + WebView2 Evergreen). Dichiarato in README.
 - **WebView2**: detection esistente + banner con link download (verificati); aggiungere il check al primo avvio con messaggio chiaro (l'editor ricco degrada a testo semplice senza runtime — già gestito).
 - **Primo avvio offline**: nessun crash (update check e download WebView2 falliscono silenziosi).
@@ -52,12 +71,13 @@ Checklist eseguibile (entra nel plan come task di verifica su VM pulita):
 - **`docs/USER-GUIDE.md`** (EN, screenshot): installazione (incl. nota SmartScreen), i 5 tipi in breve, creare/registrare, template, backup/restore (passphrase!), export, promemoria e limiti, dove sono i miei dati, FAQ.
 - **Dichiarazione privacy** (sezione della guide + README): dati solo sul dispositivo; DB cifrato (SQLCipher); foto allegate in chiaro nella cartella dati (scelta documentata, Onda 1b); backup `.recbak` cifrato (Argon2id + AES-256-GCM); **zero telemetria, zero rete** salvo update check (disattivabile) e download WebView2.
 - Release notes v1.0.
+- **Assenze dichiarate** (aggiunta 2026-07-03, in FAQ): niente **import** da altri habit tracker in v1.0 (parcheggiato in 1.x — piano §9-bis); all'**uninstall** i dati restano in `%LocalAppData%\Recordum` (scelta deliberata: disinstallare non cancella la tua storia; documentato come rimuoverli).
 
 ## 7. Chiusura del cerchio
 
 - **`/security-review`** sull'intero delta dalla baseline 2026-07-01 (aree calde: motore notifiche, updater Velopack, importer immagini 1b, parser payload template).
 - **Beta**: 1-2 persone esterne su macchine pulite con guida di test = flusso completo (installa → onboarding → crea da builder E da template → registra per giorni → foto → export → backup/restore → update da release fittizia).
-- **Release checklist**: suite verdi; onde 0-3 `verified-fixed`; deferiti 0.3 chiusi (auto-backup osservato nel tempo, passphrase opt-in testata con backup fresco); smoke installer su VM pulita; tag + asset + note.
+- **Release checklist**: suite verdi; onde 0-3 `verified-fixed`; deferiti 0.3 chiusi (auto-backup osservato nel tempo, passphrase opt-in testata con backup fresco); smoke installer su VM pulita; **audit licenze dipendenze** (QuestPDF Community, LiveCharts2, SQLCipher community, Lucide, Toast UI, Velopack — compatibilità con MIT e obblighi di attribution nella pagina Informazioni) + **ricontrollo CVE `e_sqlite3`** (NU1903 oggi declassato: se upstream ha patchato ≥3.50.2, aggiornare e rimuovere il declassamento); percorso upgrade E17 verde; tag + asset + note.
 
 ## 8. Test
 
