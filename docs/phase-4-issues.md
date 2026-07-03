@@ -11,9 +11,16 @@
 > Mappa: `docs/superpowers/specs/2026-07-03-v1-redefinition-plan-design.md`. Nessun fix in questa sessione: solo misurare e registrare. Per ogni voce: **stato** (OK / rotto / brutto) + **sintomo esatto** (cosa, dove, screenshot se serve). I findings nuovi diventano voci del tracker.
 
 ### 0.1 Chart / esplorazione dati (il tracker li dà "rotti" al 2026-06-19 — mai più guardati)
-- ☐ **Dettaglio** per ognuno dei 5 tipi: heatmap anno, streak timeline, andamento, distribuzione oraria, goal progress. Per resistance: heatmap period-aware, andamento/orario nascosti (fix U9.1 — confermare).
-- ☐ **Schermata Charts** (plugin ChartEngine): creare un chart custom nuovo end-to-end (scelta serie → resa → salvataggio → riapertura).
-- ☐ Chart esistenti/salvati si aprono senza errori.
+- ◐ **Dettaglio** (sessione 2026-07-03, DB popolato con `--seed-demo`, screenshot autore): **heatmap anno OK** (Camminata/Diario/Lettura mostrano i dati) · **streak TUTTI a 0** (→ F0-2) · **andamento "Dati insufficienti"** (→ F0-3) · **"Ora del giorno" vuota** (→ F0-4) · resistance (Niente fumo) ancora da guardare.
+- ✗ **Schermata Charts**: creazione chart custom **impossibile e crash** (→ F0-1).
+- ☐ Chart esistenti/salvati si aprono senza errori. *(non testabile finché F0-1 impedisce di crearne)*
+
+**Findings 0.1 (tutti `verified`, riprodotti a schermo il 2026-07-03 — nessun fix in Onda 0, triage → Onda 1a):**
+- **F0-1 — Chart builder incompleto + crash al salvataggio** · gravità **alta** (perdita processo). La riga-serie in `ChartsView.xaml` (~55-66) ha **solo TextBox etichetta + ✕**: nessun picker abitudine/metrica → `ChartSeriesRowViewModel.HabitNodeId` resta `Guid.Empty` → `ChartService.CreateAsync` → SQLite Error 19 `FOREIGN KEY constraint failed` → `DbUpdateException` **non gestita** → **l'app crasha** (stack: `ChartBuilderViewModel.SaveAsync` via `AsyncRelayCommand`). Due difetti distinti: (a) il builder è UI-skeleton — con la sola etichetta non si può costruire un chart valido (viola "nessuna UI placeholder"); (b) nessuna validazione né error handling sul Save — anche a builder completo, un errore DB non deve uccidere il processo.
+- **F0-2 — Streak attuale/record/Cicli sempre 0 nel Dettaglio** · malgrado ~100 giorni di completions (Camminata action 80%, Diario journal, Lettura counter). Ipotesi da triare: config seedate senza `streak_mode` utile, oppure lo `StreakSummaryViewModel`/aggregator non riceve i dati (le completions del seeder sono `IsRetroactive=true` — verificare se incide).
+- **F0-3 — "Andamento" dice "Dati insufficienti"** · anche su counter con metrica valorizzata ogni giorno (Lettura/Pagine, Acqua/Bicchieri). Da triare insieme a F0-2 (stessa pipeline dati del Dettaglio?).
+- **F0-4 — "Distribuzione oraria" vuota** · le completions seedate coprono le 6-23, la sezione non mostra nulla.
+- *Nota estetica collegata (per Onda 1a, non separata)*: la schermata Charts è visivamente skeleton — ListBox default, bottone "✕" testuale non Lucide, nessun empty-state.
 
 ### 0.2 Export (plugin ExportEngine)
 - ☐ Ognuno dei 5 formati (PDF / HTML / Markdown / JSON / CSV) su dati veri; file aperto e letto.
