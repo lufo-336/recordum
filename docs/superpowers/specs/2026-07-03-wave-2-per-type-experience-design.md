@@ -73,7 +73,7 @@ Gruppi: invariati (nessuna fascia/striscia per-tipo; fuori scope).
 3. **2.2 — U10 fascia "Oggi"** + colonne default per-tipo + selezione-vs-completato calendario.
 4. **2.3 — U8 registrazione** (repeatable, somma, chip nominate, unità tempo).
 5. **2.4 — U7 food diary** (journal note-first: gesto primario nota veloce + foto — richiede Onda 1b eseguita; template "Food diary" riallineato).
-6. **2.5 — Builder anteprima a 3 piani** (per ultimo: riusa i componenti costruiti in 2.1–2.3).
+6. **2.5 — Builder anteprima a 3 piani + parità piena** (per ultimo: riusa i componenti costruiti in 2.1–2.3). **Aggiunta 2026-07-03 (decisione autore)**: include la promozione di **R-builderCustomUnit** e **R-builderCustomScale** — dal builder si creano inline unità di misura e scale personalizzate, così tutto ciò che un template contiene è ricostruibile da "crea una nuova abitudine" (exit criterion E16; la verifica è la matrice di parità dell'Onda 2.9).
 
 ## 8. Test
 

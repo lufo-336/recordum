@@ -34,6 +34,10 @@
 - **F0-7 — Nome metrica mai esportato** · colonna `metric` vuota in CSV/MD e `"metric": null` in JSON su tutte le 38 righe di Lettura, che ha la metrica "Pagine" valorizzata (i *valori* ci sono, manca il join col *nome*). `ExportQueryService`/formatter da correggere.
 - **Conferma triage F0-2** · anche l'export di Lettura riporta `current_streak: 0, longest_streak: 0` → il bug streak NON è nella UI del Dettaglio ma nella pipeline condivisa (aggregator/query), visto che Dettaglio ed export leggono gli stessi zeri. (Su Niente fumo invece gli streak sono corretti → il ramo periodi post-U9 funziona, è il ramo completion-based a essere rotto.)
 
+### Addendum 2026-07-03 (sera) — domanda dell'autore sul core abitudini
+- **F0-14 — Le notifiche si configurano ma non scattano mai** (`verified` da ispezione codice): esiste solo la sezione editor (`NotificationsSectionView` + VM, config persistita); **nessun motore** (nessuno scheduler, nessun toast, niente tray). Decisione autore: **motore minimo in v1.0** (toast Windows ad app aperta/in tray) → Onda 4. Feature configurabile-ma-morta = inaccettabile per il rilascio pubblico.
+- **Parità template↔builder** (decisione autore): **piena** — R-builderCustomUnit e R-builderCustomScale **promossi** da "declassate" a scope Onda 2.5 (unità/scale custom create inline dal builder). Verifica: matrice di parità nella nuova **Onda 2.9** ("verità sul core abitudini", vedi piano §10), che copre anche scheduling/recovery/pause/goal/timer/tag/reset-time a schermo + rassegna del catalogo template.
+
 ### 0.L Lingua (segnalazione autore 2026-07-03)
 - **F0-6 — L'app deve potersi presentare completamente in inglese** · Oggi la UI segue la culture dell'OS (resx: VM italiana → tutto in IT); i contenuti del seeder demo sono in italiano. Per la v1.0 pubblica (principio English-first): decidere **default EN + selettore lingua in Impostazioni** (o forzare EN finché non c'è il selettore) e valutare seeder demo in EN. Decisione di design → collocata in Onda 4 (onboarding/primo avvio), ma da tenere presente in ogni stringa nuova da qui in poi.
 

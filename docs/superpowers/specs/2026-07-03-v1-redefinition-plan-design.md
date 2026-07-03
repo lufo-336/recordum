@@ -110,6 +110,9 @@ Si rilascia quando ogni riga è ✅ (verificata, non presunta).
 | E11 | Packaging + install su macchina pulita | Beta tester esterno | ☐ |
 | E12 | `/security-review` finale senza findings alti aperti | Skill + triage | ☐ |
 | E13 | Suite test Data+WPF verdi al 100% sulla VM | `dotnet test` | ☐ |
+| E14 | Promemoria minimi funzionanti (toast ad app aperta/tray) | Autore a schermo | ☐ |
+| E15 | Verità core abitudini: checklist Onda 2.9 completata, findings chiusi o esplicitamente rimandati | Sessione di misura + triage | ☐ |
+| E16 | Parità template↔builder: ogni template ufficiale ricostruibile a mano (incluse unità/scale custom) | Matrice spuntata (Onda 2.9) | ☐ |
 
 ## 9. Metodo di lavoro (vincolante)
 
@@ -129,5 +132,6 @@ Chi esegue le onde saranno **sessioni future, anche con modelli diversi (Opus/So
 | 1a | Chart funzionanti + export | ☐ **prossima** | Scope da Onda 0: F0-1, F0-2, F0-3, F0-4 (chart/pipeline dati) + F0-5, F0-7 (export) + F0-9 (stamp schema backup, fix piccolo). Brainstorm→spec→plan. |
 | 1b | Allegati foto | ☐ | Brainstorm dedicato; unico item che tocca lo schema |
 | 2 | Esperienza per-tipo | ☐ | Brainstorm unico, poi U6 → U10 → U8 → U7 → builder. Include F0-11 (Configura/enum grezzi) e selezione-vs-completato nel calendario (ex F0-13). |
-| 3 | Coerenza estetica | ☐ | Dopo la 2; include U4 + sweep R-* + F0-8/F0-10 (UX dialog backup/restore) + F0-12 (banda bianca testata Home, da riprodurre) |
-| 4 | Preparazione al pubblico | ☐ | Onboarding, packaging, hardening, security review, beta. Include F0-6 (default EN + selettore lingua) e i deferiti 0.3-residuo (auto-backup nel tempo, passphrase opt-in) |
+| 2.9 | **Verità sul core abitudini** | ☐ | **Aggiunta 2026-07-03** (domanda dell'autore: "siamo sicuri che tutto il core funzioni?"). Sessione di misura stile Onda 0, DOPO l'Onda 2: checklist scheduling (weekly ×N, every X days, monthly) / recovery a schermo (GraceDay, Manual, Retroactive) / pause / goal end-to-end / timer (stopwatch, countdown, session + recovery post-crash) / tag e filtri / cascata reset_time / archivia-cestino-ripristina / **rassegna del catalogo template ufficiali uno per uno** / **matrice di parità template↔builder**. Findings triaged nelle onde 3-4. |
+| 3 | Coerenza estetica | ☐ | Dopo la 2.9; include U4 + sweep R-* + F0-8/F0-10 (UX dialog backup/restore) + F0-12 (banda bianca testata Home, da riprodurre) |
+| 4 | Preparazione al pubblico | ☐ | Onboarding, packaging, hardening, security review, beta. Include F0-6 (default EN + selettore lingua), **F0-14 motore notifiche minimo** (decisione autore 2026-07-03: toast Windows ad app aperta/tray — oggi le notifiche si configurano ma nessun motore le fa scattare) e i deferiti 0.3-residuo (auto-backup nel tempo, passphrase opt-in) |
