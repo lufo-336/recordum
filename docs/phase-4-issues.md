@@ -30,12 +30,16 @@
 
 **Findings 0.2 (`verified` 2026-07-03, file su Desktop dell'autore ispezionati):**
 - **F0-5 — Export resistance non period-aware** · CSV = solo header (zero righe); JSON: `completions: []`, `heatmap: []`, `total_completions: 0` (fuorviante — l'abitudine ha 4 periodi/3 ricadute); MD/HTML idem. Solo `current_streak`/`longest_streak` leggono i periodi (CR11). Le **registrazioni** (periodi con inizio/fine) mancano del tutto dall'export: `ExportQueryService` va reso period-aware come heatmap/streak del Dettaglio (Onda 1 o insieme a F0-1..4).
-- *Nota (da confermare con export di un'abitudine ricca)*: MD/HTML sembrano molto scarni (3 righe di summary + note) — capire se è il taglio voluto "summary" o se manca il corpo dati.
+- *Nota superata (export Lettura, 2026-07-03)*: su un'abitudine ricca MD/HTML/CSV/JSON contengono il corpo dati completo (38 completions in tabella) — lo "scarno" di Niente fumo era solo F0-5. Due findings nuovi dall'export ricco:
+- **F0-7 — Nome metrica mai esportato** · colonna `metric` vuota in CSV/MD e `"metric": null` in JSON su tutte le 38 righe di Lettura, che ha la metrica "Pagine" valorizzata (i *valori* ci sono, manca il join col *nome*). `ExportQueryService`/formatter da correggere.
+- **Conferma triage F0-2** · anche l'export di Lettura riporta `current_streak: 0, longest_streak: 0` → il bug streak NON è nella UI del Dettaglio ma nella pipeline condivisa (aggregator/query), visto che Dettaglio ed export leggono gli stessi zeri. (Su Niente fumo invece gli streak sono corretti → il ramo periodi post-U9 funziona, è il ramo completion-based a essere rotto.)
 
 ### 0.L Lingua (segnalazione autore 2026-07-03)
 - **F0-6 — L'app deve potersi presentare completamente in inglese** · Oggi la UI segue la culture dell'OS (resx: VM italiana → tutto in IT); i contenuti del seeder demo sono in italiano. Per la v1.0 pubblica (principio English-first): decidere **default EN + selettore lingua in Impostazioni** (o forzare EN finché non c'è il selettore) e valutare seeder demo in EN. Decisione di design → collocata in Onda 4 (onboarding/primo avvio), ma da tenere presente in ogni stringa nuova da qui in poi.
 
 ### 0.3 Backup/restore runtime (CR1–CR4 finora solo test-verified)
+- **F0-8 — Dialog "Crea backup" opaco: l'autore non è riuscito a creare un backup** (`verified` 2026-07-03, screenshot + codice). Il bottone Crea si abilita solo con passphrase ≥12 char uguale nei due campi (`BackupDialogViewModel.CanRun`:54-58), ma il dialog non comunica nulla: (a) il **secondo PasswordBox non ha etichetta** (è la conferma — nel layout pare un campo misterioso); (b) **nessun hint sul requisito** dei 12 caratteri; (c) l'indicatore di forza mostra l'**enum grezzo non localizzato** ("None"/"Weak"/"Ok"/"Strong"); (d) il bottone disabilitato non spiega perché. UX da rifare (Onda 3 o insieme al blocco backup di Onda 1/4).
+- *Nota autore collegata*: "il backup delle Impostazioni è differente da quello di sinistra" — due superfici backup con modelli diversi (icona ribbon → dialog manuale `.recbak` con passphrase; Impostazioni → auto-backup DPAPI + history). Concetti realmente diversi ma presentazione incoerente: da unificare/spiegare (stessa onda di F0-8).
 - ☐ Backup manuale → restore su stato pulito: dati identici.
 - ☐ Restore di un `.recbak` **corrotto a metà** (troncare il file): l'app deve rifiutare + rollback, DB intatto (CR1).
 - ☐ Restore di un backup con `schema_version` più recente: rifiutato con messaggio chiaro (CR2).
