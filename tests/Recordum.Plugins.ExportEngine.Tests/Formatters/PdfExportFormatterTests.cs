@@ -18,4 +18,16 @@ public sealed class PdfExportFormatterTests
         Assert.Equal((byte)'D', bytes[2]);
         Assert.Equal((byte)'F', bytes[3]);
     }
+
+    [Fact]
+    public void Write_renders_periods_table_for_resistance_habit()
+    {
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        var bytes = new PdfExportFormatter().Write(SampleModel.WithAbstinencePeriods());
+        Assert.NotEmpty(bytes);
+        Assert.Equal((byte)'%', bytes[0]);
+        Assert.Equal((byte)'P', bytes[1]);
+        Assert.Equal((byte)'D', bytes[2]);
+        Assert.Equal((byte)'F', bytes[3]);
+    }
 }

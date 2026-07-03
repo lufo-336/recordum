@@ -27,4 +27,23 @@ public sealed class JsonExportFormatterTests
         Assert.Equal("Run", doc.RootElement.GetProperty("title").GetString());
         Assert.Equal(1, doc.RootElement.GetProperty("habits").GetArrayLength());
     }
+
+    [Fact]
+    public void Write_renders_periods_array_for_resistance_habit()
+    {
+        var bytes = new JsonExportFormatter().Write(SampleModel.WithAbstinencePeriods());
+        using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
+        var periods = doc.RootElement.GetProperty("habits")[0].GetProperty("periods");
+        Assert.Equal(2, periods.GetArrayLength());
+        Assert.Contains(periods.EnumerateArray(), p => p.GetProperty("open").GetBoolean());
+
+        var closed = periods.EnumerateArray().First(p => !p.GetProperty("open").GetBoolean());
+        Assert.Equal("2026-06-13T09:00:00+00:00", closed.GetProperty("started_at").GetString());
+        Assert.Equal("2026-07-01T19:00:00+00:00", closed.GetProperty("ended_at").GetString());
+        Assert.Equal((18 * 86400) + (10 * 3600), closed.GetProperty("duration_seconds").GetInt64());
+
+        var open = periods.EnumerateArray().First(p => p.GetProperty("open").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, open.GetProperty("ended_at").ValueKind);
+        Assert.Equal(4 * 3600 + 30 * 60, open.GetProperty("duration_seconds").GetInt64());
+    }
 }

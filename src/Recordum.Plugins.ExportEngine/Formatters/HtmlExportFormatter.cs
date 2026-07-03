@@ -44,6 +44,17 @@ public sealed class HtmlExportFormatter : ExportFormatterBase
                 sb.Append("</table>");
             }
 
+            if (h.Periods.Count > 0)
+            {
+                sb.Append("<table><tr><th>Started</th><th>Ended</th><th>Duration</th><th>Outcome</th></tr>");
+                foreach (var p in h.Periods)
+                    sb.Append("<tr><td>").Append(p.StartedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
+                      .Append("</td><td>").Append(p.EndedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "")
+                      .Append("</td><td>").Append(FormatPeriodDuration(p.Duration))
+                      .Append("</td><td>").Append(p.IsOpen ? "open" : "relapsed").Append("</td></tr>");
+                sb.Append("</table>");
+            }
+
             if (h.Notes.Count > 0)
             {
                 sb.Append("<h3>Notes</h3><ul>");

@@ -33,6 +33,17 @@ public sealed class MarkdownExportFormatter : ExportFormatterBase
                 sb.Append('\n');
             }
 
+            if (h.Periods.Count > 0)
+            {
+                sb.Append("| Started | Ended | Duration | Outcome |\n|---|---|---|---|\n");
+                foreach (var p in h.Periods)
+                    sb.Append("| ").Append(p.StartedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
+                      .Append(" | ").Append(p.EndedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "")
+                      .Append(" | ").Append(FormatPeriodDuration(p.Duration))
+                      .Append(" | ").Append(p.IsOpen ? "open" : "relapsed").Append(" |\n");
+                sb.Append('\n');
+            }
+
             if (h.Notes.Count > 0)
             {
                 sb.Append("### Notes\n\n");

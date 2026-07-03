@@ -25,6 +25,20 @@ public sealed class CsvExportFormatter : ExportFormatterBase
                   .Append(c.Retroactive ? "true" : "false").Append("\r\n");
             }
         }
+
+        var withPeriods = model.Habits.Where(h => h.Periods.Count > 0).ToList();
+        if (withPeriods.Count > 0)
+        {
+            sb.Append("\r\nhabit,started,ended,duration,outcome\r\n");
+            foreach (var habit in withPeriods)
+                foreach (var p in habit.Periods)
+                    sb.Append(Q(habit.Name)).Append(',')
+                      .Append(p.StartedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)).Append(',')
+                      .Append(p.EndedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "").Append(',')
+                      .Append(FormatPeriodDuration(p.Duration)).Append(',')
+                      .Append(p.IsOpen ? "open" : "relapsed").Append("\r\n");
+        }
+
         return Encoding.UTF8.GetBytes(sb.ToString());
     }
 

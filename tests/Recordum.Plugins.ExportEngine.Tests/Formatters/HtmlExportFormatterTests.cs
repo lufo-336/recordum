@@ -17,4 +17,16 @@ public sealed class HtmlExportFormatterTests
         Assert.Contains("data:image/png;base64,", html, StringComparison.Ordinal);
         Assert.Contains("felt good", html, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Write_renders_periods_table_for_resistance_habit()
+    {
+        var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.WithAbstinencePeriods()));
+        Assert.Contains("<th>Started</th>", html, StringComparison.Ordinal);
+        Assert.Contains("<th>Ended</th>", html, StringComparison.Ordinal);
+        Assert.Contains("<th>Duration</th>", html, StringComparison.Ordinal);
+        Assert.Contains("<th>Outcome</th>", html, StringComparison.Ordinal);
+        Assert.Contains("<td>2026-06-13 09:00</td><td>2026-07-01 19:00</td><td>18.10:00:00</td><td>relapsed</td>", html, StringComparison.Ordinal);
+        Assert.Contains("<td>2026-07-02 08:00</td><td></td><td>0.04:30:00</td><td>open</td>", html, StringComparison.Ordinal);
+    }
 }
