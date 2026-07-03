@@ -6,6 +6,44 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Onda 0 — Verità di base (checklist di verifica, dal piano v1.0 2026-07-03)
+
+> Mappa: `docs/superpowers/specs/2026-07-03-v1-redefinition-plan-design.md`. Nessun fix in questa sessione: solo misurare e registrare. Per ogni voce: **stato** (OK / rotto / brutto) + **sintomo esatto** (cosa, dove, screenshot se serve). I findings nuovi diventano voci del tracker.
+
+### 0.1 Chart / esplorazione dati (il tracker li dà "rotti" al 2026-06-19 — mai più guardati)
+- ☐ **Dettaglio** per ognuno dei 5 tipi: heatmap anno, streak timeline, andamento, distribuzione oraria, goal progress. Per resistance: heatmap period-aware, andamento/orario nascosti (fix U9.1 — confermare).
+- ☐ **Schermata Charts** (plugin ChartEngine): creare un chart custom nuovo end-to-end (scelta serie → resa → salvataggio → riapertura).
+- ☐ Chart esistenti/salvati si aprono senza errori.
+
+### 0.2 Export (plugin ExportEngine)
+- ☐ Ognuno dei 5 formati (PDF / HTML / Markdown / JSON / CSV) su dati veri; file aperto e letto.
+- ☐ Export di un'abitudine resistance (usa i periodi post-U9? il summary CR11 toccava `ExportQueryService`).
+
+### 0.3 Backup/restore runtime (CR1–CR4 finora solo test-verified)
+- ☐ Backup manuale → restore su stato pulito: dati identici.
+- ☐ Restore di un `.recbak` **corrotto a metà** (troncare il file): l'app deve rifiutare + rollback, DB intatto (CR1).
+- ☐ Restore di un backup con `schema_version` più recente: rifiutato con messaggio chiaro (CR2).
+- ☐ Auto-backup scheduler: scatta secondo `backup.auto.*`, riga in backup history.
+- ☐ Passphrase opt-in (Argon2id): transizione DPAPI→passphrase e riavvio.
+
+### 0.4 Sweep visivo accumulato (rese mai ri-verificate a schermo)
+- ☐ Context menu (tasto destro riga habit): pannello flottante arrotondato, hover accento, submenu chevron.
+- ☐ Dropdown ComboBox: ombra + raggio, testo nitido.
+- ☐ ToolTip: raggio 6 + ombra (non rettangolo Aero).
+- ☐ Divisori colonne (sash): hairline a riposo, accento su hover/drag.
+- ☐ Empty-state per-tab (icona + titolo) + CTA "Crea la prima abitudine" solo su Attive.
+- ☐ TabStrip workspace: angoli arrotondati, X Lucide, underline accento.
+- ☐ Brand mark "R" serif in title bar.
+- ☐ Scrollbar: hover/drag scurisce+allarga, min-size thumb.
+- ☐ Scorrimento colonne fill-then-scroll (tante colonne aperte → scroll orizzontale, mai sotto 320px).
+- ☐ Color Picker v2: anello selezione (F1), ramp tonale (F2), contagocce schermo (F3), preferiti cap 12 (F4).
+- ☐ CR13 durate visibili in Cronologia · CR20 date corrette in BackupDialog · CR22 31 dic presente nella year-heatmap · CR5 State valore-0/1-based nel calendario.
+
+### 0.5 Perf
+- ☐ Home <500ms su dataset realistico (misura: log startup o stopwatch; annotare numero habit/completion del dataset).
+
+**Esito sessione**: da compilare — ogni voce spuntata con stato; findings nuovi triati sotto.
+
 ## Stato al 2026-06-28 — sessione VM: WebView2 ripristinato + U3/U1 chiusi a schermo
 
 Sessione **sulla VM** (`WSA-2527-04`), app lanciata e verificata a schermo dall'autore. **Suite verde**: `Recordum.Data.Tests` **356/356** + `Recordum.WPF.Tests` **651/651** (dopo i fix, nessuna regressione). 3 commit di codice (`cb92fed` → `15ae730`) + ADR/test-gate (`a795450`).
