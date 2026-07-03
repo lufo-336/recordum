@@ -42,9 +42,17 @@
 - Punti d'ingresso: Impostazioni → Dati → "Importa da CSV…" (mappa la colonna `habit` su habit esistenti per nome, con risoluzione manuale per i non trovati: crea counter/action o salta) e menu contestuale habit → "Importa registrazioni…" (tutte le righe su quell'habit, colonna `habit` ignorata).
 - **Anteprima obbligatoria** prima di applicare (n righe valide, errori riga-per-riga con motivo, nulla scritto finché non confermi); tutte le righe importate marcate `IsRetroactive = true`; import in transazione (tutto o niente per habit). Limiti: valori→metrica primaria; multi-metrica/serie → 1.x (documentato). Loop Habit Tracker e altri formati → 1.x.
 
+## 5.6 Command palette + quick switcher (aggiunta 2026-07-03, decisione autore "A — entrambi" via mockup)
+
+Il pezzo identitario dell'esperienza simil-Obsidian: una casellina centrale richiamabile ovunque.
+- **Ctrl+O — quick switcher**: fuzzy match sui **nomi habit** (indice FTS di 5.3, o in-memory sui nomi — sono decine, non migliaia) → Invio apre l'habit nel workspace. Frecce per scorrere, Esc chiude.
+- **Ctrl+P — command palette**: stessa finestra in modalità comandi. Nuovo **`ICommandRegistry`** (id, titolo localizzato, categoria, `CanExecute`, azione): vi si registrano i comandi core — nuova abitudine, nuova da template, registra per oggi/ieri (poi apre il quick-add giusto), crea/ripristina backup, esporta, cambia tema, cambia lingua, apri impostazioni, apri ricerca, apri digest, metti in pausa habit corrente… Il registry è un'infrastruttura riusabile (in futuro: plugin che registrano comandi).
+- **UI**: overlay centrale (stile mockup `command-palette.html`), a norma di linguaggio (famiglia popup); highlight dei caratteri matchati; le due scorciatoie mostrate nei tooltip/menu per scopribilità. Scorciatoie fisse in v1.0 (personalizzazione hotkey → 1.x); elencate nella USER-GUIDE (sezione scorciatoie, Onda 4).
+- **Test**: fuzzy matcher (unit), registry (CanExecute/execute), VM palette (filtra/naviga/esegue), switcher end-to-end su fake tree.
+
 ## 6. Ordine di esecuzione (plan separati, scritti a ridosso)
 
-**5.0 migrazione v2.14** → **5.1** resistance pack → **5.2** vacation+routine → **5.3** ricerca+digest → **5.5** import → **5.4** quick capture (per ultimo: riusa più componenti di tutti).
+**5.0 migrazione v2.14** → **5.1** resistance pack → **5.2** vacation+routine → **5.3** ricerca+digest → **5.5** import → **5.4** quick capture → **5.6** palette (per ultima: riusa ricerca, moduli e registra i comandi di tutte le altre).
 
 ## 7. Test
 
@@ -54,4 +62,4 @@
 
 ## 8. Fuori scope (esplicito)
 
-Valute/multi-currency reali (etichetta libera basta); ricerca nelle completions e nei valori; digest mensile/annuale; import multi-metrica/serie e formati terzi (Loop → 1.x); quick capture ad app chiusa (richiede il tray dell'Onda 4 o un servizio — la combinazione arriva gratis dopo la 4); statistiche craving dedicate (il counter è un counter: heatmap/trend già suoi).
+Valute/multi-currency reali (etichetta libera basta); ricerca nelle completions e nei valori; digest mensile/annuale; import multi-metrica/serie e formati terzi (Loop → 1.x); quick capture ad app chiusa (richiede il tray dell'Onda 4 o un servizio — la combinazione arriva gratis dopo la 4); statistiche craving dedicate (il counter è un counter: heatmap/trend già suoi); personalizzazione delle scorciatoie della palette (fisse in v1.0 → 1.x); comandi plugin nella palette (il registry è pronto, l'apertura ai plugin segue il runtime WebView2 futuro).

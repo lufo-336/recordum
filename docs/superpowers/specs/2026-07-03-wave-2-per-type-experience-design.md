@@ -61,7 +61,7 @@ Gruppi: invariati (nessuna fascia/striscia per-tipo; fuori scope).
 
 ## 6. Persistenza — una sola migrazione additiva (schema v2.13)
 
-- **`habit_node.ui_prefs_json TEXT NULL`** — JSON con: cifra chiave scelta, striscia (none/7/14), colonne aperte per-abitudine, gesto primario journal. `NULL` = default del tipo. Presentazione per-nodo (precedente: `pin_scope`); **non** entra in `HabitConfigHistory`; **non** ha provenance (già coperto dal nodo).
+- **`habit_node.ui_prefs_json TEXT NULL`** — JSON con: cifra chiave scelta, striscia (none/7/14), colonne aperte per-abitudine, gesto primario journal. `NULL` = default del tipo. Presentazione per-nodo (precedente: `pin_scope`); **non** entra in `HabitConfigHistory`; **non** ha provenance (già coperto dal nodo). **Governance** (2026-07-03): ogni chiave del JSON va documentata in `docs/ARCHITECTURE.md` (tabella chiave→significato→onda che l'ha introdotta) — il campo non deve diventare una discarica; le onde successive (5: `companion_counter_id`, routine mode) rispettano la stessa regola.
 - **`habit_config.repeatable INTEGER NOT NULL DEFAULT 0`** e **`habit_config.series_labels_json TEXT NULL`** — semantica di registrazione ⇒ **versionate**: colonne mirror in `habit_config_history` + snapshot interceptor aggiornato (NON vanno in `HabitConfigHistoryColumns.Excluded`).
 - **Migrazione data-aware**: habit con almeno una `CompletionValue.SeriesIndex > 0` → `repeatable = 1` (nessun cambio di comportamento per dati esistenti). Bump `schema_version` a `2.13` (+ seed `AppSettingSeed` allineato).
 - Fluent API esplicita per tutto (indici/CHECK dove servono: `repeatable IN (0,1)`).

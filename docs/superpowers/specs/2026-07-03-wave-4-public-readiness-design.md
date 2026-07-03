@@ -70,6 +70,8 @@ Checklist eseguibile (entra nel plan come task di verifica su VM pulita):
 
 - **`docs/USER-GUIDE.md`** (EN, screenshot): installazione (incl. nota SmartScreen), i 5 tipi in breve, creare/registrare, template, backup/restore (passphrase!), export, promemoria e limiti, dove sono i miei dati, FAQ.
 - **Dichiarazione privacy** (sezione della guide + README): dati solo sul dispositivo; DB cifrato (SQLCipher); foto allegate in chiaro nella cartella dati (scelta documentata, Onda 1b); backup `.recbak` cifrato (Argon2id + AES-256-GCM); **zero telemetria, zero rete** salvo update check (disattivabile) e download WebView2.
+- **Posizionamento dati** (aggiunta 2026-07-03, per chi arriva da app "file-over-app" tipo Obsidian): paragrafo esplicito — Recordum sceglie la **cifratura** al posto dei file leggibili; la libertà dei dati passa da **export completi** (JSON/CSV/MD) e backup portabili, non dal filesystem. Promessa diversa, dichiarata, non un difetto scoperto dall'utente.
+- **Sezione scorciatoie** nella USER-GUIDE: Ctrl+O switcher, Ctrl+P palette, hotkey quick capture, Esc/Invio nei dialog.
 - Release notes v1.0.
 - **Assenze dichiarate** (aggiunta 2026-07-03, in FAQ): niente **import** da altri habit tracker in v1.0 (parcheggiato in 1.x — piano §9-bis); all'**uninstall** i dati restano in `%LocalAppData%\Recordum` (scelta deliberata: disinstallare non cancella la tua storia; documentato come rimuoverli).
 
