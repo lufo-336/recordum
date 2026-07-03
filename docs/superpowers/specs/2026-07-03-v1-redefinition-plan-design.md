@@ -125,9 +125,9 @@ Chi esegue le onde saranno **sessioni future, anche con modelli diversi (Opus/So
 
 | Onda | Nome | Stato | Note |
 |---|---|---|---|
-| 0 | Verità di base | ☐ da iniziare | Prossimo passo: preparare la checklist di verifica e la sessione VM con l'autore |
-| 1a | Chart funzionanti | ☐ | Dipende da 0 |
+| 0 | Verità di base | ✅ **completata 2026-07-03** | Sessione VM con l'autore. 13 findings F0-1…F0-13 nel tracker (§"Onda 0"). Solidi: heatmap, calendario, astinenza, backup-sicurezza (CR1/CR3/CR4 a video), perf (p95<300ms). Rotti: chart builder (crash), pipeline streak/andamento/orario, export resistance/nome-metrica. |
+| 1a | Chart funzionanti + export | ☐ **prossima** | Scope da Onda 0: F0-1, F0-2, F0-3, F0-4 (chart/pipeline dati) + F0-5, F0-7 (export) + F0-9 (stamp schema backup, fix piccolo). Brainstorm→spec→plan. |
 | 1b | Allegati foto | ☐ | Brainstorm dedicato; unico item che tocca lo schema |
-| 2 | Esperienza per-tipo | ☐ | Brainstorm unico, poi U6 → U10 → U8 → U7 → builder |
-| 3 | Coerenza estetica | ☐ | Dopo la 2; include U4 + sweep R-* |
-| 4 | Preparazione al pubblico | ☐ | Onboarding, packaging, hardening, security review, beta |
+| 2 | Esperienza per-tipo | ☐ | Brainstorm unico, poi U6 → U10 → U8 → U7 → builder. Include F0-11 (Configura/enum grezzi) e selezione-vs-completato nel calendario (ex F0-13). |
+| 3 | Coerenza estetica | ☐ | Dopo la 2; include U4 + sweep R-* + F0-8/F0-10 (UX dialog backup/restore) + F0-12 (banda bianca testata Home, da riprodurre) |
+| 4 | Preparazione al pubblico | ☐ | Onboarding, packaging, hardening, security review, beta. Include F0-6 (default EN + selettore lingua) e i deferiti 0.3-residuo (auto-backup nel tempo, passphrase opt-in) |
