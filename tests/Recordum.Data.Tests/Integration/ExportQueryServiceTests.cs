@@ -29,7 +29,8 @@ public sealed class ExportQueryServiceTests
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
-        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator());
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence);
     }
 
     [Fact]
@@ -152,6 +153,46 @@ public sealed class ExportQueryServiceTests
         var habit = Assert.Single(model.Habits);
         var row = Assert.Single(habit.Completions);
         Assert.Equal("Pagine", row.Metric);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_resistance_habit_lists_periods_not_completions()
+    {
+        var t0 = new DateTimeOffset(2026, 5, 1, 9, 0, 0, TimeSpan.Zero);
+        var fx = new DbFixture(new FakeClock(t0.AddDays(10)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "Sober" });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = t0.ToUnixTimeMilliseconds(),
+                EndedAtMs = t0.AddDays(3).ToUnixTimeMilliseconds(),
+            });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = t0.AddDays(4).ToUnixTimeMilliseconds(),
+                EndedAtMs = null,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var from = DateOnly.FromDateTime(t0.AddDays(-1).UtcDateTime);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, from, today, new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+
+        var habit = Assert.Single(model.Habits);
+        Assert.Empty(habit.Completions);
+        Assert.Equal(2, habit.Periods.Count);
+        Assert.Contains(habit.Periods, p => p.IsOpen && p.EndedAt is null);
+        Assert.Equal(2, habit.Summary.TotalCompletions);
+        Assert.NotEmpty(habit.Heatmap);
         await fx.DisposeAsync();
     }
 }

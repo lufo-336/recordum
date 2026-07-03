@@ -16,7 +16,8 @@ public sealed class ExportQueryService(
     IGoalService goals,
     IHabitConfigService configs,
     IIntensityRampResolver ramp,
-    IStreakAggregator streaks) : IExportQueryService
+    IStreakAggregator streaks,
+    IAbstinenceService abstinence) : IExportQueryService
 {
     private const int HeatmapCols = 53;
     private const int HeatmapRows = 7;
@@ -58,10 +59,27 @@ public sealed class ExportQueryService(
         var fromUtc = new DateTimeOffset(request.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         var toUtc = new DateTimeOffset(request.To.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
+        var isResistance = node.HabitType == HabitType.Resistance;
+        List<ExportPeriodRow> periodRows = [];
+        if (isResistance)
+        {
+            var periods = await abstinence.ListPeriodsAsync(node.Id, request.From, request.To, ct).ConfigureAwait(false);
+            var now = clock.UtcNow;
+            periodRows = periods
+                .OrderByDescending(p => p.StartedAtMs)
+                .Select(p =>
+                {
+                    var start = DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs);
+                    DateTimeOffset? end = p.EndedAtMs is { } e ? DateTimeOffset.FromUnixTimeMilliseconds(e) : null;
+                    return new ExportPeriodRow(start, end, (end ?? now) - start, end is null);
+                })
+                .ToList();
+        }
+
         var metricNames = (await metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
             .ToDictionary(m => m.Id, m => m.Name);
 
-        var completionRows = request.Layout.Completions
+        var completionRows = (!isResistance && request.Layout.Completions)
             ? (await completions.ListByHabitAsync(node.Id, fromUtc, toUtc, take: null, ct).ConfigureAwait(false))
                 .Select(c =>
                 {
@@ -87,12 +105,13 @@ public sealed class ExportQueryService(
             : [];
 
         var summary = await BuildSummaryAsync(node, request, ct).ConfigureAwait(false);
+        if (isResistance) summary = summary with { TotalCompletions = periodRows.Count };
         var heatmap = request.Layout.Heatmap
             ? await BuildHeatmapAsync(node, ct).ConfigureAwait(false)
             : new List<ExportHeatmapCell>();
 
         return new ExportHabitModel(node.Id, node.Name, node.HabitType?.ToString() ?? "", node.Color,
-            summary, completionRows, noteRows, heatmap);
+            summary, completionRows, noteRows, heatmap) { Periods = periodRows };
     }
 
     private async Task<ExportSummary> BuildSummaryAsync(HabitNode node, ExportRequest request, CancellationToken ct)
@@ -122,6 +141,28 @@ public sealed class ExportQueryService(
         var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
         var mondayOfTodayWeek = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
         var anchor = mondayOfTodayWeek.AddDays(-(HeatmapCols - 1) * HeatmapRows);
+
+        if (node.HabitType == HabitType.Resistance)
+        {
+            var periods = await abstinence.ListPeriodsAsync(node.Id, anchor, today, ct).ConfigureAwait(false);
+            var clean = new HashSet<DateOnly>();
+            foreach (var p in periods)
+            {
+                var s = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime);
+                var e = p.EndedAtMs is { } end
+                    ? DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(end).UtcDateTime)
+                    : today;
+                for (var d = s < anchor ? anchor : s; d <= (e > today ? today : e); d = d.AddDays(1)) clean.Add(d);
+            }
+            var resistanceCells = new List<ExportHeatmapCell>();
+            for (int i = 0; i < HeatmapCols * HeatmapRows; i++)
+            {
+                var d = anchor.AddDays(i);
+                if (d > today) continue;
+                if (clean.Contains(d)) resistanceCells.Add(new ExportHeatmapCell(i / HeatmapRows, i % HeatmapRows, 4));
+            }
+            return resistanceCells;
+        }
 
         Dictionary<DateOnly, decimal> values;
         if (node.HabitType is HabitType.Counter or HabitType.Resistance or HabitType.State)
