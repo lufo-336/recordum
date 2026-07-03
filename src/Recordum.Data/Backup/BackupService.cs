@@ -22,6 +22,7 @@ public sealed class BackupService(
     IClock clock,
     string appVersion) : IBackupService
 {
+    // Fallback only; the real value is read from AppSettings at manifest-build time (see DbSchemaVersion).
     private const string FallbackSchemaVersion = "2.7";
 
     public async Task<BackupResult> CreateAsync(string destinationPath, string passphrase, BackupOptions options, CancellationToken ct = default)
