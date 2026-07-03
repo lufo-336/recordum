@@ -192,7 +192,38 @@ public sealed class ExportQueryServiceTests
         Assert.Equal(2, habit.Periods.Count);
         Assert.Contains(habit.Periods, p => p.IsOpen && p.EndedAt is null);
         Assert.Equal(2, habit.Summary.TotalCompletions);
-        Assert.NotEmpty(habit.Heatmap);
+        // Closed period May 1-4: clean days are May 1-3 (3 days) — May 4 is the relapse day, excluded.
+        // Open period May 5 onward: clean through "today" (May 11) inclusive — 7 days. Total: 10.
+        Assert.Equal(10, habit.Heatmap.Count);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_resistance_heatmap_excludes_relapse_day_same_day_period_yields_no_clean_cell()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 5, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "Sober" });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                EndedAtMs = new DateTimeOffset(2026, 5, 1, 20, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId,
+            new DateOnly(2026, 4, 1), new DateOnly(2026, 5, 5), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+
+        // Started and relapsed on the same calendar day: zero clean days, so zero heatmap cells —
+        // an off-by-one that counts the relapse day as clean would emit exactly 1 cell here.
+        var habit = Assert.Single(model.Habits);
+        Assert.Empty(habit.Heatmap);
         await fx.DisposeAsync();
     }
 }

@@ -149,10 +149,13 @@ public sealed class ExportQueryService(
             foreach (var p in periods)
             {
                 var s = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime);
+                var isOpen = p.EndedAtMs is null;
                 var e = p.EndedAtMs is { } end
                     ? DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(end).UtcDateTime)
                     : today;
-                for (var d = s < anchor ? anchor : s; d <= (e > today ? today : e); d = d.AddDays(1)) clean.Add(d);
+                // Closed period: the relapse end-day is NOT a clean day (mirrors YearHeatmapViewModel.LoadAbstinenceAsync / Cronologia calendar).
+                var lastClean = isOpen ? e : e.AddDays(-1);
+                for (var d = s < anchor ? anchor : s; d <= lastClean && d <= today; d = d.AddDays(1)) clean.Add(d);
             }
             var resistanceCells = new List<ExportHeatmapCell>();
             for (int i = 0; i < HeatmapCols * HeatmapRows; i++)
