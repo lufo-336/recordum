@@ -22,9 +22,18 @@
 - **F0-4 — "Distribuzione oraria" vuota** · le completions seedate coprono le 6-23, la sezione non mostra nulla.
 - *Nota estetica collegata (per Onda 1a, non separata)*: la schermata Charts è visivamente skeleton — ListBox default, bottone "✕" testuale non Lucide, nessun empty-state.
 
+- **Esito 0.1 resistance (2026-07-03, screenshot autore)**: **OK sostanziale** — heatmap period-aware ✓ (giorni puliti in colore habit, gap ricadute), cronometro vivo ✓ ("20g 0:03:23"), Ricadute (90gg)=3 ✓, andamento/orario nascosti ✓ (fix U9.1 confermati a schermo). **Note minori**: (a) la barra rossa spessa segmentata sotto le stat (streak timeline dai periodi) è funzionale ma visivamente grezza — nessuna label/legenda; (b) "Nessun goal attivo — Impostane uno" mostrato anche su resistance: il goal ha senso per l'astinenza? da decidere in Onda 2; (c) incoerenza conteggio: Dettaglio "20g" (tempo trascorso) vs export `current_streak: 21` (giorni di calendario inclusivi) — convenzione da unificare.
+
 ### 0.2 Export (plugin ExportEngine)
-- ☐ Ognuno dei 5 formati (PDF / HTML / Markdown / JSON / CSV) su dati veri; file aperto e letto.
-- ☐ Export di un'abitudine resistance (usa i periodi post-U9? il summary CR11 toccava `ExportQueryService`).
+- ◐ Ognuno dei 5 formati (PDF / HTML / Markdown / JSON / CSV) su dati veri; file aperto e letto. *(2026-07-03: provati i 5 formati su "Niente fumo" → tutti prodotti e ben formati, MA vedi F0-5; da riprovare su un'abitudine ricca, es. Lettura, per giudicare il contenuto)*
+- ✗ Export di un'abitudine resistance (→ F0-5).
+
+**Findings 0.2 (`verified` 2026-07-03, file su Desktop dell'autore ispezionati):**
+- **F0-5 — Export resistance non period-aware** · CSV = solo header (zero righe); JSON: `completions: []`, `heatmap: []`, `total_completions: 0` (fuorviante — l'abitudine ha 4 periodi/3 ricadute); MD/HTML idem. Solo `current_streak`/`longest_streak` leggono i periodi (CR11). Le **registrazioni** (periodi con inizio/fine) mancano del tutto dall'export: `ExportQueryService` va reso period-aware come heatmap/streak del Dettaglio (Onda 1 o insieme a F0-1..4).
+- *Nota (da confermare con export di un'abitudine ricca)*: MD/HTML sembrano molto scarni (3 righe di summary + note) — capire se è il taglio voluto "summary" o se manca il corpo dati.
+
+### 0.L Lingua (segnalazione autore 2026-07-03)
+- **F0-6 — L'app deve potersi presentare completamente in inglese** · Oggi la UI segue la culture dell'OS (resx: VM italiana → tutto in IT); i contenuti del seeder demo sono in italiano. Per la v1.0 pubblica (principio English-first): decidere **default EN + selettore lingua in Impostazioni** (o forzare EN finché non c'è il selettore) e valutare seeder demo in EN. Decisione di design → collocata in Onda 4 (onboarding/primo avvio), ma da tenere presente in ogni stringa nuova da qui in poi.
 
 ### 0.3 Backup/restore runtime (CR1–CR4 finora solo test-verified)
 - ☐ Backup manuale → restore su stato pulito: dati identici.
