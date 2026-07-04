@@ -1,5 +1,7 @@
+using System.Windows;
 using System.Windows.Controls;
 using Recordum.Plugins.ChartEngine.Builders;
+using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 
 namespace Recordum.WPF.Controls;
@@ -39,7 +41,14 @@ public partial class HourlyHistogramControl : UserControl
     private void Rebuild()
     {
         if (DataContext is not HourlyHistogramViewModel vm) return;
-        if (vm.MaxCount == 0) { ChartHost.Content = null; return; }
+        if (vm.MaxCount == 0)
+        {
+            ChartHost.Content = null;
+            EmptyText.Text = Strings.Detail_Hourly_Empty;
+            EmptyText.Visibility = Visibility.Visible;
+            return;
+        }
+        EmptyText.Visibility = Visibility.Collapsed;
         var buckets = Array.ConvertAll(vm.Buckets, b => (double)b);
         ChartHost.Content = HourlyChartBuilder.Build(buckets, ThemeProbe.IsDark());
     }

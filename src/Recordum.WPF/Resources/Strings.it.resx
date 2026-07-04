@@ -768,7 +768,7 @@
     <value>Ora del giorno</value>
   </data>
   <data name="Detail.Hourly.Empty" xml:space="preserve">
-    <value>Nessuna registrazione</value>
+    <value>Nessuna registrazione dal vivo nel periodo</value>
   </data>
   <data name="Workspace.Home" xml:space="preserve">
     <value>Home</value>

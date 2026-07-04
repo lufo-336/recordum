@@ -786,7 +786,7 @@ Details: {0}</value>
     <value>Hour of day</value>
   </data>
   <data name="Detail.Hourly.Empty" xml:space="preserve">
-    <value>No recordings</value>
+    <value>No live records in this period</value>
   </data>
   <data name="Workspace.Home" xml:space="preserve">
     <value>Home</value>

@@ -43,4 +43,26 @@ public sealed class HourlyHistogramControlSmokeTests
 
         Assert.NotNull(control.ChartHost.Content);
     }
+
+    [WpfFact]
+    public async Task Shows_empty_text_when_no_live_records_and_hides_once_data_arrives()
+    {
+        var svc = new FakeHourlyDistributionQueryService();
+        var vm = new HourlyHistogramViewModel(svc, new FakeClock());
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action });
+
+        var control = new HourlyHistogramControl { DataContext = vm };
+
+        // No live (non-retroactive) completions in the period: all buckets zero -> empty-state shown, chart hidden.
+        Assert.Equal(Visibility.Visible, control.EmptyText.Visibility);
+        Assert.False(string.IsNullOrWhiteSpace(control.EmptyText.Text));
+        Assert.Null(control.ChartHost.Content);
+
+        // Data arrives (same mutate-in-place idiom as Late_bucket_fill_triggers_rebuild): empty-state hides.
+        vm.Buckets[9] = 4;
+        vm.MaxCount = 4;
+
+        Assert.Equal(Visibility.Collapsed, control.EmptyText.Visibility);
+        Assert.NotNull(control.ChartHost.Content);
+    }
 }
