@@ -48,6 +48,35 @@ public sealed class ChartQueryServiceTests
     }
 
     [Fact]
+    public async Task BuildModel_in_memory_overload_action_habit_no_metric_uses_count_per_bucket()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
+            long Ms(int d) => new DateTimeOffset(2026, 5, d, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            db.Completions.Add(new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(20) });
+            db.Completions.Add(new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 10, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(20) + 1 });
+            db.Completions.Add(new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 21, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(21) });
+            await db.SaveChangesAsync();
+        }
+
+        // Unsaved chart + in-memory series — no chartSvc.CreateAsync, no Charts table involved.
+        var chart = new Chart { Name = "Preview", ChartType = "bar", ConfigJson = new ChartConfig(Range: "30d", Bucket: "daily").ToJson() };
+        var series = new List<ChartSeries> { new() { Id = Guid.NewGuid(), HabitNodeId = habitId, Label = "Runs", SortOrder = 0 } };
+
+        var model = await Build(fx).BuildModelAsync(chart, series, isDark: false);
+
+        Assert.Equal(ChartKind.Bar, model.Kind);
+        Assert.Single(model.Series);
+        var pts = model.Series[0].Points;
+        Assert.Equal(2d, pts.Single(p => p.Label == "2026-05-20").Y);
+        Assert.Equal(1d, pts.Single(p => p.Label == "2026-05-21").Y);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task BuildModel_missing_chart_returns_empty_model()
     {
         var fx = new DbFixture();
