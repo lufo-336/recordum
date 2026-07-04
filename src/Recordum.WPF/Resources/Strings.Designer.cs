@@ -305,6 +305,8 @@ public static class Strings
     public static string Charts_Builder_Metric => Get("Charts.Builder.Metric");
     public static string Charts_Builder_Color => Get("Charts.Builder.Color");
     public static string Charts_Builder_Save => Get("Charts.Builder.Save");
+    public static string Charts_Builder_CountMetric => Get("Charts.Builder.CountMetric");
+    public static string Charts_Builder_SaveError => Get("Charts.Builder.SaveError");
     public static string Charts_Kind_Line => Get("Charts.Kind.Line");
     public static string Charts_Kind_Bar => Get("Charts.Kind.Bar");
     public static string Charts_Kind_Area => Get("Charts.Kind.Area");

@@ -255,7 +255,7 @@ public class MainWindowViewModelTests
         var charts = new ChartsWorkspaceViewModel(
             new FakeChartService(), new FakeChartQueryService(),
             new ExtensionPointRegistry(),
-            new ChartBuilderViewModel(new FakeChartService()));
+            new ChartBuilderViewModel(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService()));
         var exportLauncher = new FakeExportDialogLauncher();
         var backupLauncher = new FakeBackupDialogLauncher();
         var backupLog = new FakeBackupLogService();

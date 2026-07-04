@@ -13,7 +13,8 @@ public sealed class ChartsWorkspaceViewModelTests
         var registry = new ExtensionPointRegistry();
         registry.Register(new Recordum.Plugins.Contracts.ExtensionPoints.ExtensionRegistration(
             renderer.PluginId, renderer.PointId, renderer));
-        return new ChartsWorkspaceViewModel(svc, new FakeChartQueryService(), registry, new ChartBuilderViewModel(svc));
+        return new ChartsWorkspaceViewModel(svc, new FakeChartQueryService(), registry,
+            new ChartBuilderViewModel(svc, new FakeHabitTreeQueryService(), new FakeMetricDefinitionService()));
     }
 
     [Fact]

@@ -836,6 +836,12 @@
   <data name="Charts.Builder.Save" xml:space="preserve">
     <value>Salva</value>
   </data>
+  <data name="Charts.Builder.CountMetric" xml:space="preserve">
+    <value>Conteggio</value>
+  </data>
+  <data name="Charts.Builder.SaveError" xml:space="preserve">
+    <value>Impossibile salvare il grafico. Controlla le serie e riprova.</value>
+  </data>
   <data name="Charts.Kind.Line" xml:space="preserve">
     <value>Linea</value>
   </data>

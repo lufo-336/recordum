@@ -23,7 +23,8 @@ public sealed class ChartsWorkspaceE2ETests
         var svc = new FakeChartService();
         var id = Guid.NewGuid();
         svc.Store[id] = new Chart { Id = id, Name = "A", ChartType = "line" };
-        var vm = new ChartsWorkspaceViewModel(svc, new FakeChartQueryService(), registry, new ChartBuilderViewModel(svc));
+        var vm = new ChartsWorkspaceViewModel(svc, new FakeChartQueryService(), registry,
+            new ChartBuilderViewModel(svc, new FakeHabitTreeQueryService(), new FakeMetricDefinitionService()));
 
         await vm.LoadAsync();
         await vm.SelectAsync(vm.Charts[0]);
