@@ -54,8 +54,9 @@ public sealed class SchedulingAwareStreakAggregator(
         if (habitNode.HabitType == HabitType.Resistance)
             return await ComputeAbstinenceAsync(habitNode, fromDate, toDate, ct).ConfigureAwait(false);
 
-        var cfg = await configs.GetAsync(habitNodeId, ct).ConfigureAwait(false);
-        if (cfg is null) return Array.Empty<StreakRun>();
+        // F0-2a: a habit with no config row behaves as a default daily habit instead of having no streaks.
+        var cfg = await configs.GetAsync(habitNodeId, ct).ConfigureAwait(false)
+                  ?? new HabitConfig { HabitNodeId = habitNodeId };
 
         var history = await configs.ListHistoryAsync(habitNodeId, ct).ConfigureAwait(false);
         var timeline = new HabitConfigTimeline(cfg, history);
