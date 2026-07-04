@@ -182,6 +182,21 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task Launch_includes_default_config_with_correct_habit_node_id()
+    {
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Test Habit";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest.Should().NotBeNull();
+        fake.LastRequest!.Config.Should().NotBeNull();
+        fake.LastRequest.Config!.HabitNodeId.Should().Be(fake.LastRequest.Node.Id);
+    }
+
+    [WpfFact]
     public async Task SaveAsTemplate_creates_custom_template_with_roundtrippable_payload()
     {
         var fakeTemplates = new FakeHabitTemplateService();
