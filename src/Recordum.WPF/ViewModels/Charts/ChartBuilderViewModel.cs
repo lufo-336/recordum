@@ -1,17 +1,30 @@
 using System.Collections.ObjectModel;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
+using Recordum.Data.Services.Queries;
 using Recordum.Plugins.Contracts.Charts;
+using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.Charts;
 
-public sealed partial class ChartBuilderViewModel(
-    IChartService charts, IHabitTreeQueryService tree, IMetricDefinitionService metrics) : ObservableObject
+public sealed partial class ChartBuilderViewModel : ObservableObject
 {
+    private readonly IChartService _charts;
+    private readonly IHabitTreeQueryService _tree;
+    private readonly IMetricDefinitionService _metrics;
+    private readonly IChartQueryService _query;
+    private readonly IExtensionPointRegistry _registry;
+
+    // Debounces the live preview: coalesces a burst of edits into a single re-render ~300ms after
+    // the last one. Created only under a running WPF app — null in headless tests, which call
+    // RefreshPreviewAsync directly. A stopped DispatcherTimer is not rooted by the dispatcher.
+    private readonly DispatcherTimer? _previewTimer;
+
     private Guid? _editingId;
 
     [ObservableProperty] private string _name = "";
@@ -19,6 +32,34 @@ public sealed partial class ChartBuilderViewModel(
     [ObservableProperty] private string _range = "90d";
     [ObservableProperty] private string _bucket = "daily";
     [ObservableProperty] private string? _errorMessage;
+
+    /// <summary>The rendered live-preview view (a WPF FrameworkElement in Fase 3), or null when there
+    /// is nothing to preview / the render failed. Consumed by the builder panel's preview pane.</summary>
+    [ObservableProperty] private object? _previewView;
+
+    /// <summary>True when there are no valid series to preview (drives the preview pane's empty state).</summary>
+    [ObservableProperty] private bool _previewEmpty = true;
+
+    public ChartBuilderViewModel(
+        IChartService charts, IHabitTreeQueryService tree, IMetricDefinitionService metrics,
+        IChartQueryService query, IExtensionPointRegistry registry)
+    {
+        _charts = charts;
+        _tree = tree;
+        _metrics = metrics;
+        _query = query;
+        _registry = registry;
+
+        // Dispatcher unavailable in headless unit-test environments (Application.Current is null).
+        if (System.Windows.Application.Current is not null)
+        {
+            _previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+            _previewTimer.Tick += OnPreviewTick;
+        }
+    }
+
+    /// <summary>Theme flag pushed in by the workspace when it opens the builder, so the live preview themes correctly.</summary>
+    public bool IsDarkTheme { get; set; }
 
     public ObservableCollection<ChartSeriesRowViewModel> Series { get; } = [];
     public IReadOnlyList<ChartKind> AvailableKinds { get; } = Enum.GetValues<ChartKind>();
@@ -50,7 +91,7 @@ public sealed partial class ChartBuilderViewModel(
 
     public async ValueTask LoadAsync(Guid chartId, CancellationToken ct = default)
     {
-        var chart = await charts.GetAsync(chartId, ct).ConfigureAwait(true);
+        var chart = await _charts.GetAsync(chartId, ct).ConfigureAwait(true);
         if (chart is null) { LoadNew(); return; }
         await EnsureHabitsAsync(ct).ConfigureAwait(true);
 
@@ -83,12 +124,12 @@ public sealed partial class ChartBuilderViewModel(
     // CA2012 forbids discarding an un-awaited ValueTask.
     private async Task EnsureHabitsAsync(CancellationToken ct)
     {
-        var all = await tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
+        var all = await _tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
         AvailableHabits = all.Where(r => r.HabitType is not null).ToList();
     }
 
     private Task<IReadOnlyList<MetricDefinition>> LoadMetricsAsync(Guid habitNodeId, CancellationToken ct) =>
-        metrics.ListByHabitAsync(habitNodeId, ct).AsTask();
+        _metrics.ListByHabitAsync(habitNodeId, ct).AsTask();
 
     [RelayCommand]
     private void AddSeries()
@@ -105,6 +146,8 @@ public sealed partial class ChartBuilderViewModel(
         Series.Remove(row);
         SaveCommand.NotifyCanExecuteChanged();
         RaiseSeriesChanged();
+        // Removing a row changes the previewed series set, so re-render (removal doesn't fire row.Changed).
+        RaisePreviewRequested();
     }
 
     private void AddRow(ChartSeriesRowViewModel row)
@@ -117,11 +160,61 @@ public sealed partial class ChartBuilderViewModel(
     {
         SaveCommand.NotifyCanExecuteChanged();
         RaiseSeriesChanged();
+        RaisePreviewRequested();
     }
 
     private void RaiseSeriesChanged() => SeriesChanged?.Invoke(this, EventArgs.Empty);
 
     partial void OnNameChanged(string value) => SaveCommand.NotifyCanExecuteChanged();
+    partial void OnSelectedKindChanged(ChartKind value) => RaisePreviewRequested();
+    partial void OnRangeChanged(string value) => RaisePreviewRequested();
+    // Bucket feeds ChartConfig in RefreshPreviewAsync, so a bucket change must re-render too.
+    partial void OnBucketChanged(string value) => RaisePreviewRequested();
+
+    // (Re)starts the debounce: each edit pushes the single pending re-render ~300ms into the future,
+    // so a burst of edits collapses to one refresh. No-op in headless tests (timer is null there).
+    private void RaisePreviewRequested()
+    {
+        if (_previewTimer is null) return;
+        _previewTimer.Stop();
+        _previewTimer.Start();
+    }
+
+    private void OnPreviewTick(object? sender, EventArgs e)
+    {
+        _previewTimer?.Stop();   // one-shot: fire once per debounce window, not repeatedly
+        _ = RefreshPreviewAsync();
+    }
+
+    /// <summary>Rebuilds the live preview from the current (unsaved) form state, without persisting
+    /// anything. Public so tests can invoke it directly, bypassing the debounce timer.</summary>
+    public async Task RefreshPreviewAsync(CancellationToken ct = default)
+    {
+        var rows = Series.Select((r, i) => r.ToChartSeries(i)).Where(s => s is not null).Cast<ChartSeries>().ToList();
+        if (rows.Count == 0)
+        {
+            PreviewView = null;
+            PreviewEmpty = true;
+            return;
+        }
+        PreviewEmpty = false;
+        var chart = new Chart
+        {
+            Name = Name,
+            ChartType = ChartKindParser.ToToken(SelectedKind),
+            ConfigJson = new ChartConfig(Range: Range, Bucket: Bucket).ToJson(),
+        };
+        try
+        {
+            var model = await _query.BuildModelAsync(chart, rows, IsDarkTheme, ct).ConfigureAwait(true);
+            PreviewView = ChartRendererLocator.CreateView(_registry, model);
+        }
+        catch (Exception)
+        {
+            // The preview must never crash the builder; leave PreviewEmpty=false (there WERE rows).
+            PreviewView = null;
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync(CancellationToken ct)
@@ -135,18 +228,18 @@ public sealed partial class ChartBuilderViewModel(
             Guid id;
             if (_editingId is { } existing)
             {
-                await charts.UpdateAsync(existing, c =>
+                await _charts.UpdateAsync(existing, c =>
                 {
                     c.Name = Name;
                     c.ChartType = ChartKindParser.ToToken(SelectedKind);
                     c.ConfigJson = configJson;
                 }, ct).ConfigureAwait(true);
-                await charts.ReplaceSeriesAsync(existing, rows, ct).ConfigureAwait(true);
+                await _charts.ReplaceSeriesAsync(existing, rows, ct).ConfigureAwait(true);
                 id = existing;
             }
             else
             {
-                id = await charts.CreateAsync(new Chart
+                id = await _charts.CreateAsync(new Chart
                 {
                     Name = Name,
                     ChartType = ChartKindParser.ToToken(SelectedKind),

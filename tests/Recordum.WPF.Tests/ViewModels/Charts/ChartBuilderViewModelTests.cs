@@ -3,6 +3,7 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Charts;
+using Recordum.Plugins.ExtensionPoints;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.Charts;
 using Xunit;
@@ -17,7 +18,7 @@ public sealed class ChartBuilderViewModelTests
 
     private static ChartBuilderViewModel BuildVm(
         FakeChartService charts, FakeHabitTreeQueryService tree, FakeMetricDefinitionService metrics) =>
-        new(charts, tree, metrics);
+        new(charts, tree, metrics, new FakeChartQueryService(), new ExtensionPointRegistry());
 
     private static ChartSeriesRowViewModel BuildRow(
         FakeMetricDefinitionService metrics, params HomeTreeRow[] habits) =>
