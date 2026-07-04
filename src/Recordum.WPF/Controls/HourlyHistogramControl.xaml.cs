@@ -6,11 +6,34 @@ namespace Recordum.WPF.Controls;
 
 public partial class HourlyHistogramControl : UserControl
 {
+    private HourlyHistogramViewModel? _vm;
+
     public HourlyHistogramControl()
     {
         InitializeComponent();
-        DataContextChanged += (_, _) => Rebuild();
+        DataContextChanged += (_, _) => { Rehook(); Rebuild(); };
         Loaded += (_, _) => Rebuild();
+        Unloaded += (_, _) => Unhook();
+    }
+
+    private void Rehook()
+    {
+        Unhook();
+        _vm = DataContext as HourlyHistogramViewModel;
+        if (_vm is null) return;
+        _vm.PropertyChanged += OnVmPropertyChanged;
+    }
+
+    private void Unhook()
+    {
+        if (_vm is null) return;
+        _vm.PropertyChanged -= OnVmPropertyChanged;
+        _vm = null;
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(HourlyHistogramViewModel.MaxCount) or nameof(HourlyHistogramViewModel.Buckets)) Rebuild();
     }
 
     private void Rebuild()

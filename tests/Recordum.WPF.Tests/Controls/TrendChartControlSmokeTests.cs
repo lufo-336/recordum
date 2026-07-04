@@ -1,3 +1,4 @@
+using System.Windows;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -20,6 +21,24 @@ public sealed class TrendChartControlSmokeTests
         await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter });
 
         var control = new TrendChartControl { DataContext = vm };
+
+        Assert.NotNull(control.ChartHost.Content);
+    }
+
+    [WpfFact]
+    public void Late_series_fill_triggers_rebuild()
+    {
+        var trend = new FakeTrendQueryService();
+        var vm = new TrendChartViewModel(trend, new FakeClock());
+        var control = new TrendChartControl { DataContext = vm };
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+
+        // VM starts empty (no LoadAsync awaited yet): empty state, ChartHost has no content.
+        Assert.Null(control.ChartHost.Content);
+
+        // Simulate LoadAsync's completion arriving after the control already bound/loaded.
+        vm.Series.Add(new TrendPoint(new DateOnly(2026, 7, 1), 5m, 1));
+        vm.MaxValue = 5m;
 
         Assert.NotNull(control.ChartHost.Content);
     }
