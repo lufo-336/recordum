@@ -510,11 +510,16 @@ public sealed class SchedulingAwareStreakAggregatorTests
             var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
             var aggr = BuildAggregator(fx, configs);
 
-            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 5));
+            // toDate matches "today" (Apr 3) — otherwise Apr 4 reads as a missed scheduled day
+            // (StreakRecovery.None absorbs nothing) and closes the run via the Missed branch,
+            // which hardcodes IsCurrent=false, instead of exercising the still-open/current branch.
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 3));
             var r = Assert.Single(runs);
             Assert.Equal(3, r.Length);
             Assert.Equal(new DateOnly(2026, 4, 1), r.Start);
             Assert.Equal(new DateOnly(2026, 4, 3), r.End);
+            Assert.True(r.IsCurrent);
+            Assert.Null(r.BreakReason);
         }
         finally { await fx.DisposeAsync(); }
     }
