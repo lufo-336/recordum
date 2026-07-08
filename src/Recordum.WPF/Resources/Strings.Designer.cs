@@ -101,6 +101,14 @@ public static class Strings
     public static string Notes_History => Get("Notes.History");
     public static string Notes_History_Back => Get("Notes.History.Back");
     public static string Notes_History_Restore => Get("Notes.History.Restore");
+    public static string Notes_Attachments_Title => Get("Notes.Attachments.Title");
+    public static string Notes_Attachments_Add => Get("Notes.Attachments.Add");
+    public static string Notes_Attachments_Delete => Get("Notes.Attachments.Delete");
+    public static string Notes_Attachments_DeleteConfirm_Title => Get("Notes.Attachments.DeleteConfirm.Title");
+    public static string Notes_Attachments_DeleteConfirm_Message => Get("Notes.Attachments.DeleteConfirm.Message");
+    public static string Notes_Lightbox_Previous => Get("Notes.Lightbox.Previous");
+    public static string Notes_Lightbox_Next => Get("Notes.Lightbox.Next");
+    public static string Notes_Lightbox_Close => Get("Notes.Lightbox.Close");
 
     // Editor / WebView2
     public static string Editor_WebView2_NotAvailable_Title => Get("Editor.WebView2.NotAvailable.Title");

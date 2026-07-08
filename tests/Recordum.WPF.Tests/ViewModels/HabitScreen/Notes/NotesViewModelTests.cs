@@ -13,7 +13,7 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Notes;
 public class NotesViewModelTests
 {
     private static NotesViewModel CreateSut(out FakeNoteService notes, out FakeEventBus bus, out FakeClock clock)
-        => CreateSut(out notes, out bus, out clock, out _, out _);
+        => CreateSut(out notes, out bus, out clock, out _, out _, out _);
 
     private static NotesViewModel CreateSut(
         out FakeNoteService notes,
@@ -21,13 +21,23 @@ public class NotesViewModelTests
         out FakeClock clock,
         out FakeAttachmentService attachments,
         out FakeOpenFileDialog dialog)
+        => CreateSut(out notes, out bus, out clock, out attachments, out dialog, out _);
+
+    private static NotesViewModel CreateSut(
+        out FakeNoteService notes,
+        out FakeEventBus bus,
+        out FakeClock clock,
+        out FakeAttachmentService attachments,
+        out FakeOpenFileDialog dialog,
+        out FakeConfirmationDialog confirm)
     {
         notes = new FakeNoteService();
         bus = new FakeEventBus();
         clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 10, 0, 0, TimeSpan.Zero));
         attachments = new FakeAttachmentService();
         dialog = new FakeOpenFileDialog();
-        return new NotesViewModel(notes, bus, clock, new FakeWebView2Availability(available: true), attachments, dialog);
+        confirm = new FakeConfirmationDialog();
+        return new NotesViewModel(notes, bus, clock, new FakeWebView2Availability(available: true), attachments, dialog, confirm);
     }
 
     [Fact]
@@ -431,6 +441,44 @@ public class NotesViewModelTests
     }
 
     [Fact]
+    public async Task DeleteAttachmentCommand_asks_for_confirmation_before_deleting()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog, out var confirm);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        var added = sut.Attachments.Single();
+
+        await sut.DeleteAttachmentCommand.ExecuteAsync(added);
+
+        confirm.Calls.Should().Be(1);
+        attachments.DeleteCalls.Should().ContainSingle().Which.Should().Be(added.Id);
+        sut.Attachments.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentCommand_declined_confirmation_keeps_the_attachment()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog, out var confirm);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        var added = sut.Attachments.Single();
+        confirm.Result = false;
+
+        await sut.DeleteAttachmentCommand.ExecuteAsync(added);
+
+        attachments.DeleteCalls.Should().BeEmpty();
+        sut.Attachments.Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task Selecting_a_note_loads_its_attachments()
     {
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out _);
@@ -469,5 +517,144 @@ public class NotesViewModelTests
         sut.SelectedNote = sut.Notes[1];
 
         sut.Attachments.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task OpenLightboxCommand_sets_attachment_and_opens()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        var added = sut.Attachments.Single();
+
+        sut.OpenLightboxCommand.Execute(added);
+
+        sut.IsLightboxOpen.Should().BeTrue();
+        sut.LightboxAttachment.Should().Be(added);
+    }
+
+    [Fact]
+    public void OpenLightboxCommand_is_noop_when_null()
+    {
+        var sut = CreateSut(out _, out _, out _);
+
+        sut.OpenLightboxCommand.Execute(null);
+
+        sut.IsLightboxOpen.Should().BeFalse();
+        sut.LightboxAttachment.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CloseLightboxCommand_clears_state()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        sut.OpenLightboxCommand.Execute(sut.Attachments.Single());
+
+        sut.CloseLightboxCommand.Execute(null);
+
+        sut.IsLightboxOpen.Should().BeFalse();
+        sut.LightboxAttachment.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task LightboxNextCommand_wraps_around_to_first()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg", "C:\\photos\\b.jpg", "C:\\photos\\c.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        sut.OpenLightboxCommand.Execute(sut.Attachments[2]);
+
+        sut.LightboxNextCommand.Execute(null);
+
+        sut.LightboxAttachment.Should().Be(sut.Attachments[0]);
+    }
+
+    [Fact]
+    public async Task LightboxPreviousCommand_wraps_around_to_last()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg", "C:\\photos\\b.jpg", "C:\\photos\\c.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        sut.OpenLightboxCommand.Execute(sut.Attachments[0]);
+
+        sut.LightboxPreviousCommand.Execute(null);
+
+        sut.LightboxAttachment.Should().Be(sut.Attachments[2]);
+    }
+
+    [Fact]
+    public async Task CanNavigateLightbox_is_true_only_with_more_than_one_attachment()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+
+        sut.CanNavigateLightbox.Should().BeFalse();
+
+        dialog.MultipleResult = ["C:\\photos\\b.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+
+        sut.CanNavigateLightbox.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentCommand_closes_lightbox_when_deleting_the_open_photo()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        svc.Store[n.Id] = n;
+        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        var added = sut.Attachments.Single();
+        sut.OpenLightboxCommand.Execute(added);
+
+        await sut.DeleteAttachmentCommand.ExecuteAsync(added);
+
+        sut.IsLightboxOpen.Should().BeFalse();
+        sut.LightboxAttachment.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Switching_selected_note_closes_the_lightbox()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
+        var n1 = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "1" };
+        var n2 = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "2" };
+        svc.Store[n1.Id] = n1;
+        svc.Store[n2.Id] = n2;
+        sut.Notes.Add(new NoteRowViewModel(n1));
+        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        await sut.AddAttachmentCommand.ExecuteAsync(null);
+        sut.OpenLightboxCommand.Execute(sut.Attachments.Single());
+
+        sut.SelectedNote = sut.Notes[1];
+
+        sut.IsLightboxOpen.Should().BeFalse();
     }
 }

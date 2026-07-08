@@ -10,6 +10,7 @@ using Recordum.Core.Services;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
@@ -22,6 +23,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private readonly INoteService _notes;
     private readonly IAttachmentService _attachments;
     private readonly IOpenFileDialog _dialog;
+    private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
     private readonly List<IDisposable> _subs = [];
     private Guid _habitNodeId;
@@ -35,6 +37,14 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _editorMarkdown = string.Empty;
     [ObservableProperty] private bool _isConfirmingDelete;
     [ObservableProperty] private bool _isShowingHistory;
+
+    // ---- lightbox (view-only state, flat on this VM — mirrors IsShowingHistory/IsConfirmingDelete
+    // rather than a child VM, matching this file's existing style) ----
+    [ObservableProperty] private bool _isLightboxOpen;
+    [ObservableProperty] private AttachmentViewModel? _lightboxAttachment;
+
+    /// <summary>Prev/Next only make sense with more than one photo.</summary>
+    public bool CanNavigateLightbox => Attachments.Count > 1;
 
     [ObservableProperty] private EntriesRecordsMode _mode = EntriesRecordsMode.Periodo;
     [ObservableProperty] private EntriesPeriod _selectedPeriod = EntriesPeriod.Tutto;
@@ -51,7 +61,8 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         IClock clock,
         IWebView2Availability availability,
         IAttachmentService attachments,
-        IOpenFileDialog dialog)
+        IOpenFileDialog dialog,
+        IConfirmationDialog confirm)
     {
         ArgumentNullException.ThrowIfNull(notes);
         ArgumentNullException.ThrowIfNull(events);
@@ -59,13 +70,16 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(availability);
         ArgumentNullException.ThrowIfNull(attachments);
         ArgumentNullException.ThrowIfNull(dialog);
+        ArgumentNullException.ThrowIfNull(confirm);
         _notes = notes;
         _clock = clock;
         _attachments = attachments;
         _dialog = dialog;
+        _confirm = confirm;
         Availability = availability;
         History = new NoteHistoryViewModel(notes);
         History.Restored += (_, _) => IsShowingHistory = false;
+        Attachments.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanNavigateLightbox));
         _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteCreated, OnNoteEvent));
         _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
         _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
@@ -176,6 +190,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         SaveCommand.NotifyCanExecuteChanged();
 
         Attachments.Clear();
+        CloseLightbox();
         // Fire-and-forget: note switching in this tab is a deliberate user click (not the
         // rapid-fire habit-tree navigation CR14/CR18/CR19 added generation guards for), so a
         // plain reload is enough — the note list itself is small and each load is a single
@@ -225,8 +240,43 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private async Task DeleteAttachment(AttachmentViewModel? vm, CancellationToken ct)
     {
         if (vm is null) return;
+        var ok = await _confirm.ConfirmAsync(
+            Strings.Notes_Attachments_DeleteConfirm_Title, Strings.Notes_Attachments_DeleteConfirm_Message).ConfigureAwait(true);
+        if (!ok) return;
         await _attachments.DeleteAsync(vm.Id, ct).ConfigureAwait(true);
         Attachments.Remove(vm);
+        // Deleting the photo currently open in the lightbox must close it — nothing left to show.
+        if (LightboxAttachment == vm) CloseLightbox();
+    }
+
+    [RelayCommand]
+    private void OpenLightbox(AttachmentViewModel? attachment)
+    {
+        if (attachment is null) return;
+        LightboxAttachment = attachment;
+        IsLightboxOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseLightbox()
+    {
+        IsLightboxOpen = false;
+        LightboxAttachment = null;
+    }
+
+    [RelayCommand]
+    private void LightboxNext() => StepLightbox(1);
+
+    [RelayCommand]
+    private void LightboxPrevious() => StepLightbox(-1);
+
+    private void StepLightbox(int direction)
+    {
+        if (Attachments.Count == 0 || LightboxAttachment is not { } current) return;
+        var idx = Attachments.IndexOf(current);
+        if (idx < 0) return;
+        var nextIdx = (idx + direction + Attachments.Count) % Attachments.Count;
+        LightboxAttachment = Attachments[nextIdx];
     }
 
     partial void OnEditorMarkdownChanged(string value)
