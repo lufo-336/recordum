@@ -375,6 +375,34 @@ public class NotesViewModelTests
     }
 
     [Fact]
+    public async Task AddAttachmentCommand_does_not_leak_into_a_different_note_selected_mid_batch()
+    {
+        var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog);
+        var n1 = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "one" };
+        var n2 = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "two" };
+        svc.Store[n1.Id] = n1;
+        svc.Store[n2.Id] = n2;
+        sut.Notes.Add(new NoteRowViewModel(n1));
+        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.SelectedNote = sut.Notes[0];
+        dialog.MultipleResult = ["C:\\photos\\a.jpg"];
+        attachments.AddGate = new TaskCompletionSource<bool>();
+
+        // Start the add for n1 but don't let AddAsync complete yet.
+        var addTask = sut.AddAttachmentCommand.ExecuteAsync(null);
+
+        // User switches to n2 before the add resolves.
+        sut.SelectedNote = sut.Notes[1];
+
+        // Now let the in-flight add for n1 complete.
+        attachments.AddGate.SetResult(true);
+        await addTask;
+
+        attachments.AddCalls.Should().ContainSingle(c => c.NoteId == n1.Id);
+        sut.Attachments.Should().NotContain(a => a.NoteId == n1.Id);
+    }
+
+    [Fact]
     public async Task DeleteAttachmentCommand_removes_from_collection_and_calls_service()
     {
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog);

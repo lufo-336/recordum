@@ -13,10 +13,15 @@ public sealed class FakeAttachmentService : IAttachmentService
     /// so tests can simulate one bad file in a multi-file batch.</summary>
     public Dictionary<string, Exception> ThrowOnAdd { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public Task<Attachment> AddAsync(Guid noteId, string sourceFilePath, CancellationToken ct)
+    /// <summary>When set, AddAsync awaits this before completing, so tests can control the exact
+    /// interleaving of a batch add against other state changes (e.g. the selection moving on).</summary>
+    public TaskCompletionSource<bool>? AddGate { get; set; }
+
+    public async Task<Attachment> AddAsync(Guid noteId, string sourceFilePath, CancellationToken ct)
     {
         AddCalls.Add((noteId, sourceFilePath));
         if (ThrowOnAdd.TryGetValue(sourceFilePath, out var ex)) throw ex;
+        if (AddGate is not null) await AddGate.Task.ConfigureAwait(true);
 
         var attachment = new Attachment
         {
@@ -27,7 +32,7 @@ public sealed class FakeAttachmentService : IAttachmentService
             FileSizeBytes = 100,
         };
         Store[attachment.Id] = attachment;
-        return Task.FromResult(attachment);
+        return attachment;
     }
 
     public Task DeleteAsync(Guid attachmentId, CancellationToken ct)

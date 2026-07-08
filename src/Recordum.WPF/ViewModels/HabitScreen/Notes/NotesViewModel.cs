@@ -196,13 +196,20 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private async Task AddAttachment(CancellationToken ct)
     {
         if (SelectedNote is not { } row) return;
+        var noteId = row.Id;
         var paths = _dialog.PromptMultiple(ImageFileFilter);
         foreach (var path in paths)
         {
             try
             {
-                var attachment = await _attachments.AddAsync(row.Id, path, ct).ConfigureAwait(true);
-                Attachments.Add(new AttachmentViewModel(attachment, _attachments));
+                var attachment = await _attachments.AddAsync(noteId, path, ct).ConfigureAwait(true);
+                // The add itself (File.Copy + SaveChangesAsync) is a real await boundary — if the
+                // user switched to a different note mid-batch, this note's Attachments collection
+                // has already been cleared/reloaded for the new selection. Still persist the file
+                // to the originally-selected note (the user's intent), just don't let it land in a
+                // list that now represents a different note; a later reselect reloads it correctly.
+                if (SelectedNote?.Id == noteId)
+                    Attachments.Add(new AttachmentViewModel(attachment, _attachments));
             }
 #pragma warning disable CA1031 // one bad file (unreadable/moved) must not abort the rest of the batch
             catch (Exception)

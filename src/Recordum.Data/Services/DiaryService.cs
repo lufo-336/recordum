@@ -80,6 +80,7 @@ public sealed partial class DiaryService(
 
         await using (var tx = await db.Database.BeginTransactionAsync(ct))
         {
+            await db.Attachments.Where(a => a.NoteId == note.Id).ExecuteDeleteAsync(ct);
             await db.NoteHistories.Where(h => h.NoteId == note.Id).ExecuteDeleteAsync(ct);
             await db.Notes.Where(n => n.Id == note.Id).ExecuteDeleteAsync(ct);
             if (note.CompletionId is { } cid2)
