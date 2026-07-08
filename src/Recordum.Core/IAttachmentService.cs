@@ -13,10 +13,13 @@ public interface IAttachmentService
     /// and inserts row in attachment table.</summary>
     Task<Attachment> AddAsync(Guid noteId, string sourceFilePath, CancellationToken ct);
 
-    /// <summary>Soft-delete: mark updated_at. File remains for async purge.</summary>
+    /// <summary>Hard-deletes the attachment: removes the DB row and best-effort deletes the
+    /// physical file on disk (a missing file is not an error). There is no soft-delete for
+    /// attachments — the attachment table has no deleted-at column, so a soft-deleted row would
+    /// keep showing up in every gallery/list forever.</summary>
     Task DeleteAsync(Guid attachmentId, CancellationToken ct);
 
-    /// <summary>List all non-soft-deleted attachments for a note.</summary>
+    /// <summary>List all attachments for a note.</summary>
     Task<IReadOnlyList<Attachment>> ListByNoteAsync(Guid noteId, CancellationToken ct);
 
     /// <summary>Internal: list all attachments (for export/backup).</summary>

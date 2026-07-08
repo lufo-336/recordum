@@ -87,6 +87,10 @@ public static class ServiceRegistrar
         services.AddScoped<ICompletionService, CompletionService>();
         services.AddScoped<IActiveTimerService, ActiveTimerService>();
         services.AddScoped<INoteService, NoteService>();
+        services.AddScoped<Recordum.Core.IAttachmentService>(sp => new Data.Services.AttachmentService(
+            sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<IPluginContext>()));
         services.AddScoped<IDiaryService, Data.Services.DiaryService>();
         services.AddScoped<IGoalService, GoalService>();
         services.AddScoped<IMetricDefinitionService, MetricDefinitionService>();

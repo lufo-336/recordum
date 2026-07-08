@@ -162,25 +162,6 @@ public class NoteServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_with_attachments_persists_both()
-    {
-        var (fx, habitId) = await SeedHabitAsync();
-        var sut = NewService(fx, out _);
-
-        var id = await sut.CreateAsync(
-            new Note { HabitNodeId = habitId, BodyMd = "hi" },
-            new[] { new Attachment { Id = Guid.NewGuid(), FilePath = "/tmp/a.png", MimeType = "image/png" } });
-
-        await using var db = await fx.Factory.CreateDbContextAsync();
-        var note = await db.Notes.Include(n => n.Attachments).SingleAsync();
-        note.Id.Should().Be(id);
-        note.Attachments.Should().ContainSingle();
-        note.UpdatedAtMs.Should().BeGreaterThan(0);
-
-        await fx.DisposeAsync();
-    }
-
-    [Fact]
     public async Task ListByHabitAndDateAsync_returns_only_notes_for_that_day()
     {
         var (fx, habitId) = await SeedHabitAsync();

@@ -71,6 +71,6 @@ public sealed class CounterReclassV210Tests
         Assert.Equal(HabitType.Resistance, nodes.Single(n => n.Id == voglie).HabitType);
 
         var version = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.12", version.Value);
+        Assert.Equal("2.13", version.Value);
     }
 }

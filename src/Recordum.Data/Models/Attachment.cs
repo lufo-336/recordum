@@ -11,8 +11,8 @@ public class Attachment
     public string Filename { get; set; } = string.Empty;
     public string MimeType { get; set; } = string.Empty;
     public long FileSizeBytes { get; set; }
-    public DateTimeOffset CreatedAt { get; set; }
-    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public long UpdatedAtMs { get; set; }
 
     public Note Note { get; set; } = null!;

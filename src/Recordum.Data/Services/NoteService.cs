@@ -26,24 +26,12 @@ public sealed partial class NoteService(
             CreatedAt = clock.UtcNow.UtcDateTime,
         });
 
-    public ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default)
-        => CreateAsync(draft, attachments: null, ct);
-
-    public async ValueTask<Guid> CreateAsync(Note draft, IReadOnlyList<Attachment>? attachments, CancellationToken ct = default)
+    public async ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
         if (draft.Id == Guid.Empty) draft.Id = Guid.NewGuid();
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         db.Notes.Add(draft);
-        if (attachments is not null)
-        {
-            foreach (var a in attachments)
-            {
-                a.NoteId = draft.Id;
-                if (a.Id == Guid.Empty) a.Id = Guid.NewGuid();
-                db.Attachments.Add(a);
-            }
-        }
         if (!string.IsNullOrEmpty(draft.BodyMd)) AddVersion(db, draft.Id, draft.BodyMd);
         await db.SaveChangesAsync(ct);
         LogCreated(draft.Id, draft.HabitNodeId);
@@ -77,7 +65,7 @@ public sealed partial class NoteService(
     public async ValueTask<Note?> GetAsync(Guid id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Notes.Include(n => n.Attachments).AsNoTracking().FirstOrDefaultAsync(n => n.Id == id, ct);
+        return await db.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id, ct);
     }
 
     public async ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default)
