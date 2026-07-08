@@ -30,4 +30,28 @@ public sealed class PdfExportFormatterTests
         Assert.Equal((byte)'D', bytes[2]);
         Assert.Equal((byte)'F', bytes[3]);
     }
+
+    // Minimal valid 1x1 transparent PNG — QuestPDF/SkiaSharp decodes .Image(bytes), so the
+    // attachment fixture needs a real image, not arbitrary bytes.
+    private const string OnePixelPngBase64 =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+    [Fact]
+    public void Write_embeds_existing_attachment_and_skips_missing_one()
+    {
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        var photoPath = Path.Combine(Path.GetTempPath(), "recordum-pdf-export-test-" + Guid.NewGuid().ToString("N") + ".png");
+        File.WriteAllBytes(photoPath, Convert.FromBase64String(OnePixelPngBase64));
+        try
+        {
+            // Must not throw even though the second attachment's file doesn't exist on disk.
+            var bytes = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(photoPath));
+            Assert.NotEmpty(bytes);
+            Assert.Equal((byte)'%', bytes[0]);
+        }
+        finally
+        {
+            File.Delete(photoPath);
+        }
+    }
 }

@@ -29,4 +29,24 @@ public sealed class HtmlExportFormatterTests
         Assert.Contains("<td>2026-06-13 09:00</td><td>2026-07-01 19:00</td><td>18.10:00:00</td><td>relapsed</td>", html, StringComparison.Ordinal);
         Assert.Contains("<td>2026-07-02 08:00</td><td></td><td>0.04:30:00</td><td>open</td>", html, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Write_embeds_existing_attachment_and_skips_missing_one()
+    {
+        var photoPath = Path.Combine(Path.GetTempPath(), "recordum-html-export-test-" + Guid.NewGuid().ToString("N") + ".jpg");
+        File.WriteAllBytes(photoPath, "fake image bytes"u8.ToArray());
+        try
+        {
+            var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.WithNoteAttachments(photoPath)));
+            var expectedBase64 = Convert.ToBase64String("fake image bytes"u8.ToArray());
+            Assert.Contains($"data:image/jpeg;base64,{expectedBase64}", html, StringComparison.Ordinal);
+            Assert.Contains("alt=\"lake.jpg\"", html, StringComparison.Ordinal);
+            // The second attachment's AbsolutePath doesn't exist on disk — must be skipped silently.
+            Assert.DoesNotContain("missing.png", html, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(photoPath);
+        }
+    }
 }

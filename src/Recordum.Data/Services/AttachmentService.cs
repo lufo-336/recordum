@@ -47,15 +47,14 @@ public sealed class AttachmentService(
         if (!File.Exists(sourceFilePath))
             throw new FileNotFoundException($"Source file not found: {sourceFilePath}", sourceFilePath);
 
-        var ext = Path.GetExtension(sourceFilePath).TrimStart('.').ToLowerInvariant();
-        if (string.IsNullOrEmpty(ext))
-            ext = "bin";
-
+        var ext = ExtensionFor(sourceFilePath);
         var attachmentId = Guid.NewGuid();
-        var noteFolder = Path.Combine(_attachmentsRoot, noteId.ToString());
-        Directory.CreateDirectory(noteFolder);
 
-        var destPath = Path.Combine(noteFolder, $"{attachmentId:N}.{ext}");
+        // Draft DTO carrying just enough (Id/NoteId/Filename) to derive the storage path via the
+        // same formula ResolveAbsolutePath uses — the on-disk layout has exactly one source of truth.
+        var draft = new Core.Models.Attachment { Id = attachmentId, NoteId = noteId, Filename = Path.GetFileName(sourceFilePath) };
+        var destPath = ResolveAbsolutePath(draft);
+        Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
         File.Copy(sourceFilePath, destPath, overwrite: false);
 
         var entity = new Models.Attachment
@@ -85,8 +84,11 @@ public sealed class AttachmentService(
         await db.SaveChangesAsync(ct);
 
         // Best-effort: an already-missing file (e.g. purged out-of-band) must not fail the delete.
-        var path = Path.Combine(_attachmentsRoot, entity.NoteId.ToString(),
-            $"{entity.Id:N}{Path.GetExtension(entity.Filename)}");
+        // Uses the same ResolveAbsolutePath formula AddAsync wrote to, via the shared ExtensionFor
+        // helper — a prior version of this method re-derived the extension from the raw Filename
+        // without lowercasing/"bin"-fallback, so an uppercase original extension (".JPG") or an
+        // extensionless original wouldn't match the actual file on disk.
+        var path = ResolveAbsolutePath(ToDto(entity));
         try
         {
             if (File.Exists(path)) File.Delete(path);
@@ -97,6 +99,28 @@ public sealed class AttachmentService(
         catch (UnauthorizedAccessException)
         {
         }
+    }
+
+    public string ResolveRelativePath(Core.Models.Attachment attachment)
+    {
+        ArgumentNullException.ThrowIfNull(attachment);
+        return $"attachments/{attachment.NoteId}/{attachment.Id:N}.{ExtensionFor(attachment.Filename)}";
+    }
+
+    public string ResolveAbsolutePath(Core.Models.Attachment attachment)
+    {
+        ArgumentNullException.ThrowIfNull(attachment);
+        return Path.Combine(_attachmentsRoot, attachment.NoteId.ToString(),
+            $"{attachment.Id:N}.{ExtensionFor(attachment.Filename)}");
+    }
+
+    /// <summary>Single source of truth for the file extension derivation shared by AddAsync
+    /// (from the source file path), DeleteAsync/Resolve* (from the stored original Filename):
+    /// lowercased, no leading dot, falling back to "bin" when the original had no extension.</summary>
+    private static string ExtensionFor(string filenameOrPath)
+    {
+        var ext = Path.GetExtension(filenameOrPath).TrimStart('.').ToLowerInvariant();
+        return string.IsNullOrEmpty(ext) ? "bin" : ext;
     }
 
     public async Task<IReadOnlyList<Core.Models.Attachment>> ListByNoteAsync(Guid noteId, CancellationToken ct)

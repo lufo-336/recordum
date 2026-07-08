@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Recordum.Core;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -17,7 +18,8 @@ public sealed class ExportQueryService(
     IHabitConfigService configs,
     IIntensityRampResolver ramp,
     IStreakAggregator streaks,
-    IAbstinenceService abstinence) : IExportQueryService
+    IAbstinenceService abstinence,
+    IAttachmentService attachments) : IExportQueryService
 {
     private const int HeatmapCols = 53;
     private const int HeatmapRows = 7;
@@ -98,11 +100,24 @@ public sealed class ExportQueryService(
                 .ToList()
             : [];
 
-        var noteRows = request.Layout.Notes
-            ? (await notes.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
-                .Select(n => new ExportNoteRow(DateTimeOffset.FromUnixTimeMilliseconds(n.UpdatedAtMs), n.BodyMd))
-                .ToList()
-            : [];
+        var noteRows = new List<ExportNoteRow>();
+        if (request.Layout.Notes)
+        {
+            foreach (var n in await notes.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
+            {
+                var noteAttachments = await attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(false);
+                var attachmentRefs = noteAttachments
+                    .Select(a => new ExportAttachmentRef(a.Filename, a.MimeType, attachments.ResolveRelativePath(a))
+                    {
+                        AbsolutePath = attachments.ResolveAbsolutePath(a),
+                    })
+                    .ToList();
+                noteRows.Add(new ExportNoteRow(DateTimeOffset.FromUnixTimeMilliseconds(n.UpdatedAtMs), n.BodyMd)
+                {
+                    Attachments = attachmentRefs,
+                });
+            }
+        }
 
         var summary = await BuildSummaryAsync(node, request, ct).ConfigureAwait(false);
         if (isResistance) summary = summary with { TotalCompletions = periodRows.Count };

@@ -24,4 +24,13 @@ public interface IAttachmentService
 
     /// <summary>Internal: list all attachments (for export/backup).</summary>
     Task<IReadOnlyList<Attachment>> ListAllAsync(CancellationToken ct);
+
+    /// <summary>Portable, forward-slash relative path matching the on-disk storage layout:
+    /// "attachments/{NoteId}/{Id:N}.{ext}". Pure string formula, no disk I/O. Used to build
+    /// export links (Markdown/HTML/JSON) that stay valid inside an exported archive.</summary>
+    string ResolveRelativePath(Attachment attachment);
+
+    /// <summary>Absolute path to the attachment's file on disk (dataRoot + <see cref="ResolveRelativePath"/>),
+    /// for callers that need to read the actual bytes (export image embedding).</summary>
+    string ResolveAbsolutePath(Attachment attachment);
 }

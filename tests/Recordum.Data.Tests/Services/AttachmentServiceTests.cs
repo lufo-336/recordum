@@ -181,4 +181,58 @@ public class AttachmentServiceTests : IAsyncLifetime
         await using var db = await _fixture.Factory.CreateDbContextAsync();
         Assert.Null(await db.Attachments.FindAsync(attachment.Id));
     }
+
+    [Fact]
+    public async Task ResolveAbsolutePath_finds_the_file_AddAsync_wrote_for_uppercase_extension()
+    {
+        var noteId = await SeedNoteAsync();
+        var sourceFile = Path.Combine(_tempDir, "photo.JPG");
+        await File.WriteAllTextAsync(sourceFile, "fake image data");
+
+        var attachment = await _service.AddAsync(noteId, sourceFile, default);
+
+        var relative = _service.ResolveRelativePath(attachment);
+        var absolute = _service.ResolveAbsolutePath(attachment);
+
+        // Normalized to lowercase regardless of the original file's casing.
+        Assert.EndsWith(".jpg", relative, StringComparison.Ordinal);
+        Assert.True(File.Exists(absolute));
+        Assert.Equal(Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".jpg"), absolute);
+    }
+
+    [Fact]
+    public async Task ResolveAbsolutePath_finds_the_file_AddAsync_wrote_for_extensionless_original()
+    {
+        var noteId = await SeedNoteAsync();
+        var sourceFile = Path.Combine(_tempDir, "photo_no_ext");
+        await File.WriteAllTextAsync(sourceFile, "fake image data");
+
+        var attachment = await _service.AddAsync(noteId, sourceFile, default);
+
+        var relative = _service.ResolveRelativePath(attachment);
+        var absolute = _service.ResolveAbsolutePath(attachment);
+
+        Assert.EndsWith(".bin", relative, StringComparison.Ordinal);
+        Assert.True(File.Exists(absolute));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_removes_file_when_original_had_no_extension()
+    {
+        // Regression for the DeleteAsync bug: it used to re-derive the extension straight from
+        // entity.Filename (no lowercasing, no "bin" fallback), so for an extensionless original it
+        // computed a path with no extension at all while AddAsync had actually written "<id>.bin" —
+        // the delete would silently miss the real file.
+        var noteId = await SeedNoteAsync();
+        var sourceFile = Path.Combine(_tempDir, "photo_no_ext");
+        await File.WriteAllTextAsync(sourceFile, "fake image data");
+
+        var attachment = await _service.AddAsync(noteId, sourceFile, default);
+        var diskPath = Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".bin");
+        Assert.True(File.Exists(diskPath));
+
+        await _service.DeleteAsync(attachment.Id, default);
+
+        Assert.False(File.Exists(diskPath));
+    }
 }

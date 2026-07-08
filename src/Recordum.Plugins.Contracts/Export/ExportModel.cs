@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Recordum.Core.Enums;
 
 namespace Recordum.Plugins.Contracts.Export;
@@ -34,7 +35,22 @@ public sealed record ExportSummary(
 
 public sealed record ExportCompletionRow(DateTimeOffset CompletedAt, decimal? Value, string? Metric, bool Retroactive);
 
-public sealed record ExportNoteRow(DateTimeOffset UpdatedAt, string BodyMd);
+public sealed record ExportNoteRow(DateTimeOffset UpdatedAt, string BodyMd)
+{
+    /// <summary>Photos/files attached to this note. Empty for notes without attachments.</summary>
+    public IReadOnlyList<ExportAttachmentRef> Attachments { get; init; } = [];
+}
+
+/// <summary>One photo/file attached to a note, described for export purposes.</summary>
+public sealed record ExportAttachmentRef(string Filename, string MimeType, string RelativePath)
+{
+    /// <summary>Absolute on-disk path, resolved by the host at model-build time so HTML/PDF
+    /// formatters can read the file's bytes without depending on <c>IAttachmentService</c>
+    /// themselves. Never serialized: it would leak the local filesystem layout (and, on Windows,
+    /// the user's account name via the LocalAppData path) into a shared export file.</summary>
+    [JsonIgnore]
+    public string? AbsolutePath { get; init; }
+}
 
 /// <summary>One abstinence attempt: start, optional end (open = still running), elapsed span.</summary>
 public sealed record ExportPeriodRow(DateTimeOffset StartedAt, DateTimeOffset? EndedAt, TimeSpan Duration, bool IsOpen);

@@ -76,10 +76,41 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                                 }
                             });
                         }
+
+                        if (h.Notes.Any(n => n.Attachments.Count > 0))
+                        {
+                            col.Item().PaddingTop(4).Text("Attachments").SemiBold();
+                            foreach (var n in h.Notes)
+                                foreach (var att in n.Attachments)
+                                {
+                                    var bytes = TryReadBytes(att);
+                                    if (bytes is not null)
+                                        col.Item().MaxWidth(200).Image(bytes).FitWidth();
+                                }
+                        }
                     }
                 });
                 page.Footer().AlignCenter().Text(x => x.CurrentPageNumber());
             });
         }).GeneratePdf();
+    }
+
+    /// <summary>Reads the attachment's bytes for embedding, returning null (never throwing) when
+    /// the path is unset or the file is missing/unreadable — the page renders without that image.</summary>
+    private static byte[]? TryReadBytes(ExportAttachmentRef att)
+    {
+        if (att.AbsolutePath is not { Length: > 0 } path || !File.Exists(path)) return null;
+        try
+        {
+            return File.ReadAllBytes(path);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 }
