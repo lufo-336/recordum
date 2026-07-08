@@ -312,6 +312,37 @@ public class NoteServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_removes_attachments_without_throwing_FK_violation()
+    {
+        // attachment.note_id is FK Restrict (AttachmentConfiguration) — DeleteAsync must clear
+        // attachment rows before deleting the Note, or SQLite raises FOREIGN KEY constraint failed.
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "x" });
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = Guid.NewGuid(),
+                NoteId = id,
+                Filename = "photo.jpg",
+                MimeType = "image/jpeg",
+                FileSizeBytes = 123,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await sut.DeleteAsync(id);
+
+        (await sut.GetAsync(id)).Should().BeNull();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.Attachments.CountAsync(a => a.NoteId == id)).Should().Be(0);
+        }
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task DeleteAsync_removes_note_versions()
     {
         var (fx, habitId) = await SeedHabitAsync();

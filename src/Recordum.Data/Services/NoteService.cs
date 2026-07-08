@@ -57,6 +57,12 @@ public sealed partial class NoteService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var n = await db.Notes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (n is null) return;
+        // attachment.note_id is FK Restrict (AttachmentConfiguration) — must clear child rows
+        // before the parent Note delete, mirroring PurgeService's subtree-delete ordering.
+        // DB-row-only: the physical files under %LocalAppData%\Recordum\attachments\{noteId}\
+        // are not removed here (a separate, pre-existing gap — orphan-file cleanup is tracked
+        // elsewhere, not part of this fix).
+        await db.Attachments.Where(a => a.NoteId == id).ExecuteDeleteAsync(ct);
         await db.NoteHistories.Where(h => h.NoteId == id).ExecuteDeleteAsync(ct);
         await db.Notes.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
         eventBus.Publish(new NoteDeletedPayload(n.Id, n.HabitNodeId));

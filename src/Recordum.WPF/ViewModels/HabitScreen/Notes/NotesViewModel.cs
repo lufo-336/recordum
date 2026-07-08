@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -15,7 +16,12 @@ namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
 
 public sealed partial class NotesViewModel : ObservableObject, IDisposable
 {
+    private const string ImageFileFilter =
+        "Image files (*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp";
+
     private readonly INoteService _notes;
+    private readonly IAttachmentService _attachments;
+    private readonly IOpenFileDialog _dialog;
     private readonly IClock _clock;
     private readonly List<IDisposable> _subs = [];
     private Guid _habitNodeId;
@@ -23,6 +29,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private DateOnly? _calendarDay;
 
     public ObservableCollection<NoteRowViewModel> Notes { get; } = [];
+    public ObservableCollection<AttachmentViewModel> Attachments { get; } = [];
 
     [ObservableProperty] private NoteRowViewModel? _selectedNote;
     [ObservableProperty] private string _editorMarkdown = string.Empty;
@@ -38,14 +45,24 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
 
     public NoteHistoryViewModel History { get; }
 
-    public NotesViewModel(INoteService notes, IEventBus events, IClock clock, IWebView2Availability availability)
+    public NotesViewModel(
+        INoteService notes,
+        IEventBus events,
+        IClock clock,
+        IWebView2Availability availability,
+        IAttachmentService attachments,
+        IOpenFileDialog dialog)
     {
         ArgumentNullException.ThrowIfNull(notes);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(availability);
+        ArgumentNullException.ThrowIfNull(attachments);
+        ArgumentNullException.ThrowIfNull(dialog);
         _notes = notes;
         _clock = clock;
+        _attachments = attachments;
+        _dialog = dialog;
         Availability = availability;
         History = new NoteHistoryViewModel(notes);
         History.Restored += (_, _) => IsShowingHistory = false;
@@ -157,6 +174,52 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         EditorMarkdown = value?.Note.BodyMd ?? string.Empty;
         OnPropertyChanged(nameof(IsDirty));
         SaveCommand.NotifyCanExecuteChanged();
+
+        Attachments.Clear();
+        // Fire-and-forget: note switching in this tab is a deliberate user click (not the
+        // rapid-fire habit-tree navigation CR14/CR18/CR19 added generation guards for), so a
+        // plain reload is enough — the note list itself is small and each load is a single
+        // indexed query. If this tab ever grows fast programmatic note switching, revisit.
+        if (value is not null) _ = LoadAttachmentsAsync(value.Id, CancellationToken.None);
+    }
+
+    private async Task LoadAttachmentsAsync(Guid noteId, CancellationToken ct)
+    {
+        var list = await _attachments.ListByNoteAsync(noteId, ct).ConfigureAwait(true);
+        // Guard against a stale reload landing after the selection moved on again.
+        if (SelectedNote?.Id != noteId) return;
+        Attachments.Clear();
+        foreach (var a in list) Attachments.Add(new AttachmentViewModel(a, _attachments));
+    }
+
+    [RelayCommand]
+    private async Task AddAttachment(CancellationToken ct)
+    {
+        if (SelectedNote is not { } row) return;
+        var paths = _dialog.PromptMultiple(ImageFileFilter);
+        foreach (var path in paths)
+        {
+            try
+            {
+                var attachment = await _attachments.AddAsync(row.Id, path, ct).ConfigureAwait(true);
+                Attachments.Add(new AttachmentViewModel(attachment, _attachments));
+            }
+#pragma warning disable CA1031 // one bad file (unreadable/moved) must not abort the rest of the batch
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+                // Best-effort batch add — no per-file UI surface for this yet (Task 5 gallery/lightbox
+                // work adds the richer UI); skipping the failed file and continuing is acceptable here.
+            }
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteAttachment(AttachmentViewModel? vm, CancellationToken ct)
+    {
+        if (vm is null) return;
+        await _attachments.DeleteAsync(vm.Id, ct).ConfigureAwait(true);
+        Attachments.Remove(vm);
     }
 
     partial void OnEditorMarkdownChanged(string value)

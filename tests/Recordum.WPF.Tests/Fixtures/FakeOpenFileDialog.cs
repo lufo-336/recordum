@@ -6,4 +6,7 @@ public sealed class FakeOpenFileDialog : IOpenFileDialog
 {
     public string? Result { get; set; }
     public string? Prompt(string filter) => Result;
+
+    public string[] MultipleResult { get; set; } = [];
+    public string[] PromptMultiple(string filter) => MultipleResult;
 }
