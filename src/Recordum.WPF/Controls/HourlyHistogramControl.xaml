@@ -2,5 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Height="140">
-    <ContentControl x:Name="ChartHost"/>
+    <Grid>
+        <ContentControl x:Name="ChartHost"/>
+        <TextBlock x:Name="EmptyText"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="Collapsed"
+                   Foreground="{DynamicResource Brush.TextMuted}"/>
+    </Grid>
 </UserControl>

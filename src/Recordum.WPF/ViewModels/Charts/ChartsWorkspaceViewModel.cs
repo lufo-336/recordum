@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Data.Services.Queries;
-using Recordum.Plugins.Contracts.ExtensionPoints;
 using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.WPF.ViewModels.Charts;
@@ -56,15 +55,13 @@ public sealed partial class ChartsWorkspaceViewModel : ObservableObject
     private async ValueTask RenderAsync(Guid chartId, CancellationToken ct)
     {
         var model = await _query.BuildModelAsync(chartId, IsDarkTheme, ct).ConfigureAwait(true);
-        var renderer = _registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer)
-            .OfType<IChartRenderer>()
-            .FirstOrDefault(r => r.CanRender(model.Kind));
-        RenderedView = renderer?.CreateView(model);
+        RenderedView = ChartRendererLocator.CreateView(_registry, model);
     }
 
     [RelayCommand]
     private void New()
     {
+        Builder.IsDarkTheme = IsDarkTheme;   // theme the live preview to match the host
         Builder.LoadNew();
         IsBuilderOpen = true;
     }
@@ -73,6 +70,7 @@ public sealed partial class ChartsWorkspaceViewModel : ObservableObject
     private async Task Edit(ChartListItemViewModel item)
     {
         if (item is null) return;
+        Builder.IsDarkTheme = IsDarkTheme;   // theme the live preview to match the host
         await Builder.LoadAsync(item.ChartId).ConfigureAwait(true);
         IsBuilderOpen = true;
     }

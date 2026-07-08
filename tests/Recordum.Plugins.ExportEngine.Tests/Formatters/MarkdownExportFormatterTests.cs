@@ -17,4 +17,13 @@ public sealed class MarkdownExportFormatterTests
         Assert.Contains("| Date | Value | Metric |", md, StringComparison.Ordinal);
         Assert.Contains("felt good", md, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Write_renders_periods_table_for_resistance_habit()
+    {
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.WithAbstinencePeriods()));
+        Assert.Contains("| Started | Ended | Duration | Outcome |", md, StringComparison.Ordinal);
+        Assert.Contains("| 2026-06-13 09:00 | 2026-07-01 19:00 | 18.10:00:00 | relapsed |", md, StringComparison.Ordinal);
+        Assert.Contains("| 2026-07-02 08:00 |  | 0.04:30:00 | open |", md, StringComparison.Ordinal);
+    }
 }

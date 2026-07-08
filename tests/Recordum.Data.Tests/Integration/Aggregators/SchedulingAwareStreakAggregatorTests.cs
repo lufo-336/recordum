@@ -477,4 +477,50 @@ public sealed class SchedulingAwareStreakAggregatorTests
         }
         finally { await fx.DisposeAsync(); }
     }
+
+    [Fact]
+    public async Task NoConfig_FallsBackToDefaultDaily()
+    {
+        // F0-2a: A habit with no HabitConfig row should be treated as a default daily habit.
+        var clock = new FakeClock(new DateTimeOffset(new DateOnly(2026, 4, 1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+        var fx = new DbFixture(clock);
+
+        try
+        {
+            // Create habit WITHOUT calling configs.UpsertAsync (no config row).
+            var habitId = Guid.NewGuid();
+            await using (var db = await fx.Factory.CreateDbContextAsync())
+            {
+                db.HabitNodes.Add(new HabitNode
+                {
+                    Id = habitId,
+                    NodeType = NodeType.Habit,
+                    HabitType = HabitType.Action,
+                    Name = "h_no_config",
+                });
+                await db.SaveChangesAsync();
+            }
+
+            // Seed 3 completions on consecutive days: Apr 1, 2, 3.
+            await SeedCompletionsAsync(fx, habitId, new DateOnly(2026, 4, 1), "XXX");
+
+            // Set clock to Apr 3 (today = last completion day).
+            ((FakeClock)fx.Clock).Set(new DateTimeOffset(new DateOnly(2026, 4, 3).ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero));
+
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            var aggr = BuildAggregator(fx, configs);
+
+            // toDate matches "today" (Apr 3) — otherwise Apr 4 reads as a missed scheduled day
+            // (StreakRecovery.None absorbs nothing) and closes the run via the Missed branch,
+            // which hardcodes IsCurrent=false, instead of exercising the still-open/current branch.
+            var runs = await aggr.GetHistoryAsync(habitId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 3));
+            var r = Assert.Single(runs);
+            Assert.Equal(3, r.Length);
+            Assert.Equal(new DateOnly(2026, 4, 1), r.Start);
+            Assert.Equal(new DateOnly(2026, 4, 3), r.End);
+            Assert.True(r.IsCurrent);
+            Assert.Null(r.BreakReason);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
 }

@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Charts;
 
 namespace Recordum.Data.Services.Queries;
@@ -29,14 +30,24 @@ public sealed class ChartQueryService(
         if (chart is null)
             return new ChartRenderModel(ChartKind.Line, null, [], null, null, theme);
 
+        return await BuildModelAsync(chart, chart.Series.OrderBy(s => s.SortOrder).ToList(), isDark, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Preview: builds the model from unsaved state — no access to the `chart` table; series still resolve their data from completions in the DB.</summary>
+    public async ValueTask<ChartRenderModel> BuildModelAsync(Chart chart, IReadOnlyList<ChartSeries> series, bool isDark, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(chart);
+        ArgumentNullException.ThrowIfNull(series);
+        var theme = new ChartThemeModel(isDark, isDark ? DarkText : LightText, isDark ? DarkGrid : LightGrid);
+
         var kind = ChartKindParser.Parse(chart.ChartType);
         var config = ChartConfig.Parse(chart.ConfigJson);
         var (from, to) = ResolveRange(config);
         var granularity = config.Bucket.Equals("weekly", StringComparison.OrdinalIgnoreCase)
             ? TrendGranularity.Weekly : TrendGranularity.Daily;
 
-        var series = new List<ChartSeriesModel>();
-        foreach (var s in chart.Series.OrderBy(s => s.SortOrder))
+        var seriesModels = new List<ChartSeriesModel>();
+        foreach (var s in series)
         {
             var points = await ResolveSeriesPointsAsync(s.HabitNodeId, s.MetricDefinitionId, from, to, granularity, ct)
                 .ConfigureAwait(false);
@@ -45,12 +56,12 @@ public sealed class ChartQueryService(
                 var total = points.Sum(p => p.Y ?? 0d);
                 points = [new ChartPoint(0, total, s.Label ?? "")];
             }
-            series.Add(new ChartSeriesModel(s.Label ?? "", s.Color, points));
+            seriesModels.Add(new ChartSeriesModel(s.Label ?? "", s.Color, points));
         }
 
         var xAxis = new ChartAxisModel(config.XAxisLabel, IsTime: true, Format: "yyyy-MM-dd");
         var yAxis = new ChartAxisModel(config.YAxisLabel, IsTime: false, Format: null);
-        return new ChartRenderModel(kind, chart.Name, series, xAxis, yAxis, theme);
+        return new ChartRenderModel(kind, chart.Name, seriesModels, xAxis, yAxis, theme);
     }
 
     private (DateOnly from, DateOnly to) ResolveRange(ChartConfig config)

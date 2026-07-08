@@ -10,11 +10,38 @@ namespace Recordum.WPF.Controls;
 
 public partial class TrendChartControl : UserControl
 {
+    private TrendChartViewModel? _vm;
+
     public TrendChartControl()
     {
         InitializeComponent();
-        DataContextChanged += (_, _) => Rebuild();
+        DataContextChanged += (_, _) => { Rehook(); Rebuild(); };
         Loaded += (_, _) => Rebuild();
+        Unloaded += (_, _) => Unhook();
+    }
+
+    private void Rehook()
+    {
+        Unhook();
+        _vm = DataContext as TrendChartViewModel;
+        if (_vm is null) return;
+        _vm.Series.CollectionChanged += OnVmChanged;
+        _vm.PropertyChanged += OnVmPropertyChanged;
+    }
+
+    private void Unhook()
+    {
+        if (_vm is null) return;
+        _vm.Series.CollectionChanged -= OnVmChanged;
+        _vm.PropertyChanged -= OnVmPropertyChanged;
+        _vm = null;
+    }
+
+    private void OnVmChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Rebuild();
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(TrendChartViewModel.MaxValue) or nameof(TrendChartViewModel.ChartKind)) Rebuild();
     }
 
     private void Rebuild()

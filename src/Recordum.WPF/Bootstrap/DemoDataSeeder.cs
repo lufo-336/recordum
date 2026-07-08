@@ -99,6 +99,8 @@ public sealed class DemoDataSeeder(
         }, ct).ConfigureAwait(false);
         foreach (var id in new[] { camminata, meditazione, aLetto })
             await configs.UpsertAsync(id, c => c.QuickComplete = true, ct).ConfigureAwait(false);
+        foreach (var id in new[] { acqua, mood, lettura, diario, nienteFumo })
+            await configs.UpsertAsync(id, _ => { }, ct).ConfigureAwait(false);
 
         // ---- metrics ----
         var mMinuti = await MetricAsync(allenamento, "Minuti", ct).ConfigureAwait(false);
@@ -303,7 +305,7 @@ public sealed class DemoDataSeeder(
             CompletedAt = at,
             CompletedAtMs = new DateTimeOffset(at, clock.LocalTimeZone.GetUtcOffset(at)).ToUnixTimeMilliseconds(),
             Notes = notesBody,
-            IsRetroactive = true,
+            IsRetroactive = _rng.NextDouble() < 0.10,
         };
     }
 

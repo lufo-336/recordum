@@ -768,7 +768,7 @@
     <value>Ora del giorno</value>
   </data>
   <data name="Detail.Hourly.Empty" xml:space="preserve">
-    <value>Nessuna registrazione</value>
+    <value>Nessuna registrazione dal vivo nel periodo</value>
   </data>
   <data name="Workspace.Home" xml:space="preserve">
     <value>Home</value>
@@ -804,7 +804,7 @@
     <value>Elimina</value>
   </data>
   <data name="Charts.Empty" xml:space="preserve">
-    <value>Nessun grafico</value>
+    <value>Nessun grafico — creane uno</value>
   </data>
   <data name="Charts.Builder.Name" xml:space="preserve">
     <value>Nome</value>
@@ -813,7 +813,7 @@
     <value>Tipo</value>
   </data>
   <data name="Charts.Builder.Range" xml:space="preserve">
-    <value>Intervallo</value>
+    <value>Periodo</value>
   </data>
   <data name="Charts.Builder.Bucket" xml:space="preserve">
     <value>Raggruppamento</value>
@@ -835,6 +835,27 @@
   </data>
   <data name="Charts.Builder.Save" xml:space="preserve">
     <value>Salva</value>
+  </data>
+  <data name="Charts.Builder.CountMetric" xml:space="preserve">
+    <value>Conteggio</value>
+  </data>
+  <data name="Charts.Builder.SaveError" xml:space="preserve">
+    <value>Impossibile salvare il grafico. Controlla le serie e riprova.</value>
+  </data>
+  <data name="Charts.Builder.PickHabit" xml:space="preserve">
+    <value>Scegli un'abitudine…</value>
+  </data>
+  <data name="Charts.Builder.PreviewEmpty" xml:space="preserve">
+    <value>Scegli un'abitudine per l'anteprima</value>
+  </data>
+  <data name="Charts.Range.30d" xml:space="preserve">
+    <value>30 giorni</value>
+  </data>
+  <data name="Charts.Range.90d" xml:space="preserve">
+    <value>90 giorni</value>
+  </data>
+  <data name="Charts.Range.1y" xml:space="preserve">
+    <value>1 anno</value>
   </data>
   <data name="Charts.Kind.Line" xml:space="preserve">
     <value>Linea</value>

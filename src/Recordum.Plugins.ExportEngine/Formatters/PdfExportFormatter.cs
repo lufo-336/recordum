@@ -54,6 +54,28 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                                 }
                             });
                         }
+
+                        if (h.Periods.Count > 0)
+                        {
+                            col.Item().Table(t =>
+                            {
+                                t.ColumnsDefinition(c => { c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); });
+                                t.Header(hd =>
+                                {
+                                    hd.Cell().Text("Started").SemiBold();
+                                    hd.Cell().Text("Ended").SemiBold();
+                                    hd.Cell().Text("Duration").SemiBold();
+                                    hd.Cell().Text("Outcome").SemiBold();
+                                });
+                                foreach (var p in h.Periods)
+                                {
+                                    t.Cell().Text(p.StartedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                                    t.Cell().Text(p.EndedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "");
+                                    t.Cell().Text(FormatPeriodDuration(p.Duration));
+                                    t.Cell().Text(p.IsOpen ? "open" : "relapsed");
+                                }
+                            });
+                        }
                     }
                 });
                 page.Footer().AlignCenter().Text(x => x.CurrentPageNumber());

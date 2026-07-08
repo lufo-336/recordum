@@ -29,7 +29,8 @@ public sealed class ExportQueryServiceTests
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
-        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator());
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence);
     }
 
     [Fact]
@@ -126,6 +127,103 @@ public sealed class ExportQueryServiceTests
         Assert.Contains(habit.Heatmap, c => c.Step >= 1);
         Assert.All(habit.Heatmap, c => Assert.InRange(c.Week, 0, 52));
         Assert.All(habit.Heatmap, c => Assert.InRange(c.Weekday, 0, 6));
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_completion_rows_carry_metric_name()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        long Ms(int d) => new DateTimeOffset(2026, 5, d, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "Read" });
+            db.MetricDefinitions.Add(new MetricDefinition { Id = metricId, HabitNodeId = habitId, Name = "Pagine", SortOrder = 0 });
+            var completionId = Guid.NewGuid();
+            db.Completions.Add(new Completion { Id = completionId, HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(20) });
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completionId, MetricDefinitionId = metricId, ValueInteger = 22 });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+        var habit = Assert.Single(model.Habits);
+        var row = Assert.Single(habit.Completions);
+        Assert.Equal("Pagine", row.Metric);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_resistance_habit_lists_periods_not_completions()
+    {
+        var t0 = new DateTimeOffset(2026, 5, 1, 9, 0, 0, TimeSpan.Zero);
+        var fx = new DbFixture(new FakeClock(t0.AddDays(10)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "Sober" });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = t0.ToUnixTimeMilliseconds(),
+                EndedAtMs = t0.AddDays(3).ToUnixTimeMilliseconds(),
+            });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = t0.AddDays(4).ToUnixTimeMilliseconds(),
+                EndedAtMs = null,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var from = DateOnly.FromDateTime(t0.AddDays(-1).UtcDateTime);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, from, today, new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+
+        var habit = Assert.Single(model.Habits);
+        Assert.Empty(habit.Completions);
+        Assert.Equal(2, habit.Periods.Count);
+        Assert.Contains(habit.Periods, p => p.IsOpen && p.EndedAt is null);
+        Assert.Equal(2, habit.Summary.TotalCompletions);
+        // Closed period May 1-4: clean days are May 1-3 (3 days) — May 4 is the relapse day, excluded.
+        // Open period May 5 onward: clean through "today" (May 11) inclusive — 7 days. Total: 10.
+        Assert.Equal(10, habit.Heatmap.Count);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_resistance_heatmap_excludes_relapse_day_same_day_period_yields_no_clean_cell()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 5, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "Sober" });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                StartedAtMs = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                EndedAtMs = new DateTimeOffset(2026, 5, 1, 20, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId,
+            new DateOnly(2026, 4, 1), new DateOnly(2026, 5, 5), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+
+        // Started and relapsed on the same calendar day: zero clean days, so zero heatmap cells —
+        // an off-by-one that counts the relapse day as clean would emit exactly 1 cell here.
+        var habit = Assert.Single(model.Habits);
+        Assert.Empty(habit.Heatmap);
         await fx.DisposeAsync();
     }
 }

@@ -27,4 +27,13 @@ public sealed class CsvExportFormatterTests
         var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(model));
         Assert.Contains("\"Run, fast\"", text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Write_renders_periods_table_for_resistance_habit()
+    {
+        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(SampleModel.WithAbstinencePeriods()));
+        Assert.Contains("habit,started,ended,duration,outcome", text, StringComparison.Ordinal);
+        Assert.Contains("Quit smoking,2026-06-13 09:00,2026-07-01 19:00,18.10:00:00,relapsed", text, StringComparison.Ordinal);
+        Assert.Contains("Quit smoking,2026-07-02 08:00,,0.04:30:00,open", text, StringComparison.Ordinal);
+    }
 }

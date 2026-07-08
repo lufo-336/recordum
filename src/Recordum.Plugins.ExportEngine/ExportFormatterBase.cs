@@ -14,4 +14,8 @@ public abstract class ExportFormatterBase : IExportFormatter
     public abstract ExportFormat Format { get; }
     public bool CanFormat(ExportFormat format) => format == Format;
     public abstract byte[] Write(ExportModel model);
+
+    /// <summary>Formats an abstinence period's elapsed span as <c>d.hh:mm:ss</c>, invariant.</summary>
+    protected static string FormatPeriodDuration(TimeSpan t)
+        => t.ToString(@"d\.hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture);
 }

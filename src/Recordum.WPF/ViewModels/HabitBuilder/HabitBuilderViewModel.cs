@@ -259,11 +259,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         return new ComposedHabitRequest(node, config, metrics);
     }
 
-    // TODO timer-mode: mappa RecordingMode → HabitConfig.TimerMode (Stopwatch/Countdown);
-    // per questo dispatch la config è di default (null) — rifinita nell'editor post-lancio.
-#pragma warning disable CA1822 // diventerà istanza con il mapping timer-mode
-    private HabitConfig? BuildConfig(Guid nodeId) => null;
-#pragma warning restore CA1822
+    // Default config so streak/scheduling engines work out of the box; the editor refines it later.
+    // (Timer-mode mapping from RecordingMode is still future work.)
+    private static HabitConfig BuildConfig(Guid nodeId) =>
+        new() { Id = Guid.NewGuid(), HabitNodeId = nodeId };
 
     private static readonly JsonSerializerOptions s_templateJsonOptions = new()
     {
