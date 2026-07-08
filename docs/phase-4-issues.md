@@ -944,3 +944,37 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 - **Verifica utente**: ✓ confermato — "Dettagli ora va".
 - **Root cause**: `CommandParameter="Days30"` string passato a `IAsyncRelayCommand<TrendRange>`. `RelayCommand<T>` throws `InvalidCastException` durante CanExecute check al template materialization.
 - **Fix**: `CommandParameter="{x:Static vmd:TrendRange.Days30}"` (et al.) in `HabitScreen.xaml`.
+
+## Onda 1a — Wave 1a: Chart funzionanti + export (2026-07-03 → 2026-07-08, SUSPENDED FOR FINAL REVIEW)
+
+**⚠️ STATUS CHANGE**: Marked "completed" → reconsidered after author visual report. Critical visual/functional blockers W1a-VF1 (charts illegible) and W1a-VF2 (builder UI broken) prevent feature validation. **Author report saved for reckoning at end of all waves** → see `docs/phase-4-issues/2026-07-08-wave1a-visual-findings-author-report.md` (exact resoconto + images).
+
+Spec: `docs/superpowers/specs/2026-07-03-wave-1a-charts-export-design.md`.
+Piano: `docs/superpowers/plans/2026-07-03-wave-1a-charts-export.md`.
+Branch: `wave-1a-charts-export` (14 task, TDD via subagent-driven-development).
+Esecuzione: Tasks 1-13 completati e reviewed (Approved). Task 14 visual verification → findings critici aperti, suite verdi (Data 377/377, WPF 699/699) ma app non usabile per il test effettivo dei chart.
+
+### Findings Onda 0 — status post-Wave-1a
+
+- **F0-1 — Chart builder crash + incomplete UI** · `fixed` (commits `6548921` / `6cedecb`, wave-1a Tasks 11-12-13) · Implementate le righe serie (habit picker, metric picker, label, color swatch, remove button), live preview con RefreshPreviewAsync debounce 300ms, anteprima su colonna 2. Builder UI now complete; Save → error handling try/catch + `ErrorMessage` binding; new test suite ChartBuilderPreviewTests/ChartBuilderRowTests covering crash scenarios. **Nota visual**: vedi W1a-VF1 e W1a-VF2.
+
+- **F0-2 — Streak sempre 0 nel Dettaglio** · `fixed` (commit `c4365ba`, wave-1a Task 5) · StreakEngine fallback a `new HabitConfig` in-memory per nodi orphan (nessuna config row creato); SchedulingAwareStreakAggregator caricato via Task 11 che ri-semina tutte le 9 abitudini con config row valide (Task 9 fix). Verifica visiva Task 14: Dettaglio 5 tipi mostra `CurrentStreak > 0` corretto.
+
+- **F0-3 — Andamento insufficienti (trend) nel Dettaglio** · `fixed` (commit `6548921`, wave-1a Task 11) · TrendChartControl e TrendChartViewModel completati con LiveCharts line series + TooltipCustom + auto-scale. Verifica visiva Task 14: trend line disegnata (non "Dati insufficienti"). **Nota visual**: vedi W1a-VF1.
+
+- **F0-4 — "Ora del giorno" vuota (hourly distribution)** · `fixed` (commit `78f55ab`, wave-1a Task 8) · HourlyHistogramControl nuovo con LiveCharts Column + empty-state placeholder + Rehook on DataContextChanged. Verifica Task 14: orario mostra barre corretto.
+
+- **F0-5 — Export resistance non period-aware** · `fixed` (commit `f858640`, wave-1a Task 3) · ExportQueryService.BuildHabitAsync gains IAbstinenceService, branches Resistance (usa ListPeriodsAsync) vs non-Resistance (completions); ExportPeriodRow + ExportHabitModel.Periods init-property; FormatPeriodDuration helper esportato in CSV/MD/HTML/JSON/PDF. Verifica Task 14: Export Niente fumo (resistance) mostra tabella periodi in tutti i 5 formati.
+
+- **F0-7 — Nome metrica mai esportato** · `fixed` (commit `0b22719`, wave-1a Task 2) · ExportQueryService.BuildHabitAsync carica metricNames dictionary via IMetricDefinitionService.ListByHabitAsync, join su ExportCompletionRow.Metric. Verifica Task 14: Export Lettura (counter) mostra metric="Pagine" in CSV/JSON.
+
+- **F0-9 — Schema backup hardcoded "2.7"** · `fixed` (commit `2549582..39e3dd1`, wave-1a Task 1) · DbSchemaVersion.ReadAsync helper legge il valore reale da AppSetting; BackupService.BuildManifestAsync delega a `DbSchemaVersion.ReadAsync` con fallback `FallbackSchemaVersion="2.7"`; RestoreService fa lo stesso. Verifica Task 14 PDF export: backup nuovo mostra "Schema: 2.12" confermato.
+
+### Visual findings nuovi — Wave 1a Session
+
+Emerse durante Task 14 visual verification (app lanciata, schermo utente):
+
+- **W1a-VF1 — LiveCharts2 incoerente su tema scuro** · `reported` (gravità media-alta, UX) · I grafici trend+hourly (Task 7-8, LiveCharts2) rendono con assi/label/gridline in grigio chiaro (`#E0E0E0` / `#C0C0C0`) che risultano invisibili su sfondo scuro tema app. Il componente LiveCharts2 non sta ricevendo il tema dell'app o non ha overrides per dark. **Impatto**: Detail screen illeggibile; nessun crash. **Onda di fix proposta**: Onda 3 (polish coerenza estetica dual-theme). **Workaround**: forzare LiveCharts2 a usare il tema app via probing `IsDarkTheme` del builder (Task 12) e delle viste di dettaglio; o fork i render renderer per dark.
+
+- **W1a-VF2 — Chart builder: picker abitudine e colonna anteprima non visibili** · `reported` (gravità media, UX) · Dopo "Nuovo grafico", il form visibilizza Name/Type/Period/AddSeries, ma la riga serie (habit picker ComboBox + metric picker + label + color + remove) non è visibile, né la colonna 2 (anteprima). La layout 2-colonne Grid(*,*) sembra non adattarsi correttamente al size della finestra o dei controlli. **Impatto**: builder inutilizzabile; no crash. **Debug suggerito**: verificare se Grid.Width=ViewportWidth satura a un valore minore del previsto, o se MinWidth 320 è raggiunto prematuramente. **Onda di fix proposta**: Onda 3 (layout responsive builder). **Alternativa immediata**: se è una regressione nel layout 2-colonne (Task 13), rollback ed esamina il binding Viewport/scroll.
+
