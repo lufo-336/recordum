@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Web.WebView2.Core;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Controls;
+using Recordum.WPF.Tests.Fixtures;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Controls;
@@ -49,6 +50,7 @@ public class MarkdownEditorControlTests
     [WpfFact]
     public void Fallback_TextBox_visible_when_WebView2_unavailable()
     {
+        TestApp.EnsureLoaded();
         var sut = new MarkdownEditorControl { Availability = new FakeAvailability(false) };
         var host = new System.Windows.Window { Content = sut };
         host.Show();
@@ -63,6 +65,7 @@ public class MarkdownEditorControlTests
     [WpfFact]
     public void Fallback_TextBox_reflects_Markdown_DP_value()
     {
+        TestApp.EnsureLoaded();
         var sut = new MarkdownEditorControl { Availability = new FakeAvailability(false) };
         var host = new System.Windows.Window { Content = sut };
         host.Show();

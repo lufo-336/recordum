@@ -133,7 +133,7 @@
                                             Cursor="Hand" Padding="0" BorderThickness="0"
                                             Background="{DynamicResource Brush.SurfaceElevated}">
                                         <Border CornerRadius="4" ClipToBounds="True" Width="78" Height="78">
-                                            <Image Source="{Binding FilePath}" Stretch="UniformToFill"/>
+                                            <Image Source="{Binding FilePath, Converter={StaticResource FilePathToImageSource}}" Stretch="UniformToFill"/>
                                         </Border>
                                     </Button>
                                     <!-- Remove: the same Lucide-style X icon as ChartsView's series-remove
@@ -243,7 +243,7 @@
                     <Border.Effect>
                         <DropShadowEffect Color="#000000" Opacity="0.20" BlurRadius="18" ShadowDepth="0"/>
                     </Border.Effect>
-                    <Image Source="{Binding LightboxAttachment.FilePath}" Stretch="Uniform"/>
+                    <Image Source="{Binding LightboxAttachment.FilePath, Converter={StaticResource FilePathToImageSource}}" Stretch="Uniform"/>
                 </Border>
 
                 <Button HorizontalAlignment="Left" VerticalAlignment="Center"
