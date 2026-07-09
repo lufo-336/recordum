@@ -42,4 +42,23 @@ public sealed class TrendChartControlSmokeTests
 
         Assert.NotNull(control.ChartHost.Content);
     }
+
+    [WpfFact]
+    public void Reload_without_DataContext_change_still_reacts_to_later_data()
+    {
+        // Unloaded drops the VM subscriptions (Unhook). A Loaded/Unloaded/Loaded cycle with the
+        // SAME DataContext throughout (e.g. tab virtualization) must re-subscribe on the second
+        // Loaded too, or the control silently stops reacting to async data arriving afterward.
+        var trend = new FakeTrendQueryService();
+        var vm = new TrendChartViewModel(trend, new FakeClock());
+        var control = new TrendChartControl { DataContext = vm };
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent)); // no DataContextChanged in between
+
+        vm.Series.Add(new TrendPoint(new DateOnly(2026, 7, 1), 5m, 1));
+        vm.MaxValue = 5m;
+
+        Assert.NotNull(control.ChartHost.Content);
+    }
 }

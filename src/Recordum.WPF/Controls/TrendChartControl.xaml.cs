@@ -16,7 +16,10 @@ public partial class TrendChartControl : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => { Rehook(); Rebuild(); };
-        Loaded += (_, _) => Rebuild();
+        // Rehook (not just Rebuild) here too: Unloaded drops the VM subscriptions, and a
+        // Loaded/Unloaded cycle without a DataContext change (e.g. tab virtualization) would
+        // otherwise leave the control rendering once but never reacting to later async data.
+        Loaded += (_, _) => { Rehook(); Rebuild(); };
         Unloaded += (_, _) => Unhook();
     }
 
