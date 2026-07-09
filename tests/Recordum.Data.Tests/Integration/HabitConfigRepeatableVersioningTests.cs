@@ -47,21 +47,29 @@ public class HabitConfigRepeatableVersioningTests
         var (fx, habitId) = await SeedHabitAsync();
         var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
 
+        // Set repeatable to a NON-default value (true) so the captured old value is unambiguous:
+        // bool defaults to false, so seeding/asserting false could be satisfied by an unrelated
+        // history row and would pass even if "Repeatable" were dropped from the Versioned list.
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromMinutes(10));
         await svc.UpsertAsync(habitId, c =>
         {
-            c.Repeatable = false;
+            c.Repeatable = true;
             c.SeriesLabelsJson = "[\"A\"]";
         });
 
+        // Flip repeatable back off — this is the change under test.
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromMinutes(10));
-        await svc.UpsertAsync(habitId, c => c.Repeatable = true);
+        await svc.UpsertAsync(habitId, c => c.Repeatable = false);
 
+        // ListHistoryAsync orders by ValidFrom ascending, so the LAST row is the snapshot the flip
+        // produced. It must capture the previous value (true) — this only holds if the interceptor
+        // treats Repeatable as a versioned column.
         var history = await svc.ListHistoryAsync(habitId);
-        Assert.Contains(history, h => h.Repeatable == false);
+        Assert.Equal(2, history.Count);
+        Assert.True(history[^1].Repeatable);
 
         var current = await svc.GetAsync(habitId);
-        Assert.True(current!.Repeatable);
+        Assert.False(current!.Repeatable);
         Assert.Equal("[\"A\"]", current.SeriesLabelsJson);
 
         await fx.DisposeAsync();
