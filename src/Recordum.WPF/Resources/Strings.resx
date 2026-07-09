@@ -686,6 +686,30 @@ Details: {0}</value>
   <data name="Notes.History.Restore" xml:space="preserve">
     <value>Restore</value>
   </data>
+  <data name="Notes.Attachments.Title" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="Notes.Attachments.Add" xml:space="preserve">
+    <value>+ Add photo</value>
+  </data>
+  <data name="Notes.Attachments.Delete" xml:space="preserve">
+    <value>Delete photo</value>
+  </data>
+  <data name="Notes.Attachments.DeleteConfirm.Title" xml:space="preserve">
+    <value>Delete attachment</value>
+  </data>
+  <data name="Notes.Attachments.DeleteConfirm.Message" xml:space="preserve">
+    <value>Delete this photo? This cannot be undone.</value>
+  </data>
+  <data name="Notes.Lightbox.Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Notes.Lightbox.Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Notes.Lightbox.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="Editor.WebView2.NotAvailable.Title" xml:space="preserve">
     <value>Editor not available</value>
   </data>

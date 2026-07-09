@@ -668,6 +668,30 @@
   <data name="Notes.History.Restore" xml:space="preserve">
     <value>Ripristina</value>
   </data>
+  <data name="Notes.Attachments.Title" xml:space="preserve">
+    <value>Allegati</value>
+  </data>
+  <data name="Notes.Attachments.Add" xml:space="preserve">
+    <value>+ Allega foto</value>
+  </data>
+  <data name="Notes.Attachments.Delete" xml:space="preserve">
+    <value>Elimina foto</value>
+  </data>
+  <data name="Notes.Attachments.DeleteConfirm.Title" xml:space="preserve">
+    <value>Elimina allegato</value>
+  </data>
+  <data name="Notes.Attachments.DeleteConfirm.Message" xml:space="preserve">
+    <value>Eliminare questa foto? L'operazione non è reversibile.</value>
+  </data>
+  <data name="Notes.Lightbox.Previous" xml:space="preserve">
+    <value>Precedente</value>
+  </data>
+  <data name="Notes.Lightbox.Next" xml:space="preserve">
+    <value>Successivo</value>
+  </data>
+  <data name="Notes.Lightbox.Close" xml:space="preserve">
+    <value>Chiudi</value>
+  </data>
   <data name="Editor.WebView2.NotAvailable.Title" xml:space="preserve">
     <value>Editor non disponibile</value>
   </data>

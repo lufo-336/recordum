@@ -51,7 +51,8 @@ public static class HabitScreenViewModelFactory
             noteService, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             new FakeAbstinenceService(), clock, bus, new FakeWebView2Availability(), settings, editor,
-            new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog());
+            new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
+            new FakeAttachmentService(), new FakeOpenFileDialog());
 
         notes = noteService;
         configs = configService;

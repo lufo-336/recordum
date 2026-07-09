@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -9,13 +10,20 @@ using Recordum.Core.Services;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
+using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
 
 public sealed partial class NotesViewModel : ObservableObject, IDisposable
 {
+    private const string ImageFileFilter =
+        "Image files (*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp";
+
     private readonly INoteService _notes;
+    private readonly IAttachmentService _attachments;
+    private readonly IOpenFileDialog _dialog;
+    private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
     private readonly List<IDisposable> _subs = [];
     private Guid _habitNodeId;
@@ -23,11 +31,20 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private DateOnly? _calendarDay;
 
     public ObservableCollection<NoteRowViewModel> Notes { get; } = [];
+    public ObservableCollection<AttachmentViewModel> Attachments { get; } = [];
 
     [ObservableProperty] private NoteRowViewModel? _selectedNote;
     [ObservableProperty] private string _editorMarkdown = string.Empty;
     [ObservableProperty] private bool _isConfirmingDelete;
     [ObservableProperty] private bool _isShowingHistory;
+
+    // ---- lightbox (view-only state, flat on this VM — mirrors IsShowingHistory/IsConfirmingDelete
+    // rather than a child VM, matching this file's existing style) ----
+    [ObservableProperty] private bool _isLightboxOpen;
+    [ObservableProperty] private AttachmentViewModel? _lightboxAttachment;
+
+    /// <summary>Prev/Next only make sense with more than one photo.</summary>
+    public bool CanNavigateLightbox => Attachments.Count > 1;
 
     [ObservableProperty] private EntriesRecordsMode _mode = EntriesRecordsMode.Periodo;
     [ObservableProperty] private EntriesPeriod _selectedPeriod = EntriesPeriod.Tutto;
@@ -38,17 +55,31 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
 
     public NoteHistoryViewModel History { get; }
 
-    public NotesViewModel(INoteService notes, IEventBus events, IClock clock, IWebView2Availability availability)
+    public NotesViewModel(
+        INoteService notes,
+        IEventBus events,
+        IClock clock,
+        IWebView2Availability availability,
+        IAttachmentService attachments,
+        IOpenFileDialog dialog,
+        IConfirmationDialog confirm)
     {
         ArgumentNullException.ThrowIfNull(notes);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(availability);
+        ArgumentNullException.ThrowIfNull(attachments);
+        ArgumentNullException.ThrowIfNull(dialog);
+        ArgumentNullException.ThrowIfNull(confirm);
         _notes = notes;
         _clock = clock;
+        _attachments = attachments;
+        _dialog = dialog;
+        _confirm = confirm;
         Availability = availability;
         History = new NoteHistoryViewModel(notes);
         History.Restored += (_, _) => IsShowingHistory = false;
+        Attachments.CollectionChanged += (_, _) => OnPropertyChanged(nameof(CanNavigateLightbox));
         _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteCreated, OnNoteEvent));
         _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
         _subs.Add(events.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
@@ -157,6 +188,95 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         EditorMarkdown = value?.Note.BodyMd ?? string.Empty;
         OnPropertyChanged(nameof(IsDirty));
         SaveCommand.NotifyCanExecuteChanged();
+
+        Attachments.Clear();
+        CloseLightbox();
+        // Fire-and-forget: note switching in this tab is a deliberate user click (not the
+        // rapid-fire habit-tree navigation CR14/CR18/CR19 added generation guards for), so a
+        // plain reload is enough — the note list itself is small and each load is a single
+        // indexed query. If this tab ever grows fast programmatic note switching, revisit.
+        if (value is not null) _ = LoadAttachmentsAsync(value.Id, CancellationToken.None);
+    }
+
+    private async Task LoadAttachmentsAsync(Guid noteId, CancellationToken ct)
+    {
+        var list = await _attachments.ListByNoteAsync(noteId, ct).ConfigureAwait(true);
+        // Guard against a stale reload landing after the selection moved on again.
+        if (SelectedNote?.Id != noteId) return;
+        Attachments.Clear();
+        foreach (var a in list) Attachments.Add(new AttachmentViewModel(a, _attachments));
+    }
+
+    [RelayCommand]
+    private async Task AddAttachment(CancellationToken ct)
+    {
+        if (SelectedNote is not { } row) return;
+        var noteId = row.Id;
+        var paths = _dialog.PromptMultiple(ImageFileFilter);
+        foreach (var path in paths)
+        {
+            try
+            {
+                var attachment = await _attachments.AddAsync(noteId, path, ct).ConfigureAwait(true);
+                // The add itself (File.Copy + SaveChangesAsync) is a real await boundary — if the
+                // user switched to a different note mid-batch, this note's Attachments collection
+                // has already been cleared/reloaded for the new selection. Still persist the file
+                // to the originally-selected note (the user's intent), just don't let it land in a
+                // list that now represents a different note; a later reselect reloads it correctly.
+                if (SelectedNote?.Id == noteId)
+                    Attachments.Add(new AttachmentViewModel(attachment, _attachments));
+            }
+#pragma warning disable CA1031 // one bad file (unreadable/moved) must not abort the rest of the batch
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+                // Best-effort batch add — no per-file UI surface for this yet (Task 5 gallery/lightbox
+                // work adds the richer UI); skipping the failed file and continuing is acceptable here.
+            }
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteAttachment(AttachmentViewModel? vm, CancellationToken ct)
+    {
+        if (vm is null) return;
+        var ok = await _confirm.ConfirmAsync(
+            Strings.Notes_Attachments_DeleteConfirm_Title, Strings.Notes_Attachments_DeleteConfirm_Message).ConfigureAwait(true);
+        if (!ok) return;
+        await _attachments.DeleteAsync(vm.Id, ct).ConfigureAwait(true);
+        Attachments.Remove(vm);
+        // Deleting the photo currently open in the lightbox must close it — nothing left to show.
+        if (LightboxAttachment == vm) CloseLightbox();
+    }
+
+    [RelayCommand]
+    private void OpenLightbox(AttachmentViewModel? attachment)
+    {
+        if (attachment is null) return;
+        LightboxAttachment = attachment;
+        IsLightboxOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseLightbox()
+    {
+        IsLightboxOpen = false;
+        LightboxAttachment = null;
+    }
+
+    [RelayCommand]
+    private void LightboxNext() => StepLightbox(1);
+
+    [RelayCommand]
+    private void LightboxPrevious() => StepLightbox(-1);
+
+    private void StepLightbox(int direction)
+    {
+        if (Attachments.Count == 0 || LightboxAttachment is not { } current) return;
+        var idx = Attachments.IndexOf(current);
+        if (idx < 0) return;
+        var nextIdx = (idx + direction + Attachments.Count) % Attachments.Count;
+        LightboxAttachment = Attachments[nextIdx];
     }
 
     partial void OnEditorMarkdownChanged(string value)

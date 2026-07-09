@@ -162,25 +162,6 @@ public class NoteServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_with_attachments_persists_both()
-    {
-        var (fx, habitId) = await SeedHabitAsync();
-        var sut = NewService(fx, out _);
-
-        var id = await sut.CreateAsync(
-            new Note { HabitNodeId = habitId, BodyMd = "hi" },
-            new[] { new Attachment { Id = Guid.NewGuid(), FilePath = "/tmp/a.png", MimeType = "image/png" } });
-
-        await using var db = await fx.Factory.CreateDbContextAsync();
-        var note = await db.Notes.Include(n => n.Attachments).SingleAsync();
-        note.Id.Should().Be(id);
-        note.Attachments.Should().ContainSingle();
-        note.UpdatedAtMs.Should().BeGreaterThan(0);
-
-        await fx.DisposeAsync();
-    }
-
-    [Fact]
     public async Task ListByHabitAndDateAsync_returns_only_notes_for_that_day()
     {
         var (fx, habitId) = await SeedHabitAsync();
@@ -327,6 +308,37 @@ public class NoteServiceTests
         (await sut.GetAsync(id))!.BodyMd.Should().Be("v1");           // body reverted
         var versions = await sut.ListVersionsAsync(id);
         versions.Select(v => v.BodyMd).Should().Equal("v1", "v2", "v1"); // restore appended, nothing lost
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_removes_attachments_without_throwing_FK_violation()
+    {
+        // attachment.note_id is FK Restrict (AttachmentConfiguration) — DeleteAsync must clear
+        // attachment rows before deleting the Note, or SQLite raises FOREIGN KEY constraint failed.
+        var (fx, habitId) = await SeedHabitAsync();
+        var sut = NewService(fx, out _);
+        var id = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "x" });
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = Guid.NewGuid(),
+                NoteId = id,
+                Filename = "photo.jpg",
+                MimeType = "image/jpeg",
+                FileSizeBytes = 123,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await sut.DeleteAsync(id);
+
+        (await sut.GetAsync(id)).Should().BeNull();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.Attachments.CountAsync(a => a.NoteId == id)).Should().Be(0);
+        }
         await fx.DisposeAsync();
     }
 

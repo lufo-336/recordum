@@ -298,59 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 6, 28, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.12"
-                        });
-                });
-
-            modelBuilder.Entity("Recordum.Core.Models.Attachment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("caption");
-
-                    b.Property<Guid?>("CompletionId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("completion_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("file_path");
-
-                    b.Property<string>("MimeType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("mime_type");
-
-                    b.Property<Guid?>("NoteId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("note_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_attachments");
-
-                    b.HasIndex("CompletionId")
-                        .HasDatabaseName("ix_attachments_completion_id");
-
-                    b.HasIndex("NoteId")
-                        .HasDatabaseName("ix_attachments_note_id");
-
-                    b.ToTable("attachments", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_attachment_exactly_one_parent", "(completion_id IS NOT NULL OR note_id IS NOT NULL) AND NOT (completion_id IS NOT NULL AND note_id IS NOT NULL)");
+                            UpdatedAt = new DateTime(2026, 7, 8, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.13"
                         });
                 });
 
@@ -2070,6 +2019,55 @@ namespace Recordum.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Recordum.Data.Models.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("file_size_bytes");
+
+                    b.Property<string>("Filename")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("filename");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("mime_type");
+
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attachment");
+
+                    b.HasIndex("NoteId")
+                        .HasDatabaseName("ix_attachment_note_id");
+
+                    b.ToTable("attachment", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_attachment_size", "file_size_bytes >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.AIInsight", b =>
                 {
                     b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
@@ -2103,25 +2101,6 @@ namespace Recordum.Data.Migrations
                         .HasConstraintName("fk_active_timer_habit_nodes_habit_node_id");
 
                     b.Navigation("HabitNode");
-                });
-
-            modelBuilder.Entity("Recordum.Core.Models.Attachment", b =>
-                {
-                    b.HasOne("Recordum.Core.Models.Completion", "Completion")
-                        .WithMany("Attachments")
-                        .HasForeignKey("CompletionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_attachments_completions_completion_id");
-
-                    b.HasOne("Recordum.Core.Models.Note", "Note")
-                        .WithMany("Attachments")
-                        .HasForeignKey("NoteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_attachments_notes_note_id");
-
-                    b.Navigation("Completion");
-
-                    b.Navigation("Note");
                 });
 
             modelBuilder.Entity("Recordum.Core.Models.ChartSeries", b =>
@@ -2390,6 +2369,18 @@ namespace Recordum.Data.Migrations
                     b.Navigation("HabitNode");
                 });
 
+            modelBuilder.Entity("Recordum.Data.Models.Attachment", b =>
+                {
+                    b.HasOne("Recordum.Core.Models.Note", "Note")
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_attachment_note_id");
+
+                    b.Navigation("Note");
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.Chart", b =>
                 {
                     b.Navigation("Series");
@@ -2397,8 +2388,6 @@ namespace Recordum.Data.Migrations
 
             modelBuilder.Entity("Recordum.Core.Models.Completion", b =>
                 {
-                    b.Navigation("Attachments");
-
                     b.Navigation("Segments");
 
                     b.Navigation("Values");
@@ -2441,8 +2430,6 @@ namespace Recordum.Data.Migrations
 
             modelBuilder.Entity("Recordum.Core.Models.Note", b =>
                 {
-                    b.Navigation("Attachments");
-
                     b.Navigation("History");
                 });
 

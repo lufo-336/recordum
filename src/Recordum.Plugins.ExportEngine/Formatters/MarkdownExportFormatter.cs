@@ -48,8 +48,12 @@ public sealed class MarkdownExportFormatter : ExportFormatterBase
             {
                 sb.Append("### Notes\n\n");
                 foreach (var n in h.Notes)
+                {
                     sb.Append("- ").Append(n.UpdatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(": ")
                       .Append(n.BodyMd.ReplaceLineEndings(" ")).Append('\n');
+                    foreach (var att in n.Attachments)
+                        sb.Append("  ![").Append(att.Filename).Append("](").Append(att.RelativePath).Append(")\n");
+                }
                 sb.Append('\n');
             }
         }

@@ -22,7 +22,7 @@ public sealed class NoteCategoryV211MigrationTests
         await db.Database.MigrateAsync();
 
         var setting = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.12", setting.Value);
+        Assert.Equal("2.13", setting.Value);
     }
 
     [Fact]

@@ -26,4 +26,12 @@ public sealed class MarkdownExportFormatterTests
         Assert.Contains("| 2026-06-13 09:00 | 2026-07-01 19:00 | 18.10:00:00 | relapsed |", md, StringComparison.Ordinal);
         Assert.Contains("| 2026-07-02 08:00 |  | 0.04:30:00 | open |", md, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Write_renders_a_markdown_image_link_per_attachment()
+    {
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.WithNoteAttachments("unused.jpg")));
+        Assert.Contains("![lake.jpg](attachments/note1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg)", md, StringComparison.Ordinal);
+        Assert.Contains("![missing.png](attachments/note1/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png)", md, StringComparison.Ordinal);
+    }
 }

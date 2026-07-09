@@ -98,13 +98,64 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <ctrl:MarkdownEditorControl Grid.Row="0"
                                             Markdown="{Binding EditorMarkdown, Mode=TwoWay}"
                                             Availability="{Binding Availability}"/>
 
-                <DockPanel Grid.Row="1" Margin="0,8,0,0">
+                <!-- Attachments gallery: title + add button, then a thumbnail strip that only takes
+                     space once photos exist (an empty ItemsControl/WrapPanel has zero height, so no
+                     separate empty-state copy is needed here). -->
+                <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                    <DockPanel Margin="0,0,0,6">
+                        <Button DockPanel.Dock="Right"
+                                Content="{x:Static res:Strings.Notes_Attachments_Add}"
+                                Command="{Binding AddAttachmentCommand}"
+                                Padding="8,4"/>
+                        <TextBlock Text="{x:Static res:Strings.Notes_Attachments_Title}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                    </DockPanel>
+                    <ItemsControl x:Name="AttachmentGallery" ItemsSource="{Binding Attachments}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AttachmentViewModel}">
+                                <Grid Width="80" Height="80" Margin="0,0,8,8">
+                                    <Button Command="{Binding DataContext.OpenLightboxCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}"
+                                            Cursor="Hand" Padding="0" BorderThickness="0"
+                                            Background="{DynamicResource Brush.SurfaceElevated}">
+                                        <Border CornerRadius="4" ClipToBounds="True" Width="78" Height="78">
+                                            <Image Source="{Binding FilePath, Converter={StaticResource FilePathToImageSource}}" Stretch="UniformToFill"/>
+                                        </Border>
+                                    </Button>
+                                    <!-- Remove: the same Lucide-style X icon as ChartsView's series-remove
+                                         button (Path cross, not a raw glyph). -->
+                                    <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                                            Margin="2" Padding="3" Width="20" Height="20"
+                                            Background="Transparent" BorderThickness="0"
+                                            ToolTip="{x:Static res:Strings.Notes_Attachments_Delete}"
+                                            Command="{Binding DataContext.DeleteAttachmentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Path Width="9" Height="9" Stretch="Uniform"
+                                              Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                              Data="M0,0 L9,9 M9,0 L0,9"/>
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <DockPanel Grid.Row="2" Margin="0,8,0,0">
                     <Button Content="{x:Static res:Strings.Notes_Save}"
                             Command="{Binding SaveCommand}"
                             Padding="10,4" Margin="0,0,6,0"/>
@@ -170,6 +221,70 @@
                                  VerticalScrollBarVisibility="Auto"/>
                     </DockPanel>
                 </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Lightbox: full-tab overlay (no existing modal-Window precedent fit this — the photo
+             stays contextual to the Note tab rather than opening a whole new OS window). Backdrop
+             is a borderless Button filling the overlay; the content Grid below has no Background of
+             its own, so clicks in its empty margin area fall through (WPF panels are hit-test
+             invisible without a Background) to the backdrop and close the lightbox, while clicks on
+             the image/controls are consumed by those elements first (siblings, so their click never
+             bubbles into the backdrop Button). -->
+        <Grid x:Name="Lightbox" Grid.ColumnSpan="3"
+              Visibility="{Binding IsLightboxOpen, Converter={StaticResource BoolToVisible}}">
+            <Button Command="{Binding CloseLightboxCommand}"
+                    Background="#B3000000" BorderThickness="0" Focusable="False"/>
+            <Grid Margin="40">
+                <Border MaxWidth="900" MaxHeight="700"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource Brush.SurfaceElevated}"
+                        CornerRadius="8" Padding="16">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" Opacity="0.20" BlurRadius="18" ShadowDepth="0"/>
+                    </Border.Effect>
+                    <Image Source="{Binding LightboxAttachment.FilePath, Converter={StaticResource FilePathToImageSource}}" Stretch="Uniform"/>
+                </Border>
+
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Width="36" Height="36" Padding="0"
+                        Background="Transparent" BorderThickness="0"
+                        ToolTip="{x:Static res:Strings.Notes_Lightbox_Previous}"
+                        IsEnabled="{Binding CanNavigateLightbox}"
+                        Command="{Binding LightboxPreviousCommand}">
+                    <Path Width="14" Height="14" Stretch="Uniform"
+                          Data="{StaticResource Icon.ChevronRight}"
+                          Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.8"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Path.RenderTransform>
+                            <ScaleTransform ScaleX="-1"/>
+                        </Path.RenderTransform>
+                    </Path>
+                </Button>
+
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Width="36" Height="36" Padding="0"
+                        Background="Transparent" BorderThickness="0"
+                        ToolTip="{x:Static res:Strings.Notes_Lightbox_Next}"
+                        IsEnabled="{Binding CanNavigateLightbox}"
+                        Command="{Binding LightboxNextCommand}">
+                    <Path Width="14" Height="14" Stretch="Uniform"
+                          Data="{StaticResource Icon.ChevronRight}"
+                          Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.8"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                </Button>
+
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Width="28" Height="28" Padding="0"
+                        Background="Transparent" BorderThickness="0"
+                        ToolTip="{x:Static res:Strings.Notes_Lightbox_Close}"
+                        Command="{Binding CloseLightboxCommand}">
+                    <Path Width="12" Height="12" Stretch="Uniform"
+                          Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.5"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="M0,0 L9,9 M9,0 L0,9"/>
+                </Button>
             </Grid>
         </Grid>
     </Grid>

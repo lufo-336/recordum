@@ -15,6 +15,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
+            <conv:FilePathToImageSourceConverter x:Key="FilePathToImageSource"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
             <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>

@@ -17,5 +17,4 @@ public sealed class Completion
     public HabitNode HabitNode { get; set; } = null!;
     public List<CompletionValue> Values { get; set; } = [];
     public List<CompletionSegment> Segments { get; set; } = [];
-    public List<Attachment> Attachments { get; set; } = [];
 }

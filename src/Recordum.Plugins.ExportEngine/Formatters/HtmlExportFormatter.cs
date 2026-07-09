@@ -59,11 +59,40 @@ public sealed class HtmlExportFormatter : ExportFormatterBase
             {
                 sb.Append("<h3>Notes</h3><ul>");
                 foreach (var n in h.Notes)
-                    sb.Append("<li>").Append(WebUtility.HtmlEncode(n.BodyMd)).Append("</li>");
+                {
+                    sb.Append("<li>").Append(WebUtility.HtmlEncode(n.BodyMd));
+                    foreach (var att in n.Attachments)
+                        AppendAttachmentImage(sb, att);
+                    sb.Append("</li>");
+                }
                 sb.Append("</ul>");
             }
         }
         sb.Append("</body></html>");
         return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    /// <summary>Embeds the attachment as a base64 data URI. Reads AbsolutePath synchronously
+    /// (the formatter interface is synchronous) and skips the image entirely — never throws —
+    /// when the file is missing (e.g. purged out-of-band, or moved to a machine without it).</summary>
+    private static void AppendAttachmentImage(StringBuilder sb, ExportAttachmentRef att)
+    {
+        if (att.AbsolutePath is not { Length: > 0 } path || !File.Exists(path)) return;
+        byte[] bytes;
+        try
+        {
+            bytes = File.ReadAllBytes(path);
+        }
+        catch (IOException)
+        {
+            return;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return;
+        }
+        var base64 = Convert.ToBase64String(bytes);
+        sb.Append("<img src=\"data:").Append(att.MimeType).Append(";base64,").Append(base64)
+          .Append("\" alt=\"").Append(WebUtility.HtmlEncode(att.Filename)).Append("\" />");
     }
 }

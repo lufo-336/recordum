@@ -23,6 +23,5 @@ public sealed class Note
     public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
-    public List<Attachment> Attachments { get; set; } = [];
     public List<NoteHistory> History { get; set; } = [];
 }

@@ -66,7 +66,8 @@ public class HabitScreenViewModelTests
             noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, bus, new FakeWebView2Availability(true), settings, editor,
-            new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog());
+            new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
+            new FakeAttachmentService(), new FakeOpenFileDialog());
     }
 
     private static HabitScreenViewModel CreateSut(

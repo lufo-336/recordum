@@ -30,7 +30,11 @@ public sealed class ExportQueryServiceTests
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
-        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence);
+        // Fresh temp dataRoot per Build() call: none of these tests except the attachment-specific
+        // one below ever exercise disk I/O through AttachmentService, so the directory need not exist.
+        var attachments = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext,
+            Path.Combine(Path.GetTempPath(), "recordum-export-tests-" + Guid.NewGuid().ToString("N")));
+        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence, attachments);
     }
 
     [Fact]
@@ -90,6 +94,54 @@ public sealed class ExportQueryServiceTests
         Assert.Empty(habit.Notes);
         Assert.Empty(habit.Heatmap);
         await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Notes_carry_their_attachments()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        var noteId = Guid.NewGuid();
+        var dataRoot = Path.Combine(Path.GetTempPath(), "recordum-export-attachments-" + Guid.NewGuid().ToString("N"));
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "Diary" });
+            db.Notes.Add(new Note { Id = noteId, HabitNodeId = habitId, BodyMd = "hi", UpdatedAtMs = 1 });
+            await db.SaveChangesAsync();
+        }
+
+        var attachmentService = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext, dataRoot);
+        var sourceFile = Path.Combine(Path.GetTempPath(), "recordum-export-attachments-source-" + Guid.NewGuid().ToString("N") + ".jpg");
+        await File.WriteAllTextAsync(sourceFile, "fake image data");
+        var attachment = await attachmentService.AddAsync(noteId, sourceFile, default);
+
+        var bus = new RecordingEventBus();
+        var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
+        var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
+        var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var ramp = new Recordum.Core.Services.IntensityRampResolver();
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var query = new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp,
+            new StubAggregator(), abstinence, attachmentService);
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId,
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await query.BuildAsync(request);
+
+        var habit = Assert.Single(model.Habits);
+        var note = Assert.Single(habit.Notes);
+        var attachmentRef = Assert.Single(note.Attachments);
+        Assert.Equal(attachment.Filename, attachmentRef.Filename);
+        Assert.Equal("image/jpeg", attachmentRef.MimeType);
+        Assert.Equal($"attachments/{noteId}/{attachment.Id:N}.jpg", attachmentRef.RelativePath);
+        Assert.NotNull(attachmentRef.AbsolutePath);
+        Assert.True(File.Exists(attachmentRef.AbsolutePath));
+
+        await fx.DisposeAsync();
+        File.Delete(sourceFile);
+        if (Directory.Exists(dataRoot)) Directory.Delete(dataRoot, recursive: true);
     }
 
     [Fact]

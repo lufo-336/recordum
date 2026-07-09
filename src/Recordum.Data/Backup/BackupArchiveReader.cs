@@ -1,5 +1,6 @@
 #pragma warning disable CA1822
 using System.IO.Compression;
+using System.Linq;
 using System.Text.Json;
 using Recordum.Core.Backup;
 
@@ -42,19 +43,35 @@ public sealed class BackupArchiveReader
     public async Task ExtractAttachmentsAsync(string zipPath, string destinationDir, CancellationToken ct = default)
     {
         Directory.CreateDirectory(destinationDir);
+        var destinationRoot = Path.GetFullPath(destinationDir);
         using var zip = ZipFile.OpenRead(zipPath);
         var remaining = MaxExtractBytes;
         foreach (var entry in zip.Entries)
         {
             if (!entry.FullName.StartsWith("attachments/", StringComparison.Ordinal)) continue;
             if (entry.FullName.EndsWith('/')) continue;
-            var name = Path.GetFileName(entry.FullName);  // flatten: also defeats zip-slip path traversal
-            var dst = Path.Combine(destinationDir, name);
+
+            // Photos are organized as attachments/{noteId}/{id}.{ext} — preserve that relative
+            // structure (needed for AttachmentService to find the file again after restore)
+            // while still defeating zip-slip: reject any segment that isn't a plain name
+            // (no "..", no rooted/drive segment), then verify the resolved path still lands
+            // inside destinationRoot before writing anything.
+            var relative = entry.FullName["attachments/".Length..];
+            var segments = relative.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0 || segments.Any(IsUnsafeSegment)) continue;
+
+            var dst = Path.GetFullPath(Path.Combine([destinationRoot, .. segments]));
+            if (!dst.StartsWith(destinationRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal)) continue;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
             await using var src = entry.Open();
             await using var fs = File.Create(dst);
             remaining -= await CopyBoundedAsync(src, fs, remaining, ct).ConfigureAwait(false);
         }
     }
+
+    private static bool IsUnsafeSegment(string segment) =>
+        segment is ".." or "." || segment.Contains(':') || segment.Contains('\\') || Path.IsPathRooted(segment);
 
     // CR3: copy at most <paramref name="maxBytes"/> from an untrusted zip entry, returning the count
     // copied so callers can enforce a cumulative budget across many entries.

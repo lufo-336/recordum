@@ -19,7 +19,7 @@ public sealed class RecordumDbContext(DbContextOptions<RecordumDbContext> option
     public DbSet<StreakPause> StreakPauses => Set<StreakPause>();
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<NoteHistory> NoteHistories => Set<NoteHistory>();
-    public DbSet<Attachment> Attachments => Set<Attachment>();
+    public DbSet<Models.Attachment> Attachments => Set<Models.Attachment>();
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Tag> Tags => Set<Tag>();

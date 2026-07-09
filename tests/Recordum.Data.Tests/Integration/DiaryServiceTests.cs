@@ -124,6 +124,38 @@ public class DiaryServiceTests
     }
 
     [Fact]
+    public async Task DeleteEntryAsync_removes_attachments_without_throwing_FK_violation()
+    {
+        // attachment.note_id is FK Restrict (AttachmentConfiguration) — DeleteEntryAsync must clear
+        // attachment rows before deleting the Note, or SQLite raises FOREIGN KEY constraint failed.
+        var (fx, habitId) = await SeedJournalAsync();
+        var sut = NewService(fx, out _);
+        var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
+        var noteId = await sut.SaveEntryAsync(habitId, today, "entry with photo");
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = Guid.NewGuid(),
+                NoteId = noteId,
+                Filename = "photo.jpg",
+                MimeType = "image/jpeg",
+                FileSizeBytes = 123,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await sut.DeleteEntryAsync(noteId);
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.Notes.AnyAsync(n => n.Id == noteId)).Should().BeFalse();
+            (await db.Attachments.CountAsync(a => a.NoteId == noteId)).Should().Be(0);
+        }
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task DeleteEntryAsync_one_of_two_same_day_keeps_the_day_complete()
     {
         var (fx, habitId) = await SeedJournalAsync();

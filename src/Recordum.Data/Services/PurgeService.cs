@@ -36,10 +36,7 @@ public sealed partial class PurgeService(
         await db.Database.ExecuteSqlRawAsync("PRAGMA defer_foreign_keys = ON;", ct);
 
         await db.Attachments
-            .Where(a => a.NoteId != null && db.Notes.Any(n => n.Id == a.NoteId && subtree.Contains(n.HabitNodeId)))
-            .ExecuteDeleteAsync(ct);
-        await db.Attachments
-            .Where(a => a.CompletionId != null && db.Completions.Any(c => c.Id == a.CompletionId && subtree.Contains(c.HabitNodeId)))
+            .Where(a => db.Notes.Any(n => n.Id == a.NoteId && subtree.Contains(n.HabitNodeId)))
             .ExecuteDeleteAsync(ct);
         await db.Notes.Where(n => subtree.Contains(n.HabitNodeId)).ExecuteDeleteAsync(ct);
         await db.CompletionValues
@@ -89,10 +86,7 @@ public sealed partial class PurgeService(
                 subtree.Add(root);
 
                 await db.Attachments
-                    .Where(a => a.NoteId != null && db.Notes.Any(n => n.Id == a.NoteId && subtree.Contains(n.HabitNodeId)))
-                    .ExecuteDeleteAsync(ct);
-                await db.Attachments
-                    .Where(a => a.CompletionId != null && db.Completions.Any(c => c.Id == a.CompletionId && subtree.Contains(c.HabitNodeId)))
+                    .Where(a => db.Notes.Any(n => n.Id == a.NoteId && subtree.Contains(n.HabitNodeId)))
                     .ExecuteDeleteAsync(ct);
                 await db.Notes.Where(n => subtree.Contains(n.HabitNodeId)).ExecuteDeleteAsync(ct);
                 await db.CompletionValues
