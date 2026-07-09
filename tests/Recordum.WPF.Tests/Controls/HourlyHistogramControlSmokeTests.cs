@@ -45,6 +45,25 @@ public sealed class HourlyHistogramControlSmokeTests
     }
 
     [WpfFact]
+    public void Reload_without_DataContext_change_still_reacts_to_later_data()
+    {
+        // Unloaded drops the VM subscription (Unhook). A Loaded/Unloaded/Loaded cycle with the
+        // SAME DataContext throughout (e.g. tab virtualization) must re-subscribe on the second
+        // Loaded too, or the control silently stops reacting to async data arriving afterward.
+        var svc = new FakeHourlyDistributionQueryService();
+        var vm = new HourlyHistogramViewModel(svc, new FakeClock());
+        var control = new HourlyHistogramControl { DataContext = vm };
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+        control.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent)); // no DataContextChanged in between
+
+        vm.Buckets[9] = 4;
+        vm.MaxCount = 4;
+
+        Assert.NotNull(control.ChartHost.Content);
+    }
+
+    [WpfFact]
     public async Task Shows_empty_text_when_no_live_records_and_hides_once_data_arrives()
     {
         var svc = new FakeHourlyDistributionQueryService();

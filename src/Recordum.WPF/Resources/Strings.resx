@@ -884,6 +884,9 @@ Details: {0}</value>
   <data name="Charts.Builder.SaveError" xml:space="preserve">
     <value>Could not save the chart. Check the series and try again.</value>
   </data>
+  <data name="Charts.Builder.HabitsLoadError" xml:space="preserve">
+    <value>Could not load habits. Reopen the builder to try again.</value>
+  </data>
   <data name="Charts.Builder.PickHabit" xml:space="preserve">
     <value>Choose a habit…</value>
   </data>

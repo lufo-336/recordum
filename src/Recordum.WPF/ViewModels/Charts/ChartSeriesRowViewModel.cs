@@ -28,7 +28,7 @@ public sealed partial class ChartSeriesRowViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(availableHabits);
         ArgumentNullException.ThrowIfNull(loadMetrics);
-        AvailableHabits = availableHabits;
+        _availableHabits = availableHabits;
         _loadMetrics = loadMetrics;
         // Seed the Count option up front so Metrics is never empty — including for a row whose
         // SelectedHabit is assigned null while it's already null (e.g. LoadAsync resolving a
@@ -37,8 +37,12 @@ public sealed partial class ChartSeriesRowViewModel : ObservableObject
         Metrics.Add(new MetricOption(null, Strings.Charts_Builder_CountMetric));
     }
 
-    /// <summary>Habits the user can chart (groups excluded). Bound by the picker.</summary>
-    public IReadOnlyList<HomeTreeRow> AvailableHabits { get; }
+    /// <summary>Habits the user can chart (groups excluded). Bound by the picker. An
+    /// [ObservableProperty] (not a plain get-only property) because a row can be created before
+    /// the builder's habit list finishes loading (LoadNew fires the load fire-and-forget) — the
+    /// owning ChartBuilderViewModel pushes the loaded list into every existing row once it
+    /// resolves, and the picker's binding needs the change notification to pick that up.</summary>
+    [ObservableProperty] private IReadOnlyList<HomeTreeRow> _availableHabits;
 
     /// <summary>Metric options for the selected habit: the count option first, then the real metrics.</summary>
     public ObservableCollection<MetricOption> Metrics { get; } = [];

@@ -183,7 +183,8 @@ public sealed class ExportQueryService(
         }
 
         Dictionary<DateOnly, decimal> values;
-        if (node.HabitType is HabitType.Counter or HabitType.Resistance or HabitType.State)
+        // Resistance already returned above (line 160-183) — never reachable here.
+        if (node.HabitType is HabitType.Counter or HabitType.State)
         {
             var primary = (await metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
                 .OrderBy(m => m.SortOrder).FirstOrDefault();

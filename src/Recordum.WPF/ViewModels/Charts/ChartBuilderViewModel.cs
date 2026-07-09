@@ -85,8 +85,25 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
         Range = "90d";
         Bucket = "daily";
         ErrorMessage = null;
+        PreviewView = null;
+        PreviewEmpty = true;
         Series.Clear();
-        _ = EnsureHabitsAsync(default);
+        _ = LoadHabitsFireAndForgetAsync();
+    }
+
+    // LoadNew can't await the habit load (it's a sync entry point invoked from the workspace),
+    // so this wraps the fire-and-forget call with the same error surface SaveAsync uses instead
+    // of letting a failure vanish as an unobserved task exception.
+    private async Task LoadHabitsFireAndForgetAsync()
+    {
+        try
+        {
+            await EnsureHabitsAsync(default).ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            ErrorMessage = Strings.Charts_Builder_HabitsLoadError;
+        }
     }
 
     public async ValueTask LoadAsync(Guid chartId, CancellationToken ct = default)
@@ -126,6 +143,11 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
     {
         var all = await _tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
         AvailableHabits = all.Where(r => r.HabitType is not null).ToList();
+        // Rows created before this load resolved (LoadNew fires it fire-and-forget, so a user can
+        // click "Add series" first) captured the empty list at construction time and have no other
+        // way to see the real one — push it into every existing row now. ChartSeriesRowViewModel's
+        // AvailableHabits is an [ObservableProperty] specifically so the picker's binding reacts.
+        foreach (var row in Series) row.AvailableHabits = AvailableHabits;
     }
 
     private Task<IReadOnlyList<MetricDefinition>> LoadMetricsAsync(Guid habitNodeId, CancellationToken ct) =>
