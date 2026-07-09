@@ -67,6 +67,37 @@ public class HabitUiPrefsServiceTests
     }
 
     [Fact]
+    public async Task Set_stores_camelCase_json_keys()
+    {
+        var (service, fixture) = CreateService();
+        var habitId = await SeedHabitAsync(fixture);
+        await service.SetAsync(habitId, new HabitUiPrefs
+        {
+            KeyFigure = "streak",
+            Strip = HomeStrip.Days14,
+            OpenColumns = new[] { "Cronologia" },
+            JournalGesture = JournalPrimaryGesture.QuickNote,
+        });
+
+        string? json;
+        await using (var db = await fixture.Factory.CreateDbContextAsync())
+        {
+            var node = await db.HabitNodes.FindAsync(habitId);
+            json = node!.UiPrefsJson;
+        }
+
+        Assert.NotNull(json);
+        // Documented on-disk contract (docs/ARCHITECTURE.md) is camelCase.
+        Assert.Contains("\"keyFigure\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"strip\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"openColumns\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"journalGesture\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"Strip\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"KeyFigure\"", json, StringComparison.Ordinal);
+        await fixture.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Set_throws_when_node_missing()
     {
         var (service, fixture) = CreateService();

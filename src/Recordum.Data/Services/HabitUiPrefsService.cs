@@ -12,6 +12,9 @@ public sealed class HabitUiPrefsService(IDbContextFactory<RecordumDbContext> dbF
     // String enums + omit nulls keep the stored JSON small and human-inspectable (governance).
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
+        // camelCase is the documented on-disk contract (docs/ARCHITECTURE.md); one shared options
+        // instance means the same policy governs both write and read, so round-trip stays consistent.
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Converters = { new JsonStringEnumConverter() },
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
