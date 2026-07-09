@@ -866,6 +866,9 @@
   <data name="Charts.Builder.SaveError" xml:space="preserve">
     <value>Impossibile salvare il grafico. Controlla le serie e riprova.</value>
   </data>
+  <data name="Charts.Builder.HabitsLoadError" xml:space="preserve">
+    <value>Impossibile caricare le abitudini. Riapri il builder per riprovare.</value>
+  </data>
   <data name="Charts.Builder.PickHabit" xml:space="preserve">
     <value>Scegli un'abitudine…</value>
   </data>

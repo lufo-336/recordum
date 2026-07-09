@@ -27,6 +27,28 @@ public sealed class ChartBuilderViewModelTests
     // --- adapted regression coverage ---------------------------------------
 
     [Fact]
+    public void AddSeries_before_habit_load_resolves_still_sees_habits_once_it_does()
+    {
+        // LoadNew() fires the habit-tree load fire-and-forget, so a user can click "Add series"
+        // before it resolves. The row must not be stuck with the empty snapshot it was
+        // constructed with — ChartBuilderViewModel pushes the loaded list into every existing row.
+        var habitId = Guid.NewGuid();
+        var tree = new FakeHabitTreeQueryService();
+        tree.HomeRows.Add(Habit(habitId, "Reading"));
+        tree.HomeGate = new TaskCompletionSource<bool>();
+        var vm = BuildVm(new FakeChartService(), tree, new FakeMetricDefinitionService());
+
+        vm.LoadNew(); // starts the load, but it's gated — still pending.
+        vm.AddSeriesCommand.Execute(null); // row captures whatever AvailableHabits is right now: [].
+        Assert.Empty(vm.Series[0].AvailableHabits);
+
+        tree.HomeGate.SetResult(true); // let the load resolve.
+
+        Assert.Single(vm.Series[0].AvailableHabits);
+        Assert.Equal(habitId, vm.Series[0].AvailableHabits[0].HabitNodeId);
+    }
+
+    [Fact]
     public void AddSeries_then_RemoveSeries_mutates_collection()
     {
         var vm = BuildVm(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService());
