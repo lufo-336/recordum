@@ -73,4 +73,50 @@ public static class TestDbHelper
         cmd.Parameters.Add(nameParam);
         await cmd.ExecuteNonQueryAsync();
     }
+
+    /// <summary>
+    /// Raw-inserts a habit_nodes row using only columns stable since PinScopeV24 (no ui_prefs_json).
+    /// For staging rows at a migration older than a later habit_node column addition, where EF's
+    /// full-model INSERT would reference a not-yet-existing column.
+    /// </summary>
+    public static async Task RawInsertHabitNodeAsync(
+        SqliteConnection connection, Guid id, string name, string habitType)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO habit_nodes (id, name, color, node_type, habit_type, ai_data_sharing,
+                                     pin_scope, sort_order, is_archived, priority, is_locked,
+                                     created_at, updated_at, updated_at_ms)
+            VALUES ($id, $name, '#808080', 'Habit', $type, 'None',
+                    'None', 0, 0, 0, 0,
+                    '2026-06-01T00:00:00Z', '2026-06-01T00:00:00Z', 1748736000000);
+            """;
+        cmd.Parameters.AddWithValue("$id", id.ToString("D").ToUpperInvariant());
+        cmd.Parameters.AddWithValue("$name", name);
+        cmd.Parameters.AddWithValue("$type", habitType);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>
+    /// Raw-inserts a habit_configs row with the NOT NULL columns stable since v2.4 (no repeatable /
+    /// series_labels_json). Defaults: Daily schedule, Daily streak mode, None (no) recovery.
+    /// </summary>
+    public static async Task RawInsertHabitConfigAsync(
+        SqliteConnection connection, Guid id, Guid habitNodeId)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO habit_configs (id, habit_node_id, schedule_type, streak_mode, streak_recovery,
+                                       has_integrated_timer, timer_auto_prompt, session_base_timer,
+                                       quick_complete, ai_data_sharing,
+                                       created_at, updated_at, updated_at_ms)
+            VALUES ($id, $h, 'Daily', 'Daily', 'None',
+                    0, 0, 0,
+                    0, 'None',
+                    '2026-06-01T00:00:00Z', '2026-06-01T00:00:00Z', 1748736000000);
+            """;
+        cmd.Parameters.AddWithValue("$id", id.ToString("D").ToUpperInvariant());
+        cmd.Parameters.AddWithValue("$h", habitNodeId.ToString("D").ToUpperInvariant());
+        await cmd.ExecuteNonQueryAsync();
+    }
 }

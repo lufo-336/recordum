@@ -16,18 +16,6 @@ namespace Recordum.Data.Tests.Migrations;
 /// </summary>
 public sealed class CounterReclassV210Tests
 {
-    private static HabitNode Resistance(string name) => new()
-    {
-        Id = Guid.NewGuid(),
-        Name = name,
-        Color = "#808080",
-        NodeType = NodeType.Habit,
-        HabitType = HabitType.Resistance,
-        CreatedAt = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
-        UpdatedAt = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
-        UpdatedAtMs = 1_748_736_000_000,
-    };
-
     [Fact]
     public async Task Reclass_converts_series_resistance_and_keeps_abstinence_and_scale()
     {
@@ -39,20 +27,19 @@ public sealed class CounterReclassV210Tests
         // Seed against the schema just BEFORE the reclass migration runs.
         await using (var seed = TestDbHelper.CreateAtMigration(connection, "NoteHistoryV29"))
         {
-            var h1 = Resistance("Flessioni");           // measured series → becomes Counter
-            var h2 = Resistance("Niente fumo");          // pure abstinence → stays Resistance
-            var h3 = Resistance("Voglie");               // local scale     → stays Resistance
-            flessioni = h1.Id; nientefumo = h2.Id; voglie = h3.Id;
-            seed.HabitNodes.AddRange(h1, h2, h3);
+            flessioni = Guid.NewGuid(); nientefumo = Guid.NewGuid(); voglie = Guid.NewGuid();
+            await TestDbHelper.RawInsertHabitNodeAsync(connection, flessioni, "Flessioni", "Resistance");
+            await TestDbHelper.RawInsertHabitNodeAsync(connection, nientefumo, "Niente fumo", "Resistance");
+            await TestDbHelper.RawInsertHabitNodeAsync(connection, voglie, "Voglie", "Resistance");
 
             seed.MetricDefinitions.Add(new MetricDefinition
             {
-                Id = Guid.NewGuid(), HabitNodeId = h1.Id, Name = "Ripetizioni",
+                Id = Guid.NewGuid(), HabitNodeId = flessioni, Name = "Ripetizioni",
                 Type = MetricType.Integer, SortOrder = 0,
             });
             seed.MetricDefinitions.Add(new MetricDefinition
             {
-                Id = Guid.NewGuid(), HabitNodeId = h3.Id, Name = "Intensità",
+                Id = Guid.NewGuid(), HabitNodeId = voglie, Name = "Intensità",
                 Type = MetricType.Integer, SortOrder = 0,
                 LabelsJson = "[\"Bassa\",\"Media\",\"Alta\"]",
             });
@@ -71,6 +58,6 @@ public sealed class CounterReclassV210Tests
         Assert.Equal(HabitType.Resistance, nodes.Single(n => n.Id == voglie).HabitType);
 
         var version = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.13", version.Value);
+        Assert.Equal("2.14", version.Value);
     }
 }

@@ -13,6 +13,7 @@ public static class HabitConfigHistoryColumns
         "ScheduleType","ScheduleDaysJson","ScheduleWeeklyTarget","ScheduleEveryXDays","ScheduleMonthlyDaysJson",
         "StreakMode","StreakRecovery","StreakToleranceMinutes",
         "HasIntegratedTimer","TimerMode","TimerTargetSeconds","TimerAutoPrompt",
-        "RestTimerSeconds","SessionBaseTimer","SessionCountdownSeconds","SessionRepeatCount"
+        "RestTimerSeconds","SessionBaseTimer","SessionCountdownSeconds","SessionRepeatCount",
+        "Repeatable","SeriesLabelsJson"
     };
 }

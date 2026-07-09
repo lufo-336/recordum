@@ -25,7 +25,7 @@ public sealed class BackupService(
     // Fallback only; the real value is read from AppSettings at manifest-build time (see
     // DbSchemaVersion). Keep this aligned with AppSettingSeed's schema_version so it never drifts
     // stale relative to the actual current schema (same class of issue as CR8).
-    private const string FallbackSchemaVersion = "2.13";
+    private const string FallbackSchemaVersion = "2.14";
 
     public async Task<BackupResult> CreateAsync(string destinationPath, string passphrase, BackupOptions options, CancellationToken ct = default)
     {

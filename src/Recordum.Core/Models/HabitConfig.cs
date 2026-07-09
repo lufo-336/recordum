@@ -32,6 +32,10 @@ public sealed class HabitConfig
 
     public DateTime? StreakBrokenAt { get; set; }
 
+    // Onda 2 (U8): registration semantics. Versioned in HabitConfigHistory.
+    public bool Repeatable { get; set; }
+    public string? SeriesLabelsJson { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public long UpdatedAtMs { get; set; }

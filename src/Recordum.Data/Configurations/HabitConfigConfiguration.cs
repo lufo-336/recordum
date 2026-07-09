@@ -19,6 +19,12 @@ public sealed class HabitConfigConfiguration : IEntityTypeConfiguration<HabitCon
         builder.Property(c => c.TimerMode).HasConversion<string>().HasMaxLength(16);
         builder.Property(c => c.AiDataSharing).HasConversion<string>().HasMaxLength(16);
 
+        builder.Property(c => c.Repeatable).HasDefaultValue(false).IsRequired();
+        builder.Property(c => c.SeriesLabelsJson).HasMaxLength(1000);
+
+        builder.ToTable(t => t.HasCheckConstraint(
+            "ck_habit_config_repeatable", "repeatable IN (0,1)"));
+
         builder.HasOne(c => c.HabitNode)
             .WithOne(n => n.Config)
             .HasForeignKey<HabitConfig>(c => c.HabitNodeId)

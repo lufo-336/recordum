@@ -28,5 +28,8 @@ public sealed class HabitConfigHistory
     public int? SessionCountdownSeconds { get; set; }
     public int? SessionRepeatCount { get; set; }
 
+    public bool Repeatable { get; set; }
+    public string? SeriesLabelsJson { get; set; }
+
     public HabitNode HabitNode { get; set; } = null!;
 }
