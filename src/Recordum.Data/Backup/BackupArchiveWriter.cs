@@ -34,9 +34,12 @@ public sealed class BackupArchiveWriter
 
         if (Directory.Exists(attachmentsDir))
         {
-            foreach (var path in Directory.EnumerateFiles(attachmentsDir, "*", SearchOption.TopDirectoryOnly))
+            // Recursive: photos are organized as attachments/{noteId}/{id}.{ext}, not flat —
+            // the zip entry path must preserve that structure for the reader to restore it.
+            foreach (var path in Directory.EnumerateFiles(attachmentsDir, "*", SearchOption.AllDirectories))
             {
-                var entry = zip.CreateEntry($"attachments/{Path.GetFileName(path)}", CompressionLevel.Optimal);
+                var rel = Path.GetRelativePath(attachmentsDir, path).Replace(Path.DirectorySeparatorChar, '/');
+                var entry = zip.CreateEntry($"attachments/{rel}", CompressionLevel.Optimal);
                 await using var es = entry.Open();
                 await using var fs = File.OpenRead(path);
                 await fs.CopyToAsync(es, ct).ConfigureAwait(false);

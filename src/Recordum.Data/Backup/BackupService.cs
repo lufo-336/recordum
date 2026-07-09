@@ -45,11 +45,18 @@ public sealed class BackupService(
             // 1. Plain DB dump via VACUUM INTO
             await DumpDbAsync(tempDb, ct).ConfigureAwait(false);
 
-            // 2. Copy attachments
+            // 2. Copy attachments (recursive: photos live under attachments/{noteId}/{id}.{ext} —
+            // a flat top-level-only copy would silently drop every attachment, since none of them
+            // sit directly in AttachmentsDirectory itself).
             if (Directory.Exists(paths.AttachmentsDirectory))
             {
-                foreach (var f in Directory.EnumerateFiles(paths.AttachmentsDirectory))
-                    File.Copy(f, Path.Combine(tempAttachments, Path.GetFileName(f)), overwrite: true);
+                foreach (var f in Directory.EnumerateFiles(paths.AttachmentsDirectory, "*", SearchOption.AllDirectories))
+                {
+                    var rel = Path.GetRelativePath(paths.AttachmentsDirectory, f);
+                    var dest = Path.Combine(tempAttachments, rel);
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                    File.Copy(f, dest, overwrite: true);
+                }
             }
 
             // 3. Build manifest
