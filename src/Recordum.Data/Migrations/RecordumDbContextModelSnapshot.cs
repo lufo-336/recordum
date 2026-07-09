@@ -298,8 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 7, 8, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.13"
+                            UpdatedAt = new DateTime(2026, 7, 9, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.14"
                         });
                 });
 
@@ -887,6 +887,12 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("quick_complete");
 
+                    b.Property<bool>("Repeatable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("repeatable");
+
                     b.Property<int?>("RestTimerSeconds")
                         .HasColumnType("INTEGER")
                         .HasColumnName("rest_timer_seconds");
@@ -914,6 +920,11 @@ namespace Recordum.Data.Migrations
                     b.Property<int?>("ScheduleWeeklyTarget")
                         .HasColumnType("INTEGER")
                         .HasColumnName("schedule_weekly_target");
+
+                    b.Property<string>("SeriesLabelsJson")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("series_labels_json");
 
                     b.Property<bool>("SessionBaseTimer")
                         .HasColumnType("INTEGER")
@@ -975,7 +986,10 @@ namespace Recordum.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_habit_configs_habit_node_id");
 
-                    b.ToTable("habit_configs", (string)null);
+                    b.ToTable("habit_configs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_habit_config_repeatable", "repeatable IN (0,1)");
+                        });
                 });
 
             modelBuilder.Entity("Recordum.Core.Models.HabitConfigHistory", b =>
@@ -992,6 +1006,10 @@ namespace Recordum.Data.Migrations
                     b.Property<bool>("HasIntegratedTimer")
                         .HasColumnType("INTEGER")
                         .HasColumnName("has_integrated_timer");
+
+                    b.Property<bool>("Repeatable")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("repeatable");
 
                     b.Property<int?>("RestTimerSeconds")
                         .HasColumnType("INTEGER")
@@ -1018,6 +1036,10 @@ namespace Recordum.Data.Migrations
                     b.Property<int?>("ScheduleWeeklyTarget")
                         .HasColumnType("INTEGER")
                         .HasColumnName("schedule_weekly_target");
+
+                    b.Property<string>("SeriesLabelsJson")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("series_labels_json");
 
                     b.Property<bool>("SessionBaseTimer")
                         .HasColumnType("INTEGER")
@@ -1167,6 +1189,10 @@ namespace Recordum.Data.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER")
                         .HasColumnName("sort_order");
+
+                    b.Property<string>("UiPrefsJson")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ui_prefs_json");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT")

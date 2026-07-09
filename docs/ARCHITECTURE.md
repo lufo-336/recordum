@@ -52,6 +52,18 @@ EF Core over SQLite, **encrypted with SQLCipher**. Highlights:
 - The **encryption key** comes from an injected `IDbKeyProvider` (DPAPI by default, opt-in Argon2id
   passphrase). Losing a passphrase means losing the data — there is no server-side recovery.
 
+#### `habit_node.ui_prefs_json` keys (per-node presentation prefs)
+
+Serialized from `HabitUiPrefs` (`Recordum.Core.Models`) via `IHabitUiPrefsService`. NULL column
+or absent key = fall back to the habit type's default. Governance: every key lives here.
+
+| Key | Type | Meaning | Introduced |
+|---|---|---|---|
+| `keyFigure` | string | Home-row key figure id (per-type set) | Onda 2 |
+| `strip` | enum `None`/`Days7`/`Days14` | Home-row strip length | Onda 2 |
+| `openColumns` | string[] | Per-habit open workspace columns | Onda 2 |
+| `journalGesture` | enum `Diary`/`QuickNote` | Journal primary gesture | Onda 2 |
+
 ### Recordum.Plugins(.Contracts) — extensibility
 First-party features (the chart engine, the export engine) are themselves plugins that register
 capabilities through extension points, rather than reaching into the core directly. `Contracts`

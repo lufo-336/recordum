@@ -15,6 +15,7 @@ public sealed class HabitNodeConfiguration : IEntityTypeConfiguration<HabitNode>
         builder.Property(n => n.Description).HasMaxLength(2000);
         builder.Property(n => n.Icon).HasMaxLength(64);
         builder.Property(n => n.CreatedByPluginId).HasMaxLength(200);
+        builder.Property(n => n.UiPrefsJson); // TEXT NULL, no length cap (JSON blob)
 
         builder.Property(n => n.NodeType).HasConversion<string>().HasMaxLength(16);
         builder.Property(n => n.HabitType).HasConversion<string>().HasMaxLength(16);

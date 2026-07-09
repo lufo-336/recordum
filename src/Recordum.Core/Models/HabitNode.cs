@@ -20,6 +20,9 @@ public sealed class HabitNode
     public AiDataSharing AiDataSharing { get; set; } = AiDataSharing.None;
     public TimeOnly? ResetTime { get; set; }
     public string? CreatedByPluginId { get; set; }
+
+    // Onda 2: per-node presentation preferences (JSON). NULL = type defaults. Not versioned.
+    public string? UiPrefsJson { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public long UpdatedAtMs { get; set; }
