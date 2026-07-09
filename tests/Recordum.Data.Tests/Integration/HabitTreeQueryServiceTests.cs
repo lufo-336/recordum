@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.Services.Queries;
@@ -191,5 +193,165 @@ public class HabitTreeQueryServiceTests
         var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TagIds.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_TodayCounterTotal_summed_from_primary_metric()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "c", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            var unitId = await db.UnitsOfMeasure.Where(u => u.Code == "reps").Select(u => u.Id).SingleAsync();
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Reps",
+                Type = MetricType.Integer,
+                UnitOfMeasureId = unitId,
+                SortOrder = 0,
+            });
+            var c1 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            var c2 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + 1 };
+            db.Completions.AddRange(c1, c2);
+            db.CompletionValues.AddRange(
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c1.Id, MetricDefinitionId = metricId, ValueInteger = 10 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c2.Id, MetricDefinitionId = metricId, ValueInteger = 12 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayCounterTotal.Should().Be(22);
+        row.TodayCounterUnitCode.Should().Be("reps");
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_TodayStateValue_and_label_from_latest_completion()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Mood",
+                Type = MetricType.Integer,
+                LabelsJson = "[\"Male\",\"Così\",\"Bene\"]",
+                SortOrder = 0,
+            });
+            var earlier = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            var latest = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + 100 };
+            db.Completions.AddRange(earlier, latest);
+            db.CompletionValues.AddRange(
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = earlier.Id, MetricDefinitionId = metricId, ValueInteger = 1 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = latest.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayStateValue.Should().Be(3);
+        row.TodayStateLabel.Should().Be("Bene");
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_Abstaining_for_open_period()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var startedAtMs = clock.UtcNowMs - 100_000;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "r", NodeType = NodeType.Habit, HabitType = HabitType.Resistance });
+            db.AbstinencePeriods.Add(new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = startedAtMs });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.AbstinenceStatus.Should().Be(AbstinenceStatus.Abstaining);
+        row.AbstinenceOpenSinceMs.Should().Be(startedAtMs);
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_Relapsed_for_only_closed_period()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var startedAtMs = clock.UtcNowMs - 200_000;
+        var endedAtMs = clock.UtcNowMs - 100_000;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "r2", NodeType = NodeType.Habit, HabitType = HabitType.Resistance });
+            db.AbstinencePeriods.Add(new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = startedAtMs, EndedAtMs = endedAtMs });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.AbstinenceStatus.Should().Be(AbstinenceStatus.Relapsed);
+        row.AbstinenceOpenSinceMs.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_14day_completion_counts_with_day10_at_index3()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 20, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var today = clock.UtcNow.UtcDateTime.Date;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "H14", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            db.Completions.Add(new Completion
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                CompletedAt = today.AddDays(-10),
+                CompletedAtMs = new DateTimeOffset(today.AddDays(-10), TimeSpan.Zero).ToUnixTimeMilliseconds(),
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.CompletionsLast14Days.Length.Should().Be(14);
+        row.CompletionsLast14Days[3].Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_JournalEntriesThisWeek_for_journal_habit()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var today = clock.UtcNow.UtcDateTime.Date;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "j", NodeType = NodeType.Habit, HabitType = HabitType.Journal });
+            db.Completions.AddRange(
+                new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = today, CompletedAtMs = new DateTimeOffset(today, TimeSpan.Zero).ToUnixTimeMilliseconds() },
+                new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = today.AddDays(-3), CompletedAtMs = new DateTimeOffset(today.AddDays(-3), TimeSpan.Zero).ToUnixTimeMilliseconds() },
+                new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = today.AddDays(-10), CompletedAtMs = new DateTimeOffset(today.AddDays(-10), TimeSpan.Zero).ToUnixTimeMilliseconds() });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.JournalEntriesThisWeek.Should().Be(2);
     }
 }

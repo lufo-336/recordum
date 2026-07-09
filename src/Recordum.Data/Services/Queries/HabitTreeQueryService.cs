@@ -1,9 +1,11 @@
 using System.Collections.Immutable;
 using System.Linq.Expressions;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 
 namespace Recordum.Data.Services.Queries;
@@ -24,7 +26,7 @@ public sealed class HabitTreeQueryService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var today = clock.UtcNow.UtcDateTime.Date;
-        var startMs = new DateTimeOffset(today.AddDays(-6), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var startMs = new DateTimeOffset(today.AddDays(-13), TimeSpan.Zero).ToUnixTimeMilliseconds();
         var endMs = new DateTimeOffset(today.AddDays(1), TimeSpan.Zero).ToUnixTimeMilliseconds();
         var todayMs = new DateTimeOffset(today, TimeSpan.Zero).ToUnixTimeMilliseconds();
 
@@ -43,15 +45,15 @@ public sealed class HabitTreeQueryService(
             .GroupBy(b => b.HabitNodeId)
             .ToDictionary(g => g.Key, g =>
             {
-                var arr = new int[7];
+                var arr = new int[14];
                 foreach (var b in g)
                 {
-                    if (b.DayOffset is >= 0 and < 7) arr[b.DayOffset] = b.Count;
+                    if (b.DayOffset is >= 0 and < 14) arr[b.DayOffset] = b.Count;
                 }
                 return ImmutableArray.Create(arr);
             });
 
-        var emptyHeatmap = ImmutableArray.Create(new int[7]);
+        var emptyHeatmap14 = ImmutableArray.Create(new int[14]);
 
         var tagLinks = await db.HabitNodeTags
             .AsNoTracking()
@@ -60,6 +62,62 @@ public sealed class HabitTreeQueryService(
         var tagsByHabit = tagLinks
             .GroupBy(t => t.HabitNodeId)
             .ToDictionary(g => g.Key, g => ImmutableArray.CreateRange(g.Select(x => x.TagId)));
+
+        // Primary metric per node (lowest SortOrder) — drives counter total/unit and state value/label.
+        var metricRows = await db.MetricDefinitions
+            .AsNoTracking()
+            .Select(m => new
+            {
+                m.Id,
+                m.HabitNodeId,
+                m.SortOrder,
+                m.LabelsJson,
+                UnitCode = m.UnitOfMeasure != null ? m.UnitOfMeasure.Code : null,
+            })
+            .ToListAsync(ct);
+        var primaryMetricByHabit = metricRows
+            .GroupBy(m => m.HabitNodeId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(m => m.SortOrder).First());
+        var primaryMetricIds = primaryMetricByHabit.Values.Select(m => m.Id).ToHashSet();
+
+        // Today's CompletionValues on each node's primary metric — feeds both counter total and state value.
+        var todayValueRows = await db.CompletionValues
+            .AsNoTracking()
+            .Where(cv => cv.Completion.CompletedAtMs >= todayMs && primaryMetricIds.Contains(cv.MetricDefinitionId))
+            .Select(cv => new
+            {
+                cv.Completion.HabitNodeId,
+                cv.Completion.CompletedAtMs,
+                cv.ValueDecimal,
+                cv.ValueInteger,
+                cv.ValueSeconds,
+            })
+            .ToListAsync(ct);
+        var counterTotalsByHabit = todayValueRows
+            .GroupBy(r => r.HabitNodeId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Sum(r => r.ValueDecimal ?? (decimal?)r.ValueInteger ?? (decimal?)r.ValueSeconds ?? 0m));
+        var stateLatestByHabit = todayValueRows
+            .GroupBy(r => r.HabitNodeId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.CompletedAtMs).First());
+
+        // Resistance: open (Abstaining) or most-recent-closed (Relapsed) period per node.
+        var abstinenceRows = await db.AbstinencePeriods
+            .AsNoTracking()
+            .Select(p => new { p.HabitNodeId, p.StartedAtMs, p.EndedAtMs })
+            .ToListAsync(ct);
+        var abstinenceByHabit = abstinenceRows
+            .GroupBy(p => p.HabitNodeId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var open = g.Where(p => p.EndedAtMs == null)
+                    .OrderByDescending(p => p.StartedAtMs)
+                    .FirstOrDefault();
+                return open is not null
+                    ? (Status: AbstinenceStatus.Abstaining, OpenSinceMs: (long?)open.StartedAtMs)
+                    : (Status: AbstinenceStatus.Relapsed, OpenSinceMs: (long?)null);
+            });
 
         var raw = await db.HabitNodes
             .IgnoreQueryFilters()
@@ -86,22 +144,92 @@ public sealed class HabitTreeQueryService(
             })
             .ToListAsync(ct);
 
-        return raw.Select(r => new HomeTreeRow(
-                HabitNodeId: r.Id,
-                ParentId: r.ParentId,
-                Name: r.Name,
-                ColorHex: r.Color,
-                HabitType: r.HabitType,
-                LastCompletionAt: r.LastCompletionAt,
-                CurrentStreakCount: 0,
-                IsCompletedToday: r.IsCompletedToday,
-                PinScope: r.PinScope,
-                ChildCount: r.ChildCount,
-                IsArchived: r.IsArchived,
-                CompletionsLast7Days: bucketsByHabit.TryGetValue(r.Id, out var arr) ? arr : emptyHeatmap,
-                TagIds: tagsByHabit.TryGetValue(r.Id, out var tids) ? tids : ImmutableArray<Guid>.Empty,
-                Icon: r.Icon,
-                SortOrder: r.SortOrder))
+        return raw.Select(r =>
+            {
+                var completions14 = bucketsByHabit.TryGetValue(r.Id, out var arr14) ? arr14 : emptyHeatmap14;
+                var completions7 = ImmutableArray.Create(completions14.Skip(7).ToArray());
+
+                decimal? todayCounterTotal = null;
+                string? todayCounterUnitCode = null;
+                int? todayStateValue = null;
+                string? todayStateLabel = null;
+                var abstinenceStatus = AbstinenceStatus.NotStarted;
+                long? abstinenceOpenSinceMs = null;
+                int? journalEntriesThisWeek = null;
+
+                switch (r.HabitType)
+                {
+                    case HabitType.Counter:
+                        todayCounterTotal = counterTotalsByHabit.TryGetValue(r.Id, out var total) ? total : 0m;
+                        todayCounterUnitCode = primaryMetricByHabit.TryGetValue(r.Id, out var counterMetric)
+                            ? counterMetric.UnitCode
+                            : null;
+                        break;
+                    case HabitType.State:
+                        if (stateLatestByHabit.TryGetValue(r.Id, out var latest) && latest.ValueInteger is long v)
+                        {
+                            todayStateValue = (int)v;
+                            if (primaryMetricByHabit.TryGetValue(r.Id, out var stateMetric))
+                                todayStateLabel = ResolveLabel(stateMetric.LabelsJson, todayStateValue.Value);
+                        }
+                        break;
+                    case HabitType.Resistance:
+                        if (abstinenceByHabit.TryGetValue(r.Id, out var abst))
+                        {
+                            abstinenceStatus = abst.Status;
+                            abstinenceOpenSinceMs = abst.OpenSinceMs;
+                        }
+                        break;
+                    case HabitType.Journal:
+                        journalEntriesThisWeek = completions7.Sum();
+                        break;
+                    case HabitType.Action:
+                    default:
+                        break;
+                }
+
+                return new HomeTreeRow(
+                    HabitNodeId: r.Id,
+                    ParentId: r.ParentId,
+                    Name: r.Name,
+                    ColorHex: r.Color,
+                    HabitType: r.HabitType,
+                    LastCompletionAt: r.LastCompletionAt,
+                    CurrentStreakCount: 0,
+                    IsCompletedToday: r.IsCompletedToday,
+                    PinScope: r.PinScope,
+                    ChildCount: r.ChildCount,
+                    IsArchived: r.IsArchived,
+                    CompletionsLast7Days: completions7,
+                    TagIds: tagsByHabit.TryGetValue(r.Id, out var tids) ? tids : ImmutableArray<Guid>.Empty,
+                    CompletionsLast14Days: completions14,
+                    TodayCounterTotal: todayCounterTotal,
+                    TodayCounterUnitCode: todayCounterUnitCode,
+                    TodayStateValue: todayStateValue,
+                    TodayStateLabel: todayStateLabel,
+                    AbstinenceStatus: abstinenceStatus,
+                    AbstinenceOpenSinceMs: abstinenceOpenSinceMs,
+                    JournalEntriesThisWeek: journalEntriesThisWeek,
+                    Icon: r.Icon,
+                    SortOrder: r.SortOrder);
+            })
             .ToList();
+    }
+
+    private static string? ResolveLabel(string? labelsJson, int value)
+    {
+        if (string.IsNullOrWhiteSpace(labelsJson)) return null;
+        string[]? labels;
+        try
+        {
+            labels = JsonSerializer.Deserialize<string[]>(labelsJson);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        return labels is not null && value >= 1 && value <= labels.Length
+            ? labels[value - 1]
+            : null;
     }
 }
