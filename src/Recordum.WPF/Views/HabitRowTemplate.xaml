@@ -54,29 +54,39 @@
                 </Grid>
             </Grid>
 
-            <TextBlock Grid.Column="2"
-                       Margin="8,0,8,0"
-                       VerticalAlignment="Center"
-                       FontSize="{StaticResource FontSize.Small}"
-                       Opacity="0.5"
-                       Foreground="{DynamicResource Brush.TextMuted}"
-                       Text="{Binding HabitType, Converter={StaticResource HabitTypeLabel}}" />
-
-            <!-- Onda 2.1: per-type key-figure, coloured with the habit accent (colour = identifier). -->
+            <!-- Onda 2.1: per-type key-figure, coloured with the habit accent (colour = identifier).
+                 2.1-bis: the redundant type word is gone (it lives in the tooltip); a zero-state
+                 figure (×0, 0) renders muted instead of hiding, so the row never reads as empty. -->
             <TextBlock Grid.Column="3"
-                       Margin="0,0,8,0"
+                       Margin="8,0,8,0"
                        VerticalAlignment="Center"
                        FontSize="{StaticResource FontSize.Small}"
                        FontWeight="SemiBold"
                        Foreground="{Binding ColorHex, Converter={StaticResource HexToBrush}}"
                        Text="{Binding KeyFigureText}"
-                       Visibility="{Binding ShowKeyFigure, Converter={StaticResource BoolToVisible}}" />
+                       ToolTip="{Binding HabitType, Converter={StaticResource HabitTypeLabel}}"
+                       Visibility="{Binding ShowKeyFigure, Converter={StaticResource BoolToVisible}}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsKeyFigureZero}" Value="True">
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Setter Property="FontWeight" Value="Normal" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
+            <!-- 2.1-bis: fixed per-type strip visual (squares / bars / band / dots / ramp), same
+                 total width for every row so the right zone aligns. -->
             <v:HeatmapStrip Grid.Column="4"
                             Margin="0,0,8,0"
                             VerticalAlignment="Center"
-                            Counts="{Binding StripCounts}"
-                            AccentColor="{Binding ColorHex}" />
+                            Kind="{Binding StripVisual}"
+                            Fractions="{Binding StripFractions}"
+                            AccentColor="{Binding ColorHex}"
+                            ToolTip="{Binding HabitType, Converter={StaticResource HabitTypeLabel}}" />
 
             <Button Grid.Column="5"
                     Margin="0,0,8,0"

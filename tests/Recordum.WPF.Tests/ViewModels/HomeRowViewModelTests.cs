@@ -194,6 +194,102 @@ public class HomeRowViewModelTests
     }
 
     [Fact]
+    public async Task Action_zero_streak_shows_muted_x0_instead_of_hiding_the_chip()
+    {
+        // 2.1-bis (A13a): a row with no current streak used to hide the chip entirely and the
+        // row read as "empty". Now it shows ×0, flagged zero so the view can mute it.
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid(), type: HabitType.Action), 0,
+            new FakeHabitNodeService(), new FakePurgeService(),
+            uiPrefs: null, streaks: new FakeStreakAggregator(), clock: new FakeClock());
+
+        await sut.LoadKeyFigureAsync();
+
+        sut.KeyFigureText.Should().Be("×0");
+        sut.ShowKeyFigure.Should().BeTrue();
+        sut.IsKeyFigureZero.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Nonzero_streak_is_not_flagged_zero()
+    {
+        var aggregator = new FakeStreakAggregator();
+        aggregator.Runs.Add(new StreakRun(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 12), 12, IsCurrent: true));
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid(), type: HabitType.Action), 0,
+            new FakeHabitNodeService(), new FakePurgeService(),
+            uiPrefs: null, streaks: aggregator, clock: new FakeClock());
+
+        await sut.LoadKeyFigureAsync();
+
+        sut.IsKeyFigureZero.Should().BeFalse();
+    }
+
+    // ---- 2.1-bis: per-type strip style + normalized cell fractions ----
+
+    [Theory]
+    [InlineData(HabitType.Action, StripStyle.Squares)]
+    [InlineData(HabitType.Counter, StripStyle.Bars)]
+    [InlineData(HabitType.Resistance, StripStyle.Band)]
+    [InlineData(HabitType.Journal, StripStyle.Dots)]
+    [InlineData(HabitType.State, StripStyle.Ramp)]
+    public void StripVisual_is_the_fixed_per_type_style(HabitType type, StripStyle expected)
+    {
+        var sut = new HomeRowViewModel(Sample(Guid.NewGuid(), type: type), 0,
+            new FakeHabitNodeService(), new FakePurgeService());
+        sut.StripVisual.Should().Be(expected);
+    }
+
+    [Fact]
+    public void StripFractions_counter_bars_are_daily_value_over_period_max()
+    {
+        // Values (14d): 5 at index 10, 22 today (index 13) → sliced to the 7-day default the
+        // fractions are value/max-of-slice: 5/22 and 1.0, zeros elsewhere.
+        var values = new decimal?[14];
+        values[10] = 5m; values[13] = 22m;
+        var row = new HomeTreeRow(Guid.NewGuid(), null, "c", "#000000", HabitType.Counter, null, 0, false,
+            PinScope.None, 0, false, ImmutableArray.Create(0, 0, 0, 1, 0, 0, 2), ImmutableArray<Guid>.Empty,
+            CompletionsLast14Days: ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2),
+            ValuesLast14Days: ImmutableArray.Create(values));
+
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.StripFractions.Length.Should().Be(7);
+        sut.StripFractions[3].Should().BeApproximately(5d / 22d, 0.001); // index 10 of 14 → 3 of last-7
+        sut.StripFractions[6].Should().Be(1d);
+        sut.StripFractions[0].Should().Be(0d);
+    }
+
+    [Fact]
+    public void StripFractions_action_squares_are_binary_from_counts()
+    {
+        var row = new HomeTreeRow(Guid.NewGuid(), null, "a", "#000000", HabitType.Action, null, 0, false,
+            PinScope.None, 0, false, ImmutableArray.Create(0, 2, 0, 0, 1, 0, 0), ImmutableArray<Guid>.Empty,
+            CompletionsLast14Days: ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0, 0));
+
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.StripFractions[1].Should().Be(1d);
+        sut.StripFractions[2].Should().Be(0d);
+        sut.StripFractions[4].Should().Be(1d);
+    }
+
+    [Fact]
+    public void StripFractions_state_ramp_is_value_over_period_max()
+    {
+        var values = new decimal?[14];
+        values[12] = 2m; values[13] = 4m;
+        var row = new HomeTreeRow(Guid.NewGuid(), null, "s", "#000000", HabitType.State, null, 0, false,
+            PinScope.None, 0, false, ImmutableArray.Create(0, 0, 0, 0, 0, 1, 1), ImmutableArray<Guid>.Empty,
+            CompletionsLast14Days: ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1),
+            ValuesLast14Days: ImmutableArray.Create(values));
+
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.StripFractions[5].Should().Be(0.5d);
+        sut.StripFractions[6].Should().Be(1d);
+        sut.StripFractions[0].Should().Be(0d);
+    }
+
+    [Fact]
     public void Strip_length_honors_type_default_14_for_resistance_else_7()
     {
         var res = new HomeTreeRow(Guid.NewGuid(), null, "r", "#000000", HabitType.Resistance, null, 0, false,

@@ -232,6 +232,93 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_returns_ValuesLast14Days_daily_sums_for_counter()
+    {
+        // 2.1-bis: counter strip = value-height mini-bars → the row needs the daily SUM of the
+        // primary metric over the 14-day window, not just the completion count.
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var threeDaysAgoMs = todayMs - 3 * 86_400_000L;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "c", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId, HabitNodeId = habitId, Name = "Reps", Type = MetricType.Integer, SortOrder = 0,
+            });
+            var c1 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            var c2 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + 1 };
+            var c3 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime.AddDays(-3), CompletedAtMs = threeDaysAgoMs };
+            db.Completions.AddRange(c1, c2, c3);
+            db.CompletionValues.AddRange(
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c1.Id, MetricDefinitionId = metricId, ValueInteger = 10 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c2.Id, MetricDefinitionId = metricId, ValueInteger = 12 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c3.Id, MetricDefinitionId = metricId, ValueInteger = 5 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.ValuesLast14Days.Length.Should().Be(14);
+        row.ValuesLast14Days[13].Should().Be(22m);
+        row.ValuesLast14Days[10].Should().Be(5m);
+        row.ValuesLast14Days[9].Should().BeNull();
+        row.ValuesLast14Days[0].Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_returns_ValuesLast14Days_daily_last_value_for_state()
+    {
+        // State strip = ramp cells tinted by the scale value → per day the LAST value wins
+        // (a state is a point-in-time reading, same last-wins rule as TodayStateValue).
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var yesterdayMs = todayMs - 86_400_000L;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId, HabitNodeId = habitId, Name = "Mood", Type = MetricType.Integer, SortOrder = 0,
+            });
+            var early = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime.AddDays(-1), CompletedAtMs = yesterdayMs };
+            var late = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime.AddDays(-1), CompletedAtMs = yesterdayMs + 100 };
+            db.Completions.AddRange(early, late);
+            db.CompletionValues.AddRange(
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = early.Id, MetricDefinitionId = metricId, ValueInteger = 1 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = late.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.ValuesLast14Days[12].Should().Be(3m);
+        row.ValuesLast14Days[13].Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_leaves_ValuesLast14Days_empty_for_action()
+    {
+        await using var fx = new DbFixture();
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "a", NodeType = NodeType.Habit, HabitType = HabitType.Action });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.ValuesLast14Days.IsDefaultOrEmpty.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_returns_TodayStateValue_and_label_from_latest_completion()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));

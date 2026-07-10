@@ -74,6 +74,15 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// <summary>Daily completion counts sliced to <see cref="StripLength"/> (7 or 14, empty for None).</summary>
     public ImmutableArray<int> StripCounts { get; }
 
+    /// <summary>The fixed per-type strip visual (2.1-bis, spec wave-2 §1).</summary>
+    public StripStyle StripVisual { get; }
+
+    /// <summary>Per-cell intensity 0..1, same slice as <see cref="StripCounts"/>: Bars/Ramp =
+    /// day value ÷ period max (from <see cref="HomeTreeRow.ValuesLast14Days"/>); Squares/Dots/Band
+    /// = binary done/covered. The strip control renders shape from <see cref="StripVisual"/> +
+    /// these fractions.</summary>
+    public ImmutableArray<double> StripFractions { get; }
+
     /// <summary>True when this row's key figure is the live abstinence clock (drives the shared ticker in Task 4).</summary>
     public bool IsResistanceClock => KeyFigureKind == KeyFigureKind.LiveClock;
 
@@ -87,6 +96,10 @@ public sealed partial class HomeRowViewModel : ObservableObject
 
     /// <summary>True when a key-figure chip should render (non-group, non-None kind, non-empty text).</summary>
     public bool ShowKeyFigure => !IsGroup && KeyFigureKind != KeyFigureKind.None && !string.IsNullOrEmpty(KeyFigureText);
+
+    /// <summary>True when the key figure is a zero-state (×0 streak, 0 counter total): the view
+    /// mutes the chip instead of hiding it, so the row never reads as "empty" (A13a).</summary>
+    [ObservableProperty] private bool _isKeyFigureZero;
 
     /// <summary>Visible children, populated by HomeViewModel.Rebuild (hierarchical view rendering).
     /// Empty for habits and for collapsed groups.</summary>
@@ -167,9 +180,12 @@ public sealed partial class HomeRowViewModel : ObservableObject
         {
             KeyFigureKind = HomeRowPresentation.ResolveKeyFigure(type, uiPrefs);
             StripLength = HomeRowPresentation.ResolveStrip(type, uiPrefs);
+            StripVisual = HomeRowPresentation.ResolveStripStyle(type);
         }
         StripCounts = SliceStrip(row, StripLength);
+        StripFractions = ComputeStripFractions(row);
         _keyFigureText = ComputeSynchronousKeyFigure(row);
+        _isKeyFigureZero = KeyFigureKind == KeyFigureKind.CounterTotal && (row.TodayCounterTotal ?? 0m) == 0m;
 
         // Children are filled by Rebuild right after construction; keep the frame chrome in sync.
         Children.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasVisibleChildren));
@@ -185,6 +201,26 @@ public sealed partial class HomeRowViewModel : ObservableObject
             HomeStrip.Days7 => src14.Length >= 7 ? src14[^7..] : row.CompletionsLast7Days,
             _ => ImmutableArray<int>.Empty,
         };
+    }
+
+    /// <summary>Per-cell 0..1 intensity aligned with <see cref="StripCounts"/>. Value-driven styles
+    /// (Bars, Ramp) normalize each day's value against the max of the visible slice; the binary
+    /// styles map count&gt;0 (or band coverage) to 1.</summary>
+    private ImmutableArray<double> ComputeStripFractions(HomeTreeRow row)
+    {
+        if (StripCounts.IsDefaultOrEmpty) return ImmutableArray<double>.Empty;
+
+        if (StripVisual is StripStyle.Bars or StripStyle.Ramp && !row.ValuesLast14Days.IsDefaultOrEmpty)
+        {
+            var values14 = row.ValuesLast14Days;
+            var slice = StripLength == HomeStrip.Days7 && values14.Length >= 7 ? values14[^7..] : values14;
+            var max = slice.Max(v => v ?? 0m);
+            if (max > 0m)
+                return ImmutableArray.CreateRange(slice.Select(v => v is { } d && d > 0m ? (double)(d / max) : 0d));
+            // fall through: no values in the window → binary from counts below
+        }
+
+        return ImmutableArray.CreateRange(StripCounts.Select(c => c > 0 ? 1d : 0d));
     }
 
     /// <summary>Builds the key-figure text for the kinds whose value is already in the DTO.
@@ -242,11 +278,12 @@ public sealed partial class HomeRowViewModel : ObservableObject
             TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
         var runs = await _streaks.GetHistoryAsync(HabitNodeId, today.AddYears(-1), today, ct).ConfigureAwait(true);
         var length = runs.FirstOrDefault(r => r.IsCurrent)?.Length ?? 0;
+        // Zero-state shows a muted ×0 instead of hiding the chip: an empty right zone made the
+        // row read as broken during author verification (A13a, 2.1-bis).
 #pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-load UI string
-        KeyFigureText = length > 0
-            ? string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_Streak, length)
-            : string.Empty;
+        KeyFigureText = string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_Streak, length);
 #pragma warning restore CA1863
+        IsKeyFigureZero = length == 0;
     }
 
     [RelayCommand]

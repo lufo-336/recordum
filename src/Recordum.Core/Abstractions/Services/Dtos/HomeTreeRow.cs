@@ -27,4 +27,8 @@ public sealed record HomeTreeRow(
     long? AbstinenceOpenSinceMs = null,
     int? JournalEntriesThisWeek = null,
     string? Icon = null,
-    int SortOrder = 0);
+    int SortOrder = 0,
+    // 2.1-bis: per-day primary-metric value over the 14-day window (index 0 = 13 days ago,
+    // 13 = today; null = no value that day). Counter = daily sum; State = last value of the
+    // day (point-in-time reading, last-wins); other types leave it default/empty.
+    ImmutableArray<decimal?> ValuesLast14Days = default);

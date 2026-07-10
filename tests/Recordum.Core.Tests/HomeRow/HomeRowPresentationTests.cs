@@ -74,4 +74,23 @@ public class HomeRowPresentationTests
         HomeRowPresentation.ResolveStrip(HabitType.Action, new HabitUiPrefs { Strip = strip })
             .Should().Be(strip);
     }
+
+    // ---- Strip style (2.1-bis: per-type fixed visual, spec wave-2 §1) ----
+
+    [Theory]
+    [InlineData(HabitType.Action, StripStyle.Squares)]
+    [InlineData(HabitType.Counter, StripStyle.Bars)]
+    [InlineData(HabitType.Resistance, StripStyle.Band)]
+    [InlineData(HabitType.Journal, StripStyle.Dots)]
+    [InlineData(HabitType.State, StripStyle.Ramp)]
+    public void ResolveStripStyle_is_fixed_per_type(HabitType type, StripStyle expected)
+    {
+        HomeRowPresentation.ResolveStripStyle(type).Should().Be(expected);
+    }
+
+    [Fact]
+    public void ResolveStripStyle_unknown_type_falls_back_to_squares()
+    {
+        HomeRowPresentation.ResolveStripStyle((HabitType)99).Should().Be(StripStyle.Squares);
+    }
 }

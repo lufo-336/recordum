@@ -1,7 +1,7 @@
 <UserControl x:Class="Recordum.WPF.Views.HeatmapStrip"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ItemsControl x:Name="Cells">
+    <ItemsControl x:Name="Cells" Height="16">
         <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
                 <StackPanel Orientation="Horizontal" />
@@ -9,13 +9,12 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
             <DataTemplate>
-                <Border Width="{StaticResource Layout.HeatmapCell}"
-                        Height="{StaticResource Layout.HeatmapCell}"
-                        Margin="0,0,2,0"
-                        CornerRadius="2"
-                        Background="{Binding Brush}"
-                        BorderBrush="{StaticResource Brush.Text}"
-                        BorderThickness="{Binding BorderThickness}" />
+                <Border Width="{Binding Width}"
+                        Height="{Binding Height}"
+                        Margin="{Binding Margin}"
+                        CornerRadius="{Binding Radius}"
+                        VerticalAlignment="{Binding VAlign}"
+                        Background="{Binding Brush}" />
             </DataTemplate>
         </ItemsControl.ItemTemplate>
     </ItemsControl>

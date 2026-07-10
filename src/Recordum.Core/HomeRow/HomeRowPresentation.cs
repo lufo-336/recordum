@@ -22,6 +22,24 @@ public enum KeyFigureKind
 }
 
 /// <summary>
+/// The fixed per-type visual of the Home-row strip (2.1-bis, spec wave-2 §1). Unlike the key
+/// figure and the strip length, the style is not a user knob: each type has one shape.
+/// </summary>
+public enum StripStyle
+{
+    /// <summary>Action: filled/empty squares (done vs not).</summary>
+    Squares,
+    /// <summary>Counter: value-height mini-bars vs the period max.</summary>
+    Bars,
+    /// <summary>Resistance: continuous abstinence band with tears at relapses.</summary>
+    Band,
+    /// <summary>Journal: a dot on days with an entry/note.</summary>
+    Dots,
+    /// <summary>State: cells tinted by the scale value (ramp).</summary>
+    Ramp,
+}
+
+/// <summary>
 /// Resolves the per-type Home-row key figure and strip length from a habit's
 /// <see cref="HabitType"/> and its (optional) <see cref="HabitUiPrefs"/>. Per-type
 /// defaults come from the Onda 2.1 matrix (spec §1); an explicit, type-allowed pref
@@ -29,6 +47,16 @@ public enum KeyFigureKind
 /// </summary>
 public static class HomeRowPresentation
 {
+    /// <summary>The fixed strip visual for a habit type (spec wave-2 §1, "stile fisso").</summary>
+    public static StripStyle ResolveStripStyle(HabitType type) => type switch
+    {
+        HabitType.Counter => StripStyle.Bars,
+        HabitType.Resistance => StripStyle.Band,
+        HabitType.Journal => StripStyle.Dots,
+        HabitType.State => StripStyle.Ramp,
+        _ => StripStyle.Squares,
+    };
+
     /// <summary>Maps a persisted key-figure id to its kind. Ids are the stable strings written to <see cref="HabitUiPrefs.KeyFigure"/>.</summary>
     private static readonly Dictionary<string, KeyFigureKind> IdToKind =
         new Dictionary<string, KeyFigureKind>(StringComparer.Ordinal)

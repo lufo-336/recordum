@@ -88,10 +88,13 @@ public sealed class HabitTreeQueryService(
             .Select(s => new { s.Id, s.LabelsJson })
             .ToDictionaryAsync(s => s.Id, s => s.LabelsJson, ct);
 
-        // Today's CompletionValues on each node's primary metric — feeds both counter total and state value.
-        var todayValueRows = await db.CompletionValues
+        // CompletionValues on each node's primary metric over the whole 14-day window — feeds the
+        // counter total / state value of today AND the per-day value strip (2.1-bis: counter
+        // mini-bars need daily sums, state ramp cells need the day's last value).
+        var windowValueRows = await db.CompletionValues
             .AsNoTracking()
-            .Where(cv => cv.Completion.CompletedAtMs >= todayMs && primaryMetricIds.Contains(cv.MetricDefinitionId))
+            .Where(cv => cv.Completion.CompletedAtMs >= startMs && cv.Completion.CompletedAtMs < endMs
+                         && primaryMetricIds.Contains(cv.MetricDefinitionId))
             .Select(cv => new
             {
                 cv.Completion.HabitNodeId,
@@ -101,6 +104,7 @@ public sealed class HabitTreeQueryService(
                 cv.ValueSeconds,
             })
             .ToListAsync(ct);
+        var todayValueRows = windowValueRows.Where(r => r.CompletedAtMs >= todayMs).ToList();
         var counterTotalsByHabit = todayValueRows
             .GroupBy(r => r.HabitNodeId)
             .ToDictionary(
@@ -109,6 +113,36 @@ public sealed class HabitTreeQueryService(
         var stateLatestByHabit = todayValueRows
             .GroupBy(r => r.HabitNodeId)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.CompletedAtMs).First());
+
+        // Per-day value arrays (index 0 = 13 days ago … 13 = today; null = no value that day).
+        // Counter = sum of the day's values; State = the day's last value (point-in-time, last-wins).
+        var counterDailySumsByHabit = windowValueRows
+            .GroupBy(r => r.HabitNodeId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var arr = new decimal?[14];
+                foreach (var day in g.GroupBy(r => (int)((r.CompletedAtMs - startMs) / 86_400_000)))
+                {
+                    if (day.Key is >= 0 and < 14)
+                        arr[day.Key] = day.Sum(r => r.ValueDecimal ?? (decimal?)r.ValueInteger ?? (decimal?)r.ValueSeconds ?? 0m);
+                }
+                return ImmutableArray.Create(arr);
+            });
+        var stateDailyLastByHabit = windowValueRows
+            .GroupBy(r => r.HabitNodeId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var arr = new decimal?[14];
+                foreach (var day in g.GroupBy(r => (int)((r.CompletedAtMs - startMs) / 86_400_000)))
+                {
+                    if (day.Key is >= 0 and < 14)
+                    {
+                        var last = day.OrderByDescending(r => r.CompletedAtMs).First();
+                        arr[day.Key] = last.ValueDecimal ?? (decimal?)last.ValueInteger ?? (decimal?)last.ValueSeconds;
+                    }
+                }
+                return ImmutableArray.Create(arr);
+            });
 
         // Resistance: open (Abstaining) or most-recent-closed (Relapsed) period per node.
         var abstinenceRows = await db.AbstinencePeriods
@@ -186,16 +220,19 @@ public sealed class HabitTreeQueryService(
                 var abstinenceStatus = AbstinenceStatus.NotStarted;
                 long? abstinenceOpenSinceMs = null;
                 int? journalEntriesThisWeek = null;
+                var values14 = default(ImmutableArray<decimal?>);
 
                 switch (r.HabitType)
                 {
                     case HabitType.Counter:
                         todayCounterTotal = counterTotalsByHabit.TryGetValue(r.Id, out var total) ? total : 0m;
+                        if (counterDailySumsByHabit.TryGetValue(r.Id, out var sums)) values14 = sums;
                         todayCounterUnitCode = primaryMetricByHabit.TryGetValue(r.Id, out var counterMetric)
                             ? counterMetric.UnitCode
                             : null;
                         break;
                     case HabitType.State:
+                        if (stateDailyLastByHabit.TryGetValue(r.Id, out var lastVals)) values14 = lastVals;
                         if (stateLatestByHabit.TryGetValue(r.Id, out var latest) && latest.ValueInteger is long v)
                         {
                             todayStateValue = (int)v;
@@ -255,7 +292,8 @@ public sealed class HabitTreeQueryService(
                     AbstinenceOpenSinceMs: abstinenceOpenSinceMs,
                     JournalEntriesThisWeek: journalEntriesThisWeek,
                     Icon: r.Icon,
-                    SortOrder: r.SortOrder);
+                    SortOrder: r.SortOrder,
+                    ValuesLast14Days: values14);
             })
             .ToList();
     }
