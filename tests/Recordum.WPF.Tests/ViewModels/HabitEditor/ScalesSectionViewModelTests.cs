@@ -45,6 +45,32 @@ public class ScalesSectionViewModelTests
     }
 
     [Fact]
+    public async Task Reload_with_combobox_coercion_does_not_wipe_scale_template()
+    {
+        var metricId = Guid.NewGuid();
+        var scaleId = _refData.Scales[0].Id;
+        await _metrics.CreateAsync(new MetricDefinition
+        {
+            Id = metricId, HabitNodeId = _node.Id, Name = "Umore", SortOrder = 0, ScaleTemplateId = scaleId,
+        });
+        var sut = new ScalesSectionViewModel(_metrics, _refData);
+        await sut.LoadAsync(_node);
+
+        // A live ComboBox coerces SelectedValue to null the instant its ItemsSource empties;
+        // mimic that view behaviour on the reload the Configura host issues when the column reopens.
+        sut.AvailableScales.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                sut.SelectedScaleTemplateId = null;
+        };
+
+        await sut.LoadAsync(_node);
+        await Task.Delay(20);
+
+        _metrics.Store[metricId].ScaleTemplateId.Should().Be(scaleId);
+    }
+
+    [Fact]
     public void IsApplicable_only_for_State()
     {
         var sut = new ScalesSectionViewModel(_metrics, _refData);

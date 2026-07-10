@@ -21,11 +21,15 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
 
     public async Task LoadAsync(HabitNode node)
     {
+        // Detach the previous load's rows before touching AvailableUnits: emptying the shared
+        // ItemsSource makes every live unit ComboBox coerce SelectedValue to null, and an
+        // attached row would persist that null — silently wiping the metric's unit.
+        foreach (var row in Metrics) row.Detach();
+        Metrics.Clear();
         AvailableUnits.Clear();
         foreach (var u in await _refData.ListUnitsAsync()) AvailableUnits.Add(u);
 
         NodeId = node.Id;
-        Metrics.Clear();
         foreach (var m in (await _metrics.ListByHabitAsync(node.Id)).OrderBy(m => m.SortOrder))
             Metrics.Add(new MetricRowViewModel(m, _metrics));
     }
@@ -61,6 +65,7 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
 public sealed partial class MetricRowViewModel(MetricDefinition metric, IMetricDefinitionService metrics) : ObservableObject
 {
     private readonly IMetricDefinitionService _metrics = metrics;
+    private bool _detached;
     public Guid Id { get; } = metric.Id;
 
     [ObservableProperty] private string _name = metric.Name;
@@ -68,8 +73,12 @@ public sealed partial class MetricRowViewModel(MetricDefinition metric, IMetricD
     [ObservableProperty] private Guid? _unitOfMeasureId = metric.UnitOfMeasureId;
     [ObservableProperty] private int _sortOrder = metric.SortOrder;
 
-    partial void OnNameChanged(string value) => _ = _metrics.UpdateAsync(Id, m => m.Name = value).AsTask();
-    partial void OnTypeChanged(MetricType value) => _ = _metrics.UpdateAsync(Id, m => m.Type = value).AsTask();
-    partial void OnUnitOfMeasureIdChanged(Guid? value) => _ = _metrics.UpdateAsync(Id, m => m.UnitOfMeasureId = value).AsTask();
-    partial void OnSortOrderChanged(int value) => _ = _metrics.UpdateAsync(Id, m => m.SortOrder = value).AsTask();
+    /// <summary>Stops persisting changes. Called on the old rows before a reload, so view-side
+    /// side effects (ComboBox SelectedValue coercion when ItemsSource empties) can't write back.</summary>
+    internal void Detach() => _detached = true;
+
+    partial void OnNameChanged(string value) { if (!_detached) _ = _metrics.UpdateAsync(Id, m => m.Name = value).AsTask(); }
+    partial void OnTypeChanged(MetricType value) { if (!_detached) _ = _metrics.UpdateAsync(Id, m => m.Type = value).AsTask(); }
+    partial void OnUnitOfMeasureIdChanged(Guid? value) { if (!_detached) _ = _metrics.UpdateAsync(Id, m => m.UnitOfMeasureId = value).AsTask(); }
+    partial void OnSortOrderChanged(int value) { if (!_detached) _ = _metrics.UpdateAsync(Id, m => m.SortOrder = value).AsTask(); }
 }

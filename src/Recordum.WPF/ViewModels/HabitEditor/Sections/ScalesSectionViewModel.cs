@@ -56,12 +56,15 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
 
     public async Task LoadAsync(HabitNode node)
     {
-        AvailableScales.Clear();
-        foreach (var s in await _refData.ListScalesAsync()) AvailableScales.Add(s);
-
+        // _loading must already cover the Clear(): emptying the bound ItemsSource makes the
+        // ComboBox coerce SelectedValue to null, and the changed-handler would persist that
+        // null onto the previous load's _primary — silently wiping the metric's scale.
         _loading = true;
         try
         {
+            AvailableScales.Clear();
+            foreach (var s in await _refData.ListScalesAsync()) AvailableScales.Add(s);
+
             NodeId = node.Id;
             var list = await _metrics.ListByHabitAsync(node.Id);
             _primary = list.OrderBy(m => m.SortOrder).FirstOrDefault();

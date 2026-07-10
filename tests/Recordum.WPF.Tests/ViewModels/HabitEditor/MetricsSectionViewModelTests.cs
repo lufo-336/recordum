@@ -66,6 +66,33 @@ public class MetricsSectionViewModelTests
     }
 
     [Fact]
+    public async Task Reload_with_combobox_coercion_does_not_wipe_metric_units()
+    {
+        var metricId = Guid.NewGuid();
+        var unitId = _refData.Units[0].Id;
+        await _metrics.CreateAsync(new MetricDefinition
+        {
+            Id = metricId, HabitNodeId = _node.Id, Name = "Litri", SortOrder = 0, UnitOfMeasureId = unitId,
+        });
+        var sut = new MetricsSectionViewModel(_metrics, _refData);
+        await sut.LoadAsync(_node);
+        var previousRows = sut.Metrics.ToList();
+
+        // Every row's unit ComboBox shares AvailableUnits as ItemsSource: emptying it coerces the
+        // live rows' SelectedValue (UnitOfMeasureId) to null through the two-way binding.
+        sut.AvailableUnits.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                foreach (var row in previousRows) row.UnitOfMeasureId = null;
+        };
+
+        await sut.LoadAsync(_node);
+        await Task.Delay(20);
+
+        _metrics.Store[metricId].UnitOfMeasureId.Should().Be(unitId);
+    }
+
+    [Fact]
     public void IsApplicable_only_for_Counter_and_Resistance()
     {
         var sut = new MetricsSectionViewModel(_metrics, _refData);
