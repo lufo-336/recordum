@@ -60,7 +60,8 @@ public class HabitScreenViewModelTests
             nodes, configs, goals, metrics, new FakeNotificationService(), new FakeTagService(),
             settings, new FakeReferenceData(), new Recordum.WPF.Services.RecentColorStore(settings),
             new Recordum.WPF.Services.FavoriteColorStore(settings),
-            new FakeScreenColorPicker());
+            new FakeScreenColorPicker(),
+            new FakeHabitUiPrefsService());
         return new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteSvc, goals, new IntensityRampResolver(),

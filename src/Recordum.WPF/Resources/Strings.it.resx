@@ -1151,6 +1151,52 @@
   <data name="Editor.Section.ResetTime" xml:space="preserve">
     <value>Orario di reset</value>
   </data>
+  <data name="Editor.NodeType.Group" xml:space="preserve">
+    <value>Gruppo</value>
+  </data>
+  <!-- Onda 2.1: sezione Riga Home (valore chiave + striscia) -->
+  <data name="Editor.Section.HomeRow" xml:space="preserve">
+    <value>Riga Home</value>
+  </data>
+  <data name="Editor.HomeRow.KeyFigureLabel" xml:space="preserve">
+    <value>Valore chiave</value>
+  </data>
+  <data name="Editor.HomeRow.StripLabel" xml:space="preserve">
+    <value>Striscia</value>
+  </data>
+  <data name="Editor.HomeRow.KF.None" xml:space="preserve">
+    <value>Nessuno</value>
+  </data>
+  <data name="Editor.HomeRow.KF.Streak" xml:space="preserve">
+    <value>Serie</value>
+  </data>
+  <data name="Editor.HomeRow.KF.DoneToday" xml:space="preserve">
+    <value>Fatto oggi</value>
+  </data>
+  <data name="Editor.HomeRow.KF.CounterTotal" xml:space="preserve">
+    <value>Totale di oggi</value>
+  </data>
+  <data name="Editor.HomeRow.KF.LiveClock" xml:space="preserve">
+    <value>Cronometro</value>
+  </data>
+  <data name="Editor.HomeRow.KF.StateValue" xml:space="preserve">
+    <value>Valore attuale</value>
+  </data>
+  <data name="Editor.HomeRow.KF.JournalToday" xml:space="preserve">
+    <value>Oggi ✓ / —</value>
+  </data>
+  <data name="Editor.HomeRow.KF.JournalEntriesWeek" xml:space="preserve">
+    <value>Voci questa settimana</value>
+  </data>
+  <data name="Editor.HomeRow.Strip.None" xml:space="preserve">
+    <value>Nessuna</value>
+  </data>
+  <data name="Editor.HomeRow.Strip.Days7" xml:space="preserve">
+    <value>7 giorni</value>
+  </data>
+  <data name="Editor.HomeRow.Strip.Days14" xml:space="preserve">
+    <value>14 giorni</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Tipo di pianificazione</value>

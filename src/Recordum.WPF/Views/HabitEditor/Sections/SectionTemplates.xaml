@@ -15,6 +15,7 @@
     <DataTemplate DataType="{x:Type vms:NotificationsSectionViewModel}"><vs:NotificationsSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:NotesSectionViewModel}"><vs:NotesSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:TagsSectionViewModel}"><vs:TagsSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:HomeRowSectionViewModel}"><vs:HomeRowSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:AiSharingSectionViewModel}"><vs:AiSharingSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:ResetTimeSectionViewModel}"><vs:ResetTimeSectionView/></DataTemplate>
 

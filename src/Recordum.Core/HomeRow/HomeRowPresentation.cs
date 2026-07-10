@@ -71,6 +71,21 @@ public static class HomeRowPresentation
         return allowed[0];
     }
 
+    /// <summary>The persisted id for a kind (inverse of the id→kind map), for writing <see cref="HabitUiPrefs.KeyFigure"/>.</summary>
+    public static string IdFor(KeyFigureKind kind) => kind switch
+    {
+        KeyFigureKind.None => "none",
+        KeyFigureKind.Streak => "streak",
+        KeyFigureKind.DoneToday => "doneToday",
+        KeyFigureKind.CounterTotal => "counterTotal",
+        KeyFigureKind.LiveClock => "clock",
+        KeyFigureKind.StateValue => "stateValue",
+        KeyFigureKind.StateAverage7 => "stateAvg7",
+        KeyFigureKind.JournalToday => "journalToday",
+        KeyFigureKind.JournalEntriesWeek => "journalWeek",
+        _ => "none",
+    };
+
     /// <summary>Resolves the strip length: explicit pref wins; otherwise the type default (Resistance = 14 days, others = 7).</summary>
     public static HomeStrip ResolveStrip(HabitType type, HabitUiPrefs? prefs)
     {

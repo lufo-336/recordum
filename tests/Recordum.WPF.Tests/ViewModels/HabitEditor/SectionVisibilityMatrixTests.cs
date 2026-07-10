@@ -16,11 +16,11 @@ public class SectionVisibilityMatrixTests
     public static IEnumerable<object?[]> Cases() => new[]
     {
         new object?[] { NodeType.Group, (HabitType?)null,            "L1,Goal,Notifications,Tags,AiSharing,ResetTime" },
-        new object?[] { NodeType.Habit, (HabitType?)HabitType.Action,    "L1,Scheduling,Streak,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
-        new object?[] { NodeType.Habit, (HabitType?)HabitType.Counter,   "L1,Scheduling,Streak,Timer,Metrics,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
-        new object?[] { NodeType.Habit, (HabitType?)HabitType.Resistance,"L1,Timer,Metrics,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
-        new object?[] { NodeType.Habit, (HabitType?)HabitType.Journal,   "L1,Scheduling,Streak,Goal,Notifications,Tags,AiSharing,ResetTime" },
-        new object?[] { NodeType.Habit, (HabitType?)HabitType.State,     "L1,Scheduling,Streak,Scales,Goal,Notifications,Tags,AiSharing,DataSource,ResetTime" },
+        new object?[] { NodeType.Habit, (HabitType?)HabitType.Action,    "L1,Scheduling,Streak,Goal,Notifications,Tags,HomeRow,AiSharing,DataSource,ResetTime" },
+        new object?[] { NodeType.Habit, (HabitType?)HabitType.Counter,   "L1,Scheduling,Streak,Timer,Metrics,Goal,Notifications,Tags,HomeRow,AiSharing,DataSource,ResetTime" },
+        new object?[] { NodeType.Habit, (HabitType?)HabitType.Resistance,"L1,Timer,Metrics,Goal,Notifications,Tags,HomeRow,AiSharing,DataSource,ResetTime" },
+        new object?[] { NodeType.Habit, (HabitType?)HabitType.Journal,   "L1,Scheduling,Streak,Goal,Notifications,Tags,HomeRow,AiSharing,ResetTime" },
+        new object?[] { NodeType.Habit, (HabitType?)HabitType.State,     "L1,Scheduling,Streak,Scales,Goal,Notifications,Tags,HomeRow,AiSharing,DataSource,ResetTime" },
     };
 
     [Theory, MemberData(nameof(Cases))]
@@ -38,7 +38,8 @@ public class SectionVisibilityMatrixTests
             new FakeReferenceData(),
             new RecentColorStore(fakeSettings),
             new FavoriteColorStore(fakeSettings),
-            new FakeScreenColorPicker());
+            new FakeScreenColorPicker(),
+            new FakeHabitUiPrefsService());
 
         var applicable = new List<string> { "L1" };
         if (sut.Scheduling.IsApplicable(node, habit)) applicable.Add("Scheduling");
@@ -49,6 +50,7 @@ public class SectionVisibilityMatrixTests
         if (sut.Goal.IsApplicable(node, habit)) applicable.Add("Goal");
         if (sut.Notifications.IsApplicable(node, habit)) applicable.Add("Notifications");
         if (sut.Tags.IsApplicable(node, habit)) applicable.Add("Tags");
+        if (sut.HomeRow.IsApplicable(node, habit)) applicable.Add("HomeRow");
         if (sut.AiSharing.IsApplicable(node, habit)) applicable.Add("AiSharing");
         if (sut.DataSource.IsApplicable(node, habit)) applicable.Add("DataSource");
         if (sut.ResetTime.IsApplicable(node, habit)) applicable.Add("ResetTime");

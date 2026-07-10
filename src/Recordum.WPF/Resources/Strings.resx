@@ -1172,6 +1172,52 @@ Details: {0}</value>
   <data name="Editor.Section.ResetTime" xml:space="preserve">
     <value>Reset time</value>
   </data>
+  <data name="Editor.NodeType.Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <!-- Onda 2.1: Home row (key figure + strip) section -->
+  <data name="Editor.Section.HomeRow" xml:space="preserve">
+    <value>Home row</value>
+  </data>
+  <data name="Editor.HomeRow.KeyFigureLabel" xml:space="preserve">
+    <value>Key figure</value>
+  </data>
+  <data name="Editor.HomeRow.StripLabel" xml:space="preserve">
+    <value>Strip</value>
+  </data>
+  <data name="Editor.HomeRow.KF.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Editor.HomeRow.KF.Streak" xml:space="preserve">
+    <value>Streak</value>
+  </data>
+  <data name="Editor.HomeRow.KF.DoneToday" xml:space="preserve">
+    <value>Done today</value>
+  </data>
+  <data name="Editor.HomeRow.KF.CounterTotal" xml:space="preserve">
+    <value>Today total</value>
+  </data>
+  <data name="Editor.HomeRow.KF.LiveClock" xml:space="preserve">
+    <value>Live clock</value>
+  </data>
+  <data name="Editor.HomeRow.KF.StateValue" xml:space="preserve">
+    <value>Current value</value>
+  </data>
+  <data name="Editor.HomeRow.KF.JournalToday" xml:space="preserve">
+    <value>Today ✓ / —</value>
+  </data>
+  <data name="Editor.HomeRow.KF.JournalEntriesWeek" xml:space="preserve">
+    <value>Entries this week</value>
+  </data>
+  <data name="Editor.HomeRow.Strip.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Editor.HomeRow.Strip.Days7" xml:space="preserve">
+    <value>7 days</value>
+  </data>
+  <data name="Editor.HomeRow.Strip.Days14" xml:space="preserve">
+    <value>14 days</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Schedule type</value>

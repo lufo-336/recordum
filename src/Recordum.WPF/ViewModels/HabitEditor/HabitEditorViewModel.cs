@@ -65,6 +65,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     public AiSharingSectionViewModel AiSharing { get; }
     public DataSourceSectionViewModel DataSource { get; }
     public ResetTimeSectionViewModel ResetTime { get; }
+    public HomeRowSectionViewModel HomeRow { get; }
 
     public bool HasNode => Node is not null;
 
@@ -93,6 +94,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IRecentColorStore recentColors,
         IFavoriteColorStore favoriteColors,
         IScreenColorPicker screenPicker,
+        IHabitUiPrefsService uiPrefs,
         IEventBus? events = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
@@ -120,10 +122,11 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
         ResetTime = new ResetTimeSectionViewModel(nodes);
+        HomeRow = new HomeRowSectionViewModel(uiPrefs);
 
         Sections = new SectionViewModelBase[]
         {
-            Scheduling, Streak, Timer, Metrics, Scales, Goal, Notifications, Notes, Tags, AiSharing, ResetTime,
+            Scheduling, Streak, Timer, Metrics, Scales, Goal, Notifications, Notes, Tags, HomeRow, AiSharing, ResetTime,
         };
 
         foreach (var section in EnumerateSections())
@@ -141,6 +144,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         yield return Notifications;
         yield return Notes;
         yield return Tags;
+        yield return HomeRow;
         yield return AiSharing;
         yield return DataSource;
         yield return ResetTime;
@@ -233,6 +237,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             await Notifications.LoadAsync(node);
             await Notes.LoadAsync(node, cfg);
             await Tags.LoadAsync(node);
+            await HomeRow.LoadAsync(node);
             await AiSharing.LoadAsync(node);
             await DataSource.LoadAsync(node, cfg);
             await ResetTime.LoadAsync(node);

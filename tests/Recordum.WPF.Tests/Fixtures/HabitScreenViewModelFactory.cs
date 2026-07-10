@@ -44,7 +44,7 @@ public static class HabitScreenViewModelFactory
         var editor = new HabitEditorViewModel(
             nodes, configService, goals, metrics, new FakeNotificationService(), new FakeTagService(),
             settings, new FakeReferenceData(), new RecentColorStore(settings), new FavoriteColorStore(settings),
-            new FakeScreenColorPicker());
+            new FakeScreenColorPicker(), new FakeHabitUiPrefsService());
 
         var vm = new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeReferenceData(), configService,

@@ -21,7 +21,7 @@ public class HabitEditorViewModelTests
     private readonly FakeReferenceData _refData = new();
     private readonly FakeEventBus _events = new();
 
-    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData, new RecentColorStore(_appSettings), new FavoriteColorStore(_appSettings), new FakeScreenColorPicker(), _events);
+    private HabitEditorViewModel CreateSut() => new(_nodes, _configs, _goals, _metrics, _notifications, _tags, _appSettings, _refData, new RecentColorStore(_appSettings), new FavoriteColorStore(_appSettings), new FakeScreenColorPicker(), new FakeHabitUiPrefsService(), _events);
 
     [Fact]
     public async Task LoadAsync_with_null_clears_node()

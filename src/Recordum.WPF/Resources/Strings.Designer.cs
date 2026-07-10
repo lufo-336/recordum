@@ -435,6 +435,21 @@ public static class Strings
     public static string Editor_Section_Tags => Get("Editor.Section.Tags");
     public static string Editor_Section_AiSharing => Get("Editor.Section.AiSharing");
     public static string Editor_Section_ResetTime => Get("Editor.Section.ResetTime");
+    public static string Editor_NodeType_Group => Get("Editor.NodeType.Group");
+    public static string Editor_Section_HomeRow => Get("Editor.Section.HomeRow");
+    public static string Editor_HomeRow_KeyFigureLabel => Get("Editor.HomeRow.KeyFigureLabel");
+    public static string Editor_HomeRow_StripLabel => Get("Editor.HomeRow.StripLabel");
+    public static string Editor_HomeRow_KF_None => Get("Editor.HomeRow.KF.None");
+    public static string Editor_HomeRow_KF_Streak => Get("Editor.HomeRow.KF.Streak");
+    public static string Editor_HomeRow_KF_DoneToday => Get("Editor.HomeRow.KF.DoneToday");
+    public static string Editor_HomeRow_KF_CounterTotal => Get("Editor.HomeRow.KF.CounterTotal");
+    public static string Editor_HomeRow_KF_LiveClock => Get("Editor.HomeRow.KF.LiveClock");
+    public static string Editor_HomeRow_KF_StateValue => Get("Editor.HomeRow.KF.StateValue");
+    public static string Editor_HomeRow_KF_JournalToday => Get("Editor.HomeRow.KF.JournalToday");
+    public static string Editor_HomeRow_KF_JournalEntriesWeek => Get("Editor.HomeRow.KF.JournalEntriesWeek");
+    public static string Editor_HomeRow_Strip_None => Get("Editor.HomeRow.Strip.None");
+    public static string Editor_HomeRow_Strip_Days7 => Get("Editor.HomeRow.Strip.Days7");
+    public static string Editor_HomeRow_Strip_Days14 => Get("Editor.HomeRow.Strip.Days14");
 
     // Help menu + Diagnostic dialog
     public static string Workspace_Help => Get("Workspace.Help");
