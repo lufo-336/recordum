@@ -267,6 +267,92 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_resolves_TodayStateLabel_from_ScaleTemplate_when_metric_has_no_override()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var scaleId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
+            db.ScaleTemplates.Add(new ScaleTemplate
+            {
+                Id = scaleId,
+                Code = "test-mood",
+                Name = "Test Mood",
+                MinValue = 1,
+                MaxValue = 3,
+                LabelsJson = "[\"Male\",\"Così\",\"Bene\"]",
+            });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Mood",
+                Type = MetricType.Integer,
+                ScaleTemplateId = scaleId,
+                LabelsJson = null, // no metric-level override → must fall back to the template
+                SortOrder = 0,
+            });
+            var completion = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            db.Completions.Add(completion);
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completion.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayStateValue.Should().Be(3);
+        row.TodayStateLabel.Should().Be("Bene");
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_metric_LabelsJson_wins_over_ScaleTemplate()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var scaleId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
+            db.ScaleTemplates.Add(new ScaleTemplate
+            {
+                Id = scaleId,
+                Code = "test-generic",
+                Name = "Test Generic",
+                MinValue = 1,
+                MaxValue = 3,
+                LabelsJson = "[\"TmplA\",\"TmplB\",\"TmplC\"]",
+            });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Mood",
+                Type = MetricType.Integer,
+                ScaleTemplateId = scaleId,
+                LabelsJson = "[\"Male\",\"Così\",\"Bene\"]", // override must win
+                SortOrder = 0,
+            });
+            var completion = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            db.Completions.Add(completion);
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completion.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayStateValue.Should().Be(3);
+        row.TodayStateLabel.Should().Be("Bene");
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_returns_Abstaining_for_open_period()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));

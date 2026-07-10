@@ -72,6 +72,7 @@ public sealed class HabitTreeQueryService(
                 m.HabitNodeId,
                 m.SortOrder,
                 m.LabelsJson,
+                m.ScaleTemplateId,
                 UnitCode = m.UnitOfMeasure != null ? m.UnitOfMeasure.Code : null,
             })
             .ToListAsync(ct);
@@ -79,6 +80,13 @@ public sealed class HabitTreeQueryService(
             .GroupBy(m => m.HabitNodeId)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.SortOrder).First());
         var primaryMetricIds = primaryMetricByHabit.Values.Select(m => m.Id).ToHashSet();
+
+        // Shared scale-template labels — the fallback when a metric has no own LabelsJson override
+        // (metric override wins, CSS-style specificity — matches MetricCellFactory/CompletionList precedent).
+        var templateLabelsById = await db.ScaleTemplates
+            .AsNoTracking()
+            .Select(s => new { s.Id, s.LabelsJson })
+            .ToDictionaryAsync(s => s.Id, s => s.LabelsJson, ct);
 
         // Today's CompletionValues on each node's primary metric — feeds both counter total and state value.
         var todayValueRows = await db.CompletionValues
@@ -170,7 +178,16 @@ public sealed class HabitTreeQueryService(
                         {
                             todayStateValue = (int)v;
                             if (primaryMetricByHabit.TryGetValue(r.Id, out var stateMetric))
-                                todayStateLabel = ResolveLabel(stateMetric.LabelsJson, todayStateValue.Value);
+                            {
+                                var labelsJson = stateMetric.LabelsJson;
+                                if (string.IsNullOrWhiteSpace(labelsJson)
+                                    && stateMetric.ScaleTemplateId is Guid tid
+                                    && templateLabelsById.TryGetValue(tid, out var tmplLabels))
+                                {
+                                    labelsJson = tmplLabels;
+                                }
+                                todayStateLabel = ResolveLabel(labelsJson, todayStateValue.Value);
+                            }
                         }
                         break;
                     case HabitType.Resistance:
