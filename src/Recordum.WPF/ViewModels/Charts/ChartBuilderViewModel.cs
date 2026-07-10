@@ -88,6 +88,9 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
         PreviewView = null;
         PreviewEmpty = true;
         Series.Clear();
+        // Start with one empty series row: without it the form shows no habit picker at all and
+        // the user has no clue where to choose the habit (wave-1a visual finding W1a-VF2).
+        AddSeries();
         _ = LoadHabitsFireAndForgetAsync();
     }
 

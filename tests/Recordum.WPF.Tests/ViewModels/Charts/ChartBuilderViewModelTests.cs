@@ -52,11 +52,26 @@ public sealed class ChartBuilderViewModelTests
     public void AddSeries_then_RemoveSeries_mutates_collection()
     {
         var vm = BuildVm(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService());
-        vm.LoadNew();
+        vm.LoadNew(); // seeds one row (W1a-VF2)
         vm.AddSeriesCommand.Execute(null);
         vm.AddSeriesCommand.Execute(null);
-        Assert.Equal(2, vm.Series.Count);
+        Assert.Equal(3, vm.Series.Count);
         vm.RemoveSeriesCommand.Execute(vm.Series[0]);
+        Assert.Equal(2, vm.Series.Count);
+    }
+
+    [Fact]
+    public void LoadNew_seeds_one_empty_series_row_so_the_habit_picker_is_visible()
+    {
+        // W1a-VF2: a brand-new chart used to show no series row at all — the user had no way to
+        // see where the habit is picked. LoadNew now seeds one empty row (and re-seeds on reuse).
+        var vm = BuildVm(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService());
+        vm.LoadNew();
+        Assert.Single(vm.Series);
+        Assert.Null(vm.Series[0].SelectedHabit);
+
+        vm.AddSeriesCommand.Execute(null);
+        vm.LoadNew(); // reused builder: back to exactly one seeded row
         Assert.Single(vm.Series);
     }
 
