@@ -190,6 +190,18 @@ Details: {0}</value>
   <data name="Home.Empty.Trash" xml:space="preserve">
     <value>Trash is empty.</value>
   </data>
+  <data name="Home.KeyFigure.Streak" xml:space="preserve">
+    <value>×{0}</value>
+    <comment>Home-row key figure: current streak length. {0} = count.</comment>
+  </data>
+  <data name="Home.KeyFigure.CounterTotal" xml:space="preserve">
+    <value>{0} {1}</value>
+    <comment>Home-row key figure: counter today total. {0} = value, {1} = unit code.</comment>
+  </data>
+  <data name="Home.KeyFigure.EntriesWeek" xml:space="preserve">
+    <value>{0} this week</value>
+    <comment>Home-row key figure: journal entries in the last 7 days. {0} = count.</comment>
+  </data>
   <data name="Home.Error.Generic" xml:space="preserve">
     <value>Something went wrong.</value>
   </data>

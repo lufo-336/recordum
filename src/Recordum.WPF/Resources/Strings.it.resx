@@ -172,6 +172,15 @@
   <data name="Home.Empty.Trash" xml:space="preserve">
     <value>Cestino vuoto.</value>
   </data>
+  <data name="Home.KeyFigure.Streak" xml:space="preserve">
+    <value>×{0}</value>
+  </data>
+  <data name="Home.KeyFigure.CounterTotal" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="Home.KeyFigure.EntriesWeek" xml:space="preserve">
+    <value>{0} questa settimana</value>
+  </data>
   <data name="Home.Error.Generic" xml:space="preserve">
     <value>Si è verificato un errore.</value>
   </data>

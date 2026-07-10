@@ -1,10 +1,16 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Core.HomeRow;
+using Recordum.Core.Models;
+using Recordum.WPF.Formatting;
+using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.Quick;
 
 namespace Recordum.WPF.ViewModels;
@@ -13,6 +19,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
 {
     private readonly IHabitNodeService _nodes;
     private readonly IPurgeService _purge;
+    private readonly IStreakAggregator? _streaks;
+    private readonly IClock? _clock;
     private QuickActionHandlerSelector? _quickActionSelector;
     private string _originalName = string.Empty;
 
@@ -54,6 +62,31 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public bool IsGroup => HabitType is null;
     public int ChildCount { get; }
     public ImmutableArray<int> CompletionsLast7Days { get; }
+
+    // ---- Onda 2.1: per-type key figure + strip (right zone of the row) ----
+
+    /// <summary>The resolved key figure this row shows (per type + prefs). None for groups.</summary>
+    public KeyFigureKind KeyFigureKind { get; }
+
+    /// <summary>The resolved strip length. None hides the strip entirely.</summary>
+    public HomeStrip StripLength { get; }
+
+    /// <summary>Daily completion counts sliced to <see cref="StripLength"/> (7 or 14, empty for None).</summary>
+    public ImmutableArray<int> StripCounts { get; }
+
+    /// <summary>True when this row's key figure is the live abstinence clock (drives the shared ticker in Task 4).</summary>
+    public bool IsResistanceClock => KeyFigureKind == KeyFigureKind.LiveClock;
+
+    /// <summary>Unix-ms the open abstinence period started, when abstaining; else null. Feeds the live clock.</summary>
+    public long? AbstinenceOpenSinceMs { get; }
+
+    /// <summary>The displayed key figure text. Empty when there is nothing to show (hides the chip).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowKeyFigure))]
+    private string _keyFigureText = string.Empty;
+
+    /// <summary>True when a key-figure chip should render (non-group, non-None kind, non-empty text).</summary>
+    public bool ShowKeyFigure => !IsGroup && KeyFigureKind != KeyFigureKind.None && !string.IsNullOrEmpty(KeyFigureText);
 
     /// <summary>Visible children, populated by HomeViewModel.Rebuild (hierarchical view rendering).
     /// Empty for habits and for collapsed groups.</summary>
@@ -105,10 +138,14 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public bool ShowRestore    => CurrentTab == HomeTab.Trash;
     public bool ShowPurge      => CurrentTab == HomeTab.Trash;
 
-    public HomeRowViewModel(HomeTreeRow row, int indentLevel, IHabitNodeService nodes, IPurgeService purge)
+    public HomeRowViewModel(
+        HomeTreeRow row, int indentLevel, IHabitNodeService nodes, IPurgeService purge,
+        HabitUiPrefs? uiPrefs = null, IStreakAggregator? streaks = null, IClock? clock = null)
     {
         _nodes = nodes;
         _purge = purge;
+        _streaks = streaks;
+        _clock = clock;
         HabitNodeId = row.HabitNodeId;
         ParentId = row.ParentId;
         ColorHex = row.ColorHex;
@@ -118,13 +155,97 @@ public sealed partial class HomeRowViewModel : ObservableObject
         CompletionsLast7Days = row.CompletionsLast7Days;
         LastCompletionAt = row.LastCompletionAt;
         IsCompletedToday = row.IsCompletedToday;
+        AbstinenceOpenSinceMs = row.AbstinenceOpenSinceMs;
         IndentLevel = indentLevel;
         _name = row.Name;
         _originalName = row.Name;
         _pinScope = row.PinScope;
         _isArchived = row.IsArchived;
+
+        // Resolve the per-type presentation (groups get None/None).
+        if (HabitType is { } type)
+        {
+            KeyFigureKind = HomeRowPresentation.ResolveKeyFigure(type, uiPrefs);
+            StripLength = HomeRowPresentation.ResolveStrip(type, uiPrefs);
+        }
+        StripCounts = SliceStrip(row, StripLength);
+        _keyFigureText = ComputeSynchronousKeyFigure(row);
+
         // Children are filled by Rebuild right after construction; keep the frame chrome in sync.
         Children.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasVisibleChildren));
+    }
+
+    private static ImmutableArray<int> SliceStrip(HomeTreeRow row, HomeStrip length)
+    {
+        if (length == HomeStrip.None) return ImmutableArray<int>.Empty;
+        var src14 = row.CompletionsLast14Days.IsDefaultOrEmpty ? ImmutableArray<int>.Empty : row.CompletionsLast14Days;
+        return length switch
+        {
+            HomeStrip.Days14 => src14.IsEmpty ? row.CompletionsLast7Days : src14,
+            HomeStrip.Days7 => src14.Length >= 7 ? src14[^7..] : row.CompletionsLast7Days,
+            _ => ImmutableArray<int>.Empty,
+        };
+    }
+
+    /// <summary>Builds the key-figure text for the kinds whose value is already in the DTO.
+    /// Streak (and any future async kind) stays empty here and is filled by <see cref="LoadKeyFigureAsync"/>.</summary>
+    private string ComputeSynchronousKeyFigure(HomeTreeRow row) => KeyFigureKind switch
+    {
+        KeyFigureKind.DoneToday or KeyFigureKind.JournalToday => IsCompletedToday ? "✓" : "—",
+        KeyFigureKind.CounterTotal => FormatCounterTotal(row),
+        KeyFigureKind.StateValue => row.TodayStateLabel
+            ?? row.TodayStateValue?.ToString(CultureInfo.CurrentCulture)
+            ?? string.Empty,
+        KeyFigureKind.JournalEntriesWeek => (row.JournalEntriesThisWeek ?? 0) > 0
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string
+            ? string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_EntriesWeek, row.JournalEntriesThisWeek)
+#pragma warning restore CA1863
+            : string.Empty,
+        KeyFigureKind.LiveClock => FormatClock(),
+        _ => string.Empty, // Streak / None: async or nothing
+    };
+
+    private static string FormatCounterTotal(HomeTreeRow row)
+    {
+        var value = (row.TodayCounterTotal ?? 0m).ToString("0.##", CultureInfo.CurrentCulture);
+        var unit = row.TodayCounterUnitCode;
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string
+        return string.IsNullOrEmpty(unit)
+            ? value
+            : string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_CounterTotal, value, unit).Trim();
+#pragma warning restore CA1863
+    }
+
+    /// <summary>Current elapsed-abstinence display, computed from the open-period start and the clock.
+    /// Recomputed on each shared-timer tick (Task 4). Empty when not currently abstaining.</summary>
+    private string FormatClock()
+    {
+        if (AbstinenceOpenSinceMs is not { } sinceMs || _clock is null) return string.Empty;
+        var elapsed = _clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(sinceMs);
+        return DurationFormat.FormatCompactDays(elapsed);
+    }
+
+    /// <summary>Recomputes the live abstinence clock text. Called by the shared Home ticker each second.</summary>
+    public void RefreshClock()
+    {
+        if (KeyFigureKind == KeyFigureKind.LiveClock)
+            KeyFigureText = FormatClock();
+    }
+
+    /// <summary>Computes the off-critical-path key figures (currently: Streak) after the row is rendered.
+    /// No-op for the synchronous kinds. Safe to call in parallel for the visible rows.</summary>
+    public async Task LoadKeyFigureAsync(CancellationToken ct = default)
+    {
+        if (KeyFigureKind != KeyFigureKind.Streak || _streaks is null || _clock is null) return;
+        var today = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
+        var runs = await _streaks.GetHistoryAsync(HabitNodeId, today.AddYears(-1), today, ct).ConfigureAwait(true);
+        var length = runs.FirstOrDefault(r => r.IsCurrent)?.Length ?? 0;
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-load UI string
+        KeyFigureText = length > 0
+            ? string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_Streak, length)
+            : string.Empty;
+#pragma warning restore CA1863
     }
 
     [RelayCommand]

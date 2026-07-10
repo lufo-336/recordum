@@ -38,6 +38,9 @@ public static class Strings
     public static string HabitScreen_QuickAdd_ChronoStart => Get("HabitScreen.QuickAdd.ChronoStart");
     public static string HabitScreen_QuickAdd_ChronoStop => Get("HabitScreen.QuickAdd.ChronoStop");
     public static string Home_QuickAction => Get("Home.QuickAction");
+    public static string Home_KeyFigure_Streak => Get("Home.KeyFigure.Streak");
+    public static string Home_KeyFigure_CounterTotal => Get("Home.KeyFigure.CounterTotal");
+    public static string Home_KeyFigure_EntriesWeek => Get("Home.KeyFigure.EntriesWeek");
     public static string HabitScreen_Timer_Start => Get("HabitScreen.Timer.Start");
     public static string HabitScreen_Timer_Pause => Get("HabitScreen.Timer.Pause");
     public static string HabitScreen_Timer_Resume => Get("HabitScreen.Timer.Resume");

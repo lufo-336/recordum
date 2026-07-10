@@ -2,10 +2,12 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
+using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
@@ -13,17 +15,23 @@ using Recordum.WPF.Behaviors;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.WPF.ViewModels.Home;
 using Recordum.WPF.ViewModels.Quick;
 
 namespace Recordum.WPF.ViewModels;
 
-public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
+public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost, IDisposable
 {
     private readonly IHabitTreeQueryService _query;
     private readonly IHabitNodeService _nodes;
     private readonly IPurgeService _purge;
     private readonly IHabitTemplatePickerLauncher? _launcher;
     private readonly QuickActionHandlerSelector? _quickActions;
+    private readonly IHabitUiPrefsService? _uiPrefs;
+    private readonly IStreakAggregator? _streaks;
+    private readonly IClock? _clock;
+    private readonly HomeClockTicker _clockTicker = new();
+    private Dictionary<Guid, HabitUiPrefs> _prefsByNode = new();
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
     private readonly HashSet<Guid> _collapsedGroupIds = [];
@@ -60,13 +68,19 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         IPurgeService purge,
         IHabitTemplatePickerLauncher? launcher = null,
         QuickActionHandlerSelector? quickActions = null,
-        IEventBus? events = null)
+        IEventBus? events = null,
+        IHabitUiPrefsService? uiPrefs = null,
+        IStreakAggregator? streaks = null,
+        IClock? clock = null)
     {
         _query = query;
         _nodes = nodes;
         _purge = purge;
         _launcher = launcher;
         _quickActions = quickActions;
+        _uiPrefs = uiPrefs;
+        _streaks = streaks;
+        _clock = clock;
 
         // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete) must
         // refresh the row indicators (sparkline / completed-today); a habit edit (name/color/icon
@@ -92,6 +106,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
             _lastFetched = ActiveTab == HomeTab.Trash
                 ? await _query.GetTrashTreeAsync()
                 : await _query.GetHomeTreeAsync();
+            await PrefetchPrefsAsync();
             Rebuild();
         }
         catch (Exception ex)
@@ -419,17 +434,20 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
             q = q.Where(r => r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
         _rebuilding = true;
+        _clockTicker.Clear();
         try
         {
             var parentStack = new List<HomeRowViewModel>();
             foreach (var (row, level) in OrderHierarchically(q.ToList()))
             {
-                var vm = new HomeRowViewModel(row, level, _nodes, _purge)
+                _prefsByNode.TryGetValue(row.HabitNodeId, out var prefs);
+                var vm = new HomeRowViewModel(row, level, _nodes, _purge, prefs, _streaks, _clock)
                 {
                     CurrentTab = ActiveTab,
                     IsExpanded = !_collapsedGroupIds.Contains(row.HabitNodeId),
                 };
                 if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
+                if (vm.IsResistanceClock) _clockTicker.Register(vm.RefreshClock);
                 vm.Changed += OnRowChanged;
                 vm.QuickActionExecuted += OnRowQuickActionExecuted;
                 vm.ExpandToggled += OnRowExpandToggled;
@@ -446,6 +464,28 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         finally { _rebuilding = false; }
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
         ApplySelectionToRows();
+        _ = FillKeyFiguresAsync();
+    }
+
+    /// <summary>Loads per-node presentation prefs for the current fetch, once, into a lookup the
+    /// synchronous Rebuild reads. No-op when no prefs service is wired (design surfaces, tests).</summary>
+    private async Task PrefetchPrefsAsync()
+    {
+        if (_uiPrefs is null) { _prefsByNode = new(); return; }
+        var ids = _lastFetched.Where(r => r.HabitType is not null)
+            .Select(r => r.HabitNodeId).Distinct().ToList();
+        var pairs = await Task.WhenAll(ids.Select(async id => (id, prefs: await _uiPrefs.GetAsync(id))));
+        _prefsByNode = pairs.ToDictionary(p => p.id, p => p.prefs);
+    }
+
+    /// <summary>Fills the off-critical-path key figures (streak) for the current rows in parallel,
+    /// after render. Mirrors the CR24 Task.WhenAll async-fill pattern; never blocks the initial build.</summary>
+    private async Task FillKeyFiguresAsync()
+    {
+        if (_streaks is null || _clock is null) return;
+        var rows = Rows.Where(r => r.KeyFigureKind == KeyFigureKind.Streak).ToList();
+        if (rows.Count == 0) return;
+        await Task.WhenAll(rows.Select(r => r.LoadKeyFigureAsync()));
     }
 
     private IEnumerable<(HomeTreeRow Row, int Level)> OrderHierarchically(IReadOnlyList<HomeTreeRow> rows)
@@ -497,4 +537,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost
         HomeSort.Manual => rows.OrderBy(r => r.SortOrder).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase),
         _ => rows,
     };
+
+    /// <summary>Stops the shared Home clock ticker so it stops ticking and can be collected.</summary>
+    public void Dispose() => _clockTicker.Dispose();
 }

@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
 using FluentAssertions;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
@@ -135,5 +137,80 @@ public class HomeRowViewModelTests
         sut.Name.Should().Be("new");
         fakeService.Store[id].Name.Should().Be("new");
         sut.IsRenaming.Should().BeFalse();
+    }
+
+    // ---- Onda 2.1: key figure + strip ----
+
+    private static HomeTreeRow CounterRow(Guid id, decimal total, string? unit) =>
+        new(id, null, "c", "#000000", HabitType.Counter, null, 0, false, PinScope.None, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty,
+            CompletionsLast14Days: ImmutableArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            TodayCounterTotal: total, TodayCounterUnitCode: unit);
+
+    private static HomeTreeRow StateRow(Guid id, int value, string label) =>
+        new(id, null, "s", "#000000", HabitType.State, null, 0, true, PinScope.None, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty,
+            TodayStateValue: value, TodayStateLabel: label);
+
+    [Fact]
+    public void Counter_key_figure_shows_total_with_unit()
+    {
+        var sut = new HomeRowViewModel(CounterRow(Guid.NewGuid(), 22m, "pg"), 0,
+            new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureKind.Should().Be(KeyFigureKind.CounterTotal);
+        sut.KeyFigureText.Should().Be("22 pg");
+        sut.ShowKeyFigure.Should().BeTrue();
+    }
+
+    [Fact]
+    public void State_key_figure_shows_scale_label()
+    {
+        var sut = new HomeRowViewModel(StateRow(Guid.NewGuid(), 3, "Bene"), 0,
+            new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureKind.Should().Be(KeyFigureKind.StateValue);
+        sut.KeyFigureText.Should().Be("Bene");
+    }
+
+    [Fact]
+    public async Task Action_streak_key_figure_fills_after_LoadKeyFigureAsync()
+    {
+        var id = Guid.NewGuid();
+        var aggregator = new FakeStreakAggregator();
+        aggregator.Runs.Add(new StreakRun(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 12), 12, IsCurrent: true));
+        var sut = new HomeRowViewModel(Sample(id, type: HabitType.Action), 0,
+            new FakeHabitNodeService(), new FakePurgeService(),
+            uiPrefs: null, streaks: aggregator, clock: new FakeClock());
+
+        sut.KeyFigureKind.Should().Be(KeyFigureKind.Streak);
+        sut.KeyFigureText.Should().BeEmpty(); // lazy: not computed until load
+        sut.ShowKeyFigure.Should().BeFalse();
+
+        await sut.LoadKeyFigureAsync();
+
+        sut.KeyFigureText.Should().Be("×12");
+        sut.ShowKeyFigure.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Strip_length_honors_type_default_14_for_resistance_else_7()
+    {
+        var res = new HomeTreeRow(Guid.NewGuid(), null, "r", "#000000", HabitType.Resistance, null, 0, false,
+            PinScope.None, 0, false, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty,
+            CompletionsLast14Days: ImmutableArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            AbstinenceStatus: Recordum.Core.Abstractions.Services.AbstinenceStatus.Abstaining,
+            AbstinenceOpenSinceMs: new FakeClock().UtcNowMs);
+        var resVm = new HomeRowViewModel(res, 0, new FakeHabitNodeService(), new FakePurgeService(),
+            uiPrefs: null, streaks: null, clock: new FakeClock());
+
+        resVm.StripLength.Should().Be(HomeStrip.Days14);
+        resVm.StripCounts.Length.Should().Be(14);
+        resVm.IsResistanceClock.Should().BeTrue();
+
+        var counterVm = new HomeRowViewModel(CounterRow(Guid.NewGuid(), 1m, "x"), 0,
+            new FakeHabitNodeService(), new FakePurgeService());
+        counterVm.StripLength.Should().Be(HomeStrip.Days7);
+        counterVm.StripCounts.Length.Should().Be(7);
     }
 }
