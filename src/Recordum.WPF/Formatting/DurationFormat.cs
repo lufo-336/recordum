@@ -88,18 +88,6 @@ public static class DurationFormat
         return "appena ora";
     }
 
-    /// <summary>Compact in-row abstinence clock: days + h:mm, no seconds ("20g 4:12" / "4:12").
-    /// Used by the Home-row live clock where seconds would be visual noise.</summary>
-    public static string FormatCompactDays(TimeSpan elapsed)
-    {
-        if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
-        int days = (int)elapsed.TotalDays;
-        int h = elapsed.Hours, m = elapsed.Minutes;
-        return days >= 1
-            ? string.Create(CultureInfo.InvariantCulture, $"{days}g {h}:{m:00}")
-            : string.Create(CultureInfo.InvariantCulture, $"{h}:{m:00}");
-    }
-
     /// <summary>Live stopwatch format for the abstinence clock: seconds always visible.
     /// "21g 6:14:09" / "6:14:09" / "0:03:07". Days use the same "g" suffix as FormatDays.</summary>
     public static string FormatStopwatch(TimeSpan elapsed)

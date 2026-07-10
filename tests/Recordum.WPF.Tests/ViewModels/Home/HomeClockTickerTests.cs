@@ -3,7 +3,6 @@ using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
-using Recordum.WPF.Formatting;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Home;
@@ -55,30 +54,26 @@ public class HomeClockTickerTests
     }
 
     [Fact]
-    public void FormatCompactDays_matches_days_h_mm()
-    {
-        DurationFormat.FormatCompactDays(new TimeSpan(20, 4, 12, 0)).Should().Be("20g 4:12");
-        DurationFormat.FormatCompactDays(new TimeSpan(0, 4, 12, 0)).Should().Be("4:12");
-        DurationFormat.FormatCompactDays(new TimeSpan(0, 0, 7, 0)).Should().Be("0:07");
-    }
-
-    [Fact]
-    public void Registered_resistance_row_updates_clock_on_tick()
+    public void Registered_resistance_row_updates_clock_on_tick_with_seconds()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var sinceMs = clock.UtcNowMs;
         var row = new HomeRowViewModel(ResistanceRow(Guid.NewGuid(), sinceMs), 0,
             new FakeHabitNodeService(), new FakePurgeService(), uiPrefs: null, streaks: null, clock: clock);
         row.IsResistanceClock.Should().BeTrue();
-        row.KeyFigureText.Should().Be("0:00");
+        row.KeyFigureText.Should().Be("0:00:00");
 
         using var ticker = new HomeClockTicker();
         ticker.Register(row.RefreshClock);
 
+        // one second later the display must visibly change (seconds shown so the row ticks live)
+        clock.Advance(TimeSpan.FromSeconds(9));
+        ticker.TickNow();
+        row.KeyFigureText.Should().Be("0:00:09");
+
         clock.Advance(new TimeSpan(20, 4, 12, 0));
         ticker.TickNow();
-
-        row.KeyFigureText.Should().Be("20g 4:12");
+        row.KeyFigureText.Should().Be("20g 4:12:09");
     }
 
     private static HomeTreeRow ResistanceRow(Guid id, long sinceMs) =>

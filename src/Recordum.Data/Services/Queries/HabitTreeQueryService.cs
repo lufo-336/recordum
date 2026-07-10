@@ -127,6 +127,28 @@ public sealed class HabitTreeQueryService(
                     : (Status: AbstinenceStatus.Relapsed, OpenSinceMs: (long?)null);
             });
 
+        // Resistance strip = 14-day "abstaining" band from the periods (completion buckets don't apply
+        // to abstinence). A day is filled when any period covers it; an open period runs up to now.
+        var nowMs = clock.UtcNowMs;
+        var abstinenceBandByHabit = abstinenceRows
+            .GroupBy(p => p.HabitNodeId)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var arr = new int[14];
+                foreach (var p in g)
+                {
+                    var pStart = p.StartedAtMs;
+                    var pEnd = p.EndedAtMs ?? nowMs;
+                    for (var i = 0; i < 14; i++)
+                    {
+                        var dayStart = startMs + (long)i * 86_400_000;
+                        var dayEnd = dayStart + 86_400_000;
+                        if (pStart < dayEnd && pEnd >= dayStart) arr[i] = 4; // abstaining that day → full band step
+                    }
+                }
+                return ImmutableArray.Create(arr);
+            });
+
         var raw = await db.HabitNodes
             .IgnoreQueryFilters()
             .AsNoTracking()
@@ -195,6 +217,11 @@ public sealed class HabitTreeQueryService(
                         {
                             abstinenceStatus = abst.Status;
                             abstinenceOpenSinceMs = abst.OpenSinceMs;
+                        }
+                        if (abstinenceBandByHabit.TryGetValue(r.Id, out var band14))
+                        {
+                            completions14 = band14;
+                            completions7 = ImmutableArray.Create(band14.Skip(7).ToArray());
                         }
                         break;
                     case HabitType.Journal:

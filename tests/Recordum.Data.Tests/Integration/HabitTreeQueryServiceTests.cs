@@ -373,6 +373,33 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_resistance_strip_is_abstaining_band_from_periods()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 20, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        long Ms(int daysAgo) => new DateTimeOffset(
+            clock.UtcNow.UtcDateTime.Date.AddDays(-daysAgo), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "r", NodeType = NodeType.Habit, HabitType = HabitType.Resistance });
+            // open period started 3 days ago → covers today-3..today = indices 10,11,12,13 (today = index 13)
+            db.AbstinencePeriods.Add(new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = Ms(3) });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.CompletionsLast14Days.Length.Should().Be(14);
+        // the abstaining days (indices 10..13) are filled; earlier days are empty
+        row.CompletionsLast14Days[13].Should().BeGreaterThan(0);
+        row.CompletionsLast14Days[11].Should().BeGreaterThan(0);
+        row.CompletionsLast14Days[10].Should().BeGreaterThan(0);
+        row.CompletionsLast14Days[9].Should().Be(0);
+        row.CompletionsLast14Days[0].Should().Be(0);
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_returns_Relapsed_for_only_closed_period()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));

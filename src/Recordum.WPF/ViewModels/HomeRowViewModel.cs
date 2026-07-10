@@ -217,12 +217,13 @@ public sealed partial class HomeRowViewModel : ObservableObject
     }
 
     /// <summary>Current elapsed-abstinence display, computed from the open-period start and the clock.
-    /// Recomputed on each shared-timer tick (Task 4). Empty when not currently abstaining.</summary>
+    /// Recomputed on each shared-timer tick (Task 4). Seconds are shown so the in-row clock visibly
+    /// ticks (consistent with the U9.1 detail/quick-add stopwatch). Empty when not currently abstaining.</summary>
     private string FormatClock()
     {
         if (AbstinenceOpenSinceMs is not { } sinceMs || _clock is null) return string.Empty;
         var elapsed = _clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(sinceMs);
-        return DurationFormat.FormatCompactDays(elapsed);
+        return DurationFormat.FormatStopwatch(elapsed);
     }
 
     /// <summary>Recomputes the live abstinence clock text. Called by the shared Home ticker each second.</summary>
