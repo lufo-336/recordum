@@ -87,8 +87,22 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     partial void OnIsConfiguraOpenChanged(bool value)
     {
         OnColumnFlag(HabitColumn.Configura, value);
-        if (value && !_restoringColumns) ConfigureRequested?.Invoke(this, EventArgs.Empty);
+        if (value && !_restoringColumns)
+        {
+            ConfigureRequested?.Invoke(this, EventArgs.Empty);
+            _ = LoadEditorAsync();
+        }
         NotifyShowFlags();
+    }
+
+    /// <summary>Loads the Configura column's editor for the current subject. This wiring lived in
+    /// MainWindowViewModel until the workspace shell moved the column here — without it the column
+    /// renders a never-loaded editor (empty name, no sections).</summary>
+    private async Task LoadEditorAsync()
+    {
+        if (Node is null) return;
+        try { await Editor.LoadAsync(Node.Id).ConfigureAwait(true); }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"Editor load failed: {ex}"); }
     }
 
     /// <summary>Focus mode (spec §3.6): when set, only this column fills the whole tab and the chip bar
@@ -510,7 +524,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var quickAddTask = BuildQuickAddAsync(node, ct);
         var notesTask = Notes.LoadAsync(node.Id, ct);
         var detailTask = Detail.LoadAsync(node, ct);
-        await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask).ConfigureAwait(true);
+        // Configura already open (restored or carried over from the previous subject): load its editor too.
+        var editorTask = IsConfiguraOpen ? Editor.LoadAsync(node.Id, ct) : Task.CompletedTask;
+        await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask, editorTask).ConfigureAwait(true);
         if (generation != _loadGeneration) return; // a deselect/newer selection won the race
 
         Calendar.CompletedColorHex = node.Color;
