@@ -51,7 +51,10 @@ public static class HomeRowPresentation
         HabitType.Counter => new[] { KeyFigureKind.CounterTotal, KeyFigureKind.Streak, KeyFigureKind.None },
         HabitType.Resistance => new[] { KeyFigureKind.LiveClock, KeyFigureKind.None },
         HabitType.Journal => new[] { KeyFigureKind.JournalToday, KeyFigureKind.JournalEntriesWeek, KeyFigureKind.None },
-        HabitType.State => new[] { KeyFigureKind.StateValue, KeyFigureKind.StateAverage7, KeyFigureKind.None },
+        // StateAverage7 is intentionally not offered yet: no cheap 7-day state-average field
+        // exists in the perf-budgeted home query. The enum value + id mapping are kept for
+        // forward-compat; a later wave can add the backing aggregate and list it here.
+        HabitType.State => new[] { KeyFigureKind.StateValue, KeyFigureKind.None },
         _ => new[] { KeyFigureKind.None },
     };
 

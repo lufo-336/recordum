@@ -32,7 +32,6 @@ public class HomeRowPresentationTests
     [InlineData(HabitType.Counter, "counterTotal", KeyFigureKind.CounterTotal)]
     [InlineData(HabitType.Resistance, "clock", KeyFigureKind.LiveClock)]
     [InlineData(HabitType.Journal, "journalWeek", KeyFigureKind.JournalEntriesWeek)]
-    [InlineData(HabitType.State, "stateAvg7", KeyFigureKind.StateAverage7)]
     [InlineData(HabitType.State, "stateValue", KeyFigureKind.StateValue)]
     public void ResolveKeyFigure_honors_valid_explicit_choice(HabitType type, string id, KeyFigureKind expected)
     {
@@ -43,6 +42,7 @@ public class HomeRowPresentationTests
     [Theory]
     [InlineData(HabitType.Action, "counterTotal")]   // not allowed for Action → default
     [InlineData(HabitType.Counter, "clock")]         // not allowed for Counter → default
+    [InlineData(HabitType.State, "stateAvg7")]       // deferred, not offered → default
     [InlineData(HabitType.State, "bogus")]           // unknown id → default
     public void ResolveKeyFigure_unknown_or_disallowed_id_falls_back_to_default(HabitType type, string id)
     {
