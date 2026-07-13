@@ -560,12 +560,12 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_AddSeries}"
                             Command="{Binding AddSeriesCommand}" Padding="8,4" Margin="0,0,8,0"/>
-                    <Button Command="{Binding SaveCommand}" Padding="12,4">
-                        <Button.Content>
-                            <Binding Path="ValidSeriesCount"
-                                     StringFormat="{x:Static res:Strings.HabitScreen_QuickAdd_SaveSeries}"/>
-                        </Button.Content>
-                    </Button>
+                    <!-- ContentStringFormat (not StringFormat on the Content binding): WPF ignores
+                         StringFormat for a ContentControl.Content of object type, so the button showed the
+                         bare count ("1") instead of "Registra 1 serie". -->
+                    <Button Command="{Binding SaveCommand}" Padding="12,4"
+                            Content="{Binding ValidSeriesCount}"
+                            ContentStringFormat="{x:Static res:Strings.HabitScreen_QuickAdd_SaveSeries}"/>
                 </StackPanel>
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
