@@ -12,6 +12,7 @@ using Recordum.WPF.ViewModels.HabitScreen.Calendar;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
+using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Recordum.WPF.Services;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
@@ -179,6 +180,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(IsGroupNode));
         OnPropertyChanged(nameof(IsJournal));
+        OnPropertyChanged(nameof(ShowTodayStrip));
         OnPropertyChanged(nameof(ShowPanoramica));
         OnPropertyChanged(nameof(ShowDiario));
         OnPropertyChanged(nameof(ShowCronologia));
@@ -447,6 +449,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public TimerControlViewModel TimerControl { get; }
     public NotesViewModel Notes { get; }
     public DetailViewModel Detail { get; }
+
+    /// <summary>The always-visible per-type "Oggi" strip above the columns (Onda 2.2). Loaded per
+    /// subject; only shown for a habit (not a group).</summary>
+    public TodayStripViewModel TodayStrip { get; }
+
+    /// <summary>The strip is present for any habit subject (even with every column closed), hidden for
+    /// groups and when nothing is loaded — so a habit is never a blank landing.</summary>
+    public bool ShowTodayStrip => HasNode && !IsGroupNode;
+
     public CalendarNavigatorViewModel Calendar { get; }
     public DayNoteViewModel DayNote { get; }
     public IWebView2Availability Availability { get; }
@@ -538,6 +549,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, abstinence, clock, events);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, clock);
+        TodayStrip = new TodayStripViewModel();
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
@@ -558,6 +570,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Notes.Dispose();
         Detail.Dispose();
         Records.Dispose();
+        TodayStrip.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
         _subscriptions.Clear();
     }
@@ -604,9 +617,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var quickAddTask = BuildQuickAddAsync(node, ct);
         var notesTask = Notes.LoadAsync(node.Id, ct);
         var detailTask = Detail.LoadAsync(node, ct);
+        var todayTask = TodayStrip.LoadAsync(node, ct);
         // Configura already open (restored or carried over from the previous subject): load its editor too.
         var editorTask = IsConfiguraOpen ? Editor.LoadAsync(node.Id, ct) : Task.CompletedTask;
-        await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask, editorTask).ConfigureAwait(true);
+        await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask, todayTask, editorTask).ConfigureAwait(true);
         if (generation != _loadGeneration) return; // a deselect/newer selection won the race
 
         Calendar.CompletedColorHex = node.Color;
@@ -684,6 +698,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             await Task.WhenAll(
                 CompletionList.LoadAsync(Node.Id),
                 Records.ReloadAsync(),
+                TodayStrip.LoadAsync(Node),
                 Calendar.JumpAsync())
                 .ConfigureAwait(true);
         }
@@ -705,6 +720,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 Detail.LoadAsync(Node, CancellationToken.None),
                 Calendar.JumpAsync(),
                 Records.ReloadAsync(),
+                TodayStrip.LoadAsync(Node),
             };
             if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync());
             await Task.WhenAll(reloads).ConfigureAwait(true);

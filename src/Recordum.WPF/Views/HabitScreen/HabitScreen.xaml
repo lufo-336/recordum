@@ -10,6 +10,7 @@
              xmlns:v="clr-namespace:Recordum.WPF.Views.HabitScreen"
              xmlns:ve="clr-namespace:Recordum.WPF.Views"
              xmlns:cal="clr-namespace:Recordum.WPF.Views.HabitScreen.Calendar"
+             xmlns:today="clr-namespace:Recordum.WPF.Views.HabitScreen.Today"
              xmlns:ctrl="clr-namespace:Recordum.WPF.Controls"
              xmlns:sel="clr-namespace:Recordum.WPF.Selectors"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
@@ -850,6 +851,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Height="3"
@@ -900,7 +902,16 @@
                 </TextBlock>
             </StackPanel>
         </Border>
-        <Grid Grid.Row="3">
+        <!-- Always-visible per-type "Oggi" strip (Onda 2.2): sits above the chip bar and outside the
+             horizontal column ScrollViewer, so a habit is never a blank landing even with every column
+             closed. Its DataContext is the strip VM; visibility follows ShowTodayStrip on the screen VM. -->
+        <today:TodayStripView Grid.Row="3"
+                              DataContext="{Binding TodayStrip}"
+                              Visibility="{Binding DataContext.ShowTodayStrip,
+                                           RelativeSource={RelativeSource AncestorType=UserControl},
+                                           Converter={StaticResource BoolToVisible}}"/>
+
+        <Grid Grid.Row="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>

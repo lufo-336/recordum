@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:tvm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Today"
+                    xmlns:tv="clr-namespace:Recordum.WPF.Views.HabitScreen.Today">
+
+    <!-- Implicit ITodayContent -> View DataTemplates, one per habit type. Each content view is a
+         UserControl that resolves its StaticResource tokens/brushes from App.xaml at runtime (same
+         pattern as SectionTemplates.xaml). Arms are added in Onda 2.2 Tasks 4–8. -->
+
+</ResourceDictionary>
