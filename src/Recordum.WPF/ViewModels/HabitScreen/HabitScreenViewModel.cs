@@ -1000,7 +1000,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var mag = dayMag?.Magnitude ?? 0m;
         // Enrich the aggregate with the primary metric's unit (Counter) or scale label (State) so the
         // strip reads "4 km" / "Good" instead of a bare number (R-daySummaryUnits).
-        var (unit, scaleLabels) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
+        var (unit, scaleLabels, primaryMetric) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
+        if (node.HabitType == HabitType.Counter && primaryMetric is not null)
+        {
+            // A Counter's displayed total is the primary metric's sum, not the occurrence count — same
+            // semantics as CounterTodayContent/the Home row's TodayCounterTotal. Presence (below) still
+            // comes from dayMag, so a metric-less day with a 0 sum doesn't fake a completion.
+            var sums = await _completions.GetDailySumAsync(node.Id, primaryMetric.Id, date, date, ct).ConfigureAwait(true);
+            mag = sums.FirstOrDefault(s => s.Date == date)?.Sum ?? 0m;
+        }
         var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
         // Presence (a completion exists) drives the strip, not the value: a State 0 still counts (CR5).
@@ -1008,29 +1016,30 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Resolves the primary (lowest SortOrder) metric's unit code (Counter) or scale labels
-    /// (State) for the day-summary strip. Returns nulls for other types or when none apply.</summary>
-    private async Task<(string? unit, IReadOnlyList<string>? scaleLabels)> ResolvePrimaryDisplayAsync(HabitNode node, CancellationToken ct)
+    /// (State) for the day-summary strip, plus the metric itself (Counter needs its id for the day sum).
+    /// Returns nulls for other types or when none apply.</summary>
+    private async Task<(string? unit, IReadOnlyList<string>? scaleLabels, MetricDefinition? primary)> ResolvePrimaryDisplayAsync(HabitNode node, CancellationToken ct)
     {
         var type = node.HabitType ?? HabitType.Action;
-        if (type is not (HabitType.Counter or HabitType.State)) return (null, null);
+        if (type is not (HabitType.Counter or HabitType.State)) return (null, null, null);
 
         var metrics = await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true);
         var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
-        if (primary is null) return (null, null);
+        if (primary is null) return (null, null, null);
 
         if (type == HabitType.Counter)
         {
-            if (primary.UnitOfMeasureId is not { } uid) return (null, null);
+            if (primary.UnitOfMeasureId is not { } uid) return (null, null, primary);
             var units = await _refData.ListUnitsAsync(ct).ConfigureAwait(true);
-            return (units.FirstOrDefault(u => u.Id == uid)?.Code, null);
+            return (units.FirstOrDefault(u => u.Id == uid)?.Code, null, primary);
         }
 
         // State
-        if (primary.ScaleTemplateId is not { } sid) return (null, null);
+        if (primary.ScaleTemplateId is not { } sid) return (null, null, primary);
         var scales = await _refData.ListScalesAsync(ct).ConfigureAwait(true);
         var tmpl = scales.FirstOrDefault(s => s.Id == sid);
         var labels = ParseScaleLabels(primary.LabelsJson) ?? ParseScaleLabels(tmpl?.LabelsJson);
-        return (null, labels);
+        return (null, labels, primary);
     }
 
     private static string[]? ParseScaleLabels(string? json)

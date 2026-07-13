@@ -29,21 +29,34 @@ public class CounterTodayContentTests
     }
 
     [Fact]
-    public async Task TodayTotal_and_UnitCode_come_from_the_day_magnitude_and_primary_metric()
+    public async Task TodayTotal_sums_the_primary_metric_not_the_occurrences()
     {
         var (sut, completions, metrics, refData, _, node) = NewSut();
         var today = DateOnly.FromDateTime(Now.UtcDateTime);
-        completions.MagnitudeByHabit[node.Id] = new List<DailyMagnitude> { new(today, 12m) };
         var litre = refData.Units[0];
-        metrics.Store[Guid.NewGuid()] = new MetricDefinition
-        {
-            Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0, UnitOfMeasureId = litre.Id, Name = "vol",
-        };
+        var metric = new MetricDefinition
+        { Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0, UnitOfMeasureId = litre.Id, Name = "vol" };
+        metrics.Store[metric.Id] = metric;
+        // Two registrations today (1.5 + 0.5) → the magnitude would be 2 occurrences; the total must be 2.0 summed.
+        completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 2.0m) };
+        completions.MagnitudeByHabit[node.Id] = new List<DailyMagnitude> { new(today, 5m) }; // decoy: differs from the sum
 
         await sut.LoadAsync(node);
 
-        sut.TodayTotal.Should().Be(12m);
+        sut.TodayTotal.Should().Be(2.0m);
         sut.UnitCode.Should().Be(litre.Code);
+    }
+
+    [Fact]
+    public async Task Bare_counter_without_metrics_falls_back_to_the_day_magnitude()
+    {
+        var (sut, completions, _, _, _, node) = NewSut();
+        var today = DateOnly.FromDateTime(Now.UtcDateTime);
+        completions.MagnitudeByHabit[node.Id] = new List<DailyMagnitude> { new(today, 3m) };
+
+        await sut.LoadAsync(node);
+
+        sut.TodayTotal.Should().Be(3m); // 3 taps
     }
 
     [Fact]

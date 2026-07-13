@@ -47,20 +47,32 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         ArgumentNullException.ThrowIfNull(node);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
 
-        var mags = await _completions.GetDailyMagnitudeAsync(node.Id, today.Year, today.Month, ct).ConfigureAwait(true);
-        TodayTotal = mags.FirstOrDefault(m => m.Date == today)?.Magnitude ?? 0m;
-        UnitCode = await ResolveUnitCodeAsync(node.Id, ct).ConfigureAwait(true);
+        var metrics = await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true);
+        var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
+
+        if (primary is not null)
+        {
+            // Sum of the primary metric's values today — same semantics as the Home row's TodayCounterTotal.
+            var sums = await _completions.GetDailySumAsync(node.Id, primary.Id, today, today, ct).ConfigureAwait(true);
+            TodayTotal = sums.FirstOrDefault(s => s.Date == today)?.Sum ?? 0m;
+            UnitCode = await ResolveUnitCodeAsync(primary, ct).ConfigureAwait(true);
+        }
+        else
+        {
+            // Bare counter: occurrences are the total (each tap = 1).
+            var mags = await _completions.GetDailyMagnitudeAsync(node.Id, today.Year, today.Month, ct).ConfigureAwait(true);
+            TodayTotal = mags.FirstOrDefault(m => m.Date == today)?.Magnitude ?? 0m;
+            UnitCode = null;
+        }
 
         await _goalCard.LoadAsync(node, ct).ConfigureAwait(true);
         HasGoal = !_goalCard.IsEmpty;
         GoalFraction = HasGoal ? Math.Clamp(_goalCard.PercentComplete, 0d, 1d) : 0d;
     }
 
-    private async Task<string?> ResolveUnitCodeAsync(Guid habitId, CancellationToken ct)
+    private async Task<string?> ResolveUnitCodeAsync(MetricDefinition primary, CancellationToken ct)
     {
-        var metrics = await _metrics.ListByHabitAsync(habitId, ct).ConfigureAwait(true);
-        var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
-        if (primary?.UnitOfMeasureId is not { } uid) return null;
+        if (primary.UnitOfMeasureId is not { } uid) return null;
         var units = await _refData.ListUnitsAsync(ct).ConfigureAwait(true);
         return units.FirstOrDefault(u => u.Id == uid)?.Code;
     }
