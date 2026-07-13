@@ -9,5 +9,6 @@
 
     <DataTemplate DataType="{x:Type tvm:ResistanceTodayContent}"><tv:ResistanceTodayView/></DataTemplate>
     <DataTemplate DataType="{x:Type tvm:ActionTodayContent}"><tv:ActionTodayView/></DataTemplate>
+    <DataTemplate DataType="{x:Type tvm:CounterTodayContent}"><tv:CounterTodayView/></DataTemplate>
 
 </ResourceDictionary>

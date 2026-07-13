@@ -11,7 +11,8 @@ public class TodayStripViewModelTests
 {
     private static TodayStripViewModel NewSut()
         => new(new FakeAbstinenceService(), new FakeCompletionService(), new FakeStreakAggregator(),
-               new FakeHourlyDistributionQueryService(),
+               new FakeHourlyDistributionQueryService(), new FakeMetricDefinitionService(),
+               new FakeReferenceData(), new FakeGoalService(),
                new FakeClock(new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero)));
 
     [Fact]
@@ -46,6 +47,17 @@ public class TodayStripViewModelTests
         await sut.LoadAsync(node);
 
         sut.Content.Should().BeOfType<ActionTodayContent>();
+    }
+
+    [Fact]
+    public async Task LoadAsync_on_a_counter_habit_builds_counter_content()
+    {
+        var sut = NewSut();
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "c" };
+
+        await sut.LoadAsync(node);
+
+        sut.Content.Should().BeOfType<CounterTodayContent>();
     }
 
     [Fact]

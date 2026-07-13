@@ -1,0 +1,70 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Models;
+using Recordum.WPF.ViewModels.HabitScreen.Detail;
+
+namespace Recordum.WPF.ViewModels.HabitScreen.Today;
+
+/// <summary>Counter "Oggi" content (spec §1): today's total (+ unit), the active goal's progress, and a
+/// "+ Registra" affordance that asks the host to open/focus the Cronologia record module. Today's total
+/// comes from the day magnitude (same source the calendar uses); the goal reuses
+/// <see cref="GoalProgressCardViewModel"/>.</summary>
+public sealed partial class CounterTodayContent : ObservableObject, ITodayContent, ITodayContentNavigates
+{
+    private readonly ICompletionService _completions;
+    private readonly IMetricDefinitionService _metrics;
+    private readonly IReferenceDataQueryService _refData;
+    private readonly IClock _clock;
+    private readonly GoalProgressCardViewModel _goalCard;
+
+    [ObservableProperty] private decimal _todayTotal;
+    [ObservableProperty] private string? _unitCode;
+    [ObservableProperty] private bool _hasGoal;
+    [ObservableProperty] private double _goalFraction;
+
+    public event EventHandler<TodayContentAction>? ActionRequested;
+
+    public CounterTodayContent(
+        ICompletionService completions, IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData, IGoalService goals, IClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(completions);
+        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(refData);
+        ArgumentNullException.ThrowIfNull(goals);
+        ArgumentNullException.ThrowIfNull(clock);
+        _completions = completions;
+        _metrics = metrics;
+        _refData = refData;
+        _clock = clock;
+        _goalCard = new GoalProgressCardViewModel(goals, completions, clock);
+    }
+
+    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
+
+        var mags = await _completions.GetDailyMagnitudeAsync(node.Id, today.Year, today.Month, ct).ConfigureAwait(true);
+        TodayTotal = mags.FirstOrDefault(m => m.Date == today)?.Magnitude ?? 0m;
+        UnitCode = await ResolveUnitCodeAsync(node.Id, ct).ConfigureAwait(true);
+
+        await _goalCard.LoadAsync(node, ct).ConfigureAwait(true);
+        HasGoal = !_goalCard.IsEmpty;
+        GoalFraction = HasGoal ? Math.Clamp(_goalCard.PercentComplete, 0d, 1d) : 0d;
+    }
+
+    private async Task<string?> ResolveUnitCodeAsync(Guid habitId, CancellationToken ct)
+    {
+        var metrics = await _metrics.ListByHabitAsync(habitId, ct).ConfigureAwait(true);
+        var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
+        if (primary?.UnitOfMeasureId is not { } uid) return null;
+        var units = await _refData.ListUnitsAsync(ct).ConfigureAwait(true);
+        return units.FirstOrDefault(u => u.Id == uid)?.Code;
+    }
+
+    [RelayCommand]
+    private void Record() => ActionRequested?.Invoke(this, TodayContentAction.OpenRecordModule);
+}

@@ -549,10 +549,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, abstinence, clock, events);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, clock);
-        TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, clock);
+        TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, clock);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
         // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
         TodayStrip.Changed += OnAbstinenceChanged;
+        // "+ Registra" / journal gestures ask the host to open the matching column.
+        TodayStrip.ActionRequested += OnTodayStripAction;
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
@@ -570,6 +572,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Calendar.SelectedDateChanged -= OnCalendarDateSelected;
         _periodList.Changed -= OnAbstinenceChanged;
         TodayStrip.Changed -= OnAbstinenceChanged;
+        TodayStrip.ActionRequested -= OnTodayStripAction;
         if (QuickAdd is AbstinenceQuickAddViewModel ab) ab.Changed -= OnAbstinenceChanged;
         Notes.Dispose();
         Detail.Dispose();
@@ -1047,4 +1050,17 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void Export() => ExportRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Opens the column a "Oggi" strip affordance points at (Counter "+ Registra" → Cronologia,
+    /// Journal write/quick-note → Diario/Note). Opening is a no-op when the column is already open.</summary>
+    private void OnTodayStripAction(object? sender, TodayContentAction action)
+    {
+        var column = action switch
+        {
+            TodayContentAction.OpenDiario => HabitColumn.Diario,
+            TodayContentAction.OpenQuickNote => HabitColumn.Note,
+            _ => HabitColumn.Cronologia, // OpenRecordModule
+        };
+        SetColumnFlag(column, true);
+    }
 }

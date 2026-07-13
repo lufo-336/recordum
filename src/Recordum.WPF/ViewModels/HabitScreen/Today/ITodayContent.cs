@@ -18,3 +18,15 @@ public interface ITodayContentChanges
 {
     event EventHandler? Changed;
 }
+
+/// <summary>A column the strip content asks the host to open/focus (the record module lives in Cronologia,
+/// the diary in Diario, quick notes in Note).</summary>
+public enum TodayContentAction { OpenRecordModule, OpenDiario, OpenQuickNote }
+
+/// <summary>Optional companion interface for content whose primary affordance navigates the workspace
+/// (Counter "+ Registra" → the record module; Journal → the diary or a quick note). The host maps the
+/// requested action onto opening/focusing the matching column.</summary>
+public interface ITodayContentNavigates
+{
+    event EventHandler<TodayContentAction>? ActionRequested;
+}

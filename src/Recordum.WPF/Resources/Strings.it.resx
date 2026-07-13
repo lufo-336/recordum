@@ -791,6 +791,9 @@
   <data name="Today.Action.UsualHour" xml:space="preserve">
     <value>di solito verso le {0}</value>
   </data>
+  <data name="Today.Counter.Record" xml:space="preserve">
+    <value>+ Registra</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

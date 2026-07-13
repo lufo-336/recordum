@@ -1,0 +1,39 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitScreen.Today.CounterTodayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:tvm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Today"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance tvm:CounterTodayContent}">
+    <Border Padding="14,10">
+        <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- + Registra: opens/focuses the Cronologia record module. -->
+            <Button Content="{x:Static res:Strings.Today_Counter_Record}"
+                    Command="{Binding RecordCommand}" Padding="14,7" Margin="0,0,20,0"
+                    VerticalAlignment="Center"/>
+
+            <!-- today total (+ unit) -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                <TextBlock Text="{Binding TodayTotal, StringFormat='0.##'}"
+                           FontSize="22" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Bottom"/>
+                <TextBlock Text="{Binding UnitCode}" Margin="5,0,0,3" VerticalAlignment="Bottom"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           Visibility="{Binding UnitCode, Converter={StaticResource NullToVisibility}}"/>
+            </StackPanel>
+
+            <!-- goal progress (only when a goal is active) -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                        Visibility="{Binding HasGoal, Converter={StaticResource BoolToVisible}}">
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding GoalFraction, Mode=OneWay}"
+                             Width="150" Height="8" VerticalAlignment="Center"
+                             Foreground="{DynamicResource Brush.Accent}"
+                             Background="{DynamicResource Brush.Border}" BorderThickness="0"/>
+                <TextBlock Text="{Binding GoalFraction, StringFormat='{}{0:P0}'}" Margin="8,0,0,0"
+                           VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"/>
+            </StackPanel>
+        </WrapPanel>
+    </Border>
+</UserControl>

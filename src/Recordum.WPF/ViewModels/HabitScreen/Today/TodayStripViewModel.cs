@@ -18,6 +18,9 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
     private readonly ICompletionService _completions;
     private readonly IStreakAggregator _streaks;
     private readonly IHourlyDistributionQueryService _hourly;
+    private readonly IMetricDefinitionService _metrics;
+    private readonly IReferenceDataQueryService _refData;
+    private readonly IGoalService _goals;
     private readonly IClock _clock;
 
     /// <summary>The per-type content for the current subject, or <c>null</c> for a type with no strip
@@ -28,22 +31,35 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
     /// the host can reload the columns reading the same state.</summary>
     public event EventHandler? Changed;
 
+    /// <summary>Bubbled from content whose primary affordance navigates the workspace (Counter "+ Registra",
+    /// Journal write/quick-note) so the host opens/focuses the matching column.</summary>
+    public event EventHandler<TodayContentAction>? ActionRequested;
+
     public TodayStripViewModel(
         IAbstinenceService abstinence,
         ICompletionService completions,
         IStreakAggregator streaks,
         IHourlyDistributionQueryService hourly,
+        IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData,
+        IGoalService goals,
         IClock clock)
     {
         ArgumentNullException.ThrowIfNull(abstinence);
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(streaks);
         ArgumentNullException.ThrowIfNull(hourly);
+        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(refData);
+        ArgumentNullException.ThrowIfNull(goals);
         ArgumentNullException.ThrowIfNull(clock);
         _abstinence = abstinence;
         _completions = completions;
         _streaks = streaks;
         _hourly = hourly;
+        _metrics = metrics;
+        _refData = refData;
+        _goals = goals;
         _clock = clock;
     }
 
@@ -57,7 +73,8 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         {
             HabitType.Resistance => new ResistanceTodayContent(_abstinence, _clock),
             HabitType.Action => new ActionTodayContent(_completions, _streaks, _hourly, _clock),
-            // Counter / State / Journal arms are added in Tasks 6–8.
+            HabitType.Counter => new CounterTodayContent(_completions, _metrics, _refData, _goals, _clock),
+            // State / Journal arms are added in Tasks 7–8.
             _ => null,
         };
 
@@ -70,16 +87,20 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         if (ReferenceEquals(Content, next)) return;
         DetachAndDispose(Content);
         if (next is ITodayContentChanges changes) changes.Changed += OnContentChanged;
+        if (next is ITodayContentNavigates nav) nav.ActionRequested += OnContentAction;
         Content = next;
     }
 
     private void DetachAndDispose(ITodayContent? content)
     {
         if (content is ITodayContentChanges changes) changes.Changed -= OnContentChanged;
+        if (content is ITodayContentNavigates nav) nav.ActionRequested -= OnContentAction;
         if (content is IDisposable d) d.Dispose();
     }
 
     private void OnContentChanged(object? sender, EventArgs e) => Changed?.Invoke(this, EventArgs.Empty);
+
+    private void OnContentAction(object? sender, TodayContentAction action) => ActionRequested?.Invoke(this, action);
 
     public void Dispose() => DetachAndDispose(Content);
 }
