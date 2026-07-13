@@ -1,0 +1,25 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitScreen.Today.JournalTodayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:tvm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Today"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance tvm:JournalTodayContent}">
+    <Border Padding="14,10">
+        <!-- One primary button: label + action follow the configured gesture (Write entry / Quick note). -->
+        <Button Command="{Binding PrimaryCommand}" Padding="14,7" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                    <Setter Property="Content" Value="{x:Static res:Strings.Today_Journal_WriteEntry}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsQuickNote}" Value="True">
+                            <Setter Property="Content" Value="{x:Static res:Strings.Today_Journal_QuickNote}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+    </Border>
+</UserControl>

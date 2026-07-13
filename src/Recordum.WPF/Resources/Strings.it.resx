@@ -797,6 +797,12 @@
   <data name="Today.State.LastValue" xml:space="preserve">
     <value>ultimo: {0}</value>
   </data>
+  <data name="Today.Journal.WriteEntry" xml:space="preserve">
+    <value>Scrivi la voce di oggi</value>
+  </data>
+  <data name="Today.Journal.QuickNote" xml:space="preserve">
+    <value>+ Nota veloce</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

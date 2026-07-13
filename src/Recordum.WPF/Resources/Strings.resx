@@ -818,6 +818,12 @@ Details: {0}</value>
   <data name="Today.State.LastValue" xml:space="preserve">
     <value>last: {0}</value>
   </data>
+  <data name="Today.Journal.WriteEntry" xml:space="preserve">
+    <value>Write today's entry</value>
+  </data>
+  <data name="Today.Journal.QuickNote" xml:space="preserve">
+    <value>+ Quick note</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

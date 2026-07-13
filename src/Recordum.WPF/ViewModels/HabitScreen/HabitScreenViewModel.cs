@@ -549,7 +549,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, abstinence, clock, events);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, clock);
-        TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, clock);
+        TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
         // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
         TodayStrip.Changed += OnAbstinenceChanged;

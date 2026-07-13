@@ -64,6 +64,22 @@ public class HabitScreenColumnsTests
     }
 
     [Fact]
+    public async Task Journal_quick_note_gesture_opens_the_Note_column_via_the_strip()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithStores(out _, out var uiPrefs);
+        var j = AddJournal(nodes);
+        uiPrefs.Store[j] = new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote };
+        await sut.LoadAsync(j);
+        sut.IsNoteOpen.Should().BeFalse();
+
+        // The strip's primary gesture bubbles OpenQuickNote → the host opens the Note column.
+        var content = (Recordum.WPF.ViewModels.HabitScreen.Today.JournalTodayContent)sut.TodayStrip.Content!;
+        content.PrimaryCommand.Execute(null);
+
+        sut.IsNoteOpen.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Null_prefs_fall_back_to_the_legacy_global_open_columns()
     {
         var (_, _) = HabitScreenViewModelFactory.CreateWithStores(out var settings, out var uiPrefs);

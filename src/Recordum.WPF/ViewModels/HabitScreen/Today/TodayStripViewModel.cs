@@ -21,6 +21,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
     private readonly IGoalService _goals;
+    private readonly IHabitUiPrefsService _uiPrefs;
     private readonly IClock _clock;
 
     /// <summary>The per-type content for the current subject, or <c>null</c> for a type with no strip
@@ -43,6 +44,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         IMetricDefinitionService metrics,
         IReferenceDataQueryService refData,
         IGoalService goals,
+        IHabitUiPrefsService uiPrefs,
         IClock clock)
     {
         ArgumentNullException.ThrowIfNull(abstinence);
@@ -52,6 +54,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(refData);
         ArgumentNullException.ThrowIfNull(goals);
+        ArgumentNullException.ThrowIfNull(uiPrefs);
         ArgumentNullException.ThrowIfNull(clock);
         _abstinence = abstinence;
         _completions = completions;
@@ -60,6 +63,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         _metrics = metrics;
         _refData = refData;
         _goals = goals;
+        _uiPrefs = uiPrefs;
         _clock = clock;
     }
 
@@ -75,7 +79,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
             HabitType.Action => new ActionTodayContent(_completions, _streaks, _hourly, _clock),
             HabitType.Counter => new CounterTodayContent(_completions, _metrics, _refData, _goals, _clock),
             HabitType.State => new StateTodayContent(_completions, _metrics, _refData, _clock),
-            // Journal arm is added in Task 8.
+            HabitType.Journal => new JournalTodayContent(_uiPrefs),
             _ => null,
         };
 

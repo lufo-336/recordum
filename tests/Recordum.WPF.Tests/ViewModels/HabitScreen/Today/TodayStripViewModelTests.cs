@@ -12,7 +12,7 @@ public class TodayStripViewModelTests
     private static TodayStripViewModel NewSut()
         => new(new FakeAbstinenceService(), new FakeCompletionService(), new FakeStreakAggregator(),
                new FakeHourlyDistributionQueryService(), new FakeMetricDefinitionService(),
-               new FakeReferenceData(), new FakeGoalService(),
+               new FakeReferenceData(), new FakeGoalService(), new FakeHabitUiPrefsService(),
                new FakeClock(new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero)));
 
     [Fact]
@@ -69,6 +69,31 @@ public class TodayStripViewModelTests
         await sut.LoadAsync(node);
 
         sut.Content.Should().BeOfType<StateTodayContent>();
+    }
+
+    [Fact]
+    public async Task LoadAsync_on_a_journal_habit_builds_journal_content()
+    {
+        var sut = NewSut();
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "j" };
+
+        await sut.LoadAsync(node);
+
+        sut.Content.Should().BeOfType<JournalTodayContent>();
+    }
+
+    [Fact]
+    public async Task Content_navigation_bubbles_through_the_strip()
+    {
+        var sut = NewSut();
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "j" };
+        await sut.LoadAsync(node);
+        TodayContentAction? bubbled = null;
+        sut.ActionRequested += (_, a) => bubbled = a;
+
+        ((JournalTodayContent)sut.Content!).PrimaryCommand.Execute(null);
+
+        bubbled.Should().Be(TodayContentAction.OpenDiario);
     }
 
     [Fact]

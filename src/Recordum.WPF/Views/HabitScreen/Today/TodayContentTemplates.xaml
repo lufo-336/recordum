@@ -11,5 +11,6 @@
     <DataTemplate DataType="{x:Type tvm:ActionTodayContent}"><tv:ActionTodayView/></DataTemplate>
     <DataTemplate DataType="{x:Type tvm:CounterTodayContent}"><tv:CounterTodayView/></DataTemplate>
     <DataTemplate DataType="{x:Type tvm:StateTodayContent}"><tv:StateTodayView/></DataTemplate>
+    <DataTemplate DataType="{x:Type tvm:JournalTodayContent}"><tv:JournalTodayView/></DataTemplate>
 
 </ResourceDictionary>
