@@ -779,6 +779,9 @@
   <data name="Abstinence.DeleteConfirm.Message" xml:space="preserve">
     <value>Eliminare questa registrazione d'astinenza? L'operazione non è reversibile.</value>
   </data>
+  <data name="Today.Resistance.Attempts" xml:space="preserve">
+    <value>{0} tentativi (90g)</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

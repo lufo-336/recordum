@@ -9,16 +9,30 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
 public class TodayStripViewModelTests
 {
+    private static TodayStripViewModel NewSut()
+        => new(new FakeAbstinenceService(), new FakeClock(new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero)));
+
     [Fact]
     public async Task LoadAsync_on_a_type_with_no_content_yet_sets_null_without_throwing()
     {
-        var sut = new TodayStripViewModel();
+        var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "h" };
 
         var act = async () => await sut.LoadAsync(node);
 
         await act.Should().NotThrowAsync();
         sut.Content.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task LoadAsync_on_a_resistance_habit_builds_resistance_content()
+    {
+        var sut = NewSut();
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "r" };
+
+        await sut.LoadAsync(node);
+
+        sut.Content.Should().BeOfType<ResistanceTodayContent>();
     }
 
     [Fact]

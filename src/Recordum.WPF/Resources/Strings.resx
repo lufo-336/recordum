@@ -800,6 +800,9 @@ Details: {0}</value>
   <data name="Abstinence.DeleteConfirm.Message" xml:space="preserve">
     <value>Delete this abstinence record? This cannot be undone.</value>
   </data>
+  <data name="Today.Resistance.Attempts" xml:space="preserve">
+    <value>{0} attempts (90d)</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>
