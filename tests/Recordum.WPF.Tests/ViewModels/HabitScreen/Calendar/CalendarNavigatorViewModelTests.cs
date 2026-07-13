@@ -296,6 +296,26 @@ public class CalendarNavigatorViewModelTests
     }
 
     [Fact]
+    public async Task Selecting_a_completed_day_keeps_both_tint_and_selection_independent()
+    {
+        // F0-13: the selected day (ring) must not be confused with a completed day (fill). The VM keeps
+        // TintStep and IsSelected as independent signals so the view can render a ring over the tint.
+        CalendarMarkerProvider provider = (from, to, ct) => Task.FromResult(
+            new CalendarMarkers(new[]
+            {
+                new CalendarDayMarker(new DateOnly(2026, 6, 10), TintStep: 4, Number: null, NoteCount: 0),
+            }));
+        var sut = NewSut(out _, provider);
+        await sut.LoadAsync(2026, 6, selected: null);
+
+        var cell = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10));
+        sut.SelectDateCommand.Execute(cell);
+
+        cell.TintStep.Should().BeGreaterThan(0);   // completion fill survives
+        cell.IsSelected.Should().BeTrue();          // selection ring is a separate signal
+    }
+
+    [Fact]
     public void DayCell_TooltipText_includes_the_date()
     {
         var cell = new CalendarDayCellViewModel(new DateOnly(2026, 6, 10), inCurrentMonth: true, isToday: false, isFuture: false);

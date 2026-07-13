@@ -37,14 +37,16 @@
                                 <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
                                 <Setter Property="Opacity" Value="0.45"/>
                             </DataTrigger>
+                            <!-- Today: subtle 1px accent ring (the default BorderThickness). -->
                             <DataTrigger Binding="{Binding IsToday}" Value="True">
                                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
                             </DataTrigger>
-                            <!-- Selected: filled accent background (= habit color via the HabitScreen
-                                 Brush.Accent override), with contrast-aware text. -->
+                            <!-- Selected: an accent RING (not a fill) so the completion tint underneath stays
+                                 visible — a selected + completed day is unambiguous (F0-13). Placed after the
+                                 today trigger so the 2px ring overrides today's 1px one. -->
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
-                                <Setter Property="Foreground" Value="{Binding TintColorHex, Converter={StaticResource ContrastForeground}}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                <Setter Property="BorderThickness" Value="2"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
