@@ -803,6 +803,15 @@ Details: {0}</value>
   <data name="Today.Resistance.Attempts" xml:space="preserve">
     <value>{0} attempts (90d)</value>
   </data>
+  <data name="Today.Action.MarkDone" xml:space="preserve">
+    <value>Mark as done</value>
+  </data>
+  <data name="Today.Action.Pct30" xml:space="preserve">
+    <value>{0}% last 30 days</value>
+  </data>
+  <data name="Today.Action.UsualHour" xml:space="preserve">
+    <value>usually around {0}</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

@@ -10,13 +10,15 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 public class TodayStripViewModelTests
 {
     private static TodayStripViewModel NewSut()
-        => new(new FakeAbstinenceService(), new FakeClock(new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero)));
+        => new(new FakeAbstinenceService(), new FakeCompletionService(), new FakeStreakAggregator(),
+               new FakeHourlyDistributionQueryService(),
+               new FakeClock(new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero)));
 
     [Fact]
-    public async Task LoadAsync_on_a_type_with_no_content_yet_sets_null_without_throwing()
+    public async Task LoadAsync_on_a_group_clears_the_strip_without_throwing()
     {
         var sut = NewSut();
-        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "h" };
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Group, HabitType = null, Name = "g" };
 
         var act = async () => await sut.LoadAsync(node);
 
@@ -33,6 +35,17 @@ public class TodayStripViewModelTests
         await sut.LoadAsync(node);
 
         sut.Content.Should().BeOfType<ResistanceTodayContent>();
+    }
+
+    [Fact]
+    public async Task LoadAsync_on_an_action_habit_builds_action_content()
+    {
+        var sut = NewSut();
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a" };
+
+        await sut.LoadAsync(node);
+
+        sut.Content.Should().BeOfType<ActionTodayContent>();
     }
 
     [Fact]

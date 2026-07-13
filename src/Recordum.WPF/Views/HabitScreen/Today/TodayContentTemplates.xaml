@@ -8,5 +8,6 @@
          pattern as SectionTemplates.xaml). Arms are added in Onda 2.2 Tasks 4–8. -->
 
     <DataTemplate DataType="{x:Type tvm:ResistanceTodayContent}"><tv:ResistanceTodayView/></DataTemplate>
+    <DataTemplate DataType="{x:Type tvm:ActionTodayContent}"><tv:ActionTodayView/></DataTemplate>
 
 </ResourceDictionary>

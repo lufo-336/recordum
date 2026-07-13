@@ -15,6 +15,9 @@ namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
 {
     private readonly IAbstinenceService _abstinence;
+    private readonly ICompletionService _completions;
+    private readonly IStreakAggregator _streaks;
+    private readonly IHourlyDistributionQueryService _hourly;
     private readonly IClock _clock;
 
     /// <summary>The per-type content for the current subject, or <c>null</c> for a type with no strip
@@ -25,11 +28,22 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
     /// the host can reload the columns reading the same state.</summary>
     public event EventHandler? Changed;
 
-    public TodayStripViewModel(IAbstinenceService abstinence, IClock clock)
+    public TodayStripViewModel(
+        IAbstinenceService abstinence,
+        ICompletionService completions,
+        IStreakAggregator streaks,
+        IHourlyDistributionQueryService hourly,
+        IClock clock)
     {
         ArgumentNullException.ThrowIfNull(abstinence);
+        ArgumentNullException.ThrowIfNull(completions);
+        ArgumentNullException.ThrowIfNull(streaks);
+        ArgumentNullException.ThrowIfNull(hourly);
         ArgumentNullException.ThrowIfNull(clock);
         _abstinence = abstinence;
+        _completions = completions;
+        _streaks = streaks;
+        _hourly = hourly;
         _clock = clock;
     }
 
@@ -39,16 +53,13 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        // CA1859: with only the Resistance arm the analyzer wants the concrete type; the best-common-type
-        // widens back to ITodayContent once the other per-type arms land (Tasks 5–8). Remove then.
-#pragma warning disable CA1859
         ITodayContent? next = node.HabitType switch
         {
             HabitType.Resistance => new ResistanceTodayContent(_abstinence, _clock),
-            // Action / Counter / State / Journal arms are added in Tasks 5–8.
+            HabitType.Action => new ActionTodayContent(_completions, _streaks, _hourly, _clock),
+            // Counter / State / Journal arms are added in Tasks 6–8.
             _ => null,
         };
-#pragma warning restore CA1859
 
         if (next is not null) await next.LoadAsync(node, ct).ConfigureAwait(true);
         SetContent(next);

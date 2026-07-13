@@ -782,6 +782,15 @@
   <data name="Today.Resistance.Attempts" xml:space="preserve">
     <value>{0} tentativi (90g)</value>
   </data>
+  <data name="Today.Action.MarkDone" xml:space="preserve">
+    <value>Segna come fatto</value>
+  </data>
+  <data name="Today.Action.Pct30" xml:space="preserve">
+    <value>{0}% ultimi 30 giorni</value>
+  </data>
+  <data name="Today.Action.UsualHour" xml:space="preserve">
+    <value>di solito verso le {0}</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>
