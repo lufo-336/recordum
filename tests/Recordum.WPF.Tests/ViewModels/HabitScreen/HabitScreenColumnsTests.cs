@@ -23,6 +23,61 @@ public class HabitScreenColumnsTests
         return id;
     }
 
+    private static Guid AddJournal(FakeHabitNodeService nodes)
+    {
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "j", Color = "#808080" };
+        return id;
+    }
+
+    // ---- Onda 2.2: per-habit column persistence + per-type defaults ----
+
+    [Fact]
+    public async Task First_load_of_a_journal_with_no_prefs_defaults_to_diario()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
+        var j = AddJournal(nodes);
+
+        await sut.LoadAsync(j);
+
+        sut.ShowDiario.Should().BeTrue();
+        sut.ShowCronologia.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Per_habit_open_set_persists_and_restores_across_instances()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithStores(out var settings, out var uiPrefs);
+        var a = AddHabit(nodes);
+        await sut.LoadAsync(a);
+        sut.IsDettaglioOpen = true;   // user toggle → persists A's own set
+
+        uiPrefs.Store[a].OpenColumns.Should().Contain("Dettaglio");
+
+        // A fresh VM over the SAME per-habit store restores A's columns (no legacy global carry-over).
+        var (sut2, nodes2) = HabitScreenViewModelFactory.CreateOver(settings, uiPrefs);
+        nodes2.Store[a] = nodes.Store[a];
+        await sut2.LoadAsync(a);
+
+        sut2.IsDettaglioOpen.Should().BeTrue();
+        sut2.IsCronologiaOpen.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Null_prefs_fall_back_to_the_legacy_global_open_columns()
+    {
+        var (_, _) = HabitScreenViewModelFactory.CreateWithStores(out var settings, out var uiPrefs);
+        await settings.SetAsync(HabitScreenViewModel.OpenColumnsSettingKey, "Cronologia,Dettaglio");
+
+        // A brand-new VM/subject with no per-habit prefs restores the legacy global set.
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateOver(settings, uiPrefs);
+        var id = AddHabit(nodes);
+        await sut.LoadAsync(id);
+
+        sut.IsCronologiaOpen.Should().BeTrue();
+        sut.IsDettaglioOpen.Should().BeTrue();
+    }
+
     [Fact]
     public async Task Group_with_no_applicable_columns_defaults_to_panoramica()
     {

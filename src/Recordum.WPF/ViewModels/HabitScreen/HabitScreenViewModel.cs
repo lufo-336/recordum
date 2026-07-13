@@ -42,6 +42,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IHabitConfigService _configs;
     private readonly IClock _clock;
     private readonly IAppSettingService _appSettings;
+    private readonly IHabitUiPrefsService _uiPrefs;
     private readonly AbstinencePeriodListViewModel _periodList;
     private readonly List<IDisposable> _subscriptions = [];
 
@@ -198,7 +199,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (open) { if (!_openOrder.Contains(column)) _openOrder.Add(column); }
         else { _openOrder.Remove(column); if (FocusedColumn == column) FocusedColumn = null; }
         if (_restoringColumns) return;
-        _ = PersistOpenColumnsAsync();
+        _ = PersistOpenColumnsAsync();      // legacy global (kept warm for brand-new habits)
+        _ = PersistSubjectColumnsAsync();   // per-habit prefs (the authoritative set from now on)
         if (!open)
         {
             _lastClosedColumn = column;
@@ -211,6 +213,87 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private Task PersistOpenColumnsAsync()
         => _appSettings.SetAsync(OpenColumnsSettingKey,
             string.Join(",", CanonicalOpen().Select(c => c.ToString()))).AsTask();
+
+    /// <summary>Persists the current subject's open-column set into its own <see cref="HabitUiPrefs.OpenColumns"/>.
+    /// The whole list is replaced (never mutated) because <c>OpenColumns</c> uses reference equality.</summary>
+    private async Task PersistSubjectColumnsAsync()
+    {
+        var node = Node;
+        if (node is null) return;
+        var prefs = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
+        var cols = CanonicalOpen().Select(c => c.ToString()).ToList();
+        await _uiPrefs.SetAsync(node.Id, prefs with { OpenColumns = cols }).ConfigureAwait(true);
+    }
+
+    /// <summary>Restores the open-column set for a single subject on load. Precedence:
+    /// (1) the subject's own persisted <see cref="HabitUiPrefs.OpenColumns"/> — a hard replace of the set;
+    /// (2) the live carry-over set from the previously shown subject when a column still applies
+    ///     (preserves the old un-customized shared behaviour);
+    /// (3) the legacy global <c>ui.open_columns</c> for brand-new habits with nothing carried over;
+    /// (4) the per-type default (group → Panoramica §A.1, journal → Diario §3.4, else Cronologia §B.5),
+    ///     preferring the last closed column when it applies.
+    /// Every application runs under <see cref="_restoringColumns"/> so it never persists or fires
+    /// AllColumnsClosed — only explicit user toggles do.</summary>
+    internal async Task RestoreColumnsForSubjectAsync(HabitNode node, CancellationToken ct)
+    {
+        // (1) Per-habit prefs win: replace the open set with the subject's own applicable columns.
+        var prefs = await _uiPrefs.GetAsync(node.Id, ct).ConfigureAwait(true);
+        if (prefs.OpenColumns is { Count: > 0 } saved)
+        {
+            var cols = ParseApplicableColumns(saved, node);
+            if (cols.Count > 0) { ApplyColumnSet(cols); return; }
+            // saved set has nothing applicable here → fall through to the additive defaults below.
+        }
+
+        // (2) A live-carried column already applies → keep the current set as-is (additive shared behaviour).
+        if (CanonicalOpen().Any(c => IsColumnApplicable(c, node.NodeType, node.HabitType)))
+            return;
+
+        // (3) Legacy global fallback (applicable subset), opened additively.
+        var raw = await _appSettings.GetAsync(OpenColumnsSettingKey, ct).ConfigureAwait(true);
+        var legacy = ParseApplicableColumns(
+            (raw ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            node);
+        if (legacy.Count > 0) { OpenColumnsAdditively(legacy); return; }
+
+        // (4) Per-type default (prefer the last closed column when applicable).
+        var fallback = node.NodeType == NodeType.Group ? HabitColumn.Panoramica
+            : node.HabitType == HabitType.Journal ? HabitColumn.Diario
+            : HabitColumn.Cronologia;
+        var target = _lastClosedColumn is { } lc && IsColumnApplicable(lc, node.NodeType, node.HabitType) ? lc : fallback;
+        OpenColumnsAdditively([target]);
+    }
+
+    private static List<HabitColumn> ParseApplicableColumns(IEnumerable<string> tokens, HabitNode node)
+        => tokens
+            .Select(t => Enum.TryParse<HabitColumn>(t, out var c) ? c : (HabitColumn?)null)
+            .Where(c => c is not null && IsColumnApplicable(c.Value, node.NodeType, node.HabitType))
+            .Select(c => c!.Value)
+            .ToList();
+
+    /// <summary>Hard-replaces the open flags with <paramref name="columns"/> (closes everything else),
+    /// preserving the given order in <see cref="_openOrder"/>. Runs under <see cref="_restoringColumns"/>.</summary>
+    private void ApplyColumnSet(IReadOnlyList<HabitColumn> columns)
+    {
+        var target = columns.ToHashSet();
+        _restoringColumns = true;
+        try
+        {
+            foreach (var col in Enum.GetValues<HabitColumn>())
+                if (!target.Contains(col)) SetColumnFlag(col, false);
+            foreach (var col in columns) SetColumnFlag(col, true);
+        }
+        finally { _restoringColumns = false; }
+    }
+
+    /// <summary>Opens <paramref name="columns"/> on top of the current flags without closing anything and
+    /// without persisting (guarded by <see cref="_restoringColumns"/>).</summary>
+    private void OpenColumnsAdditively(IReadOnlyList<HabitColumn> columns)
+    {
+        _restoringColumns = true;
+        try { foreach (var col in columns) SetColumnFlag(col, true); }
+        finally { _restoringColumns = false; }
+    }
 
     private IEnumerable<HabitColumn> CanonicalOpen()
     {
@@ -410,9 +493,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IDiaryService diary,
         IConfirmationDialog confirmationDialog,
         Recordum.Core.IAttachmentService attachments,
-        IOpenFileDialog openFileDialog)
+        IOpenFileDialog openFileDialog,
+        IHabitUiPrefsService uiPrefs)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
+        ArgumentNullException.ThrowIfNull(uiPrefs);
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(tree);
         ArgumentNullException.ThrowIfNull(diary);
@@ -442,6 +527,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _configs = configs;
         _clock = clock;
         _appSettings = appSettings;
+        _uiPrefs = uiPrefs;
         Editor = editor;
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
@@ -501,16 +587,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Name));
         if (node is null) { QuickAdd = null; return; }
 
-        // No applicable column open for this subject: open the last closed one if it fits, else the
-        // type's default (group → Panoramica §A.1, journal habit → Diario §3.4, habit → Cronologia §3.7/§B.5).
-        if (!CanonicalOpen().Any(c => IsColumnApplicable(c, node.NodeType, node.HabitType)))
-        {
-            var fallback = node.NodeType == NodeType.Group ? HabitColumn.Panoramica
-                : node.HabitType == HabitType.Journal ? HabitColumn.Diario
-                : HabitColumn.Cronologia;
-            var target = _lastClosedColumn is { } lc && IsColumnApplicable(lc, node.NodeType, node.HabitType) ? lc : fallback;
-            SetColumnFlag(target, true);
-        }
+        // Restore this subject's own open-column set (per-habit prefs → live carry-over → legacy global →
+        // per-type default). Must run BEFORE the editorTask line below so a restored-open Configura loads.
+        await RestoreColumnsForSubjectAsync(node, ct).ConfigureAwait(true);
+        if (generation != _loadGeneration) return;
 
         if (node.NodeType == NodeType.Group)
             await Panoramica.LoadAsync(node, ct).ConfigureAwait(true);
