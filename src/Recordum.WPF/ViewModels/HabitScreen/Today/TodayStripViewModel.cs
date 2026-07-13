@@ -74,7 +74,8 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
             HabitType.Resistance => new ResistanceTodayContent(_abstinence, _clock),
             HabitType.Action => new ActionTodayContent(_completions, _streaks, _hourly, _clock),
             HabitType.Counter => new CounterTodayContent(_completions, _metrics, _refData, _goals, _clock),
-            // State / Journal arms are added in Tasks 7–8.
+            HabitType.State => new StateTodayContent(_completions, _metrics, _refData, _clock),
+            // Journal arm is added in Task 8.
             _ => null,
         };
 

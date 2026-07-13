@@ -1,0 +1,36 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitScreen.Today.StateTodayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:tvm="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Today"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance tvm:StateTodayContent}">
+    <Border Padding="14,10">
+        <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- current step label (accent) -->
+            <TextBlock Text="{Binding CurrentLabel}" FontWeight="SemiBold" MinWidth="64"
+                       Foreground="{DynamicResource Brush.Accent}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+            <!-- quick stepped slider for today -->
+            <Slider Minimum="{Binding Min}" Maximum="{Binding Max}"
+                    Value="{Binding SliderValue, Mode=TwoWay}"
+                    IsSnapToTickEnabled="True" TickFrequency="1"
+                    Width="220" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+            <!-- record today's value (last-wins) -->
+            <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                    Command="{Binding RecordCommand}" IsEnabled="{Binding CanRecord}"
+                    Padding="12,6" Margin="0,0,16,0" VerticalAlignment="Center"/>
+
+            <!-- last recorded value -->
+            <TextBlock Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center"
+                       Visibility="{Binding LastValueLabel, Converter={StaticResource NullToVisibility}}">
+                <TextBlock.Text>
+                    <Binding Path="LastValueLabel" StringFormat="{x:Static res:Strings.Today_State_LastValue}"/>
+                </TextBlock.Text>
+            </TextBlock>
+        </WrapPanel>
+    </Border>
+</UserControl>

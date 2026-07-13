@@ -815,6 +815,9 @@ Details: {0}</value>
   <data name="Today.Counter.Record" xml:space="preserve">
     <value>+ Record</value>
   </data>
+  <data name="Today.State.LastValue" xml:space="preserve">
+    <value>last: {0}</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

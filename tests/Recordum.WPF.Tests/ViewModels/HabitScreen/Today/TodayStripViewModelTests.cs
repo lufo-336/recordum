@@ -61,6 +61,17 @@ public class TodayStripViewModelTests
     }
 
     [Fact]
+    public async Task LoadAsync_on_a_state_habit_builds_state_content()
+    {
+        var sut = NewSut();
+        var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.State, Name = "s" };
+
+        await sut.LoadAsync(node);
+
+        sut.Content.Should().BeOfType<StateTodayContent>();
+    }
+
+    [Fact]
     public async Task ShowTodayStrip_is_true_for_a_habit_false_for_a_group_and_when_unloaded()
     {
         var (screen, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out _);
