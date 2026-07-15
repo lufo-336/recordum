@@ -130,6 +130,30 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
+    public async Task Day_summary_for_a_counter_shows_the_primary_metric_sum_not_the_occurrences()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out var metrics, out var clock);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode
+        { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "reading" };
+        var metric = new MetricDefinition
+        { Id = Guid.NewGuid(), HabitNodeId = id, SortOrder = 0, Name = "pages" };
+        metrics.Store[metric.Id] = metric;
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        // The metric sum today is 7; the occurrence magnitude is a differing decoy (3) that also drives
+        // the strip's presence signal. The pushed summary must read 7, not 3.
+        completions.DailySumByKey[(id, metric.Id)] = new List<DailyValue> { new(today, 7m) };
+        completions.MagnitudeByHabit[id] = new List<DailyMagnitude> { new(today, 3m) };
+
+        await sut.LoadAsync(id);
+        // Drive the public calendar day-selection path for today (re-pushes the day summary).
+        sut.Calendar.SelectDateCommand.Execute(sut.Calendar.Cells.Single(c => c.Date == today));
+
+        sut.DayNote.SummaryText.Should().Contain("7");
+        sut.DayNote.SummaryText.Should().NotContain("3");
+    }
+
+    [Fact]
     public async Task OpenConfigureCommand_raises_event()
     {
         var sut = CreateSut(out var nodes, out _, out _, out _, out _);

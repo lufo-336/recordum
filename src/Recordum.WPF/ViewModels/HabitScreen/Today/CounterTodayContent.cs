@@ -9,8 +9,9 @@ namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
 /// <summary>Counter "Oggi" content (spec §1): today's total (+ unit), the active goal's progress, and a
 /// "+ Registra" affordance that asks the host to open/focus the Cronologia record module. Today's total
-/// comes from the day magnitude (same source the calendar uses); the goal reuses
-/// <see cref="GoalProgressCardViewModel"/>.</summary>
+/// is the sum of the primary metric's values for the day (same semantics as the Home row's
+/// TodayCounterTotal); a bare counter with no metrics falls back to the day magnitude (occurrence
+/// count). The goal reuses <see cref="GoalProgressCardViewModel"/>.</summary>
 public sealed partial class CounterTodayContent : ObservableObject, ITodayContent, ITodayContentNavigates
 {
     private readonly ICompletionService _completions;
