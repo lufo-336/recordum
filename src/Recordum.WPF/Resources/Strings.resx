@@ -824,6 +824,15 @@ Details: {0}</value>
   <data name="Today.Journal.QuickNote" xml:space="preserve">
     <value>+ Quick note</value>
   </data>
+  <data name="TimeUnit.Hours" xml:space="preserve">
+    <value>hours</value>
+  </data>
+  <data name="TimeUnit.Minutes" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="TimeUnit.Seconds" xml:space="preserve">
+    <value>sec</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>No streaks yet</value>
   </data>

@@ -334,7 +334,8 @@ public class CounterSeriesQuickAddViewModelTests
         Assert.True(vm.ChronoRunning);
 
         await vm.ToggleChronoCommand.ExecuteAsync(cell);  // stop → 95s
-        Assert.Equal("1:35", cell.DurationText);
+        Assert.Equal(TimeUnit.Seconds, cell.DurationUnit);
+        Assert.Equal(95m, cell.DurationValue);
         Assert.False(vm.ChronoRunning);
         Assert.Single(timers.StopWithoutRecordingCalls);
     }
@@ -422,26 +423,26 @@ public class SeriesCellViewModelDurationTests
     [Fact]
     public void Seconds_cell_parses_duration_into_value_seconds()
     {
-        var cell = new SeriesCellViewModel(SecondsMetric()) { DurationText = "1:02:05" };
+        var cell = new SeriesCellViewModel(SecondsMetric()) { DurationUnit = TimeUnit.Minutes, DurationValue = 62.083m };
         var v = cell.BuildValue(0);
         Assert.NotNull(v);
-        Assert.Equal(3725, v!.ValueSeconds);
+        Assert.Equal(3725, v!.ValueSeconds); // 62.083 min × 60 rounds to 3725s
         Assert.Null(v.ValueInteger);
     }
 
     [Fact]
-    public void Seconds_cell_invalid_text_is_flagged_and_yields_null()
+    public void Empty_duration_value_yields_null()
     {
-        var cell = new SeriesCellViewModel(SecondsMetric()) { DurationText = "abc" };
-        Assert.True(cell.IsDurationInvalid);
+        var cell = new SeriesCellViewModel(SecondsMetric());
         Assert.Null(cell.BuildValue(0));
     }
 
     [Fact]
-    public void SetDurationSeconds_round_trips_display()
+    public void SetDurationSeconds_round_trips_value()
     {
         var cell = new SeriesCellViewModel(SecondsMetric());
         cell.SetDurationSeconds(3725);
-        Assert.Equal("1:02:05", cell.DurationText);
+        Assert.Equal(TimeUnit.Seconds, cell.DurationUnit);
+        Assert.Equal(3725m, cell.DurationValue);
     }
 }

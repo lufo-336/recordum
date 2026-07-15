@@ -803,6 +803,15 @@
   <data name="Today.Journal.QuickNote" xml:space="preserve">
     <value>+ Nota veloce</value>
   </data>
+  <data name="TimeUnit.Hours" xml:space="preserve">
+    <value>ore</value>
+  </data>
+  <data name="TimeUnit.Minutes" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="TimeUnit.Seconds" xml:space="preserve">
+    <value>sec</value>
+  </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
     <value>Nessuno streak ancora</value>
   </data>

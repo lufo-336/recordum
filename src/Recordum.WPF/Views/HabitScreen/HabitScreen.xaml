@@ -269,7 +269,7 @@
                 <TextBlock Text="{Binding Name}" MinWidth="110" VerticalAlignment="Center" Margin="0,0,8,0"
                            Foreground="{DynamicResource Brush.TextMuted}"/>
                 <Grid VerticalAlignment="Center">
-                    <!-- Measured: Integer (Seconds is handled by the duration mask below) -->
+                    <!-- Measured: Integer (Seconds is handled by the duration value+unit selector below) -->
                     <TextBox Width="90"
                              Text="{Binding IntegerValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}">
                         <TextBox.Style>
@@ -287,24 +287,25 @@
                             </Style>
                         </TextBox.Style>
                     </TextBox>
-                    <!-- Measured: Seconds → mm:ss duration mask (writes ValueSeconds). Red border when unparseable. -->
-                    <TextBox Width="90"
-                             Text="{Binding DurationText, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"
-                             ToolTip="12:30">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                    <!-- Measured: Seconds → decimal value + time-unit selector; normalized to seconds on save (U8). -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsDuration}" Value="True">
                                         <Setter Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsDurationInvalid}" Value="True">
-                                        <Setter Property="BorderBrush" Value="Red"/>
-                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                        </StackPanel.Style>
+                        <TextBox Width="70"
+                                 Text="{Binding DurationValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"/>
+                        <ComboBox Width="72" Margin="4,0,0,0"
+                                  ItemsSource="{x:Static qa:SeriesCellViewModel.TimeUnitOptions}"
+                                  SelectedValue="{Binding DurationUnit}"
+                                  SelectedValuePath="Unit" DisplayMemberPath="Label"/>
+                    </StackPanel>
                     <!-- Measured: Decimal -->
                     <TextBox Width="90"
                              Text="{Binding DecimalValue, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}">

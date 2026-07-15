@@ -70,4 +70,49 @@ public class SeriesCellViewModelTests
         cell.ShowReferencePoints.Should().BeFalse();                      // too many to caption
         cell.SliderMax.Should().Be(99);
     }
+
+    [Fact]
+    public void Duration_cell_normalizes_hours_to_seconds_on_build()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric, unitCode: "hours");
+        cell.DurationUnit.Should().Be(TimeUnit.Hours);       // default follows the metric unit
+        cell.DurationValue = 7.5m;
+
+        var v = cell.BuildValue(0);
+
+        v!.ValueSeconds.Should().Be(27000);                   // 7.5 h × 3600
+    }
+
+    [Fact]
+    public void Duration_cell_defaults_to_minutes_when_the_metric_has_no_time_unit()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric);
+        cell.DurationUnit.Should().Be(TimeUnit.Minutes);
+        cell.DurationValue = 90m;
+
+        cell.BuildValue(0)!.ValueSeconds.Should().Be(5400);
+    }
+
+    [Fact]
+    public void Chrono_pour_sets_seconds_unit_and_value()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric, unitCode: "hours");
+
+        cell.SetDurationSeconds(125);
+
+        cell.DurationUnit.Should().Be(TimeUnit.Seconds);
+        cell.DurationValue.Should().Be(125m);
+        cell.BuildValue(0)!.ValueSeconds.Should().Be(125);
+    }
+
+    [Fact]
+    public void Empty_duration_builds_no_value()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric);
+        cell.BuildValue(0).Should().BeNull();
+    }
 }

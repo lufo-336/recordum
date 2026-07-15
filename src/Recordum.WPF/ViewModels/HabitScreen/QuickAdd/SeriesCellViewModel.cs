@@ -3,7 +3,7 @@ using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.Formatting;
+using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
@@ -59,17 +59,25 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SelectedScaleLabel))]
     private int? _selectedScaleIndex; // 0-based across steps
 
-    /// <summary>True per la cella durata (Measured + Seconds): usa DurationText/mask invece di IntegerValue.</summary>
+    /// <summary>True per la cella durata (Measured + Seconds): usa DurationValue/DurationUnit invece di IntegerValue.</summary>
     public bool IsDuration => Kind == MetricInputKind.Measured && Metric.Type == MetricType.Seconds;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsDurationInvalid))]
-    private string? _durationText;
+    [ObservableProperty] private decimal? _durationValue;
+    [ObservableProperty] private TimeUnit _durationUnit = TimeUnit.Minutes;
 
-    public bool IsDurationInvalid =>
-        !string.IsNullOrWhiteSpace(DurationText) && !DurationFormat.TryParse(DurationText, out _);
+    /// <summary>Static so the XAML binds it via x:Static (one list app-wide).</summary>
+    public static IReadOnlyList<TimeUnitOption> TimeUnitOptions { get; } =
+    [
+        new(TimeUnit.Hours, Strings.TimeUnit_Hours),
+        new(TimeUnit.Minutes, Strings.TimeUnit_Minutes),
+        new(TimeUnit.Seconds, Strings.TimeUnit_Seconds),
+    ];
 
-    public void SetDurationSeconds(int seconds) => DurationText = DurationFormat.Format(seconds);
+    public void SetDurationSeconds(int seconds)
+    {
+        DurationUnit = TimeUnit.Seconds;
+        DurationValue = seconds;
+    }
 
     /// <summary>Label for the current slider position (falls back to the 1-based step number when a step
     /// has no label), so the slider reads "Good" instead of a bare number. Empty when nothing is picked.</summary>
@@ -97,6 +105,13 @@ public sealed partial class SeriesCellViewModel : ObservableObject
         Metric = metric;
         Kind = ResolveKind(metric);
         UnitLabel = unitCode;
+        if (IsDuration)
+            DurationUnit = unitCode?.ToLowerInvariant() switch
+            {
+                "hours" => TimeUnit.Hours,
+                "seconds" => TimeUnit.Seconds,
+                _ => TimeUnit.Minutes,
+            };
         if (Kind == MetricInputKind.Scale && scale is not null)
         {
             ScaleLabels = scale.Labels;
@@ -141,8 +156,13 @@ public sealed partial class SeriesCellViewModel : ObservableObject
                         v.ValueInteger = IntegerValue;
                         return v;
                     case MetricType.Seconds:
-                        if (!DurationFormat.TryParse(DurationText, out var secs)) return null;
-                        v.ValueSeconds = secs;
+                        if (DurationValue is not { } dur) return null;
+                        v.ValueSeconds = (int)Math.Round(dur * DurationUnit switch
+                        {
+                            TimeUnit.Hours => 3600m,
+                            TimeUnit.Minutes => 60m,
+                            _ => 1m,
+                        });
                         return v;
                     default:
                         return null;

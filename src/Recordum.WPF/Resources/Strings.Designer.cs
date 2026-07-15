@@ -299,6 +299,9 @@ public static class Strings
     public static string Today_State_LastValue => Get("Today.State.LastValue");
     public static string Today_Journal_WriteEntry => Get("Today.Journal.WriteEntry");
     public static string Today_Journal_QuickNote => Get("Today.Journal.QuickNote");
+    public static string TimeUnit_Hours => Get("TimeUnit.Hours");
+    public static string TimeUnit_Minutes => Get("TimeUnit.Minutes");
+    public static string TimeUnit_Seconds => Get("TimeUnit.Seconds");
     public static string Detail_Streak_Empty => Get("Detail.Streak.Empty");
     public static string Detail_Streak_Days => Get("Detail.Streak.Days");
     public static string Detail_Trend_Range_30d => Get("Detail.Trend.Range.30d");
