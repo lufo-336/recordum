@@ -115,4 +115,27 @@ public class SeriesCellViewModelTests
         var cell = new SeriesCellViewModel(metric);
         cell.BuildValue(0).Should().BeNull();
     }
+
+    [Fact]
+    public void Out_of_range_duration_builds_no_value()
+    {
+        // Regression: the decimal→int narrowing in BuildValue always throws OverflowException when
+        // out of range, and BuildValue runs live on every keystroke (row IsValid re-evaluates on
+        // PropertyChanged) — so typing a huge number must yield "no value", never crash.
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric, unitCode: "hours");
+        cell.DurationValue = 999_999_999m;
+
+        cell.BuildValue(0).Should().BeNull();
+    }
+
+    [Fact]
+    public void Negative_duration_builds_no_value()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric);
+        cell.DurationValue = -5m;
+
+        cell.BuildValue(0).Should().BeNull();
+    }
 }

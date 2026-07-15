@@ -157,12 +157,17 @@ public sealed partial class SeriesCellViewModel : ObservableObject
                         return v;
                     case MetricType.Seconds:
                         if (DurationValue is not { } dur) return null;
-                        v.ValueSeconds = (int)Math.Round(dur * DurationUnit switch
+                        var total = Math.Round(dur * DurationUnit switch
                         {
                             TimeUnit.Hours => 3600m,
                             TimeUnit.Minutes => 60m,
                             _ => 1m,
                         });
+                        // BuildValue runs live on every keystroke (row IsValid re-evaluates on
+                        // PropertyChanged): an out-of-int-range total must read as "no value",
+                        // never throw. Negatives are rejected too — a duration can't be negative.
+                        if (total < 0 || total > int.MaxValue) return null;
+                        v.ValueSeconds = (int)total;
                         return v;
                     default:
                         return null;
