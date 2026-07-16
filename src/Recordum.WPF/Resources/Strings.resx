@@ -1257,6 +1257,13 @@ Details: {0}</value>
   <data name="Editor.HomeRow.Strip.Days14" xml:space="preserve">
     <value>14 days</value>
   </data>
+  <!-- U8: Registration section (repeatable knob), Counter-only -->
+  <data name="Editor.Section.Registration" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="Editor.Registration.Repeatable" xml:space="preserve">
+    <value>Can be recorded multiple times a day</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Schedule type</value>

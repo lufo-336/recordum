@@ -58,6 +58,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     public TimerSectionViewModel Timer { get; }
     public MetricsSectionViewModel Metrics { get; }
     public ScalesSectionViewModel Scales { get; }
+    public RegistrationSectionViewModel Registration { get; }
     public GoalSectionViewModel Goal { get; }
     public NotificationsSectionViewModel Notifications { get; }
     public NotesSectionViewModel Notes { get; }
@@ -115,6 +116,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Timer = new TimerSectionViewModel(configs);
         Metrics = new MetricsSectionViewModel(metrics, refData);
         Scales = new ScalesSectionViewModel(metrics, refData);
+        Registration = new RegistrationSectionViewModel(configs);
         Goal = new GoalSectionViewModel(goals);
         Notifications = new NotificationsSectionViewModel(notifications);
         Notes = new NotesSectionViewModel(configs, recentColors, favoriteColors, _screenPicker);
@@ -126,7 +128,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
         Sections = new SectionViewModelBase[]
         {
-            Scheduling, Streak, Timer, Metrics, Scales, Goal, Notifications, Notes, Tags, HomeRow, AiSharing, ResetTime,
+            Scheduling, Streak, Timer, Metrics, Scales, Registration, Goal, Notifications, Notes, Tags, HomeRow, AiSharing, ResetTime,
         };
 
         foreach (var section in EnumerateSections())
@@ -140,6 +142,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         yield return Timer;
         yield return Metrics;
         yield return Scales;
+        yield return Registration;
         yield return Goal;
         yield return Notifications;
         yield return Notes;
@@ -233,6 +236,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             await Timer.LoadAsync(node, cfg);
             await Metrics.LoadAsync(node);
             await Scales.LoadAsync(node);
+            await Registration.LoadAsync(node);
             await Goal.LoadAsync(node);
             await Notifications.LoadAsync(node);
             await Notes.LoadAsync(node, cfg);

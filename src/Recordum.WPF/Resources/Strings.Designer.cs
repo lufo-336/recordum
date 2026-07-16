@@ -463,6 +463,8 @@ public static class Strings
     public static string Editor_HomeRow_Strip_None => Get("Editor.HomeRow.Strip.None");
     public static string Editor_HomeRow_Strip_Days7 => Get("Editor.HomeRow.Strip.Days7");
     public static string Editor_HomeRow_Strip_Days14 => Get("Editor.HomeRow.Strip.Days14");
+    public static string Editor_Section_Registration => Get("Editor.Section.Registration");
+    public static string Editor_Registration_Repeatable => Get("Editor.Registration.Repeatable");
 
     // Help menu + Diagnostic dialog
     public static string Workspace_Help => Get("Workspace.Help");

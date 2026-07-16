@@ -352,4 +352,48 @@ public class HabitBuilderViewModelTests
         var metric = doc.RootElement.GetProperty("metrics")[0];
         metric.GetProperty("scale_code").GetString().Should().Be(refData.Scales[0].Code);
     }
+
+    [WpfFact]
+    public void Repeatable_flows_into_the_launched_config_and_template_payload()
+    {
+        var vm = CreateVm();
+        vm.Name = "Sonno";
+        vm.Repeatable = true;
+
+        var request = vm.BuildRequestForTest();
+        request.Config!.Repeatable.Should().BeTrue();
+    }
+
+    [WpfFact]
+    public async Task Repeatable_writes_into_the_template_payload_when_true()
+    {
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        sut.Name = "Sonno";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+
+        var saved = fakeTemplates.Created.Single();
+        using var doc = JsonDocument.Parse(saved.PayloadJson);
+        doc.RootElement.GetProperty("repeatable").GetBoolean().Should().BeTrue();
+    }
+
+    [WpfFact]
+    public async Task Repeatable_is_omitted_from_the_template_payload_when_false()
+    {
+        // Byte-stability: old payloads (saved before this task) must round-trip unchanged —
+        // Repeatable defaults false and WhenWritingNull drops it, same as CountsOccurrences.
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        sut.Name = "Sonno";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+
+        var saved = fakeTemplates.Created.Single();
+        using var doc = JsonDocument.Parse(saved.PayloadJson);
+        doc.RootElement.TryGetProperty("repeatable", out _).Should().BeFalse();
+    }
 }

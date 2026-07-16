@@ -84,6 +84,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [ObservableProperty] private HabitType _derivedType = HabitType.Action;
     [ObservableProperty] private Guid? _createdHabitNodeId;
 
+    /// <summary>Counter-only knob (U8): can this habit be recorded multiple times a day (named
+    /// series) or once (a second same-day save sums into the day total)? Flows into the launched
+    /// <see cref="HabitConfig"/> and the saved template payload; refined later in Configura.</summary>
+    [ObservableProperty] private bool _repeatable;
+
     /// <summary>True briefly after "Save as template" succeeds; cleared on any edit that would
     /// change the payload, so the "Saved ✓" badge reflects the current composition. (R-builderSaveFeedback)</summary>
     [ObservableProperty] private bool _templateSaved;
@@ -143,6 +148,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     partial void OnNameChanged(string value) { TemplateSaved = false; RaiseLaunchState(); }
     partial void OnColorChanged(string value) => TemplateSaved = false;
     partial void OnIconChanged(string? value) => TemplateSaved = false;
+    partial void OnRepeatableChanged(bool value) => TemplateSaved = false;
 
     [RelayCommand]
     private async Task AddFavoriteAsync(string? hex, CancellationToken ct)
@@ -232,6 +238,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         TemplateSaved = true;
     }
 
+    /// <summary>Test seam: <see cref="BuildRequest"/> is otherwise private (Launch is the only
+    /// production caller); tests need to inspect the composed request without going through the
+    /// DB-backed <see cref="IComposedHabitService"/>.</summary>
+    internal ComposedHabitRequest BuildRequestForTest() => BuildRequest();
+
     private ComposedHabitRequest BuildRequest()
     {
         var nodeId = Guid.NewGuid();
@@ -260,9 +271,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     }
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.
-    // (Timer-mode mapping from RecordingMode is still future work.)
-    private static HabitConfig BuildConfig(Guid nodeId) =>
-        new() { Id = Guid.NewGuid(), HabitNodeId = nodeId };
+    // (Timer-mode mapping from RecordingMode is still future work.) Instance method (not static)
+    // since U8 needs the builder's Repeatable knob.
+    private HabitConfig BuildConfig(Guid nodeId) =>
+        new() { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = Repeatable };
 
     private static readonly JsonSerializerOptions s_templateJsonOptions = new()
     {
@@ -303,6 +315,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                 .ToList(),
             CountsOccurrences = CountsOccurrences ? true : null,
             Mode = Mode.ToString(),
+            Repeatable = Repeatable ? true : null,
         };
         return JsonSerializer.Serialize(payload, s_templateJsonOptions);
     }
@@ -314,6 +327,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         public List<MetricPayload>? Metrics { get; set; }
         public bool? CountsOccurrences { get; set; }
         public string? Mode { get; set; }
+        // null-when-false (WhenWritingNull) so templates saved before U8 stay byte-identical.
+        public bool? Repeatable { get; set; }
     }
 
     private sealed class NodePayload

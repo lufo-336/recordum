@@ -10,6 +10,7 @@
     <DataTemplate DataType="{x:Type vms:StreakSectionViewModel}"><vs:StreakSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:MetricsSectionViewModel}"><vs:MetricsSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:ScalesSectionViewModel}"><vs:ScalesSectionView/></DataTemplate>
+    <DataTemplate DataType="{x:Type vms:RegistrationSectionViewModel}"><vs:RegistrationSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:TimerSectionViewModel}"><vs:TimerSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:GoalSectionViewModel}"><vs:GoalSectionView/></DataTemplate>
     <DataTemplate DataType="{x:Type vms:NotificationsSectionViewModel}"><vs:NotificationsSectionView/></DataTemplate>

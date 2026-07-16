@@ -122,6 +122,13 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- Repeatable (U8): Counter-only, can this habit be recorded multiple times a day? -->
+                <CheckBox Content="{x:Static res:Strings.Editor_Registration_Repeatable}"
+                          IsChecked="{Binding Repeatable}"
+                          Margin="0,0,0,16"
+                          Visibility="{Binding DerivedType, Converter={StaticResource EnumToVisibility},
+                                       ConverterParameter={x:Static enums:HabitType.Counter}}"/>
+
                 <!-- ===== Zone 2: Composizione ===== -->
                 <TextBlock Text="{x:Static res:Strings.HabitBuilder_Blocks}"
                            FontSize="{StaticResource FontSize.Body}"
