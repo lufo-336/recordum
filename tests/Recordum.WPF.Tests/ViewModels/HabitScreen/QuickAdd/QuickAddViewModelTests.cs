@@ -158,7 +158,7 @@ public class CounterSeriesQuickAddViewModelTests
         var tempo = SecondsMetric(habitId);
         metrics.Store[reps.Id] = reps;
         metrics.Store[tempo.Id] = tempo;
-        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), new FakeActiveTimerService())
+        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), new FakeActiveTimerService(), new FakeHabitConfigService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
         };
@@ -175,7 +175,7 @@ public class CounterSeriesQuickAddViewModelTests
         metrics.Store[reps.Id] = reps;
         metrics.Store[tempo.Id] = tempo;
         var timers = new FakeActiveTimerService { StopWithoutRecordingFactory = _ => 95 };
-        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), timers)
+        var vm = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), timers, new FakeHabitConfigService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
         };
@@ -192,7 +192,7 @@ public class CounterSeriesQuickAddViewModelTests
         var load = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "load", Type = MetricType.Decimal, SortOrder = 1 };
         metrics.Store[reps.Id] = reps;
         metrics.Store[load.Id] = load;
-        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), new FakeActiveTimerService())
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(), new FakeClock(), new FakeActiveTimerService(), new FakeHabitConfigService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Resistance },
         };
@@ -208,7 +208,7 @@ public class CounterSeriesQuickAddViewModelTests
         var habitId = Guid.NewGuid();
         var unitId = rd.Units[0].Id;
         await metrics.CreateAsync(new MetricDefinition { HabitNodeId = habitId, Name = "Distance", Type = MetricType.Decimal, UnitOfMeasureId = unitId, SortOrder = 0 });
-        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, rd, new FakeClock(), new FakeActiveTimerService())
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, rd, new FakeClock(), new FakeActiveTimerService(), new FakeHabitConfigService())
         {
             Node = new HabitNode { Id = habitId, HabitType = HabitType.Counter },
         };

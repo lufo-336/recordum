@@ -37,6 +37,8 @@ public static class Strings
     public static string HabitScreen_QuickAdd_SaveSeries => Get("HabitScreen.QuickAdd.SaveSeries");
     public static string HabitScreen_QuickAdd_ChronoStart => Get("HabitScreen.QuickAdd.ChronoStart");
     public static string HabitScreen_QuickAdd_ChronoStop => Get("HabitScreen.QuickAdd.ChronoStop");
+    public static string HabitScreen_QuickAdd_SeriesFallback => Get("HabitScreen.QuickAdd.SeriesFallback");
+    public static string HabitScreen_QuickAdd_RenameSeries => Get("HabitScreen.QuickAdd.RenameSeries");
     public static string Home_QuickAction => Get("Home.QuickAction");
     public static string Home_KeyFigure_Streak => Get("Home.KeyFigure.Streak");
     public static string Home_KeyFigure_CounterTotal => Get("Home.KeyFigure.CounterTotal");

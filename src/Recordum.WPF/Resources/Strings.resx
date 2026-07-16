@@ -539,6 +539,12 @@ Details: {0}</value>
   <data name="HabitScreen.QuickAdd.ChronoStop" xml:space="preserve">
     <value>Stop and fill in the time</value>
   </data>
+  <data name="HabitScreen.QuickAdd.SeriesFallback" xml:space="preserve">
+    <value>Series {0}</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.RenameSeries" xml:space="preserve">
+    <value>Rename series</value>
+  </data>
   <data name="Home.QuickAction" xml:space="preserve">
     <value>Quick log</value>
   </data>

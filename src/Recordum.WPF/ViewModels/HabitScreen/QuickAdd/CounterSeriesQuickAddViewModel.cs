@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
@@ -13,18 +14,26 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
 {
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
+    private readonly IHabitConfigService _configs;
     private List<MetricDefinition> _orderedMetrics = [];
     private MetricCellFactory _factory = new(Array.Empty<UnitOfMeasure>(), Array.Empty<ScaleTemplate>());
+    private string[] _seriesLabels = [];
+
+    [ObservableProperty] private bool _isRepeatable;
+    [ObservableProperty] private int _selectedSeriesIndex;
+    public ObservableCollection<SeriesChipViewModel> Chips { get; } = [];
 
     public CounterSeriesQuickAddViewModel(
         ICompletionService completions,
         IMetricDefinitionService metrics,
         IReferenceDataQueryService refData,
         IClock clock,
-        IActiveTimerService timers) : base(completions, clock, timers)
+        IActiveTimerService timers,
+        IHabitConfigService configs) : base(completions, clock, timers)
     {
         _metrics = metrics;
         _refData = refData;
+        _configs = configs;
         // Keep the per-row delete button's enabled state in sync with the "at least one series" rule.
         // Also notify ValidSeriesCount whenever the collection changes (add/remove rows).
         Series.CollectionChanged += (_, _) =>
@@ -32,6 +41,78 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
             RemoveSeriesCommand.NotifyCanExecuteChanged();
             OnPropertyChanged(nameof(ValidSeriesCount));
         };
+    }
+
+    /// <summary>Call BEFORE LoadMetricsAsync: fixes the registration mode + the persisted series names
+    /// (U8 repeatable counter).</summary>
+    public void SetRegistrationConfig(bool repeatable, string? seriesLabelsJson)
+    {
+        IsRepeatable = repeatable;
+        _seriesLabels = ParseSeriesLabels(seriesLabelsJson);
+    }
+
+    private static string[] ParseSeriesLabels(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return System.Text.Json.JsonSerializer.Deserialize<string[]>(json) ?? []; }
+        catch (System.Text.Json.JsonException) { return []; }
+    }
+
+    private string LabelFor(int i)
+    {
+        if (i < _seriesLabels.Length && !string.IsNullOrWhiteSpace(_seriesLabels[i])) return _seriesLabels[i];
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+        return string.Format(CultureInfo.CurrentCulture, Strings.HabitScreen_QuickAdd_SeriesFallback, i + 1);
+#pragma warning restore CA1863
+    }
+
+    /// <summary>Rebuilds the chip list from the current rows, clamps the selection, and re-applies
+    /// row visibility. Chips carry no persist handlers, so clearing here is safe (4d01f9c rule).</summary>
+    private void RebuildChips()
+    {
+        Chips.Clear();
+        if (IsRepeatable)
+            for (var i = 0; i < Series.Count; i++)
+                Chips.Add(new SeriesChipViewModel(i, LabelFor(i)));
+        if (SelectedSeriesIndex >= Series.Count) SelectedSeriesIndex = Math.Max(0, Series.Count - 1);
+        ApplySelection();
+    }
+
+    private void ApplySelection()
+    {
+        foreach (var chip in Chips) chip.IsSelected = chip.Index == SelectedSeriesIndex;
+        for (var i = 0; i < Series.Count; i++)
+            Series[i].IsVisibleRow = !IsRepeatable || i == SelectedSeriesIndex;
+    }
+
+    partial void OnSelectedSeriesIndexChanged(int value) => ApplySelection();
+
+    [RelayCommand]
+    private void SelectSeries(SeriesChipViewModel chip) => SelectedSeriesIndex = chip.Index;
+
+    [RelayCommand]
+    private static void BeginRenameChip(SeriesChipViewModel chip)
+    {
+        chip.PendingName = chip.Name;
+        chip.IsEditing = true;
+    }
+
+    [RelayCommand]
+    private static void CancelRenameChip(SeriesChipViewModel chip) => chip.IsEditing = false;
+
+    [RelayCommand]
+    private async Task CommitRenameChipAsync(SeriesChipViewModel chip)
+    {
+        var name = chip.PendingName?.Trim();
+        chip.IsEditing = false;
+        if (string.IsNullOrEmpty(name) || name == chip.Name || Node is null) return;
+        chip.Name = name;
+        var labels = new string[Math.Max(_seriesLabels.Length, chip.Index + 1)];
+        for (var i = 0; i < labels.Length; i++) labels[i] = i < _seriesLabels.Length ? _seriesLabels[i] : string.Empty;
+        labels[chip.Index] = name;
+        _seriesLabels = labels;
+        var json = System.Text.Json.JsonSerializer.Serialize(_seriesLabels);
+        await _configs.UpsertAsync(Node.Id, c => c.SeriesLabelsJson = json).ConfigureAwait(true);
     }
 
     public ObservableCollection<SeriesRowViewModel> Series { get; } = [];
@@ -53,6 +134,8 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
         Series.Clear();
         if (_orderedMetrics.Count > 0)
             Series.Add(NewRow());
+        SelectedSeriesIndex = 0;
+        RebuildChips();
     }
 
     private SeriesRowViewModel NewRow()
@@ -71,6 +154,8 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
     {
         if (_orderedMetrics.Count == 0) return;
         Series.Add(NewRow());
+        RebuildChips();
+        SelectedSeriesIndex = Series.Count - 1;
     }
 
     [RelayCommand(CanExecute = nameof(CanRemoveSeries))]
@@ -80,6 +165,7 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
         // Unhook the PropertyChanged handler before removing to avoid stale notifications.
         row.PropertyChanged -= OnRowPropertyChanged;
         Series.Remove(row);
+        RebuildChips();
     }
 
     private bool CanRemoveSeries(SeriesRowViewModel row) => Series.Count > 1;

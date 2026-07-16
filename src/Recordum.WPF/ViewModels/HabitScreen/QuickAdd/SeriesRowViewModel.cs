@@ -23,4 +23,9 @@ public sealed partial class SeriesRowViewModel : ObservableObject
     /// <summary>Serie valida = almeno un campo compilato (spec D6). Il ✓/○ in UI e il conteggio
     /// "Registra N serie" derivano da qui.</summary>
     public bool IsValid => Cells.Any(c => c.BuildValue(0) is not null);
+
+    /// <summary>Whether this row is shown in the repeatable counter quick-add (U8): only the row
+    /// fronted by the selected chip is visible. Default true keeps Measured/Resistance rows (which
+    /// never go through the chip UI) always visible.</summary>
+    [ObservableProperty] private bool _isVisibleRow = true;
 }

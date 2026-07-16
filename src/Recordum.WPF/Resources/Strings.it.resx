@@ -518,6 +518,12 @@
   <data name="HabitScreen.QuickAdd.ChronoStop" xml:space="preserve">
     <value>Ferma e compila il tempo</value>
   </data>
+  <data name="HabitScreen.QuickAdd.SeriesFallback" xml:space="preserve">
+    <value>Serie {0}</value>
+  </data>
+  <data name="HabitScreen.QuickAdd.RenameSeries" xml:space="preserve">
+    <value>Rinomina serie</value>
+  </data>
   <data name="Home.QuickAction" xml:space="preserve">
     <value>Log rapido</value>
   </data>

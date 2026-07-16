@@ -681,9 +681,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         async Task<QuickAddViewModelBase> BuildCounterQuickAddAsync(CancellationToken c)
         {
             var defs = await _metrics.ListByHabitAsync(node.Id, c).ConfigureAwait(true);
-            return defs.Count == 0
-                ? new CounterTapQuickAddViewModel(_completions, _clock)
-                : new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers);
+            if (defs.Count == 0)
+                return new CounterTapQuickAddViewModel(_completions, _clock);
+            var cfg = await _configs.GetAsync(node.Id, c).ConfigureAwait(true);
+            var vm = new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _configs);
+            vm.SetRegistrationConfig(cfg?.Repeatable ?? false, cfg?.SeriesLabelsJson);
+            return vm;
         }
     }
 
@@ -766,6 +769,16 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(Name));
             Calendar.CompletedColorHex = refreshed.Color;
             await Calendar.JumpAsync().ConfigureAwait(true);
+
+            // A Configura "repeatable" flip must re-shape the open registration module (the editor
+            // publishes HabitUpdated after every section apply). Rebuild only when the mode actually
+            // changed, so a rename/recolor never wipes half-typed values.
+            if (QuickAdd is CounterSeriesQuickAddViewModel cs)
+            {
+                var cfg = await _configs.GetAsync(refreshed.Id).ConfigureAwait(true);
+                if (cfg is not null && cfg.Repeatable != cs.IsRepeatable)
+                    await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
+            }
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitUpdatedEvent failed: {ex}"); }
     }
