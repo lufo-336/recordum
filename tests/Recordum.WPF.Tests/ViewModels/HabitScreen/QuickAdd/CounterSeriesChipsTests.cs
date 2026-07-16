@@ -87,4 +87,17 @@ public class CounterSeriesChipsTests
         vm.Series[0].IsVisibleRow.Should().BeTrue();
         vm.Series[1].IsVisibleRow.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task Removing_a_non_last_row_keeps_the_surviving_labels_aligned()
+    {
+        var (vm, _, _) = await LoadRepeatableAsync(seriesLabelsJson: "[\"Notte\",\"Riposino\"]");
+        vm.AddSeriesCommand.Execute(null);
+        vm.Chips.Should().HaveCount(2);
+
+        vm.RemoveSeriesCommand.Execute(vm.Series[0]);
+
+        vm.Chips.Should().ContainSingle();
+        vm.Chips[0].Name.Should().Be("Riposino");
+    }
 }

@@ -162,9 +162,17 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
     private void RemoveSeries(SeriesRowViewModel row)
     {
         if (Series.Count <= 1) return;
+        var idx = Series.IndexOf(row);
+        if (idx < 0) return; // guard: row already gone
         // Unhook the PropertyChanged handler before removing to avoid stale notifications.
         row.PropertyChanged -= OnRowPropertyChanged;
-        Series.Remove(row);
+        Series.RemoveAt(idx);
+        // Splice the removed row's label out too, so _seriesLabels (positional) stays aligned
+        // with Series after removing a non-last row (review finding: a shifted-but-unspliced
+        // array mislabels the surviving rows and CommitRenameChipAsync then persists the wrong
+        // mapping to series_labels_json).
+        if (idx < _seriesLabels.Length)
+            _seriesLabels = [.. _seriesLabels[..idx], .. _seriesLabels[(idx + 1)..]];
         RebuildChips();
     }
 
