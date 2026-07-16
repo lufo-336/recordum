@@ -506,10 +506,69 @@
                                Foreground="{DynamicResource Brush.Text}"
                                Text="{Binding CompletionDate, StringFormat=d}"/>
                 </Grid>
+                <!-- Series chips (repeatable only): named, renamable, one selected at a time (U8). -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8"
+                            Visibility="{Binding IsRepeatable, Converter={StaticResource BoolToVisible}}">
+                    <ItemsControl ItemsSource="{Binding Chips}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,6,0">
+                                    <StackPanel Orientation="Horizontal"
+                                                Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVisible}}">
+                                        <Button Content="{Binding Name}" Padding="10,3" Cursor="Hand"
+                                                Command="{Binding DataContext.SelectSeriesCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <!-- ✎ rename, only on the selected chip (same inline-edit affordance as rows) -->
+                                        <Button Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0"
+                                                Content="✎" FontSize="11"
+                                                ToolTip="{x:Static res:Strings.HabitScreen_QuickAdd_RenameSeries}"
+                                                Command="{Binding DataContext.BeginRenameChipCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                Visibility="{Binding IsSelected, Converter={StaticResource BoolToVisible}}"/>
+                                    </StackPanel>
+                                    <TextBox Width="110"
+                                             Text="{Binding PendingName, UpdateSourceTrigger=PropertyChanged}"
+                                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisible}}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Return"
+                                                        Command="{Binding DataContext.CommitRenameChipCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                            <KeyBinding Key="Escape"
+                                                        Command="{Binding DataContext.CancelRenameChipCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_AddSeries}" Padding="8,3"
+                            Command="{Binding AddSeriesCommand}"/>
+                </StackPanel>
                 <ItemsControl ItemsSource="{Binding Series}" Margin="0,0,0,8">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6" CornerRadius="3">
+                            <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6" CornerRadius="3"
+                                    Visibility="{Binding IsVisibleRow, Converter={StaticResource BoolToVisible}}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -559,14 +618,23 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <Button Content="{x:Static res:Strings.HabitScreen_QuickAdd_AddSeries}"
-                            Command="{Binding AddSeriesCommand}" Padding="8,4" Margin="0,0,8,0"/>
                     <!-- ContentStringFormat (not StringFormat on the Content binding): WPF ignores
                          StringFormat for a ContentControl.Content of object type, so the button showed the
                          bare count ("1") instead of "Registra 1 serie". -->
-                    <Button Command="{Binding SaveCommand}" Padding="12,4"
-                            Content="{Binding ValidSeriesCount}"
-                            ContentStringFormat="{x:Static res:Strings.HabitScreen_QuickAdd_SaveSeries}"/>
+                    <Button Command="{Binding SaveCommand}" Padding="12,4">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Content" Value="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRepeatable}" Value="True">
+                                        <Setter Property="Content" Value="{Binding ValidSeriesCount}"/>
+                                        <Setter Property="ContentStringFormat"
+                                                Value="{x:Static res:Strings.HabitScreen_QuickAdd_SaveSeries}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
