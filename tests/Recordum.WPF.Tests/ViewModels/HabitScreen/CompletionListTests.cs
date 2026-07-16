@@ -220,6 +220,35 @@ public class CompletionListViewModelTests
         sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Time: 1:30");
     }
 
+    [WpfFact]
+    public async Task LoadDayAsync_renders_a_duration_field_in_the_metrics_own_unit()
+    {
+        // U8: a duration metric with a time unit chosen on it (e.g. "hours") renders in that unit
+        // instead of the bare h:mm/mm:ss DurationFormat — 27000s on an "hours" metric reads "7.5 hours".
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var hoursUnitId = rd.Units.Single(u => u.Code == "hours").Id;
+        var sleepId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = sleepId, HabitNodeId = habit, Name = "Slept", Type = MetricType.Seconds, UnitOfMeasureId = hoursUnitId, SortOrder = 0 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue> { new() { MetricDefinitionId = sleepId, SeriesIndex = 0, ValueSeconds = 27000 } },
+        };
+
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
+        await sut.LoadDayAsync(habit, day);
+
+        var expected = 7.5m.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture) + " hours";
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be($"Slept: {expected}");
+    }
+
     [Fact]
     public async Task Journal_rows_show_paired_note_body_and_hide_inline_edit()
     {

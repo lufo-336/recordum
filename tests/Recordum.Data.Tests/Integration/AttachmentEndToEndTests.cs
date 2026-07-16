@@ -42,8 +42,9 @@ public class AttachmentEndToEndTests
         var configs = new HabitConfigService(fixture.DbFactory, fixture.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fixture.DbFactory, fixture.Clock);
+        var refData = new ReferenceDataQueryService(fixture.DbFactory);
         return new ExportQueryService(fixture.DbFactory, fixture.Clock, completions, notes, metrics, goals, configs,
-            ramp, new StubAggregator(), abstinence, attachments);
+            ramp, new StubAggregator(), abstinence, attachments, refData);
     }
 
     [Fact]

@@ -19,7 +19,8 @@ public sealed class ExportQueryService(
     IIntensityRampResolver ramp,
     IStreakAggregator streaks,
     IAbstinenceService abstinence,
-    IAttachmentService attachments) : IExportQueryService
+    IAttachmentService attachments,
+    IReferenceDataQueryService refData) : IExportQueryService
 {
     private const int HeatmapCols = 53;
     private const int HeatmapRows = 7;
@@ -78,8 +79,12 @@ public sealed class ExportQueryService(
                 .ToList();
         }
 
-        var metricNames = (await metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
-            .ToDictionary(m => m.Id, m => m.Name);
+        var metricList = await metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(false);
+        var metricNames = metricList.ToDictionary(m => m.Id, m => m.Name);
+        var units = await refData.ListUnitsAsync(ct).ConfigureAwait(false);
+        var metricUnits = metricList.ToDictionary(
+            m => m.Id,
+            m => m.UnitOfMeasureId is { } uid ? units.FirstOrDefault(u => u.Id == uid)?.Code : null);
 
         var completionRows = (!isResistance && request.Layout.Completions)
             ? (await completions.ListByHabitAsync(node.Id, fromUtc, toUtc, take: null, ct).ConfigureAwait(false))
@@ -90,7 +95,12 @@ public sealed class ExportQueryService(
                         ? null
                         : primaryValue.ValueDecimal
                             ?? (primaryValue.ValueInteger.HasValue ? (decimal?)primaryValue.ValueInteger.Value : null)
-                            ?? (primaryValue.ValueSeconds.HasValue ? (decimal?)primaryValue.ValueSeconds.Value : null);
+                            ?? (primaryValue.ValueSeconds.HasValue
+                                ? (Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit(
+                                       primaryValue.ValueSeconds.Value,
+                                       metricUnits.GetValueOrDefault(primaryValue.MetricDefinitionId))
+                                   ?? primaryValue.ValueSeconds.Value)
+                                : null);
                     return new ExportCompletionRow(
                         new DateTimeOffset(DateTime.SpecifyKind(c.CompletedAt, DateTimeKind.Utc), TimeSpan.Zero),
                         value,

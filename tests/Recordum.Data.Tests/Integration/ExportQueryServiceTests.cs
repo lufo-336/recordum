@@ -30,11 +30,12 @@ public sealed class ExportQueryServiceTests
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var refData = new ReferenceDataQueryService(fx.Factory);
         // Fresh temp dataRoot per Build() call: none of these tests except the attachment-specific
         // one below ever exercise disk I/O through AttachmentService, so the directory need not exist.
         var attachments = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext,
             Path.Combine(Path.GetTempPath(), "recordum-export-tests-" + Guid.NewGuid().ToString("N")));
-        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence, attachments);
+        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence, attachments, refData);
     }
 
     [Fact]
@@ -123,8 +124,9 @@ public sealed class ExportQueryServiceTests
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var refData = new ReferenceDataQueryService(fx.Factory);
         var query = new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp,
-            new StubAggregator(), abstinence, attachmentService);
+            new StubAggregator(), abstinence, attachmentService, refData);
 
         var request = new ExportRequest(ExportSubject.SingleHabit, habitId,
             new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
@@ -205,6 +207,34 @@ public sealed class ExportQueryServiceTests
         var habit = Assert.Single(model.Habits);
         var row = Assert.Single(habit.Completions);
         Assert.Equal("Pagine", row.Metric);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_completion_rows_convert_duration_seconds_to_the_metric_unit()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var hoursUnitId = Guid.Parse("00000001-0000-0000-0000-000000000009"); // seeded "hours" unit
+        long Ms(int d) => new DateTimeOffset(2026, 5, d, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "Sleep" });
+            db.MetricDefinitions.Add(new MetricDefinition { Id = metricId, HabitNodeId = habitId, Name = "Hours slept", SortOrder = 0, UnitOfMeasureId = hoursUnitId });
+            var completionId = Guid.NewGuid();
+            db.Completions.Add(new Completion { Id = completionId, HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(20) });
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completionId, MetricDefinitionId = metricId, ValueSeconds = 27000 });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+        var habit = Assert.Single(model.Habits);
+        var row = Assert.Single(habit.Completions);
+        Assert.Equal("Hours slept", row.Metric);
+        Assert.Equal(7.5m, row.Value);
         await fx.DisposeAsync();
     }
 
