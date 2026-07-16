@@ -102,6 +102,10 @@ public sealed class HabitTemplateService(
                     : null;
                 c.TimerTargetSeconds = payload.Config.TimerTargetSeconds;
                 if (c.TimerMode == Recordum.Core.Enums.TimerMode.Session) c.SessionBaseTimer = true;
+                c.Repeatable = payload.Config.Repeatable ?? false;
+                c.SeriesLabelsJson = payload.Config.SeriesLabels is { Count: > 0 }
+                    ? JsonSerializer.Serialize(payload.Config.SeriesLabels)
+                    : null;
             }, ct);
 
             await MaterializeMetricsSegmentsGoalAsync(newId, node.Name, payload, ct);
@@ -263,5 +267,7 @@ public sealed class HabitTemplateService(
         public bool? HasIntegratedTimer { get; set; }
         public string? TimerMode { get; set; }
         public int? TimerTargetSeconds { get; set; }
+        public bool? Repeatable { get; set; }
+        public List<string>? SeriesLabels { get; set; }
     }
 }

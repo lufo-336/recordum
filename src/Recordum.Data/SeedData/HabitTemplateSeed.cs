@@ -27,7 +27,7 @@ public static class HabitTemplateSeed
         "{\"node\":{\"name\":\"Water intake\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#5bc8f5\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[{\"name\":\"Amount\",\"type\":\"Decimal\",\"unit\":\"l\"}],\"segments\":[],\"goal\":{\"target\":2,\"unit\":\"l\",\"period_type\":\"Open\"}}";
 
     private const string SleepTrackerPayload =
-        "{\"node\":{\"name\":\"Sleep tracker\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[{\"name\":\"Hours slept\",\"type\":\"Decimal\",\"unit\":\"hours\"},{\"name\":\"Sleep quality\",\"type\":\"Integer\",\"scale_code\":\"sleep-quality\"}],\"segments\":[]}";
+        "{\"node\":{\"name\":\"Sleep tracker\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\",\"repeatable\":true,\"series_labels\":[\"Night\",\"Nap\"]},\"metrics\":[{\"name\":\"Hours slept\",\"type\":\"Decimal\",\"unit\":\"hours\"},{\"name\":\"Sleep quality\",\"type\":\"Integer\",\"scale_code\":\"sleep-quality\"}],\"segments\":[]}";
 
     private const string StopSmokingPayload =
         "{\"node\":{\"name\":\"Stop smoking\",\"node_type\":\"Habit\",\"habit_type\":\"Resistance\",\"color\":\"#27ae60\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"None\"},\"metrics\":[],\"segments\":[]}";

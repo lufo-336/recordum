@@ -218,6 +218,38 @@ public class HabitTemplateServiceTests
         goal.Name.Should().Be("Meditate");
     }
 
+    [Fact]
+    public async Task Instantiate_maps_repeatable_and_series_labels_from_the_payload()
+    {
+        await using var fx = new DbFixture();
+        var payload = "{\"node\":{\"name\":\"S\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"}," +
+                      "\"config\":{\"schedule_type\":\"Daily\",\"repeatable\":true,\"series_labels\":[\"Night\",\"Nap\"]},\"metrics\":[]}";
+        var templateId = await InsertTemplateAsync(fx, payload);
+
+        var svc = CreateSut(fx);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
+
+        var cfg = await configs.GetAsync(nodeId);
+        cfg!.Repeatable.Should().BeTrue();
+        cfg.SeriesLabelsJson.Should().Be("[\"Night\",\"Nap\"]");
+    }
+
+    private static async Task<Guid> InsertTemplateAsync(DbFixture fx, string payloadJson)
+    {
+        var templateId = Guid.NewGuid();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.HabitTemplates.Add(new HabitTemplate
+        {
+            Id = templateId,
+            Name = "T",
+            PayloadJson = payloadJson,
+            IsOfficial = true,
+        });
+        await db.SaveChangesAsync();
+        return templateId;
+    }
+
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),

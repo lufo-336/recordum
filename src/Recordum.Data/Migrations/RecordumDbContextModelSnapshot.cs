@@ -15,7 +15,7 @@ namespace Recordum.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.18");
 
             modelBuilder.Entity("Recordum.Core.Models.AIInsight", b =>
                 {
@@ -298,8 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 7, 9, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.14"
+                            UpdatedAt = new DateTime(2026, 7, 17, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.15"
                         });
                 });
 
@@ -1371,7 +1371,7 @@ namespace Recordum.Data.Migrations
                             Description = "Log hours slept and subjective sleep quality each morning.",
                             IsOfficial = true,
                             Name = "Sleep tracker",
-                            PayloadJson = "{\"node\":{\"name\":\"Sleep tracker\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[{\"name\":\"Hours slept\",\"type\":\"Decimal\",\"unit\":\"hours\"},{\"name\":\"Sleep quality\",\"type\":\"Integer\",\"scale_code\":\"sleep-quality\"}],\"segments\":[]}",
+                            PayloadJson = "{\"node\":{\"name\":\"Sleep tracker\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\",\"repeatable\":true,\"series_labels\":[\"Night\",\"Nap\"]},\"metrics\":[{\"name\":\"Hours slept\",\"type\":\"Decimal\",\"unit\":\"hours\"},{\"name\":\"Sleep quality\",\"type\":\"Integer\",\"scale_code\":\"sleep-quality\"}],\"segments\":[]}",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAtMs = 1778716800000L
                         },

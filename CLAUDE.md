@@ -10,7 +10,7 @@ Editor di abitudini con tipi multipli (action, counter, resistance, journal, sta
 
 - **Autore**: ITS Web Solutions Architect · Torino
 - **Product spec**: v2.0 (aprile 2026)
-- **DB schema**: v2.12 (luglio 2026) — delta `abstinence_period` v2.12 (astinenza a stato esplicito; chiude anche **CR8** riallineando il seed `schema_version` a 2.12) > `note_category` v2.11 (`notes.category` + `notes.completion_id`) > `counter_reclass` v2.10 (data-only: resistance-serie → counter) > `note_history` v2.9 > `abitudine_calendar` v2.8 > `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
+- **DB schema**: v2.15 (luglio 2026) — delta `sleep_repeatable` v2.15 (data-only: seed Sleep ripetibile + serie nominate "Night"/"Nap") > `per_type_prefs` v2.14 (`habit_nodes.ui_prefs_json` + `habit_configs`/`habit_config_histories.repeatable`+`series_labels_json`) > `attachment` v2.13 (tabella `attachment` singolare Note-only, sostituisce lo scaffold polimorfico `attachments` mai wired) > `abstinence_period` v2.12 (astinenza a stato esplicito; chiude anche **CR8** riallineando il seed `schema_version` a 2.12) > `note_category` v2.11 (`notes.category` + `notes.completion_id`) > `counter_reclass` v2.10 (data-only: resistance-serie → counter) > `note_history` v2.9 > `abitudine_calendar` v2.8 > `backup_log` v2.7 > `streak_broken_at` v2.6 > `active_timer` v2.5 > PinScope v2.4 > provenance plugin v2.3 > v2.2 > v2.1.
 - **Namespace**: `Recordum`
 
 ---
