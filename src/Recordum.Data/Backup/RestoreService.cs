@@ -20,7 +20,7 @@ public sealed class RestoreService(
     // CR2: fallback only if the live DB somehow has no schema_version row; the real current
     // version is read from the DB at runtime (see GetCurrentSchemaVersionAsync). Keep aligned
     // with AppSettingSeed's schema_version so it never drifts stale (same class of issue as CR8).
-    private const string FallbackSchemaVersion = "2.14";
+    private const string FallbackSchemaVersion = "2.15";
 
     public async Task<RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default)
     {
