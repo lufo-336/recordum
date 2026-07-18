@@ -464,6 +464,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private QuickAddViewModelBase? _quickAdd;
 
+    partial void OnQuickAddChanged(QuickAddViewModelBase? oldValue, QuickAddViewModelBase? newValue)
+    {
+        if (oldValue is IDisposable d) d.Dispose();
+    }
+
     partial void OnQuickAddChanged(QuickAddViewModelBase? value) => NotifyQuickAddRouting();
 
     // The journal markdown editor (WebView2) must be hosted by exactly one ContentControl, else two
@@ -574,6 +579,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         TodayStrip.Changed -= OnAbstinenceChanged;
         TodayStrip.ActionRequested -= OnTodayStripAction;
         if (QuickAdd is AbstinenceQuickAddViewModel ab) ab.Changed -= OnAbstinenceChanged;
+        if (QuickAdd is IDisposable qd) qd.Dispose();
         Notes.Dispose();
         Detail.Dispose();
         Records.Dispose();

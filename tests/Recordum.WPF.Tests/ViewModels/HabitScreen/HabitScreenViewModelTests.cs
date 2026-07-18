@@ -409,6 +409,38 @@ public class HabitScreenViewModelTests
         sut.CompletionList.Rows.Should().NotBeEmpty();
     }
 
+    private sealed class DisposableStubQuickAdd : QuickAddViewModelBase, IDisposable
+    {
+        public DisposableStubQuickAdd() : base(new FakeCompletionService(), new FakeClock()) { }
+        public bool Disposed { get; private set; }
+        public override Task SaveAsync(CancellationToken ct = default) => Task.CompletedTask;
+        public void Dispose() => Disposed = true;
+    }
+
+    [Fact]
+    public void Assigning_a_new_quick_add_disposes_the_previous_one()
+    {
+        var sut = CreateSut(out _, out _, out _, out _, out _);
+        var first = new DisposableStubQuickAdd();
+        sut.QuickAdd = first;
+
+        sut.QuickAdd = new DisposableStubQuickAdd(); // swap
+
+        first.Disposed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Disposing_the_screen_disposes_the_current_quick_add()
+    {
+        var sut = CreateSut(out _, out _, out _, out _, out _);
+        var current = new DisposableStubQuickAdd();
+        sut.QuickAdd = current;
+
+        sut.Dispose();
+
+        current.Disposed.Should().BeTrue();
+    }
+
     [Fact]
     public async Task LoadAsync_deselect_during_an_in_flight_load_does_not_throw_or_clobber()
     {
