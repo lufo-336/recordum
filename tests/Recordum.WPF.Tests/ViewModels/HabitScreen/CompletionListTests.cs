@@ -224,7 +224,8 @@ public class CompletionListViewModelTests
     public async Task LoadDayAsync_renders_a_duration_field_in_the_metrics_own_unit()
     {
         // U8: a duration metric with a time unit chosen on it (e.g. "hours") renders in that unit
-        // instead of the bare h:mm/mm:ss DurationFormat — 27000s on an "hours" metric reads "7.5 hours".
+        // instead of the bare h:mm/mm:ss DurationFormat — 27000s on an "hours" metric reads "7.5 hours"
+        // (localized: "7,5 ore" under it-IT, matching the quick-add time-unit selector).
         var cs = new FakeCompletionService();
         var ms = new FakeMetricDefinitionService();
         var rd = new FakeReferenceData();
@@ -245,7 +246,7 @@ public class CompletionListViewModelTests
         var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, day);
 
-        var expected = 7.5m.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture) + " hours";
+        var expected = 7.5m.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture) + " " + Recordum.WPF.Resources.Strings.TimeUnit_Hours;
         sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be($"Slept: {expected}");
     }
 
