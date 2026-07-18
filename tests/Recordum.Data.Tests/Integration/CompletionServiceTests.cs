@@ -343,6 +343,36 @@ public class CompletionServiceTests
         await fx.DisposeAsync();
     }
 
+    [Fact]
+    public async Task Two_same_day_registrations_sum_in_the_daily_metric_total()
+    {
+        // U8 spec §3: non-repeatable counters record once per save; a second same-day save SUMS in
+        // the day total (the UI shows one module, the data layer just aggregates). Lock test —
+        // no production behavior change, this pins the "somma" semantics against future refactors.
+        var (fx, habitId) = await SeedActionAsync(HabitType.Counter);
+        Guid metricId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "vol", Type = MetricType.Decimal, SortOrder = 0 };
+            db.MetricDefinitions.Add(metric);
+            await db.SaveChangesAsync();
+            metricId = metric.Id;
+        }
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var day = new DateOnly(2026, 2, 1);
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueDecimal = 1.5m } });
+        await svc.RecordAsync(
+            new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 20), CompletedAtMs = MsAt(day, 20) },
+            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueDecimal = 0.5m } });
+
+        var rows = await svc.GetDailySumAsync(habitId, metricId, day, day);
+
+        rows.Should().ContainSingle().Which.Sum.Should().Be(2.0m);
+        await fx.DisposeAsync();
+    }
+
     // ── GetDailyMagnitudeAsync tests ─────────────────────────────────────────
 
     private static async Task<(DbFixture fx, Guid habitId, Guid? metricId)> SeedHabitWithMetricAsync(HabitType type)
