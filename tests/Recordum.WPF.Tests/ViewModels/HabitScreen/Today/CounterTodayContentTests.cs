@@ -48,6 +48,25 @@ public class CounterTodayContentTests
     }
 
     [Fact]
+    public async Task Duration_metric_total_is_converted_to_the_metrics_unit_not_raw_seconds()
+    {
+        var (sut, completions, metrics, refData, _, node) = NewSut();
+        var today = DateOnly.FromDateTime(Now.UtcDateTime);
+        var minutes = refData.Units.Single(u => u.Code == "minutes");
+        // A duration (Seconds) metric measured in "minutes": the stored sum is 90 SECONDS, which must
+        // display as 1.5 minutes — not "90 minutes" (raw seconds + label, the pre-fix bug).
+        var metric = new MetricDefinition
+        { Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0, Type = MetricType.Seconds, UnitOfMeasureId = minutes.Id, Name = "Tempo" };
+        metrics.Store[metric.Id] = metric;
+        completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 90m) };
+
+        await sut.LoadAsync(node);
+
+        sut.TodayTotal.Should().Be(1.5m);
+        sut.UnitCode.Should().Be("minutes");
+    }
+
+    [Fact]
     public async Task Bare_counter_without_metrics_falls_back_to_the_day_magnitude()
     {
         var (sut, completions, _, _, _, node) = NewSut();

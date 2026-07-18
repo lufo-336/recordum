@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -55,8 +56,13 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         {
             // Sum of the primary metric's values today — same semantics as the Home row's TodayCounterTotal.
             var sums = await _completions.GetDailySumAsync(node.Id, primary.Id, today, today, ct).ConfigureAwait(true);
-            TodayTotal = sums.FirstOrDefault(s => s.Date == today)?.Sum ?? 0m;
+            var rawSum = sums.FirstOrDefault(s => s.Date == today)?.Sum ?? 0m;
             UnitCode = await ResolveUnitCodeAsync(primary, ct).ConfigureAwait(true);
+            // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
+            // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
+            TodayTotal = primary.Type == MetricType.Seconds
+                ? Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)rawSum, UnitCode) ?? rawSum
+                : rawSum;
         }
         else
         {

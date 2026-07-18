@@ -71,6 +71,7 @@ public sealed class HabitTreeQueryService(
                 m.Id,
                 m.HabitNodeId,
                 m.SortOrder,
+                m.Type,
                 m.LabelsJson,
                 m.ScaleTemplateId,
                 UnitCode = m.UnitOfMeasure != null ? m.UnitOfMeasure.Code : null,
@@ -227,9 +228,17 @@ public sealed class HabitTreeQueryService(
                     case HabitType.Counter:
                         todayCounterTotal = counterTotalsByHabit.TryGetValue(r.Id, out var total) ? total : 0m;
                         if (counterDailySumsByHabit.TryGetValue(r.Id, out var sums)) values14 = sums;
-                        todayCounterUnitCode = primaryMetricByHabit.TryGetValue(r.Id, out var counterMetric)
-                            ? counterMetric.UnitCode
-                            : null;
+                        if (primaryMetricByHabit.TryGetValue(r.Id, out var counterMetric))
+                        {
+                            todayCounterUnitCode = counterMetric.UnitCode;
+                            // A duration (Seconds) metric stores value_seconds; the total must be shown
+                            // in the metric's own unit (90s on a "minutes" metric = 1.5), not the raw
+                            // second count with a "minutes" label (which read "90 minutes" for 90s).
+                            if (counterMetric.Type == MetricType.Seconds && todayCounterTotal is { } secs)
+                                todayCounterTotal =
+                                    Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)secs, counterMetric.UnitCode)
+                                    ?? todayCounterTotal;
+                        }
                         break;
                     case HabitType.State:
                         if (stateDailyLastByHabit.TryGetValue(r.Id, out var lastVals)) values14 = lastVals;

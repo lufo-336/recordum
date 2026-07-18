@@ -1026,7 +1026,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // semantics as CounterTodayContent/the Home row's TodayCounterTotal. Presence (below) still
             // comes from dayMag, so a metric-less day with a 0 sum doesn't fake a completion.
             var sums = await _completions.GetDailySumAsync(node.Id, primaryMetric.Id, date, date, ct).ConfigureAwait(true);
-            mag = sums.FirstOrDefault(s => s.Date == date)?.Sum ?? 0m;
+            var rawSum = sums.FirstOrDefault(s => s.Date == date)?.Sum ?? 0m;
+            // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
+            // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
+            mag = primaryMetric.Type == MetricType.Seconds
+                ? Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)rawSum, unit) ?? rawSum
+                : rawSum;
         }
         var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);

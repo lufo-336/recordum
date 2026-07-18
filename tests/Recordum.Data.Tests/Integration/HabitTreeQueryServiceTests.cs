@@ -232,6 +232,44 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_converts_duration_counter_total_to_the_metrics_unit()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "t", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            var unitId = await db.UnitsOfMeasure.Where(u => u.Code == "minutes").Select(u => u.Id).SingleAsync();
+            // A duration (Seconds) metric measured in "minutes": stored values are SECONDS.
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Tempo",
+                Type = MetricType.Seconds,
+                UnitOfMeasureId = unitId,
+                SortOrder = 0,
+            });
+            var c1 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            var c2 = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + 1 };
+            db.Completions.AddRange(c1, c2);
+            db.CompletionValues.AddRange(
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c1.Id, MetricDefinitionId = metricId, ValueSeconds = 60 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = c2.Id, MetricDefinitionId = metricId, ValueSeconds = 30 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        // 90 stored seconds shown in minutes = 1.5, NOT "90 minutes" (raw seconds + label).
+        row.TodayCounterTotal.Should().Be(1.5m);
+        row.TodayCounterUnitCode.Should().Be("minutes");
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_returns_ValuesLast14Days_daily_sums_for_counter()
     {
         // 2.1-bis: counter strip = value-height mini-bars → the row needs the daily SUM of the
