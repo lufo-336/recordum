@@ -365,11 +365,13 @@ public class CompletionServiceTests
             new[] { new CompletionValue { MetricDefinitionId = metricId, ValueDecimal = 1.5m } });
         await svc.RecordAsync(
             new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 20), CompletedAtMs = MsAt(day, 20) },
-            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueDecimal = 0.5m } });
+            new[] { new CompletionValue { MetricDefinitionId = metricId, ValueDecimal = 3.25m } });
 
         var rows = await svc.GetDailySumAsync(habitId, metricId, day, day);
 
-        rows.Should().ContainSingle().Which.Sum.Should().Be(2.0m);
+        // Values deliberately chosen so Sum (4.75) != record count (2): a regression to
+        // count-instead-of-sum would fail this assertion, not coincidentally pass it.
+        rows.Should().ContainSingle().Which.Sum.Should().Be(4.75m);
         await fx.DisposeAsync();
     }
 
