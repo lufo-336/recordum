@@ -130,6 +130,19 @@ public class SeriesCellViewModelTests
     }
 
     [Fact]
+    public void Extreme_duration_that_overflows_the_multiply_builds_no_value()
+    {
+        // Regression (F2): the value×factor multiply can overflow System.Decimal itself for extreme
+        // input, throwing before the int-range check — BuildValue must still yield "no value", not
+        // crash the live-validation path.
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric, unitCode: "hours");
+        cell.DurationValue = decimal.MaxValue;
+
+        cell.BuildValue(0).Should().BeNull();
+    }
+
+    [Fact]
     public void Negative_duration_builds_no_value()
     {
         var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
