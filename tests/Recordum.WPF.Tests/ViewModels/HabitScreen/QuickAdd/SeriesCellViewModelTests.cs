@@ -130,6 +130,34 @@ public class SeriesCellViewModelTests
     }
 
     [Fact]
+    public void Duration_cell_hides_the_trailing_unit_label_to_avoid_a_double_unit()
+    {
+        // A duration cell shows its unit in the h/min/sec selector; the trailing UnitLabel would
+        // repeat it ("9 sec … minutes"), so ShowUnitLabel is false for durations.
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "d", Type = MetricType.Seconds };
+        var cell = new SeriesCellViewModel(metric, unitCode: "minutes");
+        cell.IsDuration.Should().BeTrue();
+        cell.ShowUnitLabel.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Non_duration_measured_cell_shows_its_unit_label()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "vol", Type = MetricType.Decimal };
+        var cell = new SeriesCellViewModel(metric, unitCode: "l");
+        cell.IsDuration.Should().BeFalse();
+        cell.ShowUnitLabel.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Measured_cell_without_a_unit_shows_no_label()
+    {
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), Name = "reps", Type = MetricType.Integer };
+        var cell = new SeriesCellViewModel(metric);
+        cell.ShowUnitLabel.Should().BeFalse();
+    }
+
+    [Fact]
     public void Extreme_duration_that_overflows_the_multiply_builds_no_value()
     {
         // Regression (F2): the value×factor multiply can overflow System.Decimal itself for extreme

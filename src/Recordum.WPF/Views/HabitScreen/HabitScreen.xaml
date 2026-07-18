@@ -442,7 +442,7 @@
                            Visibility="{Binding IsChronoRunning, Converter={StaticResource BoolToVisible}}"/>
                 <TextBlock Text="{Binding UnitLabel}" Margin="6,0,0,0" VerticalAlignment="Center"
                            Foreground="{DynamicResource Brush.TextMuted}"
-                           Visibility="{Binding UnitLabel, Converter={StaticResource NullToVisibility}}"/>
+                           Visibility="{Binding ShowUnitLabel, Converter={StaticResource BoolToVisible}}"/>
             </StackPanel>
         </DataTemplate>
 

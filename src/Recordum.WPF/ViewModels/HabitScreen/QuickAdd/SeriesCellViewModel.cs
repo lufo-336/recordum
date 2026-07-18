@@ -62,6 +62,11 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     /// <summary>True per la cella durata (Measured + Seconds): usa DurationValue/DurationUnit invece di IntegerValue.</summary>
     public bool IsDuration => Kind == MetricInputKind.Measured && Metric.Type == MetricType.Seconds;
 
+    /// <summary>The trailing unit label shows only for non-duration cells: a duration cell already
+    /// carries its unit in the time-unit selector (h/min/sec), so repeating the metric's unit code
+    /// beside it would show the unit twice ("9 sec … minutes"). U8 double-unit fix.</summary>
+    public bool ShowUnitLabel => UnitLabel is not null && !IsDuration;
+
     [ObservableProperty] private decimal? _durationValue;
     [ObservableProperty] private TimeUnit _durationUnit = TimeUnit.Minutes;
 
