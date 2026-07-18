@@ -403,23 +403,43 @@
                 <Button Width="28" Height="28" Padding="0" Margin="6,0,0,0" VerticalAlignment="Center"
                         Background="Transparent" BorderThickness="0" Cursor="Hand"
                         Command="{Binding Content.ToggleChronoCommand, RelativeSource={RelativeSource AncestorType=ContentControl}}"
-                        CommandParameter="{Binding}"
-                        ToolTip="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStart}">
+                        CommandParameter="{Binding}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                             <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="ToolTip" Value="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStart}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsDuration}" Value="True">
                                     <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsChronoRunning}" Value="True">
+                                    <Setter Property="ToolTip" Value="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStop}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Button.Style>
                     <Path Width="16" Height="16" Stretch="Uniform"
-                          Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                          Data="{StaticResource Icon.Clock}"/>
+                          StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
+                                <Setter Property="Data" Value="{StaticResource Icon.Clock}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsChronoRunning}" Value="True">
+                                        <Setter Property="Stroke" Value="{DynamicResource Brush.Accent}"/>
+                                        <Setter Property="Data" Value="{StaticResource Icon.Square}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
                 </Button>
+                <!-- Live elapsed while this cell's stopwatch runs (U8). Value comes from the shared ChronoClock on
+                     the quick-add host; visibility is scoped to the running cell so other duration cells stay quiet. -->
+                <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="Consolas"
+                           Foreground="{DynamicResource Brush.Accent}"
+                           Text="{Binding Content.ChronoClock.Display, RelativeSource={RelativeSource AncestorType=ContentControl}}"
+                           Visibility="{Binding IsChronoRunning, Converter={StaticResource BoolToVisible}}"/>
                 <TextBlock Text="{Binding UnitLabel}" Margin="6,0,0,0" VerticalAlignment="Center"
                            Foreground="{DynamicResource Brush.TextMuted}"
                            Visibility="{Binding UnitLabel, Converter={StaticResource NullToVisibility}}"/>
