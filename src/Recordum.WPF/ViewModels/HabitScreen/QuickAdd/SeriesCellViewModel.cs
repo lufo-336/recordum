@@ -65,6 +65,10 @@ public sealed partial class SeriesCellViewModel : ObservableObject
     [ObservableProperty] private decimal? _durationValue;
     [ObservableProperty] private TimeUnit _durationUnit = TimeUnit.Minutes;
 
+    /// <summary>True while THIS cell's stopwatch is running (U8 live chrono): scopes the running
+    /// clock readout and the stop icon to the timed cell only. Set by the parent quick-add VM.</summary>
+    [ObservableProperty] private bool _isChronoRunning;
+
     /// <summary>Static so the XAML binds it via x:Static (one list app-wide).</summary>
     public static IReadOnlyList<TimeUnitOption> TimeUnitOptions { get; } =
     [

@@ -324,7 +324,7 @@ public class CounterSeriesQuickAddViewModelTests
     }
 
     [Fact]
-    public async Task Chrono_toggle_fills_the_duration_cell()
+    public async Task Chrono_toggle_marks_the_cell_running_then_pours_and_clears()
     {
         var (vm, timers) = CreateCounterSeriesVmWithTimers();
         await vm.LoadMetricsAsync();
@@ -332,12 +332,30 @@ public class CounterSeriesQuickAddViewModelTests
 
         await vm.ToggleChronoCommand.ExecuteAsync(cell);  // start
         Assert.True(vm.ChronoRunning);
+        Assert.True(cell.IsChronoRunning);                 // the timed cell is flagged
+        Assert.Single(timers.StartCalls);
 
-        await vm.ToggleChronoCommand.ExecuteAsync(cell);  // stop → 95s
+        await vm.ToggleChronoCommand.ExecuteAsync(cell);  // stop → 95s (fake factory)
+        Assert.False(vm.ChronoRunning);
+        Assert.False(cell.IsChronoRunning);                // flag cleared on stop
         Assert.Equal(TimeUnit.Seconds, cell.DurationUnit);
         Assert.Equal(95m, cell.DurationValue);
-        Assert.False(vm.ChronoRunning);
         Assert.Single(timers.StopWithoutRecordingCalls);
+    }
+
+    [Fact]
+    public async Task Disposing_the_quick_add_clears_a_running_chrono()
+    {
+        var (vm, _) = CreateCounterSeriesVmWithTimers();
+        await vm.LoadMetricsAsync();
+        var cell = vm.Series[0].Cells.First(c => c.IsDuration);
+        await vm.ToggleChronoCommand.ExecuteAsync(cell);  // start
+        Assert.True(vm.ChronoRunning);
+
+        vm.Dispose();
+
+        // ChronoClock display is reset and no exception is thrown (the DispatcherTimer, if any, is detached).
+        Assert.Equal(string.Empty, vm.ChronoClock.Display);
     }
 }
 

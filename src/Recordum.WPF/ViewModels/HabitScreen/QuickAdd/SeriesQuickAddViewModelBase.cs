@@ -3,24 +3,30 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.WPF.ViewModels.HabitScreen;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
 /// <summary>Base for the QuickAdd VMs that record multi-field series rows and share the per-cell
 /// stopwatch (Measured / CounterSeries). Holds the chrono state and <c>ToggleChrono</c> so the two
 /// don't duplicate it (CR21).</summary>
-public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBase
+public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBase, IDisposable
 {
     private readonly IActiveTimerService _timers;
     private SeriesCellViewModel? _chronoCell;
 
     [ObservableProperty] private bool _chronoRunning;
 
+    /// <summary>Live-ticking elapsed readout shown next to the running duration cell (U8). One timer
+    /// per habit, so one shared clock. MUST be disposed with the VM (the DispatcherTimer leaks otherwise).</summary>
+    public LiveElapsedClock ChronoClock { get; }
+
     protected SeriesQuickAddViewModelBase(ICompletionService completions, IClock clock, IActiveTimerService timers)
         : base(completions, clock)
     {
         ArgumentNullException.ThrowIfNull(timers);
         _timers = timers;
+        ChronoClock = new LiveElapsedClock(Clock);
     }
 
     /// <summary>Per-cell stopwatch: start runs an active_timer (Stopwatch); stop pours the elapsed
@@ -34,16 +40,32 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
         if (!ChronoRunning)
         {
             if (await _timers.GetActiveAsync(Node.Id, ct).ConfigureAwait(true) is not null) return;
-            await _timers.StartAsync(Node.Id, TimerMode.Stopwatch, ct).ConfigureAwait(true);
+            var timer = await _timers.StartAsync(Node.Id, TimerMode.Stopwatch, ct).ConfigureAwait(true);
             _chronoCell = cell;
+            cell.IsChronoRunning = true;
+            ChronoClock.Start(timer.StartedAtMs);
             ChronoRunning = true;
         }
         else
         {
             var secs = await _timers.StopWithoutRecordingAsync(Node.Id, ct).ConfigureAwait(true);
-            (_chronoCell ?? cell).SetDurationSeconds(secs);
+            var target = _chronoCell ?? cell;
+            target.SetDurationSeconds(secs);
+            target.IsChronoRunning = false;
+            ChronoClock.Stop();
             _chronoCell = null;
             ChronoRunning = false;
         }
+    }
+
+    /// <summary>Stops any running chrono and detaches the clock's DispatcherTimer so the VM can be
+    /// collected when the screen swaps or tears down the quick-add.</summary>
+    public void Dispose()
+    {
+        if (_chronoCell is not null) _chronoCell.IsChronoRunning = false;
+        _chronoCell = null;
+        ChronoRunning = false;
+        ChronoClock.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
