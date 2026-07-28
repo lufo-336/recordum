@@ -716,12 +716,17 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 _ => Guid.Empty,
             };
             if (habitId != Node.Id) return;
-            await Task.WhenAll(
+            var reloads = new List<Task>
+            {
                 CompletionList.LoadAsync(Node.Id),
                 Records.ReloadAsync(),
                 TodayStrip.LoadAsync(Node),
-                Calendar.JumpAsync())
-                .ConfigureAwait(true);
+                Calendar.JumpAsync(),
+            };
+            // The tap quick-add counts the day in a local field it bumps per tap, so a completion
+            // deleted from the records list would leave it reading high (W23-VF1). Re-read from the DB.
+            if (QuickAdd is CounterTapQuickAddViewModel tap) reloads.Add(tap.LoadDayAsync());
+            await Task.WhenAll(reloads).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCompletionEvent failed: {ex}"); }
     }
@@ -1007,6 +1012,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             if (QuickAdd is not null)
                 QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
+            // The tap quick-add's count belongs to the day it was loaded for: without this it kept
+            // showing the previous day's total, and the next tap incremented from there (W23-VF1).
+            if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
             Notes.SetCalendarDay(date);
             await DayNote.LoadDayAsync(date).ConfigureAwait(true);
             await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);

@@ -241,6 +241,13 @@ public sealed class HabitTreeQueryService(
                                     Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)secs, counterMetric.UnitCode)
                                     ?? todayCounterTotal; // no time unit to convert into: stays raw seconds
                         }
+                        else
+                        {
+                            // Bare counter (no metrics): there is nothing to sum, so the total is the
+                            // occurrence count — each tap = 1. Same rule as CounterTodayContent and the
+                            // day-summary strip; without it the row alone read 0 for a day of taps.
+                            todayCounterTotal = completions14[13];
+                        }
                         break;
                     case HabitType.State:
                         if (stateDailyLastByHabit.TryGetValue(r.Id, out var lastVals)) values14 = lastVals;

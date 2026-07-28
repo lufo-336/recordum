@@ -270,6 +270,69 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_counts_occurrences_for_a_counter_with_no_metrics()
+    {
+        // A bare counter (tap counter) has no metric to sum, so the sum-based total collapsed to 0
+        // while the habit screen, the calendar badge and the day note all showed the occurrence
+        // count — the Home row was the only place reading "0" for a day with 3 taps (W23-VF1).
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "tap", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            for (var i = 0; i < 3; i++)
+            {
+                db.Completions.Add(new Completion
+                {
+                    Id = Guid.NewGuid(), HabitNodeId = habitId,
+                    CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + i,
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayCounterTotal.Should().Be(3m);
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_keeps_a_zero_sum_for_a_counter_that_does_have_a_metric()
+    {
+        // The occurrence fallback must NOT leak into metric-bearing counters: a day with two
+        // registrations that both recorded 0 is a real 0, not "2".
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "m", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            db.MetricDefinitions.Add(new MetricDefinition
+            { Id = metricId, HabitNodeId = habitId, Name = "Pagine", Type = MetricType.Integer, SortOrder = 0 });
+            for (var i = 0; i < 2; i++)
+            {
+                var c = new Completion
+                {
+                    Id = Guid.NewGuid(), HabitNodeId = habitId,
+                    CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + i,
+                };
+                db.Completions.Add(c);
+                db.CompletionValues.Add(new CompletionValue
+                { Id = Guid.NewGuid(), CompletionId = c.Id, MetricDefinitionId = metricId, ValueInteger = 0 });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayCounterTotal.Should().Be(0m);
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_flags_a_duration_counter_whose_total_stayed_in_raw_seconds()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));

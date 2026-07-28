@@ -372,6 +372,62 @@ public class HabitScreenViewModelTests
         sut.CompletionList.Rows.Should().NotBeEmpty();
     }
 
+    /// <summary>The bare-counter quick-add keeps its day count in a local field it bumps on each tap,
+    /// so a completion deleted anywhere else (the Cronologia "×") leaves it reading high — the very
+    /// drift the visual pass caught as "9 oggi" over 5 stored records (W23-VF1).</summary>
+    [Fact]
+    public async Task EventBus_CompletionDeleted_resyncs_the_tap_quick_add_day_count()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out var clock, out var bus);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "tap" };
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var ids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+        foreach (var (cid, i) in ids.Select((c, i) => (c, i)))
+            completions.Store[cid] = new Completion { Id = cid, HabitNodeId = id, CompletedAtMs = todayMs + i };
+
+        await sut.LoadAsync(id);
+        var tap = sut.QuickAdd.Should().BeOfType<CounterTapQuickAddViewModel>().Subject;
+        tap.DayCount.Should().Be(3);
+
+        completions.Store.Remove(ids[0]); // deleted from the records list, not from the quick-add
+        bus.Publish(new Recordum.Plugins.Contracts.Events.CompletionDeletedPayload(ids[0], id, DateTime.UtcNow));
+        await Task.Delay(20);
+
+        tap.DayCount.Should().Be(2);
+    }
+
+    /// <summary>Switching day moves the quick-add's CompletionDate but used to leave the count showing
+    /// the previous day's total, which the next tap would then increment from (W23-VF1).</summary>
+    [Fact]
+    public async Task Selecting_another_day_resyncs_the_tap_quick_add_day_count()
+    {
+        var sut = CreateSut(out var nodes, out var completions, out _, out _, out _, out _);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "tap" };
+        // Three on 2020-01-02, none on the day we will select.
+        var dayMs = new DateTimeOffset(new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+        for (var i = 0; i < 3; i++)
+        {
+            var cid = Guid.NewGuid();
+            completions.Store[cid] = new Completion { Id = cid, HabitNodeId = id, CompletedAtMs = dayMs + i };
+        }
+
+        await sut.LoadAsync(id);
+        await sut.Calendar.LoadAsync(2020, 1, selected: null);
+        var tap = sut.QuickAdd.Should().BeOfType<CounterTapQuickAddViewModel>().Subject;
+
+        var busy = sut.Calendar.Cells.First(c => c.InCurrentMonth && c.Date == new DateOnly(2020, 1, 2));
+        sut.Calendar.SelectDateCommand.Execute(busy);
+        await Task.Delay(20);
+        tap.DayCount.Should().Be(3);
+
+        var empty = sut.Calendar.Cells.First(c => c.InCurrentMonth && c.Date == new DateOnly(2020, 1, 5));
+        sut.Calendar.SelectDateCommand.Execute(empty);
+        await Task.Delay(20);
+        tap.DayCount.Should().Be(0);
+    }
+
     [Fact]
     public async Task EventBus_CompletionEvent_for_other_habit_is_ignored()
     {
