@@ -270,6 +270,66 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_flags_a_duration_counter_whose_total_stayed_in_raw_seconds()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "t", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            // A duration (Seconds) metric with NO unit — the default for a "+ Tempo" field from the
+            // builder. There is nothing to convert into, so the total stays raw seconds; the row must
+            // say so, otherwise the Home row prints "720" where the records list reads "12:00".
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Tempo",
+                Type = MetricType.Seconds,
+                SortOrder = 0,
+            });
+            var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            db.Completions.Add(c);
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = c.Id, MetricDefinitionId = metricId, ValueSeconds = 720 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayCounterTotal.Should().Be(720m);
+        row.TodayCounterUnitCode.Should().BeNull();
+        row.TodayCounterIsDuration.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_does_not_flag_a_plain_counter_as_a_duration()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "t", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            db.MetricDefinitions.Add(new MetricDefinition
+            { Id = metricId, HabitNodeId = habitId, Name = "Pagine", Type = MetricType.Integer, SortOrder = 0 });
+            var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
+            db.Completions.Add(c);
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = c.Id, MetricDefinitionId = metricId, ValueInteger = 720 });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+        row.TodayCounterTotal.Should().Be(720m); // 720 pages must never read as "12:00"
+        row.TodayCounterIsDuration.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_returns_ValuesLast14Days_daily_sums_for_counter()
     {
         // 2.1-bis: counter strip = value-height mini-bars → the row needs the daily SUM of the

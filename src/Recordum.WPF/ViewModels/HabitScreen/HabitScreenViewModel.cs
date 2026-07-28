@@ -624,8 +624,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
         CompletionList.IsJournal = node.HabitType == HabitType.Journal;
 
-        // Config is needed for both QuickAdd and TimerControl; fetch once, share.
-        var configTask = _configs.GetAsync(node.Id, ct).AsTask();
+        // Config is needed for QuickAdd, TimerControl and the records lists; fetch once, share. Awaited
+        // before the parallel block because the lists must know the series names BEFORE they populate.
+        var config = await _configs.GetAsync(node.Id, ct).ConfigureAwait(true);
+        if (generation != _loadGeneration) return;
+        CompletionList.SeriesLabelsJson = config?.SeriesLabelsJson;
+
         var listTask = CompletionList.LoadAsync(node.Id, ct);
         var quickAddTask = BuildQuickAddAsync(node, ct);
         var notesTask = Notes.LoadAsync(node.Id, ct);
@@ -633,11 +637,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var todayTask = TodayStrip.LoadAsync(node, ct);
         // Configura already open (restored or carried over from the previous subject): load its editor too.
         var editorTask = IsConfiguraOpen ? Editor.LoadAsync(node.Id, ct) : Task.CompletedTask;
-        await Task.WhenAll(configTask, listTask, quickAddTask, notesTask, detailTask, todayTask, editorTask).ConfigureAwait(true);
+        await Task.WhenAll(listTask, quickAddTask, notesTask, detailTask, todayTask, editorTask).ConfigureAwait(true);
         if (generation != _loadGeneration) return; // a deselect/newer selection won the race
 
         Calendar.CompletedColorHex = node.Color;
-        Calendar.NoteColorHex = configTask.Result?.NoteMarkerColor ?? "#e0b341";
+        Calendar.NoteColorHex = config?.NoteMarkerColor ?? "#e0b341";
         var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone);
         await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
@@ -647,7 +651,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             QuickAdd.CompletionDate = preSelected.ToDateTime(TimeOnly.MinValue);
 
         DayNote.SetContext(node.Id, node.HabitType == HabitType.Journal);
-        Records.SetContext(node.Id, node.HabitType == HabitType.Journal, isResistance: node.HabitType == HabitType.Resistance);
+        Records.SetContext(node.Id, node.HabitType == HabitType.Journal,
+            isResistance: node.HabitType == HabitType.Resistance, seriesLabelsJson: config?.SeriesLabelsJson);
         if (Calendar.SelectedDate is { } sel)
         {
             Notes.SetCalendarDay(sel);
@@ -656,7 +661,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             await Records.ShowDayAsync(sel, ct).ConfigureAwait(true);
         }
 
-        await TimerControl.SetContextAsync(node, configTask.Result, ct).ConfigureAwait(true);
+        await TimerControl.SetContextAsync(node, config, ct).ConfigureAwait(true);
     }
 
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)
@@ -1017,6 +1022,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var mags = await _completions.GetDailyMagnitudeAsync(node.Id, date.Year, date.Month, ct).ConfigureAwait(true);
         var dayMag = mags.FirstOrDefault(m => m.Date == date);
         var mag = dayMag?.Magnitude ?? 0m;
+        string? durationText = null;
         // Enrich the aggregate with the primary metric's unit (Counter) or scale label (State) so the
         // strip reads "4 km" / "Good" instead of a bare number (R-daySummaryUnits).
         var (unit, scaleLabels, primaryMetric) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
@@ -1029,11 +1035,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             var rawSum = sums.FirstOrDefault(s => s.Date == date)?.Sum ?? 0m;
             // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
             // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
-            mag = primaryMetric.Type == MetricType.Seconds
+            var isDuration = primaryMetric.Type == MetricType.Seconds;
+            mag = isDuration
                 ? Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)rawSum, unit) ?? rawSum
                 : rawSum;
+            // No time unit to convert into: mag is still raw seconds, so render it as h:mm:ss rather
+            // than letting the strip print "720" where the records list reads "12:00" (W23-VF2).
+            durationText = Formatting.CounterTotalDisplay.AsRawDuration(isDuration, unit, mag);
         }
-        var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels);
+        var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels, durationText);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
         // Presence (a completion exists) drives the strip, not the value: a State 0 still counts (CR5).
         DayNote.SetDaySummary(dayMag is not null, label, notes.Count);

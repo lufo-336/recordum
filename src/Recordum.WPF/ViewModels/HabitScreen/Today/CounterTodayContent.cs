@@ -22,6 +22,9 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
     private readonly GoalProgressCardViewModel _goalCard;
 
     [ObservableProperty] private decimal _todayTotal;
+    /// <summary>What the view shows: <see cref="TodayTotal"/> pre-formatted, so a unitless duration
+    /// can read "12:00" instead of the raw second count (W23-VF2).</summary>
+    [ObservableProperty] private string? _todayTotalDisplay;
     [ObservableProperty] private string? _unitCode;
     [ObservableProperty] private bool _hasGoal;
     [ObservableProperty] private double _goalFraction;
@@ -52,6 +55,7 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         var metrics = await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true);
         var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
 
+        var isDuration = false;
         if (primary is not null)
         {
             // Sum of the primary metric's values today — same semantics as the Home row's TodayCounterTotal.
@@ -60,7 +64,8 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
             UnitCode = await ResolveUnitCodeAsync(primary, ct).ConfigureAwait(true);
             // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
             // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
-            TodayTotal = primary.Type == MetricType.Seconds
+            isDuration = primary.Type == MetricType.Seconds;
+            TodayTotal = isDuration
                 ? Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)rawSum, UnitCode) ?? rawSum
                 : rawSum;
         }
@@ -71,6 +76,11 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
             TodayTotal = mags.FirstOrDefault(m => m.Date == today)?.Magnitude ?? 0m;
             UnitCode = null;
         }
+
+        // A duration with no time unit is still raw seconds: render it as h:mm:ss so this total agrees
+        // with the records list; every other case keeps the plain number the view always showed.
+        TodayTotalDisplay = Formatting.CounterTotalDisplay.AsRawDuration(isDuration, UnitCode, TodayTotal)
+            ?? TodayTotal.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture);
 
         await _goalCard.LoadAsync(node, ct).ConfigureAwait(true);
         HasGoal = !_goalCard.IsEmpty;

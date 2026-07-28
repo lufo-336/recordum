@@ -243,7 +243,12 @@ public sealed partial class HomeRowViewModel : ObservableObject
 
     private static string FormatCounterTotal(HomeTreeRow row)
     {
-        var value = (row.TodayCounterTotal ?? 0m).ToString("0.##", CultureInfo.CurrentCulture);
+        var total = row.TodayCounterTotal ?? 0m;
+        // A duration total that no time unit converted is still raw seconds: show it as h:mm:ss so the
+        // row agrees with the records list, and skip the unit label (the format carries the meaning).
+        if (Formatting.CounterTotalDisplay.AsRawDuration(row.TodayCounterIsDuration, row.TodayCounterUnitCode, total) is { } duration)
+            return duration;
+        var value = total.ToString("0.##", CultureInfo.CurrentCulture);
         var unit = row.TodayCounterUnitCode;
 #pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string
         return string.IsNullOrEmpty(unit)

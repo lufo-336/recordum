@@ -164,6 +164,27 @@ public class HomeRowViewModelTests
     }
 
     [Fact]
+    public void Counter_key_figure_reads_a_unitless_duration_total_as_a_duration()
+    {
+        // A duration (Seconds) metric with no unit stores raw seconds and has nothing to convert into:
+        // the row must read "12:00" like the records list, not the bare "720" (W23-VF2).
+        var row = CounterRow(Guid.NewGuid(), 720m, null) with { TodayCounterIsDuration = true };
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureText.Should().Be("12:00");
+    }
+
+    [Fact]
+    public void Counter_key_figure_keeps_the_converted_value_when_the_duration_has_a_time_unit()
+    {
+        // Already converted upstream (90s → 1.5 minutes): the unit label path must stay untouched.
+        var row = CounterRow(Guid.NewGuid(), 1.5m, "minutes") with { TodayCounterIsDuration = true };
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureText.Should().Be("1,5 minutes".Replace(',', System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0]));
+    }
+
+    [Fact]
     public void State_key_figure_shows_scale_label()
     {
         var sut = new HomeRowViewModel(StateRow(Guid.NewGuid(), 3, "Bene"), 0,

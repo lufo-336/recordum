@@ -47,10 +47,11 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
         periods.Changed += (_, _) => OnPropertyChanged(nameof(IsEmpty));
     }
 
-    public void SetContext(Guid nodeId, bool isJournal, bool isResistance = false)
+    public void SetContext(Guid nodeId, bool isJournal, bool isResistance = false, string? seriesLabelsJson = null)
     {
         _nodeId = nodeId;
         Records.IsJournal = isJournal;
+        Records.SeriesLabelsJson = seriesLabelsJson;
         _isResistance = isResistance;
         OnPropertyChanged(nameof(CurrentList));
         OnPropertyChanged(nameof(IsEmpty));

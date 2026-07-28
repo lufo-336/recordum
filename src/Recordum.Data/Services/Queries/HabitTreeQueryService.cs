@@ -216,6 +216,7 @@ public sealed class HabitTreeQueryService(
 
                 decimal? todayCounterTotal = null;
                 string? todayCounterUnitCode = null;
+                bool todayCounterIsDuration = false;
                 int? todayStateValue = null;
                 string? todayStateLabel = null;
                 var abstinenceStatus = AbstinenceStatus.NotStarted;
@@ -234,10 +235,11 @@ public sealed class HabitTreeQueryService(
                             // A duration (Seconds) metric stores value_seconds; the total must be shown
                             // in the metric's own unit (90s on a "minutes" metric = 1.5), not the raw
                             // second count with a "minutes" label (which read "90 minutes" for 90s).
-                            if (counterMetric.Type == MetricType.Seconds && todayCounterTotal is { } secs)
+                            todayCounterIsDuration = counterMetric.Type == MetricType.Seconds;
+                            if (todayCounterIsDuration && todayCounterTotal is { } secs)
                                 todayCounterTotal =
                                     Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)secs, counterMetric.UnitCode)
-                                    ?? todayCounterTotal;
+                                    ?? todayCounterTotal; // no time unit to convert into: stays raw seconds
                         }
                         break;
                     case HabitType.State:
@@ -302,7 +304,8 @@ public sealed class HabitTreeQueryService(
                     JournalEntriesThisWeek: journalEntriesThisWeek,
                     Icon: r.Icon,
                     SortOrder: r.SortOrder,
-                    ValuesLast14Days: values14);
+                    ValuesLast14Days: values14,
+                    TodayCounterIsDuration: todayCounterIsDuration);
             })
             .ToList();
     }

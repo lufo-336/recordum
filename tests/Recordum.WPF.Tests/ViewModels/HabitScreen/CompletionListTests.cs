@@ -166,6 +166,80 @@ public class CompletionListViewModelTests
     }
 
     [WpfFact]
+    public async Task LoadDayAsync_labels_series_with_their_configured_names()
+    {
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var hoursId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = hoursId, HabitNodeId = habit, Name = "Hours", Type = MetricType.Integer, SortOrder = 0 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue>
+            {
+                new() { MetricDefinitionId = hoursId, SeriesIndex = 0, ValueInteger = 7 },
+                new() { MetricDefinitionId = hoursId, SeriesIndex = 1, ValueInteger = 1 },
+            },
+        };
+
+        // Registered as "Night"/"Nap" in the quick-add — the records list must read them back the
+        // same way instead of the positional "Series 1 / Series 2" fallback (W23-VF3).
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService())
+        {
+            SeriesLabelsJson = "[\"Night\",\"Nap\"]",
+        };
+        await sut.LoadDayAsync(habit, day);
+
+        var displays = sut.Rows.Single().FieldDisplays;
+        displays[0].Should().StartWith("Night —").And.Contain("Hours: 7");
+        displays[1].Should().StartWith("Nap —").And.Contain("Hours: 1");
+    }
+
+    [WpfFact]
+    public async Task LoadDayAsync_falls_back_to_the_positional_label_for_unnamed_series()
+    {
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var hoursId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = hoursId, HabitNodeId = habit, Name = "Hours", Type = MetricType.Integer, SortOrder = 0 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue>
+            {
+                new() { MetricDefinitionId = hoursId, SeriesIndex = 0, ValueInteger = 7 },
+                new() { MetricDefinitionId = hoursId, SeriesIndex = 1, ValueInteger = 1 },
+            },
+        };
+
+        // Only the first series was ever renamed; the second keeps the numbered fallback.
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService())
+        {
+            SeriesLabelsJson = "[\"Night\",\"\"]",
+        };
+        await sut.LoadDayAsync(habit, day);
+
+        var displays = sut.Rows.Single().FieldDisplays;
+#pragma warning disable CA1863 // test-only formatting of a localized series label
+        var series2 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.WPF.Resources.Strings.HabitBuilder_SeriesRow, 2);
+#pragma warning restore CA1863
+        displays[0].Should().StartWith("Night —");
+        displays[1].Should().StartWith(series2);
+    }
+
+    [WpfFact]
     public async Task LoadDayAsync_shows_scale_label_not_raw_index()
     {
         var cs = new FakeCompletionService();

@@ -450,3 +450,7 @@ tools/plugin-api-ts/dist/
 
 # Claude Code per-user local settings
 .claude/settings.local.json
+
+# Visual verification sessions (screenshots + report) — local evidence, not repo history.
+# Findings that matter get promoted into docs/phase-4-issues.md, which IS tracked.
+docs/verification/

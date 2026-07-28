@@ -16,7 +16,9 @@
 
             <!-- today total (+ unit) -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
-                <TextBlock Text="{Binding TodayTotal, StringFormat='0.##'}"
+                <!-- Pre-formatted by the VM: a unitless duration reads "12:00", everything else keeps
+                     the plain 0.## number it always had. -->
+                <TextBlock Text="{Binding TodayTotalDisplay}"
                            FontSize="22" FontWeight="SemiBold"
                            Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Bottom"/>
                 <TextBlock Text="{Binding UnitCode}" Margin="5,0,0,3" VerticalAlignment="Bottom"

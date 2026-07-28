@@ -11,9 +11,14 @@ namespace Recordum.WPF.ViewModels.HabitScreen;
 /// </summary>
 public static class DaySummaryFormatter
 {
-    public static string? Label(HabitType type, decimal mag, string? unit, IReadOnlyList<string>? scaleLabels)
+    /// <param name="durationText">Pre-rendered h:mm:ss for a Counter whose duration total is still raw
+    /// seconds (no time unit to convert into). Wins over the number+unit form, but never resurrects a
+    /// day with nothing in it.</param>
+    public static string? Label(HabitType type, decimal mag, string? unit, IReadOnlyList<string>? scaleLabels,
+        string? durationText = null)
     {
         if (mag <= 0) return null;
+        if (durationText is not null) return durationText;
         return type switch
         {
             HabitType.State => ScaleLabel(mag, scaleLabels) ?? FormatMag(mag),

@@ -14,4 +14,9 @@ public static class SecondsDisplay
         "seconds" => seconds,
         _ => null,
     };
+
+    /// <summary>True when the code is a unit a duration can be expressed in. Callers use it to tell
+    /// "this total was converted" from "this total is still raw seconds" — the latter covers both a
+    /// non-time unit and the far more common case of a duration metric with no unit chosen at all.</summary>
+    public static bool IsTimeUnit(string? unitCode) => ConvertToUnit(1, unitCode) is not null;
 }

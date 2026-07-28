@@ -24,6 +24,11 @@ public sealed partial class CompletionListViewModel : ObservableObject
     /// via IDiaryService instead of the bare completion.</summary>
     public bool IsJournal { get; set; }
 
+    /// <summary>The habit's persisted series names (`habit_config.series_labels_json`, U8). Set by the
+    /// host before loading so a multi-series row reads back the names it was registered under
+    /// ("Night"/"Nap") instead of the positional fallback (W23-VF3). Null/blank entries fall back.</summary>
+    public string? SeriesLabelsJson { get; set; }
+
     public CompletionListViewModel(ICompletionService completions, IMetricDefinitionService metrics,
         IReferenceDataQueryService refData, IDiaryService diary)
     {
@@ -71,7 +76,7 @@ public sealed partial class CompletionListViewModel : ObservableObject
                 : null;
             Rows.Add(new CompletionRowViewModel(c, _completions, c.Values,
                 onDeleted: row => Rows.Remove(row),
-                fieldDisplays: BuildFieldDisplays(c.Values, lookup),
+                fieldDisplays: BuildFieldDisplays(c.Values, lookup, ParseLabels(SeriesLabelsJson)),
                 overrideNotes: overrideNotes,
                 deleteOverride: del,
                 canInlineEdit: !IsJournal));
@@ -95,7 +100,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
         return map;
     }
 
-    private static List<string> BuildFieldDisplays(IReadOnlyList<CompletionValue> values, Dictionary<Guid, MetricDisplay> lookup)
+    private static List<string> BuildFieldDisplays(IReadOnlyList<CompletionValue> values,
+        Dictionary<Guid, MetricDisplay> lookup, string[]? seriesLabels)
     {
         // Group by series so a multi-series resistance reads "Series 1 — Count: 12 · Time: 30"
         // per row instead of a flat, ambiguous list of every series' values jumbled together.
@@ -115,18 +121,24 @@ public sealed partial class CompletionListViewModel : ObservableObject
             }
             if (fields.Count == 0) continue;
             if (multiSeries)
-            {
-#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
-                var label = string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_SeriesRow, g.Key + 1);
-#pragma warning restore CA1863
-                result.Add($"{label} — {string.Join(" · ", fields)}");
-            }
+                result.Add($"{SeriesLabel(g.Key, seriesLabels)} — {string.Join(" · ", fields)}");
             else
             {
                 result.AddRange(fields);
             }
         }
         return result;
+    }
+
+    /// <summary>The series' configured name, or the positional "Series N" when it was never renamed.
+    /// Mirrors CounterSeriesQuickAddViewModel.LabelFor so a row reads back what the chips wrote.</summary>
+    private static string SeriesLabel(int index, string[]? labels)
+    {
+        if (labels is not null && index < labels.Length && !string.IsNullOrWhiteSpace(labels[index]))
+            return labels[index];
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+        return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_SeriesRow, index + 1);
+#pragma warning restore CA1863
     }
 
     private static string? FormatValue(CompletionValue v, MetricDisplay m)

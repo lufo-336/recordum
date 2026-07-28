@@ -16,6 +16,15 @@ public class DaySummaryFormatterTests
         => DaySummaryFormatter.Label(HabitType.Counter, 4m, null, null).Should().Be("4");
 
     [Fact]
+    public void A_duration_text_replaces_the_bare_number_for_a_unitless_duration_counter()
+        // 720 raw seconds with nothing to convert into: the strip must read "12:00", not "720" (W23-VF2).
+        => DaySummaryFormatter.Label(HabitType.Counter, 720m, null, null, "12:00").Should().Be("12:00");
+
+    [Fact]
+    public void A_duration_text_does_not_resurrect_an_empty_day()
+        => DaySummaryFormatter.Label(HabitType.Counter, 0m, null, null, "0:00").Should().BeNull();
+
+    [Fact]
     public void State_maps_the_one_based_value_to_the_scale_label()
         => DaySummaryFormatter.Label(HabitType.State, 3m, null, new[] { "Bad", "Ok", "Good" }).Should().Be("Good");
 

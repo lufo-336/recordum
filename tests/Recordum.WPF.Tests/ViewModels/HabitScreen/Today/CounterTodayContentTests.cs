@@ -67,6 +67,41 @@ public class CounterTodayContentTests
     }
 
     [Fact]
+    public async Task Duration_metric_without_a_unit_is_displayed_as_a_duration_not_as_raw_seconds()
+    {
+        var (sut, completions, metrics, _, _, node) = NewSut();
+        var today = DateOnly.FromDateTime(Now.UtcDateTime);
+        // No UnitOfMeasureId: nothing to convert into, so the stored sum stays 720 raw seconds. The
+        // records list already reads that as "12:00" — the total must agree (W23-VF2).
+        var metric = new MetricDefinition
+        { Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0, Type = MetricType.Seconds, Name = "Tempo" };
+        metrics.Store[metric.Id] = metric;
+        completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 720m) };
+
+        await sut.LoadAsync(node);
+
+        sut.TodayTotalDisplay.Should().Be("12:00");
+    }
+
+    [Fact]
+    public async Task A_converted_duration_total_keeps_the_plain_number_display()
+    {
+        var (sut, completions, metrics, refData, _, node) = NewSut();
+        var today = DateOnly.FromDateTime(Now.UtcDateTime);
+        var minutes = refData.Units.Single(u => u.Code == "minutes");
+        var metric = new MetricDefinition
+        { Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0, Type = MetricType.Seconds, UnitOfMeasureId = minutes.Id, Name = "Tempo" };
+        metrics.Store[metric.Id] = metric;
+        completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 90m) };
+
+        await sut.LoadAsync(node);
+
+        // 1.5 minutes: the unit label carries the meaning, so no h:mm override.
+        sut.TodayTotalDisplay.Should().Be(1.5m.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture));
+        sut.UnitCode.Should().Be("minutes");
+    }
+
+    [Fact]
     public async Task Bare_counter_without_metrics_falls_back_to_the_day_magnitude()
     {
         var (sut, completions, _, _, _, node) = NewSut();
