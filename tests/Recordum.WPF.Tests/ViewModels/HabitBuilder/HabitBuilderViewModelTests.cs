@@ -396,4 +396,35 @@ public class HabitBuilderViewModelTests
         using var doc = JsonDocument.Parse(saved.PayloadJson);
         doc.RootElement.TryGetProperty("repeatable", out _).Should().BeFalse();
     }
+
+    [WpfFact]
+    public void A_time_field_without_a_unit_blocks_launch()
+    {
+        // A duration with no unit has nothing to render its totals in: the day total, the goal and
+        // the export all fall back to raw seconds. The unit is required at creation, mirroring the
+        // rule a Scale field already enforces.
+        var sut = NewSut();
+        sut.Name = "Meditazione";
+        sut.AddFieldCommand.Execute(FieldNature.Time);
+
+        sut.CanLaunch.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task Picking_a_time_unit_re_enables_the_launch_command()
+    {
+        var sut = NewSut();
+        await sut.InitializeAsync();
+        sut.Name = "Meditazione";
+        sut.AddFieldCommand.Execute(FieldNature.Time);
+        sut.CanLaunch.Should().BeFalse();
+        var fired = false;
+        sut.LaunchCommand.CanExecuteChanged += (_, _) => fired = true;
+
+        sut.Fields[0].UnitOfMeasureId = sut.AvailableTimeUnits.Single(u => u.Code == "minutes").Id;
+
+        fired.Should().BeTrue();
+        sut.CanLaunch.Should().BeTrue();
+        sut.LaunchCommand.CanExecute(null).Should().BeTrue();
+    }
 }

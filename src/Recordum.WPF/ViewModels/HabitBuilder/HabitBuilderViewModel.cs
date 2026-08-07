@@ -54,12 +54,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <summary>User-pinned favourite colours (bound to ColorSwatchPicker.FavoriteColors).</summary>
     public ObservableCollection<string> FavoriteColors { get; } = new();
 
-    /// <summary>Units offered for a Time field (hours / minutes / seconds). A Time field's unit is
-    /// optional — unlike Quantity it does not gate <see cref="CanLaunch"/> — but picking one makes
-    /// future charts and the day-records panel show "30 min" rather than a bare "30".</summary>
+    /// <summary>Units offered for a Time field (hours / minutes / seconds). Picking one is required:
+    /// a duration with no unit has nothing to express its totals, its goal or its export rows in.
+    /// The list comes from Core so it cannot drift from what the formatters treat as a time unit.</summary>
     public ObservableCollection<UnitOfMeasure> AvailableTimeUnits { get; } = new();
-
-    private static readonly string[] TimeUnitCodes = { "hours", "minutes", "seconds" };
 
     /// <summary>Loads reference data for the field pickers. Called by the launcher before the dialog opens.</summary>
     public async Task InitializeAsync(CancellationToken ct = default)
@@ -69,7 +67,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         AvailableScales.Clear();
         foreach (var s in await _refData.ListScalesAsync(ct).ConfigureAwait(true)) AvailableScales.Add(s);
         AvailableTimeUnits.Clear();
-        foreach (var u in AvailableUnits.Where(u => TimeUnitCodes.Contains(u.Code))) AvailableTimeUnits.Add(u);
+        foreach (var u in AvailableUnits.Where(u => Recordum.Core.Formatting.SecondsDisplay.IsTimeUnit(u.Code)))
+            AvailableTimeUnits.Add(u);
         RecentColors.Clear();
         foreach (var c in await _recentColors.GetAsync(ct).ConfigureAwait(true)) RecentColors.Add(c);
         await ReloadFavoritesAsync(ct).ConfigureAwait(true);
@@ -198,10 +197,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         LaunchCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>Lancia abilitato solo con nome valido e ogni campo Scale ben formato (unità quantità opzionale). Spec §3.1.</summary>
+    /// <summary>Launch enabled only with a valid name, a scale on every Scale field and a time unit on
+    /// every Time field. A Quantity field's unit stays optional — a bare number reads fine — but a
+    /// duration without a unit has no unit to render its totals in.</summary>
     public bool CanLaunch =>
         !string.IsNullOrWhiteSpace(Name)
-        && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null);
+        && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null)
+        && Fields.All(f => f.Nature != FieldNature.Time || f.UnitOfMeasureId is not null);
 
     /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
     public bool LaunchBlocked => !CanLaunch;
