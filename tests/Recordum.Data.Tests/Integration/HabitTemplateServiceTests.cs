@@ -250,6 +250,59 @@ public class HabitTemplateServiceTests
         return templateId;
     }
 
+    [Fact]
+    public async Task Shipped_Workout_log_template_materializes_its_duration_with_a_time_unit()
+    {
+        // R7: the builder refuses to create a duration metric without a time unit, but the shipped
+        // "Workout log" seed carried {"name":"Duration","type":"Seconds"} with no "unit" key — so
+        // instantiating an official template produced, on every fresh install, exactly the object the
+        // rule exists to prevent. This reads the SEEDED payload (EnsureCreated applies HasData), not a
+        // payload the test writes, so it fails the day someone edits the seed back.
+        await using var fx = new DbFixture();
+        var workoutLogId = Guid.Parse("00000003-0000-0000-0000-000000000002");
+        Guid minutesId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.HabitTemplates.SingleAsync(t => t.Id == workoutLogId)).Name.Should().Be("Workout log");
+            minutesId = (await db.UnitsOfMeasure.SingleAsync(u => u.Code == "minutes")).Id;
+        }
+
+        var svc = CreateSut(fx);
+        var newId = await svc.InstantiateAsync(workoutLogId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var duration = await db2.MetricDefinitions
+            .SingleAsync(m => m.HabitNodeId == newId && m.Type == MetricType.Seconds);
+        duration.Name.Should().Be("Duration");
+        duration.UnitOfMeasureId.Should().Be(minutesId);
+    }
+
+    [Fact]
+    public async Task No_shipped_template_ships_a_duration_metric_without_a_time_unit()
+    {
+        // The guard that generalises the one above: whatever official templates ship, none of them may
+        // declare a Seconds metric without a "unit" that is one of the three time units. Catches a new
+        // template added later with the same omission.
+        await using var fx = new DbFixture();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var payloads = await db.HabitTemplates.Where(t => t.IsOfficial)
+            .Select(t => new { t.Name, t.PayloadJson }).ToListAsync();
+        payloads.Should().NotBeEmpty();
+
+        foreach (var t in payloads)
+        {
+            var payload = System.Text.Json.JsonDocument.Parse(t.PayloadJson);
+            if (!payload.RootElement.TryGetProperty("metrics", out var metrics)) continue;
+            foreach (var m in metrics.EnumerateArray())
+            {
+                if (!m.TryGetProperty("type", out var type) || type.GetString() != "Seconds") continue;
+                var unit = m.TryGetProperty("unit", out var u) ? u.GetString() : null;
+                Recordum.Core.Formatting.SecondsDisplay.IsTimeUnit(unit).Should()
+                    .BeTrue($"the '{t.Name}' template declares a duration metric, which needs a time unit (found '{unit ?? "none"}')");
+            }
+        }
+    }
+
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),

@@ -298,8 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 7, 17, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.15"
+                            UpdatedAt = new DateTime(2026, 8, 8, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.16"
                         });
                 });
 
@@ -1335,7 +1335,7 @@ namespace Recordum.Data.Migrations
                             Description = "Session-mode habit for logging gym workouts with Work/Rest segments.",
                             IsOfficial = true,
                             Name = "Workout log",
-                            PayloadJson = "{\"node\":{\"name\":\"Workout log\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#e85d4a\"},\"config\":{\"schedule_type\":\"SpecificDays\",\"streak_mode\":\"Weekly\",\"streak_recovery\":\"None\",\"has_integrated_timer\":true,\"timer_mode\":\"Session\"},\"metrics\":[{\"name\":\"Duration\",\"type\":\"Seconds\"},{\"name\":\"Reps\",\"type\":\"Integer\"},{\"name\":\"Weight\",\"type\":\"Decimal\"}],\"segments\":[{\"name\":\"Work\",\"is_rest\":false,\"sort_order\":0},{\"name\":\"Rest\",\"is_rest\":true,\"sort_order\":1}]}",
+                            PayloadJson = "{\"node\":{\"name\":\"Workout log\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#e85d4a\"},\"config\":{\"schedule_type\":\"SpecificDays\",\"streak_mode\":\"Weekly\",\"streak_recovery\":\"None\",\"has_integrated_timer\":true,\"timer_mode\":\"Session\"},\"metrics\":[{\"name\":\"Duration\",\"type\":\"Seconds\",\"unit\":\"minutes\"},{\"name\":\"Reps\",\"type\":\"Integer\"},{\"name\":\"Weight\",\"type\":\"Decimal\"}],\"segments\":[{\"name\":\"Work\",\"is_rest\":false,\"sort_order\":0},{\"name\":\"Rest\",\"is_rest\":true,\"sort_order\":1}]}",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAtMs = 1778716800000L
                         },

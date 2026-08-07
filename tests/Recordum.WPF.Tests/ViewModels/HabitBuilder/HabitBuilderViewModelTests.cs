@@ -156,6 +156,31 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task SaveAsTemplate_is_blocked_while_a_time_field_has_no_unit()
+    {
+        // R7: a template is a saved composition, and InstantiateAsync materialises it with no gate of
+        // its own. Saving one the builder itself refuses to launch just moves the malformed object
+        // downstream, where it becomes a habit with a unit-less duration — the very thing CanLaunch
+        // exists to prevent. The guard is inside the method too, not only on CanExecute, because
+        // ExecuteAsync does not consult CanExecute.
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        await sut.InitializeAsync();
+        sut.Name = "Meditazione";
+        sut.AddFieldCommand.Execute(FieldNature.Time);
+
+        sut.SaveAsTemplateCommand.CanExecute(null).Should().BeFalse();
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+        fakeTemplates.Created.Should().BeEmpty();
+
+        sut.Fields[0].UnitOfMeasureId = sut.AvailableTimeUnits.Single(u => u.Code == "minutes").Id;
+
+        sut.SaveAsTemplateCommand.CanExecute(null).Should().BeTrue();
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+        fakeTemplates.Created.Should().ContainSingle();
+    }
+
+    [WpfFact]
     public void Text_field_blocks_count_and_makes_journal()
     {
         var sut = NewSut();

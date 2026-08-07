@@ -26,7 +26,7 @@ public class RestoreServicePreviewTests
 
             var preview = await restore.PreviewAsync(bk.Path, Pass);
 
-            preview.Manifest.SchemaVersion.Should().Be("2.15");
+            preview.Manifest.SchemaVersion.Should().Be("2.16");
             preview.Warnings.Should().BeEmpty();
         }
         finally { await fixture.DisposeAsync(); }

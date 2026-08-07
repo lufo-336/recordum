@@ -195,11 +195,14 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         OnPropertyChanged(nameof(CanLaunch));
         OnPropertyChanged(nameof(LaunchBlocked));
         LaunchCommand.NotifyCanExecuteChanged();
+        SaveAsTemplateCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>Launch enabled only with a valid name, a scale on every Scale field and a time unit on
-    /// every Time field. A Quantity field's unit stays optional — a bare number reads fine — but a
-    /// duration without a unit has no unit to render its totals in.</summary>
+    /// <summary>Gates both Launch and Save-as-template: a valid name, a scale on every Scale field and
+    /// a time unit on every Time field. A Quantity field's unit stays optional — a bare number reads
+    /// fine — but a duration without a unit has no unit to render its totals in. Saving is gated by the
+    /// same rule because a template is a saved composition and <c>InstantiateAsync</c> materialises it
+    /// with no gate of its own: a template you cannot launch would create the malformed habit later.</summary>
     public bool CanLaunch =>
         !string.IsNullOrWhiteSpace(Name)
         && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null)
@@ -224,10 +227,12 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task SaveAsTemplateAsync(CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(Name)) return;
+        // Belt and braces: AsyncRelayCommand.ExecuteAsync does not consult CanExecute, so the rule has
+        // to hold here too, not only on the greyed-out button.
+        if (!CanLaunch) return;
         var template = new HabitTemplate
         {
             Id = Guid.NewGuid(),
