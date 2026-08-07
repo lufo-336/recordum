@@ -357,6 +357,8 @@ public sealed class ExportQueryServiceTests
 
         Assert.Equal(7.5m, habit.Summary.GoalActual);
         Assert.Equal(10m, habit.Summary.GoalTarget);
+        // "7.5 / 10" is meaningless without saying of what — same rule as the completion rows.
+        Assert.Equal("hours", habit.Summary.GoalUnit);
         await fx.DisposeAsync();
     }
 
@@ -401,7 +403,40 @@ public sealed class ExportQueryServiceTests
         var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
         var model = await Build(fx).BuildAsync(request);
 
-        Assert.Equal(7.5m, Assert.Single(model.Habits).Summary.GoalActual);
+        var summary = Assert.Single(model.Habits).Summary;
+        Assert.Equal(7.5m, summary.GoalActual);
+        Assert.Equal("hours", summary.GoalUnit);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_goal_on_a_count_has_no_unit()
+    {
+        // A goal with no metric counts completions: there is no unit to name.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
+            db.Completions.Add(new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds() });
+            db.Goals.Add(new Goal
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                Name = "Run often",
+                MetricDefinitionId = null,
+                TargetValue = 20m,
+                PeriodType = GoalPeriodType.Open,
+                IsClosed = false,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var summary = Assert.Single((await Build(fx).BuildAsync(request)).Habits).Summary;
+
+        Assert.Equal(1m, summary.GoalActual);
+        Assert.Null(summary.GoalUnit);
         await fx.DisposeAsync();
     }
 

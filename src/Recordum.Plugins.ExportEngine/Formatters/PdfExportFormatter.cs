@@ -31,6 +31,8 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                         if (model.Subject == ExportSubject.Library)
                             col.Item().PaddingTop(8).Text(h.Name).FontSize(15).SemiBold();
                         col.Item().Text($"Current streak: {h.Summary.CurrentStreak}   Longest: {h.Summary.LongestStreak}   Total: {h.Summary.TotalCompletions}");
+                        if (FormatGoal(h.Summary) is { } goal)
+                            col.Item().Text($"Goal: {goal}");
 
                         if (h.Heatmap.Count > 0)
                             col.Item().Image(HeatmapImageRenderer.RenderPng(h.Heatmap)).FitWidth();

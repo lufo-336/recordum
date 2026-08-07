@@ -21,7 +21,9 @@ public sealed class MarkdownExportFormatter : ExportFormatterBase
             if (model.Subject == ExportSubject.Library) sb.Append("## ").Append(h.Name).Append("\n\n");
             sb.Append("- Current streak: ").Append(h.Summary.CurrentStreak).Append('\n');
             sb.Append("- Longest streak: ").Append(h.Summary.LongestStreak).Append('\n');
-            sb.Append("- Total completions: ").Append(h.Summary.TotalCompletions).Append("\n\n");
+            sb.Append("- Total completions: ").Append(h.Summary.TotalCompletions).Append('\n');
+            if (FormatGoal(h.Summary) is { } goal) sb.Append("- Goal: ").Append(goal).Append('\n');
+            sb.Append('\n');
 
             if (h.Completions.Count > 0)
             {

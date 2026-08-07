@@ -19,6 +19,32 @@ public sealed class MarkdownExportFormatterTests
     }
 
     [Fact]
+    public void Write_prints_the_goal_progress()
+    {
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.One()));
+        Assert.Contains("- Goal: 12 / 20", md, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Write_prints_the_goal_unit_when_the_goal_tracks_a_metric()
+    {
+        var model = SampleModel.One();
+        var habit = model.Habits[0];
+        var withUnit = habit with { Summary = habit.Summary with { GoalUnit = "hours" } };
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(model with { Habits = [withUnit] }));
+
+        Assert.Contains("- Goal: 12 / 20 hours", md, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Write_omits_the_goal_line_for_a_habit_without_one()
+    {
+        // SampleModel.WithAbstinencePeriods carries a null goal: no empty "Goal: /" line.
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.WithAbstinencePeriods()));
+        Assert.DoesNotContain("Goal:", md, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Write_prints_the_value_with_its_unit()
     {
         var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.One()));

@@ -31,7 +31,13 @@ public sealed record ExportSummary(
     int LongestStreak,
     int TotalCompletions,
     decimal? GoalActual,
-    decimal? GoalTarget);
+    decimal? GoalTarget)
+{
+    /// <summary>Unit <see cref="GoalActual"/>/<see cref="GoalTarget"/> are expressed in, resolved the
+    /// same way as <see cref="ExportCompletionRow.Unit"/>. Null for a goal that counts completions —
+    /// there is no unit — and for a metric that declares none.</summary>
+    public string? GoalUnit { get; init; }
+}
 
 public sealed record ExportCompletionRow(DateTimeOffset CompletedAt, decimal? Value, string? Metric, bool Retroactive)
 {

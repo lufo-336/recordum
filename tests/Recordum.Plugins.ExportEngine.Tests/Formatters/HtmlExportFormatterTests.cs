@@ -19,6 +19,20 @@ public sealed class HtmlExportFormatterTests
     }
 
     [Fact]
+    public void Write_prints_the_goal_progress()
+    {
+        var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.One()));
+        Assert.Contains("<li>Goal: 12 / 20</li>", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Write_omits_the_goal_item_for_a_habit_without_one()
+    {
+        var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.WithAbstinencePeriods()));
+        Assert.DoesNotContain("Goal:", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Write_prints_the_value_with_its_unit()
     {
         var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.One()));

@@ -26,7 +26,10 @@ public sealed class HtmlExportFormatter : ExportFormatterBase
             if (model.Subject == ExportSubject.Library) sb.Append("<h2>").Append(WebUtility.HtmlEncode(h.Name)).Append("</h2>");
             sb.Append("<ul><li>Current streak: ").Append(h.Summary.CurrentStreak)
               .Append("</li><li>Longest streak: ").Append(h.Summary.LongestStreak)
-              .Append("</li><li>Total completions: ").Append(h.Summary.TotalCompletions).Append("</li></ul>");
+              .Append("</li><li>Total completions: ").Append(h.Summary.TotalCompletions).Append("</li>");
+            if (FormatGoal(h.Summary) is { } goal)
+                sb.Append("<li>Goal: ").Append(WebUtility.HtmlEncode(goal)).Append("</li>");
+            sb.Append("</ul>");
 
             if (h.Heatmap.Count > 0)
             {

@@ -23,6 +23,18 @@ public abstract class ExportFormatterBase : IExportFormatter
     /// it is expressed in ("7.5 hours"), or the bare number when the metric declares none. Invariant,
     /// like every other value in an export file. The machine formats (CSV, JSON) keep the number and
     /// the unit apart instead, so a consumer never has to parse them back out of one string.</summary>
+    /// <summary>"12 / 20", or "7.5 / 10 hours" when the goal tracks a metric that has a unit — null
+    /// when the habit has no active goal, so callers can drop the line entirely rather than print an
+    /// empty one.</summary>
+    protected static string? FormatGoal(ExportSummary summary)
+    {
+        ArgumentNullException.ThrowIfNull(summary);
+        if (summary.GoalTarget is not { } target) return null;
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        var pair = (summary.GoalActual ?? 0m).ToString(culture) + " / " + target.ToString(culture);
+        return string.IsNullOrEmpty(summary.GoalUnit) ? pair : pair + " " + summary.GoalUnit;
+    }
+
     protected static string FormatValue(ExportCompletionRow row)
     {
         ArgumentNullException.ThrowIfNull(row);

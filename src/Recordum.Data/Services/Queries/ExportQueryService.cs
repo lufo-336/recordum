@@ -167,6 +167,7 @@ public sealed class ExportQueryService(
         var goal = await goals.GetActiveAsync(node.Id, ct).ConfigureAwait(false);
         decimal? target = goal?.TargetValue;
         decimal? actual = null;
+        string? goalUnit = null;
         if (goal is not null)
         {
             if (goal.MetricDefinitionId is { } mid)
@@ -175,14 +176,21 @@ public sealed class ExportQueryService(
                 // A duration metric sums value_seconds, but the target was typed in the metric's unit —
                 // report both in the same unit, or a 7.5-hour night reads as 27000 against a target of 10.
                 var isDuration = metricList.FirstOrDefault(m => m.Id == mid)?.Type == MetricType.Seconds;
-                actual = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(raw, isDuration, metricUnits.GetValueOrDefault(mid));
+                var declaredUnit = metricUnits.GetValueOrDefault(mid);
+                actual = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(raw, isDuration, declaredUnit);
+                // Same rule as the completion rows: name the unit the pair is actually in, which for
+                // a duration with no time unit to convert into is still seconds.
+                goalUnit = isDuration && !Recordum.Core.Formatting.SecondsDisplay.IsTimeUnit(declaredUnit)
+                    ? "seconds"
+                    : declaredUnit;
             }
             else
             {
+                // A goal with no metric counts completions: nothing to name.
                 actual = total;
             }
         }
-        return new ExportSummary(current, longest, total, actual, target);
+        return new ExportSummary(current, longest, total, actual, target) { GoalUnit = goalUnit };
     }
 
     private async Task<IReadOnlyList<ExportHeatmapCell>> BuildHeatmapAsync(HabitNode node, CancellationToken ct)
