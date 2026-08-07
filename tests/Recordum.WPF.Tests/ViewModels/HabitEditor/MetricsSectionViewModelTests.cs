@@ -109,4 +109,91 @@ public class MetricsSectionViewModelTests
         await sut.LoadAsync(new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Counter });
         sut.AvailableUnits.Should().ContainSingle(u => u.Code == "l");
     }
+
+    [Fact]
+    public async Task Switching_a_metric_to_duration_assigns_minutes()
+    {
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+
+        row.Type = MetricType.Seconds;
+        await Task.Delay(20);
+
+        var minutes = _refData.Units.Single(u => u.Code == "minutes");
+        row.UnitOfMeasureId.Should().Be(minutes.Id);
+        _metrics.Store[row.Id].UnitOfMeasureId.Should().Be(minutes.Id);
+        _metrics.Store[row.Id].Type.Should().Be(MetricType.Seconds);
+    }
+
+    [Fact]
+    public async Task Switching_to_duration_discards_a_non_time_unit()
+    {
+        // A metric that was a quantity in litres keeps nothing meaningful when it becomes a duration.
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+        row.UnitOfMeasureId = _refData.Units.Single(u => u.Code == "l").Id;
+        await Task.Delay(20);
+
+        row.Type = MetricType.Seconds;
+        await Task.Delay(20);
+
+        row.UnitOfMeasureId.Should().Be(_refData.Units.Single(u => u.Code == "minutes").Id);
+    }
+
+    [Fact]
+    public async Task Switching_to_duration_keeps_a_time_unit_already_chosen()
+    {
+        // Overwriting "hours" with minutes would silently throw away a choice the user made.
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+        var hours = _refData.Units.Single(u => u.Code == "hours");
+        row.UnitOfMeasureId = hours.Id;
+        await Task.Delay(20);
+
+        row.Type = MetricType.Seconds;
+        await Task.Delay(20);
+
+        row.UnitOfMeasureId.Should().Be(hours.Id);
+    }
+
+    [Fact]
+    public async Task A_duration_row_offers_only_time_units_and_a_quantity_row_offers_all()
+    {
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+
+        row.Units.Select(u => u.Code).Should().BeEquivalentTo(_refData.Units.Select(u => u.Code));
+
+        row.Type = MetricType.Seconds;
+
+        row.Units.Select(u => u.Code).Should().BeEquivalentTo(new[] { "hours", "minutes", "seconds" });
+    }
+
+    [Fact]
+    public async Task A_legacy_duration_keeps_its_foreign_unit_in_the_list()
+    {
+        // A duration carrying "l" from before the rule: dropping it from the row's list would leave the
+        // ComboBox with a SelectedValue that matches no item, WPF would coerce it to null and the
+        // attached row would persist that null — the 4d01f9c data-wipe through another door. No backfill
+        // happens on load either: the metric keeps its foreign unit until the user picks a valid one.
+        var litres = _refData.Units.Single(u => u.Code == "l");
+        var metricId = Guid.NewGuid();
+        await _metrics.CreateAsync(new MetricDefinition
+        {
+            Id = metricId, HabitNodeId = _node.Id, Name = "Vecchia durata",
+            Type = MetricType.Seconds, UnitOfMeasureId = litres.Id, SortOrder = 0,
+        });
+
+        var sut = CreateSut();
+        await Task.Delay(20);
+        var row = sut.Metrics.Single();
+
+        row.Units.Should().Contain(u => u.Id == litres.Id);
+        row.UnitOfMeasureId.Should().Be(litres.Id);
+        _metrics.Store[metricId].UnitOfMeasureId.Should().Be(litres.Id);
+    }
 }

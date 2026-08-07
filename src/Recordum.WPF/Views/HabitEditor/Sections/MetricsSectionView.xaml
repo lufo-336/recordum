@@ -21,7 +21,7 @@
                                   ItemsSource="{Binding Source={StaticResource MetricTypeValues}}"
                                   SelectedItem="{Binding Type}"/>
                         <ComboBox Grid.Column="2" Margin="0,0,4,0"
-                                  ItemsSource="{Binding DataContext.AvailableUnits, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                  ItemsSource="{Binding Units}"
                                   DisplayMemberPath="Name"
                                   SelectedValuePath="Id"
                                   SelectedValue="{Binding UnitOfMeasureId}"/>
