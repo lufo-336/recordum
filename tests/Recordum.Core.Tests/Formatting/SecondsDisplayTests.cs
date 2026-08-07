@@ -55,4 +55,21 @@ public class SecondsDisplayTests
     [InlineData(2147483648)] // int.MaxValue + 1: cannot be a real second count, and the cast would throw
     public void ConvertTotal_leaves_totals_outside_the_second_count_range_raw(double raw)
         => SecondsDisplay.ConvertTotal((decimal)raw, isDurationMetric: true, "minutes").Should().Be((decimal)raw);
+
+    [Fact]
+    public void TimeUnitCodes_lists_the_three_units_a_duration_can_be_expressed_in()
+        => SecondsDisplay.TimeUnitCodes.Should().Equal("hours", "minutes", "seconds");
+
+    [Fact]
+    public void Every_listed_code_is_a_time_unit_and_converts()
+    {
+        // Anti-divergence guard: the list the UI filters its pickers with and the predicate the
+        // formatters branch on must stay the same set. Before this, the codes lived duplicated as a
+        // private array in HabitBuilderViewModel while IsTimeUnit derived the notion another way.
+        foreach (var code in SecondsDisplay.TimeUnitCodes)
+        {
+            SecondsDisplay.IsTimeUnit(code).Should().BeTrue($"'{code}' is listed as a time unit");
+            SecondsDisplay.ConvertToUnit(1, code).Should().NotBeNull($"'{code}' must be convertible");
+        }
+    }
 }

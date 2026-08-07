@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace Recordum.Core.Formatting;
 
 /// <summary>Converts a stored value_seconds into the unit chosen on the metric (U8): hours, minutes,
@@ -7,6 +9,11 @@ namespace Recordum.Core.Formatting;
 /// h:mm rendering.</summary>
 public static class SecondsDisplay
 {
+    /// <summary>The unit codes a duration can be expressed in, lowercase as the unit table stores them.
+    /// Single source of truth: the UI filters its unit pickers with this list and <see cref="IsTimeUnit"/>
+    /// answers from it, so the two can never disagree about what counts as a time unit.</summary>
+    public static readonly IReadOnlyList<string> TimeUnitCodes = ["hours", "minutes", "seconds"];
+
     public static decimal? ConvertToUnit(int seconds, string? unitCode) => unitCode?.ToLowerInvariant() switch
     {
         "hours" => seconds / 3600m,
@@ -17,8 +24,9 @@ public static class SecondsDisplay
 
     /// <summary>True when the code is a unit a duration can be expressed in. Callers use it to tell
     /// "this total was converted" from "this total is still raw seconds" — the latter covers both a
-    /// non-time unit and the far more common case of a duration metric with no unit chosen at all.</summary>
-    public static bool IsTimeUnit(string? unitCode) => ConvertToUnit(1, unitCode) is not null;
+    /// non-time unit and a legacy duration metric with no unit chosen at all.</summary>
+    public static bool IsTimeUnit(string? unitCode) =>
+        unitCode is not null && TimeUnitCodes.Contains(unitCode, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>A summed duration expressed in the metric's own unit (7200s on an "hours" metric = 2),
     /// which is the unit the user typed the target/field in. Returns the total untouched when it is not
