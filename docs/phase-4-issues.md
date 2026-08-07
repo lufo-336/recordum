@@ -1013,3 +1013,33 @@ Emerse durante Task 14 visual verification (app lanciata, schermo utente):
 - **A13 — Riga Home: verdetto estetico autore = NON ci siamo (gap 2.1-bis confermato)** · `verified-fixed` (2026-07-11 — approvazione autore "va bene così, mergia"; commit `7d5aa25`: stili striscia per-tipo da spec §1 con `StripStyle`+`ValuesLast14Days`+`HeatmapStrip` a larghezza fissa 96px, banda continua resistance, parola tipo → tooltip (chiude anche **A6**), zero-state ×0/0 muted; sparito anche il bordo-checkbox sull'ultima cella. Core 92/Data 415/WPF 754 verdi) · (a) Camminata mostra "semplicemente i quadranti": lo streak chip è nascosto quando non c'è streak corrente (seed stale) → la riga sembra vuota; serve uno stato zero leggibile. (b) Niente fumo "pieno di quadratini": la striscia resistance è 14 celle discrete vs 7 delle altre — l'autore chiede **stessa larghezza visiva** e una **banda continua** vera, non quadratini. (c) Parola del tipo ridondante (=A6). Scope del giro **"2.1-bis" prima del merge**: stili striscia per-tipo dalla spec §1 (mini-barre counter, ramp State, punti journal, banda continua resistance), larghezza visiva uniforme (14 giorni = celle più strette, stessa larghezza totale), rimozione parola tipo, zero-state del chip.
 
 
+
+## Onda 2.3 — pass visivo 2026-07-28 (W23-VF1…VF8) + chiusura 2026-08-07
+
+> Contesto: pass visivo dell'Onda 2.3 (U8 registrazione) sul branch `wave-2-3-registration`. Evidenza
+> in `docs/verification/2026-07-28-wave-2-3/` — 8 screenshot + `REPORT.md`. **La cartella è in
+> `.gitignore`**: è evidenza locale, non storia del repo, e quella è l'unica copia.
+> Nessuno dei `fixed` qui sotto è ancora `verified-fixed`: il pass visivo di conferma è da fare.
+
+**Chiusi in codice:**
+
+- **W23-VF1 — Quattro numeri diversi per lo stesso giorno su un tap-counter** · `fixed` (commit `3cec5d1`) · Due cause indipendenti che si sommavano: nel Data mancava il fallback "conta le occorrenze" per un counter nudo (senza metriche), e il `DayCount` del quick-add a tap non veniva mai riallineato dopo una registrazione. Riga Home, striscia "Oggi", badge calendario e totale Dettaglio divergevano fra loro.
+- **W23-VF2 — Metrica durata senza unità: i totali mostrano secondi grezzi** · `fixed` (commit `9c759d9`) · Il fix precedente `d1bbecf` copriva solo il caso *con* unità. Vedi anche il giro del 2026-08-07 qui sotto, che rimuove il caso alla radice per le metriche nuove.
+- **W23-VF3 — Le serie nominate non arrivano in Cronologia** · `fixed` (commit `9c759d9`) · Le serie rinominate ("Night"/"Nap") si rileggevano come "Serie 1"/"Serie 2".
+- **W23-VF6 — Formato incoerente fra schede di registrazione** · `fixed` (commit `5949f58`) · Una registrazione multi-serie stava su una riga per serie con prefisso, una a serie singola spezzava i campi su una riga ciascuno: due layout per lo stesso oggetto. Ora sempre una riga per serie; la serie sola si limita a non stampare il prefisso.
+
+**Rimandati al giro sul modello counter con Fable** (vedi memoria `recordum-counter-repeatability-rethink`):
+
+- **W23-VF4 — Il cronometro non è scopribile dal builder** · `triaged` (UX, media) · Il ⏱ nasce solo dal campo "+ Tempo": chi costruisce l'abitudine non ha modo di sapere che esiste.
+- **W23-VF5 — Le abitudini "cronometro" pre-esistenti non ricevono niente** · `triaged` (media) · Il gate guarda il *tipo* metrica `Seconds`, non l'unità: un'abitudine costruita prima resta esclusa dalla feature.
+- **W23-VF8 — Badge calendario = occorrenze, totale = somma** · `triaged` (domanda di modello) · Non è un bug ma una scelta mai decisa: due numeri legittimi per lo stesso giorno.
+
+**Pre-esistente, non dell'onda:**
+
+- **W23-VF7 — Grafici Dettaglio vuoti** · `triaged` → Onda 3 · **Duplicato di A4** (audit 2026-07-11), che ha l'analisi più completa: il difetto è nel percorso Dettaglio, non in LiveCharts2, e la direzione approvata dall'autore è unificare il Dettaglio sul renderer del ChartEngine. Tracciare A4, non questo.
+
+**Chiusi nella stessa finestra ma senza numero VF** (emersi analizzando i VF, non dal pass visivo):
+
+- **Goal-actual 60× su metrica durata** · `fixed` (commit `bebfd06`) · Un goal su metrica `Seconds` sommava `value_seconds` grezzi mentre il target era digitato nell'unità: 7,5h leggeva 27000 contro un target di 10. Nuova regola condivisa `SecondsDisplay.ConvertTotal` in Core; goal card ed export convertono; i 3 siti che ricopiavano la conversione a mano ora la chiamano (e guadagnano il guard fuori range che non avevano).
+- **Export: valori senza unità, e il goal invisibile** · `fixed` (commit `37ecd8c`, `09b3107`) · Tutti e 5 i formatter stampavano il valore come numero nudo (7.5 senza "hours"; una durata senza unità usciva "27000"). E `GoalActual`/`GoalTarget` esistevano nel modello ma **solo il JSON li emetteva**, perché serializza l'intero model: Markdown/HTML/PDF buttavano via il goal, quindi il fix `bebfd06` era invisibile in ogni formato leggibile. CSV lasciato fuori di proposito dal summary (è il formato macchina a righe).
+- **Unità temporale obbligatoria su metrica durata** · `fixed` (commit `7f628c3`→`1d96967`) · Chiude alla radice il caso di VF2 per le metriche nuove. Spec e piano in `docs/superpowers/`; decisioni di modello riassunte in CLAUDE.md §7 e nella memoria `recordum-duration-unit-required`. Vedi **R7** per il buco che resta aperto (template seed).
