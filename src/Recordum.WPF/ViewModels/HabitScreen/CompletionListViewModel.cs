@@ -103,8 +103,11 @@ public sealed partial class CompletionListViewModel : ObservableObject
     private static List<string> BuildFieldDisplays(IReadOnlyList<CompletionValue> values,
         Dictionary<Guid, MetricDisplay> lookup, string[]? seriesLabels)
     {
-        // Group by series so a multi-series resistance reads "Series 1 — Count: 12 · Time: 30"
+        // Group by series so a multi-series registration reads "Series 1 — Count: 12 · Time: 30"
         // per row instead of a flat, ambiguous list of every series' values jumbled together.
+        // One line per series either way: a lone series only drops the prefix, because there is
+        // nothing to disambiguate — it used to break its fields onto a line each, so the same
+        // object was laid out two different ways depending on how many series it had (W23-VF6).
         var groups = values.GroupBy(v => v.SeriesIndex).OrderBy(g => g.Key).ToList();
         bool multiSeries = groups.Count > 1;
         var result = new List<string>();
@@ -120,12 +123,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
                 fields.Add($"{m.Name}: {val}");
             }
             if (fields.Count == 0) continue;
-            if (multiSeries)
-                result.Add($"{SeriesLabel(g.Key, seriesLabels)} — {string.Join(" · ", fields)}");
-            else
-            {
-                result.AddRange(fields);
-            }
+            var line = string.Join(" · ", fields);
+            result.Add(multiSeries ? $"{SeriesLabel(g.Key, seriesLabels)} — {line}" : line);
         }
         return result;
     }

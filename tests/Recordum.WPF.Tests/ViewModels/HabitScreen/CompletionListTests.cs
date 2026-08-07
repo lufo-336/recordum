@@ -166,6 +166,41 @@ public class CompletionListViewModelTests
     }
 
     [WpfFact]
+    public async Task LoadDayAsync_keeps_one_line_per_series_when_a_single_series_carries_several_fields()
+    {
+        // W23-VF6: a multi-series registration read "Series 1 — Count: 1 · Reps: 10" while a
+        // single-series one broke the very same fields onto a line each — two layouts for one object.
+        // A lone series still drops the prefix: there is nothing to disambiguate.
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var habit = Guid.NewGuid();
+        var countId = Guid.NewGuid();
+        var repsId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = countId, HabitNodeId = habit, Name = "Count", Type = MetricType.Integer, SortOrder = 0 });
+        await ms.CreateAsync(new MetricDefinition { Id = repsId, HabitNodeId = habit, Name = "Reps", Type = MetricType.Integer, SortOrder = 1 });
+
+        var day = new DateOnly(2026, 6, 1);
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue>
+            {
+                new() { MetricDefinitionId = countId, SeriesIndex = 0, ValueInteger = 1 },
+                new() { MetricDefinitionId = repsId, SeriesIndex = 0, ValueInteger = 10 },
+            },
+        };
+
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
+        await sut.LoadDayAsync(habit, day);
+
+        sut.Rows.Single().FieldDisplays.Should().ContainSingle()
+            .Which.Should().Be("Count: 1 · Reps: 10");
+    }
+
+    [WpfFact]
     public async Task LoadDayAsync_labels_series_with_their_configured_names()
     {
         var cs = new FakeCompletionService();
