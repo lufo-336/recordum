@@ -33,7 +33,14 @@ public sealed record ExportSummary(
     decimal? GoalActual,
     decimal? GoalTarget);
 
-public sealed record ExportCompletionRow(DateTimeOffset CompletedAt, decimal? Value, string? Metric, bool Retroactive);
+public sealed record ExportCompletionRow(DateTimeOffset CompletedAt, decimal? Value, string? Metric, bool Retroactive)
+{
+    /// <summary>Unit code the <see cref="Value"/> is actually expressed in — the metric's own unit
+    /// once a duration has been converted into it, or "seconds" for a duration the metric gave no
+    /// time unit to convert into. Null when the metric declares no unit. Without it a duration
+    /// exports as a bare number that means hours in one file and seconds in the next.</summary>
+    public string? Unit { get; init; }
+}
 
 public sealed record ExportNoteRow(DateTimeOffset UpdatedAt, string BodyMd)
 {

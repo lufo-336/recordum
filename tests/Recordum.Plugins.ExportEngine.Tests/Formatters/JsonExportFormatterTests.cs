@@ -29,6 +29,16 @@ public sealed class JsonExportFormatterTests
     }
 
     [Fact]
+    public void Write_carries_the_unit_alongside_the_numeric_value()
+    {
+        var bytes = new JsonExportFormatter().Write(SampleModel.One());
+        using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
+        var row = doc.RootElement.GetProperty("habits")[0].GetProperty("completions")[0];
+        Assert.Equal(5, row.GetProperty("value").GetDecimal());
+        Assert.Equal("km", row.GetProperty("unit").GetString());
+    }
+
+    [Fact]
     public void Write_renders_periods_array_for_resistance_habit()
     {
         var bytes = new JsonExportFormatter().Write(SampleModel.WithAbstinencePeriods());

@@ -91,6 +91,7 @@ public sealed class ExportQueryService(
                 .Select(c =>
                 {
                     var primaryValue = c.Values.FirstOrDefault();
+                    var declaredUnit = primaryValue is null ? null : metricUnits.GetValueOrDefault(primaryValue.MetricDefinitionId);
                     decimal? value = primaryValue is null
                         ? null
                         : primaryValue.ValueDecimal
@@ -98,14 +99,23 @@ public sealed class ExportQueryService(
                             ?? (primaryValue.ValueSeconds.HasValue
                                 ? (Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit(
                                        primaryValue.ValueSeconds.Value,
-                                       metricUnits.GetValueOrDefault(primaryValue.MetricDefinitionId))
+                                       declaredUnit)
                                    ?? primaryValue.ValueSeconds.Value)
                                 : null);
+                    // Name the unit the exported number is actually in. A duration with no time unit
+                    // to convert into stays a second count, whatever the metric declares.
+                    var valueUnit = primaryValue?.ValueSeconds.HasValue == true
+                                    && !Recordum.Core.Formatting.SecondsDisplay.IsTimeUnit(declaredUnit)
+                        ? "seconds"
+                        : declaredUnit;
                     return new ExportCompletionRow(
                         new DateTimeOffset(DateTime.SpecifyKind(c.CompletedAt, DateTimeKind.Utc), TimeSpan.Zero),
                         value,
                         primaryValue is null ? null : metricNames.GetValueOrDefault(primaryValue.MetricDefinitionId),
-                        c.IsRetroactive);
+                        c.IsRetroactive)
+                    {
+                        Unit = valueUnit,
+                    };
                 })
                 .ToList()
             : [];

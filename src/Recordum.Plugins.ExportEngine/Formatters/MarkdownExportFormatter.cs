@@ -28,7 +28,7 @@ public sealed class MarkdownExportFormatter : ExportFormatterBase
                 sb.Append("| Date | Value | Metric |\n|---|---|---|\n");
                 foreach (var c in h.Completions)
                     sb.Append("| ").Append(c.CompletedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
-                      .Append(" | ").Append(c.Value?.ToString(CultureInfo.InvariantCulture) ?? "")
+                      .Append(" | ").Append(FormatValue(c))
                       .Append(" | ").Append(c.Metric ?? "").Append(" |\n");
                 sb.Append('\n');
             }

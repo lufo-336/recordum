@@ -13,8 +13,29 @@ public sealed class CsvExportFormatterTests
         Assert.Equal(ExportFormat.Csv, f.Format);
         var text = Encoding.UTF8.GetString(f.Write(SampleModel.One()));
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal("habit,date,value,metric,retroactive", lines[0].Trim());
+        Assert.Equal("habit,date,value,metric,unit,retroactive", lines[0].Trim());
         Assert.Contains(lines, l => l.StartsWith("Run,2026-05-20", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Write_names_the_unit_the_value_is_in()
+    {
+        // The value column stays numeric for machine consumers; the unit rides in its own column,
+        // or "5" could mean kilometres in one file and hours in the next.
+        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(SampleModel.One()));
+        Assert.Contains("Run,2026-05-20,5,Distance,km,false", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Write_leaves_the_unit_column_empty_when_the_metric_has_none()
+    {
+        var model = SampleModel.One();
+        var habit = model.Habits[0];
+        var bare = habit.Completions[0] with { Unit = null };
+        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(
+            model with { Habits = [habit with { Completions = [bare] }] }));
+
+        Assert.Contains("Run,2026-05-20,5,Distance,,false", text, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -13,6 +13,8 @@ namespace Recordum.Data.Tests.Integration;
 public sealed class ExportQueryServiceTests
 {
     private static readonly string[] ExpectedLibraryNames = ["A", "B"];
+    private static readonly Guid HoursUnitId = Guid.Parse("00000001-0000-0000-0000-000000000009");
+    private static readonly Guid LitreUnitId = Guid.Parse("00000001-0000-0000-0000-000000000006");
 
     private sealed class StubAggregator : IStreakAggregator
     {
@@ -236,6 +238,78 @@ public sealed class ExportQueryServiceTests
         Assert.Equal("Hours slept", row.Metric);
         Assert.Equal(7.5m, row.Value);
         await fx.DisposeAsync();
+    }
+
+    /// <summary>Seeds one Counter habit with one metric and one completion value, and returns the
+    /// exported completion row — the shared shape for the unit-labelling tests below.</summary>
+    private static async Task<ExportCompletionRow> ExportOneValueRowAsync(
+        MetricType type, Guid? unitId, int? valueSeconds = null, decimal? valueDecimal = null)
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "H" });
+            db.MetricDefinitions.Add(new MetricDefinition { Id = metricId, HabitNodeId = habitId, Name = "M", Type = type, SortOrder = 0, UnitOfMeasureId = unitId });
+            var completionId = Guid.NewGuid();
+            db.Completions.Add(new Completion
+            {
+                Id = completionId,
+                HabitNodeId = habitId,
+                CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc),
+                CompletedAtMs = new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+            });
+            db.CompletionValues.Add(new CompletionValue
+            {
+                Id = Guid.NewGuid(),
+                CompletionId = completionId,
+                MetricDefinitionId = metricId,
+                ValueSeconds = valueSeconds,
+                ValueDecimal = valueDecimal,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+        var row = Assert.Single(Assert.Single(model.Habits).Completions);
+        await fx.DisposeAsync();
+        return row;
+    }
+
+    [Fact]
+    public async Task Export_rows_name_the_unit_a_converted_duration_is_expressed_in()
+    {
+        // 27000s on an "hours" metric exports as 7.5 — useless unless the file says "hours".
+        var row = await ExportOneValueRowAsync(MetricType.Seconds, HoursUnitId, valueSeconds: 27000);
+        Assert.Equal(7.5m, row.Value);
+        Assert.Equal("hours", row.Unit);
+    }
+
+    [Fact]
+    public async Task Export_rows_label_an_unconverted_duration_as_seconds()
+    {
+        // No unit on the metric: the value stays a raw second count, so that IS its unit. Without
+        // saying so the file reads "27000" for a 7.5-hour night (W23-VF2, export branch).
+        var row = await ExportOneValueRowAsync(MetricType.Seconds, unitId: null, valueSeconds: 27000);
+        Assert.Equal(27000m, row.Value);
+        Assert.Equal("seconds", row.Unit);
+    }
+
+    [Fact]
+    public async Task Export_rows_carry_the_unit_of_a_non_duration_metric()
+    {
+        var row = await ExportOneValueRowAsync(MetricType.Decimal, LitreUnitId, valueDecimal: 1.5m);
+        Assert.Equal(1.5m, row.Value);
+        Assert.Equal("l", row.Unit);
+    }
+
+    [Fact]
+    public async Task Export_rows_leave_the_unit_empty_when_the_metric_has_none()
+    {
+        var row = await ExportOneValueRowAsync(MetricType.Decimal, unitId: null, valueDecimal: 3m);
+        Assert.Null(row.Unit);
     }
 
     [Fact]

@@ -49,7 +49,7 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                                 foreach (var c in h.Completions)
                                 {
                                     t.Cell().Text(c.CompletedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-                                    t.Cell().Text(c.Value?.ToString(CultureInfo.InvariantCulture) ?? "");
+                                    t.Cell().Text(FormatValue(c));
                                     t.Cell().Text(c.Metric ?? "");
                                 }
                             });

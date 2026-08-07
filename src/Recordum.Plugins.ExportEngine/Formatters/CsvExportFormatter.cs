@@ -13,7 +13,9 @@ public sealed class CsvExportFormatter : ExportFormatterBase
     {
         ArgumentNullException.ThrowIfNull(model);
         var sb = new StringBuilder();
-        sb.Append("habit,date,value,metric,retroactive\r\n");
+        // The value stays a bare number and the unit gets its own column: a consumer that wants to
+        // compute on the values must not have to strip "hours" off them first.
+        sb.Append("habit,date,value,metric,unit,retroactive\r\n");
         foreach (var habit in model.Habits)
         {
             foreach (var c in habit.Completions)
@@ -22,6 +24,7 @@ public sealed class CsvExportFormatter : ExportFormatterBase
                   .Append(c.CompletedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(',')
                   .Append(c.Value?.ToString(CultureInfo.InvariantCulture) ?? "").Append(',')
                   .Append(Q(c.Metric ?? "")).Append(',')
+                  .Append(Q(c.Unit ?? "")).Append(',')
                   .Append(c.Retroactive ? "true" : "false").Append("\r\n");
             }
         }

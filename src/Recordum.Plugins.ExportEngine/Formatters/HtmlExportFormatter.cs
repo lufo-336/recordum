@@ -39,7 +39,7 @@ public sealed class HtmlExportFormatter : ExportFormatterBase
                 sb.Append("<table><tr><th>Date</th><th>Value</th><th>Metric</th></tr>");
                 foreach (var c in h.Completions)
                     sb.Append("<tr><td>").Append(c.CompletedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
-                      .Append("</td><td>").Append(WebUtility.HtmlEncode(c.Value?.ToString(CultureInfo.InvariantCulture) ?? ""))
+                      .Append("</td><td>").Append(WebUtility.HtmlEncode(FormatValue(c)))
                       .Append("</td><td>").Append(WebUtility.HtmlEncode(c.Metric ?? "")).Append("</td></tr>");
                 sb.Append("</table>");
             }

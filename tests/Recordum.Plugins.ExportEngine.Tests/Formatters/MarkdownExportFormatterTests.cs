@@ -19,6 +19,25 @@ public sealed class MarkdownExportFormatterTests
     }
 
     [Fact]
+    public void Write_prints_the_value_with_its_unit()
+    {
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.One()));
+        Assert.Contains("| 2026-05-20 | 5 km | Distance |", md, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Write_prints_a_bare_value_when_the_metric_has_no_unit()
+    {
+        var model = SampleModel.One();
+        var habit = model.Habits[0];
+        var bare = habit.Completions[0] with { Unit = null };
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(
+            model with { Habits = [habit with { Completions = [bare] }] }));
+
+        Assert.Contains("| 2026-05-20 | 5 | Distance |", md, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Write_renders_periods_table_for_resistance_habit()
     {
         var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.WithAbstinencePeriods()));

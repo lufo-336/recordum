@@ -19,6 +19,13 @@ public sealed class HtmlExportFormatterTests
     }
 
     [Fact]
+    public void Write_prints_the_value_with_its_unit()
+    {
+        var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.One()));
+        Assert.Contains("<td>5 km</td><td>Distance</td>", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Write_renders_periods_table_for_resistance_habit()
     {
         var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.WithAbstinencePeriods()));

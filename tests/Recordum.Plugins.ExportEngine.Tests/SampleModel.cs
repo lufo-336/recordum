@@ -13,7 +13,7 @@ internal static class SampleModel
             new ExportHabitModel(
                 Guid.Parse("11111111-1111-1111-1111-111111111111"), "Run", "Action", "#112233",
                 new ExportSummary(3, 7, 12, 12m, 20m),
-                [new ExportCompletionRow(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero), 5m, "km", false)],
+                [new ExportCompletionRow(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero), 5m, "Distance", false) { Unit = "km" }],
                 [new ExportNoteRow(new DateTimeOffset(2026, 5, 20, 9, 0, 0, TimeSpan.Zero), "felt good")],
                 [new ExportHeatmapCell(10, 2, 4), new ExportHeatmapCell(11, 0, 2)]),
         ]);

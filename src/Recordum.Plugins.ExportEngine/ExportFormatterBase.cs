@@ -18,4 +18,16 @@ public abstract class ExportFormatterBase : IExportFormatter
     /// <summary>Formats an abstinence period's elapsed span as <c>d.hh:mm:ss</c>, invariant.</summary>
     protected static string FormatPeriodDuration(TimeSpan t)
         => t.ToString(@"d\.hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>A completion's value for the human-readable formats: the number followed by the unit
+    /// it is expressed in ("7.5 hours"), or the bare number when the metric declares none. Invariant,
+    /// like every other value in an export file. The machine formats (CSV, JSON) keep the number and
+    /// the unit apart instead, so a consumer never has to parse them back out of one string.</summary>
+    protected static string FormatValue(ExportCompletionRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        if (row.Value is not { } v) return "";
+        var number = v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return string.IsNullOrEmpty(row.Unit) ? number : number + " " + row.Unit;
+    }
 }
