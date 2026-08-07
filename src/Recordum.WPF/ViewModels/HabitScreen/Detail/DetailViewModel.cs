@@ -37,6 +37,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         IHourlyDistributionQueryService hourly,
         ICompletionService completions,
         IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData,
         IIntensityRampResolver ramp,
         IHabitConfigService configs,
         IAbstinenceService abstinence,
@@ -47,7 +48,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(bus);
         _goals = goals;
         _configs = configs;
-        Goal = new GoalProgressCardViewModel(goals, completions, clock);
+        Goal = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
         YearHeatmap = new YearHeatmapViewModel(completions, metrics, ramp, abstinence, clock);
         StreakSummary = new StreakSummaryViewModel(streaks, abstinence, clock);
         StreakTimeline = new StreakTimelineViewModel(streaks, clock);

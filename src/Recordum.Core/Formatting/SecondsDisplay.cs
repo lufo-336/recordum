@@ -19,4 +19,15 @@ public static class SecondsDisplay
     /// "this total was converted" from "this total is still raw seconds" — the latter covers both a
     /// non-time unit and the far more common case of a duration metric with no unit chosen at all.</summary>
     public static bool IsTimeUnit(string? unitCode) => ConvertToUnit(1, unitCode) is not null;
+
+    /// <summary>A summed duration expressed in the metric's own unit (7200s on an "hours" metric = 2),
+    /// which is the unit the user typed the target/field in. Returns the total untouched when it is not
+    /// a duration, when the unit is not a time unit (the total is then still a second count), or when it
+    /// falls outside the second-count range — the conversion casts to int and would otherwise throw.
+    /// One rule for every aggregate: daily totals, the goal's actual, the export summary.</summary>
+    public static decimal ConvertTotal(decimal rawTotal, bool isDurationMetric, string? unitCode)
+    {
+        if (!isDurationMetric || rawTotal < 0 || rawTotal > int.MaxValue) return rawTotal;
+        return ConvertToUnit((int)rawTotal, unitCode) ?? rawTotal;
+    }
 }

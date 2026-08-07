@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
 
@@ -12,6 +13,8 @@ namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 public sealed partial class GoalProgressCardViewModel(
     IGoalService goals,
     ICompletionService completions,
+    IMetricDefinitionService metrics,
+    IReferenceDataQueryService refData,
     IClock clock) : ObservableObject
 {
     [ObservableProperty] private string _name = string.Empty;
@@ -61,9 +64,17 @@ public sealed partial class GoalProgressCardViewModel(
 
         if (goal.MetricDefinitionId is { } metricId)
         {
-            Actual = list.SelectMany(c => c.Values)
-                         .Where(v => v.MetricDefinitionId == metricId)
-                         .Sum(v => v.ValueDecimal ?? (decimal?)v.ValueInteger ?? (decimal?)v.ValueSeconds ?? 0m);
+            var raw = list.SelectMany(c => c.Values)
+                          .Where(v => v.MetricDefinitionId == metricId)
+                          .Sum(v => v.ValueDecimal ?? (decimal?)v.ValueInteger ?? (decimal?)v.ValueSeconds ?? 0m);
+            // A duration metric stores value_seconds, but the target was typed in the metric's unit —
+            // compare like with like, or a 2-minute actual reads as 120 against a target of 4.
+            var metric = (await metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true))
+                .FirstOrDefault(m => m.Id == metricId);
+            Actual = SecondsDisplay.ConvertTotal(
+                raw,
+                metric?.Type == MetricType.Seconds,
+                await ResolveUnitCodeAsync(metric, ct).ConfigureAwait(true));
             UnitLabel = string.Empty;
         }
         else
@@ -74,6 +85,13 @@ public sealed partial class GoalProgressCardViewModel(
 
         PercentComplete = Target == 0 ? 0 : (double)(Actual / Target);
         IsDone = Actual >= Target && Target > 0;
+    }
+
+    private async Task<string?> ResolveUnitCodeAsync(MetricDefinition? metric, CancellationToken ct)
+    {
+        if (metric?.UnitOfMeasureId is not { } uid) return null;
+        var units = await refData.ListUnitsAsync(ct).ConfigureAwait(true);
+        return units.FirstOrDefault(u => u.Id == uid)?.Code;
     }
 
     private static (DateOnly from, DateOnly to) ResolveRange(Goal goal, HabitNode node, IClock clock)

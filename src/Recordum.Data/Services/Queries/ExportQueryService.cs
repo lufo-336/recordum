@@ -129,7 +129,7 @@ public sealed class ExportQueryService(
             }
         }
 
-        var summary = await BuildSummaryAsync(node, request, ct).ConfigureAwait(false);
+        var summary = await BuildSummaryAsync(node, request, metricList, metricUnits, ct).ConfigureAwait(false);
         if (isResistance) summary = summary with { TotalCompletions = periodRows.Count };
         var heatmap = request.Layout.Heatmap
             ? await BuildHeatmapAsync(node, ct).ConfigureAwait(false)
@@ -139,7 +139,12 @@ public sealed class ExportQueryService(
             summary, completionRows, noteRows, heatmap) { Periods = periodRows };
     }
 
-    private async Task<ExportSummary> BuildSummaryAsync(HabitNode node, ExportRequest request, CancellationToken ct)
+    private async Task<ExportSummary> BuildSummaryAsync(
+        HabitNode node,
+        ExportRequest request,
+        IReadOnlyList<MetricDefinition> metricList,
+        IReadOnlyDictionary<Guid, string?> metricUnits,
+        CancellationToken ct)
     {
         var runs = await streaks.GetHistoryAsync(node.Id, request.From, request.To, ct).ConfigureAwait(false);
         var current = runs.FirstOrDefault(r => r.IsCurrent)?.Length ?? 0;
@@ -154,9 +159,18 @@ public sealed class ExportQueryService(
         decimal? actual = null;
         if (goal is not null)
         {
-            actual = goal.MetricDefinitionId is { } mid
-                ? (await completions.GetDailySumAsync(node.Id, mid, request.From, request.To, ct).ConfigureAwait(false)).Sum(r => r.Sum)
-                : total;
+            if (goal.MetricDefinitionId is { } mid)
+            {
+                var raw = (await completions.GetDailySumAsync(node.Id, mid, request.From, request.To, ct).ConfigureAwait(false)).Sum(r => r.Sum);
+                // A duration metric sums value_seconds, but the target was typed in the metric's unit —
+                // report both in the same unit, or a 7.5-hour night reads as 27000 against a target of 10.
+                var isDuration = metricList.FirstOrDefault(m => m.Id == mid)?.Type == MetricType.Seconds;
+                actual = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(raw, isDuration, metricUnits.GetValueOrDefault(mid));
+            }
+            else
+            {
+                actual = total;
+            }
         }
         return new ExportSummary(current, longest, total, actual, target);
     }

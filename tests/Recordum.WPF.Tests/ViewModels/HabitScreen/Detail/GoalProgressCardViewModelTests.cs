@@ -44,6 +44,8 @@ public sealed class GoalProgressCardViewModelTests
         var vm = new GoalProgressCardViewModel(
             new FakeGoalService(),
             new FakeCompletionService(),
+            new FakeMetricDefinitionService(),
+            new FakeReferenceData(),
             new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero)));
 
         await vm.LoadAsync(Habit());
@@ -72,7 +74,7 @@ public sealed class GoalProgressCardViewModelTests
             SeedCompletion(completions, habit.Id, clock.UtcNow.AddDays(-i));
         }
 
-        var vm = new GoalProgressCardViewModel(goals, completions, clock);
+        var vm = new GoalProgressCardViewModel(goals, completions, new FakeMetricDefinitionService(), new FakeReferenceData(), clock);
         await vm.LoadAsync(habit);
 
         Assert.False(vm.IsEmpty);
@@ -97,10 +99,125 @@ public sealed class GoalProgressCardViewModelTests
             Name = "G",
         });
 
-        var vm = new GoalProgressCardViewModel(goals, new FakeCompletionService(), clock);
+        var vm = new GoalProgressCardViewModel(goals, new FakeCompletionService(), new FakeMetricDefinitionService(), new FakeReferenceData(), clock);
         await vm.LoadAsync(habit);
 
         Assert.Equal(9, vm.DaysLeft);
+    }
+
+    /// <summary>Seeds a duration (Seconds) metric on the habit plus a goal bound to it, and two
+    /// completions carrying <paramref name="secondsA"/> / <paramref name="secondsB"/>.</summary>
+    private static (FakeGoalService goals, FakeCompletionService completions, FakeMetricDefinitionService metrics)
+        SeedDurationGoal(HabitNode habit, DateTimeOffset when, decimal target, Guid? unitId, int secondsA, int secondsB)
+    {
+        var metrics = new FakeMetricDefinitionService();
+        var metric = new MetricDefinition
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = habit.Id,
+            Name = "Tempo",
+            Type = MetricType.Seconds,
+            UnitOfMeasureId = unitId,
+        };
+        metrics.Store[metric.Id] = metric;
+
+        var goals = new FakeGoalService();
+        SeedActiveGoal(goals, habit.Id, new Goal
+        {
+            TargetValue = target,
+            PeriodType = GoalPeriodType.Open,
+            MetricDefinitionId = metric.Id,
+            Name = "G",
+        });
+
+        var completions = new FakeCompletionService();
+        foreach (var secs in new[] { secondsA, secondsB })
+        {
+            var id = Guid.NewGuid();
+            completions.Store[id] = new Completion
+            {
+                Id = id,
+                HabitNodeId = habit.Id,
+                CompletedAt = when.UtcDateTime,
+                CompletedAtMs = when.ToUnixTimeMilliseconds(),
+                Values = [new CompletionValue { MetricDefinitionId = metric.Id, ValueSeconds = secs }],
+            };
+        }
+        return (goals, completions, metrics);
+    }
+
+    [Fact]
+    public async Task Duration_goal_actual_is_expressed_in_the_metric_unit()
+    {
+        // 90s + 30s = 120s on a "minutes" metric is 2 minutes against a 4-minute target — not 120.
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var habit = Habit();
+        var refData = new FakeReferenceData();
+        var minutes = refData.Units.Single(u => u.Code == "minutes").Id;
+        var (goals, completions, metrics) = SeedDurationGoal(habit, clock.UtcNow, target: 4m, minutes, 90, 30);
+
+        var vm = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
+        await vm.LoadAsync(habit);
+
+        Assert.Equal(2m, vm.Actual);
+        Assert.Equal(0.5, vm.PercentComplete, 3);
+        Assert.False(vm.IsDone);
+    }
+
+    [Fact]
+    public async Task Duration_goal_without_a_time_unit_keeps_the_raw_second_count()
+    {
+        // A "+ Tempo" field ships with no unit: the target was typed in seconds, so the actual stays seconds.
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var habit = Habit();
+        var (goals, completions, metrics) = SeedDurationGoal(habit, clock.UtcNow, target: 300m, unitId: null, 90, 30);
+
+        var vm = new GoalProgressCardViewModel(goals, completions, metrics, new FakeReferenceData(), clock);
+        await vm.LoadAsync(habit);
+
+        Assert.Equal(120m, vm.Actual);
+    }
+
+    [Fact]
+    public async Task Non_duration_goal_is_not_converted_even_on_a_time_unit()
+    {
+        // A Decimal metric already stores minutes; converting it would divide a correct total by 60.
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero));
+        var habit = Habit();
+        var refData = new FakeReferenceData();
+        var metrics = new FakeMetricDefinitionService();
+        var metric = new MetricDefinition
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = habit.Id,
+            Name = "Minuti",
+            Type = MetricType.Decimal,
+            UnitOfMeasureId = refData.Units.Single(u => u.Code == "minutes").Id,
+        };
+        metrics.Store[metric.Id] = metric;
+        var goals = new FakeGoalService();
+        SeedActiveGoal(goals, habit.Id, new Goal
+        {
+            TargetValue = 200m,
+            PeriodType = GoalPeriodType.Open,
+            MetricDefinitionId = metric.Id,
+            Name = "G",
+        });
+        var completions = new FakeCompletionService();
+        var id = Guid.NewGuid();
+        completions.Store[id] = new Completion
+        {
+            Id = id,
+            HabitNodeId = habit.Id,
+            CompletedAt = clock.UtcNow.UtcDateTime,
+            CompletedAtMs = clock.UtcNow.ToUnixTimeMilliseconds(),
+            Values = [new CompletionValue { MetricDefinitionId = metric.Id, ValueDecimal = 120m }],
+        };
+
+        var vm = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
+        await vm.LoadAsync(habit);
+
+        Assert.Equal(120m, vm.Actual);
     }
 
     [Fact]
@@ -113,7 +230,7 @@ public sealed class GoalProgressCardViewModelTests
         var completions = new FakeCompletionService();
         SeedCompletion(completions, habit.Id, clock.UtcNow);
 
-        var vm = new GoalProgressCardViewModel(goals, completions, clock);
+        var vm = new GoalProgressCardViewModel(goals, completions, new FakeMetricDefinitionService(), new FakeReferenceData(), clock);
         await vm.LoadAsync(habit);
 
         Assert.True(vm.IsDone);

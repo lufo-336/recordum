@@ -44,7 +44,7 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         _metrics = metrics;
         _refData = refData;
         _clock = clock;
-        _goalCard = new GoalProgressCardViewModel(goals, completions, clock);
+        _goalCard = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
     }
 
     public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
@@ -65,9 +65,7 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
             // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
             // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
             isDuration = primary.Type == MetricType.Seconds;
-            TodayTotal = isDuration
-                ? Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)rawSum, UnitCode) ?? rawSum
-                : rawSum;
+            TodayTotal = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(rawSum, isDuration, UnitCode);
         }
         else
         {

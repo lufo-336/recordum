@@ -32,4 +32,27 @@ public class SecondsDisplayTests
     [InlineData("km")]
     public void IsTimeUnit_is_false_for_everything_else(string? unit)
         => SecondsDisplay.IsTimeUnit(unit).Should().BeFalse();
+
+    [Theory]
+    [InlineData(120, "minutes", 2)]
+    [InlineData(27000, "hours", 7.5)]
+    [InlineData(45, "seconds", 45)]
+    public void ConvertTotal_expresses_a_duration_total_in_the_metric_unit(double raw, string unit, double expected)
+        => SecondsDisplay.ConvertTotal((decimal)raw, isDurationMetric: true, unit).Should().Be((decimal)expected);
+
+    [Theory]
+    [InlineData(null)] // a "+ Tempo" field ships with no unit: the total stays a second count
+    [InlineData("l")]
+    public void ConvertTotal_leaves_a_duration_total_raw_when_the_unit_is_not_a_time_unit(string? unit)
+        => SecondsDisplay.ConvertTotal(120m, isDurationMetric: true, unit).Should().Be(120m);
+
+    [Fact]
+    public void ConvertTotal_leaves_a_non_duration_total_alone_even_on_a_time_unit()
+        => SecondsDisplay.ConvertTotal(120m, isDurationMetric: false, "minutes").Should().Be(120m);
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(2147483648)] // int.MaxValue + 1: cannot be a real second count, and the cast would throw
+    public void ConvertTotal_leaves_totals_outside_the_second_count_range_raw(double raw)
+        => SecondsDisplay.ConvertTotal((decimal)raw, isDurationMetric: true, "minutes").Should().Be((decimal)raw);
 }

@@ -236,10 +236,9 @@ public sealed class HabitTreeQueryService(
                             // in the metric's own unit (90s on a "minutes" metric = 1.5), not the raw
                             // second count with a "minutes" label (which read "90 minutes" for 90s).
                             todayCounterIsDuration = counterMetric.Type == MetricType.Seconds;
-                            if (todayCounterIsDuration && todayCounterTotal is { } secs)
-                                todayCounterTotal =
-                                    Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)secs, counterMetric.UnitCode)
-                                    ?? todayCounterTotal; // no time unit to convert into: stays raw seconds
+                            if (todayCounterTotal is { } secs)
+                                todayCounterTotal = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(
+                                    secs, todayCounterIsDuration, counterMetric.UnitCode);
                         }
                         else
                         {

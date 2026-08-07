@@ -552,8 +552,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), _periodList, clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
-        Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, ramp, configs, abstinence, clock, events);
-        Panoramica = new PanoramicaViewModel(tree, goals, completions, clock);
+        Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events);
+        Panoramica = new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
         TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
         // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
@@ -1044,9 +1044,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
             // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
             var isDuration = primaryMetric.Type == MetricType.Seconds;
-            mag = isDuration
-                ? Recordum.Core.Formatting.SecondsDisplay.ConvertToUnit((int)rawSum, unit) ?? rawSum
-                : rawSum;
+            mag = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(rawSum, isDuration, unit);
             // No time unit to convert into: mag is still raw seconds, so render it as h:mm:ss rather
             // than letting the strip print "720" where the records list reads "12:00" (W23-VF2).
             durationText = Formatting.CounterTotalDisplay.AsRawDuration(isDuration, unit, mag);

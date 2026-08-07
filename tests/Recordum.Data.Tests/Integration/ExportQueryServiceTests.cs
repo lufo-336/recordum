@@ -239,6 +239,99 @@ public sealed class ExportQueryServiceTests
     }
 
     [Fact]
+    public async Task Export_goal_actual_converts_duration_seconds_to_the_metric_unit()
+    {
+        // The target was typed in hours; the actual must be hours too, or the summary reads
+        // "27000 / 10" for a night that was 7.5 hours long.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var hoursUnitId = Guid.Parse("00000001-0000-0000-0000-000000000009"); // seeded "hours" unit
+        long Ms(int d) => new DateTimeOffset(2026, 5, d, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "Sleep" });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Hours slept",
+                Type = MetricType.Seconds,
+                SortOrder = 0,
+                UnitOfMeasureId = hoursUnitId,
+            });
+            var completionId = Guid.NewGuid();
+            db.Completions.Add(new Completion { Id = completionId, HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(20) });
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completionId, MetricDefinitionId = metricId, ValueSeconds = 27000 });
+            db.Goals.Add(new Goal
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                Name = "Sleep enough",
+                MetricDefinitionId = metricId,
+                TargetValue = 10m,
+                PeriodType = GoalPeriodType.Open,
+                IsClosed = false,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+        var habit = Assert.Single(model.Habits);
+
+        Assert.Equal(7.5m, habit.Summary.GoalActual);
+        Assert.Equal(10m, habit.Summary.GoalTarget);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_goal_actual_on_a_non_duration_metric_is_left_alone()
+    {
+        // A Decimal metric already stores the unit it displays: converting it would divide by 3600.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
+        var habitId = Guid.NewGuid();
+        var metricId = Guid.NewGuid();
+        var hoursUnitId = Guid.Parse("00000001-0000-0000-0000-000000000009");
+        long Ms(int d) => new DateTimeOffset(2026, 5, d, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "Study" });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = metricId,
+                HabitNodeId = habitId,
+                Name = "Ore",
+                Type = MetricType.Decimal,
+                SortOrder = 0,
+                UnitOfMeasureId = hoursUnitId,
+            });
+            var completionId = Guid.NewGuid();
+            db.Completions.Add(new Completion { Id = completionId, HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 20, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = Ms(20) });
+            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completionId, MetricDefinitionId = metricId, ValueDecimal = 7.5m });
+            db.Goals.Add(new Goal
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                Name = "Study enough",
+                MetricDefinitionId = metricId,
+                TargetValue = 10m,
+                PeriodType = GoalPeriodType.Open,
+                IsClosed = false,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+
+        Assert.Equal(7.5m, Assert.Single(model.Habits).Summary.GoalActual);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Export_resistance_habit_lists_periods_not_completions()
     {
         var t0 = new DateTimeOffset(2026, 5, 1, 9, 0, 0, TimeSpan.Zero);

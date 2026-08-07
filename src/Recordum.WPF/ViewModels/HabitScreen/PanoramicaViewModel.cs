@@ -38,10 +38,16 @@ public sealed partial class PanoramicaViewModel : ObservableObject
     /// <summary>Click on a child row: the host selects that habit in the Home tree (spec §A.3).</summary>
     public event EventHandler<Guid>? ChildSelected;
 
-    public PanoramicaViewModel(IHabitTreeQueryService tree, IGoalService goals, ICompletionService completions, IClock clock)
+    public PanoramicaViewModel(
+        IHabitTreeQueryService tree,
+        IGoalService goals,
+        ICompletionService completions,
+        IMetricDefinitionService metrics,
+        IReferenceDataQueryService refData,
+        IClock clock)
     {
         _tree = tree;
-        Goal = new GoalProgressCardViewModel(goals, completions, clock);
+        Goal = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
     }
 
     public async Task LoadAsync(HabitNode group, CancellationToken ct = default)

@@ -20,6 +20,7 @@ public sealed class DetailViewModelTests
             new FakeHourlyDistributionQueryService(),
             new FakeCompletionService(),
             new FakeMetricDefinitionService(),
+            new FakeReferenceData(),
             new IntensityRampResolver(),
             new FakeHabitConfigService(),
             new FakeAbstinenceService(),

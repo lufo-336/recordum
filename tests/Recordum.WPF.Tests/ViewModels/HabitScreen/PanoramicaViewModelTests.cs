@@ -15,7 +15,8 @@ public class PanoramicaViewModelTests
     private readonly FakeClock _clock = new(new DateTimeOffset(2026, 6, 11, 12, 0, 0, TimeSpan.Zero));
 
     private PanoramicaViewModel CreateSut() =>
-        new(_tree, new FakeGoalService(), new FakeCompletionService(), _clock);
+        new(_tree, new FakeGoalService(), new FakeCompletionService(),
+            new FakeMetricDefinitionService(), new FakeReferenceData(), _clock);
 
     private static HomeTreeRow Row(Guid id, string name, Guid? parent, HabitType? type = HabitType.Action, bool today = false) =>
         new(id, parent, name, "#112233", type, null, 0, today, PinScope.None, 0, false,
