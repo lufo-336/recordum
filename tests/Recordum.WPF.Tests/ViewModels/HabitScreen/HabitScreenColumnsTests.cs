@@ -206,21 +206,6 @@ public class HabitScreenColumnsTests
     }
 
     [Fact]
-    public async Task Opening_configura_raises_ConfigureRequested()
-    {
-        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out var _unused);
-        var id = AddHabit(nodes);
-        await sut.LoadAsync(id);
-        var raised = 0;
-        sut.ConfigureRequested += (_, _) => raised++;
-
-        sut.IsConfiguraOpen = true;
-
-        raised.Should().Be(1);
-        sut.IsConfiguraOpen.Should().BeTrue();
-    }
-
-    [Fact]
     public async Task Reopen_defaults_to_the_last_closed_column()
     {
         var (sut, nodes) = HabitScreenViewModelFactory.CreateWithSettings(out var settings);

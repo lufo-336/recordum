@@ -32,8 +32,6 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     [ObservableProperty] private string? _editedNotes;
     [ObservableProperty] private DateTime _editedDate;
 
-    public event EventHandler<Guid>? EditRequested;
-
     public CompletionRowViewModel(
         Completion completion,
         ICompletionService completions,
@@ -64,7 +62,6 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         EditedNotes = Notes;
         EditedDate = CompletedAt;
         IsEditing = true;
-        EditRequested?.Invoke(this, Id);
     }
 
     [RelayCommand]

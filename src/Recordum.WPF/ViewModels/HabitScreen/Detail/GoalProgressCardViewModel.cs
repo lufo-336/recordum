@@ -28,11 +28,6 @@ public sealed partial class GoalProgressCardViewModel(
     [ObservableProperty] private bool _isEmpty;
     [ObservableProperty] private string _emptyMessage = string.Empty;
 
-    public event EventHandler? OpenConfigureRequested;
-
-    [RelayCommand]
-    private void OpenConfigure() => OpenConfigureRequested?.Invoke(this, EventArgs.Empty);
-
     public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);

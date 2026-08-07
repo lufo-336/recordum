@@ -26,8 +26,7 @@ public sealed partial class ActionQuickAddViewModel(ICompletionService completio
                 CompletedAtMs = ms,
                 IsRetroactive = retro,
             };
-            var id = await Completions.RecordAsync(draft, ct: ct).ConfigureAwait(true);
-            OnSaved(id);
+            await Completions.RecordAsync(draft, ct: ct).ConfigureAwait(true);
         }
         catch (Exception ex)
         {

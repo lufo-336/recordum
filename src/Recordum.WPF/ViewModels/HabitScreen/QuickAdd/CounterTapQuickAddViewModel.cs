@@ -34,13 +34,12 @@ public sealed partial class CounterTapQuickAddViewModel(ICompletionService compl
         try
         {
             var (ts, ms, retro) = ResolveCompletionTimestamp();
-            var id = await Completions.RecordAsync(new Completion
+            await Completions.RecordAsync(new Completion
             {
                 HabitNodeId = Node.Id, CompletedAt = ts, CompletedAtMs = ms, IsRetroactive = retro,
             }, ct: ct).ConfigureAwait(true);
             DayCount++;
             UndoLastCommand.NotifyCanExecuteChanged();
-            OnSaved(id);
         }
         catch (Exception ex) { SetUnexpectedError(ex); }
         finally { IsSaving = false; }

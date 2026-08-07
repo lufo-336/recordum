@@ -30,8 +30,7 @@ public sealed partial class JournalQuickAddViewModel(ICompletionService completi
         try
         {
             var day = DateOnly.FromDateTime(CompletionDate.Date);
-            var noteId = await diary.SaveEntryAsync(Node.Id, day, Notes!, ct).ConfigureAwait(true);
-            OnSaved(noteId);
+            await diary.SaveEntryAsync(Node.Id, day, Notes!, ct).ConfigureAwait(true);
         }
         catch (Exception ex)
         {

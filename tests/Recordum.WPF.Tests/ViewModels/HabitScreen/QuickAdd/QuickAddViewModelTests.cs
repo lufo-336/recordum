@@ -58,21 +58,6 @@ public class ActionQuickAddViewModelTests
     }
 
     [Fact]
-    public async Task SaveAsync_raises_CompletionSaved_event()
-    {
-        var sut = new ActionQuickAddViewModel(new FakeCompletionService(), new FakeClock())
-        {
-            Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action },
-        };
-        Guid? fired = null;
-        sut.CompletionSaved += (_, id) => fired = id;
-
-        await sut.SaveAsync();
-
-        fired.Should().NotBeNull();
-    }
-
-    [Fact]
     public async Task SaveAsync_without_node_is_noop()
     {
         var cs = new FakeCompletionService();

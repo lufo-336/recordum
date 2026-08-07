@@ -71,9 +71,6 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
     /// <summary>Raised after a successful save, carrying the persisted chart id.</summary>
     public event EventHandler<Guid>? Saved;
 
-    /// <summary>Raised whenever the series list or a row's content changes. Internal signal for the live preview (Task 12).</summary>
-    public event EventHandler? SeriesChanged;
-
     /// <summary>Gates <see cref="SaveCommand"/>: a non-blank name and at least one row with a habit selected.</summary>
     public bool CanSave => !string.IsNullOrWhiteSpace(Name) && Series.Any(r => r.SelectedHabit is not null);
 
@@ -170,7 +167,6 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
         row.Changed -= OnRowChanged;
         Series.Remove(row);
         SaveCommand.NotifyCanExecuteChanged();
-        RaiseSeriesChanged();
         // Removing a row changes the previewed series set, so re-render (removal doesn't fire row.Changed).
         RaisePreviewRequested();
     }
@@ -184,11 +180,8 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
     private void OnRowChanged(object? sender, EventArgs e)
     {
         SaveCommand.NotifyCanExecuteChanged();
-        RaiseSeriesChanged();
         RaisePreviewRequested();
     }
-
-    private void RaiseSeriesChanged() => SeriesChanged?.Invoke(this, EventArgs.Empty);
 
     partial void OnNameChanged(string value) => SaveCommand.NotifyCanExecuteChanged();
     partial void OnSelectedKindChanged(ChartKind value) => RaisePreviewRequested();

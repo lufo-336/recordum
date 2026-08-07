@@ -64,8 +64,7 @@ public sealed partial class MeasuredQuickAddViewModel(
                 IsRetroactive = retro,
                 Notes = Notes,
             };
-            var id = await Completions.RecordAsync(draft, values, ct: ct).ConfigureAwait(true);
-            OnSaved(id);
+            await Completions.RecordAsync(draft, values, ct: ct).ConfigureAwait(true);
         }
         catch (Exception ex)
         {

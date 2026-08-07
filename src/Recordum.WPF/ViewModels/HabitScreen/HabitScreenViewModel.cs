@@ -89,11 +89,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     partial void OnIsConfiguraOpenChanged(bool value)
     {
         OnColumnFlag(HabitColumn.Configura, value);
-        if (value && !_restoringColumns)
-        {
-            ConfigureRequested?.Invoke(this, EventArgs.Empty);
-            _ = LoadEditorAsync();
-        }
+        if (value && !_restoringColumns) _ = LoadEditorAsync();
         NotifyShowFlags();
     }
 
@@ -483,7 +479,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(QuickAddForCronologia));
     }
 
-    public event EventHandler? ConfigureRequested;
     public event EventHandler? ExportRequested;
 
     public HabitScreenViewModel(
@@ -1087,14 +1082,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (string.IsNullOrWhiteSpace(json)) return null;
         try { return System.Text.Json.JsonSerializer.Deserialize<string[]>(json); }
         catch (System.Text.Json.JsonException) { return null; }
-    }
-
-    [RelayCommand]
-    private void OpenConfigure()
-    {
-        // Idempotent: opening when already open still re-raises so the host reloads the editor.
-        if (IsConfiguraOpen) ConfigureRequested?.Invoke(this, EventArgs.Empty);
-        else IsConfiguraOpen = true; // the flag's change handler raises ConfigureRequested
     }
 
     [RelayCommand]

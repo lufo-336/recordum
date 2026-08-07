@@ -211,8 +211,7 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
                 IsRetroactive = retro,
                 Notes = Notes,
             };
-            var id = await Completions.RecordAsync(draft, values, ct: ct).ConfigureAwait(true);
-            OnSaved(id);
+            await Completions.RecordAsync(draft, values, ct: ct).ConfigureAwait(true);
         }
         catch (Exception ex)
         {

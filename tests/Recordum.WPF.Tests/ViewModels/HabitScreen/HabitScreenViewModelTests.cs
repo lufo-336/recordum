@@ -154,21 +154,6 @@ public class HabitScreenViewModelTests
     }
 
     [Fact]
-    public async Task OpenConfigureCommand_raises_event()
-    {
-        var sut = CreateSut(out var nodes, out _, out _, out _, out _);
-        var id = Guid.NewGuid();
-        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "x" };
-        await sut.LoadAsync(id);
-        var fired = 0;
-        sut.ConfigureRequested += (_, _) => fired++;
-
-        sut.OpenConfigureCommand.Execute(null);
-
-        fired.Should().Be(1);
-    }
-
-    [Fact]
     public async Task Focus_expands_one_column_and_hides_the_others()
     {
         var sut = CreateSut(out var nodes, out _, out _, out _, out _);

@@ -11,8 +11,8 @@ namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 /// recording against the currently-selected <see cref="Node"/> on <see cref="CompletionDate"/>.
 /// Each habit type has its own subclass (action tap, counter, measured series, abstinence
 /// Inizio/Ricaduta, journal); the host picks the right one from the habit type and binds it via a
-/// template selector. Subclasses implement <see cref="SaveAsync"/> and raise
-/// <see cref="CompletionSaved"/> so the screen can refresh. Shared here: the target node, the date,
+/// template selector. Subclasses implement <see cref="SaveAsync"/>; the screen refreshes itself after
+/// a save rather than listening to the quick-add. Shared here: the target node, the date,
 /// and the saving/error state.
 /// </summary>
 public abstract partial class QuickAddViewModelBase : ObservableObject
@@ -25,8 +25,6 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private bool _isSaving;
 
-    public event EventHandler<Guid>? CompletionSaved;
-
     protected QuickAddViewModelBase(ICompletionService completions, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(completions);
@@ -37,8 +35,6 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
     }
 
     public abstract Task SaveAsync(CancellationToken ct = default);
-
-    protected void OnSaved(Guid completionId) => CompletionSaved?.Invoke(this, completionId);
 
     /// <summary>Shows a localized message for an unexpected save failure and traces the real exception,
     /// so a raw EF/SQLite message (e.g. "UNIQUE constraint failed") never leaks into the UI (CR21).</summary>
