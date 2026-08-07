@@ -922,6 +922,12 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 ### R6. CLAUDE.md ridotto — strategia di consultazione dei file companion
 - **Stato**: `fixed` (questo commit) — `CLAUDE.md` rimosso le sezioni storiche, ora pointer a `docs/MILESTONES.md`. Tracker bug in questo file.
 
+### R7. Template seed "Workout log" — metrica durata senza unità
+- **Stato**: `reported` (2026-08-07, trovato dalla review finale del giro "unità durata obbligatoria").
+- **Scope**: `HabitTemplateSeed.cs:21` definisce `{"name":"Duration","type":"Seconds"}` senza chiave `unit`, e `HabitTemplateService` lascia `UnitOfMeasureId = null` quando il codice unità manca. Dal 2026-08-07 il builder impedisce di *creare* una durata senza unità e Configura ne assegna una, ma istanziare questo template ufficiale continua a produrre esattamente l'oggetto che la regola vuole rendere impossibile — su ogni installazione nuova, non solo sui dati legacy.
+- **Perché non è stato chiuso nello stesso giro**: il seed è `HasData`, quindi correggerlo richiede una migration data-only (stile `SleepRepeatableV215`), esplicitamente fuori dai vincoli di quel piano. Una chiave JSON di distanza dalla correttezza.
+- **Correlato**: `HabitBuilderViewModel.SaveAsTemplateAsync` non è protetto da `CanLaunch`, quindi si può salvare un template con un campo Tempo senza unità che non si potrebbe lanciare — il gate del builder è aggirabile col giro salva→istanzia. Simmetrico al buco preesistente sulle scale.
+
 ---
 
 ## Risolti
