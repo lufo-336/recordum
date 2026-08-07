@@ -262,7 +262,7 @@
                                         </ComboBox.Style>
                                     </ComboBox>
 
-                                    <!-- Time-unit picker (Time) — optional unit (hours/minutes/seconds) so charts read sensibly -->
+                                    <!-- Time-unit picker (Time) — a duration metric always carries a unit (hours/minutes/seconds); required, not optional -->
                                     <ComboBox Grid.Column="2"
                                               MinWidth="120"
                                               Margin="8,0,0,0"

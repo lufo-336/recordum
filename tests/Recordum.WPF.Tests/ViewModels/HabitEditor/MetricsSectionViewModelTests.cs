@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -171,6 +172,70 @@ public class MetricsSectionViewModelTests
         row.Type = MetricType.Seconds;
 
         row.Units.Select(u => u.Code).Should().BeEquivalentTo(new[] { "hours", "minutes", "seconds" });
+    }
+
+    [Fact]
+    public async Task RebuildUnits_coercion_on_type_change_to_duration_does_not_wipe_the_unit()
+    {
+        // RebuildUnits() clears the row's own Units collection, which is the ComboBox's live
+        // ItemsSource. Simulate WPF's SelectedValue coercion on Reset the same way the existing
+        // reload regression test does, but on the row's own Units instead of the section's
+        // AvailableUnits — that's the door this finding walks through instead.
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+        row.Units.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset) row.UnitOfMeasureId = null;
+        };
+
+        row.Type = MetricType.Seconds;
+        await Task.Delay(20);
+
+        var minutes = _refData.Units.Single(u => u.Code == "minutes");
+        row.UnitOfMeasureId.Should().Be(minutes.Id);
+        _metrics.Store[row.Id].UnitOfMeasureId.Should().Be(minutes.Id);
+    }
+
+    [Fact]
+    public async Task RebuildUnits_coercion_on_type_change_between_non_duration_types_does_not_wipe_the_unit()
+    {
+        // The insidious half of the finding: a type change with no duration involved at all used to
+        // clear the row's Units list too (RebuildUnits repopulates it for every type), coercing away a
+        // perfectly good unit that had nothing to do with the type change.
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+        var litres = _refData.Units.Single(u => u.Code == "l");
+        row.UnitOfMeasureId = litres.Id;
+        await Task.Delay(20);
+        row.Units.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset) row.UnitOfMeasureId = null;
+        };
+
+        row.Type = MetricType.Decimal; // any non-duration type change away from the Integer default
+        await Task.Delay(20);
+
+        row.UnitOfMeasureId.Should().Be(litres.Id);
+        _metrics.Store[row.Id].UnitOfMeasureId.Should().Be(litres.Id);
+    }
+
+    [Fact]
+    public async Task Type_change_to_duration_persists_type_and_unit_in_a_single_UpdateAsync_call()
+    {
+        // The type+unit write is combined into ONE UpdateAsync specifically to avoid two concurrent
+        // read-modify-writes racing on separate DbContext instances (IDbContextFactory) and losing one
+        // of the two changes. RebuildUnits()'s own coercion defense must not add a second call.
+        var sut = CreateSut();
+        await sut.AddMetricCommand.ExecuteAsync(null);
+        var row = sut.Metrics[0];
+        var before = _metrics.UpdateCallCount;
+
+        row.Type = MetricType.Seconds;
+        await Task.Delay(20);
+
+        (_metrics.UpdateCallCount - before).Should().Be(1);
     }
 
     [Fact]

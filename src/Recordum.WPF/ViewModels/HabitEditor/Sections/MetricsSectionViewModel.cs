@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
@@ -23,9 +22,10 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
 
     public async Task LoadAsync(HabitNode node)
     {
-        // Detach the previous load's rows before touching AvailableUnits: emptying the shared
-        // ItemsSource makes every live unit ComboBox coerce SelectedValue to null, and an
-        // attached row would persist that null — silently wiping the metric's unit.
+        // Detach the previous load's rows before clearing Metrics/AvailableUnits: each row still owns
+        // its own Units list (the actual ComboBox ItemsSource, see MetricRowViewModel), so nothing here
+        // coerces a live SelectedValue anymore. Kept as a defense anyway — a detached row ignores any
+        // property change it might still receive from a stale binding during teardown.
         foreach (var row in Metrics) row.Detach();
         Metrics.Clear();
         AvailableUnits.Clear();
@@ -143,15 +143,29 @@ public sealed partial class MetricRowViewModel : ObservableObject
 
     private void RebuildUnits()
     {
-        Units.Clear();
-        if (Type != MetricType.Seconds)
+        // Units is the ComboBox's live ItemsSource: Clear() coerces a bound SelectedValue
+        // (UnitOfMeasureId) to null through the two-way binding — the 4d01f9c data-wipe, reopened on
+        // this row. Suppress the property's own persistence for the whole rebuild and re-assert the
+        // value we captured before the Clear() so the coerced null never reaches the store.
+        var keep = UnitOfMeasureId;
+        var previous = _suppressUnitPersist;
+        _suppressUnitPersist = true;
+        try
         {
-            foreach (var u in _allUnits) Units.Add(u);
-            return;
+            Units.Clear();
+            if (Type != MetricType.Seconds)
+            {
+                foreach (var u in _allUnits) Units.Add(u);
+            }
+            else
+            {
+                foreach (var u in _allUnits.Where(u => SecondsDisplay.IsTimeUnit(u.Code))) Units.Add(u);
+                // Keep a legacy duration's foreign unit selectable so the binding still finds its item.
+                if (_allUnits.FirstOrDefault(u => u.Id == keep) is { } current && !Units.Contains(current))
+                    Units.Add(current);
+            }
+            if (UnitOfMeasureId != keep) UnitOfMeasureId = keep;
         }
-        foreach (var u in _allUnits.Where(u => SecondsDisplay.IsTimeUnit(u.Code))) Units.Add(u);
-        // Keep a legacy duration's foreign unit selectable so the binding still finds its item.
-        if (_allUnits.FirstOrDefault(u => u.Id == UnitOfMeasureId) is { } current && !Units.Contains(current))
-            Units.Add(current);
+        finally { _suppressUnitPersist = previous; }
     }
 }

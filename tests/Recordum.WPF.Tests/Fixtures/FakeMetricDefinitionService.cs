@@ -7,6 +7,7 @@ public sealed class FakeMetricDefinitionService : IMetricDefinitionService
 {
     public Dictionary<Guid, MetricDefinition> Store { get; } = new();
     public Exception? NextException { get; set; }
+    public int UpdateCallCount { get; private set; }
 
     public ValueTask<Guid> CreateAsync(MetricDefinition draft, CancellationToken ct = default)
     {
@@ -19,6 +20,7 @@ public sealed class FakeMetricDefinitionService : IMetricDefinitionService
     public ValueTask UpdateAsync(Guid id, Action<MetricDefinition> mutate, CancellationToken ct = default)
     {
         Throw();
+        UpdateCallCount++;
         if (Store.TryGetValue(id, out var m)) mutate(m);
         return ValueTask.CompletedTask;
     }

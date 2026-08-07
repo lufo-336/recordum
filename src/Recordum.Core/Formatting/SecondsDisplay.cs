@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace Recordum.Core.Formatting;
 
 /// <summary>Converts a stored value_seconds into the unit chosen on the metric (U8): hours, minutes,
