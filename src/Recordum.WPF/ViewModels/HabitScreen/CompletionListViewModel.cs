@@ -148,11 +148,9 @@ public sealed partial class CompletionListViewModel : ObservableObject
         if (v.ValueText is { } t) return t;
         // Duration metrics store ValueSeconds only; without this branch a series with just a time
         // (e.g. 1:30) rendered as a blank field in Cronologia/Records despite being saved (CR13).
-        // U8: display in the metric's own unit ("7,5 ore") when the metric has a time unit chosen on
-        // it — localized to match the quick-add selector; falls back to the bare h:mm rendering when
-        // the metric has no unit / a non-time unit.
-        if (v.ValueSeconds is { } secs)
-            return Recordum.WPF.Formatting.DurationUnitDisplay.InUnit(secs, m.Unit) ?? DurationFormat.Format(secs);
+        // A single recording always reads as a clock — the metric's unit governs aggregates (day
+        // total, goal, export), where the value is a number you compare against a target.
+        if (v.ValueSeconds is { } secs) return DurationFormat.Format(secs);
         var unit = m.Unit is { } u ? " " + u : string.Empty;
         if (v.ValueDecimal is { } d) return d.ToString(CultureInfo.CurrentCulture) + unit;
         if (v.ValueInteger is { } i) return i.ToString(CultureInfo.CurrentCulture) + unit;

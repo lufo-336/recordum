@@ -3,10 +3,10 @@ using System.Linq;
 namespace Recordum.Core.Formatting;
 
 /// <summary>Converts a stored value_seconds into the unit chosen on the metric (U8): hours, minutes,
-/// or seconds. Numeric-only (no localized suffix — that belongs to the presentation layer): the WPF
-/// records list wraps this with a localized unit word (DurationUnitDisplay), the export projection
-/// uses the bare number. Null when the unit code is not a time unit — callers fall back to their own
-/// h:mm rendering.</summary>
+/// or seconds. Numeric-only (no localized suffix — that belongs to the presentation layer). Used by
+/// the aggregates: the Home row total, the "Today" total, the day strip, the goal's actual and the
+/// export projection. A single recording is not an aggregate — it reads as a clock via
+/// DurationFormat, so it does not come through here.</summary>
 public static class SecondsDisplay
 {
     /// <summary>The unit codes a duration can be expressed in, lowercase as the unit table stores them.
