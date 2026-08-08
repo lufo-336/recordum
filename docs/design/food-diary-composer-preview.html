@@ -1,0 +1,169 @@
+<h2>Dove vive il composer "nota veloce"?</h2>
+<p class="subtitle">
+  Gesto primario = Nota veloce. Un salvataggio = <strong>Nota(Diario) + Completion</strong> via <code>IDiaryService</code>
+  (opzione D già scelta), più le foto dell'Onda 1b. Cinque pasti = cinque salvataggi nella stessa giornata.
+  La domanda è <em>dove</em> si scrive e <em>dove</em> rivedi quello che hai già scritto oggi.
+</p>
+
+<style>
+  .wf { font-size: 12px; line-height: 1.35; }
+  .wf-shell { border: 1px solid var(--border, #d5d5d5); border-radius: 8px; overflow: hidden; }
+  .wf-strip { padding: 8px 10px; border-bottom: 1px solid var(--border, #d5d5d5);
+              display: flex; align-items: center; gap: 8px; }
+  .wf-accent { width: 3px; height: 20px; border-radius: 2px; background: #e67e22; }
+  .wf-cols { display: flex; min-height: 210px; }
+  .wf-col { flex: 1; border-right: 1px solid var(--border, #d5d5d5); }
+  .wf-col:last-child { border-right: 0; }
+  .wf-colhead { padding: 6px 9px; font-size: 10px; letter-spacing: .06em;
+                text-transform: uppercase; opacity: .55; border-bottom: 1px solid var(--border, #d5d5d5); }
+  .wf-pad { padding: 9px; }
+  .wf-field { border: 0; border-bottom: 1.5px solid #e67e22; padding: 6px 2px; opacity: .85; }
+  .wf-field.tall { min-height: 58px; }
+  .wf-btn { display: inline-block; border: 1px solid var(--border, #d5d5d5);
+            border-radius: 5px; padding: 3px 9px; font-size: 11px; }
+  .wf-btn.primary { background: #e67e22; border-color: #e67e22; color: #fff; }
+  .wf-thumb { width: 30px; height: 30px; border-radius: 4px; background: rgba(230,126,34,.22);
+              display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+  .wf-entry { display: flex; gap: 7px; padding: 6px 0; border-top: 1px dashed var(--border, #d5d5d5); }
+  .wf-time { opacity: .5; min-width: 34px; font-variant-numeric: tabular-nums; }
+  .wf-ghost { opacity: .32; }
+  .wf-row { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+  .wf-note { font-size: 11px; opacity: .6; margin-top: 6px; }
+</style>
+
+<div class="cards wf">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px">
+      <div class="wf-shell">
+        <div class="wf-strip">
+          <div class="wf-accent"></div>
+          <strong>Food diary</strong>
+          <span class="wf-ghost">· ● ● ● ○ ● ● ●</span>
+          <span style="margin-left:auto" class="wf-btn">＋ Nota veloce</span>
+        </div>
+        <div class="wf-cols">
+          <div class="wf-col" style="flex:0 0 34%">
+            <div class="wf-colhead">Cronologia</div>
+            <div class="wf-pad wf-ghost">calendario<br>+ elenco giorni</div>
+          </div>
+          <div class="wf-col">
+            <div class="wf-colhead">✎ Diario</div>
+            <div class="wf-pad">
+              <div class="wf-field">Insalata di farro, mezza porzione…<span style="opacity:.4">|</span></div>
+              <div class="wf-row">
+                <span class="wf-thumb">🖼</span>
+                <span class="wf-btn">＋ Foto</span>
+                <span style="margin-left:auto" class="wf-btn primary">Salva</span>
+              </div>
+              <div style="margin-top:10px">
+                <div class="wf-entry"><span class="wf-time">13:10</span><span>Pasta al pesto</span></div>
+                <div class="wf-entry"><span class="wf-time">08:20</span><span>Caffè + fette biscottate</span><span class="wf-thumb" style="width:20px;height:20px;font-size:10px">🖼</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · Composer in cima alla colonna Diario</h3>
+      <p>
+        Il bottone della fascia "Oggi" apre la colonna Diario <em>e mette il cursore nel campo</em>. Sotto il composer,
+        le voci di oggi in righe-scheda (ora · testo · miniature). L'editor Markdown a tutta pagina resta la faccia
+        del gesto "Scrivi la voce di oggi".
+      </p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px">
+      <div class="wf-shell">
+        <div class="wf-strip" style="display:block">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="wf-accent"></div>
+            <strong>Food diary</strong>
+            <span class="wf-ghost">· ● ● ● ○ ● ● ●</span>
+          </div>
+          <div style="margin-top:8px">
+            <div class="wf-field">Insalata di farro, mezza porzione…<span style="opacity:.4">|</span></div>
+            <div class="wf-row">
+              <span class="wf-thumb">🖼</span>
+              <span class="wf-btn">＋ Foto</span>
+              <span style="margin-left:auto" class="wf-btn primary">Salva</span>
+            </div>
+            <div class="wf-note">oggi: 13:10 Pasta al pesto · 08:20 Caffè</div>
+          </div>
+        </div>
+        <div class="wf-cols">
+          <div class="wf-col">
+            <div class="wf-colhead">Cronologia</div>
+            <div class="wf-pad wf-ghost">calendario<br>+ elenco giorni</div>
+          </div>
+          <div class="wf-col">
+            <div class="wf-colhead">Note</div>
+            <div class="wf-pad wf-ghost">elenco note<br>+ galleria foto</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Composer dentro la fascia "Oggi"</h3>
+      <p>
+        Si scrive <em>senza aprire nessuna colonna</em> — la fascia è sempre visibile (è il punto di U10). Le voci
+        già salvate le vedi solo come riga riassuntiva; per rileggerle davvero apri Cronologia o Note. La fascia
+        cresce in altezza per tutti gli habit journal.
+      </p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px">
+      <div class="wf-shell" style="position:relative">
+        <div class="wf-strip wf-ghost">
+          <div class="wf-accent"></div><strong>Food diary</strong>
+          <span style="margin-left:auto" class="wf-btn">＋ Nota veloce</span>
+        </div>
+        <div class="wf-cols wf-ghost">
+          <div class="wf-col"><div class="wf-colhead">Cronologia</div><div class="wf-pad">calendario</div></div>
+          <div class="wf-col"><div class="wf-colhead">Note</div><div class="wf-pad">elenco note</div></div>
+        </div>
+        <div style="position:absolute;inset:34px 26px 26px 26px;border:1px solid var(--border,#d5d5d5);
+                    border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.22);background:var(--bg,#fff);padding:11px">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.55">Nota veloce · oggi 19:42</div>
+          <div class="wf-field tall" style="margin-top:8px">Insalata di farro, mezza porzione…<span style="opacity:.4">|</span></div>
+          <div class="wf-row">
+            <span class="wf-thumb">🖼</span><span class="wf-thumb">🖼</span>
+            <span class="wf-btn">＋ Foto</span>
+            <span style="margin-left:auto" class="wf-btn">Annulla</span>
+            <span class="wf-btn primary">Salva</span>
+          </div>
+          <div class="wf-note">Esc chiude · Ctrl+Invio salva</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · Dialog modale rapido</h3>
+      <p>
+        Un pannello al centro, tastiera-first. Il più veloce da raggiungere da qualunque punto (anche dalla Home,
+        senza entrare nell'abitudine), ma è una superficie nuova che non riusa nessun componente esistente, e la
+        modale copre proprio le voci di oggi che vorresti rileggere mentre scrivi.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section">
+  <p class="label">La mia raccomandazione</p>
+  <p>
+    <strong>A</strong>. È l'unica che risponde anche alla seconda metà del problema — <em>rivedere</em> i pasti di oggi
+    mentre ne aggiungi un altro — e riusa la colonna che per i journal è già la casa della scrittura, invece di
+    aprirne una terza. La fascia "Oggi" resta quello che l'Onda 2.2 ha costruito: un'affordance che porta alla
+    superficie giusta col cursore già pronto, non una superficie che se ne prende il lavoro.
+  </p>
+  <p>
+    Contro <strong>B</strong>: la fascia è alta ~40px per tutti i tipi; farla diventare un modulo di inserimento
+    per uno solo dei cinque la fa smettere di essere una fascia. Contro <strong>C</strong>: velocissima, ma è un
+    pezzo di UI in più da mantenere e nasconde il contesto proprio mentre scrivi.
+  </p>
+</div>
