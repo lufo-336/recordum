@@ -1,0 +1,204 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Recordum.Core;
+using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
+using Recordum.Core.Models;
+using Recordum.WPF.Resources;
+using Recordum.WPF.Services;
+using Recordum.WPF.ViewModels.HabitScreen.Notes;
+
+namespace Recordum.WPF.ViewModels.HabitScreen.Journal;
+
+/// <summary>Composer "nota veloce" della colonna Diario (Onda 2.4, U7). Ogni salvataggio e' una
+/// voce di diario vera — Nota(Diario) + Completion via IDiaryService — cosi' streak, heatmap e
+/// cifra chiave funzionano senza semantica nuova. Le foto restano percorsi in memoria finche' non
+/// esiste il noteId: allegare prima vorrebbe dire creare una nota-bozza che, se abbandoni, resta
+/// orfana.</summary>
+public sealed partial class JournalQuickEntryViewModel : ObservableObject
+{
+    private const string ImageFileFilter =
+        "Image files (*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp";
+
+    private readonly IDiaryService _diary;
+    private readonly INoteService _notes;
+    private readonly IAttachmentService _attachments;
+    private readonly IOpenFileDialog _dialog;
+    private readonly IConfirmationDialog _confirm;
+    private readonly IClock _clock;
+
+    private Guid _habitNodeId;
+    private DateOnly _day;
+
+    [ObservableProperty] private string _draft = string.Empty;
+    [ObservableProperty] private string? _errorMessage;
+    [ObservableProperty] private bool _isSaving;
+
+    /// <summary>Percorsi scelti e non ancora allegati. Diventano allegati solo dopo il salvataggio.</summary>
+    public ObservableCollection<string> PendingPhotos { get; } = [];
+
+    public ObservableCollection<JournalEntryRowViewModel> Entries { get; } = [];
+
+    public JournalQuickEntryViewModel(
+        IDiaryService diary,
+        INoteService notes,
+        IAttachmentService attachments,
+        IOpenFileDialog dialog,
+        IConfirmationDialog confirm,
+        IClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(diary);
+        ArgumentNullException.ThrowIfNull(notes);
+        ArgumentNullException.ThrowIfNull(attachments);
+        ArgumentNullException.ThrowIfNull(dialog);
+        ArgumentNullException.ThrowIfNull(confirm);
+        ArgumentNullException.ThrowIfNull(clock);
+        _diary = diary;
+        _notes = notes;
+        _attachments = attachments;
+        _dialog = dialog;
+        _confirm = confirm;
+        _clock = clock;
+        _day = Today();
+    }
+
+    private DateOnly Today() => DateOnly.FromDateTime(
+        TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone));
+
+    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        _habitNodeId = node.Id;
+        Draft = string.Empty;
+        ErrorMessage = null;
+        PendingPhotos.Clear();
+        await ReloadEntriesAsync(ct).ConfigureAwait(true);
+    }
+
+    /// <summary>Allinea il composer al giorno selezionato nel calendario di Cronologia — e' cosi'
+    /// che si registra la cena di ieri, senza un secondo selettore di data.</summary>
+    public void SetDay(DateOnly day)
+    {
+        _day = day;
+        _ = ReloadEntriesAsync(CancellationToken.None);
+    }
+
+    private async Task ReloadEntriesAsync(CancellationToken ct)
+    {
+        if (_habitNodeId == Guid.Empty) return;
+        var all = await _notes.ListByHabitAsync(_habitNodeId, ct).ConfigureAwait(true);
+        var ofDay = all
+            .Where(n => n.Category == NoteCategory.Diario
+                        && (n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt)) == _day)
+            .OrderByDescending(n => n.CreatedAt)
+            .ToList();
+
+        Entries.Clear();
+        foreach (var n in ofDay)
+        {
+            var row = new JournalEntryRowViewModel(n);
+            Entries.Add(row);
+            foreach (var a in await _attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(true))
+                row.Photos.Add(new AttachmentViewModel(a, _attachments));
+        }
+    }
+
+    [RelayCommand]
+    private void AddPhoto()
+    {
+        foreach (var path in _dialog.PromptMultiple(ImageFileFilter))
+            PendingPhotos.Add(path);
+    }
+
+    [RelayCommand]
+    private void RemovePendingPhoto(string? path)
+    {
+        if (path is not null) PendingPhotos.Remove(path);
+    }
+
+    [RelayCommand]
+    private void BeginEdit(JournalEntryRowViewModel? row)
+    {
+        if (row is null) return;
+        foreach (var r in Entries) r.IsEditing = false;
+        row.EditDraft = row.Text;
+        row.IsEditing = true;
+    }
+
+    [RelayCommand]
+    private void CancelEdit()
+    {
+        foreach (var r in Entries) r.IsEditing = false;
+    }
+
+    [RelayCommand]
+    private async Task Save(CancellationToken ct)
+    {
+        if (_habitNodeId == Guid.Empty) return;
+        ErrorMessage = null;
+
+        // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.
+        if (Entries.FirstOrDefault(r => r.IsEditing) is { } editing)
+        {
+            await _diary.EditEntryAsync(editing.Id, editing.EditDraft, ct).ConfigureAwait(true);
+            editing.Text = editing.EditDraft;
+            editing.IsEditing = false;
+            return;
+        }
+
+        var text = Draft?.Trim() ?? string.Empty;
+        if (text.Length == 0 && PendingPhotos.Count == 0)
+        {
+            ErrorMessage = Strings.Diario_QuickEntry_Error_Empty;
+            return;
+        }
+
+        IsSaving = true;
+        try
+        {
+            var noteId = await _diary.SaveEntryAsync(_habitNodeId, _day, text, ct).ConfigureAwait(true);
+
+            var failed = false;
+            foreach (var path in PendingPhotos.ToList())
+            {
+                try
+                {
+                    await _attachments.AddAsync(noteId, path, ct).ConfigureAwait(true);
+                }
+#pragma warning disable CA1031 // un file illeggibile non deve abortire il resto del batch
+                catch (Exception)
+#pragma warning restore CA1031
+                {
+                    failed = true;
+                }
+            }
+            if (failed) ErrorMessage = Strings.Diario_QuickEntry_Error_PhotoFailed;
+
+            Draft = string.Empty;
+            PendingPhotos.Clear();
+            await ReloadEntriesAsync(ct).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task Delete(JournalEntryRowViewModel? row, CancellationToken ct)
+    {
+        if (row is null) return;
+        var ok = await _confirm.ConfirmAsync(
+            Strings.Diario_QuickEntry_DeleteConfirm_Title,
+            Strings.Diario_QuickEntry_DeleteConfirm_Message).ConfigureAwait(true);
+        if (!ok) return;
+        await _diary.DeleteEntryAsync(row.Id, ct).ConfigureAwait(true);
+        Entries.Remove(row);
+    }
+}

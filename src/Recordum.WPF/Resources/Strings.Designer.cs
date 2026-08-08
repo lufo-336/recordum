@@ -469,6 +469,20 @@ public static class Strings
     public static string Editor_Registration_Gesture_Diary => Get("Editor.Registration.Gesture.Diary");
     public static string Editor_Registration_Gesture_QuickNote => Get("Editor.Registration.Gesture.QuickNote");
 
+    // Diario quick entry composer (Onda 2.4, U7)
+    public static string Diario_QuickEntry_Placeholder => Get("Diario.QuickEntry.Placeholder");
+    public static string Diario_QuickEntry_AddPhoto => Get("Diario.QuickEntry.AddPhoto");
+    public static string Diario_QuickEntry_Save => Get("Diario.QuickEntry.Save");
+    public static string Diario_QuickEntry_Today => Get("Diario.QuickEntry.Today");
+    public static string Diario_QuickEntry_Empty => Get("Diario.QuickEntry.Empty");
+    public static string Diario_QuickEntry_Edit => Get("Diario.QuickEntry.Edit");
+    public static string Diario_QuickEntry_Cancel => Get("Diario.QuickEntry.Cancel");
+    public static string Diario_QuickEntry_Delete => Get("Diario.QuickEntry.Delete");
+    public static string Diario_QuickEntry_Error_Empty => Get("Diario.QuickEntry.Error.Empty");
+    public static string Diario_QuickEntry_Error_PhotoFailed => Get("Diario.QuickEntry.Error.PhotoFailed");
+    public static string Diario_QuickEntry_DeleteConfirm_Title => Get("Diario.QuickEntry.DeleteConfirm.Title");
+    public static string Diario_QuickEntry_DeleteConfirm_Message => Get("Diario.QuickEntry.DeleteConfirm.Message");
+
     // Help menu + Diagnostic dialog
     public static string Workspace_Help => Get("Workspace.Help");
     public static string Diagnostic_Menu_Open => Get("Diagnostic.Menu.Open");

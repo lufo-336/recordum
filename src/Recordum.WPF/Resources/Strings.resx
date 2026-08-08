@@ -1273,6 +1273,43 @@ Details: {0}</value>
   <data name="Editor.Registration.Gesture.QuickNote" xml:space="preserve">
     <value>Quick note with photo</value>
   </data>
+  <!-- Onda 2.4: Diario quick-entry composer (U7) -->
+  <data name="Diario.QuickEntry.Placeholder" xml:space="preserve">
+    <value>What did you have?</value>
+  </data>
+  <data name="Diario.QuickEntry.AddPhoto" xml:space="preserve">
+    <value>Add photo</value>
+  </data>
+  <data name="Diario.QuickEntry.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Diario.QuickEntry.Today" xml:space="preserve">
+    <value>Entries for this day</value>
+  </data>
+  <data name="Diario.QuickEntry.Empty" xml:space="preserve">
+    <value>Nothing recorded yet.</value>
+  </data>
+  <data name="Diario.QuickEntry.Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Diario.QuickEntry.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Diario.QuickEntry.Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Diario.QuickEntry.Error.Empty" xml:space="preserve">
+    <value>Write something or add a photo.</value>
+  </data>
+  <data name="Diario.QuickEntry.Error.PhotoFailed" xml:space="preserve">
+    <value>Some photos could not be attached.</value>
+  </data>
+  <data name="Diario.QuickEntry.DeleteConfirm.Title" xml:space="preserve">
+    <value>Delete entry</value>
+  </data>
+  <data name="Diario.QuickEntry.DeleteConfirm.Message" xml:space="preserve">
+    <value>This entry and its photos will be removed.</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Schedule type</value>

@@ -8,17 +8,42 @@ namespace Recordum.WPF.Tests.Fixtures;
 /// stores a Diario note + a paired completion; DeleteEntryAsync removes both by either id.</summary>
 public sealed class FakeDiaryService : IDiaryService
 {
+    private readonly FakeNoteService? _notes;
+
+    /// <summary>Optional linked note store. Production DiaryService and NoteService share one
+    /// database, so a saved/edited/deleted diary entry is immediately visible through
+    /// INoteService too; pass the same FakeNoteService instance here to model that for VMs (like
+    /// JournalQuickEntryViewModel) that write via IDiaryService and read back via INoteService.</summary>
+    public FakeDiaryService(FakeNoteService? notes = null)
+    {
+        _notes = notes;
+    }
+
     public Dictionary<Guid, Note> Notes { get; } = new();
     public Dictionary<Guid, Completion> Completions { get; } = new();
     public List<(Guid HabitId, DateOnly Day, string Text)> SaveCalls { get; } = [];
     public List<Guid> DeleteCalls { get; } = [];
     public List<(Guid NoteId, string Text)> EditCalls { get; } = [];
 
+    /// <summary>Same data as <see cref="SaveCalls"/> plus the generated NoteId, for callers that need
+    /// to correlate the saved entry with what it produced (e.g. an attachment added right after).</summary>
+    public List<(Guid NoteId, Guid HabitId, DateOnly Day, string Text)> SavedEntries { get; } = [];
+
+    /// <summary>Ids actually resolved and removed by <see cref="DeleteEntryAsync"/> — unlike
+    /// <see cref="DeleteCalls"/> (which logs whatever id was passed in, note or completion), this only
+    /// records the note id when a matching entry was found.</summary>
+    public List<Guid> DeletedIds { get; } = [];
+
+    /// <summary>Same data as <see cref="EditCalls"/>, kept alongside it so existing callers of
+    /// EditCalls are undisturbed.</summary>
+    public List<(Guid NoteId, string Text)> EditedEntries { get; } = [];
+
     public ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, string text, CancellationToken ct = default)
     {
         SaveCalls.Add((habitNodeId, day, text));
         var completionId = Guid.NewGuid();
         var noteId = Guid.NewGuid();
+        SavedEntries.Add((noteId, habitNodeId, day, text));
         Completions[completionId] = new Completion
         {
             Id = completionId,
@@ -26,7 +51,7 @@ public sealed class FakeDiaryService : IDiaryService
             CompletedAt = day.ToDateTime(TimeOnly.MinValue),
             CompletedAtMs = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds(),
         };
-        Notes[noteId] = new Note
+        var note = new Note
         {
             Id = noteId,
             HabitNodeId = habitNodeId,
@@ -34,7 +59,10 @@ public sealed class FakeDiaryService : IDiaryService
             Category = NoteCategory.Diario,
             TargetDate = day,
             CompletionId = completionId,
+            CreatedAt = day.ToDateTime(TimeOnly.MinValue),
         };
+        Notes[noteId] = note;
+        if (_notes is not null) _notes.Store[noteId] = note;
         return new(noteId);
     }
 
@@ -43,7 +71,9 @@ public sealed class FakeDiaryService : IDiaryService
         DeleteCalls.Add(noteOrCompletionId);
         var note = Notes.Values.FirstOrDefault(n => n.Id == noteOrCompletionId || n.CompletionId == noteOrCompletionId);
         if (note is null) return ValueTask.CompletedTask;
+        DeletedIds.Add(note.Id);
         Notes.Remove(note.Id);
+        _notes?.Store.Remove(note.Id);
         if (note.CompletionId is { } cid) Completions.Remove(cid);
         return ValueTask.CompletedTask;
     }
@@ -51,6 +81,7 @@ public sealed class FakeDiaryService : IDiaryService
     public ValueTask EditEntryAsync(Guid noteId, string text, CancellationToken ct = default)
     {
         EditCalls.Add((noteId, text));
+        EditedEntries.Add((noteId, text));
         if (Notes.TryGetValue(noteId, out var n)) n.BodyMd = text;
         return ValueTask.CompletedTask;
     }
