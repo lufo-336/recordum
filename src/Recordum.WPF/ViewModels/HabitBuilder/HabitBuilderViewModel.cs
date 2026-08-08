@@ -10,6 +10,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
+using Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
@@ -87,6 +88,19 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// series) or once (a second same-day save sums into the day total)? Flows into the launched
     /// <see cref="HabitConfig"/> and the saved template payload; refined later in Configura.</summary>
     [ObservableProperty] private bool _repeatable;
+
+    /// <summary>Gesto primario di una composizione journal (Onda 2.4). Serializzato in ui_prefs
+    /// quando la composizione si salva come template; per l'abitudine creata da Lancia lo imposta
+    /// poi Configura, che e' l'unico posto dove si cambia dopo.</summary>
+    [ObservableProperty] private JournalPrimaryGesture _journalGesture = JournalPrimaryGesture.Diary;
+
+    public bool ShowJournalGesture => DerivedType == HabitType.Journal;
+
+    public IReadOnlyList<JournalGestureOption> JournalGestureOptions { get; } =
+    [
+        new(JournalPrimaryGesture.Diary, Strings.Editor_Registration_Gesture_Diary),
+        new(JournalPrimaryGesture.QuickNote, Strings.Editor_Registration_Gesture_QuickNote),
+    ];
 
     /// <summary>True briefly after "Save as template" succeeds; cleared on any edit that would
     /// change the payload, so the "Saved ✓" badge reflects the current composition. (R-builderSaveFeedback)</summary>
@@ -187,6 +201,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEnableCounter));
         OnPropertyChanged(nameof(CanEnableAbstinence));
         OnPropertyChanged(nameof(FieldsAllowed));
+        OnPropertyChanged(nameof(ShowJournalGesture));
         RaiseLaunchState();
     }
 
@@ -307,35 +322,45 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                 Color = Color,
                 Icon = Icon,
             },
+            Config = Repeatable ? new ConfigPayload { Repeatable = true } : null,
+            UiPrefs = DerivedType == HabitType.Journal
+                ? new UiPrefsPayload { JournalGesture = JournalGesture.ToString() }
+                : null,
             Metrics = Fields
                 .Where(f => f.Nature != FieldNature.Text)
-                .Select((f, i) => new MetricPayload
+                .Select(f => new MetricPayload
                 {
                     Name = f.Name,
                     Type = f.MetricType.ToString(),
-                    SortOrder = i,
-                    // Write codes (not GUIDs) so HabitTemplateService.InstantiateAsync, which resolves
-                    // unit / scale by Code, can round-trip the picked unit/scale on re-instantiate.
+                    // Codici (non GUID) perche' InstantiateAsync risolve unita' e scala per Code.
                     Unit = f.UnitOfMeasureId is { } uid && unitCodeById.TryGetValue(uid, out var uc) ? uc : null,
                     ScaleCode = f.ScaleTemplateId is { } sid && scaleCodeById.TryGetValue(sid, out var sc) ? sc : null,
                 })
                 .ToList(),
-            CountsOccurrences = CountsOccurrences ? true : null,
-            Mode = Mode.ToString(),
-            Repeatable = Repeatable ? true : null,
         };
         return JsonSerializer.Serialize(payload, s_templateJsonOptions);
     }
 
-    // Mirror of the payload shape consumed by HabitTemplateService.InstantiateAsync (snake_case via options).
+    // Mirror della forma consumata da HabitTemplateService.InstantiateAsync (snake_case via options).
+    // I nomi e l'annidamento devono restare identici a quelli del servizio: una chiave scritta qui e
+    // non letta la' e' silenziosamente persa al re-instanziamento.
     private sealed class TemplatePayload
     {
         public NodePayload? Node { get; set; }
+        public ConfigPayload? Config { get; set; }
+        public UiPrefsPayload? UiPrefs { get; set; }
         public List<MetricPayload>? Metrics { get; set; }
-        public bool? CountsOccurrences { get; set; }
-        public string? Mode { get; set; }
-        // null-when-false (WhenWritingNull) so templates saved before U8 stay byte-identical.
+    }
+
+    private sealed class ConfigPayload
+    {
+        // null-when-false (WhenWritingNull) cosi' i template salvati prima di U8 restano byte-identici.
         public bool? Repeatable { get; set; }
+    }
+
+    private sealed class UiPrefsPayload
+    {
+        public string? JournalGesture { get; set; }
     }
 
     private sealed class NodePayload
@@ -351,7 +376,6 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         public string? Name { get; set; }
         public string? Type { get; set; }
-        public int SortOrder { get; set; }
         public string? Unit { get; set; }       // unit code (Quantity) → reader resolves to UnitOfMeasureId
         public string? ScaleCode { get; set; }  // scale code (Scale)  → reader resolves to ScaleTemplateId
     }

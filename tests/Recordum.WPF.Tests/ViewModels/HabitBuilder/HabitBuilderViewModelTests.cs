@@ -392,6 +392,10 @@ public class HabitBuilderViewModelTests
     [WpfFact]
     public async Task Repeatable_writes_into_the_template_payload_when_true()
     {
+        // Updated by Task 3 (wave 2.4): this test used to assert a root-level "repeatable" key, which
+        // is exactly the pre-existing bug the task fixes — HabitTemplateService only ever read
+        // config.repeatable, so a template saved under the old shape silently lost the flag on
+        // re-instantiation. The assertion now matches the shape the service actually reads.
         var fakeTemplates = new FakeHabitTemplateService();
         var sut = NewSut(templates: fakeTemplates);
         sut.Name = "Sonno";
@@ -402,7 +406,52 @@ public class HabitBuilderViewModelTests
 
         var saved = fakeTemplates.Created.Single();
         using var doc = JsonDocument.Parse(saved.PayloadJson);
-        doc.RootElement.GetProperty("repeatable").GetBoolean().Should().BeTrue();
+        doc.RootElement.GetProperty("config").GetProperty("repeatable").GetBoolean().Should().BeTrue();
+    }
+
+    [WpfFact]
+    public async Task SaveAsTemplate_nests_repeatable_under_config_so_instantiation_reads_it()
+    {
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        sut.Name = "Sonno";
+        sut.CountsOccurrences = true;
+        sut.Repeatable = true;
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+
+        var json = fakeTemplates.Created.Single().PayloadJson;
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("config").GetProperty("repeatable").GetBoolean().Should().BeTrue();
+        doc.RootElement.TryGetProperty("repeatable", out _).Should().BeFalse("il servizio legge solo config.repeatable");
+    }
+
+    [WpfFact]
+    public async Task SaveAsTemplate_writes_the_journal_gesture_for_a_journal_composition()
+    {
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        sut.Name = "Diario alimentare";
+        sut.AddFieldCommand.Execute(FieldNature.Text);          // una composizione di solo testo -> Journal
+        sut.JournalGesture = JournalPrimaryGesture.QuickNote;
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+
+        var json = fakeTemplates.Created.Single().PayloadJson;
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.GetProperty("ui_prefs").GetProperty("journal_gesture").GetString().Should().Be("QuickNote");
+    }
+
+    [WpfFact]
+    public void Journal_gesture_knob_is_offered_only_for_journal_compositions()
+    {
+        var sut = CreateVm();
+        sut.CountsOccurrences = true;               // -> Counter
+        sut.ShowJournalGesture.Should().BeFalse();
+
+        sut.CountsOccurrences = false;
+        sut.AddFieldCommand.Execute(FieldNature.Text);             // -> Journal
+        sut.ShowJournalGesture.Should().BeTrue();
     }
 
     [WpfFact]

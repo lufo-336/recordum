@@ -129,6 +129,18 @@
                           Visibility="{Binding DerivedType, Converter={StaticResource EnumToVisibility},
                                        ConverterParameter={x:Static enums:HabitType.Counter}}"/>
 
+                <!-- Journal gesture (Onda 2.4): Journal-only, quale gesto e' primario in Cronologia. -->
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                            Visibility="{Binding ShowJournalGesture, Converter={StaticResource BoolToVisible}}">
+                    <TextBlock Text="{x:Static res:Strings.Editor_Registration_JournalGesture}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{Binding JournalGestureOptions}"
+                              DisplayMemberPath="Label"
+                              SelectedValuePath="Gesture"
+                              SelectedValue="{Binding JournalGesture}"
+                              MinWidth="200"/>
+                </StackPanel>
+
                 <!-- ===== Zone 2: Composizione ===== -->
                 <TextBlock Text="{x:Static res:Strings.HabitBuilder_Blocks}"
                            FontSize="{StaticResource FontSize.Body}"
