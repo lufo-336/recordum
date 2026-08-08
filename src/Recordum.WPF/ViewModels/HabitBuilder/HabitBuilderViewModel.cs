@@ -162,6 +162,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     partial void OnColorChanged(string value) => TemplateSaved = false;
     partial void OnIconChanged(string? value) => TemplateSaved = false;
     partial void OnRepeatableChanged(bool value) => TemplateSaved = false;
+    partial void OnJournalGestureChanged(JournalPrimaryGesture value) => TemplateSaved = false;
 
     [RelayCommand]
     private async Task AddFavoriteAsync(string? hex, CancellationToken ct)

@@ -443,6 +443,24 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task SaveAsTemplate_sets_saved_feedback_then_clears_on_journal_gesture_change()
+    {
+        // JournalGesture writes into ui_prefs (a real payload field), so it must invalidate the
+        // "Saved" badge on change just like Repeatable/Color/Icon do — otherwise the badge lies
+        // about a composition that no longer matches what was saved.
+        var sut = NewSut();
+        sut.Name = "Diario alimentare";
+        sut.AddFieldCommand.Execute(FieldNature.Text); // -> Journal
+        sut.JournalGesture = JournalPrimaryGesture.QuickNote;
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+        sut.TemplateSaved.Should().BeTrue();
+
+        sut.JournalGesture = JournalPrimaryGesture.Diary;
+        sut.TemplateSaved.Should().BeFalse();
+    }
+
+    [WpfFact]
     public void Journal_gesture_knob_is_offered_only_for_journal_compositions()
     {
         var sut = CreateVm();
