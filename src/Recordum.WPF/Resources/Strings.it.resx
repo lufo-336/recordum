@@ -1243,6 +1243,15 @@
   <data name="Editor.Registration.Repeatable" xml:space="preserve">
     <value>Si può registrare più volte al giorno</value>
   </data>
+  <data name="Editor.Registration.JournalGesture" xml:space="preserve">
+    <value>Gesto primario</value>
+  </data>
+  <data name="Editor.Registration.Gesture.Diary" xml:space="preserve">
+    <value>Scrivi la voce di oggi</value>
+  </data>
+  <data name="Editor.Registration.Gesture.QuickNote" xml:space="preserve">
+    <value>Nota veloce con foto</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Tipo di pianificazione</value>

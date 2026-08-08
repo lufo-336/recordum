@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System.Globalization;
 using System.Resources;
 
@@ -465,6 +465,9 @@ public static class Strings
     public static string Editor_HomeRow_Strip_Days14 => Get("Editor.HomeRow.Strip.Days14");
     public static string Editor_Section_Registration => Get("Editor.Section.Registration");
     public static string Editor_Registration_Repeatable => Get("Editor.Registration.Repeatable");
+    public static string Editor_Registration_JournalGesture => Get("Editor.Registration.JournalGesture");
+    public static string Editor_Registration_Gesture_Diary => Get("Editor.Registration.Gesture.Diary");
+    public static string Editor_Registration_Gesture_QuickNote => Get("Editor.Registration.Gesture.QuickNote");
 
     // Help menu + Diagnostic dialog
     public static string Workspace_Help => Get("Workspace.Help");

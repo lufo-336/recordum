@@ -1264,6 +1264,15 @@ Details: {0}</value>
   <data name="Editor.Registration.Repeatable" xml:space="preserve">
     <value>Can be recorded multiple times a day</value>
   </data>
+  <data name="Editor.Registration.JournalGesture" xml:space="preserve">
+    <value>Primary gesture</value>
+  </data>
+  <data name="Editor.Registration.Gesture.Diary" xml:space="preserve">
+    <value>Write today's entry</value>
+  </data>
+  <data name="Editor.Registration.Gesture.QuickNote" xml:space="preserve">
+    <value>Quick note with photo</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Schedule type</value>

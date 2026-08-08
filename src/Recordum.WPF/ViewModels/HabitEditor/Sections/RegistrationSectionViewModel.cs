@@ -6,31 +6,53 @@ using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitEditor.Sections;
 
-/// <summary>"Registrazione" section (U8): the repeatable knob — can this counter be recorded
-/// multiple times a day (named series) or once (second save sums in the day total)? Mirrors the
-/// same knob exposed at creation time in the builder (Livello 1, Counter-only); this section lets
-/// it be changed later. Counter-only.</summary>
-public sealed partial class RegistrationSectionViewModel(IHabitConfigService configs) : SectionViewModelBase
+/// <summary>"Registrazione" section: come si registra questa abitudine. Per i counter e' il flag
+/// ripetibile (U8, persistito su habit_config); per i journal e' il gesto primario (U7, persistito
+/// in ui_prefs_json). Due tipi, due manopole, due percorsi di persistenza — ma una sola domanda.</summary>
+public sealed partial class RegistrationSectionViewModel(
+    IHabitConfigService configs,
+    IHabitUiPrefsService uiPrefs) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_Registration;
 
     private readonly IHabitConfigService _configs = configs;
+    private readonly IHabitUiPrefsService _uiPrefs = uiPrefs;
     private bool _loading;
+    private HabitUiPrefs _current = new();
     internal Guid NodeId { get; private set; }
 
     [ObservableProperty] private bool _repeatable;
+    [ObservableProperty] private bool _showRepeatable;
+    [ObservableProperty] private bool _showJournalGesture;
+    [ObservableProperty] private JournalGestureOption? _selectedGesture;
+
+    /// <summary>Lista fissa: non e' mai svuotata, quindi non puo' innescare la coercizione-a-null
+    /// che ha causato i bug 4d01f9c / 1d96967.</summary>
+    public IReadOnlyList<JournalGestureOption> GestureOptions { get; } =
+    [
+        new(JournalPrimaryGesture.Diary, Strings.Editor_Registration_Gesture_Diary),
+        new(JournalPrimaryGesture.QuickNote, Strings.Editor_Registration_Gesture_QuickNote),
+    ];
 
     public override bool IsApplicable(NodeType node, HabitType? habit)
-        => node == NodeType.Habit && habit == HabitType.Counter;
+        => node == NodeType.Habit && habit is HabitType.Counter or HabitType.Journal;
 
     public async Task LoadAsync(HabitNode node)
     {
+        ArgumentNullException.ThrowIfNull(node);
         _loading = true;
         try
         {
             NodeId = node.Id;
+            ShowRepeatable = node.HabitType == HabitType.Counter;
+            ShowJournalGesture = node.HabitType == HabitType.Journal;
+
             var cfg = await _configs.GetAsync(node.Id).ConfigureAwait(true);
             Repeatable = cfg?.Repeatable ?? false;
+
+            _current = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
+            var gesture = _current.JournalGesture ?? JournalPrimaryGesture.Diary;
+            SelectedGesture = GestureOptions.First(o => o.Gesture == gesture);
         }
         finally { _loading = false; }
     }
@@ -40,4 +62,14 @@ public sealed partial class RegistrationSectionViewModel(IHabitConfigService con
         if (_loading || NodeId == Guid.Empty) return;
         _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => c.Repeatable = value).AsTask());
     }
+
+    partial void OnSelectedGestureChanged(JournalGestureOption? value)
+    {
+        if (_loading || NodeId == Guid.Empty || value is null) return;
+        _current = _current with { JournalGesture = value.Gesture };
+        _ = ApplyAsync(() => _uiPrefs.SetAsync(NodeId, _current).AsTask());
+    }
 }
+
+/// <summary>Una scelta di gesto primario journal: l'enum + la sua etichetta localizzata.</summary>
+public sealed record JournalGestureOption(JournalPrimaryGesture Gesture, string Label);
