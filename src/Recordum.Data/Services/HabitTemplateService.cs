@@ -15,6 +15,7 @@ public sealed class HabitTemplateService(
     IPluginContext pluginContext,
     IHabitNodeService nodes,
     IHabitConfigService configs,
+    IHabitUiPrefsService uiPrefs,
     ILogger<HabitTemplateService> logger) : IHabitTemplateService
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new()
@@ -109,6 +110,15 @@ public sealed class HabitTemplateService(
             }, ct);
 
             await MaterializeMetricsSegmentsGoalAsync(newId, node.Name, payload, ct);
+        }
+
+        // Presentazione per-nodo: si scrive solo se il template la dichiara, così un template
+        // che non dice niente lascia ui_prefs_json NULL = "default del tipo" (governance §6).
+        if (payload.UiPrefs?.JournalGesture is { } gestureText
+            && Enum.TryParse<JournalPrimaryGesture>(gestureText, ignoreCase: true, out var gesture))
+        {
+            var prefs = await uiPrefs.GetAsync(newId, ct);
+            await uiPrefs.SetAsync(newId, prefs with { JournalGesture = gesture }, ct);
         }
 
         return newId;
@@ -219,9 +229,17 @@ public sealed class HabitTemplateService(
     {
         public NodePayload? Node { get; set; }
         public ConfigPayload? Config { get; set; }
+        public UiPrefsPayload? UiPrefs { get; set; }
         public List<MetricPayload>? Metrics { get; set; }
         public List<SegmentPayload>? Segments { get; set; }
         public GoalPayload? Goal { get; set; }
+    }
+
+    private sealed class UiPrefsPayload
+    {
+        /// <summary>"Diary" | "QuickNote". Chiave snake_case, valore PascalCase, come gli altri enum
+        /// del payload. Null = il nodo resta senza prefs e usa il default del tipo.</summary>
+        public string? JournalGesture { get; set; }
     }
 
     private sealed class MetricPayload

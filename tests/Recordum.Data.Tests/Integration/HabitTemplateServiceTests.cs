@@ -303,9 +303,61 @@ public class HabitTemplateServiceTests
         }
     }
 
+    [Fact]
+    public async Task InstantiateAsync_applies_the_journal_gesture_from_the_payload()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId,
+                Name = "Food diary",
+                PayloadJson = "{\"node\":{\"name\":\"Food diary\",\"node_type\":\"Habit\",\"habit_type\":\"Journal\",\"color\":\"#e67e22\"}," +
+                              "\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"}," +
+                              "\"ui_prefs\":{\"journal_gesture\":\"QuickNote\"}}",
+                IsOfficial = true,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var svc = CreateSut(fx);
+        var newId = await svc.InstantiateAsync(tmplId, parentId: null);
+
+        var prefs = new HabitUiPrefsService(fx.Factory);
+        (await prefs.GetAsync(newId)).JournalGesture.Should().Be(JournalPrimaryGesture.QuickNote);
+    }
+
+    [Fact]
+    public async Task InstantiateAsync_leaves_ui_prefs_null_when_the_payload_has_none()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId,
+                Name = "Daily journal",
+                PayloadJson = "{\"node\":{\"name\":\"Daily journal\",\"node_type\":\"Habit\",\"habit_type\":\"Journal\",\"color\":\"#4a90e2\"}," +
+                              "\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"}}",
+                IsOfficial = true,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var newId = await CreateSut(fx).InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        // Nessuna scrittura spuria: la colonna resta NULL, cioè "usa il default del tipo".
+        (await db2.HabitNodes.FindAsync(newId))!.UiPrefsJson.Should().BeNull();
+    }
+
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),
         new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
+        new HabitUiPrefsService(fx.Factory),
         NullLogger<HabitTemplateService>.Instance);
 }
