@@ -108,7 +108,7 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
     }
 
     [Fact]
-    public void AppSetting_schema_version_is_2_16()
+    public void AppSetting_schema_version_is_2_17()
     {
         using var ctx = _fixture.CreateContext();
         var schemaVersion = ctx.AppSettings
@@ -116,7 +116,37 @@ public sealed class SeedDataTests : IClassFixture<SchemaFixture>
             .Select(s => s.Value)
             .Single();
 
-        Assert.Equal("2.16", schemaVersion);
+        Assert.Equal("2.17", schemaVersion);
+    }
+
+    [Fact]
+    public void No_official_journal_template_declares_metrics()
+    {
+        // Un habit Journal si registra scrivendo: non ha nessun modulo metriche. Un template
+        // journal che dichiara metriche promette un inserimento che il tipo non sa offrire
+        // (principio 8). Gemello del guard sulle durate senza unita' introdotto con R7.
+        using var ctx = _fixture.CreateContext();
+        foreach (var t in ctx.HabitTemplates.Where(t => t.IsOfficial).ToList())
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(t.PayloadJson);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("node", out var node)) continue;
+            if (!node.TryGetProperty("habit_type", out var ht) || ht.GetString() != "Journal") continue;
+            var hasMetrics = root.TryGetProperty("metrics", out var metrics)
+                && metrics.ValueKind == System.Text.Json.JsonValueKind.Array
+                && metrics.GetArrayLength() > 0;
+            Assert.False(hasMetrics, $"Template '{t.Name}' e' un Journal ma dichiara metriche.");
+        }
+    }
+
+    [Fact]
+    public void Food_diary_template_ships_the_quick_note_gesture()
+    {
+        using var ctx = _fixture.CreateContext();
+        var t = ctx.HabitTemplates.Single(x => x.Name == "Food diary");
+        using var doc = System.Text.Json.JsonDocument.Parse(t.PayloadJson);
+        var gesture = doc.RootElement.GetProperty("ui_prefs").GetProperty("journal_gesture").GetString();
+        Assert.Equal("QuickNote", gesture);
     }
 
     [Fact]

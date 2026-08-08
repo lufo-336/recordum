@@ -299,7 +299,7 @@ namespace Recordum.Data.Migrations
                         {
                             Key = "schema_version",
                             UpdatedAt = new DateTime(2026, 8, 8, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.16"
+                            Value = "2.17"
                         });
                 });
 
@@ -1347,7 +1347,7 @@ namespace Recordum.Data.Migrations
                             Description = "A free-form Markdown journal entry, one per day.",
                             IsOfficial = true,
                             Name = "Daily journal",
-                            PayloadJson = "{\"node\":{\"name\":\"Daily journal\",\"node_type\":\"Habit\",\"habit_type\":\"Journal\",\"color\":\"#4a90e2\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[],\"segments\":[]}",
+                            PayloadJson = "{\"node\":{\"name\":\"Daily journal\",\"node_type\":\"Habit\",\"habit_type\":\"Journal\",\"color\":\"#4a90e2\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"ui_prefs\":{\"journal_gesture\":\"Diary\"},\"metrics\":[],\"segments\":[]}",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAtMs = 1778716800000L
                         },
@@ -1404,10 +1404,10 @@ namespace Recordum.Data.Migrations
                             Id = new Guid("00000003-0000-0000-0000-000000000008"),
                             Category = "Health",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Log meals with multi-series entries (food name, grams, calories).",
+                            Description = "Log each meal in seconds: a short note and a photo, as many times a day as you eat.",
                             IsOfficial = true,
                             Name = "Food diary",
-                            PayloadJson = "{\"node\":{\"name\":\"Food diary\",\"node_type\":\"Habit\",\"habit_type\":\"Journal\",\"color\":\"#e67e22\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"metrics\":[{\"name\":\"Food name\",\"type\":\"Text\"},{\"name\":\"Grams\",\"type\":\"Decimal\",\"unit\":\"g\"},{\"name\":\"Calories\",\"type\":\"Decimal\",\"unit\":\"kcal\"}],\"segments\":[]}",
+                            PayloadJson = "{\"node\":{\"name\":\"Food diary\",\"node_type\":\"Habit\",\"habit_type\":\"Journal\",\"color\":\"#e67e22\"},\"config\":{\"schedule_type\":\"Daily\",\"streak_mode\":\"Daily\",\"streak_recovery\":\"GraceDay\"},\"ui_prefs\":{\"journal_gesture\":\"QuickNote\"},\"metrics\":[],\"segments\":[]}",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAtMs = 1778716800000L
                         });

@@ -15,7 +15,7 @@ namespace Recordum.Data.Tests.Migrations;
 public sealed class PerTypePrefsV214MigrationTests
 {
     [Fact]
-    public async Task Schema_version_is_2_16_after_full_migration()
+    public async Task Schema_version_is_2_17_after_full_migration()
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync();
@@ -23,7 +23,7 @@ public sealed class PerTypePrefsV214MigrationTests
         await db.Database.MigrateAsync();
 
         var setting = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.16", setting.Value);
+        Assert.Equal("2.17", setting.Value);
     }
 
     [Fact]
