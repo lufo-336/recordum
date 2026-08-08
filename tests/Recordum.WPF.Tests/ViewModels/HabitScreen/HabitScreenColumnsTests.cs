@@ -64,19 +64,22 @@ public class HabitScreenColumnsTests
     }
 
     [Fact]
-    public async Task Journal_quick_note_gesture_opens_the_Note_column_via_the_strip()
+    public async Task Journal_quick_note_gesture_opens_the_Diario_column_via_the_strip()
     {
         var (sut, nodes) = HabitScreenViewModelFactory.CreateWithStores(out _, out var uiPrefs);
         var j = AddJournal(nodes);
         uiPrefs.Store[j] = new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote };
         await sut.LoadAsync(j);
-        sut.IsNoteOpen.Should().BeFalse();
+        sut.IsDiarioOpen = false; // journal's per-type default already opens Diario on load; close it first
 
-        // The strip's primary gesture bubbles OpenQuickNote → the host opens the Note column.
+        // The strip's primary gesture bubbles OpenQuickNote → the host opens the Diario column, which
+        // hosts the quick-note composer for this habit (Onda 2.4: the gesture no longer points at Note,
+        // where there is no composer).
         var content = (Recordum.WPF.ViewModels.HabitScreen.Today.JournalTodayContent)sut.TodayStrip.Content!;
         content.PrimaryCommand.Execute(null);
 
-        sut.IsNoteOpen.Should().BeTrue();
+        sut.IsDiarioOpen.Should().BeTrue();
+        sut.IsNoteOpen.Should().BeFalse();
     }
 
     [Fact]

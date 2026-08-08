@@ -10,6 +10,7 @@ using Recordum.WPF.Bootstrap;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen.Calendar;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
+using Recordum.WPF.ViewModels.HabitScreen.Journal;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
@@ -44,6 +45,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IClock _clock;
     private readonly IAppSettingService _appSettings;
     private readonly IHabitUiPrefsService _uiPrefs;
+    private readonly Recordum.Core.IAttachmentService _attachments;
+    private readonly IOpenFileDialog _openFileDialog;
+    private readonly IConfirmationDialog _confirmationDialog;
     private readonly AbstinencePeriodListViewModel _periodList;
     private readonly List<IDisposable> _subscriptions = [];
 
@@ -467,15 +471,25 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     partial void OnQuickAddChanged(QuickAddViewModelBase? value) => NotifyQuickAddRouting();
 
+    [ObservableProperty] private JournalQuickEntryViewModel? _journalQuickEntry;
+
+    /// <summary>Vero quando il journal caricato ha il gesto "nota veloce". Deciso al load da
+    /// ui_prefs_json; null = default del tipo = Diary.</summary>
+    private bool _isQuickNoteJournal;
+
     // The journal markdown editor (WebView2) must be hosted by exactly one ContentControl, else two
     // editors share one VM and double-instantiate WebView2 (spec §3.5 caution): route the quick-add to
     // Diario for journals and to Cronologia otherwise, so only one host ever has non-null content.
-    public QuickAddViewModelBase? QuickAddForDiario => IsJournal ? QuickAdd : null;
+    // La colonna Diario ospita O il composer O l'editor Markdown, mai entrambi: cosi' WebView2
+    // continua a istanziarsi una volta sola (cautela spec §3.5) e su un food diary mai.
+    public QuickAddViewModelBase? QuickAddForDiario => IsJournal && !_isQuickNoteJournal ? QuickAdd : null;
+    public JournalQuickEntryViewModel? QuickEntryForDiario => IsJournal && _isQuickNoteJournal ? JournalQuickEntry : null;
     public QuickAddViewModelBase? QuickAddForCronologia => IsJournal ? null : QuickAdd;
 
     private void NotifyQuickAddRouting()
     {
         OnPropertyChanged(nameof(QuickAddForDiario));
+        OnPropertyChanged(nameof(QuickEntryForDiario));
         OnPropertyChanged(nameof(QuickAddForCronologia));
     }
 
@@ -539,6 +553,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _clock = clock;
         _appSettings = appSettings;
         _uiPrefs = uiPrefs;
+        _attachments = attachments;
+        _openFileDialog = openFileDialog;
+        _confirmationDialog = confirmationDialog;
         Editor = editor;
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
@@ -651,6 +668,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (Calendar.SelectedDate is { } sel)
         {
             Notes.SetCalendarDay(sel);
+            JournalQuickEntry?.SetDay(sel);
             await DayNote.LoadDayAsync(sel, ct).ConfigureAwait(true);
             await PushDaySummaryAsync(sel, ct).ConfigureAwait(true);
             await Records.ShowDayAsync(sel, ct).ConfigureAwait(true);
@@ -661,6 +679,24 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)
     {
+        _isQuickNoteJournal = false;
+        JournalQuickEntry = null;
+        if (node.HabitType == HabitType.Journal)
+        {
+            var prefs = await _uiPrefs.GetAsync(node.Id, ct).ConfigureAwait(true);
+            _isQuickNoteJournal = prefs.JournalGesture == JournalPrimaryGesture.QuickNote;
+            if (_isQuickNoteJournal)
+            {
+                var composer = new JournalQuickEntryViewModel(
+                    _diary, _noteService, _attachments, _openFileDialog, _confirmationDialog, _clock);
+                await composer.LoadAsync(node, ct).ConfigureAwait(true);
+                JournalQuickEntry = composer;
+                QuickAdd = null;          // niente editor Markdown per questa abitudine
+                NotifyQuickAddRouting();
+                return;
+            }
+        }
+
         QuickAddViewModelBase? vm = node.HabitType switch
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
@@ -1011,6 +1047,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // showing the previous day's total, and the next tap incremented from there (W23-VF1).
             if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
             Notes.SetCalendarDay(date);
+            JournalQuickEntry?.SetDay(date);
             await DayNote.LoadDayAsync(date).ConfigureAwait(true);
             await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
             if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);
@@ -1094,9 +1131,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var column = action switch
         {
             TodayContentAction.OpenDiario => HabitColumn.Diario,
-            TodayContentAction.OpenQuickNote => HabitColumn.Note,
+            // Il composer nota veloce vive in Diario (Onda 2.4): prima puntava a Note, dove non c'e'.
+            TodayContentAction.OpenQuickNote => HabitColumn.Diario,
             _ => HabitColumn.Cronologia, // OpenRecordModule
         };
         SetColumnFlag(column, true);
     }
+
+    /// <summary>Test seam: OnTodayStripAction e' privato e normalmente arriva da un evento della fascia.</summary>
+    internal void RaiseTodayStripActionForTest(TodayContentAction action) => OnTodayStripAction(this, action);
 }

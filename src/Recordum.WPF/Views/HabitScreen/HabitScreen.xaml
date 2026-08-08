@@ -7,6 +7,7 @@
              xmlns:qa="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.QuickAdd"
              xmlns:vmn="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Notes"
              xmlns:vmd="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Detail"
+             xmlns:vmj="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Journal"
              xmlns:v="clr-namespace:Recordum.WPF.Views.HabitScreen"
              xmlns:ve="clr-namespace:Recordum.WPF.Views"
              xmlns:cal="clr-namespace:Recordum.WPF.Views.HabitScreen.Calendar"
@@ -719,6 +720,12 @@
             </DockPanel>
         </DataTemplate>
 
+        <!-- Composer "nota veloce" (Onda 2.4, U7): l'altra faccia della colonna Diario, mai insieme
+             all'editor Markdown — vedi QuickEntryForDiario/QuickAddForDiario, mutuamente esclusivi. -->
+        <DataTemplate DataType="{x:Type vmj:JournalQuickEntryViewModel}">
+            <v:JournalQuickEntryView/>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vmn:NotesViewModel}">
             <v:NotesTabView/>
         </DataTemplate>
@@ -1210,8 +1217,13 @@
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Diario}"/>
                                 </Grid>
-                                <ContentControl Content="{Binding QuickAddForDiario}"
-                                                ContentTemplate="{StaticResource JournalDiarioTemplate}"/>
+                                <!-- La colonna ospita O il composer nota-veloce O l'editor Markdown, mai
+                                     entrambi: uno solo dei due binding e' non-null (Onda 2.4). -->
+                                <Grid>
+                                    <ContentControl Content="{Binding QuickAddForDiario}"
+                                                    ContentTemplate="{StaticResource JournalDiarioTemplate}"/>
+                                    <ContentControl Content="{Binding QuickEntryForDiario}"/>
+                                </Grid>
                             </DockPanel>
                         </Grid>
                     </Border>

@@ -1,0 +1,113 @@
+<UserControl x:Class="Recordum.WPF.Views.HabitScreen.JournalQuickEntryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:vmj="clr-namespace:Recordum.WPF.ViewModels.HabitScreen.Journal"
+             d:DataContext="{d:DesignInstance vmj:JournalQuickEntryViewModel}"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    <DockPanel Margin="12">
+        <!-- Composer -->
+        <StackPanel DockPanel.Dock="Top">
+            <TextBox Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" TextWrapping="Wrap" MinLines="2" MaxLines="6"
+                     VerticalScrollBarVisibility="Auto"
+                     Tag="{x:Static res:Strings.Diario_QuickEntry_Placeholder}">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Return" Modifiers="Control" Command="{Binding SaveCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+
+            <ItemsControl ItemsSource="{Binding PendingPhotos}" Margin="0,8,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,0,6,6">
+                            <Image Source="{Binding}" Width="48" Height="48" Stretch="UniformToFill"/>
+                            <Button Content="✕" Width="16" Height="16" Padding="0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Command="{Binding DataContext.RemovePendingPhotoCommand,
+                                              RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="{x:Static res:Strings.Diario_QuickEntry_AddPhoto}"
+                        Command="{Binding AddPhotoCommand}" Padding="10,5"/>
+                <Button Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
+                        Command="{Binding SaveCommand}" Padding="12,5" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,6,0,0"
+                       Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+
+            <TextBlock Text="{x:Static res:Strings.Diario_QuickEntry_Today}"
+                       Foreground="{DynamicResource Brush.TextMuted}" Margin="0,16,0,4"/>
+        </StackPanel>
+
+        <!-- Voci del giorno -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Entries}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}" Padding="0,8">
+                            <StackPanel>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Left" Margin="0,0,8,0"
+                                               Foreground="{DynamicResource Brush.TextMuted}"
+                                               Text="{Binding CreatedAt, StringFormat=HH:mm}"/>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="{x:Static res:Strings.Diario_QuickEntry_Edit}"
+                                                Command="{Binding DataContext.BeginEditCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" Padding="6,2"
+                                                Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVisible}}"/>
+                                        <Button Content="{x:Static res:Strings.Diario_QuickEntry_Delete}"
+                                                Command="{Binding DataContext.DeleteCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" Padding="6,2" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap"
+                                               Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVisible}}"/>
+                                </DockPanel>
+
+                                <StackPanel Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisible}}">
+                                    <TextBox Text="{Binding EditDraft, UpdateSourceTrigger=PropertyChanged}"
+                                             AcceptsReturn="True" TextWrapping="Wrap" MinLines="2"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Button Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
+                                                Command="{Binding DataContext.SaveCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                Padding="10,4"/>
+                                        <Button Content="{x:Static res:Strings.Diario_QuickEntry_Cancel}"
+                                                Command="{Binding DataContext.CancelEditCommand,
+                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                Padding="10,4" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <ItemsControl ItemsSource="{Binding Photos}" Margin="0,6,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Image Source="{Binding FilePath}" Width="56" Height="56"
+                                                   Stretch="UniformToFill" Margin="0,0,6,6"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

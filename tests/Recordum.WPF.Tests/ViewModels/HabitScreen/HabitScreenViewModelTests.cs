@@ -8,7 +8,9 @@ using Recordum.Core.Models;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.WPF.ViewModels.HabitScreen.Journal;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
+using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
@@ -44,6 +46,18 @@ public class HabitScreenViewModelTests
         out FakeEventBus bus,
         out FakeNoteService noteSvc,
         out FakeAbstinenceService abstinence)
+        => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out bus, out noteSvc, out abstinence, out _);
+
+    private static HabitScreenViewModel CreateSut(
+        out FakeHabitNodeService nodes,
+        out FakeCompletionService completions,
+        out FakeActiveTimerService timers,
+        out FakeMetricDefinitionService metrics,
+        out FakeClock clock,
+        out FakeEventBus bus,
+        out FakeNoteService noteSvc,
+        out FakeAbstinenceService abstinence,
+        out FakeHabitUiPrefsService uiPrefs)
     {
         nodes = new FakeHabitNodeService();
         completions = new FakeCompletionService();
@@ -53,6 +67,7 @@ public class HabitScreenViewModelTests
         bus = new FakeEventBus();
         noteSvc = new FakeNoteService();
         abstinence = new FakeAbstinenceService();
+        uiPrefs = new FakeHabitUiPrefsService();
         var configs = new FakeHabitConfigService();
         var goals = new FakeGoalService();
         var settings = new FakeAppSettingService();
@@ -61,14 +76,14 @@ public class HabitScreenViewModelTests
             settings, new FakeReferenceData(), new Recordum.WPF.Services.RecentColorStore(settings),
             new Recordum.WPF.Services.FavoriteColorStore(settings),
             new FakeScreenColorPicker(),
-            new FakeHabitUiPrefsService());
+            uiPrefs);
         return new HabitScreenViewModel(
             nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, bus, new FakeWebView2Availability(true), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakeOpenFileDialog(), new FakeHabitUiPrefsService());
+            new FakeAttachmentService(), new FakeOpenFileDialog(), uiPrefs);
     }
 
     private static HabitScreenViewModel CreateSut(
@@ -78,6 +93,14 @@ public class HabitScreenViewModelTests
         out FakeMetricDefinitionService metrics,
         out FakeClock clock)
         => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out _);
+
+    private static HabitNode AddJournal(FakeHabitNodeService nodes, string name)
+    {
+        var node = new HabitNode
+        { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = name, Color = "#808080" };
+        nodes.Store[node.Id] = node;
+        return node;
+    }
 
     [Fact]
     public async Task LoadAsync_null_id_clears_state()
@@ -503,5 +526,59 @@ public class HabitScreenViewModelTests
         sut.HasNode.Should().BeFalse();
         // The superseded load must not have applied the habit's state (e.g. the calendar color).
         sut.Calendar.CompletedColorHex.Should().NotBe("#123456");
+    }
+
+    // ---- Onda 2.4 (U7): the Diario column hosts the quick-note composer OR the markdown editor ----
+
+    [Fact]
+    public async Task Quick_note_journal_hosts_the_composer_and_never_the_markdown_editor()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out _, out var uiPrefs);
+        var node = AddJournal(nodes, "Food diary");
+        await uiPrefs.SetAsync(node.Id, new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote });
+
+        await sut.LoadAsync(node.Id);
+
+        sut.QuickEntryForDiario.Should().NotBeNull();
+        sut.QuickAddForDiario.Should().BeNull("WebView2 non deve istanziarsi per un'abitudine a nota veloce");
+    }
+
+    [Fact]
+    public async Task Diary_journal_still_hosts_the_markdown_editor()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out _, out var uiPrefs);
+        var node = AddJournal(nodes, "Daily journal");
+        await uiPrefs.SetAsync(node.Id, new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.Diary });
+
+        await sut.LoadAsync(node.Id);
+
+        sut.QuickAddForDiario.Should().NotBeNull();
+        sut.QuickEntryForDiario.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_journal_with_no_pref_defaults_to_the_diary_editor()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out _, out _);
+        var node = AddJournal(nodes, "Senza prefs");
+
+        await sut.LoadAsync(node.Id);
+
+        sut.QuickAddForDiario.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task The_quick_note_affordance_opens_the_Diario_column()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out _, out var uiPrefs);
+        var node = AddJournal(nodes, "Food diary");
+        await uiPrefs.SetAsync(node.Id, new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote });
+        await sut.LoadAsync(node.Id);
+        sut.IsDiarioOpen = false;
+
+        sut.RaiseTodayStripActionForTest(TodayContentAction.OpenQuickNote);
+
+        sut.IsDiarioOpen.Should().BeTrue("il composer vive in Diario, non in Note");
+        sut.IsNoteOpen.Should().BeFalse();
     }
 }
