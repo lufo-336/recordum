@@ -1623,14 +1623,18 @@ Expected: tutte verdi. Rispetto alla baseline (Core 113 / Data 432 / WPF 842 / P
 - [ ] **Step 5: Commit**
 
 ```bash
-git add docs CLAUDE.md .superpowers/sdd/progress.md
-git commit -m "docs: U7 chiuso — schema 2.17, chiave journalGesture, ledger di sessione"
+git add docs CLAUDE.md
+git commit -m "docs: U7 chiuso — schema 2.17, chiave journalGesture"
 ```
+
+> `.superpowers/` è gitignored e `progress.md` **non è tracciato**: aggiornalo, ma non provare a committarlo — `git add` fallirebbe. È un ledger locale della macchina, non parte della cronologia.
 
 ---
 
 ## Note per chi esegue
 
-- **L'ordine conta poco tranne che per Task 1 → Task 2.** Il seed di Task 2 scrive `ui_prefs` nel payload; senza il parsing di Task 1 quella chiave verrebbe ignorata e il test del gesto fallirebbe per il motivo sbagliato.
+- **Ordine di esecuzione: 1 → 2 → 4 → 3 → 5 → 6 → 7.** Due dipendenze reali, e sono le sole:
+  - **Task 1 prima di Task 2**: il seed scrive `ui_prefs` nel payload, e senza il parsing quella chiave verrebbe ignorata — il test del gesto fallirebbe per il motivo sbagliato.
+  - **Task 4 prima di Task 3**: le tre stringhe `Editor_Registration_*` e il record `JournalGestureOption` nascono in Task 4, e Task 3 li consuma. Eseguirli nell'ordine numerato costringerebbe Task 3 a crearli, duplicando il lavoro.
 - **Task 3 è separabile.** Chiude un bug preesistente (il payload salvato dal builder in una forma che il servizio non rilegge) e non serve a far funzionare il food diary spedito. Se l'autore decide di stralciarlo, va aperto un finding nel tracker invece di lasciarlo implicito: senza, "template = composizione salvata" resta rotto per `repeatable`.
 - **Niente verifica visiva in quest'onda.** L'autore guarda tutta l'Onda 2 una volta sola dopo la 2.5.
