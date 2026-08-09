@@ -153,4 +153,95 @@ public class JournalQuickEntryViewModelTests
         diary.EditedEntries.Single().Text.Should().Be("Pasta al pomodoro");
         sut.Entries.Single().Text.Should().Be("Pasta al pomodoro");
     }
+
+    [Fact]
+    public async Task Editing_a_row_to_empty_text_is_refused_like_the_composer()
+    {
+        var (sut, diary, _, _, _, _) = Build();
+        await sut.LoadAsync(Journal());
+        sut.Draft = "Pasta al pesto";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var row = sut.Entries.Single();
+
+        sut.BeginEditCommand.Execute(row);
+        row.EditDraft = "   ";
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        diary.EditedEntries.Should().BeEmpty("un salvataggio con testo vuoto non deve modificare la voce");
+        sut.ErrorMessage.Should().NotBeNull();
+        row.IsEditing.Should().BeTrue("la modifica resta aperta cosi' l'utente puo' correggere");
+        sut.Entries.Single().Text.Should().Be("Pasta al pesto");
+    }
+
+    [Fact]
+    public async Task Save_sets_IsSaving_during_the_composer_path_and_clears_it_after()
+    {
+        var (sut, _, _, _, _, _) = Build();
+        await sut.LoadAsync(Journal());
+        sut.Draft = "cena";
+        sut.IsSaving.Should().BeFalse();
+
+        var save = sut.SaveCommand.ExecuteAsync(null);
+        await save;
+
+        sut.IsSaving.Should().BeFalse("IsSaving deve tornare false dopo il salvataggio");
+    }
+
+    [Fact]
+    public async Task Save_sets_IsSaving_during_the_in_row_edit_path_too()
+    {
+        var (sut, _, _, _, _, _) = Build();
+        await sut.LoadAsync(Journal());
+        sut.Draft = "Pasta al pesto";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var row = sut.Entries.Single();
+        sut.BeginEditCommand.Execute(row);
+        row.EditDraft = "Pasta al pomodoro";
+
+        sut.IsSaving.Should().BeFalse();
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        sut.IsSaving.Should().BeFalse("IsSaving deve tornare false anche dopo il salvataggio in riga");
+    }
+
+    [Fact]
+    public async Task Overlapping_SetDay_calls_do_not_interleave_into_a_mixed_day_list()
+    {
+        // I4: SetDay is fire-and-forget (no caller holds a CancellationToken to propagate from a
+        // calendar click). Before the fix, a slower reload (A) resuming after a faster one (B) would
+        // Clear() Entries out from under B's already-applied rows, or append its own rows on top of
+        // B's — either way, a day list mixing two days. This holds A's note fetch open with a gate,
+        // fires B (which completes immediately), then releases A: only B's day must survive.
+        var (sut, _, _, _, _, notes) = Build();
+        var node = Journal();
+        await sut.LoadAsync(node);
+        var dayA = new DateOnly(2026, 8, 1);
+        var dayB = new DateOnly(2026, 8, 2);
+        var noteAId = Guid.NewGuid();
+        var noteBId = Guid.NewGuid();
+        notes.Store[noteAId] = new Note
+        {
+            Id = noteAId, HabitNodeId = node.Id, Category = NoteCategory.Diario,
+            TargetDate = dayA, BodyMd = "giorno A", CreatedAt = DateTime.UtcNow,
+        };
+        notes.Store[noteBId] = new Note
+        {
+            Id = noteBId, HabitNodeId = node.Id, Category = NoteCategory.Diario,
+            TargetDate = dayB, BodyMd = "giorno B", CreatedAt = DateTime.UtcNow,
+        };
+
+        var gate = new TaskCompletionSource();
+        notes.NextListByHabitDelay = () => gate.Task;
+        sut.SetDay(dayA); // starts, blocks inside ListByHabitAsync awaiting the gate
+
+        sut.SetDay(dayB); // no delay queued anymore: runs to completion immediately
+
+        sut.Entries.Should().ContainSingle().Which.Text.Should().Be("giorno B");
+
+        gate.SetResult(); // release the superseded A; it must bail instead of touching Entries
+        await Task.Delay(20);
+
+        sut.Entries.Should().ContainSingle().Which.Text.Should().Be("giorno B",
+            "il reload superato non deve ne' sovrascrivere ne' aggiungersi alla lista di B");
+    }
 }

@@ -31,6 +31,10 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
 
     private Guid _habitNodeId;
     private DateOnly _day;
+    // Bumped by every ReloadEntriesAsync call; a call that finds itself superseded (a newer one
+    // started while it was awaiting) bails instead of touching Entries — the CR18/CR19 class of guard,
+    // needed here because SetDay fires ReloadEntriesAsync without awaiting it (I4).
+    private int _reloadGeneration;
 
     [ObservableProperty] private string _draft = string.Empty;
     [ObservableProperty] private string? _errorMessage;
@@ -78,31 +82,61 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     }
 
     /// <summary>Allinea il composer al giorno selezionato nel calendario di Cronologia — e' cosi'
-    /// che si registra la cena di ieri, senza un secondo selettore di data.</summary>
+    /// che si registra la cena di ieri, senza un secondo selettore di data. Fire-and-forget (nessun
+    /// caller ha un CancellationToken da propagare da un click calendario), quindi guardato: una
+    /// reload che scopre di essere stata superata da una piu' recente si ritira invece di sovrascrivere
+    /// Entries con un mix di due giorni (I4), e un fallimento si traccia invece di sparire nel nulla.</summary>
     public void SetDay(DateOnly day)
     {
         _day = day;
-        _ = ReloadEntriesAsync(CancellationToken.None);
+        _ = ReloadEntriesGuardedAsync();
+    }
+
+    private async Task ReloadEntriesGuardedAsync()
+    {
+        try
+        {
+            await ReloadEntriesAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+#pragma warning disable CA1031 // fire-and-forget da SetDay: non c'e' nessun caller da cui propagare
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel.ReloadEntriesAsync failed: {ex}");
+        }
     }
 
     private async Task ReloadEntriesAsync(CancellationToken ct)
     {
         if (_habitNodeId == Guid.Empty) return;
+        var generation = ++_reloadGeneration;
+
         var all = await _notes.ListByHabitAsync(_habitNodeId, ct).ConfigureAwait(true);
+        if (generation != _reloadGeneration) return; // superseded while awaiting the note list
+
         var ofDay = all
             .Where(n => n.Category == NoteCategory.Diario
                         && (n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt)) == _day)
             .OrderByDescending(n => n.CreatedAt)
             .ToList();
 
-        Entries.Clear();
+        // Build the day's rows in a local first — Entries is only ever touched once, atomically,
+        // by whichever reload turns out to still be current. Two overlapping SetDay calls used to
+        // interleave through a shared Entries.Clear() (I4); this can't, because neither call's
+        // partial state is ever visible to the other.
+        var rows = new List<JournalEntryRowViewModel>();
         foreach (var n in ofDay)
         {
             var row = new JournalEntryRowViewModel(n);
-            Entries.Add(row);
             foreach (var a in await _attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(true))
                 row.Photos.Add(new AttachmentViewModel(a, _attachments));
+            if (generation != _reloadGeneration) return; // superseded mid-build; drop this partial batch
+            rows.Add(row);
         }
+
+        if (generation != _reloadGeneration) return; // bail before ever touching Entries
+        Entries.Clear();
+        foreach (var row in rows) Entries.Add(row);
     }
 
     [RelayCommand]
@@ -142,9 +176,24 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.
         if (Entries.FirstOrDefault(r => r.IsEditing) is { } editing)
         {
-            await _diary.EditEntryAsync(editing.Id, editing.EditDraft, ct).ConfigureAwait(true);
-            editing.Text = editing.EditDraft;
-            editing.IsEditing = false;
+            var editText = editing.EditDraft?.Trim() ?? string.Empty;
+            if (editText.Length == 0)
+            {
+                // Stessa regola del composer piu' sotto: una voce non puo' restare senza testo.
+                ErrorMessage = Strings.Diario_QuickEntry_Error_Empty;
+                return;
+            }
+            IsSaving = true;
+            try
+            {
+                await _diary.EditEntryAsync(editing.Id, editText, ct).ConfigureAwait(true);
+                editing.Text = editText;
+                editing.IsEditing = false;
+            }
+            finally
+            {
+                IsSaving = false;
+            }
             return;
         }
 

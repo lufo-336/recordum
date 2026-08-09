@@ -13,6 +13,11 @@ public sealed class FakeNoteService : INoteService
     public Dictionary<Guid, List<NoteVersion>> Versions { get; } = new();
     public List<(Guid NoteId, Guid VersionId)> RestoreCalls { get; } = [];
 
+    /// <summary>One-shot delay consumed by the next <see cref="ListByHabitAsync"/> call, then cleared —
+    /// lets a test hold one call in flight (e.g. to simulate two overlapping reloads racing) while a
+    /// later call proceeds unblocked.</summary>
+    public Func<Task>? NextListByHabitDelay { get; set; }
+
     public ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default)
     {
         Throw();
@@ -45,14 +50,19 @@ public sealed class FakeNoteService : INoteService
         return new ValueTask<Note?>(Store.TryGetValue(id, out var n) ? n : null);
     }
 
-    public ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default)
+    public async ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default)
     {
         Throw();
+        if (NextListByHabitDelay is { } delay)
+        {
+            NextListByHabitDelay = null;
+            await delay().ConfigureAwait(true);
+        }
         IReadOnlyList<Note> list = Store.Values
             .Where(n => n.HabitNodeId == habitNodeId)
             .OrderByDescending(n => n.UpdatedAtMs)
             .ToList();
-        return new ValueTask<IReadOnlyList<Note>>(list);
+        return list;
     }
 
     public ValueTask<IReadOnlyList<Note>> ListByHabitAndDateAsync(Guid habitNodeId, DateOnly targetDate, CancellationToken ct = default)
