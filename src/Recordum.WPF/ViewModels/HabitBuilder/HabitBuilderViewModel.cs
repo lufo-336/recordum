@@ -25,11 +25,12 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private readonly IRecentColorStore _recentColors;
     private readonly IFavoriteColorStore _favoriteColors;
     private readonly IScreenColorPicker _screenPicker;
+    private readonly IHabitUiPrefsService _uiPrefs;
     private Guid? _parentId;
 
     public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates,
         IReferenceDataQueryService refData, IClock clock, IRecentColorStore recentColors,
-        IFavoriteColorStore favoriteColors, IScreenColorPicker screenPicker)
+        IFavoriteColorStore favoriteColors, IScreenColorPicker screenPicker, IHabitUiPrefsService uiPrefs)
     {
         _composed = composed;
         _templates = templates;
@@ -38,6 +39,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         _recentColors = recentColors;
         _favoriteColors = favoriteColors;
         _screenPicker = screenPicker;
+        _uiPrefs = uiPrefs;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -89,9 +91,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <see cref="HabitConfig"/> and the saved template payload; refined later in Configura.</summary>
     [ObservableProperty] private bool _repeatable;
 
-    /// <summary>Gesto primario di una composizione journal (Onda 2.4). Serializzato in ui_prefs
-    /// quando la composizione si salva come template; per l'abitudine creata da Lancia lo imposta
-    /// poi Configura, che e' l'unico posto dove si cambia dopo.</summary>
+    /// <summary>Gesto primario di una composizione journal (Onda 2.4). Serializzato in ui_prefs sia
+    /// quando la composizione si salva come template, sia quando Lancia crea l'abitudine (I3: prima
+    /// non veniva applicata, solo scritta nel template); Configura resta l'unico posto dove si cambia
+    /// dopo la creazione.</summary>
     [ObservableProperty] private JournalPrimaryGesture _journalGesture = JournalPrimaryGesture.Diary;
 
     public bool ShowJournalGesture => DerivedType == HabitType.Journal;
@@ -230,7 +233,18 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync(CancellationToken ct)
     {
-        CreatedHabitNodeId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
+        var habitId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
+        CreatedHabitNodeId = habitId;
+
+        // I3: the gesture knob previously only ever reached a saved template's payload — Lancia itself
+        // never applied it, so a "Quick note with photo" composition still launched with the Markdown
+        // editor. Mirrors HabitTemplateService.InstantiateAsync's post-create ui_prefs write.
+        if (DerivedType == HabitType.Journal)
+        {
+            await _uiPrefs.UpdateAsync(habitId, p => p with { JournalGesture = JournalGesture }, ct)
+                .ConfigureAwait(true);
+        }
+
         // Recording the picked color is a best-effort MRU side effect — never let it undo a created
         // habit or crash the app if the write hiccups (e.g. a transient DB lock). See B-dbLock.
         try

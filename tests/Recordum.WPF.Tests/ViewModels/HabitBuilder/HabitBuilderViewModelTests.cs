@@ -16,14 +16,16 @@ public class HabitBuilderViewModelTests
         IComposedHabitService? composed = null,
         IHabitTemplateService? templates = null,
         IReferenceDataQueryService? refData = null,
-        IRecentColorStore? recentColors = null)
+        IRecentColorStore? recentColors = null,
+        IHabitUiPrefsService? uiPrefs = null)
     {
         var settings = new FakeAppSettingService();
         return new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
                refData ?? new FakeReferenceData(), new FakeClock(),
                recentColors ?? new RecentColorStore(settings),
                new FavoriteColorStore(settings),
-               new FakeScreenColorPicker());
+               new FakeScreenColorPicker(),
+               uiPrefs ?? new FakeHabitUiPrefsService());
     }
 
     // Alias for plan compatibility — same as NewSut()
@@ -458,6 +460,41 @@ public class HabitBuilderViewModelTests
 
         sut.JournalGesture = JournalPrimaryGesture.Diary;
         sut.TemplateSaved.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task Launch_applies_the_journal_gesture_to_the_created_habit()
+    {
+        // I3: the gesture knob previously only ever flowed into a SAVED TEMPLATE's payload — Lancia
+        // itself ignored it, so composing a text-only habit, picking "Quick note with photo" and
+        // clicking Lancia still produced the Markdown editor. This asserts the habit created by
+        // Lancia (not a re-instantiated template) carries the gesture.
+        var fake = new FakeComposedHabitService();
+        var prefs = new FakeHabitUiPrefsService();
+        var sut = NewSut(composed: fake, uiPrefs: prefs);
+        sut.Name = "Diario alimentare";
+        sut.AddFieldCommand.Execute(FieldNature.Text); // -> Journal
+        sut.JournalGesture = JournalPrimaryGesture.QuickNote;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        sut.CreatedHabitNodeId.Should().NotBeNull();
+        (await prefs.GetAsync(sut.CreatedHabitNodeId!.Value)).JournalGesture
+            .Should().Be(JournalPrimaryGesture.QuickNote);
+    }
+
+    [WpfFact]
+    public async Task Launch_does_not_touch_ui_prefs_for_a_non_journal_habit()
+    {
+        var fake = new FakeComposedHabitService();
+        var prefs = new FakeHabitUiPrefsService();
+        var sut = NewSut(composed: fake, uiPrefs: prefs);
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity); // -> Counter
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        prefs.Store.Should().BeEmpty();
     }
 
     [WpfFact]
