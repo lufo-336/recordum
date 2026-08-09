@@ -18,7 +18,6 @@ public sealed partial class RegistrationSectionViewModel(
     private readonly IHabitConfigService _configs = configs;
     private readonly IHabitUiPrefsService _uiPrefs = uiPrefs;
     private bool _loading;
-    private HabitUiPrefs _current = new();
     internal Guid NodeId { get; private set; }
 
     [ObservableProperty] private bool _repeatable;
@@ -50,8 +49,8 @@ public sealed partial class RegistrationSectionViewModel(
             var cfg = await _configs.GetAsync(node.Id).ConfigureAwait(true);
             Repeatable = cfg?.Repeatable ?? false;
 
-            _current = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
-            var gesture = _current.JournalGesture ?? JournalPrimaryGesture.Diary;
+            var prefs = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
+            var gesture = prefs.JournalGesture ?? JournalPrimaryGesture.Diary;
             SelectedGesture = GestureOptions.First(o => o.Gesture == gesture);
         }
         finally { _loading = false; }
@@ -66,8 +65,7 @@ public sealed partial class RegistrationSectionViewModel(
     partial void OnSelectedGestureChanged(JournalGestureOption? value)
     {
         if (_loading || NodeId == Guid.Empty || value is null) return;
-        _current = _current with { JournalGesture = value.Gesture };
-        _ = ApplyAsync(() => _uiPrefs.SetAsync(NodeId, _current).AsTask());
+        _ = ApplyAsync(() => _uiPrefs.UpdateAsync(NodeId, p => p with { JournalGesture = value.Gesture }).AsTask());
     }
 }
 

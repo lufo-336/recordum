@@ -20,7 +20,6 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
 
     private readonly IHabitUiPrefsService _uiPrefs = uiPrefs;
     private bool _loading;
-    private HabitUiPrefs _current = new();
     internal Guid NodeId { get; private set; }
 
     public ObservableCollection<KeyFigureOption> KeyFigureOptions { get; } = new();
@@ -38,19 +37,19 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
         try
         {
             NodeId = node.Id;
-            _current = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
+            var prefs = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
             var type = node.HabitType ?? HabitType.Action;
 
             KeyFigureOptions.Clear();
             foreach (var kind in HomeRowPresentation.AllowedKeyFigures(type))
                 KeyFigureOptions.Add(new KeyFigureOption(kind, KeyFigureLabel(kind)));
-            var resolvedKf = HomeRowPresentation.ResolveKeyFigure(type, _current);
+            var resolvedKf = HomeRowPresentation.ResolveKeyFigure(type, prefs);
             SelectedKeyFigure = KeyFigureOptions.FirstOrDefault(o => o.Kind == resolvedKf);
 
             StripOptions.Clear();
             foreach (var strip in new[] { HomeStrip.None, HomeStrip.Days7, HomeStrip.Days14 })
                 StripOptions.Add(new StripOption(strip, StripLabel(strip)));
-            var resolvedStrip = HomeRowPresentation.ResolveStrip(type, _current);
+            var resolvedStrip = HomeRowPresentation.ResolveStrip(type, prefs);
             SelectedStrip = StripOptions.FirstOrDefault(o => o.Strip == resolvedStrip);
         }
         finally { _loading = false; }
@@ -59,15 +58,13 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
     partial void OnSelectedKeyFigureChanged(KeyFigureOption? value)
     {
         if (_loading || NodeId == Guid.Empty || value is null) return;
-        _current = _current with { KeyFigure = HomeRowPresentation.IdFor(value.Kind) };
-        _ = ApplyAsync(() => _uiPrefs.SetAsync(NodeId, _current).AsTask());
+        _ = ApplyAsync(() => _uiPrefs.UpdateAsync(NodeId, p => p with { KeyFigure = HomeRowPresentation.IdFor(value.Kind) }).AsTask());
     }
 
     partial void OnSelectedStripChanged(StripOption? value)
     {
         if (_loading || NodeId == Guid.Empty || value is null) return;
-        _current = _current with { Strip = value.Strip };
-        _ = ApplyAsync(() => _uiPrefs.SetAsync(NodeId, _current).AsTask());
+        _ = ApplyAsync(() => _uiPrefs.UpdateAsync(NodeId, p => p with { Strip = value.Strip }).AsTask());
     }
 
     private static string KeyFigureLabel(KeyFigureKind kind) => kind switch

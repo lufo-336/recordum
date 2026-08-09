@@ -222,9 +222,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         var node = Node;
         if (node is null) return;
-        var prefs = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
         var cols = CanonicalOpen().Select(c => c.ToString()).ToList();
-        await _uiPrefs.SetAsync(node.Id, prefs with { OpenColumns = cols }).ConfigureAwait(true);
+        // UpdateAsync re-reads immediately before writing, so this can't clobber a concurrent write to
+        // another field (e.g. the editor's Registration/HomeRow sections) with a stale snapshot (C2).
+        await _uiPrefs.UpdateAsync(node.Id, p => p with { OpenColumns = cols }).ConfigureAwait(true);
     }
 
     /// <summary>Restores the open-column set for a single subject on load. Precedence:

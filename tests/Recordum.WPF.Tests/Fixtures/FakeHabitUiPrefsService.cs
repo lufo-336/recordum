@@ -16,4 +16,10 @@ public sealed class FakeHabitUiPrefsService : IHabitUiPrefsService
         Store[habitNodeId] = prefs;
         return ValueTask.CompletedTask;
     }
+
+    public ValueTask UpdateAsync(Guid habitNodeId, Func<HabitUiPrefs, HabitUiPrefs> mutate, CancellationToken ct = default)
+    {
+        Store.AddOrUpdate(habitNodeId, _ => mutate(new HabitUiPrefs()), (_, existing) => mutate(existing));
+        return ValueTask.CompletedTask;
+    }
 }

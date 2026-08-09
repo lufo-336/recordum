@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.Services;
@@ -103,6 +104,36 @@ public class HabitUiPrefsServiceTests
         var (service, fixture) = CreateService();
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.SetAsync(Guid.NewGuid(), new HabitUiPrefs()).AsTask());
+        await fixture.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_merges_into_the_current_row_instead_of_a_caller_held_snapshot()
+    {
+        // C2: two callers each hold their own snapshot from an earlier GetAsync (as the Habit Editor's
+        // Registration and HomeRow sections do). Both mutate through UpdateAsync — each call re-reads
+        // the row fresh, so neither's write reverts the other's, unlike GetAsync+SetAsync by hand.
+        var (service, fixture) = CreateService();
+        var habitId = await SeedHabitAsync(fixture);
+        var snapshotA = await service.GetAsync(habitId);
+        var snapshotB = await service.GetAsync(habitId);
+        _ = snapshotA; _ = snapshotB; // both callers loaded before either wrote — the stale-snapshot setup
+
+        await service.UpdateAsync(habitId, p => p with { KeyFigure = "streak" });
+        await service.UpdateAsync(habitId, p => p with { JournalGesture = JournalPrimaryGesture.QuickNote });
+
+        var got = await service.GetAsync(habitId);
+        got.KeyFigure.Should().Be("streak", "the first UpdateAsync's field must survive the second");
+        got.JournalGesture.Should().Be(JournalPrimaryGesture.QuickNote);
+        await fixture.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_throws_when_node_missing()
+    {
+        var (service, fixture) = CreateService();
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.UpdateAsync(Guid.NewGuid(), p => p).AsTask());
         await fixture.DisposeAsync();
     }
 }
