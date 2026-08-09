@@ -836,6 +836,17 @@
                                       CounterTap="{StaticResource CounterTapQuickAddTemplate}"
                                       Journal="{StaticResource JournalQuickAddTemplate}"/>
 
+        <!-- C1 fix: a selector (not a static ContentTemplate) for the Diario host. Verified empirically
+             (a throwaway diagnostic test walking the real visual tree) that ContentPresenter.ChooseTemplate()
+             applies a statically-assigned ContentTemplate even when Content is null AND the ContentControl
+             itself is Visibility=Collapsed — Collapsed only skips layout/measure, it does not stop the
+             DataTemplate from being chosen and its visual child (here: MarkdownEditorControl -> WebView2)
+             from being built. A DataTemplateSelector, by contrast, is invoked with the actual Content
+             instance and can return null for null content, so nothing is ever chosen or built. Only
+             Journal is set; every other item (including null) selects null, same as QuickAddSelector's
+             fallback for CounterTap/etc. above. -->
+        <sel:QuickAddTemplateSelector x:Key="DiarioQuickAddSelector" Journal="{StaticResource JournalDiarioTemplate}"/>
+
         <!-- Column chrome (nav-model: chip-toggled side-by-side view columns). -->
         <Style x:Key="HabitScreen.Column" TargetType="Border">
             <Setter Property="BorderThickness" Value="0,0,1,0"/>
@@ -1201,9 +1212,10 @@
                         </Grid>
                     </Border>
 
-                    <!-- ✎ Diario (journal-only writing surface, spec §3.5). The editor is hosted only here
-                         via QuickAddForDiario (null for non-journal), so WebView2 instantiates once. -->
-                    <Border Grid.Column="2" Style="{StaticResource HabitScreen.Column}"
+                    <!-- ✎ Diario (journal-only writing surface, spec §3.5). The editor is hosted only here,
+                         and — for a quick-note journal — never materialized at all (DiarioQuickAddSelector
+                         below, C1). -->
+                    <Border x:Name="DiarioColumn" Grid.Column="2" Style="{StaticResource HabitScreen.Column}"
                             Visibility="{Binding ShowDiario, Converter={StaticResource BoolToVisible}}">
                         <Grid>
                             <DockPanel>
@@ -1218,11 +1230,24 @@
                                             CommandParameter="{x:Static vm:HabitColumn.Diario}"/>
                                 </Grid>
                                 <!-- La colonna ospita O il composer nota-veloce O l'editor Markdown, mai
-                                     entrambi: uno solo dei due binding e' non-null (Onda 2.4). -->
+                                     entrambi (Onda 2.4). Il primo host usa un ContentTemplateSelector
+                                     (DiarioQuickAddSelector), non un ContentTemplate statico: con un
+                                     ContentTemplate statico, ContentPresenter.ChooseTemplate() applica
+                                     comunque il template quando Content e' null — verificato empiricamente
+                                     che perfino Visibility=Collapsed sull'host NON basta a impedirlo (misura/
+                                     layout sono saltati, ma la scelta+costruzione del template no) — quindi
+                                     il MarkdownEditorControl/WebView2 si istanzierebbe comunque su una nota
+                                     veloce (finding C1). Il selector, invocato con l'istanza reale di Content,
+                                     restituisce null per Content null e non sceglie/costruisce nulla. Il
+                                     secondo host non ha questo problema: il suo DataTemplate e' implicito
+                                     (per DataType, non x:Key) e la risoluzione implicita gia' salta un
+                                     Content nullo. Visibility resta comunque come guardia difensiva. -->
                                 <Grid>
                                     <ContentControl Content="{Binding QuickAddForDiario}"
-                                                    ContentTemplate="{StaticResource JournalDiarioTemplate}"/>
-                                    <ContentControl Content="{Binding QuickEntryForDiario}"/>
+                                                    ContentTemplateSelector="{StaticResource DiarioQuickAddSelector}"
+                                                    Visibility="{Binding QuickAddForDiario, Converter={StaticResource NullToVisibility}}"/>
+                                    <ContentControl Content="{Binding QuickEntryForDiario}"
+                                                    Visibility="{Binding QuickEntryForDiario, Converter={StaticResource NullToVisibility}}"/>
                                 </Grid>
                             </DockPanel>
                         </Grid>

@@ -18,7 +18,7 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 public class HabitScreenViewModelTests
 {
 
-    private static HabitScreenViewModel CreateSut(
+    internal static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
         out FakeCompletionService completions,
         out FakeActiveTimerService timers,
@@ -27,7 +27,7 @@ public class HabitScreenViewModelTests
         out FakeEventBus bus)
         => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out bus, out _);
 
-    private static HabitScreenViewModel CreateSut(
+    internal static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
         out FakeCompletionService completions,
         out FakeActiveTimerService timers,
@@ -37,7 +37,7 @@ public class HabitScreenViewModelTests
         out FakeNoteService noteSvc)
         => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out bus, out noteSvc, out _);
 
-    private static HabitScreenViewModel CreateSut(
+    internal static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
         out FakeCompletionService completions,
         out FakeActiveTimerService timers,
@@ -48,7 +48,7 @@ public class HabitScreenViewModelTests
         out FakeAbstinenceService abstinence)
         => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out bus, out noteSvc, out abstinence, out _);
 
-    private static HabitScreenViewModel CreateSut(
+    internal static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
         out FakeCompletionService completions,
         out FakeActiveTimerService timers,
@@ -86,7 +86,7 @@ public class HabitScreenViewModelTests
             new FakeAttachmentService(), new FakeOpenFileDialog(), uiPrefs);
     }
 
-    private static HabitScreenViewModel CreateSut(
+    internal static HabitScreenViewModel CreateSut(
         out FakeHabitNodeService nodes,
         out FakeCompletionService completions,
         out FakeActiveTimerService timers,
@@ -94,7 +94,7 @@ public class HabitScreenViewModelTests
         out FakeClock clock)
         => CreateSut(out nodes, out completions, out timers, out metrics, out clock, out _);
 
-    private static HabitNode AddJournal(FakeHabitNodeService nodes, string name)
+    internal static HabitNode AddJournal(FakeHabitNodeService nodes, string name)
     {
         var node = new HabitNode
         { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = name, Color = "#808080" };
