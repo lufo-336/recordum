@@ -235,6 +235,45 @@ public class HabitTemplateServiceTests
         cfg.SeriesLabelsJson.Should().Be("[\"Night\",\"Nap\"]");
     }
 
+    [Fact]
+    public async Task Instantiate_reads_legacy_root_level_repeatable_from_pre_task3_templates()
+    {
+        // I5: HabitBuilderViewModel wrote "repeatable" at the payload ROOT (with no "config" object
+        // at all) for every template saved between U8 and the Task 3 fix (wave 2.4). InstantiateAsync
+        // reads only config.repeatable, and its config-mutation lambda used to bail out entirely
+        // when payload.Config was null — so a template saved under this shape silently lost the flag
+        // on every re-instantiation. This is a compatibility read, not a new writer.
+        await using var fx = new DbFixture();
+        var payload = "{\"node\":{\"name\":\"S\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"}," +
+                      "\"repeatable\":true,\"metrics\":[]}";
+        var templateId = await InsertTemplateAsync(fx, payload);
+
+        var svc = CreateSut(fx);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
+
+        var cfg = await configs.GetAsync(nodeId);
+        cfg!.Repeatable.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Instantiate_prefers_nested_config_repeatable_over_the_legacy_root_key()
+    {
+        // Defensive: if a payload somehow carries both (should never happen from either writer), the
+        // current (Task 3) shape wins.
+        await using var fx = new DbFixture();
+        var payload = "{\"node\":{\"name\":\"S\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#7b68ee\"}," +
+                      "\"config\":{\"schedule_type\":\"Daily\",\"repeatable\":false},\"repeatable\":true,\"metrics\":[]}";
+        var templateId = await InsertTemplateAsync(fx, payload);
+
+        var svc = CreateSut(fx);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
+
+        var cfg = await configs.GetAsync(nodeId);
+        cfg!.Repeatable.Should().BeFalse();
+    }
+
     private static async Task<Guid> InsertTemplateAsync(DbFixture fx, string payloadJson)
     {
         var templateId = Guid.NewGuid();

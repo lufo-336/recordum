@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
@@ -90,7 +91,17 @@ public sealed class HabitTemplateService(
         {
             await configs.UpsertAsync(newId, c =>
             {
-                if (payload.Config is null) return;
+                // I5: templates saved by the builder before Task 3 (wave 2.4) wrote "repeatable" at
+                // the payload ROOT and had no "config" object at all — the only shape the builder
+                // produced between U8 and that fix. Read it here, before the payload.Config null-guard
+                // below would otherwise skip this branch entirely and silently drop the flag on
+                // instantiation. The writer no longer produces this shape; this is a compatibility
+                // read only, kept because the flag can still live in an already-saved local template.
+                if (payload.Config is null)
+                {
+                    c.Repeatable = payload.RepeatableLegacy ?? false;
+                    return;
+                }
                 c.ScheduleType = ParseEnum(payload.Config.ScheduleType, ScheduleType.Daily);
                 c.ScheduleDaysJson = payload.Config.ScheduleDaysJson;
                 c.ScheduleWeeklyTarget = payload.Config.ScheduleWeeklyTarget;
@@ -103,7 +114,7 @@ public sealed class HabitTemplateService(
                     : null;
                 c.TimerTargetSeconds = payload.Config.TimerTargetSeconds;
                 if (c.TimerMode == Recordum.Core.Enums.TimerMode.Session) c.SessionBaseTimer = true;
-                c.Repeatable = payload.Config.Repeatable ?? false;
+                c.Repeatable = payload.Config.Repeatable ?? payload.RepeatableLegacy ?? false;
                 c.SeriesLabelsJson = payload.Config.SeriesLabels is { Count: > 0 }
                     ? JsonSerializer.Serialize(payload.Config.SeriesLabels)
                     : null;
@@ -233,6 +244,12 @@ public sealed class HabitTemplateService(
         public List<MetricPayload>? Metrics { get; set; }
         public List<SegmentPayload>? Segments { get; set; }
         public GoalPayload? Goal { get; set; }
+
+        /// <summary>Compatibility read only (I5): pre-Task-3 builder templates wrote "repeatable" at
+        /// the payload root instead of nested under "config". The writer no longer produces this
+        /// shape — see the comment at its read site in <see cref="HabitTemplateService.InstantiateAsync"/>.</summary>
+        [JsonPropertyName("repeatable")]
+        public bool? RepeatableLegacy { get; set; }
     }
 
     private sealed class UiPrefsPayload
