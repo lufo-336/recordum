@@ -62,7 +62,7 @@ or absent key = fall back to the habit type's default. Governance: every key liv
 | `keyFigure` | string | Home-row key figure id (per-type set) | Onda 2 |
 | `strip` | enum `None`/`Days7`/`Days14` | Home-row strip length | Onda 2 |
 | `openColumns` | string[] | Per-habit open workspace columns | Onda 2 |
-| `journalGesture` | enum `Diary`/`QuickNote` | Journal primary gesture | Onda 2 |
+| `journalGesture` | `"Diary"` \| `"QuickNote"` | Gesto primario di un habit journal: scrivere la voce di oggi nell'editor Markdown, oppure il composer nota veloce con foto. Assente = `Diary`. | Onda 2.4 |
 
 ### Recordum.Plugins(.Contracts) — extensibility
 First-party features (the chart engine, the export engine) are themselves plugins that register
