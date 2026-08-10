@@ -1033,7 +1033,7 @@ Emerse durante Task 14 visual verification (app lanciata, schermo utente):
 - **W23-VF3 — Le serie nominate non arrivano in Cronologia** · `fixed` (commit `9c759d9`) · Le serie rinominate ("Night"/"Nap") si rileggevano come "Serie 1"/"Serie 2".
 - **W23-VF6 — Formato incoerente fra schede di registrazione** · `fixed` (commit `5949f58`) · Una registrazione multi-serie stava su una riga per serie con prefisso, una a serie singola spezzava i campi su una riga ciascuno: due layout per lo stesso oggetto. Ora sempre una riga per serie; la serie sola si limita a non stampare il prefisso.
 
-**Rimandati al giro sul modello counter con Fable** (vedi memoria `recordum-counter-repeatability-rethink`):
+**Rimandati al giro sul modello counter** (questioni **CM-1…CM-4**, v. §"Onda 2.4 — review finale" in fondo al file):
 
 - **W23-VF4 — Il cronometro non è scopribile dal builder** · `triaged` (UX, media) · Il ⏱ nasce solo dal campo "+ Tempo": chi costruisce l'abitudine non ha modo di sapere che esiste.
 - **W23-VF5 — Le abitudini "cronometro" pre-esistenti non ricevono niente** · `triaged` (media) · Il gate guarda il *tipo* metrica `Seconds`, non l'unità: un'abitudine costruita prima resta esclusa dalla feature.
@@ -1048,3 +1048,59 @@ Emerse durante Task 14 visual verification (app lanciata, schermo utente):
 - **Goal-actual 60× su metrica durata** · `fixed` (commit `bebfd06`) · Un goal su metrica `Seconds` sommava `value_seconds` grezzi mentre il target era digitato nell'unità: 7,5h leggeva 27000 contro un target di 10. Nuova regola condivisa `SecondsDisplay.ConvertTotal` in Core; goal card ed export convertono; i 3 siti che ricopiavano la conversione a mano ora la chiamano (e guadagnano il guard fuori range che non avevano).
 - **Export: valori senza unità, e il goal invisibile** · `fixed` (commit `37ecd8c`, `09b3107`) · Tutti e 5 i formatter stampavano il valore come numero nudo (7.5 senza "hours"; una durata senza unità usciva "27000"). E `GoalActual`/`GoalTarget` esistevano nel modello ma **solo il JSON li emetteva**, perché serializza l'intero model: Markdown/HTML/PDF buttavano via il goal, quindi il fix `bebfd06` era invisibile in ogni formato leggibile. CSV lasciato fuori di proposito dal summary (è il formato macchina a righe).
 - **Unità temporale obbligatoria su metrica durata** · `fixed` (commit `7f628c3`→`1d96967`) · Chiude alla radice il caso di VF2 per le metriche nuove. Spec e piano in `docs/superpowers/`; decisioni di modello riassunte in CLAUDE.md §7 e nella memoria `recordum-duration-unit-required`. Vedi **R7** per il buco che resta aperto (template seed).
+
+
+## Onda 2.4 — review finale (2026-08-09/10): residui parcheggiati + questioni-modello counter
+
+> Contesto: review finale dell'intero branch `wave-2-4-food-diary` (opus, `5d9667a..3925a9e`): due Critical
+> trovati e fixati — **C1** WebView2 fantasma (un `ContentControl` con `ContentTemplate` esplicito applica il
+> template anche con `Content` null; chiuso con `ContentTemplateSelector`, `1a97aa8`) e **C2** due sezioni di
+> Configura che si annullavano su `ui_prefs_json` (nuova merge API `IHabitUiPrefsService.UpdateAsync`,
+> `16f6ffb`) — più tre Important (`21038f6`, `f15a8bc`, `17eca02`). Suite alla chiusura: Core 113 / Data 440 /
+> WPF 872 / Plugins 66 / ExportEngine 37 / ChartEngine 18 = 1546. I residui sotto erano rimasti solo nella
+> prosa di CLAUDE.md §7 e in memorie machine-local: trascritti qui il 2026-08-11 perché il tracker è l'unica
+> lista che ogni sessione (e ogni modello) legge.
+
+**Residui della review (nessun secondo giro di fix, decisione 2026-08-10):**
+
+- **W24-R1 — Il gesto journal del builder si scrive dopo la chiusura del dialog** · `triaged` (bassa) ·
+  `HabitBuilderViewModel` scrive le ui_prefs *dopo* aver impostato `CreatedHabitNodeId`, che ha già chiuso il
+  dialog: un errore transitorio nella scrittura uscirebbe da un comando già "riuscito". Fix da una riga
+  (scrivere le prefs prima). → giro fix del pass visivo post-2.5.
+- **W24-R2 — Il test di regressione dell'interleaving non fallisce contro il codice pre-fix** · `triaged`
+  (test-debt) · rilegge `_day` dopo l'await invece di catturarlo prima: verifica la convivenza delle chiamate,
+  non la regressione che voleva coprire.
+- **W24-R3 — I due test su `IsSaving` asseriscono solo false→false** · `triaged` (test-debt) · non
+  intercetterebbero un salvataggio che non setta mai il flag.
+- **W24-Q1 — `NotesTabView` ospita un secondo `MarkdownEditorControl` solo `Collapsed`** · `triaged`
+  (domanda aperta, pesa sulla promessa "niente WebView2 per journal QuickNote") · se la sonda
+  dell'implementatore su `Collapsed` è corretta, quell'editor si istanzia per *ogni* abitudine e la promessa
+  è falsa comunque, a prescindere dal fix C1. Si adjudica allargando `FindDescendants<MarkdownEditorControl>`
+  dal `DiarioColumn` all'intera view col pannello Note chiuso, in `HabitScreenDiarioColumnViewTests`.
+  → 2.5 o pass visivo post-2.5.
+
+**Questioni-modello counter CM-1…CM-4** (trasferite dalla memoria machine-local
+`recordum-counter-repeatability-rethink`; giro di *decisioni* con l'autore, nessuna esecuzione prima; si
+adjudicano preferibilmente col dogfooding, E21):
+
+- **CM-1 — Flag "ripetibile" inerte sui tap-counter** · un counter senza metriche ignora il flag, ma
+  l'etichetta in Configura promette un comportamento che non c'è.
+- **CM-2 — Sonno: totale-vs-sessioni** · il template Sleep ripetibile somma le serie, ma non è mai stato
+  deciso se "il valore del giorno" sia il totale o la lista delle sessioni (imparentato con W23-VF8).
+- **CM-3 — Metrica durata + unità separata** · la durata è una metrica `Seconds` + unità di visualizzazione:
+  rivedere se l'unità debba far parte del tipo (goal-actual 60× e W23-VF2 nascevano esattamente qui; il giro
+  "unità obbligatoria" del 2026-08-07 ha tamponato per le metriche nuove, non risolto il modello).
+- **CM-4 — Più metriche durata / più cronometri** · `active_timer` ha UNIQUE su `habit_node_id`: il secondo
+  cronometro simultaneo sulla stessa abitudine è strutturalmente impossibile oggi.
+
+**Gotcha ambiente scoperto durante la verifica pre-merge (2026-08-11):**
+
+- **W24-E1 — Il run WPF completo può appendersi con le collezioni xunit parallele (VM)** · `reported`
+  (ambiente, non difetto dell'app) · Due hang riprodotti nella notte 2026-08-10/11: 855 e poi 848 test verdi,
+  zero falliti, poi stallo a CPU ferma; il blame-dump nomina in volo `MarkdownEditorControlTests`
+  (sonda WebView2), `BootstrapSmokeTests`, `HabitScreenDetailSmokeTests`, `CrashLoggerTests`,
+  `BackupRoundTripE2ETests`. Gli stessi 5 gruppi sono verdi in isolamento (24/24) e il run **serializzato**
+  (`dotnet test -- xUnit.ParallelizeTestCollections=false`) è **872/872 in 25s**. Sospetti: sonda WebView2
+  concorrente + I/O DriveFS. Se si ripresenta: serializzare le collezioni, non inseguire i singoli test.
+  (Nello stesso giro: il lock `CreateAppHost` di DriveFS ha rotto una build — `-p:UseAppHost=false` resta
+  obbligatorio, come da mappa §9.2.)
