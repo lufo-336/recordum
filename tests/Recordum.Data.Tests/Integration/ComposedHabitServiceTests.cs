@@ -50,4 +50,55 @@ public class ComposedHabitServiceTests
         await using var db = await fx.Factory.CreateDbContextAsync();
         (await db.HabitNodes.FindAsync(nodeId)).Should().BeNull();
     }
+
+    [Fact]
+    public async Task CreateComposedHabitAsync_materializes_everything_in_one_transaction()
+    {
+        await using var fx = new DbFixture();
+        var svc = new ComposedHabitService(fx.Factory);
+        var nodeId = Guid.NewGuid();
+        var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Code = "tazze", Name = "Tazze", IsOfficial = false };
+        var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "energia-3", Name = "Energia",
+            MinValue = 1, MaxValue = 3, LabelsJson = """["Bassa","Media","Alta"]""", IsOfficial = false };
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = nodeId, Name = "Tazze",
+            Type = MetricType.Decimal, UnitOfMeasureId = unit.Id, SortOrder = 0 };
+        var request = new ComposedHabitRequest(
+            Node: new HabitNode { Id = nodeId, NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "Tè", Color = "#123456" },
+            Config: new HabitConfig { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = true,
+                ScheduleType = ScheduleType.SpecificDays, ScheduleDaysJson = """["Mon","Fri"]""",
+                StreakMode = StreakMode.Weekly, StreakRecovery = StreakRecovery.None,
+                SeriesLabelsJson = """["Mattina","Sera"]""" },
+            Metrics: [metric],
+            Segments: [new SegmentDefinition { Id = Guid.NewGuid(), HabitNodeId = nodeId, Name = "Work", IsRest = false, SortOrder = 0 }],
+            Goal: new Goal { Id = Guid.NewGuid(), HabitNodeId = nodeId, Name = "Tè",
+                MetricDefinitionId = metric.Id, TargetValue = 3, PeriodType = GoalPeriodType.Open },
+            NewUnits: [unit],
+            NewScales: [scale],
+            UiPrefs: new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote });
+
+        var id = await svc.CreateComposedHabitAsync(request);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.UnitsOfMeasure.AnyAsync(u => u.Code == "tazze")).Should().BeTrue();
+        (await db.ScaleTemplates.AnyAsync(s => s.Code == "energia-3")).Should().BeTrue();
+        (await db.SegmentDefinitions.CountAsync(s => s.HabitNodeId == id)).Should().Be(1);
+        (await db.Goals.SingleAsync(g => g.HabitNodeId == id)).TargetValue.Should().Be(3);
+        var node = await db.HabitNodes.SingleAsync(n => n.Id == id);
+        HabitUiPrefsJson.Deserialize(node.UiPrefsJson).JournalGesture.Should().Be(JournalPrimaryGesture.QuickNote);
+    }
+
+    [Fact]
+    public async Task CreateComposedHabitAsync_with_minimal_request_behaves_as_before()
+    {
+        // Compat: i 3 argomenti storici bastano (default null sui nuovi) — il call site legacy compila e crea solo nodo+config+metriche.
+        await using var fx = new DbFixture();
+        var svc = new ComposedHabitService(fx.Factory);
+        var nodeId = Guid.NewGuid();
+        var id = await svc.CreateComposedHabitAsync(new ComposedHabitRequest(
+            new HabitNode { Id = nodeId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "A", Color = "#000000" },
+            new HabitConfig { Id = Guid.NewGuid(), HabitNodeId = nodeId }, []));
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.HabitNodes.AnyAsync(n => n.Id == id)).Should().BeTrue();
+        (await db.Goals.AnyAsync(g => g.HabitNodeId == id)).Should().BeFalse();
+    }
 }
