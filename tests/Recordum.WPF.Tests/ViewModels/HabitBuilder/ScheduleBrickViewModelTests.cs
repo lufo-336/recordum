@@ -1,0 +1,56 @@
+using FluentAssertions;
+using Recordum.Core.Enums;
+using Recordum.Core.Models;
+using Recordum.WPF.ViewModels.HabitBuilder;
+using Xunit;
+
+namespace Recordum.WPF.Tests.ViewModels.HabitBuilder;
+
+public class ScheduleBrickViewModelTests
+{
+    [Fact]
+    public void Defaults_match_seed_shape()
+    {
+        var vm = new ScheduleBrickViewModel();
+        vm.ScheduleType.Should().Be(ScheduleType.Daily);
+        vm.StreakMode.Should().Be(StreakMode.Daily);
+        vm.StreakRecovery.Should().Be(StreakRecovery.GraceDay);
+        vm.IsExpanded.Should().BeFalse();
+        vm.Days.Should().HaveCount(7);
+    }
+
+    [Fact]
+    public void ApplyTo_writes_specific_days_in_scheduling_section_format()
+    {
+        var vm = new ScheduleBrickViewModel { ScheduleType = ScheduleType.SpecificDays };
+        vm.Days.Single(d => d.DayKey == "Mon").IsSelected = true;
+        vm.Days.Single(d => d.DayKey == "Fri").IsSelected = true;
+        var cfg = new HabitConfig();
+        vm.ApplyTo(cfg);
+        cfg.ScheduleType.Should().Be(ScheduleType.SpecificDays);
+        cfg.ScheduleDaysJson.Should().Be("""["Mon","Fri"]""");
+    }
+
+    [Fact]
+    public void ApplyTo_clears_fields_of_other_schedule_types()
+    {
+        var vm = new ScheduleBrickViewModel { ScheduleType = ScheduleType.WeeklyX, WeeklyTarget = 3 };
+        var cfg = new HabitConfig { ScheduleDaysJson = "[\"Mon\"]", ScheduleEveryXDays = 2 };
+        vm.ApplyTo(cfg);
+        cfg.ScheduleWeeklyTarget.Should().Be(3);
+        cfg.ScheduleDaysJson.Should().BeNull();
+        cfg.ScheduleEveryXDays.Should().BeNull();
+    }
+
+    [Fact]
+    public void Any_change_raises_Changed_and_updates_Summary()
+    {
+        var vm = new ScheduleBrickViewModel();
+        var raised = 0;
+        vm.Changed += (_, _) => raised++;
+        var before = vm.Summary;
+        vm.StreakRecovery = StreakRecovery.None;
+        raised.Should().BeGreaterThan(0);
+        vm.Summary.Should().NotBe(before);
+    }
+}

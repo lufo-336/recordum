@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Globalization;
 using System.Resources;
 
@@ -252,6 +252,21 @@ public static class Strings
     public static string HabitBuilder_ScalePickerPrompt => Get("HabitBuilder.ScalePickerPrompt");
     public static string HabitBuilder_LaunchHint => Get("HabitBuilder.LaunchHint");
     public static string HabitBuilder_TemplateSaved => Get("HabitBuilder.TemplateSaved");
+    public static string HabitBuilder_Advanced => Get("HabitBuilder.Advanced");
+    public static string HabitBuilder_Schedule_Header => Get("HabitBuilder.Schedule.Header");
+    public static string HabitBuilder_Schedule_Daily => Get("HabitBuilder.Schedule.Daily");
+    public static string HabitBuilder_Schedule_SpecificDays => Get("HabitBuilder.Schedule.SpecificDays");
+    public static string HabitBuilder_Schedule_WeeklyX => Get("HabitBuilder.Schedule.WeeklyX");
+    public static string HabitBuilder_Schedule_EveryXDays => Get("HabitBuilder.Schedule.EveryXDays");
+    public static string HabitBuilder_Schedule_StreakMode => Get("HabitBuilder.Schedule.StreakMode");
+    public static string HabitBuilder_Schedule_Recovery => Get("HabitBuilder.Schedule.Recovery");
+    public static string Day_Mon => Get("Day.Mon");
+    public static string Day_Tue => Get("Day.Tue");
+    public static string Day_Wed => Get("Day.Wed");
+    public static string Day_Thu => Get("Day.Thu");
+    public static string Day_Fri => Get("Day.Fri");
+    public static string Day_Sat => Get("Day.Sat");
+    public static string Day_Sun => Get("Day.Sun");
     public static string Editor_Error_NameRequired => Get("Editor.Error.NameRequired");
     public static string Editor_Error_NameTooLong => Get("Editor.Error.NameTooLong");
     public static string Editor_Error_DescriptionTooLong => Get("Editor.Error.DescriptionTooLong");

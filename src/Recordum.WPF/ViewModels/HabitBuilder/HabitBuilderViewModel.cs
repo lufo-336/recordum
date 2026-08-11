@@ -40,10 +40,15 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         _favoriteColors = favoriteColors;
         _screenPicker = screenPicker;
         _uiPrefs = uiPrefs;
+        Schedule.Changed += (_, _) => TemplateSaved = false;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
     public RecordingPreviewViewModel Preview { get; } = new();
+
+    /// <summary>Mattone Programma (Onda 2.5 T3): schedule + streak + recovery del draft, applicato
+    /// all'<see cref="HabitConfig"/> da <see cref="BuildConfig"/>.</summary>
+    public ScheduleBrickViewModel Schedule { get; } = new();
 
     /// <summary>Units and scales available to the Quantity / Scale field pickers, loaded by
     /// <see cref="InitializeAsync"/>.</summary>
@@ -307,9 +312,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.
     // (Timer-mode mapping from the future Sessione brick is still future work.) Instance method
-    // (not static) since U8 needs the builder's Repeatable knob.
-    private HabitConfig BuildConfig(Guid nodeId) =>
-        new() { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = Repeatable };
+    // (not static) since U8 needs the builder's Repeatable knob and Onda 2.5 T3 needs Schedule.
+    private HabitConfig BuildConfig(Guid nodeId)
+    {
+        var cfg = new HabitConfig { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = Repeatable };
+        Schedule.ApplyTo(cfg);
+        return cfg;
+    }
 
     private static readonly JsonSerializerOptions s_templateJsonOptions = new()
     {

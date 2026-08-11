@@ -413,6 +413,51 @@
   <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
     <value>Salvato ✓</value>
   </data>
+  <data name="HabitBuilder.Advanced" xml:space="preserve">
+    <value>Dettagli della composizione</value>
+  </data>
+  <data name="HabitBuilder.Schedule.Header" xml:space="preserve">
+    <value>Programma e streak</value>
+  </data>
+  <data name="HabitBuilder.Schedule.Daily" xml:space="preserve">
+    <value>Ogni giorno</value>
+  </data>
+  <data name="HabitBuilder.Schedule.SpecificDays" xml:space="preserve">
+    <value>Giorni specifici</value>
+  </data>
+  <data name="HabitBuilder.Schedule.WeeklyX" xml:space="preserve">
+    <value>Volte a settimana</value>
+  </data>
+  <data name="HabitBuilder.Schedule.EveryXDays" xml:space="preserve">
+    <value>Ogni X giorni</value>
+  </data>
+  <data name="HabitBuilder.Schedule.StreakMode" xml:space="preserve">
+    <value>Streak</value>
+  </data>
+  <data name="HabitBuilder.Schedule.Recovery" xml:space="preserve">
+    <value>Recupero</value>
+  </data>
+  <data name="Day.Mon" xml:space="preserve">
+    <value>Lun</value>
+  </data>
+  <data name="Day.Tue" xml:space="preserve">
+    <value>Mar</value>
+  </data>
+  <data name="Day.Wed" xml:space="preserve">
+    <value>Mer</value>
+  </data>
+  <data name="Day.Thu" xml:space="preserve">
+    <value>Gio</value>
+  </data>
+  <data name="Day.Fri" xml:space="preserve">
+    <value>Ven</value>
+  </data>
+  <data name="Day.Sat" xml:space="preserve">
+    <value>Sab</value>
+  </data>
+  <data name="Day.Sun" xml:space="preserve">
+    <value>Dom</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Il nome è obbligatorio</value>
   </data>

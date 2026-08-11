@@ -10,6 +10,16 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HabitBuilderViewModel, IsDesignTimeCreatable=False}"
              Background="{DynamicResource Brush.Surface}">
+    <UserControl.Resources>
+        <!-- Scope del mattone Programma (Onda 2.5 T3): Daily/SpecificDays/WeeklyX/EveryXDays only —
+             Monthly/Custom stay Configura-only (nessun seed li usa). -->
+        <x:Array x:Key="ScheduleBrickTypeValues" Type="{x:Type enums:ScheduleType}">
+            <enums:ScheduleType>Daily</enums:ScheduleType>
+            <enums:ScheduleType>SpecificDays</enums:ScheduleType>
+            <enums:ScheduleType>WeeklyX</enums:ScheduleType>
+            <enums:ScheduleType>EveryXDays</enums:ScheduleType>
+        </x:Array>
+    </UserControl.Resources>
     <DockPanel LastChildFill="True">
 
         <!-- Bottom action bar -->
@@ -308,6 +318,76 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <!-- ===== Zone 2b: Composizione avanzata (Onda 2.5) ===== -->
+                <TextBlock Text="{x:Static res:Strings.HabitBuilder_Advanced}" FontSize="{StaticResource FontSize.Body}"
+                           FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" Margin="0,4,0,6"/>
+                <Expander IsExpanded="{Binding Schedule.IsExpanded}" Margin="0,0,0,8">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{x:Static res:Strings.HabitBuilder_Schedule_Header}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Schedule.Summary}" Margin="8,0,0,0"
+                                       Foreground="{DynamicResource Brush.TextMuted}"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="12,6,0,4">
+
+                        <!-- Tipo programma: 4 valori nello scope del mattone, ItemTemplate localizzato (F0-11) -->
+                        <ComboBox ItemsSource="{StaticResource ScheduleBrickTypeValues}"
+                                  SelectedItem="{Binding Schedule.ScheduleType}"
+                                  Margin="0,0,0,8">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource ScheduleTypeLabel}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <!-- SpecificDays: day-of-week toggles -->
+                        <ItemsControl ItemsSource="{Binding Schedule.Days}" Margin="0,0,0,8"
+                                      Visibility="{Binding Schedule.ScheduleType, Converter={StaticResource EnumToVisibility},
+                                                   ConverterParameter={x:Static enums:ScheduleType.SpecificDays}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ScheduleDayToggle}">
+                                    <ToggleButton Content="{Binding Label}"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  Margin="0,0,4,4" MinWidth="40"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- WeeklyX: target numerico -->
+                        <TextBox Text="{Binding Schedule.WeeklyTarget, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"
+                                 Margin="0,0,0,8"
+                                 Visibility="{Binding Schedule.ScheduleType, Converter={StaticResource EnumToVisibility},
+                                              ConverterParameter={x:Static enums:ScheduleType.WeeklyX}}"/>
+
+                        <!-- EveryXDays: intervallo numerico -->
+                        <TextBox Text="{Binding Schedule.EveryXDays, UpdateSourceTrigger=LostFocus, TargetNullValue=''}"
+                                 Margin="0,0,0,8"
+                                 Visibility="{Binding Schedule.ScheduleType, Converter={StaticResource EnumToVisibility},
+                                              ConverterParameter={x:Static enums:ScheduleType.EveryXDays}}"/>
+
+                        <!-- Streak mode -->
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Schedule_StreakMode}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <ComboBox ItemsSource="{Binding Source={StaticResource StreakModeValues}}"
+                                  SelectedItem="{Binding Schedule.StreakMode}"
+                                  Margin="0,2,0,8"/>
+
+                        <!-- Recovery -->
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Schedule_Recovery}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <ComboBox ItemsSource="{Binding Source={StaticResource StreakRecoveryValues}}"
+                                  SelectedItem="{Binding Schedule.StreakRecovery}"
+                                  Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Expander>
 
                 <!-- ===== Zone 3: Anteprima ===== -->
                 <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview}"

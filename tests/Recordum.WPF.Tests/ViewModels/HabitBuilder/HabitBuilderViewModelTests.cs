@@ -540,6 +540,22 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public void Schedule_brick_writes_specific_days_into_the_launched_config()
+    {
+        // Onda 2.5 T3: the Schedule brick is a view over the draft, applied by BuildConfig — this
+        // is the host-side half of ScheduleBrickViewModelTests.ApplyTo_writes_specific_days_...
+        var vm = CreateVm();
+        vm.Name = "Allenamento";
+        vm.Schedule.ScheduleType = ScheduleType.SpecificDays;
+        vm.Schedule.Days.Single(d => d.DayKey == "Mon").IsSelected = true;
+        vm.Schedule.Days.Single(d => d.DayKey == "Fri").IsSelected = true;
+
+        var request = vm.BuildRequestForTest();
+
+        request.Config!.ScheduleDaysJson.Should().Be("[\"Mon\",\"Fri\"]");
+    }
+
+    [WpfFact]
     public async Task Picking_a_time_unit_re_enables_the_launch_command()
     {
         var sut = NewSut();

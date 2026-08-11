@@ -17,6 +17,7 @@
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
             <conv:FilePathToImageSourceConverter x:Key="FilePathToImageSource"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
+            <conv:ScheduleTypeLabelConverter x:Key="ScheduleTypeLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
             <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>
             <conv:BoolToHiddenConverter x:Key="BoolToHidden"/>

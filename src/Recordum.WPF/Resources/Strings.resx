@@ -434,6 +434,51 @@ Details: {0}</value>
   <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
     <value>Saved ✓</value>
   </data>
+  <data name="HabitBuilder.Advanced" xml:space="preserve">
+    <value>Composition details</value>
+  </data>
+  <data name="HabitBuilder.Schedule.Header" xml:space="preserve">
+    <value>Schedule &amp; streak</value>
+  </data>
+  <data name="HabitBuilder.Schedule.Daily" xml:space="preserve">
+    <value>Every day</value>
+  </data>
+  <data name="HabitBuilder.Schedule.SpecificDays" xml:space="preserve">
+    <value>Specific days</value>
+  </data>
+  <data name="HabitBuilder.Schedule.WeeklyX" xml:space="preserve">
+    <value>Times per week</value>
+  </data>
+  <data name="HabitBuilder.Schedule.EveryXDays" xml:space="preserve">
+    <value>Every X days</value>
+  </data>
+  <data name="HabitBuilder.Schedule.StreakMode" xml:space="preserve">
+    <value>Streak</value>
+  </data>
+  <data name="HabitBuilder.Schedule.Recovery" xml:space="preserve">
+    <value>Recovery</value>
+  </data>
+  <data name="Day.Mon" xml:space="preserve">
+    <value>Mon</value>
+  </data>
+  <data name="Day.Tue" xml:space="preserve">
+    <value>Tue</value>
+  </data>
+  <data name="Day.Wed" xml:space="preserve">
+    <value>Wed</value>
+  </data>
+  <data name="Day.Thu" xml:space="preserve">
+    <value>Thu</value>
+  </data>
+  <data name="Day.Fri" xml:space="preserve">
+    <value>Fri</value>
+  </data>
+  <data name="Day.Sat" xml:space="preserve">
+    <value>Sat</value>
+  </data>
+  <data name="Day.Sun" xml:space="preserve">
+    <value>Sun</value>
+  </data>
   <data name="Editor.Error.NameRequired" xml:space="preserve">
     <value>Name is required</value>
   </data>
