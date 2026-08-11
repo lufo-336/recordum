@@ -408,7 +408,7 @@
     <value>Scegli una scala</value>
   </data>
   <data name="HabitBuilder.LaunchHint" xml:space="preserve">
-    <value>Dai un nome, scegli una scala per ogni campo Scala e un'unità per ogni campo Tempo per lanciare.</value>
+    <value>Dai un nome, scegli una scala per ogni campo Scala e un'unità per ogni campo Tempo — e un target positivo sull'obiettivo, se attivo — per lanciare.</value>
   </data>
   <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
     <value>Salvato ✓</value>
