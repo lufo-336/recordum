@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Recordum.Core.Composition;
 using Recordum.Core.Enums;
 using Xunit;
@@ -7,7 +8,7 @@ namespace Recordum.Core.Tests.Composition;
 public class HabitCompositionRulesTests
 {
     private static HabitComposition C(bool counts = false, bool abst = false, params FieldNature[] fields) =>
-        new(fields, counts, abst, RecordingMode.Manual);
+        new(fields, counts, abst);
 
     [Fact] public void Text_wins() => Assert.Equal(HabitType.Journal, HabitCompositionRules.ResolveType(C(fields: [FieldNature.Text, FieldNature.Time])));
     [Fact] public void Abstinence_resolves_resistance() => Assert.Equal(HabitType.Resistance, HabitCompositionRules.ResolveType(C(abst: true, fields: [FieldNature.Quantity, FieldNature.Scale])));
@@ -29,4 +30,11 @@ public class HabitCompositionRulesTests
 
     [Fact] public void Counter_block_requires_empty_canvas() { Assert.True(HabitCompositionRules.CanEnableCounter(C())); Assert.False(HabitCompositionRules.CanEnableCounter(C(fields: [FieldNature.Quantity]))); Assert.False(HabitCompositionRules.CanEnableCounter(C(abst: true))); }
     [Fact] public void Abstinence_blocked_by_text_and_counter() { Assert.True(HabitCompositionRules.CanEnableAbstinence(C(fields: [FieldNature.Scale]))); Assert.False(HabitCompositionRules.CanEnableAbstinence(C(fields: [FieldNature.Text]))); Assert.False(HabitCompositionRules.CanEnableAbstinence(C(counts: true))); }
+
+    [Fact]
+    public void Composition_has_no_recording_mode()
+    {
+        typeof(HabitComposition).GetProperty("Mode").Should().BeNull(
+            "il modo di registrazione è uscito dalla grammatica (Onda 2.5, decisione 4: il mattone Sessione lo sostituisce)");
+    }
 }

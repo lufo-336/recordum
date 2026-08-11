@@ -14,7 +14,7 @@ using Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
-/// <summary>Costruttore block-first: assembli mattoni (campi, contatore, astinenza, modo), vedi l'anteprima dal vivo
+/// <summary>Costruttore block-first: assembli mattoni (campi, contatore, astinenza), vedi l'anteprima dal vivo
 /// e Lanci la creazione atomica. Il <see cref="DerivedType"/> è dedotto dalla grammatica pura in Core.</summary>
 public sealed partial class HabitBuilderViewModel : ObservableObject
 {
@@ -82,7 +82,6 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [ObservableProperty] private string? _icon;
     [ObservableProperty] private bool _countsOccurrences;
     [ObservableProperty] private bool _abstinence;
-    [ObservableProperty] private RecordingMode _mode = RecordingMode.Manual;
     [ObservableProperty] private HabitType _derivedType = HabitType.Action;
     [ObservableProperty] private Guid? _createdHabitNodeId;
 
@@ -112,7 +111,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     public void SetParent(Guid? parentId) => _parentId = parentId;
 
     private HabitComposition Snapshot() =>
-        new(Fields.Select(f => f.Nature).ToList(), CountsOccurrences, Abstinence, Mode);
+        new(Fields.Select(f => f.Nature).ToList(), CountsOccurrences, Abstinence);
 
     public bool CanAddField(FieldNature nature) => HabitCompositionRules.CanAddField(Snapshot(), nature);
 
@@ -160,7 +159,6 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         }
     }
 
-    partial void OnModeChanged(RecordingMode value) => Recompute();
     partial void OnNameChanged(string value) { TemplateSaved = false; RaiseLaunchState(); }
     partial void OnColorChanged(string value) => TemplateSaved = false;
     partial void OnIconChanged(string? value) => TemplateSaved = false;
@@ -308,8 +306,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     }
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.
-    // (Timer-mode mapping from RecordingMode is still future work.) Instance method (not static)
-    // since U8 needs the builder's Repeatable knob.
+    // (Timer-mode mapping from the future Sessione brick is still future work.) Instance method
+    // (not static) since U8 needs the builder's Repeatable knob.
     private HabitConfig BuildConfig(Guid nodeId) =>
         new() { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = Repeatable };
 

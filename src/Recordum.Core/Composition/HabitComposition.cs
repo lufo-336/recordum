@@ -6,9 +6,8 @@ namespace Recordum.Core.Composition;
 public sealed record HabitComposition(
     IReadOnlyList<FieldNature> Fields,
     bool CountsOccurrences,
-    bool Abstinence,
-    RecordingMode Mode)
+    bool Abstinence)
 {
     public static HabitComposition Empty { get; } =
-        new(Array.Empty<FieldNature>(), CountsOccurrences: false, Abstinence: false, RecordingMode.Manual);
+        new(Array.Empty<FieldNature>(), CountsOccurrences: false, Abstinence: false);
 }

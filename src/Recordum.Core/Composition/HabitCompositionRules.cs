@@ -50,11 +50,4 @@ public static class HabitCompositionRules
         ArgumentNullException.ThrowIfNull(c);
         return !c.Fields.Contains(FieldNature.Text) && !c.CountsOccurrences;
     }
-
-    public static bool CanSetMode(HabitComposition c, RecordingMode mode)
-    {
-        ArgumentNullException.ThrowIfNull(c);
-        if (mode == RecordingMode.Manual) return true;
-        return c.Fields.Any(f => f is FieldNature.Quantity or FieldNature.Time);
-    }
 }
