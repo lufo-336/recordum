@@ -556,6 +556,26 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public async Task Schedule_brick_changes_clear_the_saved_template_badge()
+    {
+        // Onda 2.5 T3: HabitBuilderViewModel wires Schedule.Changed => TemplateSaved = false in its
+        // constructor — this is a task constraint (BuildConfig applies Schedule to the launched
+        // HabitConfig) with no dedicated test of its own until now, same as the other draft-mutation
+        // sites already covered above (Name/Repeatable/JournalGesture).
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        sut.Name = "Meditazione";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+        sut.TemplateSaved.Should().BeTrue();
+
+        sut.Schedule.StreakRecovery = StreakRecovery.None;
+
+        sut.TemplateSaved.Should().BeFalse();
+    }
+
+    [WpfFact]
     public async Task Picking_a_time_unit_re_enables_the_launch_command()
     {
         var sut = NewSut();

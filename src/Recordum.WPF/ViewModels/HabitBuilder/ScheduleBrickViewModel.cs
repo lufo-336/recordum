@@ -5,6 +5,7 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Converters;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
@@ -85,34 +86,14 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
         });
 
         // Recovery/streak mode default (GraceDay + Daily, the seed shape) stays quiet — only a
-        // change from the default is worth surfacing in the collapsed summary. Labels are localized
-        // (F0-11): never surface a raw enum name, even in a computed summary string.
+        // change from the default is worth surfacing in the collapsed summary. Labels come from
+        // StreakLabels (F0-11): never surface a raw enum name, even in a computed summary string —
+        // and never a second, hand-duplicated switch that could drift from the ComboBoxes' converters.
         if (StreakRecovery != StreakRecovery.GraceDay)
-            sb.Append(" · ").Append(Strings.HabitBuilder_Schedule_Recovery).Append(": ").Append(RecoveryLabel(StreakRecovery));
+            sb.Append(" · ").Append(Strings.HabitBuilder_Schedule_Recovery).Append(": ").Append(StreakLabels.For(StreakRecovery));
         if (StreakMode != StreakMode.Daily)
-            sb.Append(" · ").Append(Strings.HabitBuilder_Schedule_StreakMode).Append(": ").Append(StreakModeLabel(StreakMode));
+            sb.Append(" · ").Append(Strings.HabitBuilder_Schedule_StreakMode).Append(": ").Append(StreakLabels.For(StreakMode));
 
         return sb.ToString();
     }
-
-    // Mirrors StreakModeLabelConverter/StreakRecoveryLabelConverter in Converters/ — those exist for
-    // the two ComboBoxes' ItemTemplate, this exists because Summary is plain text, not a binding a
-    // converter can sit on. Keep both switches in sync if a case is ever added.
-    private static string StreakModeLabel(StreakMode mode) => mode switch
-    {
-        StreakMode.Daily => Strings.HabitBuilder_StreakMode_Daily,
-        StreakMode.Weekly => Strings.HabitBuilder_StreakMode_Weekly,
-        StreakMode.Occurrences => Strings.HabitBuilder_StreakMode_Occurrences,
-        StreakMode.Both => Strings.HabitBuilder_StreakMode_Both,
-        _ => string.Empty,
-    };
-
-    private static string RecoveryLabel(StreakRecovery recovery) => recovery switch
-    {
-        StreakRecovery.None => Strings.HabitBuilder_Recovery_None,
-        StreakRecovery.GraceDay => Strings.HabitBuilder_Recovery_GraceDay,
-        StreakRecovery.Manual => Strings.HabitBuilder_Recovery_Manual,
-        StreakRecovery.Retroactive => Strings.HabitBuilder_Recovery_Retroactive,
-        _ => string.Empty,
-    };
 }
