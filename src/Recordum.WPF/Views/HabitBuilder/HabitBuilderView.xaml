@@ -377,7 +377,13 @@
                                    Foreground="{DynamicResource Brush.TextMuted}"/>
                         <ComboBox ItemsSource="{Binding Source={StaticResource StreakModeValues}}"
                                   SelectedItem="{Binding Schedule.StreakMode}"
-                                  Margin="0,2,0,8"/>
+                                  Margin="0,2,0,8">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource StreakModeLabel}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
 
                         <!-- Recovery -->
                         <TextBlock Text="{x:Static res:Strings.HabitBuilder_Schedule_Recovery}"
@@ -385,7 +391,13 @@
                                    Foreground="{DynamicResource Brush.TextMuted}"/>
                         <ComboBox ItemsSource="{Binding Source={StaticResource StreakRecoveryValues}}"
                                   SelectedItem="{Binding Schedule.StreakRecovery}"
-                                  Margin="0,2,0,0"/>
+                                  Margin="0,2,0,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource StreakRecoveryLabel}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
                 </Expander>
 

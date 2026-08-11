@@ -18,6 +18,8 @@
             <conv:FilePathToImageSourceConverter x:Key="FilePathToImageSource"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
             <conv:ScheduleTypeLabelConverter x:Key="ScheduleTypeLabel"/>
+            <conv:StreakModeLabelConverter x:Key="StreakModeLabel"/>
+            <conv:StreakRecoveryLabelConverter x:Key="StreakRecoveryLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
             <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>
             <conv:BoolToHiddenConverter x:Key="BoolToHidden"/>

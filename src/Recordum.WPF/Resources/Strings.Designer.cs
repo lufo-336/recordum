@@ -260,6 +260,14 @@ public static class Strings
     public static string HabitBuilder_Schedule_EveryXDays => Get("HabitBuilder.Schedule.EveryXDays");
     public static string HabitBuilder_Schedule_StreakMode => Get("HabitBuilder.Schedule.StreakMode");
     public static string HabitBuilder_Schedule_Recovery => Get("HabitBuilder.Schedule.Recovery");
+    public static string HabitBuilder_StreakMode_Daily => Get("HabitBuilder.StreakMode.Daily");
+    public static string HabitBuilder_StreakMode_Weekly => Get("HabitBuilder.StreakMode.Weekly");
+    public static string HabitBuilder_StreakMode_Occurrences => Get("HabitBuilder.StreakMode.Occurrences");
+    public static string HabitBuilder_StreakMode_Both => Get("HabitBuilder.StreakMode.Both");
+    public static string HabitBuilder_Recovery_None => Get("HabitBuilder.Recovery.None");
+    public static string HabitBuilder_Recovery_GraceDay => Get("HabitBuilder.Recovery.GraceDay");
+    public static string HabitBuilder_Recovery_Manual => Get("HabitBuilder.Recovery.Manual");
+    public static string HabitBuilder_Recovery_Retroactive => Get("HabitBuilder.Recovery.Retroactive");
     public static string Day_Mon => Get("Day.Mon");
     public static string Day_Tue => Get("Day.Tue");
     public static string Day_Wed => Get("Day.Wed");

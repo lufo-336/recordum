@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.HabitBuilder;
 using Xunit;
 
@@ -52,5 +53,16 @@ public class ScheduleBrickViewModelTests
         vm.StreakRecovery = StreakRecovery.None;
         raised.Should().BeGreaterThan(0);
         vm.Summary.Should().NotBe(before);
+    }
+
+    [Fact]
+    public void Summary_localizes_streak_mode_and_recovery_instead_of_the_raw_enum_name()
+    {
+        // F0-11: never show a raw enum name — Occurrences.ToString() would read "Occurrences", the
+        // localized label reads "By occurrences" (Strings.HabitBuilder_StreakMode_Occurrences), so a
+        // regression back to StreakMode.ToString() fails this even under the default (EN) culture.
+        var vm = new ScheduleBrickViewModel { StreakMode = StreakMode.Occurrences, StreakRecovery = StreakRecovery.Retroactive };
+        vm.Summary.Should().Contain(Strings.HabitBuilder_StreakMode_Occurrences);
+        vm.Summary.Should().Contain(Strings.HabitBuilder_Recovery_Retroactive);
     }
 }

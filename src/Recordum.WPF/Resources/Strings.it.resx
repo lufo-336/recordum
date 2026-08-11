@@ -437,6 +437,30 @@
   <data name="HabitBuilder.Schedule.Recovery" xml:space="preserve">
     <value>Recupero</value>
   </data>
+  <data name="HabitBuilder.StreakMode.Daily" xml:space="preserve">
+    <value>Giornaliera</value>
+  </data>
+  <data name="HabitBuilder.StreakMode.Weekly" xml:space="preserve">
+    <value>Settimanale</value>
+  </data>
+  <data name="HabitBuilder.StreakMode.Occurrences" xml:space="preserve">
+    <value>A occorrenze</value>
+  </data>
+  <data name="HabitBuilder.StreakMode.Both" xml:space="preserve">
+    <value>Entrambe</value>
+  </data>
+  <data name="HabitBuilder.Recovery.None" xml:space="preserve">
+    <value>Nessuno</value>
+  </data>
+  <data name="HabitBuilder.Recovery.GraceDay" xml:space="preserve">
+    <value>Grace day</value>
+  </data>
+  <data name="HabitBuilder.Recovery.Manual" xml:space="preserve">
+    <value>Manuale</value>
+  </data>
+  <data name="HabitBuilder.Recovery.Retroactive" xml:space="preserve">
+    <value>Retroattivo</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Lun</value>
   </data>
