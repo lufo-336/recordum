@@ -461,6 +461,21 @@
   <data name="HabitBuilder.Recovery.Retroactive" xml:space="preserve">
     <value>Retroattivo</value>
   </data>
+  <data name="HabitBuilder.Goal.Add" xml:space="preserve">
+    <value>+ Obiettivo</value>
+  </data>
+  <data name="HabitBuilder.Goal.Target" xml:space="preserve">
+    <value>Obiettivo</value>
+  </data>
+  <data name="HabitBuilder.Goal.Period.Open" xml:space="preserve">
+    <value>Aperto</value>
+  </data>
+  <data name="HabitBuilder.Goal.Period.Fixed" xml:space="preserve">
+    <value>A periodo</value>
+  </data>
+  <data name="HabitBuilder.Goal.Period.Rolling" xml:space="preserve">
+    <value>Mobile</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Lun</value>
   </data>

@@ -20,6 +20,7 @@
             <conv:ScheduleTypeLabelConverter x:Key="ScheduleTypeLabel"/>
             <conv:StreakModeLabelConverter x:Key="StreakModeLabel"/>
             <conv:StreakRecoveryLabelConverter x:Key="StreakRecoveryLabel"/>
+            <conv:GoalPeriodLabelConverter x:Key="GoalPeriodLabel"/>
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible"/>
             <conv:InvBoolToVisibilityConverter x:Key="InvBoolToVisible"/>
             <conv:BoolToHiddenConverter x:Key="BoolToHidden"/>

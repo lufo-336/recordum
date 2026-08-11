@@ -41,6 +41,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         _screenPicker = screenPicker;
         _uiPrefs = uiPrefs;
         Schedule.Changed += (_, _) => TemplateSaved = false;
+        // Unlike Schedule, the Goal brick's Target/HasGoal feed CanLaunch (an incomplete goal blocks
+        // launch, R7-style) — so its Changed also has to re-query the Launch button, not only clear
+        // the "Saved" badge.
+        GoalBrick.Changed += (_, _) => { TemplateSaved = false; RaiseLaunchState(); };
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -49,6 +53,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <summary>Mattone Programma (Onda 2.5 T3): schedule + streak + recovery del draft, applicato
     /// all'<see cref="HabitConfig"/> da <see cref="BuildConfig"/>.</summary>
     public ScheduleBrickViewModel Schedule { get; } = new();
+
+    /// <summary>Mattone Obiettivo (Onda 2.5 T4): goal opzionale del draft, applicato alla
+    /// <see cref="ComposedHabitRequest.Goal"/> da <see cref="BuildRequest"/>. Disponibile solo quando
+    /// la composizione deriva Counter — <see cref="Recompute"/> ne ricalcola <c>IsAvailable</c>.</summary>
+    public GoalBrickViewModel GoalBrick { get; } = new();
 
     /// <summary>Units and scales available to the Quantity / Scale field pickers, loaded by
     /// <see cref="InitializeAsync"/>.</summary>
@@ -203,6 +212,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         TemplateSaved = false;
         DerivedType = HabitCompositionRules.ResolveType(Snapshot());
+        // GoalBrickViewModel.OnIsAvailableChanged forces HasGoal off when it goes false — the brick
+        // switches itself off rather than leaving an orphaned goal in a draft that stopped deriving
+        // Counter (e.g. adding a Text field flips it to Journal).
+        GoalBrick.IsAvailable = DerivedType == HabitType.Counter;
         bool hasCells = Fields.Any(f => f.Nature != FieldNature.Text);
         Preview.Rebuild(Fields, CountsOccurrences, DerivedType == HabitType.Counter && hasCells);
         OnPropertyChanged(nameof(CanEnableCounter));
@@ -228,7 +241,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     public bool CanLaunch =>
         !string.IsNullOrWhiteSpace(Name)
         && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null)
-        && Fields.All(f => f.Nature != FieldNature.Time || f.UnitOfMeasureId is not null);
+        && Fields.All(f => f.Nature != FieldNature.Time || f.UnitOfMeasureId is not null)
+        && (!GoalBrick.HasGoal || GoalBrick.Target is > 0);
 
     /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
     public bool LaunchBlocked => !CanLaunch;
@@ -236,6 +250,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync(CancellationToken ct)
     {
+        // Belt and braces (R7 precedent): AsyncRelayCommand.ExecuteAsync does not consult CanExecute,
+        // so an incomplete goal (HasGoal with no positive target) has to be refused here too, not
+        // only on the greyed-out button.
+        if (!CanLaunch) return;
         var habitId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
         CreatedHabitNodeId = habitId;
 
@@ -307,7 +325,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             SortOrder = i,
         }).ToList();
         var config = BuildConfig(nodeId);
-        return new ComposedHabitRequest(node, config, metrics);
+        var goal = GoalBrick.Build(nodeId, Name.Trim(), metrics.FirstOrDefault()?.Id);
+        return new ComposedHabitRequest(node, config, metrics, Goal: goal);
     }
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.

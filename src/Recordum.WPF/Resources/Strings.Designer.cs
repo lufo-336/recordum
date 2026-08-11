@@ -268,6 +268,11 @@ public static class Strings
     public static string HabitBuilder_Recovery_GraceDay => Get("HabitBuilder.Recovery.GraceDay");
     public static string HabitBuilder_Recovery_Manual => Get("HabitBuilder.Recovery.Manual");
     public static string HabitBuilder_Recovery_Retroactive => Get("HabitBuilder.Recovery.Retroactive");
+    public static string HabitBuilder_Goal_Add => Get("HabitBuilder.Goal.Add");
+    public static string HabitBuilder_Goal_Target => Get("HabitBuilder.Goal.Target");
+    public static string HabitBuilder_Goal_Period_Open => Get("HabitBuilder.Goal.Period.Open");
+    public static string HabitBuilder_Goal_Period_Fixed => Get("HabitBuilder.Goal.Period.Fixed");
+    public static string HabitBuilder_Goal_Period_Rolling => Get("HabitBuilder.Goal.Period.Rolling");
     public static string Day_Mon => Get("Day.Mon");
     public static string Day_Tue => Get("Day.Tue");
     public static string Day_Wed => Get("Day.Wed");

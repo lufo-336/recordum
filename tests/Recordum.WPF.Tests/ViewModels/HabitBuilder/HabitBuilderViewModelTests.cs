@@ -576,6 +576,135 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
+    public void GoalBrick_becomes_available_for_a_quantity_field_counter()
+    {
+        // Onda 2.5 T4: IsAvailable = DerivedType == Counter, recalculated by Recompute().
+        var sut = CreateVm();
+        sut.GoalBrick.IsAvailable.Should().BeFalse(); // empty canvas -> Action, not yet available
+
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        sut.DerivedType.Should().Be(HabitType.Counter);
+        sut.GoalBrick.IsAvailable.Should().BeTrue();
+    }
+
+    [WpfFact]
+    public void GoalBrick_is_available_for_a_bare_tap_counter()
+    {
+        // Water intake precedent: a tap counter (CountsOccurrences) has no metric field of its own
+        // but is still a Counter, and can still carry a goal.
+        var sut = CreateVm();
+        sut.CountsOccurrences = true;
+
+        sut.GoalBrick.IsAvailable.Should().BeTrue();
+    }
+
+    [WpfFact]
+    public void GoalBrick_is_forced_off_when_the_composition_stops_supporting_it()
+    {
+        // The brick switches itself off (never an orphaned goal in the draft) when the composition
+        // no longer derives Counter — e.g. switching the tap counter to Abstinence.
+        var sut = CreateVm();
+        sut.CountsOccurrences = true; // -> Counter, tap counter
+        sut.GoalBrick.HasGoal = true;
+        sut.GoalBrick.Target = 3m;
+
+        sut.CountsOccurrences = false;
+        sut.Abstinence = true; // -> Resistance
+
+        sut.DerivedType.Should().Be(HabitType.Resistance);
+        sut.GoalBrick.IsAvailable.Should().BeFalse();
+        sut.GoalBrick.HasGoal.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public void An_incomplete_goal_blocks_CanLaunch()
+    {
+        var sut = CreateVm();
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.GoalBrick.HasGoal = true; // target left null
+
+        sut.CanLaunch.Should().BeFalse();
+
+        sut.GoalBrick.Target = 2m;
+        sut.CanLaunch.Should().BeTrue();
+
+        sut.GoalBrick.Target = 0m; // not positive -> still blocked
+        sut.CanLaunch.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task Launch_is_blocked_internally_when_the_goal_is_incomplete()
+    {
+        // ExecuteAsync does not consult CanExecute (R7 precedent) — the guard must live inside
+        // LaunchAsync too, not only on the greyed-out button.
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.GoalBrick.HasGoal = true;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest.Should().BeNull();
+        sut.CreatedHabitNodeId.Should().BeNull();
+    }
+
+    [WpfFact]
+    public async Task Launch_persists_a_complete_goal_bound_to_the_habit_name_and_first_metric()
+    {
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.GoalBrick.HasGoal = true;
+        sut.GoalBrick.Target = 2m;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest.Should().NotBeNull();
+        fake.LastRequest!.Goal.Should().NotBeNull();
+        fake.LastRequest.Goal!.Name.Should().Be("Bevi acqua");
+        fake.LastRequest.Goal.HabitNodeId.Should().Be(fake.LastRequest.Node.Id);
+        fake.LastRequest.Goal.MetricDefinitionId.Should().Be(fake.LastRequest.Metrics.Single().Id);
+        fake.LastRequest.Goal.TargetValue.Should().Be(2m);
+    }
+
+    [WpfFact]
+    public async Task Launch_omits_the_goal_when_the_brick_is_off()
+    {
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest!.Goal.Should().BeNull();
+    }
+
+    [WpfFact]
+    public async Task GoalBrick_changes_clear_the_saved_template_badge_and_launch_state()
+    {
+        var fakeTemplates = new FakeHabitTemplateService();
+        var sut = NewSut(templates: fakeTemplates);
+        sut.Name = "Bevi acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+        sut.TemplateSaved.Should().BeTrue();
+
+        var fired = false;
+        sut.LaunchCommand.CanExecuteChanged += (_, _) => fired = true;
+
+        sut.GoalBrick.HasGoal = true;
+
+        sut.TemplateSaved.Should().BeFalse();
+        fired.Should().BeTrue(); // CanLaunch now depends on the (incomplete) goal
+    }
+
+    [WpfFact]
     public async Task Picking_a_time_unit_re_enables_the_launch_command()
     {
         var sut = NewSut();
