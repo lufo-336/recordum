@@ -433,6 +433,61 @@
                     </StackPanel>
                 </StackPanel>
 
+                <!-- ===== Zone 2d: Mattone Sessione (Onda 2.5 T5) — solo se la composizione deriva
+                     Counter con campi da registrare (Workout log e' il precedente; un tap counter
+                     nudo non ha nulla da segmentare). ===== -->
+                <StackPanel Margin="0,0,0,16"
+                            Visibility="{Binding SessionBrick.IsAvailable, Converter={StaticResource BoolToVisible}}">
+                    <ToggleButton Content="{x:Static res:Strings.HabitBuilder_Session_Add}"
+                                  IsChecked="{Binding SessionBrick.HasSession}"
+                                  HorizontalAlignment="Left"
+                                  Padding="10,5"/>
+                    <StackPanel Margin="0,8,0,0"
+                                Visibility="{Binding SessionBrick.HasSession, Converter={StaticResource BoolToVisible}}">
+                        <ItemsControl ItemsSource="{Binding SessionBrick.Segments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SegmentRowViewModel}">
+                                    <Border Margin="0,3"
+                                            Padding="10,6"
+                                            CornerRadius="4"
+                                            BorderThickness="1"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            Background="{DynamicResource Brush.SurfaceElevated}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="0"
+                                                     VerticalAlignment="Center"
+                                                     Padding="6,3"
+                                                     Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <CheckBox Grid.Column="1"
+                                                      Content="{x:Static res:Strings.HabitBuilder_Session_IsRest}"
+                                                      IsChecked="{Binding IsRest}"
+                                                      VerticalAlignment="Center"
+                                                      Margin="10,0,0,0"/>
+                                            <Button Grid.Column="2"
+                                                    Content="✕"
+                                                    Margin="8,0,0,0"
+                                                    Padding="8,2"
+                                                    VerticalAlignment="Center"
+                                                    Command="{Binding DataContext.SessionBrick.RemoveSegmentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="{x:Static res:Strings.HabitBuilder_Session_AddSegment}"
+                                Padding="10,5"
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Left"
+                                Command="{Binding SessionBrick.AddSegmentCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+
                 <!-- ===== Zone 3: Anteprima ===== -->
                 <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview}"
                            FontSize="{StaticResource FontSize.Body}"

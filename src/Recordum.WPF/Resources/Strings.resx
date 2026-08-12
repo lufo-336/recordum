@@ -497,6 +497,21 @@ Details: {0}</value>
   <data name="HabitBuilder.Goal.Period.Rolling" xml:space="preserve">
     <value>Rolling</value>
   </data>
+  <data name="HabitBuilder.Session.Add" xml:space="preserve">
+    <value>+ Session</value>
+  </data>
+  <data name="HabitBuilder.Session.IsRest" xml:space="preserve">
+    <value>Rest</value>
+  </data>
+  <data name="HabitBuilder.Session.AddSegment" xml:space="preserve">
+    <value>+ Segment</value>
+  </data>
+  <data name="HabitBuilder.Segment.Work" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="HabitBuilder.Segment.Rest" xml:space="preserve">
+    <value>Rest</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Mon</value>
   </data>

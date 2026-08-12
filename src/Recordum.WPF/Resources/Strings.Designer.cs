@@ -273,6 +273,11 @@ public static class Strings
     public static string HabitBuilder_Goal_Period_Open => Get("HabitBuilder.Goal.Period.Open");
     public static string HabitBuilder_Goal_Period_Fixed => Get("HabitBuilder.Goal.Period.Fixed");
     public static string HabitBuilder_Goal_Period_Rolling => Get("HabitBuilder.Goal.Period.Rolling");
+    public static string HabitBuilder_Session_Add => Get("HabitBuilder.Session.Add");
+    public static string HabitBuilder_Session_IsRest => Get("HabitBuilder.Session.IsRest");
+    public static string HabitBuilder_Session_AddSegment => Get("HabitBuilder.Session.AddSegment");
+    public static string HabitBuilder_Segment_Work => Get("HabitBuilder.Segment.Work");
+    public static string HabitBuilder_Segment_Rest => Get("HabitBuilder.Segment.Rest");
     public static string Day_Mon => Get("Day.Mon");
     public static string Day_Tue => Get("Day.Tue");
     public static string Day_Wed => Get("Day.Wed");

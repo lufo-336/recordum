@@ -721,4 +721,74 @@ public class HabitBuilderViewModelTests
         sut.CanLaunch.Should().BeTrue();
         sut.LaunchCommand.CanExecute(null).Should().BeTrue();
     }
+
+    [WpfFact]
+    public void SessionBrick_is_available_for_a_quantity_field_counter_but_not_for_a_tap_counter()
+    {
+        // Onda 2.5 T5: IsAvailable = DerivedType == Counter && !CountsOccurrences — the session needs
+        // fields to record per segment (Workout log is the precedent); a bare tap counter has none.
+        var sut = CreateVm();
+        sut.SessionBrick.IsAvailable.Should().BeFalse(); // empty canvas -> Action, not yet available
+
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.SessionBrick.IsAvailable.Should().BeTrue();
+
+        sut.RemoveFieldCommand.Execute(sut.Fields[0]);
+        sut.CountsOccurrences = true; // bare tap counter -> still Counter, but no fields to segment
+        sut.SessionBrick.IsAvailable.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public void SessionBrick_is_forced_off_when_the_composition_stops_supporting_it()
+    {
+        var sut = CreateVm();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.SessionBrick.HasSession = true;
+        sut.SessionBrick.Segments.Should().NotBeEmpty();
+
+        sut.RemoveFieldCommand.Execute(sut.Fields[0]);
+        sut.Abstinence = true; // -> Resistance
+
+        sut.DerivedType.Should().Be(HabitType.Resistance);
+        sut.SessionBrick.IsAvailable.Should().BeFalse();
+        sut.SessionBrick.HasSession.Should().BeFalse();
+        sut.SessionBrick.Segments.Should().BeEmpty();
+    }
+
+    [WpfFact]
+    public async Task Launch_persists_segments_and_timer_flags_when_the_session_brick_is_on()
+    {
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Workout";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.SessionBrick.HasSession = true;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest.Should().NotBeNull();
+        fake.LastRequest!.Segments.Should().NotBeNull();
+        fake.LastRequest.Segments!.Select(s => (s.Name, s.IsRest, s.SortOrder)).Should()
+            .Equal(("Work", false, 0), ("Rest", true, 1));
+        fake.LastRequest.Segments!.All(s => s.HabitNodeId == fake.LastRequest.Node.Id).Should().BeTrue();
+        fake.LastRequest.Config!.HasIntegratedTimer.Should().BeTrue();
+        fake.LastRequest.Config.TimerMode.Should().Be(TimerMode.Session);
+        fake.LastRequest.Config.SessionBaseTimer.Should().BeTrue();
+    }
+
+    [WpfFact]
+    public async Task Launch_omits_segments_and_timer_flags_when_the_session_brick_is_off()
+    {
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Corsa";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest!.Segments.Should().BeNull();
+        fake.LastRequest.Config!.HasIntegratedTimer.Should().BeFalse();
+        fake.LastRequest.Config.TimerMode.Should().BeNull();
+        fake.LastRequest.Config.SessionBaseTimer.Should().BeFalse();
+    }
 }

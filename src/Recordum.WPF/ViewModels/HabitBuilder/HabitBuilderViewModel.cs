@@ -45,6 +45,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // launch, R7-style) — so its Changed also has to re-query the Launch button, not only clear
         // the "Saved" badge.
         GoalBrick.Changed += (_, _) => { TemplateSaved = false; RaiseLaunchState(); };
+        SessionBrick.Changed += (_, _) => TemplateSaved = false;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -58,6 +59,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <see cref="ComposedHabitRequest.Goal"/> da <see cref="BuildRequest"/>. Disponibile solo quando
     /// la composizione deriva Counter — <see cref="Recompute"/> ne ricalcola <c>IsAvailable</c>.</summary>
     public GoalBrickViewModel GoalBrick { get; } = new();
+
+    /// <summary>Mattone Sessione (Onda 2.5 T5): integrated timer + named segments of the draft,
+    /// applied to the launched <see cref="HabitConfig"/> by <see cref="BuildConfig"/> and to
+    /// <see cref="ComposedHabitRequest.Segments"/> by <see cref="BuildRequest"/>. Available only when
+    /// the composition derives a non-tally Counter (fields to record per segment) — <see cref="Recompute"/>
+    /// recalculates <c>IsAvailable</c>.</summary>
+    public SessionBrickViewModel SessionBrick { get; } = new();
 
     /// <summary>Units and scales available to the Quantity / Scale field pickers, loaded by
     /// <see cref="InitializeAsync"/>.</summary>
@@ -216,6 +224,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // switches itself off rather than leaving an orphaned goal in a draft that stopped deriving
         // Counter (e.g. adding a Text field flips it to Journal).
         GoalBrick.IsAvailable = DerivedType == HabitType.Counter;
+        // SessionBrickViewModel.OnIsAvailableChanged forces HasSession off (and clears the seeded
+        // segments) when it goes false — a tap counter has no per-segment fields to record, so the
+        // brick switches itself off rather than leaving orphaned segments in a draft that no longer
+        // supports them (same pattern as GoalBrick).
+        SessionBrick.IsAvailable = DerivedType == HabitType.Counter && !CountsOccurrences;
         bool hasCells = Fields.Any(f => f.Nature != FieldNature.Text);
         Preview.Rebuild(Fields, CountsOccurrences, DerivedType == HabitType.Counter && hasCells);
         OnPropertyChanged(nameof(CanEnableCounter));
@@ -326,16 +339,18 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         }).ToList();
         var config = BuildConfig(nodeId);
         var goal = GoalBrick.Build(nodeId, Name.Trim(), metrics.FirstOrDefault()?.Id);
-        return new ComposedHabitRequest(node, config, metrics, Goal: goal);
+        var segments = SessionBrick.HasSession ? SessionBrick.BuildSegments(nodeId) : null;
+        return new ComposedHabitRequest(node, config, metrics, Segments: segments, Goal: goal);
     }
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.
-    // (Timer-mode mapping from the future Sessione brick is still future work.) Instance method
-    // (not static) since U8 needs the builder's Repeatable knob and Onda 2.5 T3 needs Schedule.
+    // Instance method (not static) since U8 needs the builder's Repeatable knob and Onda 2.5 T3 needs
+    // Schedule (+ T5 needs SessionBrick).
     private HabitConfig BuildConfig(Guid nodeId)
     {
         var cfg = new HabitConfig { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = Repeatable };
         Schedule.ApplyTo(cfg);
+        SessionBrick.ApplyTo(cfg);
         return cfg;
     }
 
