@@ -7,6 +7,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Composition;
 using Recordum.Core.Enums;
+using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
@@ -91,6 +92,92 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// a duration with no unit has nothing to express its totals, its goal or its export rows in.
     /// The list comes from Core so it cannot drift from what the formatters treat as a time unit.</summary>
     public ObservableCollection<UnitOfMeasure> AvailableTimeUnits { get; } = new();
+
+    // ===== Unità e scale custom staged (Onda 2.5 T7) =====
+    // Definizioni create dentro il builder e non ancora nel DB: viaggiano nel ComposedHabitRequest
+    // (Lancia le materializza nella stessa transazione) o incorporate nel payload del template
+    // (InstantiateAsync le risolve-o-crea). Restano nel draft finché non le referenzia una metrica.
+    private readonly List<UnitOfMeasure> _stagedUnits = new();
+    private readonly List<ScaleTemplate> _stagedScales = new();
+    private FieldBlockViewModel? _formTarget;
+
+    public IReadOnlyList<UnitOfMeasure> StagedUnits => _stagedUnits;
+    public IReadOnlyList<ScaleTemplate> StagedScales => _stagedScales;
+
+    /// <summary>The open micro-form, or null when none is. Bound to the popup's IsOpen; only one of
+    /// the two is ever non-null.</summary>
+    [ObservableProperty] private NewUnitFormViewModel? _unitForm;
+    [ObservableProperty] private NewScaleFormViewModel? _scaleForm;
+
+    [RelayCommand]
+    public void BeginAddCustomUnit(FieldBlockViewModel? field)
+    {
+        if (field is null) return;
+        ScaleForm = null;
+        _formTarget = field;
+        UnitForm = new NewUnitFormViewModel();
+    }
+
+    [RelayCommand]
+    public void BeginAddCustomScale(FieldBlockViewModel? field)
+    {
+        if (field is null) return;
+        UnitForm = null;
+        _formTarget = field;
+        ScaleForm = new NewScaleFormViewModel();
+    }
+
+    [RelayCommand]
+    private void CancelCustomForm()
+    {
+        UnitForm = null;
+        ScaleForm = null;
+        _formTarget = null;
+    }
+
+    [RelayCommand]
+    private void ConfirmCustomUnit()
+    {
+        // Belt and braces (R7): the disabled button is not the guard — an incomplete form has to be
+        // refused here too, and refusing leaves the form open rather than losing what was typed.
+        if (UnitForm is not { CanConfirm: true } form || _formTarget is null) return;
+        var unit = new UnitOfMeasure
+        {
+            Id = Guid.NewGuid(),
+            Code = ReferenceCodeSlug.From(form.Name, AvailableUnits.Select(u => u.Code).ToList()),
+            Name = form.Name.Trim(),
+            Symbol = string.IsNullOrWhiteSpace(form.Symbol) ? null : form.Symbol.Trim(),
+            IsOfficial = false,
+        };
+        _stagedUnits.Add(unit);
+        // Add, never rebuild: AvailableUnits is the live ItemsSource of the field pickers and clearing
+        // it would coerce their two-way SelectedValue to null (4d01f9c / 1d96967). A staged unit stays
+        // out of AvailableTimeUnits on purpose — the time units are closed in Core.
+        AvailableUnits.Add(unit);
+        _formTarget.UnitOfMeasureId = unit.Id;
+        CancelCustomForm();
+    }
+
+    [RelayCommand]
+    private void ConfirmCustomScale()
+    {
+        if (ScaleForm is not { CanConfirm: true } form || _formTarget is null) return;
+        var labels = form.Labels;
+        var scale = new ScaleTemplate
+        {
+            Id = Guid.NewGuid(),
+            Code = ReferenceCodeSlug.From(form.Name, AvailableScales.Select(s => s.Code).ToList()),
+            Name = form.Name.Trim(),
+            MinValue = 1,
+            MaxValue = labels.Count,
+            LabelsJson = JsonSerializer.Serialize(labels),
+            IsOfficial = false,
+        };
+        _stagedScales.Add(scale);
+        AvailableScales.Add(scale);
+        _formTarget.ScaleTemplateId = scale.Id;
+        CancelCustomForm();
+    }
 
     /// <summary>Loads reference data for the field pickers. Called by the launcher before the dialog opens.</summary>
     public async Task InitializeAsync(CancellationToken ct = default)
@@ -371,12 +458,24 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             Type = f.MetricType,
             UnitOfMeasureId = f.UnitOfMeasureId,
             ScaleTemplateId = f.ScaleTemplateId,
+            // Snapshot of the scale's steps, as the template reader does — the State quick-add reads
+            // the labels from the metric, not from the scale.
+            LabelsJson = LabelsOfScale(f.ScaleTemplateId),
             SortOrder = i,
         }).ToList();
         var config = BuildConfig(nodeId);
         var goal = GoalBrick.Build(nodeId, Name.Trim(), metrics.FirstOrDefault()?.Id);
         var segments = SessionBrick.HasSession ? SessionBrick.BuildSegments(nodeId) : null;
-        return new ComposedHabitRequest(node, config, metrics, Segments: segments, Goal: goal);
+        // Only the staged definitions a metric actually points at: dropping the field that used one
+        // leaves it in the draft (so re-adding the field can pick it again) but it must not be
+        // materialised for nobody.
+        var usedUnits = metrics.Where(m => m.UnitOfMeasureId is not null).Select(m => m.UnitOfMeasureId!.Value).ToHashSet();
+        var usedScales = metrics.Where(m => m.ScaleTemplateId is not null).Select(m => m.ScaleTemplateId!.Value).ToHashSet();
+        var newUnits = _stagedUnits.Where(u => usedUnits.Contains(u.Id)).ToList();
+        var newScales = _stagedScales.Where(s => usedScales.Contains(s.Id)).ToList();
+        return new ComposedHabitRequest(node, config, metrics, Segments: segments, Goal: goal,
+            NewUnits: newUnits.Count > 0 ? newUnits : null,
+            NewScales: newScales.Count > 0 ? newScales : null);
     }
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.
@@ -391,6 +490,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         cfg.SeriesLabelsJson = Repeatable && labels.Length > 0 ? JsonSerializer.Serialize(labels) : null;
         return cfg;
     }
+
+    private string? LabelsOfScale(Guid? scaleId) =>
+        scaleId is { } id ? AvailableScales.FirstOrDefault(s => s.Id == id)?.LabelsJson : null;
 
     /// <summary>The series labels the user actually named: blank rows are an in-progress edit, not an
     /// unnamed entry. Shared by <see cref="BuildConfig"/> and the template payload so a launched habit

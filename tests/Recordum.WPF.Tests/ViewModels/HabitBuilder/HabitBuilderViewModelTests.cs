@@ -888,4 +888,197 @@ public class HabitBuilderViewModelTests
 
         sut.TemplateSaved.Should().BeFalse();
     }
+
+    // ===== Onda 2.5 T7 — unità e scale custom staged nei picker =====
+
+    private static async Task<HabitBuilderViewModel> InitializedVmAsync()
+    {
+        var sut = NewSut();
+        await sut.InitializeAsync();
+        return sut;
+    }
+
+    [WpfFact]
+    public async Task Confirming_the_unit_form_stages_the_unit_and_selects_it_on_the_field()
+    {
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        var field = sut.Fields.Single();
+
+        sut.BeginAddCustomUnit(field);
+        sut.UnitForm!.Name = "Tazze";
+        sut.ConfirmCustomUnitCommand.Execute(null);
+
+        var staged = sut.StagedUnits.Single();
+        staged.Code.Should().Be("tazze");
+        staged.Name.Should().Be("Tazze");
+        staged.IsOfficial.Should().BeFalse();
+        field.UnitOfMeasureId.Should().Be(staged.Id);
+        sut.AvailableUnits.Should().Contain(staged);
+        sut.UnitForm.Should().BeNull(); // the micro-form closes on confirm
+    }
+
+    [WpfFact]
+    public async Task A_staged_unit_code_never_collides_with_an_existing_one()
+    {
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Litre"; // the seed catalogue already has code "l", but not "litre"
+        sut.ConfirmCustomUnitCommand.Execute(null);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Litre"; // …now it does
+        sut.ConfirmCustomUnitCommand.Execute(null);
+
+        sut.StagedUnits.Select(u => u.Code).Should().Equal("litre", "litre-2");
+    }
+
+    [WpfFact]
+    public async Task An_incomplete_unit_form_confirms_nothing()
+    {
+        // R7 precedent: the greyed-out button is not the guard — the command body has to refuse too.
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+
+        sut.ConfirmCustomUnitCommand.Execute(null); // name still blank
+
+        sut.StagedUnits.Should().BeEmpty();
+        sut.UnitForm.Should().NotBeNull(); // still open, waiting for a name
+    }
+
+    [WpfFact]
+    public async Task Cancelling_the_unit_form_stages_nothing()
+    {
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Tazze";
+
+        sut.CancelCustomFormCommand.Execute(null);
+
+        sut.UnitForm.Should().BeNull();
+        sut.StagedUnits.Should().BeEmpty();
+        sut.Fields[0].UnitOfMeasureId.Should().BeNull();
+    }
+
+    [WpfFact]
+    public async Task A_staged_unit_stays_out_of_the_time_unit_picker()
+    {
+        // The time units are closed in Core (SecondsDisplay.TimeUnitCodes) — a custom unit cannot
+        // become an hours/minutes/seconds option, or the duration formatters would not know it.
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Tazze";
+        sut.ConfirmCustomUnitCommand.Execute(null);
+
+        sut.AvailableTimeUnits.Should().NotContain(u => u.Code == "tazze");
+    }
+
+    [WpfFact]
+    public async Task A_staged_unit_referenced_by_a_field_reaches_the_request()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Tè";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Tazze";
+        sut.ConfirmCustomUnitCommand.Execute(null);
+
+        var request = sut.BuildRequestForTest();
+
+        request.NewUnits!.Single().Code.Should().Be("tazze");
+        request.Metrics.Single().UnitOfMeasureId.Should().Be(request.NewUnits.Single().Id);
+    }
+
+    [WpfFact]
+    public async Task Unreferenced_staged_definitions_do_not_reach_the_request()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Tè";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        var field = sut.Fields.Single();
+        sut.BeginAddCustomUnit(field);
+        sut.UnitForm!.Name = "Tazze";
+        sut.ConfirmCustomUnitCommand.Execute(null);
+        sut.RemoveFieldCommand.Execute(field);            // the field goes, the staged unit stays in the draft
+        sut.AddFieldCommand.Execute(FieldNature.Quantity); // a new field, with no unit
+
+        sut.BuildRequestForTest().NewUnits.Should().BeNullOrEmpty();
+    }
+
+    [WpfFact]
+    public async Task A_metric_on_a_staged_scale_snapshots_its_labels()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Energia";
+        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.BeginAddCustomScale(sut.Fields[0]);
+        sut.ScaleForm!.Name = "Energia";
+        sut.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        sut.ConfirmCustomScaleCommand.Execute(null);
+
+        var request = sut.BuildRequestForTest();
+
+        request.Metrics.Single().LabelsJson.Should().Be("""["Bassa","Media","Alta"]""");
+        var scale = request.NewScales!.Single();
+        scale.Code.Should().Be("energia");
+        scale.MinValue.Should().Be(1);
+        scale.MaxValue.Should().Be(3);
+        scale.IsOfficial.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task A_metric_on_an_official_scale_snapshots_its_labels_too()
+    {
+        // Mirror of the template reader (HabitTemplateService.MaterializeMetricsSegmentsGoalAsync):
+        // it snapshots the scale's labels onto every metric so the State quick-add can show them.
+        // A habit launched from the builder must not be poorer than the same one instantiated from a
+        // template — the T10 parity guard compares the two.
+        var refData = new FakeReferenceData();
+        refData.Scales[0].LabelsJson = """["Terribile","Male","Cosi cosi","Bene","Ottimo"]""";
+        var sut = NewSut(refData: refData);
+        await sut.InitializeAsync();
+        sut.Name = "Umore";
+        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.Fields[0].ScaleTemplateId = refData.Scales[0].Id;
+
+        sut.BuildRequestForTest().Metrics.Single().LabelsJson
+            .Should().Be("""["Terribile","Male","Cosi cosi","Bene","Ottimo"]""");
+    }
+
+    [WpfFact]
+    public async Task Staging_a_definition_clears_the_saved_template_badge()
+    {
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Tazze";
+        sut.TemplateSaved = true;
+
+        sut.ConfirmCustomUnitCommand.Execute(null);
+
+        sut.TemplateSaved.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task Staging_a_scale_satisfies_the_launch_gate()
+    {
+        // A Scale field with no scale blocks Launch; picking the freshly staged one has to unblock it
+        // immediately (the gate watches ScaleTemplateId).
+        var sut = await InitializedVmAsync();
+        sut.Name = "Energia";
+        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.CanLaunch.Should().BeFalse();
+
+        sut.BeginAddCustomScale(sut.Fields[0]);
+        sut.ScaleForm!.Name = "Energia";
+        sut.ScaleForm.LabelsText = "Bassa, Alta";
+        sut.ConfirmCustomScaleCommand.Execute(null);
+
+        sut.CanLaunch.Should().BeTrue();
+        sut.LaunchCommand.CanExecute(null).Should().BeTrue();
+    }
 }

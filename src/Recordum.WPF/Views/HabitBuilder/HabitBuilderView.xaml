@@ -269,6 +269,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
                                             Padding="6,2"
@@ -351,7 +352,50 @@
                                         </ComboBox.Style>
                                     </ComboBox>
 
+                                    <!-- Onda 2.5 T7: stage a custom unit / scale without leaving the
+                                         builder. Not offered next to the Time picker: the time units
+                                         are closed in Core (SecondsDisplay.TimeUnitCodes). -->
                                     <Button Grid.Column="3"
+                                            Content="+"
+                                            Margin="4,0,0,0"
+                                            Padding="8,2"
+                                            VerticalAlignment="Center"
+                                            ToolTip="{x:Static res:Strings.HabitBuilder_NewUnit}"
+                                            Command="{Binding DataContext.BeginAddCustomUnitCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Nature}" Value="{x:Static enums:FieldNature.Quantity}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <Button Grid.Column="3"
+                                            Content="+"
+                                            Margin="4,0,0,0"
+                                            Padding="8,2"
+                                            VerticalAlignment="Center"
+                                            ToolTip="{x:Static res:Strings.HabitBuilder_NewScale}"
+                                            Command="{Binding DataContext.BeginAddCustomScaleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Nature}" Value="{x:Static enums:FieldNature.Scale}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <Button Grid.Column="4"
                                             Content="✕"
                                             Margin="8,0,0,0"
                                             Padding="8,2"
@@ -363,6 +407,74 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <!-- Micro-form unità custom (Onda 2.5 T7) — inline sotto la lista campi: la
+                     definizione resta nel draft finché Lancia (o il salvataggio come template) non la
+                     materializza. -->
+                <Border Margin="0,0,0,12"
+                        Padding="12"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        Background="{DynamicResource Brush.SurfaceElevated}"
+                        Visibility="{Binding UnitForm, Converter={StaticResource NullToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewUnit}"
+                                   FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <TextBox Text="{Binding UnitForm.Name, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,8"/>
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewUnit_Symbol}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <TextBox Text="{Binding UnitForm.Symbol, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,10"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="{x:Static res:Strings.HabitBuilder_New_Cancel}"
+                                    Padding="12,5"
+                                    Command="{Binding CancelCustomFormCommand}"/>
+                            <Button Content="{x:Static res:Strings.HabitBuilder_New_Confirm}"
+                                    Padding="12,5" Margin="8,0,0,0" FontWeight="SemiBold"
+                                    IsEnabled="{Binding UnitForm.CanConfirm}"
+                                    Command="{Binding ConfirmCustomUnitCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Micro-form scala custom (Onda 2.5 T7) -->
+                <Border Margin="0,0,0,12"
+                        Padding="12"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        Background="{DynamicResource Brush.SurfaceElevated}"
+                        Visibility="{Binding ScaleForm, Converter={StaticResource NullToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewScale}"
+                                   FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <TextBox Text="{Binding ScaleForm.Name, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,8"/>
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewScale_Labels}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"/>
+                        <TextBox Text="{Binding ScaleForm.LabelsText, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,10"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="{x:Static res:Strings.HabitBuilder_New_Cancel}"
+                                    Padding="12,5"
+                                    Command="{Binding CancelCustomFormCommand}"/>
+                            <Button Content="{x:Static res:Strings.HabitBuilder_New_Confirm}"
+                                    Padding="12,5" Margin="8,0,0,0" FontWeight="SemiBold"
+                                    IsEnabled="{Binding ScaleForm.CanConfirm}"
+                                    Command="{Binding ConfirmCustomScaleCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
                 <!-- ===== Zone 2b: Composizione avanzata (Onda 2.5) ===== -->
                 <TextBlock Text="{x:Static res:Strings.HabitBuilder_Advanced}" FontSize="{StaticResource FontSize.Body}"

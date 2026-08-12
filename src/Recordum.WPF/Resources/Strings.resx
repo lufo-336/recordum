@@ -518,6 +518,27 @@ Details: {0}</value>
   <data name="HabitBuilder.SeriesLabels.Add" xml:space="preserve">
     <value>+ Add</value>
   </data>
+  <data name="HabitBuilder.NewUnit" xml:space="preserve">
+    <value>New unit…</value>
+  </data>
+  <data name="HabitBuilder.NewUnit.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="HabitBuilder.NewUnit.Symbol" xml:space="preserve">
+    <value>Symbol (optional)</value>
+  </data>
+  <data name="HabitBuilder.NewScale" xml:space="preserve">
+    <value>New scale…</value>
+  </data>
+  <data name="HabitBuilder.NewScale.Labels" xml:space="preserve">
+    <value>Steps, comma-separated</value>
+  </data>
+  <data name="HabitBuilder.New.Confirm" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="HabitBuilder.New.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Mon</value>
   </data>

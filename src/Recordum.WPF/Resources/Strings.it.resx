@@ -497,6 +497,27 @@
   <data name="HabitBuilder.SeriesLabels.Add" xml:space="preserve">
     <value>+ Aggiungi</value>
   </data>
+  <data name="HabitBuilder.NewUnit" xml:space="preserve">
+    <value>Nuova unità…</value>
+  </data>
+  <data name="HabitBuilder.NewUnit.Name" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="HabitBuilder.NewUnit.Symbol" xml:space="preserve">
+    <value>Simbolo (opzionale)</value>
+  </data>
+  <data name="HabitBuilder.NewScale" xml:space="preserve">
+    <value>Nuova scala…</value>
+  </data>
+  <data name="HabitBuilder.NewScale.Labels" xml:space="preserve">
+    <value>Gradini, separati da virgola</value>
+  </data>
+  <data name="HabitBuilder.New.Confirm" xml:space="preserve">
+    <value>Aggiungi</value>
+  </data>
+  <data name="HabitBuilder.New.Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Lun</value>
   </data>
