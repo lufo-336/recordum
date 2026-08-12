@@ -466,11 +466,12 @@ public class HabitBuilderViewModelTests
     {
         // I3: the gesture knob previously only ever flowed into a SAVED TEMPLATE's payload — Lancia
         // itself ignored it, so composing a text-only habit, picking "Quick note with photo" and
-        // clicking Lancia still produced the Markdown editor. This asserts the habit created by
-        // Lancia (not a re-instantiated template) carries the gesture.
+        // clicking Lancia still produced the Markdown editor. It now travels INSIDE the request
+        // (W24-R1) instead of being written after the dialog has already closed; that the service then
+        // persists it is covered on the Data side (ComposedHabitServiceTests) and end to end by
+        // BuilderTemplateRoundTripE2ETests.
         var fake = new FakeComposedHabitService();
-        var prefs = new FakeHabitUiPrefsService();
-        var sut = NewSut(composed: fake, uiPrefs: prefs);
+        var sut = NewSut(composed: fake);
         sut.Name = "Diario alimentare";
         sut.AddFieldCommand.Execute(FieldNature.Text); // -> Journal
         sut.JournalGesture = JournalPrimaryGesture.QuickNote;
@@ -478,8 +479,7 @@ public class HabitBuilderViewModelTests
         await sut.LaunchCommand.ExecuteAsync(null);
 
         sut.CreatedHabitNodeId.Should().NotBeNull();
-        (await prefs.GetAsync(sut.CreatedHabitNodeId!.Value)).JournalGesture
-            .Should().Be(JournalPrimaryGesture.QuickNote);
+        fake.LastRequest!.UiPrefs!.JournalGesture.Should().Be(JournalPrimaryGesture.QuickNote);
     }
 
     [WpfFact]

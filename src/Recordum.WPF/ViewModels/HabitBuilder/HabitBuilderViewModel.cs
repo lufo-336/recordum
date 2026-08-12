@@ -398,17 +398,12 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // so an incomplete goal (HasGoal with no positive target) has to be refused here too, not
         // only on the greyed-out button.
         if (!CanLaunch) return;
+        // The gesture travels inside the request (W24-R1): it used to be written after
+        // CreatedHabitNodeId had already closed the dialog, so a transient failure would surface out
+        // of a command that had visibly succeeded. ComposedHabitService serializes it onto the node
+        // before the insert, in the same transaction as everything else.
         var habitId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
         CreatedHabitNodeId = habitId;
-
-        // I3: the gesture knob previously only ever reached a saved template's payload — Lancia itself
-        // never applied it, so a "Quick note with photo" composition still launched with the Markdown
-        // editor. Mirrors HabitTemplateService.InstantiateAsync's post-create ui_prefs write.
-        if (DerivedType == HabitType.Journal)
-        {
-            await _uiPrefs.UpdateAsync(habitId, p => p with { JournalGesture = JournalGesture }, ct)
-                .ConfigureAwait(true);
-        }
 
         // Recording the picked color is a best-effort MRU side effect — never let it undo a created
         // habit or crash the app if the write hiccups (e.g. a transient DB lock). See B-dbLock.
@@ -481,9 +476,15 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         var usedScales = metrics.Where(m => m.ScaleTemplateId is not null).Select(m => m.ScaleTemplateId!.Value).ToHashSet();
         var newUnits = _stagedUnits.Where(u => usedUnits.Contains(u.Id)).ToList();
         var newScales = _stagedScales.Where(s => usedScales.Contains(s.Id)).ToList();
+        // I3: the gesture knob used to reach only a saved template's payload — Lancia never applied
+        // it, so a "quick note with photos" composition still launched with the Markdown editor.
+        var uiPrefs = DerivedType == HabitType.Journal
+            ? new HabitUiPrefs { JournalGesture = JournalGesture }
+            : null;
         return new ComposedHabitRequest(node, config, metrics, Segments: segments, Goal: goal,
             NewUnits: newUnits.Count > 0 ? newUnits : null,
-            NewScales: newScales.Count > 0 ? newScales : null);
+            NewScales: newScales.Count > 0 ? newScales : null,
+            UiPrefs: uiPrefs);
     }
 
     // Default config so streak/scheduling engines work out of the box; the editor refines it later.

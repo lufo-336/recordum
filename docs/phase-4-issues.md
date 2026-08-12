@@ -1063,21 +1063,27 @@ Emerse durante Task 14 visual verification (app lanciata, schermo utente):
 
 **Residui della review (nessun secondo giro di fix, decisione 2026-08-10):**
 
-- **W24-R1 — Il gesto journal del builder si scrive dopo la chiusura del dialog** · `triaged` (bassa) ·
-  `HabitBuilderViewModel` scrive le ui_prefs *dopo* aver impostato `CreatedHabitNodeId`, che ha già chiuso il
-  dialog: un errore transitorio nella scrittura uscirebbe da un comando già "riuscito". Fix da una riga
-  (scrivere le prefs prima). → giro fix del pass visivo post-2.5.
+- **W24-R1 — Il gesto journal del builder si scrive dopo la chiusura del dialog** ·
+  **`fixed` (2026-08-12, Onda 2.5 T10)** · `HabitBuilderViewModel` scriveva le ui_prefs *dopo* aver impostato
+  `CreatedHabitNodeId`, che ha già chiuso il dialog: un errore transitorio nella scrittura sarebbe uscito da
+  un comando già "riuscito". Il gesto viaggia ora **dentro** `ComposedHabitRequest.UiPrefs` (capacità creata
+  dal T2), che `ComposedHabitService` serializza sul nodo **prima** dell'insert, nella stessa transazione di
+  tutto il resto: non c'è più una scrittura post-creazione da fallire.
 - **W24-R2 — Il test di regressione dell'interleaving non fallisce contro il codice pre-fix** · `triaged`
   (test-debt) · rilegge `_day` dopo l'await invece di catturarlo prima: verifica la convivenza delle chiamate,
   non la regressione che voleva coprire.
 - **W24-R3 — I due test su `IsSaving` asseriscono solo false→false** · `triaged` (test-debt) · non
   intercetterebbero un salvataggio che non setta mai il flag.
-- **W24-Q1 — `NotesTabView` ospita un secondo `MarkdownEditorControl` solo `Collapsed`** · `triaged`
-  (domanda aperta, pesa sulla promessa "niente WebView2 per journal QuickNote") · se la sonda
-  dell'implementatore su `Collapsed` è corretta, quell'editor si istanzia per *ogni* abitudine e la promessa
-  è falsa comunque, a prescindere dal fix C1. Si adjudica allargando `FindDescendants<MarkdownEditorControl>`
-  dal `DiarioColumn` all'intera view col pannello Note chiuso, in `HabitScreenDiarioColumnViewTests`.
-  → 2.5 o pass visivo post-2.5.
+- **W24-Q1 — `NotesTabView` ospita un secondo `MarkdownEditorControl` solo `Collapsed`** ·
+  **`verified-fixed` (2026-08-12, Onda 2.5 T9)** · **adjudicata, e l'esito era quello brutto**: il test
+  allargato (`Quick_note_journal_materializes_no_markdown_editor_anywhere_in_the_screen`, whole-view scan col
+  pannello Note **chiuso**) è nato **rosso** — l'editor del Note si istanziava comunque, quindi la promessa
+  "niente WebView2 per un Food diary" era **falsa** anche dopo il fix C1, che copriva solo la colonna Diario.
+  La sonda dell'implementatore 2.4 su `Collapsed` era dunque corretta. Chiusa con la stessa cura di C1, ma
+  sul Content invece che sul template: `HabitScreenViewModel.NotesForColumn` torna il VM solo mentre
+  `ShowNote`, così a colonna chiusa il `ContentControl` ha `Content` null e non c'è nulla da costruire.
+  **Lezione confermata**: `Visibility="Collapsed"` non impedisce la materializzazione — solo un Content null
+  (o un selector) lo fa.
 
 **Questioni-modello counter CM-1…CM-4** (trasferite dalla memoria machine-local
 `recordum-counter-repeatability-rethink`; giro di *decisioni* con l'autore, nessuna esecuzione prima; si
@@ -1104,3 +1110,44 @@ adjudicano preferibilmente col dogfooding, E21):
   concorrente + I/O DriveFS. Se si ripresenta: serializzare le collezioni, non inseguire i singoli test.
   (Nello stesso giro: il lock `CreateAppHost` di DriveFS ha rotto una build — `-p:UseAppHost=false` resta
   obbligatorio, come da mappa §9.2.)
+
+---
+
+## Onda 2.5 — builder come superficie di composizione completa (2026-08-12)
+
+> Branch `wave-2-5-builder`, 11 task dal piano `docs/superpowers/plans/2026-08-11-wave-2-5-builder.md`.
+> Suite a fine onda: **Core 118 / Data 445 / WPF 983 / Plugins 66 / ExportEngine 37 / ChartEngine 18 = 1667**
+> (WPF serializzato, W24-E1). **Nessuna migrazione di schema**: resta 2.17.
+
+**Chiuso in quest'onda:** W24-R1 (`fixed`), W24-Q1 (`verified-fixed`, adjudicata — v. sopra).
+
+**Trovato dal guard di parità, chiuso subito (E16 in azione):**
+
+- **W25-1 — Il builder non sapeva comporre una Quantità decimale senza unità** · `fixed` (T10) · il seed
+  "Workout log" dichiara `Weight` come `Decimal` senza unità, ma nel builder una Quantità senza unità
+  derivava sempre `Integer`: un template ufficiale che l'utente **non** poteva ricostruire, cioè esattamente
+  la violazione del principio 8 che E16 esiste per intercettare. Chiuso col mattone mancante
+  (`FieldBlockViewModel.AllowsDecimals`, offerto solo finché il campo non ha un'unità — un'unità implica già
+  le frazioni), non aggiustando la fixture. **È la prima cattura del guard, al primo run.**
+
+**Deviazioni dal piano, con la ragione:**
+
+- **T9, terzo riquadro dell'anteprima** — il piano prescriveva i DataTemplate quick-add veri. Vivono dentro
+  le risorse di `HabitScreen.xaml` (≈500 righe, cablate a VM DB-backed): estrarle dalla schermata che
+  l'autore non ha ancora verificato a schermo comprava una regressione, non fedeltà. Usato il "modello
+  visivo minimo" che la spec §3 autorizza esplicitamente. Effetto collaterale desiderabile: "niente WebView2
+  nell'anteprima" diventa vero **per costruzione**, non per un binding che si dà il caso sia null.
+- **T7, badge "nuova" sulle voci staged** — non fatto. L'unico segnale bindabile in XAML era `IsOfficial`,
+  che marcherebbe anche le unità definite dall'utente in Configura: un badge che mente è peggio di nessun
+  badge. → decisione al pass visivo.
+- **T9, tier 1** — `HomeRowViewModel` di produzione non è riusabile (4 servizi + machinery albero), come la
+  spec prevedeva: usato `HomeRowPreviewModel` + il `HeatmapStrip` **vero**, con stile per-tipo risolto da
+  `HomeRowPresentation` (Core), che era già documentato come condiviso con l'anteprima del builder.
+
+**Da guardare al pass visivo unico dell'Onda 2** (nessuno di questi è un difetto noto: sono scelte da
+validare a schermo):
+
+- larghezza del dialog portata da 720 a **1080** per la colonna anteprima: verificare su schermo piccolo;
+- l'anteprima è **inerte** (`IsHitTestVisible=False`): verificare che non sembri "rotta";
+- micro-form unità/scala resi **inline** sotto la lista campi invece che in un `Popup` accanto al picker;
+- il riquadro "Oggi" monta il componente vero: controllare che non sbordi dai 360px.
