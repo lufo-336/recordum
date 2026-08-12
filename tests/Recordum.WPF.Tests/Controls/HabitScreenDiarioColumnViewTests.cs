@@ -97,6 +97,36 @@ public sealed class HabitScreenDiarioColumnViewTests
         finally { window.Close(); }
     }
 
+    [WpfFact]
+    public async Task Quick_note_journal_materializes_no_markdown_editor_anywhere_in_the_screen()
+    {
+        // W24-Q1 (open question left by the Onda 2.4 review): the sibling test above scopes its search
+        // to the Diario column on purpose, so it cannot see the SECOND MarkdownEditorControl the screen
+        // hosts in its Note tab. If that one is built even while the Note column is closed, then "no
+        // WebView2 for a quick-note journal" was never true — the editor just moved out of view. This
+        // widens the same search to the whole screen and settles it either way.
+        TestApp.EnsureLoaded();
+        var sut = HabitScreenViewModelTests.CreateSut(
+            out var nodes, out _, out _, out _, out _, out _, out _, out _, out var uiPrefs);
+        var node = HabitScreenViewModelTests.AddJournal(nodes, "Food diary");
+        await uiPrefs.SetAsync(node.Id, new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote });
+        await sut.LoadAsync(node.Id);
+        sut.ShowNote.Should().BeFalse("this test is about the Note column being closed");
+
+        var view = new HabitScreen { DataContext = sut };
+        var window = new Window { Content = view, Width = 1400, Height = 900 };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+
+            FindDescendants<MarkdownEditorControl>(view).Should().BeEmpty(
+                "with the Note column closed and a quick-note journal open, no Markdown/WebView2 host " +
+                "should exist anywhere in the screen (W24-Q1)");
+        }
+        finally { window.Close(); }
+    }
+
     private static List<T> FindDescendants<T>(DependencyObject root) where T : DependencyObject
     {
         var found = new List<T>();

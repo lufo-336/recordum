@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Recordum.WPF.ViewModels.HabitBuilder"
              xmlns:v="clr-namespace:Recordum.WPF.Views"
+             xmlns:hb="clr-namespace:Recordum.WPF.Views.HabitBuilder"
              xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
              xmlns:res="clr-namespace:Recordum.WPF.Resources"
              mc:Ignorable="d"
@@ -58,7 +59,12 @@
             </DockPanel>
         </Border>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="360"/>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="20">
 
                 <!-- ===== Zone 1: Testata ===== -->
@@ -645,82 +651,16 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- ===== Zone 3: Anteprima ===== -->
-                <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview}"
-                           FontSize="{StaticResource FontSize.Body}"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource Brush.Text}"
-                           Margin="0,0,0,6"/>
-
-                <Border Padding="12"
-                        CornerRadius="4"
-                        BorderThickness="1"
-                        BorderBrush="{DynamicResource Brush.Border}"
-                        Background="{DynamicResource Brush.SurfaceElevated}">
-                    <StackPanel>
-
-                        <!-- Mock bottone +1 per counter nudo -->
-                        <Border Width="56" Height="56"
-                                CornerRadius="28"
-                                HorizontalAlignment="Left"
-                                Background="{DynamicResource Brush.Accent}"
-                                Visibility="{Binding Preview.IsTapCounter, Converter={StaticResource BoolToVisible}}">
-                            <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview_Tap}"
-                                       FontSize="22" FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource Brush.OnAccent}"/>
-                        </Border>
-
-                        <!-- Righe anteprima (counter con campi o habit normale) -->
-                        <ItemsControl ItemsSource="{Binding Preview.Rows}"
-                                      Visibility="{Binding Preview.IsTapCounter, Converter={StaticResource InvBoolToVisible}}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="0,3">
-                                        <TextBlock Text="{Binding Label}"
-                                                   MinWidth="56"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                                   FontSize="{StaticResource FontSize.Small}"/>
-                                        <ItemsControl ItemsSource="{Binding CellNames}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Padding="8,4" Margin="0,0,6,0"
-                                                            CornerRadius="3"
-                                                            BorderThickness="1"
-                                                            BorderBrush="{DynamicResource Brush.Border}"
-                                                            Background="{DynamicResource Brush.Surface}">
-                                                        <TextBlock Text="{Binding}"
-                                                                   Foreground="{DynamicResource Brush.Text}"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <!-- Hint "+ Aggiungi serie" (counter con campi) -->
-                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview_AddSeries}"
-                                   Margin="0,6,0,0"
-                                   FontSize="{StaticResource FontSize.Small}"
-                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                   Visibility="{Binding Preview.HasAddSeries, Converter={StaticResource BoolToVisible}}"/>
-
-                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_TextFieldNote}"
-                                   Margin="0,8,0,0"
-                                   FontSize="{StaticResource FontSize.Small}"
-                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                   Visibility="{Binding Preview.HasTextField, Converter={StaticResource BoolToVisible}}"/>
-                    </StackPanel>
-                </Border>
-
             </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
+
+            <!-- Anteprima viva (E7): colonna fissa a destra, larga quanto una riga Home reale. -->
+            <Border Grid.Column="1"
+                    BorderThickness="1,0,0,0"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    Background="{DynamicResource Brush.Surface}">
+                <hb:BuilderPreviewPane DataContext="{Binding Preview}"/>
+            </Border>
+        </Grid>
     </DockPanel>
 </UserControl>

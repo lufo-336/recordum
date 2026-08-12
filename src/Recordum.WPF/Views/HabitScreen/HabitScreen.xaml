@@ -1358,7 +1358,7 @@
                                             Command="{Binding ToggleColumnCommand}"
                                             CommandParameter="{x:Static vm:HabitColumn.Note}"/>
                                 </Grid>
-                                <ContentControl Content="{Binding Notes}"/>
+                                <ContentControl Content="{Binding NotesForColumn}"/>
                             </DockPanel>
                         </Grid>
                     </Border>

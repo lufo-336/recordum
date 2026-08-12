@@ -6,6 +6,7 @@ using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitBuilder;
+using Recordum.WPF.ViewModels.HabitBuilder.Preview;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitBuilder;
@@ -91,7 +92,7 @@ public class HabitBuilderViewModelTests
         vm.DerivedType.Should().Be(HabitType.Counter);
         vm.CanAddField(FieldNature.Quantity).Should().BeFalse();
         vm.FieldsAllowed.Should().BeFalse(); // bare counter disables the field palette
-        vm.Preview.IsTapCounter.Should().BeTrue();
+        vm.Preview!.Recording.Kind.Should().Be(RecordingPreviewKind.Tap);
 
         vm.CountsOccurrences = false;
         vm.FieldsAllowed.Should().BeTrue(); // re-enabled when the tally block is cleared
@@ -106,10 +107,8 @@ public class HabitBuilderViewModelTests
 
         vm.Fields.Should().HaveCount(2);               // multiple blocks coexist
         vm.DerivedType.Should().Be(HabitType.Counter); // auto-derived, no tally checkbox needed
-        vm.Preview.IsTapCounter.Should().BeFalse();    // shows series rows, not the +1 mock
-        vm.Preview.HasAddSeries.Should().BeTrue();
-        vm.Preview.Rows.Should().ContainSingle()
-            .Which.CellNames.Should().HaveCount(2);
+        vm.Preview!.Recording.Kind.Should().Be(RecordingPreviewKind.Fields); // rows, not the +1 mock
+        vm.Preview.Recording.Fields.Should().HaveCount(2);
     }
 
     [WpfFact]
@@ -134,12 +133,12 @@ public class HabitBuilderViewModelTests
     }
 
     [WpfFact]
-    public void Counter_with_fields_preview_shows_add_series()
+    public void Counter_with_fields_previews_a_measured_recording()
     {
         var vm = CreateVm();
         vm.AddFieldCommand.Execute(FieldNature.Quantity);
-        vm.Preview.HasAddSeries.Should().BeTrue();
-        vm.Preview.Rows.Should().HaveCount(1);
+        vm.Preview!.Recording.Kind.Should().Be(RecordingPreviewKind.Fields);
+        vm.Preview.Recording.Fields.Should().HaveCount(1);
     }
 
     [WpfFact]

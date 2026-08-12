@@ -10,6 +10,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
+using Recordum.WPF.ViewModels.HabitBuilder.Preview;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitEditor.Sections;
 
@@ -48,17 +49,24 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         _favoriteColors = favoriteColors;
         _screenPicker = screenPicker;
         _uiPrefs = uiPrefs;
-        Schedule.Changed += (_, _) => TemplateSaved = false;
-        // Unlike Schedule, the Goal brick's Target/HasGoal feed CanLaunch (an incomplete goal blocks
-        // launch, R7-style) — so its Changed also has to re-query the Launch button, not only clear
-        // the "Saved" badge.
-        GoalBrick.Changed += (_, _) => { TemplateSaved = false; RaiseLaunchState(); };
-        SessionBrick.Changed += (_, _) => TemplateSaved = false;
+        _previewFactory = new SamplePreviewFactory(clock);
+        // Every brick feeds the preview, so they all go through Recompute — which also clears the
+        // "Saved" badge and re-queries Launch (an incomplete goal blocks it, R7-style).
+        Schedule.Changed += (_, _) => Recompute();
+        GoalBrick.Changed += (_, _) => Recompute();
+        SessionBrick.Changed += (_, _) => Recompute();
         SeriesLabels.CollectionChanged += OnSeriesLabelsChanged;
+        Recompute();
     }
 
+    private readonly SamplePreviewFactory _previewFactory;
+
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
-    public RecordingPreviewViewModel Preview { get; } = new();
+
+    /// <summary>The three-tier live preview (E7), rebuilt by <see cref="Recompute"/> on every change
+    /// of the draft. A record, so the pane re-renders wholesale instead of watching a dozen
+    /// properties.</summary>
+    [ObservableProperty] private BuilderPreviewModel? _preview;
 
     /// <summary>Mattone Programma (Onda 2.5 T3): schedule + streak + recovery del draft, applicato
     /// all'<see cref="HabitConfig"/> da <see cref="BuildConfig"/>.</summary>
@@ -229,11 +237,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             foreach (SeriesLabelRowViewModel row in e.OldItems) row.PropertyChanged -= OnSeriesLabelRowChanged;
         if (e.NewItems is not null)
             foreach (SeriesLabelRowViewModel row in e.NewItems) row.PropertyChanged += OnSeriesLabelRowChanged;
-        TemplateSaved = false;
+        Recompute();
     }
 
     private void OnSeriesLabelRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
-        TemplateSaved = false;
+        Recompute();
 
     /// <summary>Gesto primario di una composizione journal (Onda 2.4). Serializzato in ui_prefs sia
     /// quando la composizione si salva come template, sia quando Lancia crea l'abitudine (I3: prima
@@ -297,18 +305,19 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     // Picking a unit/scale on a field flips CanLaunch — re-query the Launch button (it watches CanExecuteChanged).
     private void OnFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(FieldBlockViewModel.UnitOfMeasureId) or nameof(FieldBlockViewModel.ScaleTemplateId))
+        if (e.PropertyName is nameof(FieldBlockViewModel.UnitOfMeasureId) or nameof(FieldBlockViewModel.ScaleTemplateId)
+            or nameof(FieldBlockViewModel.Name))
         {
-            TemplateSaved = false;
-            RaiseLaunchState();
+            Recompute();
         }
     }
 
-    partial void OnNameChanged(string value) { TemplateSaved = false; RaiseLaunchState(); }
-    partial void OnColorChanged(string value) => TemplateSaved = false;
-    partial void OnIconChanged(string? value) => TemplateSaved = false;
-    partial void OnRepeatableChanged(bool value) => TemplateSaved = false;
-    partial void OnJournalGestureChanged(JournalPrimaryGesture value) => TemplateSaved = false;
+    // Name/colour/icon/repeatable/gesture all show up in the preview, so they rebuild it too.
+    partial void OnNameChanged(string value) => Recompute();
+    partial void OnColorChanged(string value) => Recompute();
+    partial void OnIconChanged(string? value) => Recompute();
+    partial void OnRepeatableChanged(bool value) => Recompute();
+    partial void OnJournalGestureChanged(JournalPrimaryGesture value) => Recompute();
 
     [RelayCommand]
     private async Task AddFavoriteAsync(string? hex, CancellationToken ct)
@@ -352,8 +361,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // brick switches itself off rather than leaving orphaned segments in a draft that no longer
         // supports them (same pattern as GoalBrick).
         SessionBrick.IsAvailable = DerivedType == HabitType.Counter && !CountsOccurrences;
-        bool hasCells = Fields.Any(f => f.Nature != FieldNature.Text);
-        Preview.Rebuild(Fields, CountsOccurrences, DerivedType == HabitType.Counter && hasCells);
+        Preview = _previewFactory.Build(BuildPreviewInput());
         OnPropertyChanged(nameof(CanEnableCounter));
         OnPropertyChanged(nameof(CanEnableAbstinence));
         OnPropertyChanged(nameof(FieldsAllowed));
@@ -489,6 +497,40 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         var labels = NamedSeriesLabels();
         cfg.SeriesLabelsJson = Repeatable && labels.Length > 0 ? JsonSerializer.Serialize(labels) : null;
         return cfg;
+    }
+
+    /// <summary>Projects the draft into the preview's input. Reads the same collections the launch
+    /// path reads, so what the pane shows and what Lancia creates cannot say different things.</summary>
+    private BuilderPreviewInput BuildPreviewInput() => new(
+        Name: Name,
+        Color: Color,
+        Icon: Icon,
+        Type: DerivedType,
+        CountsOccurrences: CountsOccurrences,
+        Repeatable: Repeatable,
+        JournalGesture: JournalGesture,
+        Fields: Fields.Select(f => new PreviewField(
+            f.Name, f.Nature,
+            f.UnitOfMeasureId is { } uid ? AvailableUnits.FirstOrDefault(u => u.Id == uid)?.Code : null,
+            ScaleLabelsOf(f.ScaleTemplateId))).ToList(),
+        SeriesLabels: NamedSeriesLabels(),
+        SegmentNames: SessionBrick.HasSession
+            ? SessionBrick.Segments.Select(s => s.Name).Where(n => !string.IsNullOrWhiteSpace(n)).ToList()
+            : [],
+        GoalTarget: GoalBrick.HasGoal ? GoalBrick.Target : null);
+
+    private List<string> ScaleLabelsOf(Guid? scaleId)
+    {
+        if (LabelsOfScale(scaleId) is not { Length: > 0 } json) return [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            // A malformed labels blob is a preview detail, never a reason to break the builder.
+            return [];
+        }
     }
 
     private string? LabelsOfScale(Guid? scaleId) =>

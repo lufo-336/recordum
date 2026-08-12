@@ -539,6 +539,30 @@ Details: {0}</value>
   <data name="HabitBuilder.New.Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="HabitBuilder.Preview.Home" xml:space="preserve">
+    <value>In Home</value>
+  </data>
+  <data name="HabitBuilder.Preview.Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="HabitBuilder.Preview.Recording" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="HabitBuilder.Preview.UnnamedHabit" xml:space="preserve">
+    <value>Untitled habit</value>
+  </data>
+  <data name="HabitBuilder.Preview.DiaryCard" xml:space="preserve">
+    <value>Markdown diary entry</value>
+  </data>
+  <data name="HabitBuilder.Preview.QuickNoteCard" xml:space="preserve">
+    <value>Quick note, with photos</value>
+  </data>
+  <data name="HabitBuilder.Preview.Done" xml:space="preserve">
+    <value>Done today</value>
+  </data>
+  <data name="HabitBuilder.Preview.Sample" xml:space="preserve">
+    <value>Sample data</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Mon</value>
   </data>

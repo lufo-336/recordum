@@ -287,6 +287,14 @@ public static class Strings
     public static string HabitBuilder_NewScale_Labels => Get("HabitBuilder.NewScale.Labels");
     public static string HabitBuilder_New_Confirm => Get("HabitBuilder.New.Confirm");
     public static string HabitBuilder_New_Cancel => Get("HabitBuilder.New.Cancel");
+    public static string HabitBuilder_Preview_Home => Get("HabitBuilder.Preview.Home");
+    public static string HabitBuilder_Preview_Today => Get("HabitBuilder.Preview.Today");
+    public static string HabitBuilder_Preview_Recording => Get("HabitBuilder.Preview.Recording");
+    public static string HabitBuilder_Preview_UnnamedHabit => Get("HabitBuilder.Preview.UnnamedHabit");
+    public static string HabitBuilder_Preview_DiaryCard => Get("HabitBuilder.Preview.DiaryCard");
+    public static string HabitBuilder_Preview_QuickNoteCard => Get("HabitBuilder.Preview.QuickNoteCard");
+    public static string HabitBuilder_Preview_Done => Get("HabitBuilder.Preview.Done");
+    public static string HabitBuilder_Preview_Sample => Get("HabitBuilder.Preview.Sample");
     public static string Day_Mon => Get("Day.Mon");
     public static string Day_Tue => Get("Day.Tue");
     public static string Day_Wed => Get("Day.Wed");

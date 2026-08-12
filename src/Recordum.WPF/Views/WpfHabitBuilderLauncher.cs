@@ -24,7 +24,8 @@ public sealed class WpfHabitBuilderLauncher(IServiceProvider services) : IHabitB
         var window = new Window
         {
             Title = Recordum.WPF.Resources.Strings.HabitBuilder_Title,
-            Width = 720,
+            // 720 for the composition column + 360 for the live preview pane (Onda 2.5 T9).
+            Width = 1080,
             Height = 640,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Owner = Application.Current?.MainWindow,

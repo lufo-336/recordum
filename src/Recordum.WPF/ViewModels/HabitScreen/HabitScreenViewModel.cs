@@ -186,6 +186,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowCronologia));
         OnPropertyChanged(nameof(ShowDettaglio));
         OnPropertyChanged(nameof(ShowNote));
+        OnPropertyChanged(nameof(NotesForColumn));
         OnPropertyChanged(nameof(ShowConfigura));
         OnPropertyChanged(nameof(OpenColumnsMinWidth));
     }
@@ -449,6 +450,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public HabitRecordsViewModel Records { get; }
     public TimerControlViewModel TimerControl { get; }
     public NotesViewModel Notes { get; }
+
+    /// <summary>What the Note column's host binds to: the notes view-model while the column is open,
+    /// null while it is closed. Adjudicates W24-Q1 — the column's <c>Visibility</c> alone did NOT keep
+    /// its Markdown editor out of the visual tree (a widened tree scan found the control materialised
+    /// with the column collapsed), because Collapsed only skips layout while the ContentControl still
+    /// picks and builds its DataTemplate. Making the Content null is what actually stops it, exactly
+    /// as <see cref="QuickAddForDiario"/> does for the Diario column (C1).</summary>
+    public NotesViewModel? NotesForColumn => ShowNote ? Notes : null;
     public DetailViewModel Detail { get; }
 
     /// <summary>The always-visible per-type "Oggi" strip above the columns (Onda 2.2). Loaded per
