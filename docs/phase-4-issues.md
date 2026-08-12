@@ -1137,6 +1137,41 @@ adjudicano preferibilmente col dogfooding, E21):
   (`FieldBlockViewModel.AllowsDecimals`, offerto solo finché il campo non ha un'unità — un'unità implica già
   le frazioni), non aggiustando la fixture. **È la prima cattura del guard, al primo run.**
 
+**Review finale di branch (2026-08-12, `main..wave-2-5-builder`, 19 commit / 57 file) — 6 findings, tutti chiusi** (commit `26c487c`, 5 test di regressione):
+
+- **F1 (alto)** — un goal `Fixed`/`Rolling` violava `ck_goal_period_consistency`: `GoalBrickViewModel.Build`
+  non ha mai scritto `period_start`/`period_end`/`rolling_days`, ma la ComboBox offriva tutti e tre i
+  periodi. Lancia moriva su una violazione di constraint **senza try/catch e senza superficie d'errore**
+  (il pulsante sembrava non fare nulla); lo stesso payload salvato come template esplodeva dentro
+  `InstantiateAsync` **dopo** che il nodo era già stato committato → abitudine orfana senza config.
+  Chiuso restringendo il builder ai **goal aperti** (l'unica forma che i template ufficiali usano) e
+  togliendo la manopola `PeriodType`, che sarebbe rimasta una bugia un livello più sotto. Fixed/Rolling
+  restano in Configura, che ha i campi e la validazione.
+- **F2 (alto)** / **F3 (medio)** — il builder era **l'unico writer che saltava**
+  `HabitConfigService.ValidateCrossFields`, perché `ComposedHabitService` scrive la config direttamente
+  sul DbSet. "Volte a settimana"/"ogni X giorni" col campo vuoto o a zero creava un'abitudine su cui poi
+  esplodeva *ogni* modifica in Configura e *ogni* istanziazione da template; "giorni specifici" senza
+  giorni falliva ancora più in silenzio (mai programmata, streak ferma a zero). Chiusi da un unico gate
+  `Schedule.IsComplete` su Lancia **e** Salva-come-template.
+- **F4 (medio)** — la spunta "Decimali" occupava la stessa colonna del picker unità e ne copriva la
+  freccia su ogni campo Quantità appena aggiunto. Ha una colonna sua.
+- **F5 (basso)** — `IsHitTestVisible=False` sullo `ScrollViewer` uccideva rotella e cursore della
+  scrollbar: un'anteprima più alta della finestra aveva il fondo irraggiungibile. L'inerzia è passata al
+  contenuto.
+- **F6 (basso)** — rimuovere un campo lasciava aperto il micro-form puntato su un VM staccato.
+
+**Difetto del seed emerso da F3 — nuovo:**
+
+- **W25-2 — Il template ufficiale "Workout log" crea un'abitudine mai programmata** · `verified` (alta) ·
+  il payload dichiara `"schedule_type":"SpecificDays"` ma **non dice quali giorni**, e
+  `ScheduleEvaluator.MatchesDayMask(date, null)` è `false` per ogni data: l'abitudine istanziata dal
+  template non scade mai e la sua streak resta a zero per sempre. Non è un difetto del builder — che ora
+  quella composizione la **rifiuta** — ma del template spedito. La fixture di parità lo documenta
+  (`BuilderTemplateParityTests`, "Workout log"). **Fix = migration data-only** (dichiarare i giorni, o
+  passare a `WeeklyX` con un target, coerentemente con `streak_mode: Weekly`) → **fuori dall'Onda 2.5**,
+  che non tocca lo schema. Quando si fa, il gate naturale è un test-guardia gemello di R7: percorrere
+  tutti i template ufficiali e fallire su qualsiasi config non programmabile.
+
 **Deviazioni dal piano, con la ragione:**
 
 - **T9, terzo riquadro dell'anteprima** — il piano prescriveva i DataTemplate quick-add veri. Vivono dentro
