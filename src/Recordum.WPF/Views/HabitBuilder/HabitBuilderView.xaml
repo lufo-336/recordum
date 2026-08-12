@@ -276,6 +276,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0"
                                             Padding="6,2"
@@ -361,12 +362,11 @@
                                     <!-- Onda 2.5 T10: a unit-less quantity that still wants fractions
                                          (body weight — the "Workout log" seed's own Weight metric,
                                          which the parity guard found the builder could not compose). -->
-                                    <CheckBox Grid.Column="2"
+                                    <CheckBox Grid.Column="3"
                                               Content="{x:Static res:Strings.HabitBuilder_Field_Decimals}"
                                               IsChecked="{Binding AllowsDecimals}"
                                               VerticalAlignment="Center"
-                                              HorizontalAlignment="Right"
-                                              Margin="0,0,8,0">
+                                              Margin="8,0,0,0">
                                         <CheckBox.Style>
                                             <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -386,7 +386,7 @@
                                     <!-- Onda 2.5 T7: stage a custom unit / scale without leaving the
                                          builder. Not offered next to the Time picker: the time units
                                          are closed in Core (SecondsDisplay.TimeUnitCodes). -->
-                                    <Button Grid.Column="3"
+                                    <Button Grid.Column="4"
                                             Content="+"
                                             Margin="4,0,0,0"
                                             Padding="8,2"
@@ -406,7 +406,7 @@
                                         </Button.Style>
                                     </Button>
 
-                                    <Button Grid.Column="3"
+                                    <Button Grid.Column="4"
                                             Content="+"
                                             Margin="4,0,0,0"
                                             Padding="8,2"
@@ -426,7 +426,7 @@
                                         </Button.Style>
                                     </Button>
 
-                                    <Button Grid.Column="4"
+                                    <Button Grid.Column="5"
                                             Content="✕"
                                             Margin="8,0,0,0"
                                             Padding="8,2"
@@ -608,16 +608,13 @@
                                  HorizontalAlignment="Left"
                                  MinWidth="120"
                                  Margin="0,0,0,8"/>
-                        <ComboBox ItemsSource="{Binding Source={StaticResource GoalPeriodTypeValues}}"
-                                  SelectedItem="{Binding GoalBrick.PeriodType}"
-                                  HorizontalAlignment="Left"
-                                  MinWidth="160">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource GoalPeriodLabel}}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                        <!-- Niente selettore di periodo qui (review 2.5, F1): un goal "a periodo" o
+                             "mobile" richiede date di inizio/fine o un numero di giorni, che il
+                             vincolo ck_goal_period_consistency pretende e il builder non ha campi per
+                             raccogliere — offrirlo faceva fallire Lancia con una violazione di
+                             constraint, in silenzio. Il builder compone goal aperti (l'unica forma che
+                             i template ufficiali usano); il periodo si imposta in Configura, che ha
+                             i campi e la validazione. -->
                     </StackPanel>
                 </StackPanel>
 

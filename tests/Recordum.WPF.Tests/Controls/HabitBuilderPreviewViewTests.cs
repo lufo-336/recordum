@@ -53,11 +53,13 @@ public sealed class HabitBuilderPreviewViewTests
     }
 
     [WpfFact]
-    public void The_preview_pane_is_inert()
+    public void The_preview_content_is_inert_but_the_pane_still_scrolls()
     {
-        // A preview you can click is a preview that can record something. The whole pane is
-        // hit-test-invisible, which is also what keeps the real "Oggi" view-models' commands — wired
-        // to inert sample services — permanently out of reach.
+        // A preview you can click is a preview that can record something, so the content is
+        // hit-test-invisible — that is what keeps the real "Oggi" view-models' commands, wired to
+        // inert sample services, permanently out of reach. But the flag must NOT sit on the
+        // ScrollViewer: that would kill its own wheel and thumb, and three tiers overflow the dialog
+        // easily enough that the bottom of the preview would be unreachable (review 2.5, F5).
         TestApp.EnsureLoaded();
         var vm = NewVm();
         vm.AddFieldCommand.Execute(FieldNature.Quantity);
@@ -69,8 +71,11 @@ public sealed class HabitBuilderPreviewViewTests
         {
             window.UpdateLayout();
             var pane = FindDescendants<BuilderPreviewPane>(view).Single();
-            FindDescendants<System.Windows.Controls.ScrollViewer>(pane).First()
-                .IsHitTestVisible.Should().BeFalse();
+            var scroller = FindDescendants<System.Windows.Controls.ScrollViewer>(pane).First();
+
+            scroller.IsHitTestVisible.Should().BeTrue("altrimenti non si potrebbe scorrere l'anteprima");
+            ((System.Windows.UIElement)scroller.Content).IsHitTestVisible.Should().BeFalse(
+                "il contenuto dell'anteprima non si tocca");
         }
         finally { window.Close(); }
     }

@@ -429,7 +429,7 @@ Details: {0}</value>
     <value>Pick a scale</value>
   </data>
   <data name="HabitBuilder.LaunchHint" xml:space="preserve">
-    <value>Name the habit, pick a scale for every Scale field and a unit for every Time field — and a positive target on the goal, if enabled — to launch.</value>
+    <value>Name the habit, pick a scale for every Scale field and a unit for every Time field, complete the schedule (the days, or how many times) — and a positive target on the goal, if enabled — to launch.</value>
   </data>
   <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
     <value>Saved ✓</value>

@@ -41,10 +41,13 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- Inert by construction: the whole pane is a picture of the habit, never a control you can
-         touch. Hit-testing off also means no command on the real "Oggi" view-models can ever fire. -->
-    <ScrollViewer VerticalScrollBarVisibility="Auto" IsHitTestVisible="False">
-        <StackPanel Margin="16,12">
+    <!-- Inert by construction: the pane is a picture of the habit, never a control you can touch, so
+         no command on the real "Oggi" view-models can ever fire. The flag sits on the CONTENT and not
+         on the ScrollViewer: hit-testing off on the scroller kills its own wheel and thumb too, and
+         three tiers overflow a 640px-tall dialog easily enough that the bottom would be unreachable
+         (review 2.5, F5). -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16,12" IsHitTestVisible="False">
 
             <!-- ===== Tier 1: la riga in Home ===== -->
             <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview_Home}" Style="{StaticResource Preview.SectionLabel}"/>

@@ -295,6 +295,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private void RemoveField(FieldBlockViewModel field)
     {
         if (field is null) return;
+        // A micro-form opened for THIS field would otherwise stay on screen pointing at a detached
+        // VM: confirming it would write the unit onto nothing and leave a staged definition in every
+        // picker for the rest of the session, with the typed name silently lost (review 2.5, F6).
+        if (_formTarget == field) CancelCustomForm();
         field.PropertyChanged -= OnFieldChanged;
         Fields.Remove(field);
         Recompute();
@@ -375,8 +379,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         SaveAsTemplateCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>Gates both Launch and Save-as-template: a valid name, a scale on every Scale field and
-    /// a time unit on every Time field. A Quantity field's unit stays optional — a bare number reads
+    /// <summary>Gates both Launch and Save-as-template: a valid name, a scale on every Scale field, a
+    /// time unit on every Time field and a schedule that carries the number (or the days) it needs. A Quantity field's unit stays optional — a bare number reads
     /// fine — but a duration without a unit has no unit to render its totals in. Saving is gated by the
     /// same rule because a template is a saved composition and <c>InstantiateAsync</c> materialises it
     /// with no gate of its own: a template you cannot launch would create the malformed habit later.</summary>
@@ -384,7 +388,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         !string.IsNullOrWhiteSpace(Name)
         && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null)
         && Fields.All(f => f.Nature != FieldNature.Time || f.UnitOfMeasureId is not null)
-        && (!GoalBrick.HasGoal || GoalBrick.Target is > 0);
+        && (!GoalBrick.HasGoal || GoalBrick.Target is > 0)
+        && Schedule.IsComplete;
 
     /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
     public bool LaunchBlocked => !CanLaunch;

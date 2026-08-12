@@ -57,6 +57,23 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>False when the chosen schedule is missing the number (or the days) it needs to mean
+    /// anything (review 2.5, F2/F3). Three different failures hide behind this one flag: WeeklyX and
+    /// EveryXDays without a positive value are rejected later by
+    /// <c>HabitConfigService.ValidateCrossFields</c> — but only later, because
+    /// <c>ComposedHabitService</c> writes the config straight to the DbSet, so the builder would
+    /// happily create a habit that every subsequent edit (and any template instantiation) throws on;
+    /// SpecificDays with no day ticked fails more quietly still, since
+    /// <c>ScheduleEvaluator.MatchesDayMask</c> returns false for every date and the habit simply never
+    /// comes due. The builder is the only writer that had no guard.</summary>
+    public bool IsComplete => ScheduleType switch
+    {
+        ScheduleType.WeeklyX => WeeklyTarget is > 0,
+        ScheduleType.EveryXDays => EveryXDays is > 0,
+        ScheduleType.SpecificDays => Days.Any(d => d.IsSelected),
+        _ => true,
+    };
+
     public void ApplyTo(HabitConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);

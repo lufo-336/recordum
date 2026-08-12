@@ -65,6 +65,11 @@ public class BuilderTemplateParityTests
         {
             vm.Name = "Workout log";
             vm.Color = "#e85d4a";
+            // Il seed dichiara SpecificDays ma NON dice quali giorni, quindi la fixture non ne
+            // seleziona nessuno: e' l'unico modo di essere fedeli al payload. Conseguenza (W25-2 a
+            // tracker): questa composizione NON e' lanciabile — il gate introdotto dalla review 2.5
+            // (F3) la rifiuta, perche' un SpecificDays senza giorni non e' mai programmato. Il difetto
+            // e' del template spedito, non del builder.
             vm.Schedule.ScheduleType = ScheduleType.SpecificDays;
             vm.Schedule.StreakMode = StreakMode.Weekly;
             vm.Schedule.StreakRecovery = StreakRecovery.None;
@@ -87,7 +92,6 @@ public class BuilderTemplateParityTests
             AddField(vm, FieldNature.Quantity, "Amount", unit: "l");
             vm.GoalBrick.HasGoal = true;
             vm.GoalBrick.Target = 2m;
-            vm.GoalBrick.PeriodType = GoalPeriodType.Open;
         },
         ["Sleep tracker"] = vm =>
         {
@@ -183,7 +187,6 @@ public class BuilderTemplateParityTests
         vm.SessionBrick.Segments.Add(new SegmentRowViewModel { Name = "Cooldown", IsRest = true });
         vm.GoalBrick.HasGoal = true;
         vm.GoalBrick.Target = 5m;
-        vm.GoalBrick.PeriodType = GoalPeriodType.Rolling;
 
         var payload = JsonDocument.Parse(vm.BuildTemplatePayloadJsonForTest()).RootElement;
         AssertKnownKeys(payload, "Tutto insieme");
@@ -201,7 +204,9 @@ public class BuilderTemplateParityTests
         payload.GetProperty("segments").EnumerateArray().Select(s => s.GetProperty("name").GetString())
             .Should().Equal("Work", "Rest", "Cooldown");
         payload.GetProperty("goal").GetProperty("target").GetDecimal().Should().Be(5m);
-        payload.GetProperty("goal").GetProperty("period_type").GetString().Should().Be("Rolling");
+        // Il builder compone solo goal aperti (review 2.5, F1): Fixed/Rolling richiedono campi che
+        // solo Configura ha, e senza di essi violerebbero ck_goal_period_consistency.
+        payload.GetProperty("goal").GetProperty("period_type").GetString().Should().Be("Open");
         payload.GetProperty("units").EnumerateArray().Single().GetProperty("code").GetString().Should().Be("tazze");
         payload.GetProperty("scales").EnumerateArray().Single().GetProperty("labels")
             .EnumerateArray().Select(l => l.GetString()).Should().Equal("Bassa", "Media", "Alta");

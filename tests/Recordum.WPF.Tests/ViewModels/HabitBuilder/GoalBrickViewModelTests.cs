@@ -13,7 +13,6 @@ public class GoalBrickViewModelTests
         var vm = new GoalBrickViewModel();
         vm.HasGoal.Should().BeFalse();
         vm.Target.Should().BeNull();
-        vm.PeriodType.Should().Be(GoalPeriodType.Open);
         vm.IsAvailable.Should().BeFalse();
     }
 
@@ -40,7 +39,7 @@ public class GoalBrickViewModelTests
     [Fact]
     public void Build_returns_goal_bound_to_habit_name_and_first_metric()
     {
-        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m, PeriodType = GoalPeriodType.Open };
+        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m };
         var metricId = Guid.NewGuid();
         var nodeId = Guid.NewGuid();
         var goal = vm.Build(nodeId, "Acqua", metricId);
@@ -69,7 +68,7 @@ public class GoalBrickViewModelTests
 
         vm.HasGoal = true;
         vm.Target = 3m;
-        vm.PeriodType = GoalPeriodType.Rolling;
+        vm.Target = 7m;
 
         raised.Should().BeGreaterThanOrEqualTo(3);
     }

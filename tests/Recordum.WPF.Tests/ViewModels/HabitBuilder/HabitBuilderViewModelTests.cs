@@ -888,6 +888,95 @@ public class HabitBuilderViewModelTests
         sut.TemplateSaved.Should().BeFalse();
     }
 
+    // ===== Review di branch 2.5 — regressioni dei sei findings =====
+
+    [WpfTheory]
+    [InlineData(ScheduleType.WeeklyX)]
+    [InlineData(ScheduleType.EveryXDays)]
+    public void A_numeric_schedule_without_its_number_cannot_launch(ScheduleType type)
+    {
+        // F2: ComposedHabitService scrive la config direttamente sul DbSet, saltando
+        // ValidateCrossFields — il builder era l'unico writer senza guard, e creava abitudini che
+        // ogni modifica successiva in Configura (e ogni istanziazione da template) faceva esplodere.
+        var sut = CreateVm();
+        sut.Name = "Palestra";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.CanLaunch.Should().BeTrue();
+
+        sut.Schedule.ScheduleType = type;
+
+        sut.CanLaunch.Should().BeFalse("il numero manca");
+        sut.LaunchCommand.CanExecute(null).Should().BeFalse();
+
+        if (type == ScheduleType.WeeklyX) sut.Schedule.WeeklyTarget = 0;
+        else sut.Schedule.EveryXDays = 0;
+        sut.CanLaunch.Should().BeFalse("zero non è un programma valido");
+
+        if (type == ScheduleType.WeeklyX) sut.Schedule.WeeklyTarget = 3;
+        else sut.Schedule.EveryXDays = 3;
+        sut.CanLaunch.Should().BeTrue();
+    }
+
+    [WpfFact]
+    public void Specific_days_with_no_day_ticked_cannot_launch()
+    {
+        // F3: il fallimento più silenzioso dei tre — nessuna eccezione, ma
+        // ScheduleEvaluator.MatchesDayMask(null) è false per ogni data: l'abitudine non scade mai e
+        // la streak resta a zero per sempre.
+        var sut = CreateVm();
+        sut.Name = "Palestra";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        sut.Schedule.ScheduleType = ScheduleType.SpecificDays;
+        sut.CanLaunch.Should().BeFalse();
+
+        sut.Schedule.Days.Single(d => d.DayKey == "Wed").IsSelected = true;
+        sut.CanLaunch.Should().BeTrue();
+
+        sut.Schedule.Days.Single(d => d.DayKey == "Wed").IsSelected = false;
+        sut.CanLaunch.Should().BeFalse("togliere l'ultimo giorno ri-blocca il lancio");
+    }
+
+    [WpfFact]
+    public async Task A_launched_goal_is_always_open()
+    {
+        // F1: Fixed/Rolling pretendono period_start/period_end o rolling_days
+        // (ck_goal_period_consistency). Il builder non ha quei campi, quindi compone solo goal aperti;
+        // il periodo si sceglie in Configura.
+        var fake = new FakeComposedHabitService();
+        var sut = NewSut(composed: fake);
+        sut.Name = "Acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.GoalBrick.HasGoal = true;
+        sut.GoalBrick.Target = 2m;
+
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        fake.LastRequest!.Goal!.PeriodType.Should().Be(GoalPeriodType.Open);
+        fake.LastRequest.Goal.PeriodStart.Should().BeNull();
+        fake.LastRequest.Goal.PeriodEnd.Should().BeNull();
+        fake.LastRequest.Goal.RollingDays.Should().BeNull();
+    }
+
+    [WpfFact]
+    public async Task Removing_a_field_closes_the_micro_form_opened_for_it()
+    {
+        // F6: il form restava aperto puntando a un VM staccato — confermarlo scriveva l'unità su
+        // nessuno e lasciava una definizione staged in tutti i picker per il resto della sessione.
+        var sut = await InitializedVmAsync();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        var field = sut.Fields.Single();
+        sut.BeginAddCustomUnit(field);
+        sut.UnitForm.Should().NotBeNull();
+
+        sut.RemoveFieldCommand.Execute(field);
+
+        sut.UnitForm.Should().BeNull();
+        sut.ConfirmCustomUnitCommand.Execute(null); // non deve mettere in scena nulla
+        sut.StagedUnits.Should().BeEmpty();
+        sut.AvailableUnits.Should().NotContain(u => u.Code == "tazze");
+    }
+
     // ===== Onda 2.5 T7 — unità e scale custom staged nei picker =====
 
     private static async Task<HabitBuilderViewModel> InitializedVmAsync()

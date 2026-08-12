@@ -12,7 +12,6 @@ public sealed partial class GoalBrickViewModel : ObservableObject
 {
     [ObservableProperty] private bool _hasGoal;
     [ObservableProperty] private decimal? _target;
-    [ObservableProperty] private GoalPeriodType _periodType = GoalPeriodType.Open;
 
     /// <summary>Impostato dall'host in <c>Recompute()</c>: true quando <c>DerivedType == Counter</c>.
     /// Non e' un input utente — quando l'host lo spegne, forziamo <see cref="HasGoal"/> a false cosi'
@@ -23,7 +22,6 @@ public sealed partial class GoalBrickViewModel : ObservableObject
 
     partial void OnHasGoalChanged(bool value) => Raise();
     partial void OnTargetChanged(decimal? value) => Raise();
-    partial void OnPeriodTypeChanged(GoalPeriodType value) => Raise();
 
     partial void OnIsAvailableChanged(bool value)
     {
@@ -46,7 +44,10 @@ public sealed partial class GoalBrickViewModel : ObservableObject
             Name = habitName,
             MetricDefinitionId = firstMetricId,
             TargetValue = Target.Value,
-            PeriodType = PeriodType,
+            // Sempre aperto: v. il commento in HabitBuilderView.xaml (review 2.5, F1). Un periodo
+            // Fixed/Rolling senza date o rolling_days viola ck_goal_period_consistency e fa fallire
+            // l'insert; il periodo si sceglie in Configura, che ha i campi per reggerlo.
+            PeriodType = GoalPeriodType.Open,
         };
     }
 }
