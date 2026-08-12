@@ -110,13 +110,18 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     {
         if (_habitNodeId == Guid.Empty) return;
         var generation = ++_reloadGeneration;
+        // Capture the day this reload is FOR. Reading _day after the await would silently re-target a
+        // superseded reload at whatever day is current by then — which also made the interleaving
+        // regression test pass against the pre-guard code, since the late reload rebuilt the *new*
+        // day's rows and looked correct (W24-R2).
+        var day = _day;
 
         var all = await _notes.ListByHabitAsync(_habitNodeId, ct).ConfigureAwait(true);
         if (generation != _reloadGeneration) return; // superseded while awaiting the note list
 
         var ofDay = all
             .Where(n => n.Category == NoteCategory.Diario
-                        && (n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt)) == _day)
+                        && (n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt)) == day)
             .OrderByDescending(n => n.CreatedAt)
             .ToList();
 

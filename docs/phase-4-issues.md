@@ -1069,11 +1069,18 @@ Emerse durante Task 14 visual verification (app lanciata, schermo utente):
   un comando già "riuscito". Il gesto viaggia ora **dentro** `ComposedHabitRequest.UiPrefs` (capacità creata
   dal T2), che `ComposedHabitService` serializza sul nodo **prima** dell'insert, nella stessa transazione di
   tutto il resto: non c'è più una scrittura post-creazione da fallire.
-- **W24-R2 — Il test di regressione dell'interleaving non fallisce contro il codice pre-fix** · `triaged`
-  (test-debt) · rilegge `_day` dopo l'await invece di catturarlo prima: verifica la convivenza delle chiamate,
-  non la regressione che voleva coprire.
-- **W24-R3 — I due test su `IsSaving` asseriscono solo false→false** · `triaged` (test-debt) · non
-  intercetterebbero un salvataggio che non setta mai il flag.
+- **W24-R2 — Il test di regressione dell'interleaving non fallisce contro il codice pre-fix** ·
+  **`fixed` (2026-08-12)** · la causa non era solo nel test: `ReloadEntriesAsync` **rileggeva `_day` dopo
+  l'await**, quindi un reload superato ricostruiva il giorno *nuovo* e sembrava corretto. Il giorno si cattura
+  ora all'ingresso — è anche un difetto vero (un reload deve riguardare il giorno per cui è partito), e solo
+  così il test discrimina.
+- **W24-R3 — I due test su `IsSaving` asseriscono solo false→false** · **`fixed` (2026-08-12)** ·
+  `FakeDiaryService.NextWriteDelay` tiene la scrittura aperta, così lo stato "in volo" è osservabile: i test
+  asseriscono ora `false → true → false`.
+
+  > **Verifica del fix, non solo del verde** (è il difetto che questi due item denunciavano): disattivati
+  > temporaneamente i tre generation-guard e l'assegnazione `IsSaving = true`, i **tre** test falliscono;
+  > ripristinato il codice, tornano verdi. Un test che non sa fallire non è una copertura.
 - **W24-Q1 — `NotesTabView` ospita un secondo `MarkdownEditorControl` solo `Collapsed`** ·
   **`verified-fixed` (2026-08-12, Onda 2.5 T9)** · **adjudicata, e l'esito era quello brutto**: il test
   allargato (`Quick_note_journal_materializes_no_markdown_editor_anywhere_in_the_screen`, whole-view scan col

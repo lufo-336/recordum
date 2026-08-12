@@ -38,8 +38,21 @@ public sealed class FakeDiaryService : IDiaryService
     /// EditCalls are undisturbed.</summary>
     public List<(Guid NoteId, string Text)> EditedEntries { get; } = [];
 
-    public ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, string text, CancellationToken ct = default)
+    /// <summary>Optional gate a test can hold open to observe the VM mid-save (e.g. that IsSaving is
+    /// actually true while the write is in flight). Consumed by the next Save/Edit call.</summary>
+    public Func<Task>? NextWriteDelay { get; set; }
+
+    private async ValueTask AwaitWriteGateAsync()
     {
+        if (NextWriteDelay is null) return;
+        var gate = NextWriteDelay;
+        NextWriteDelay = null;
+        await gate().ConfigureAwait(false);
+    }
+
+    public async ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, string text, CancellationToken ct = default)
+    {
+        await AwaitWriteGateAsync().ConfigureAwait(true);
         SaveCalls.Add((habitNodeId, day, text));
         var completionId = Guid.NewGuid();
         var noteId = Guid.NewGuid();
@@ -63,7 +76,7 @@ public sealed class FakeDiaryService : IDiaryService
         };
         Notes[noteId] = note;
         if (_notes is not null) _notes.Store[noteId] = note;
-        return new(noteId);
+        return noteId; // the method is async now: the ValueTask wrapper is implicit
     }
 
     public ValueTask DeleteEntryAsync(Guid noteOrCompletionId, CancellationToken ct = default)
@@ -78,12 +91,12 @@ public sealed class FakeDiaryService : IDiaryService
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask EditEntryAsync(Guid noteId, string text, CancellationToken ct = default)
+    public async ValueTask EditEntryAsync(Guid noteId, string text, CancellationToken ct = default)
     {
+        await AwaitWriteGateAsync().ConfigureAwait(true);
         EditCalls.Add((noteId, text));
         EditedEntries.Add((noteId, text));
         if (Notes.TryGetValue(noteId, out var n)) n.BodyMd = text;
-        return ValueTask.CompletedTask;
     }
 
     public ValueTask<Note?> GetEntryByCompletionAsync(Guid completionId, CancellationToken ct = default)

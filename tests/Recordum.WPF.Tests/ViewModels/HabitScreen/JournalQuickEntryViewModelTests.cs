@@ -176,12 +176,21 @@ public class JournalQuickEntryViewModelTests
     [Fact]
     public async Task Save_sets_IsSaving_during_the_composer_path_and_clears_it_after()
     {
-        var (sut, _, _, _, _, _) = Build();
+        // W24-R3: asserire solo false→false non intercetterebbe un salvataggio che il flag non lo
+        // alza mai. Il gate tiene la scrittura aperta finche' non la rilasciamo, cosi' lo stato
+        // "in volo" e' davvero osservabile.
+        var (sut, diary, _, _, _, _) = Build();
         await sut.LoadAsync(Journal());
         sut.Draft = "cena";
         sut.IsSaving.Should().BeFalse();
 
+        var gate = new TaskCompletionSource();
+        diary.NextWriteDelay = () => gate.Task;
         var save = sut.SaveCommand.ExecuteAsync(null);
+
+        sut.IsSaving.Should().BeTrue("il salvataggio e' in volo: il flag deve essere alzato");
+
+        gate.SetResult();
         await save;
 
         sut.IsSaving.Should().BeFalse("IsSaving deve tornare false dopo il salvataggio");
@@ -190,16 +199,23 @@ public class JournalQuickEntryViewModelTests
     [Fact]
     public async Task Save_sets_IsSaving_during_the_in_row_edit_path_too()
     {
-        var (sut, _, _, _, _, _) = Build();
+        var (sut, diary, _, _, _, _) = Build();
         await sut.LoadAsync(Journal());
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
         sut.BeginEditCommand.Execute(row);
         row.EditDraft = "Pasta al pomodoro";
-
         sut.IsSaving.Should().BeFalse();
-        await sut.SaveCommand.ExecuteAsync(null);
+
+        var gate = new TaskCompletionSource();
+        diary.NextWriteDelay = () => gate.Task;
+        var save = sut.SaveCommand.ExecuteAsync(null);
+
+        sut.IsSaving.Should().BeTrue("anche la modifica in riga deve alzare il flag mentre scrive");
+
+        gate.SetResult();
+        await save;
 
         sut.IsSaving.Should().BeFalse("IsSaving deve tornare false anche dopo il salvataggio in riga");
     }
