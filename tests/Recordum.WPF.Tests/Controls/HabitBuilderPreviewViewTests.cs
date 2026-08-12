@@ -22,7 +22,7 @@ public sealed class HabitBuilderPreviewViewTests
         var settings = new FakeAppSettingService();
         return new(new FakeComposedHabitService(), new FakeHabitTemplateService(), new FakeReferenceData(),
             new FakeClock(), new RecentColorStore(settings), new FavoriteColorStore(settings),
-            new FakeScreenColorPicker(), new FakeHabitUiPrefsService());
+            new FakeScreenColorPicker());
     }
 
     [WpfTheory]

@@ -17,16 +17,14 @@ public class HabitBuilderViewModelTests
         IComposedHabitService? composed = null,
         IHabitTemplateService? templates = null,
         IReferenceDataQueryService? refData = null,
-        IRecentColorStore? recentColors = null,
-        IHabitUiPrefsService? uiPrefs = null)
+        IRecentColorStore? recentColors = null)
     {
         var settings = new FakeAppSettingService();
         return new(composed ?? new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
                refData ?? new FakeReferenceData(), new FakeClock(),
                recentColors ?? new RecentColorStore(settings),
                new FavoriteColorStore(settings),
-               new FakeScreenColorPicker(),
-               uiPrefs ?? new FakeHabitUiPrefsService());
+               new FakeScreenColorPicker());
     }
 
     // Alias for plan compatibility — same as NewSut()
@@ -485,15 +483,17 @@ public class HabitBuilderViewModelTests
     [WpfFact]
     public async Task Launch_does_not_touch_ui_prefs_for_a_non_journal_habit()
     {
+        // A habit that declares no presentation preference must leave ui_prefs_json NULL, i.e. "use
+        // the type's default" (governance §6) — the request carries no UiPrefs at all rather than an
+        // empty object that would still be serialized onto the node.
         var fake = new FakeComposedHabitService();
-        var prefs = new FakeHabitUiPrefsService();
-        var sut = NewSut(composed: fake, uiPrefs: prefs);
+        var sut = NewSut(composed: fake);
         sut.Name = "Bevi acqua";
         sut.AddFieldCommand.Execute(FieldNature.Quantity); // -> Counter
 
         await sut.LaunchCommand.ExecuteAsync(null);
 
-        prefs.Store.Should().BeEmpty();
+        fake.LastRequest!.UiPrefs.Should().BeNull();
     }
 
     [WpfFact]

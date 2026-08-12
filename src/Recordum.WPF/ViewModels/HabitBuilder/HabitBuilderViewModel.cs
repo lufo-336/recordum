@@ -34,12 +34,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private readonly IRecentColorStore _recentColors;
     private readonly IFavoriteColorStore _favoriteColors;
     private readonly IScreenColorPicker _screenPicker;
-    private readonly IHabitUiPrefsService _uiPrefs;
     private Guid? _parentId;
 
     public HabitBuilderViewModel(IComposedHabitService composed, IHabitTemplateService templates,
         IReferenceDataQueryService refData, IClock clock, IRecentColorStore recentColors,
-        IFavoriteColorStore favoriteColors, IScreenColorPicker screenPicker, IHabitUiPrefsService uiPrefs)
+        IFavoriteColorStore favoriteColors, IScreenColorPicker screenPicker)
     {
         _composed = composed;
         _templates = templates;
@@ -48,7 +47,6 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         _recentColors = recentColors;
         _favoriteColors = favoriteColors;
         _screenPicker = screenPicker;
-        _uiPrefs = uiPrefs;
         _previewFactory = new SamplePreviewFactory(clock);
         // Every brick feeds the preview, so they all go through Recompute — which also clears the
         // "Saved" badge and re-queries Launch (an incomplete goal blocks it, R7-style).

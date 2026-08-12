@@ -233,7 +233,7 @@ public class BuilderTemplateParityTests
         var settings = new FakeAppSettingService();
         var vm = new HabitBuilderViewModel(new FakeComposedHabitService(), new FakeHabitTemplateService(),
             new SeedReferenceData(), new FakeClock(), new RecentColorStore(settings),
-            new FavoriteColorStore(settings), new FakeScreenColorPicker(), new FakeHabitUiPrefsService());
+            new FavoriteColorStore(settings), new FakeScreenColorPicker());
         vm.InitializeAsync().GetAwaiter().GetResult();
         return vm;
     }
