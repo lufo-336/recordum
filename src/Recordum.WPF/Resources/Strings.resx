@@ -512,6 +512,12 @@ Details: {0}</value>
   <data name="HabitBuilder.Segment.Rest" xml:space="preserve">
     <value>Rest</value>
   </data>
+  <data name="HabitBuilder.SeriesLabels.Hint" xml:space="preserve">
+    <value>Name your entries (optional): Night, Nap…</value>
+  </data>
+  <data name="HabitBuilder.SeriesLabels.Add" xml:space="preserve">
+    <value>+ Add</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Mon</value>
   </data>

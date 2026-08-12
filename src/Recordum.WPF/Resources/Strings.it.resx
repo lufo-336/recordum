@@ -491,6 +491,12 @@
   <data name="HabitBuilder.Segment.Rest" xml:space="preserve">
     <value>Rest</value>
   </data>
+  <data name="HabitBuilder.SeriesLabels.Hint" xml:space="preserve">
+    <value>Dai un nome alle registrazioni (opzionale): Notte, Riposino…</value>
+  </data>
+  <data name="HabitBuilder.SeriesLabels.Add" xml:space="preserve">
+    <value>+ Aggiungi</value>
+  </data>
   <data name="Day.Mon" xml:space="preserve">
     <value>Lun</value>
   </data>

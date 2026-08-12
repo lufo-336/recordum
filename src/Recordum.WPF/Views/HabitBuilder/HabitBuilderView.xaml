@@ -132,12 +132,57 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Repeatable (U8): Counter-only, can this habit be recorded multiple times a day? -->
-                <CheckBox Content="{x:Static res:Strings.Editor_Registration_Repeatable}"
-                          IsChecked="{Binding Repeatable}"
-                          Margin="0,0,0,16"
-                          Visibility="{Binding DerivedType, Converter={StaticResource EnumToVisibility},
-                                       ConverterParameter={x:Static enums:HabitType.Counter}}"/>
+                <!-- Repeatable (U8): Counter-only, can this habit be recorded multiple times a day?
+                     Con le serie nominate (Onda 2.5 T6) sotto: i nomi delle registrazioni del giorno. -->
+                <StackPanel Margin="0,0,0,16"
+                            Visibility="{Binding DerivedType, Converter={StaticResource EnumToVisibility},
+                                         ConverterParameter={x:Static enums:HabitType.Counter}}">
+                    <CheckBox Content="{x:Static res:Strings.Editor_Registration_Repeatable}"
+                              IsChecked="{Binding Repeatable}"/>
+                    <StackPanel Margin="20,8,0,0"
+                                Visibility="{Binding Repeatable, Converter={StaticResource BoolToVisible}}">
+                        <TextBlock Text="{x:Static res:Strings.HabitBuilder_SeriesLabels_Hint}"
+                                   FontSize="{StaticResource FontSize.Small}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,6"/>
+                        <ItemsControl ItemsSource="{Binding SeriesLabels}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SeriesLabelRowViewModel}">
+                                    <Border Margin="0,0,6,6"
+                                            Padding="8,4"
+                                            CornerRadius="4"
+                                            BorderThickness="1"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            Background="{DynamicResource Brush.SurfaceElevated}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBox MinWidth="90"
+                                                     VerticalAlignment="Center"
+                                                     Padding="4,2"
+                                                     Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <Button Content="✕"
+                                                    Margin="6,0,0,0"
+                                                    Padding="6,1"
+                                                    VerticalAlignment="Center"
+                                                    Command="{Binding DataContext.RemoveSeriesLabelCommand,
+                                                              RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="{x:Static res:Strings.HabitBuilder_SeriesLabels_Add}"
+                                Padding="10,4"
+                                HorizontalAlignment="Left"
+                                Command="{Binding AddSeriesLabelCommand}"/>
+                    </StackPanel>
+                </StackPanel>
 
                 <!-- Journal gesture (Onda 2.4): Journal-only, quale gesto e' primario in Cronologia. -->
                 <StackPanel Orientation="Horizontal" Margin="0,6,0,0"

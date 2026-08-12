@@ -278,6 +278,8 @@ public static class Strings
     public static string HabitBuilder_Session_AddSegment => Get("HabitBuilder.Session.AddSegment");
     public static string HabitBuilder_Segment_Work => Get("HabitBuilder.Segment.Work");
     public static string HabitBuilder_Segment_Rest => Get("HabitBuilder.Segment.Rest");
+    public static string HabitBuilder_SeriesLabels_Hint => Get("HabitBuilder.SeriesLabels.Hint");
+    public static string HabitBuilder_SeriesLabels_Add => Get("HabitBuilder.SeriesLabels.Add");
     public static string Day_Mon => Get("Day.Mon");
     public static string Day_Tue => Get("Day.Tue");
     public static string Day_Wed => Get("Day.Wed");

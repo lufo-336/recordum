@@ -791,4 +791,101 @@ public class HabitBuilderViewModelTests
         fake.LastRequest.Config.TimerMode.Should().BeNull();
         fake.LastRequest.Config.SessionBaseTimer.Should().BeFalse();
     }
+
+    // ===== Onda 2.5 T6 — serie nominate nel mattone Ripetibile =====
+
+    [WpfFact]
+    public void Series_labels_reach_the_config_as_a_json_array()
+    {
+        var sut = CreateVm();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[0].Name = "Notte";
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[1].Name = "Riposino";
+
+        sut.BuildRequestForTest().Config!.SeriesLabelsJson.Should().Be("""["Notte","Riposino"]""");
+    }
+
+    [WpfFact]
+    public void Series_labels_are_null_when_none_are_named()
+    {
+        var sut = CreateVm();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null); // added but left blank
+
+        sut.BuildRequestForTest().Config!.SeriesLabelsJson.Should().BeNull();
+    }
+
+    [WpfFact]
+    public void Series_labels_do_not_travel_without_the_repeatable_flag()
+    {
+        // The labels name the entries of a repeatable habit; on a non-repeatable one there is a single
+        // entry a day and nothing to name, so they stay out of the config even if the list is filled.
+        var sut = CreateVm();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[0].Name = "Notte";
+        sut.Repeatable = false;
+
+        sut.BuildRequestForTest().Config!.SeriesLabelsJson.Should().BeNull();
+    }
+
+    [WpfFact]
+    public void Blank_series_labels_are_dropped_and_names_are_trimmed()
+    {
+        var sut = CreateVm();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[0].Name = "  Notte  ";
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[1].Name = "   ";
+
+        sut.BuildRequestForTest().Config!.SeriesLabelsJson.Should().Be("""["Notte"]""");
+    }
+
+    [WpfFact]
+    public void Removing_a_series_label_takes_it_out_of_the_config()
+    {
+        var sut = CreateVm();
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[0].Name = "Notte";
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[1].Name = "Riposino";
+
+        sut.RemoveSeriesLabelCommand.Execute(sut.SeriesLabels[0]);
+
+        sut.BuildRequestForTest().Config!.SeriesLabelsJson.Should().Be("""["Riposino"]""");
+    }
+
+    [WpfFact]
+    public void Editing_a_series_label_clears_the_saved_template_badge()
+    {
+        var sut = CreateVm();
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.TemplateSaved = true;
+
+        sut.SeriesLabels[0].Name = "Notte";
+
+        sut.TemplateSaved.Should().BeFalse();
+    }
+
+    [WpfFact]
+    public void Adding_a_series_label_clears_the_saved_template_badge()
+    {
+        var sut = CreateVm();
+        sut.Repeatable = true;
+        sut.TemplateSaved = true;
+
+        sut.AddSeriesLabelCommand.Execute(null);
+
+        sut.TemplateSaved.Should().BeFalse();
+    }
 }

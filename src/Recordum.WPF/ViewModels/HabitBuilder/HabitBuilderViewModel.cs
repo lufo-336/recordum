@@ -14,6 +14,13 @@ using Recordum.WPF.ViewModels.HabitEditor.Sections;
 
 namespace Recordum.WPF.ViewModels.HabitBuilder;
 
+/// <summary>One named entry of a repeatable composition (Onda 2.5 T6) — "Night", "Nap"… The names
+/// travel in <c>HabitConfig.SeriesLabelsJson</c> and only alongside the Repeatable flag.</summary>
+public sealed partial class SeriesLabelRowViewModel : ObservableObject
+{
+    [ObservableProperty] private string _name = string.Empty;
+}
+
 /// <summary>Costruttore block-first: assembli mattoni (campi, contatore, astinenza), vedi l'anteprima dal vivo
 /// e Lanci la creazione atomica. Il <see cref="DerivedType"/> è dedotto dalla grammatica pura in Core.</summary>
 public sealed partial class HabitBuilderViewModel : ObservableObject
@@ -46,6 +53,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // the "Saved" badge.
         GoalBrick.Changed += (_, _) => { TemplateSaved = false; RaiseLaunchState(); };
         SessionBrick.Changed += (_, _) => TemplateSaved = false;
+        SeriesLabels.CollectionChanged += OnSeriesLabelsChanged;
     }
 
     public ObservableCollection<FieldBlockViewModel> Fields { get; } = new();
@@ -111,6 +119,34 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// series) or once (a second same-day save sums into the day total)? Flows into the launched
     /// <see cref="HabitConfig"/> and the saved template payload; refined later in Configura.</summary>
     [ObservableProperty] private bool _repeatable;
+
+    /// <summary>Names of the daily entries of a repeatable composition (Onda 2.5 T6) — the "Night" /
+    /// "Nap" of the Sleep seed. Serialized into <c>HabitConfig.SeriesLabelsJson</c> by
+    /// <see cref="BuildConfig"/>, and only together with <see cref="Repeatable"/>: without the flag
+    /// there is one entry a day and nothing to name.</summary>
+    public ObservableCollection<SeriesLabelRowViewModel> SeriesLabels { get; } = new();
+
+    [RelayCommand]
+    private void AddSeriesLabel() => SeriesLabels.Add(new SeriesLabelRowViewModel());
+
+    [RelayCommand]
+    private void RemoveSeriesLabel(SeriesLabelRowViewModel? row)
+    {
+        if (row is null) return;
+        SeriesLabels.Remove(row);
+    }
+
+    private void OnSeriesLabelsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+            foreach (SeriesLabelRowViewModel row in e.OldItems) row.PropertyChanged -= OnSeriesLabelRowChanged;
+        if (e.NewItems is not null)
+            foreach (SeriesLabelRowViewModel row in e.NewItems) row.PropertyChanged += OnSeriesLabelRowChanged;
+        TemplateSaved = false;
+    }
+
+    private void OnSeriesLabelRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        TemplateSaved = false;
 
     /// <summary>Gesto primario di una composizione journal (Onda 2.4). Serializzato in ui_prefs sia
     /// quando la composizione si salva come template, sia quando Lancia crea l'abitudine (I3: prima
@@ -351,8 +387,16 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         var cfg = new HabitConfig { Id = Guid.NewGuid(), HabitNodeId = nodeId, Repeatable = Repeatable };
         Schedule.ApplyTo(cfg);
         SessionBrick.ApplyTo(cfg);
+        var labels = NamedSeriesLabels();
+        cfg.SeriesLabelsJson = Repeatable && labels.Length > 0 ? JsonSerializer.Serialize(labels) : null;
         return cfg;
     }
+
+    /// <summary>The series labels the user actually named: blank rows are an in-progress edit, not an
+    /// unnamed entry. Shared by <see cref="BuildConfig"/> and the template payload so a launched habit
+    /// and its saved template carry the same list.</summary>
+    private string[] NamedSeriesLabels() =>
+        SeriesLabels.Select(l => l.Name.Trim()).Where(n => n.Length > 0).ToArray();
 
     private static readonly JsonSerializerOptions s_templateJsonOptions = new()
     {
