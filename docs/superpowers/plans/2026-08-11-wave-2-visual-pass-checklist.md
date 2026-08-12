@@ -72,6 +72,7 @@ Su un counter ripetibile (Sleep tracker) e uno non ripetibile (Water intake):
 - [ ] Ricostruire **Workout log** da zero nel builder (SpecificDays + sessione + 3 metriche, **Weight con la spunta "Decimali"**) e confrontarlo a schermo col template istanziato.
 - [ ] **Spunta "Decimali"** su un campo Quantità: compare solo finché il campo non ha un'unità (un'unità implica già le frazioni), e sparisce appena se ne sceglie una.
 - [ ] **Larghezza del dialog**: da 720 a **1080px** per la colonna anteprima. Provarlo su schermo piccolo / finestra affiancata — è il cambio più invasivo dell'onda sul layout.
+- [ ] **Sfarfallio mentre si scrive**: l'anteprima si ricostruisce **interamente a ogni tasto** (il DataContext del pannello è un record nuovo ogni volta, quindi il riquadro "Oggi" ricrea il proprio sotto-albero visuale). Scrivere un nome lungo e guardare se lampeggia: se sì, la cura è ricostruire il piano "Oggi" solo quando cambia il **tipo** derivato invece che a ogni proprietà. Nessuno l'ha ancora visto girare — è un sospetto da codice, non un difetto osservato.
 - [ ] **L'anteprima è inerte per scelta**: verificare che non *sembri* rotta o disabilitata (nessun hover, nessun cursore, niente click).
 - [ ] **Colonna Note chiusa** (fix W24-Q1): aprire un journal e controllare che la colonna Note si apra e funzioni normalmente — il suo contenuto ora è null finché è chiusa, e questa è la superficie che quel fix tocca.
 
