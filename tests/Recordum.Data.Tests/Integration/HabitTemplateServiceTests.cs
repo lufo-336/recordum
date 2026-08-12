@@ -393,6 +393,113 @@ public class HabitTemplateServiceTests
         (await db2.HabitNodes.FindAsync(newId))!.UiPrefsJson.Should().BeNull();
     }
 
+    // ===== Onda 2.5 T8 — unità e scale incorporate nel payload (risolvi-o-crea) =====
+
+    [Fact]
+    public async Task InstantiateAsync_creates_missing_units_and_scales_from_embedded_definitions()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Tè", IsOfficial = false,
+                PayloadJson = """
+                    {"node":{"name":"Tè","node_type":"Habit","habit_type":"Counter","color":"#123456"},
+                     "config":{"schedule_type":"Daily","streak_mode":"Daily","streak_recovery":"GraceDay"},
+                     "metrics":[{"name":"Tazze","type":"Decimal","unit":"tazze"},
+                                {"name":"Energia","type":"Integer","scale_code":"energia-3"}],
+                     "segments":[],
+                     "units":[{"code":"tazze","name":"Tazze","symbol":"tz"}],
+                     "scales":[{"code":"energia-3","name":"Energia","min_value":1,"max_value":3,
+                                "labels":["Bassa","Media","Alta"]}]}
+                    """,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var newId = await CreateSut(fx).InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var unit = await db2.UnitsOfMeasure.SingleAsync(u => u.Code == "tazze");
+        unit.Name.Should().Be("Tazze");
+        unit.Symbol.Should().Be("tz");
+        unit.IsOfficial.Should().BeFalse();
+        var scale = await db2.ScaleTemplates.SingleAsync(s => s.Code == "energia-3");
+        scale.MaxValue.Should().Be(3);
+        scale.LabelsJson.Should().Be("""["Bassa","Media","Alta"]""");
+        scale.IsOfficial.Should().BeFalse();
+
+        var metric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId && m.Name == "Tazze");
+        metric.UnitOfMeasureId.Should().Be(unit.Id);
+        var scaleMetric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId && m.Name == "Energia");
+        scaleMetric.ScaleTemplateId.Should().Be(scale.Id);
+        scaleMetric.LabelsJson.Should().Be("""["Bassa","Media","Alta"]""");
+    }
+
+    [Fact]
+    public async Task InstantiateAsync_reuses_an_existing_code_instead_of_duplicating()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        Guid seedUnitId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            seedUnitId = (await db.UnitsOfMeasure.SingleAsync(u => u.Code == "l")).Id;
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Acqua", IsOfficial = false,
+                PayloadJson = """
+                    {"node":{"name":"Acqua","node_type":"Habit","habit_type":"Counter","color":"#5bc8f5"},
+                     "config":{"schedule_type":"Daily","streak_mode":"Daily","streak_recovery":"GraceDay"},
+                     "metrics":[{"name":"Quantità","type":"Decimal","unit":"l"}],
+                     "units":[{"code":"l","name":"Duplicato"}]}
+                    """,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var newId = await CreateSut(fx).InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        (await db2.UnitsOfMeasure.CountAsync(u => u.Code == "l")).Should().Be(1);
+        (await db2.UnitsOfMeasure.SingleAsync(u => u.Code == "l")).Name.Should().NotBe("Duplicato");
+        (await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId)).UnitOfMeasureId.Should().Be(seedUnitId);
+    }
+
+    [Fact]
+    public async Task Instantiating_the_same_template_twice_creates_one_unit_not_two()
+    {
+        // The second instantiation resolves the code the first one created — otherwise every launch
+        // of the same custom template would litter the catalogue with tazze, tazze-2, tazze-3…
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Tè", IsOfficial = false,
+                PayloadJson = """
+                    {"node":{"name":"Tè","node_type":"Habit","habit_type":"Counter","color":"#123456"},
+                     "metrics":[{"name":"Tazze","type":"Decimal","unit":"tazze"}],
+                     "units":[{"code":"tazze","name":"Tazze"}]}
+                    """,
+            });
+            await db.SaveChangesAsync();
+        }
+        var svc = CreateSut(fx);
+
+        var first = await svc.InstantiateAsync(tmplId, parentId: null);
+        var second = await svc.InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        (await db2.UnitsOfMeasure.CountAsync(u => u.Code == "tazze")).Should().Be(1);
+        var unitId = (await db2.UnitsOfMeasure.SingleAsync(u => u.Code == "tazze")).Id;
+        (await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == first)).UnitOfMeasureId.Should().Be(unitId);
+        (await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == second)).UnitOfMeasureId.Should().Be(unitId);
+    }
+
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),

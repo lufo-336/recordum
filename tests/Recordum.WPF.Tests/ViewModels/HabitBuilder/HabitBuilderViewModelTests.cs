@@ -1063,6 +1063,165 @@ public class HabitBuilderViewModelTests
         sut.TemplateSaved.Should().BeFalse();
     }
 
+    // ===== Onda 2.5 T8 — payload template v2 (scrittore) =====
+
+    private static JsonElement PayloadOf(HabitBuilderViewModel sut) =>
+        JsonDocument.Parse(sut.BuildTemplatePayloadJsonForTest()).RootElement;
+
+    [WpfFact]
+    public async Task The_payload_always_declares_the_schedule_even_at_its_defaults()
+    {
+        // The seeds declare Daily/Daily/GraceDay explicitly; the parity guard (T10) compares the two
+        // payloads, so the builder has to say it out loud rather than rely on the reader's fallbacks —
+        // which for StreakRecovery is None, not GraceDay.
+        var sut = await InitializedVmAsync();
+        sut.Name = "Corsa";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        var config = PayloadOf(sut).GetProperty("config");
+
+        config.GetProperty("schedule_type").GetString().Should().Be("Daily");
+        config.GetProperty("streak_mode").GetString().Should().Be("Daily");
+        config.GetProperty("streak_recovery").GetString().Should().Be("GraceDay");
+    }
+
+    [WpfFact]
+    public async Task The_payload_carries_the_schedule_brick_choices()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Palestra";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Schedule.ScheduleType = ScheduleType.SpecificDays;
+        sut.Schedule.Days.Single(d => d.DayKey == "Mon").IsSelected = true;
+        sut.Schedule.Days.Single(d => d.DayKey == "Fri").IsSelected = true;
+        sut.Schedule.StreakMode = StreakMode.Weekly;
+        sut.Schedule.StreakRecovery = StreakRecovery.None;
+
+        var config = PayloadOf(sut).GetProperty("config");
+
+        config.GetProperty("schedule_type").GetString().Should().Be("SpecificDays");
+        config.GetProperty("schedule_days_json").GetString().Should().Be("""["Mon","Fri"]""");
+        config.GetProperty("streak_mode").GetString().Should().Be("Weekly");
+        config.GetProperty("streak_recovery").GetString().Should().Be("None");
+    }
+
+    [WpfFact]
+    public async Task The_payload_carries_repeatable_and_its_series_labels()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Sonno";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Repeatable = true;
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[0].Name = "Notte";
+        sut.AddSeriesLabelCommand.Execute(null);
+        sut.SeriesLabels[1].Name = "Riposino";
+
+        var config = PayloadOf(sut).GetProperty("config");
+
+        config.GetProperty("repeatable").GetBoolean().Should().BeTrue();
+        config.GetProperty("series_labels").EnumerateArray().Select(l => l.GetString())
+            .Should().Equal("Notte", "Riposino");
+    }
+
+    [WpfFact]
+    public async Task The_payload_carries_the_session_brick_as_timer_flags_and_segments()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Workout";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.SessionBrick.HasSession = true;
+
+        var payload = PayloadOf(sut);
+
+        payload.GetProperty("config").GetProperty("has_integrated_timer").GetBoolean().Should().BeTrue();
+        payload.GetProperty("config").GetProperty("timer_mode").GetString().Should().Be("Session");
+        payload.GetProperty("segments").EnumerateArray()
+            .Select(s => (s.GetProperty("name").GetString(), s.GetProperty("is_rest").GetBoolean(),
+                          s.GetProperty("sort_order").GetInt32()))
+            .Should().Equal(("Work", false, 0), ("Rest", true, 1));
+    }
+
+    [WpfFact]
+    public async Task The_payload_omits_the_timer_flags_without_a_session()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Corsa";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+
+        var config = PayloadOf(sut).GetProperty("config");
+
+        config.TryGetProperty("has_integrated_timer", out _).Should().BeFalse();
+        config.TryGetProperty("timer_mode", out _).Should().BeFalse();
+    }
+
+    [WpfFact]
+    public async Task The_payload_carries_the_goal_with_the_unit_of_its_metric()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Acqua";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.Fields[0].UnitOfMeasureId = sut.AvailableUnits.Single(u => u.Code == "l").Id;
+        sut.GoalBrick.HasGoal = true;
+        sut.GoalBrick.Target = 2m;
+
+        var goal = PayloadOf(sut).GetProperty("goal");
+
+        goal.GetProperty("target").GetDecimal().Should().Be(2m);
+        goal.GetProperty("period_type").GetString().Should().Be("Open");
+        goal.GetProperty("unit").GetString().Should().Be("l");
+    }
+
+    [WpfFact]
+    public async Task The_payload_embeds_the_staged_definitions_a_metric_points_at()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Tè";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.BeginAddCustomUnit(sut.Fields[0]);
+        sut.UnitForm!.Name = "Tazze";
+        sut.UnitForm.Symbol = "tz";
+        sut.ConfirmCustomUnitCommand.Execute(null);
+        sut.AddFieldCommand.Execute(FieldNature.Scale);
+        sut.BeginAddCustomScale(sut.Fields[1]);
+        sut.ScaleForm!.Name = "Energia";
+        sut.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        sut.ConfirmCustomScaleCommand.Execute(null);
+
+        var payload = PayloadOf(sut);
+
+        var unit = payload.GetProperty("units").EnumerateArray().Single();
+        unit.GetProperty("code").GetString().Should().Be("tazze");
+        unit.GetProperty("name").GetString().Should().Be("Tazze");
+        unit.GetProperty("symbol").GetString().Should().Be("tz");
+        var scale = payload.GetProperty("scales").EnumerateArray().Single();
+        scale.GetProperty("code").GetString().Should().Be("energia");
+        scale.GetProperty("max_value").GetInt32().Should().Be(3);
+        scale.GetProperty("labels").EnumerateArray().Select(l => l.GetString())
+            .Should().Equal("Bassa", "Media", "Alta");
+
+        // The metrics join by code, exactly as the reader resolves them.
+        payload.GetProperty("metrics").EnumerateArray().ElementAt(0)
+            .GetProperty("unit").GetString().Should().Be("tazze");
+        payload.GetProperty("metrics").EnumerateArray().ElementAt(1)
+            .GetProperty("scale_code").GetString().Should().Be("energia");
+    }
+
+    [WpfFact]
+    public async Task The_payload_omits_staged_definitions_no_metric_points_at()
+    {
+        var sut = await InitializedVmAsync();
+        sut.Name = "Tè";
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        var field = sut.Fields.Single();
+        sut.BeginAddCustomUnit(field);
+        sut.UnitForm!.Name = "Tazze";
+        sut.ConfirmCustomUnitCommand.Execute(null);
+        sut.RemoveFieldCommand.Execute(field);
+
+        PayloadOf(sut).TryGetProperty("units", out _).Should().BeFalse();
+    }
+
     [WpfFact]
     public async Task Staging_a_scale_satisfies_the_launch_gate()
     {

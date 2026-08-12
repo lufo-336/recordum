@@ -153,6 +153,42 @@ public sealed class HabitTemplateService(
         var scalesByCode = await db.ScaleTemplates.AsNoTracking()
             .ToDictionaryAsync(s => s.Code, s => (Id: s.Id, Labels: (string?)s.LabelsJson), StringComparer.OrdinalIgnoreCase, ct);
 
+        // Risolvi-o-crea (Onda 2.5 T8): un template composto nel builder può portarsi dietro le unità
+        // e le scale che ha inventato. Un codice già nel catalogo vince sempre sulla definizione
+        // incorporata — così ristanziare lo stesso template non moltiplica "tazze, tazze-2, tazze-3"
+        // e non ridefinisce un'unità ufficiale. Dentro la stessa transazione delle metriche.
+        foreach (var u in payload.Units ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(u.Code) || unitsByCode.ContainsKey(u.Code)) continue;
+            var unit = new UnitOfMeasure
+            {
+                Id = Guid.NewGuid(),
+                Code = u.Code,
+                Name = string.IsNullOrWhiteSpace(u.Name) ? u.Code : u.Name,
+                Symbol = u.Symbol,
+                IsOfficial = false,
+            };
+            db.UnitsOfMeasure.Add(unit);
+            unitsByCode[unit.Code] = unit.Id;
+        }
+        foreach (var s in payload.Scales ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(s.Code) || scalesByCode.ContainsKey(s.Code)) continue;
+            var labels = JsonSerializer.Serialize(s.Labels ?? []);
+            var scale = new ScaleTemplate
+            {
+                Id = Guid.NewGuid(),
+                Code = s.Code,
+                Name = string.IsNullOrWhiteSpace(s.Name) ? s.Code : s.Name,
+                MinValue = s.MinValue,
+                MaxValue = s.MaxValue,
+                LabelsJson = labels,
+                IsOfficial = false,
+            };
+            db.ScaleTemplates.Add(scale);
+            scalesByCode[scale.Code] = (scale.Id, labels);
+        }
+
         Guid? firstMetricId = null;
         if (payload.Metrics is { Count: > 0 })
         {
@@ -245,6 +281,12 @@ public sealed class HabitTemplateService(
         public List<SegmentPayload>? Segments { get; set; }
         public GoalPayload? Goal { get; set; }
 
+        /// <summary>Unità e scale che il template porta con sé (Onda 2.5 T8) perché il builder le ha
+        /// composte insieme all'abitudine. Si risolvono per Code: se il codice esiste già si usa
+        /// quello del catalogo, altrimenti si crea. Assenti = comportamento storico.</summary>
+        public List<UnitDefPayload>? Units { get; set; }
+        public List<ScaleDefPayload>? Scales { get; set; }
+
         /// <summary>Compatibility read only (I5): pre-Task-3 builder templates wrote "repeatable" at
         /// the payload root instead of nested under "config". The writer no longer produces this
         /// shape — see the comment at its read site in <see cref="HabitTemplateService.InstantiateAsync"/>.</summary>
@@ -273,6 +315,22 @@ public sealed class HabitTemplateService(
         public bool IsRest { get; set; }
         public int SortOrder { get; set; }
         public string? Color { get; set; }
+    }
+
+    private sealed class UnitDefPayload
+    {
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string? Symbol { get; set; }
+    }
+
+    private sealed class ScaleDefPayload
+    {
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public int MinValue { get; set; }
+        public int MaxValue { get; set; }
+        public List<string>? Labels { get; set; }
     }
 
     private sealed class GoalPayload

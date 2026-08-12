@@ -513,6 +513,34 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         var unitCodeById = AvailableUnits.ToDictionary(u => u.Id, u => u.Code);
         var scaleCodeById = AvailableScales.ToDictionary(s => s.Id, s => s.Code);
+        var fields = Fields.Where(f => f.Nature != FieldNature.Text).ToList();
+
+        // Solo le definizioni staged che una metrica referenzia ancora — stessa regola di BuildRequest.
+        var usedUnits = fields.Where(f => f.UnitOfMeasureId is not null).Select(f => f.UnitOfMeasureId!.Value).ToHashSet();
+        var usedScales = fields.Where(f => f.ScaleTemplateId is not null).Select(f => f.ScaleTemplateId!.Value).ToHashSet();
+        var units = _stagedUnits.Where(u => usedUnits.Contains(u.Id))
+            .Select(u => new UnitDefPayload { Code = u.Code, Name = u.Name, Symbol = u.Symbol }).ToList();
+        var scales = _stagedScales.Where(s => usedScales.Contains(s.Id))
+            .Select(s => new ScaleDefPayload
+            {
+                Code = s.Code,
+                Name = s.Name,
+                MinValue = s.MinValue,
+                MaxValue = s.MaxValue,
+                Labels = JsonSerializer.Deserialize<List<string>>(s.LabelsJson) ?? [],
+            }).ToList();
+
+        // Il payload config si legge dalla stessa HabitConfig che Lancia costruirebbe: così le due
+        // strade non possono divergere (è esattamente ciò che il guard di parità T10 verifica).
+        var launched = BuildConfig(Guid.Empty);
+        var seriesLabels = NamedSeriesLabels();
+        var segments = SessionBrick.HasSession
+            ? SessionBrick.BuildSegments(Guid.Empty)
+                .Select(s => new SegmentPayload { Name = s.Name, IsRest = s.IsRest, SortOrder = s.SortOrder })
+                .ToList()
+            : null;
+        var firstUnitCode = fields.FirstOrDefault() is { UnitOfMeasureId: { } gid }
+            && unitCodeById.TryGetValue(gid, out var guc) ? guc : null;
 
         var payload = new TemplatePayload
         {
@@ -524,12 +552,27 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                 Color = Color,
                 Icon = Icon,
             },
-            Config = Repeatable ? new ConfigPayload { Repeatable = true } : null,
+            // Sempre presente e con i default scritti espliciti: il lettore ha fallback propri
+            // (StreakRecovery.None) che non coincidono con quelli del builder, e i template seed li
+            // dichiarano tutti — il guard di parità (T10) confronta le due forme.
+            Config = new ConfigPayload
+            {
+                ScheduleType = launched.ScheduleType.ToString(),
+                ScheduleDaysJson = launched.ScheduleDaysJson,
+                ScheduleWeeklyTarget = launched.ScheduleWeeklyTarget,
+                ScheduleEveryXDays = launched.ScheduleEveryXDays,
+                StreakMode = launched.StreakMode.ToString(),
+                StreakRecovery = launched.StreakRecovery.ToString(),
+                HasIntegratedTimer = launched.HasIntegratedTimer ? true : null,
+                TimerMode = launched.TimerMode?.ToString(),
+                Repeatable = launched.Repeatable ? true : null,
+                SeriesLabels = seriesLabels.Length > 0 && launched.SeriesLabelsJson is not null
+                    ? seriesLabels.ToList() : null,
+            },
             UiPrefs = DerivedType == HabitType.Journal
                 ? new UiPrefsPayload { JournalGesture = JournalGesture.ToString() }
                 : null,
-            Metrics = Fields
-                .Where(f => f.Nature != FieldNature.Text)
+            Metrics = fields
                 .Select(f => new MetricPayload
                 {
                     Name = f.Name,
@@ -539,9 +582,21 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                     ScaleCode = f.ScaleTemplateId is { } sid && scaleCodeById.TryGetValue(sid, out var sc) ? sc : null,
                 })
                 .ToList(),
+            Segments = segments is { Count: > 0 } ? segments : null,
+            // Il target del goal appartiene alla prima metrica; l'unità è ridondante per il lettore
+            // (che la ignora) ma i seed la portano e la parità semantica la confronta.
+            Goal = GoalBrick.Build(Guid.Empty, Name.Trim(), null) is { } g
+                ? new GoalPayload { Target = g.TargetValue, Unit = firstUnitCode, PeriodType = g.PeriodType.ToString() }
+                : null,
+            Units = units.Count > 0 ? units : null,
+            Scales = scales.Count > 0 ? scales : null,
         };
         return JsonSerializer.Serialize(payload, s_templateJsonOptions);
     }
+
+    /// <summary>Test seam, twin of <see cref="BuildRequestForTest"/>: the parity guard (T10) compares
+    /// this payload with the seed ones without going through the DB-backed template service.</summary>
+    internal string BuildTemplatePayloadJsonForTest() => BuildTemplatePayloadJson();
 
     // Mirror della forma consumata da HabitTemplateService.InstantiateAsync (snake_case via options).
     // I nomi e l'annidamento devono restare identici a quelli del servizio: una chiave scritta qui e
@@ -552,12 +607,55 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         public ConfigPayload? Config { get; set; }
         public UiPrefsPayload? UiPrefs { get; set; }
         public List<MetricPayload>? Metrics { get; set; }
+        public List<SegmentPayload>? Segments { get; set; }
+        public GoalPayload? Goal { get; set; }
+        public List<UnitDefPayload>? Units { get; set; }
+        public List<ScaleDefPayload>? Scales { get; set; }
     }
 
     private sealed class ConfigPayload
     {
+        public string? ScheduleType { get; set; }
+        public string? ScheduleDaysJson { get; set; }
+        public int? ScheduleWeeklyTarget { get; set; }
+        public int? ScheduleEveryXDays { get; set; }
+        public string? StreakMode { get; set; }
+        public string? StreakRecovery { get; set; }
+        public bool? HasIntegratedTimer { get; set; }
+        public string? TimerMode { get; set; }
         // null-when-false (WhenWritingNull) cosi' i template salvati prima di U8 restano byte-identici.
         public bool? Repeatable { get; set; }
+        public List<string>? SeriesLabels { get; set; }
+    }
+
+    private sealed class SegmentPayload
+    {
+        public string? Name { get; set; }
+        public bool IsRest { get; set; }
+        public int SortOrder { get; set; }
+    }
+
+    private sealed class GoalPayload
+    {
+        public decimal Target { get; set; }
+        public string? Unit { get; set; }
+        public string? PeriodType { get; set; }
+    }
+
+    private sealed class UnitDefPayload
+    {
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string? Symbol { get; set; }
+    }
+
+    private sealed class ScaleDefPayload
+    {
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public int MinValue { get; set; }
+        public int MaxValue { get; set; }
+        public List<string>? Labels { get; set; }
     }
 
     private sealed class UiPrefsPayload
