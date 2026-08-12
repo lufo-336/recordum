@@ -54,17 +54,26 @@ Su un counter ripetibile (Sleep tracker) e uno non ripetibile (Water intake):
 
 - [ ] Quick-add Inizio/Ricaduta + cronometro vivo; registrazioni chiuse con **intervallo di tempo**; elimina con conferma; heatmap Dettaglio period-aware.
 
-## 6. Builder (Onda 2.5) — ⚠️ confermare/estendere a fine esecuzione 2.5
+## 6. Builder (Onda 2.5) — ✅ confermata a fine esecuzione (2026-08-12)
 
-- [ ] **Anteprima a 3 piani** (In Home / Oggi / Registrazione) coi componenti reali: reagisce **a ogni tocco** (nome, colore, icona, campi, ripetibile, gesto); dati campione plausibili con l'**unità/scala vere** del draft; riquadri inerti (niente click-through); resistance con valore statico.
+> Tre voci scritte l'11 agosto dalla spec **non corrispondono a ciò che è stato costruito**, e sono
+> corrette qui sotto: il badge "nuova" non esiste, il terzo riquadro dell'anteprima non usa i componenti
+> reali, e i micro-form sono inline invece che in un popup. Sono scelte motivate (tracker §"Onda 2.5"),
+> non difetti: **non segnalarle come bug**. Le ultime quattro voci sono nuove.
+
+- [ ] **Anteprima a 3 piani** (In Home / Oggi / Registrazione): reagisce **a ogni tocco** (nome, colore, icona, campi, ripetibile, gesto); dati campione plausibili con l'**unità/scala vere** del draft; riquadri inerti (niente click-through); resistance con valore statico. **Componenti reali solo nei primi due piani** — riga Home = `HeatmapStrip` vero con lo stile per-tipo, "Oggi" = il VM di produzione: il terzo è un campione disegnato, non il quick-add vero (scelta motivata: quei template vivono dentro `HabitScreen.xaml`). Giudicare la **fedeltà** del terzo riquadro, non la sua identità.
 - [ ] **Mattone Programma** collassato coi default ("Ogni giorno · …"); espanso: giorni specifici / volte-a-settimana / ogni-X-giorni; streak e recupero localizzati.
 - [ ] **Mattone Obiettivo** solo su counter; target + periodo; l'unità ereditata dalla metrica.
 - [ ] **Mattone Sessione** solo su counter con campi; segmenti Work/Rest default, aggiungi/rimuovi/riposo.
 - [ ] **Serie nominate** sotto Ripetibile; chip aggiungi/rinomina/rimuovi.
-- [ ] **"+ Nuova unità…" / "+ Nuova scala…"** nei picker: micro-form, la nuova voce appare marcata "nuova", riusabile da altri campi; annullare il builder NON lascia unità/scale nel catalogo (staging).
+- [ ] **"+" accanto ai picker Quantità/Scala** (non su Tempo: le unità tempo sono chiuse in Core): apre un micro-form **inline sotto la lista campi** (non un popup); confermando, la voce è selezionata subito sul campo ed è riusabile dagli altri; annullare il builder NON lascia unità/scale nel catalogo (staging). **Nessun badge "nuova"**: l'unico segnale bindabile era `IsOfficial`, che marcherebbe anche le unità create in Configura. Da decidere a schermo se serve davvero un segnale.
 - [ ] Journal `Diary` nel builder: **nessun WebView2** nell'anteprima (card statica).
 - [ ] Round-trip a mano: composizione ricca → salva template → ristanzia → l'abitudine è identica (spot-check di E16, il guard automatico copre il resto).
-- [ ] Ricostruire **Workout log** da zero nel builder (SpecificDays + sessione + 3 metriche) e confrontarlo a schermo col template istanziato.
+- [ ] Ricostruire **Workout log** da zero nel builder (SpecificDays + sessione + 3 metriche, **Weight con la spunta "Decimali"**) e confrontarlo a schermo col template istanziato.
+- [ ] **Spunta "Decimali"** su un campo Quantità: compare solo finché il campo non ha un'unità (un'unità implica già le frazioni), e sparisce appena se ne sceglie una.
+- [ ] **Larghezza del dialog**: da 720 a **1080px** per la colonna anteprima. Provarlo su schermo piccolo / finestra affiancata — è il cambio più invasivo dell'onda sul layout.
+- [ ] **L'anteprima è inerte per scelta**: verificare che non *sembri* rotta o disabilitata (nessun hover, nessun cursore, niente click).
+- [ ] **Colonna Note chiusa** (fix W24-Q1): aprire un journal e controllare che la colonna Note si apra e funzioni normalmente — il suo contenuto ora è null finché è chiusa, e questa è la superficie che quel fix tocca.
 
 ## Già noti — NON ri-segnalare
 
@@ -75,6 +84,7 @@ Su un counter ripetibile (Sleep tracker) e uno non ripetibile (Water intake):
 | A4, A5, A7, A8, A10, W1a-VF1 — estetici/a11y (card bianche in dark, heatmap anno, righe tagliate, sezioni che sbordano, UIA) | Onda 3 |
 | W23-VF7 — grafici Dettaglio vuoti (pre-esistente) | Onda 3 |
 | W24-R2/R3 — test-debt | giro fix post-2.5 |
+| W23-VF4 — cronometro non scopribile dal builder | **ri-triare dopo il pass**: il mattone Sessione ora espone il timer integrato, il finding potrebbe essere già superato |
 | F0-6 — default lingua EN + selettore | Onda 4 |
 
 ## Esito
