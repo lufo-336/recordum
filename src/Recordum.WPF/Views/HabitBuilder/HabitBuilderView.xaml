@@ -358,6 +358,31 @@
                                         </ComboBox.Style>
                                     </ComboBox>
 
+                                    <!-- Onda 2.5 T10: a unit-less quantity that still wants fractions
+                                         (body weight — the "Workout log" seed's own Weight metric,
+                                         which the parity guard found the builder could not compose). -->
+                                    <CheckBox Grid.Column="2"
+                                              Content="{x:Static res:Strings.HabitBuilder_Field_Decimals}"
+                                              IsChecked="{Binding AllowsDecimals}"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Right"
+                                              Margin="0,0,8,0">
+                                        <CheckBox.Style>
+                                            <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Nature}" Value="{x:Static enums:FieldNature.Quantity}"/>
+                                                            <Condition Binding="{Binding UnitOfMeasureId}" Value="{x:Null}"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </CheckBox.Style>
+                                    </CheckBox>
+
                                     <!-- Onda 2.5 T7: stage a custom unit / scale without leaving the
                                          builder. Not offered next to the Time picker: the time units
                                          are closed in Core (SecondsDisplay.TimeUnitCodes). -->

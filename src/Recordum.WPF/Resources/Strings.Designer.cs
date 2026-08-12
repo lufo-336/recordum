@@ -287,6 +287,7 @@ public static class Strings
     public static string HabitBuilder_NewScale_Labels => Get("HabitBuilder.NewScale.Labels");
     public static string HabitBuilder_New_Confirm => Get("HabitBuilder.New.Confirm");
     public static string HabitBuilder_New_Cancel => Get("HabitBuilder.New.Cancel");
+    public static string HabitBuilder_Field_Decimals => Get("HabitBuilder.Field.Decimals");
     public static string HabitBuilder_Preview_Home => Get("HabitBuilder.Preview.Home");
     public static string HabitBuilder_Preview_Today => Get("HabitBuilder.Preview.Today");
     public static string HabitBuilder_Preview_Recording => Get("HabitBuilder.Preview.Recording");

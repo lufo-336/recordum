@@ -539,6 +539,9 @@ Details: {0}</value>
   <data name="HabitBuilder.New.Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="HabitBuilder.Field.Decimals" xml:space="preserve">
+    <value>Decimals</value>
+  </data>
   <data name="HabitBuilder.Preview.Home" xml:space="preserve">
     <value>In Home</value>
   </data>

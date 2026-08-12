@@ -306,7 +306,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private void OnFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(FieldBlockViewModel.UnitOfMeasureId) or nameof(FieldBlockViewModel.ScaleTemplateId)
-            or nameof(FieldBlockViewModel.Name))
+            or nameof(FieldBlockViewModel.Name) or nameof(FieldBlockViewModel.AllowsDecimals))
         {
             Recompute();
         }
