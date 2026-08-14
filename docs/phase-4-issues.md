@@ -1193,3 +1193,141 @@ validare a schermo):
 - l'anteprima è **inerte** (`IsHitTestVisible=False`): verificare che non sembri "rotta";
 - micro-form unità/scala resi **inline** sotto la lista campi invece che in un `Popup` accanto al picker;
 - il riquadro "Oggi" monta il componente vero: controllare che non sbordi dai 360px.
+
+---
+
+## Pass visivo unico dell'Onda 2 (2026-08-14) — findings `W2V-*`
+
+Sessione con l'autore sulla build di `main` (`d6cc97e`, schema 2.17), DB **vuoto** → 8 template ufficiali
+istanziati + registrazioni su 12/13/14 agosto. Checklist vincolante:
+`docs/superpowers/plans/2026-08-11-wave-2-visual-pass-checklist.md`. Evidenza fotografica:
+`C:\Users\sonit\Pictures\Screenshots\report_recordum` (7 screenshot, **fuori dal repo** — da spostare in
+`docs/verification/2026-08-14-wave-2-pass/`).
+
+**Confermato funzionante** in questo giro (sezioni 1–3 della checklist, per quanto gli screenshot coprono):
+serie nominate dai template col rinomina inline (`Night` su Sleep tracker → **W23-VF3 chiuso a schermo**);
+durata coerente nei tre posti (`12 minutes` in riga Home e fascia Oggi = aggregato nell'unità, `Duration: 12:00`
+nelle Registrazioni = evento singolo come orologio → **il fix 60× regge**); nessuna unità doppiata accanto al
+campo (**W23-VF2**); goal di Water intake con barra + `100%`; fascia "Oggi" completa e per-tipo (action:
+`Segna come fatto · Streak ×1 · 3% ultimi 30 giorni · di solito verso le 20:00`); calendario con selezionato =
+anello e completato = fill; cinque stili di striscia distinti e allineati a destra su tutte le righe.
+
+**Falso allarme scartato dopo lettura del codice**: la banda verde continua di *Stop smoking* a zero periodi
+non dichiara 14 giorni di astinenza — i giorni scoperti sono la traccia debole ad alpha 24/255
+(`HeatmapStrip.xaml.cs:129-131`). Comportamento corretto.
+
+- **W2V-1 — Le date sono in formato americano dentro un'app in italiano** (`verified`, screenshot + codice).
+  Sintomo: `Registrando per: 8/14/2026` e `Nota del giorno 8/14/2026` su ogni tipo. **Non è F0-6** (che chiede
+  il problema opposto: poter *presentare* l'app in inglese). Causa: `HabitScreen.xaml:212` (e i 4 gemelli alle
+  righe 458/523/673/704) usano `Text="{Binding CompletionDate, StringFormat=d}"`, e `StringFormat` in XAML
+  formatta con il `Language` del `FrameworkElement`, che WPF lascia a **en-US** a prescindere da
+  `CultureInfo.CurrentCulture`. Le stringhe passano invece dalle `.resx` (`CurrentUICulture` = it) e i numeri
+  da `CurrentCulture` in C# — infatti la stessa schermata stampa `Weight: 30,0` con la **virgola** e i timestamp
+  delle Registrazioni in ISO. Tre convenzioni contemporaneamente. Fix: override di
+  `FrameworkElement.LanguageProperty` con `XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag)`
+  in `App.OnStartup` — una riga, ma **va censito ogni `StringFormat` della UI** perché il difetto è di famiglia,
+  non di quel binding. Priorità autore: **alta**.
+- **W2V-2 — Zero-state muto proprio sui tipi che ne hanno più bisogno** (`verified`, screenshot + codice).
+  Sintomo: a DB appena seminato *Stop smoking* e *Mood tracker* non mostrano **nessuna** cifra chiave, mentre
+  gli altri sei mostrano `×0` / `0 l` / `0 hours` / `—`. Causa: `HomeRowViewModel.cs:228-242` — `LiveClock`,
+  `StateValue` e `JournalEntriesWeek` tornano `string.Empty` quando non c'è dato, e `ShowKeyFigure` nasconde
+  il chip. È **la stessa lezione già imparata e applicata solo allo streak**: il commento a
+  `HomeRowViewModel.cs:286` dice che `×0` smorzato fu scelto apposta perché *"an empty right zone made the row
+  read as broken during author verification"* (A13a, 2.1-bis). Caso peggiore l'astinenza: la riga non invita in
+  nessun modo a iniziare e il gesto si scopre solo dal `+`.
+- **W2V-3 — I nomi delle abitudini sono tagliati netto, senza ellissi** (`verified`, screenshot + codice).
+  Sintomo: con la colonna Home stretta (workspace aperto) si legge `Mood track`, `Sleep tracke`, `Workout`.
+  Causa: `HabitRowTemplate.xaml:46` — il `TextBlock` del nome non ha `TextTrimming="CharacterEllipsis"`.
+  Imparentato con **A7** ma distinto: A7 è la *zona destra* che perde ☐/+ in modo incoerente, questo è il
+  **nome** che sparisce senza segnalarlo. Da fixare insieme ad A7 (stessa regola di collasso).
+- **W2V-4 — Nel calendario il cerchietto del conteggio si sovrappone al numero del giorno** (`verified`,
+  screenshot ingrandito 3× + codice). Sintomo: nella cella del 14 agosto di *Morning routine* il bordo del
+  cerchio `2×` **taglia la cifra "4"** del "14"; su *Mood tracker* il cerchio ① tocca il "13". Causa:
+  `CalendarNavigator.xaml:64-72` — il numero del giorno è ancorato in alto a sinistra con `Margin="5,3"` a
+  `FontSize=10`, il badge è centrato con `Height=18` e `MinWidth=18`+`Padding="4,0"`: alla dimensione reale
+  della cella i due riquadri si intersecano, e il problema peggiora sui giorni a due cifre e sui badge larghi
+  (`2×`, `12`). Serve o spostare il badge (in basso a destra) o rimpicciolirlo, non entrambi al centro.
+- **W2V-5 — Lo stesso cerchietto dice tre cose diverse a seconda del tipo, e per un contatore non dice il
+  valore** (`verified`, screenshot + codice). Sintomo: *Mood tracker* mostra `3` (= il **livello** della scala,
+  Neutral), *Morning routine* mostra `2×` (= le **volte**), *Water intake* mostra `1` **mentre il totale del
+  giorno è 12 litri**. Causa: `HabitScreenViewModel.NumberFor` (:1014-1025) sceglie tre semantiche diverse, e
+  per Counter/Resistance la magnitudine arriva da `CompletionService.GetDailyMagnitudeAsync` (:211-212) come
+  **numero di occorrenze/serie**, non come somma dei valori. Conseguenza più grave del badge: la stessa
+  `mag` alimenta `TintStepFor`, quindi la **heatmap del mese di un contatore è piatta** — un giorno da 1 litro
+  e uno da 12 hanno identica tinta, perché entrambi valgono "1 occorrenza". Il comportamento è **conforme alla
+  spec §12** (che definisce la magnitudine di un counter come occorrenze), quindi non è una regressione
+  d'implementazione: è la spec a produrre un calendario che non mostra il dato che l'utente ha inserito.
+  → **decisione di modello**, stessa famiglia di CM-1…CM-4: da adjudicare col dogfooding, non a tavolino.
+  Nel frattempo resta almeno da disambiguare il badge (tre significati, nessuna etichetta).
+- **W2V-6 — Le azioni di astinenza non aggiornano la Home, e dopo una ricaduta la riga continua a scorrere un
+  cronometro morto** (`verified`, autore + codice). **Priorità alta: è un dato falso a schermo.** Sintomi
+  osservati in sequenza: (a) premuto **Inizio** su Stop smoking, la riga Home **non** parte — il cronometro
+  compare solo dopo un giro in "Archiviate" e ritorno (cioè dopo un reload); (b) premuta **Ricaduta**, la riga
+  Home **continua a contare** come se l'astinenza fosse ancora in corso; (c) solo un altro reload la azzera.
+  Causa: `HomeViewModel.cs:91-94` si ricarica su `CompletionRecorded/Updated/Deleted` + `HabitUpdated`, ma
+  l'astinenza a stato esplicito (U9) **non produce completion** e `WellKnownEvents` **non ha nessun evento
+  `abstinence.*`** (`src/Recordum.Plugins.Contracts/Events/WellKnownEvents.cs`: solo completion.*, note.*,
+  habit.updated). Una mutazione di dati che nessuna altra superficie può osservare. Aggravante: la riga ha un
+  ticker attivo ogni secondo (`HomeRowViewModel.RefreshClock`) che continua a ricalcolare
+  `now − AbstinenceOpenSinceMs` su uno stato ormai chiuso, quindi non è un valore fermo ma **un valore vivo e
+  sbagliato**. Fix: pubblicare eventi di astinenza (start / lapse / period-deleted) da `IAbstinenceService` e
+  sottoscriverli dove i periodi si leggono (Home, Dettaglio, calendario, quick-add).
+- **W2V-7 — Il dialog di conferma è una MessageBox di Windows, fuori dalla famiglia visiva** (`verified`,
+  screenshot + codice). "Eliminare questa registrazione d'astinenza?" arriva come finestra di sistema chiara,
+  con l'icona "?" blu Win32 e i pulsanti Sì/No standard, dentro un'app dark interamente tematizzata. Causa:
+  `Services/MessageBoxConfirmationDialog.cs:9` → `MessageBox.Show(..., MessageBoxImage.Question)`.
+  L'astrazione `IConfirmationDialog` esiste già (U9.1): serve solo un'implementazione tematizzata, che vale
+  per ogni conferma futura. Nota di design brief: "niente controlli desktop reinventati" **non** copre questo —
+  qui non si reinventa un controllo, si applica il tema a un dialog dell'app.
+- **W2V-8 — Il composer nota veloce non dice dove scrivere** (`verified`, screenshot + codice). Il campo di
+  testo è una hairline senza etichetta né placeholder: la voce del giorno si scrive in un punto che non si
+  vede. Il placeholder **esiste come stringa ma non viene mai reso**: `JournalQuickEntryView.xaml` lo passa
+  come `Strings.Diario_QuickEntry_Placeholder` sul `TextBox.Tag`, ma in `BaseStyles.xaml` non c'è nessun
+  meccanismo Tag-driven che lo disegni (stesso pattern morto di `EditorPane.xaml:62`). Era **parcheggiato**
+  in CLAUDE.md §7 "in attesa del pass visivo": ora è osservato → promosso a finding. Minore collegato: la
+  lista "Voci di questo giorno" non ha stato vuoto (resta il solo titolo).
+
+**Confermato funzionante in questo blocco**: Food diary apre il **composer di note veloci** e non l'editor
+Markdown, senza flash né processo browser → **C1** (Onda 2.4) e **W24-Q1** (Onda 2.5) tengono a schermo, e la
+promessa "niente WebView2 per un journal QuickNote" è vera in esecuzione, non solo nei test. La ricaduta
+registra correttamente l'**intervallo di tempo**, la cancellazione chiede conferma e funziona (U9.1).
+
+**Builder (§6) — i tre dubbi aperti del piano 2.5 sono chiusi, tutti in positivo** (autore, 2026-08-14):
+
+- **Sfarfallio dell'anteprima mentre si scrive**: **non si verifica**. Era un sospetto *da codice* (il
+  DataContext del pannello è un record nuovo a ogni proprietà, quindi il riquadro "Oggi" ricostruisce il
+  proprio sotto-albero visuale a ogni tasto) annotato in checklist §6 e mai visto girare: scrivendo un nome
+  lungo lettera per lettera l'anteprima non lampeggia. **La cura proposta — ricostruire il piano "Oggi" solo
+  al cambio di tipo derivato — non serve**: nessun intervento.
+- **Larghezza 1080px**: il dialog si apre correttamente sullo schermo dell'autore. Era il cambio più invasivo
+  dell'onda sul layout.
+- **Anteprima inerte** (`IsHitTestVisible=False`): non sembra rotta né disabilitata — giudizio dell'autore
+  "ottima". La scelta regge.
+
+Altro verificato a schermo nel builder (composizione "Abitudine di prova creazione": Quantità in grammi,
+obiettivo 3, sessione a 2 segmenti): chip **"Si comporta come: Counter"** (tipo derivato) corretto; **"+"**
+accanto al picker unità presente; la spunta **"Decimali" correttamente assente** perché il campo ha già
+un'unità (Gram); **Programma e streak** collassato che legge "Ogni giorno"; **Obiettivo e Sessione visibili
+solo sul counter**; segmenti **Work/Rest** coi default e "Riposo" spuntato su Rest; il **gate F1/F2 della
+review 2.5 funziona** — con l'obiettivo attivo e il target vuoto *Lancia* e *Salva come template* sono
+disabilitati; l'anteprima **reagisce** (chip dei segmenti aggiornati, barra goal al 67% con target 3).
+**Prova decisiva della composizione**: l'abitudine lanciata porta davvero i segmenti `Work | Prova` nel timer
+di sessione, il campo Quantità con l'unità `g` e la card goal — il builder compone, non finge.
+
+- **W2V-9 — I ToggleButton del builder non sono tematizzati: azzurro di sistema da accesi, illeggibili da
+  spenti** (`verified`, screenshot + codice). Sintomo: "+ Obiettivo" e "+ Sessione" hanno fondo **chiaro** a
+  riposo con testo chiaro sopra (sembrano disabilitati) e diventano **azzurro Windows** quando attivi — un
+  colore che non esiste nella palette dell'app, in un dialog interamente dark. Causa: in
+  `HabitBuilderView.xaml:596` e `:626` i due `ToggleButton` sono nudi (nessuno `Style`), e lo stile implicito
+  in `BaseStyles.xaml:779-781` imposta **solo il `Foreground`**: il `ControlTemplate` resta quello Aero di
+  sistema, quindi il `Brush.Text` chiaro finisce su un fondo chiaro. Stesso difetto sui **day-toggle del
+  Programma** (`HabitBuilderView.xaml:543-545`, stessa forma nuda). Fix a portata: `Recordum.PillToggle`
+  esiste già (`BaseStyles.xaml:785`) ed è **keyed apposta** per non essere implicita — basta applicarla ai tre
+  siti. Nota: lo stile implicito che tocca il solo `Foreground` è una **trappola di famiglia** — dà
+  l'impressione che il controllo sia tematizzato mentre ne peggiora il contrasto.
+- **W2V-10 — Con Lancia disabilitato, l'hint elenca tutte le condizioni invece di quella che manca**
+  (`verified`, screenshot). Il testo in fondo al dialog recita per intero *"Dai un nome, scegli una scala per
+  ogni campo Scala e un'unità per ogni campo Tempo, completa il programma (i giorni, o quante volte) — e un
+  target positivo sull'obiettivo, se attivo — per lanciare"*, anche quando l'unico requisito mancante è il
+  target del goal. Il gate è corretto (è il fix F1/F2 della review 2.5): è la **diagnosi** a non essere
+  specifica. Minore, ma è la stessa famiglia UX di F0-8 (bottone disabilitato che non dice perché).
