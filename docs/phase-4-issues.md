@@ -40,6 +40,7 @@
 
 ### 0.L Lingua (segnalazione autore 2026-07-03)
 - **F0-6 — L'app deve potersi presentare completamente in inglese** · Oggi la UI segue la culture dell'OS (resx: VM italiana → tutto in IT); i contenuti del seeder demo sono in italiano. Per la v1.0 pubblica (principio English-first): decidere **default EN + selettore lingua in Impostazioni** (o forzare EN finché non c'è il selettore) e valutare seeder demo in EN. Decisione di design → collocata in Onda 4 (onboarding/primo avvio), ma da tenere presente in ogni stringa nuova da qui in poi.
+  - **Scope allargato dall'autore (2026-08-17)**: Impostazioni deve offrire **la cultura**, non solo la lingua — formato data, separatore decimale, lingua. Sono **due manopole distinte**, come le separa Windows stesso: **lingua dell'interfaccia** (`CurrentUICulture` → quale `.resx`) e **formato regionale** (`CurrentCulture` → date, numeri, e quindi anche **quale separatore decimale l'input accetta**, vedi W2V-17c). Vanno separate perché un utente italiano che vuole l'app in inglese continua a scrivere `2,5` e a leggere `17/08/2026`. Meccanica: due AppSetting + un service allo stile di `ThemeService`/`AppFontService`, applicati in `App.OnStartup` **prima** di costruire la UI (il `Language` dei `FrameworkElement` si imposta una volta lì — cambiare a caldo richiede di riapplicarlo all'albero visuale già montato, quindi la v1 può chiedere il riavvio). **Il fix di W2V-1/W2V-17c è la fondazione di questa feature, non un lavoro sprecato**: imposta la cultura corrente come sorgente unica del formato; il selettore poi cambia solo *da dove* quella cultura arriva (OS → AppSetting).
 
 ### 0.3 Backup/restore runtime (CR1–CR4 finora solo test-verified)
 - **F0-8 — Dialog "Crea backup" opaco: l'autore non è riuscito a creare un backup** (`verified` 2026-07-03, screenshot + codice). Il bottone Crea si abilita solo con passphrase ≥12 char uguale nei due campi (`BackupDialogViewModel.CanRun`:54-58), ma il dialog non comunica nulla: (a) il **secondo PasswordBox non ha etichetta** (è la conferma — nel layout pare un campo misterioso); (b) **nessun hint sul requisito** dei 12 caratteri; (c) l'indicatore di forza mostra l'**enum grezzo non localizzato** ("None"/"Weak"/"Ok"/"Strong"); (d) il bottone disabilitato non spiega perché. UX da rifare (Onda 3 o insieme al blocco backup di Onda 1/4).
@@ -1331,3 +1332,134 @@ di sessione, il campo Quantità con l'unità `g` e la card goal — il builder c
   target positivo sull'obiettivo, se attivo — per lanciare"*, anche quando l'unico requisito mancante è il
   target del goal. Il gate è corretto (è il fix F1/F2 della review 2.5): è la **diagnosi** a non essere
   specifica. Minore, ma è la stessa famiglia UX di F0-8 (bottone disabilitato che non dice perché).
+
+### Segmento 2026-08-16 — unità staged nel builder
+
+**Confermati a schermo** (checklist §6): il micro-form "Nuova unità…" si apre **inline sotto la lista campi**
+e confermando l'unità è già selezionata sul campo; un **secondo** campo Quantità la **riusa** dal proprio
+picker; **annullare** il builder non lascia nulla nel catalogo (staging). La spunta **"Decimali"** compare
+correttamente su un campo Quantità **senza** unità. Visibile in foto anche **W2V-9** (i due ToggleButton
+"+ Obiettivo"/"+ Sessione" chiari e illeggibili) — già a tracker, non ri-segnalato.
+
+**Non è un difetto — chiarito**: dopo *Salva come template* l'unità **non** è nel catalogo alla riapertura del
+builder. È il progetto: il payload la porta come definizione incorporata e la crea `InstantiateAsync`
+(risolvi-o-crea). **Resta da verificare a schermo** la seconda metà del round-trip: istanziare il template
+(l'unità appare) e istanziarlo una **seconda** volta (non deve nascere `pagina-2`) — il guard è
+`HabitTemplateService.cs:161`, `unitsByCode.ContainsKey(u.Code) → continue` case-insensitive.
+
+- **W2V-11 — Unità e scale si possono solo aggiungere: nessun editor, nessuna cancellazione** (`verified`,
+  autore + codice). `IReferenceDataQueryService` espone **solo** `ListUnitsAsync`/`ListScalesAsync` — non
+  esiste update né delete in nessun punto dell'app. L'unico creatore è il builder
+  (`HabitBuilderViewModel.ConfirmCustomUnit/Scale`, staged) più `HabitTemplateService` all'istanziazione;
+  Configura → Metriche le sa solo **scegliere** da un picker (`MetricsSectionViewModel`), e `Settings` ha la
+  sola `SettingsWindow`. Conseguenze concrete: un refuso nel nome è **permanente**; il catalogo cresce in modo
+  monotono; e poiché `ReferenceCodeSlug.From` deduplica col suffisso, ricreare "Pagina" dopo averla già
+  lanciata produce un secondo `pagina-2` con lo **stesso nome visibile**, indistinguibile nel picker e
+  incancellabile. Aggravante da dogfooding (E21): è la fase in cui si sperimenta di più con le composizioni.
+  Nota di scope: un editor va progettato con la regola di cosa succede a un'unità **in uso** (bloccare
+  l'eliminazione, o staccarla dalle metriche) — non è un CRUD banale. Priorità autore: da concordare nel giro
+  fix.
+- **W2V-12 — Il "Simbolo" di un'unità non compare da nessuna parte: campo scritto e mai letto** (`verified`,
+  autore + codice). Sintomo: il micro-form chiede "Simbolo (opzionale)" e non si capisce dove finisca. Causa
+  verificata per esclusione: `UnitOfMeasure.Symbol` è persistito (`UnitOfMeasureConfiguration.cs:15`,
+  maxLength 16), scritto dal builder (`HabitBuilderViewModel.cs:155`), incorporato nel payload template
+  (`:568`) e riletto all'istanziazione (`HabitTemplateService.cs:168`) — ma **nessun binding e nessuna lettura
+  in UI**: l'unico `Symbol` in tutto lo strato di presentazione è il `TextBox` che lo scrive
+  (`HabitBuilderView.xaml:463`). Tutte le superfici che mostrano l'unità usano la **Code**:
+  `SeriesCellViewModel.cs:116` (`UnitLabel = unitCode`), `CompletionListViewModel.cs:154` (`" " + m.Unit`), e
+  gli aggregati riga Home / fascia Oggi. Il difetto è invisibile sui seed perché le unità ufficiali hanno
+  `Code == Symbol` (`l`, `g`, `km`) con il nome esteso a parte ("Litre"); per un'unità utente la Code è lo
+  **slug del nome**, quindi "Pagina" + simbolo "pg" si legge a schermo `2 pagina` — mai `2 pg`. Due strade,
+  decisione dell'autore: **(a)** togliere il campo (l'etichetta a schermo resta lo slug del nome, e allora
+  serve almeno poterlo correggere → W2V-11); **(b)** rendere il simbolo **l'etichetta di visualizzazione**
+  (`display = Symbol ?? Code`), che è ciò che il campo implicitamente promette — con un'anteprima viva accanto
+  al campo ("es. `2 pg`") che risponda da sola alla domanda "dove compare". Il TextBox libero **non** è il
+  problema (i simboli reali sono testo: `pg`, `tz`, `kcal`): non serve un picker di glifi.
+- **W2V-13 — Due unità con lo stesso nome nel picker, e a schermo si legge lo slug** (`verified`, screenshot +
+  codice). Osservato: dopo aver creato "Facciate" due volte il picker Quantità elenca **due voci identiche
+  "Facciate"** e l'abitudine lanciata mostra `0 facciate-2` nella fascia Oggi e `facciate-2` accanto al campo.
+  È W2V-11 + W2V-12 che si materializzano insieme, e mostra l'inversione esatta: il picker usa
+  `DisplayMemberPath="Name"` (`HabitBuilderView.xaml:302`) → i duplicati sono **indistinguibili nel punto in
+  cui scegli**; tutto il resto dell'app usa la `Code` → si legge lo **slug che l'utente non ha mai digitato**,
+  suffisso di deduplica incluso. Il suffisso arriva da `ReferenceCodeSlug.From` (dedup `-2`, `-3`… contro i
+  codici già presi), che è corretto come chiave di join dei payload ma non è mai stato pensato per essere
+  letto. Chiudere W2V-12 (display = simbolo, o comunque un'etichetta scelta) e W2V-11 (poter rinominare /
+  eliminare) chiude anche questo; separatamente, il picker dovrebbe distinguere due voci omonime.
+- **W2V-14 — I mattoni illegali per la composizione corrente non sono disabilitati: il click è un no-op muto**
+  (`verified`, autore + codice + spec). Con un campo **Testo libero** nella composizione, "+ Quantità" e
+  "+ Scala" restano di aspetto normale e cliccabili, ma non fanno **nulla**: `AddField` esce subito
+  (`HabitBuilderViewModel.cs:288`, `if (!CanAddField(nature)) return;`) perché
+  `HabitCompositionRules.CanAddField` nega Quantity/Scale quando c'è un Text. In XAML la palette ha un solo
+  `IsEnabled="{Binding FieldsAllowed}"` sull'intero `WrapPanel` (`HabitBuilderView.xaml:219`), che copre **solo**
+  il caso contatore-a-tap: non esiste alcun gating per-bottone. **Non è una richiesta nuova**: la spec del
+  builder §4.4 lo prescriveva già — *"Mattoni illegali per il tipo corrente: disabilitati in palette con
+  tooltip che spiega"* (`2026-06-02-modular-habit-builder-design.md:69`) — ed è rimasta non implementata. Il
+  VM espone già `CanAddField(FieldNature)`: serve la superficie (4 proprietà calcolate, o un converter), non
+  la regola.
+- **W2V-15 — Il builder compone un journal con una metrica durata che nessuna superficie sa registrare**
+  (`verified`, codice). La grammatica permette **Testo libero + Tempo** (`CanAddField`: Text ammesso solo se
+  tutti i campi esistenti sono Time; Time ammesso con Text se non ce n'è già uno) — è il **"rilassamento
+  journal+tempo"** deciso in brainstorming e documentato in `2026-06-02-modular-habit-builder-design.md:64`
+  ("Scrittura cronometrata"). Ma la registrazione di un journal è `JournalQuickAddViewModel`, che salva
+  **solo il testo della nota** via `IDiaryService` e non ha alcun campo metrica (né il composer nota veloce,
+  né l'editor Markdown ne hanno). Risultato: una composizione lecita produce un `MetricDefinition` di tipo
+  `Seconds` **invisibile per sempre** — esattamente le "metriche fantasma" che l'Onda 2.4 ha tolto dal seed
+  Food diary con la migration `FoodDiaryQuickNoteV217`, e che un test-guardia impedisce ai template ufficiali.
+  Il guard di parità (E16) non lo intercetta: confronta template↔builder, non builder↔superficie di
+  registrazione. Tre strade: (a) togliere il rilassamento dalla grammatica (il journal cronometrato si compone
+  come counter con un campo testo… che però la grammatica manda in Journal — quindi la strada implica
+  ripensare la regola #1); (b) dare al journal una superficie per la durata (cronometro nella colonna Diario);
+  (c) tenere la regola e accettare la metrica invisibile — **da escludere**, è il difetto appena migrato via.
+  → **decisione di modello**, famiglia CM-*.
+- **W2V-16 — "Ripetibile" non si chiama ripetibile e compare prima dei mattoni che lo abilitano**
+  (`verified`, autore + codice). L'autore ha chiesto *"dove dovrei spuntare ripetibile?"* con la spunta a
+  schermo: si chiama **"Si può registrare più volte al giorno"** (`Strings.Editor_Registration_Repeatable`) —
+  copy corretta in sé, ma la checklist, la spec e la conversazione dicono "ripetibile", e il termine non
+  compare da nessuna parte. Aggravante di posizione: il blocco è visibile solo quando `DerivedType == Counter`
+  (`HabitBuilderView.xaml:142`) e sta **sopra** la sezione "Mattoni", cioè appare all'improvviso più in alto
+  di dove stai lavorando nel momento in cui aggiungi il primo campo. Le serie nominate stanno annidate sotto,
+  visibili solo a spunta attiva: chi non trova la spunta non scopre mai i chip.
+- **W2V-17 — La spunta "Decimali" insegna il modello sbagliato, e l'input numerico non dice le sue regole**
+  (`verified`, autore + codice). Tre cose distinte osservate insieme. (a) La spunta **sparisce** quando scegli
+  un'unità e l'autore ne ha dedotto *"andrebbe spuntata prima"*: in realtà un'unità **implica** i decimali
+  (`FieldBlockViewModel.cs:39` — `Quantity` → `Decimal` se c'è unità **o** se la spunta è attiva), quindi
+  spuntarla prima è inutile. La UI comunica una perdita di controllo dove c'è un automatismo. (b)
+  **L'anteprima non riflette la scelta**: `SamplePreviewFactory` campiona sempre `SampleValue = 2m` formattato
+  `"0.##"`, quindi un campo decimale mostra `2` identico a un intero — l'unica manopola che cambia il tipo di
+  dato non ha riscontro nel piano che serve a mostrarti cosa otterrai. (c) **Separatore e valori non numerici**
+  (domande dell'autore, risposte verificate): le celle numeriche sono `TextBox` con binding nudo
+  (`HabitScreen.xaml:275/304/312`, nessun `ConverterCulture`, nessuna `ValidationRule`, nessun filtro di
+  input), quindi la conversione stringa→`decimal` usa la cultura del `FrameworkElement`, che WPF lascia a
+  **en-US**: si accetta il **punto**, la **virgola no** — mentre la Cronologia *stampa* con la virgola
+  (`Weight: 30,0`, `CurrentCulture`). Un valore alfabetico (o con la virgola) **non** dà errore: il binding
+  fallisce in silenzio, la sorgente resta al valore precedente e il salvataggio registra quello vecchio o
+  niente. È la **stessa radice di W2V-1** (nessun override di `FrameworkElement.LanguageProperty`), qui però
+  non è cosmetica: è un dato che non viene salvato senza dirlo.
+- **W2V-18 — Contatore e Astinenza sono checkbox in mezzo a una palette di mattoni-bottone** (`verified`,
+  autore + codice). Obiezione di grammatica visiva dell'autore: *"perché non sono mattoni anche loro?"*.
+  Nel modello **lo sono** — la spec li chiama mattoni-base (`2026-06-12-multivalue-habits-revision-design.md`
+  §3.1: "Astinenza — *nuovo* mattone-base esclusivo"), e `HabitCompositionRules` li tratta alla pari dei campi
+  nella risoluzione del tipo. È solo la resa a dissentire: quattro `Button` "+ …" per i campi, due `CheckBox`
+  per i due mattoni esclusivi (`HabitBuilderView.xaml:241-252`). Sono davvero diversi — sono esclusivi e
+  senza sotto-campi, non aggiungono una riga alla lista — ma la differenza è *modale*, non *categoriale*, e
+  presentarla come un'altra specie di controllo suggerisce che siano opzioni di contorno invece che due dei
+  cinque modi di far nascere un tipo. Nota: la spec del builder §5 immaginava una palette unica di
+  "`+ mattone ▾`". Rifinitura UX, non un difetto funzionale — ma tocca la leggibilità del pezzo centrale.
+- **W2V-19 — L'anteprima "In Home" è piatta: le strisce che codificano una grandezza non la mostrano**
+  (`verified`, autore + codice). Osservato: l'anteprima non sembra cambiare con il tipo. Gli stili **sono**
+  per-tipo (`HomeRowPresentation.ResolveStripStyle`: Counter→`Bars`, Resistance→`Band`, Journal→`Dots`,
+  State→`Ramp`, resto→`Squares`), ma il campione li rende indistinguibili: `SamplePreviewFactory` usa
+  `DayPattern = [1,0,1,1,0,1,1]` (**binario**) e poi calcola `fractions = c == 0 ? 0 : 0.4 + 0.2 * (c % 3)` —
+  con `c ∈ {0,1}` il risultato è **sempre 0.6**. Quindi in anteprima le barre del counter hanno tutte la
+  **stessa altezza** e la ramp dello state ha una **tinta unica**, cioè le due strisce che esistono apposta per
+  mostrare *quanto*, in anteprima mostrano solo *se*: a colpo d'occhio sono la stessa cosa dei quadretti
+  action. In Home vera la differenza si vede (le barre di Water intake sono di altezze diverse), quindi
+  l'anteprima è **meno fedele della cosa che anticipa**. Fix piccolo e circoscritto: un campione di valori
+  **non binario** (il pattern dei giorni resta, cambiano le magnitudini), verificando che `Fractions` copra
+  l'intervallo utile.
+- **W2V-20 — "Gesto primario" è gergo di progetto esposto all'utente** (`verified`, autore + codice).
+  L'etichetta della manopola journal è letteralmente `Gesto primario`
+  (`Strings.it.resx:1399`), con le opzioni "Scrivi la voce di oggi" / "Nota veloce con foto". Le **opzioni**
+  sono chiare; è l'**etichetta** a nominare il concetto interno invece di porre la domanda ("Aprendo il
+  diario, cosa vuoi fare?"). Compare identica nel builder e in Configura → Registrazione. Copy, non
+  comportamento — ma è la prima cosa che si legge di U7.
