@@ -64,7 +64,7 @@ public sealed class NumericInputRuleTests
     [WpfFact]
     public void Wpf_alone_flags_unreadable_text_but_not_a_misread_number()
     {
-        CultureBootstrap.Apply(Italian);
+        CultureBootstrap.Apply(Italian, Italian);
         var holder = new AmountHolder { Value = 7m };
         var box = new TextBox { DataContext = holder };
         box.SetBinding(TextBox.TextProperty, new Binding(nameof(AmountHolder.Value))
@@ -84,7 +84,7 @@ public sealed class NumericInputRuleTests
     [WpfFact]
     public void A_refused_value_never_reaches_the_source_and_the_field_says_so()
     {
-        CultureBootstrap.Apply(Italian);
+        CultureBootstrap.Apply(Italian, Italian);
         var holder = new AmountHolder { Value = 7m };
         var box = new TextBox { DataContext = holder };
         var binding = new Binding(nameof(AmountHolder.Value))
@@ -106,7 +106,7 @@ public sealed class NumericInputRuleTests
     public void The_shared_text_box_style_shows_the_refusal()
     {
         TestApp.EnsureLoaded();
-        CultureBootstrap.Apply(Italian);
+        CultureBootstrap.Apply(Italian, Italian);
         var holder = new AmountHolder { Value = 7m };
         var box = new TextBox { DataContext = holder };
         var binding = new Binding(nameof(AmountHolder.Value))

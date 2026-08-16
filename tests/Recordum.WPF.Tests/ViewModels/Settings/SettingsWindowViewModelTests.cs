@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
+using Recordum.WPF.Theming;
 using Recordum.WPF.ViewModels;
 using Recordum.WPF.ViewModels.Backup;
 using Recordum.WPF.ViewModels.DiagnosticInfo;
@@ -12,7 +13,7 @@ public class SettingsWindowViewModelTests
 {
     private static SettingsWindowViewModel CreateSut()
         => new(
-            new SettingsViewModel(new FakeThemeService(), new FakeAppFontService()),
+            new SettingsViewModel(new FakeThemeService(), new FakeAppFontService(), new CultureService(new FakeAppSettingService())),
             new GeneralSettingsViewModel(new FakeAppSettingService()),
             new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner()),
             new DiagnosticInfoViewModel(

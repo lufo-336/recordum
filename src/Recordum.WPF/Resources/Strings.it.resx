@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -213,6 +213,34 @@
   </data>
   <data name="Settings.Font.Serif" xml:space="preserve">
     <value>Serif (Palatino)</value>
+  </data>
+  <!-- F0-6: lingua dell'interfaccia e formato regionale, due manopole distinte. -->
+  <data name="Settings.Language" xml:space="preserve">
+    <value>Lingua</value>
+  </data>
+  <data name="Settings.Language.System" xml:space="preserve">
+    <value>Come il sistema</value>
+  </data>
+  <data name="Settings.Language.English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Settings.Language.Italian" xml:space="preserve">
+    <value>Italiano</value>
+  </data>
+  <data name="Settings.Format" xml:space="preserve">
+    <value>Formato regionale</value>
+  </data>
+  <data name="Settings.Format.System" xml:space="preserve">
+    <value>Come il sistema</value>
+  </data>
+  <data name="Settings.Format.English" xml:space="preserve">
+    <value>English — 8/17/2026 · 2.5</value>
+  </data>
+  <data name="Settings.Format.Italian" xml:space="preserve">
+    <value>Italiano — 17/08/2026 · 2,5</value>
+  </data>
+  <data name="Settings.Culture.RestartNotice" xml:space="preserve">
+    <value>Lingua e formato hanno effetto al prossimo avvio di Recordum.</value>
   </data>
   <data name="Settings.About" xml:space="preserve">
     <value>Informazioni su Recordum</value>

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
@@ -56,6 +56,7 @@ public static class ServiceRegistrar
         services.AddLogging();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IAppFontService, AppFontService>();
+        services.AddSingleton<ICultureService, CultureService>();
         services.AddSingleton<IWebView2Availability, WebView2Availability>();
 
         // Security: DPAPI by default. Passphrase opt-in via IKeyTransitionService.

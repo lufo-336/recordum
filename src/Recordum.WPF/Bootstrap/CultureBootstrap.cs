@@ -1,10 +1,11 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Markup;
+using Recordum.Core.Enums;
 
 namespace Recordum.WPF.Bootstrap;
 
-/// <summary>Makes one culture govern the whole UI (W2V-1 / W2V-17c).
+/// <summary>Decides which culture formats the UI and which one it speaks (W2V-1 / W2V-17c, F0-6).
 ///
 /// <para>WPF does not read <see cref="CultureInfo.CurrentCulture"/>: every binding formats and parses
 /// through <see cref="FrameworkElement.LanguageProperty"/>, whose metadata default is a hardcoded
@@ -12,14 +13,27 @@ namespace Recordum.WPF.Bootstrap;
 /// (CurrentUICulture), Italian numbers from C# formatting (CurrentCulture, "30,0"), and American dates
 /// and number *parsing* from every XAML binding ("8/14/2026"; "2,5" read as 25).</para>
 ///
-/// <para>Applying the culture once, before any window exists, is what the future culture setting
-/// (F0-6) will drive: the selector changes where the culture comes from (OS → AppSetting), not how it
-/// reaches the visual tree. The metadata default can be overridden only once per process, so changing
-/// culture at runtime needs a restart — <see cref="Apply"/> keeps the thread cultures in sync anyway
-/// so C#-side formatting follows immediately.</para></summary>
+/// <para>The two choices stay separate all the way down, the way Windows keeps display language and
+/// regional format apart: the language picks the .resx, the format picks dates, numbers and therefore
+/// which decimal separator <c>NumericInputRule</c> accepts. The metadata default can be overridden
+/// only once per process, which is why both choices take effect at the next start.</para></summary>
 public static class CultureBootstrap
 {
     private static bool s_visualTreeLanguageSet;
+
+    /// <summary>The culture a choice stands for. <see cref="AppCulture.System"/> defers to the default
+    /// the caller supplies — the OS display language for the UI, the OS regional format for numbers —
+    /// rather than to one global machine culture, so the two knobs keep Windows' own distinction.</summary>
+    public static CultureInfo Resolve(AppCulture choice, CultureInfo systemDefault)
+    {
+        ArgumentNullException.ThrowIfNull(systemDefault);
+        return choice switch
+        {
+            AppCulture.English => CultureInfo.GetCultureInfo("en-US"),
+            AppCulture.Italian => CultureInfo.GetCultureInfo("it-IT"),
+            _ => systemDefault,
+        };
+    }
 
     /// <summary>The <see cref="XmlLanguage"/> a culture maps to. Separate from <see cref="Apply"/> so
     /// the mapping is testable for cultures the process cannot actually switch to.</summary>
@@ -29,14 +43,17 @@ public static class CultureBootstrap
         return XmlLanguage.GetLanguage(culture.IetfLanguageTag);
     }
 
-    /// <summary>Makes <paramref name="culture"/> the one the UI formats, parses and sorts by. Call
-    /// before creating any window.</summary>
-    public static void Apply(CultureInfo culture)
+    /// <summary>Makes <paramref name="format"/> the culture the UI formats, parses and sorts by, and
+    /// <paramref name="language"/> the one it reads its strings in. Call before creating any window.</summary>
+    public static void Apply(CultureInfo format, CultureInfo language)
     {
-        ArgumentNullException.ThrowIfNull(culture);
+        ArgumentNullException.ThrowIfNull(format);
+        ArgumentNullException.ThrowIfNull(language);
 
-        CultureInfo.CurrentCulture = culture;
-        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.CurrentCulture = format;
+        CultureInfo.DefaultThreadCurrentCulture = format;
+        CultureInfo.CurrentUICulture = language;
+        CultureInfo.DefaultThreadCurrentUICulture = language;
 
         // OverrideMetadata throws if called twice for the same type, and a process that has already
         // built windows would not pick up a new default anyway: first call wins, by design.
@@ -44,6 +61,12 @@ public static class CultureBootstrap
         s_visualTreeLanguageSet = true;
         FrameworkElement.LanguageProperty.OverrideMetadata(
             typeof(FrameworkElement),
-            new FrameworkPropertyMetadata(LanguageFor(culture)));
+            new FrameworkPropertyMetadata(LanguageFor(format)));
     }
+
+    /// <summary>Both cultures at once, from the persisted choices. The system defaults come from the
+    /// process as Windows started it: <see cref="CultureInfo.CurrentCulture"/> is the regional format,
+    /// <see cref="CultureInfo.CurrentUICulture"/> the display language.</summary>
+    public static void Apply(AppCulture format, AppCulture language) =>
+        Apply(Resolve(format, CultureInfo.CurrentCulture), Resolve(language, CultureInfo.CurrentUICulture));
 }

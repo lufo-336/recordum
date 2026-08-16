@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -25,11 +25,6 @@ public partial class App : Application
 
         // Must be first: any later failure needs the global log to capture it.
         CrashLogger.WireUp();
-
-        // Before any window: WPF bindings format and parse through FrameworkElement.Language, whose
-        // metadata default is en-US regardless of the thread culture (W2V-1 / W2V-17c). The source of
-        // the culture becomes an AppSetting when F0-6 lands; today it is the machine's.
-        CultureBootstrap.Apply(CultureInfo.CurrentCulture);
 
         var collection = new ServiceCollection();
         collection.AddRecordumServices(RecordumOptions.Default());
@@ -58,6 +53,14 @@ public partial class App : Application
         var seedHabitIndex = Array.IndexOf(e.Args, "--seed-habit");
         if (seedHabitIndex >= 0 && seedHabitIndex + 1 < e.Args.Length)
             await _services.GetRequiredService<DemoDataSeeder>().SeedHabitAsync(e.Args[seedHabitIndex + 1]).ConfigureAwait(true);
+
+        // Before any window exists, and after the initializer because the choices live in AppSettings:
+        // WPF bindings format and parse through FrameworkElement.Language, whose metadata default is
+        // en-US regardless of the thread culture (W2V-1 / W2V-17c). Overridable once per process,
+        // which is why Settings says the change lands at the next start.
+        var culture = _services.GetRequiredService<ICultureService>();
+        await culture.InitializeAsync().ConfigureAwait(true);
+        CultureBootstrap.Apply(culture.Format, culture.Language);
 
         var theme = _services.GetRequiredService<IThemeService>();
         await theme.InitializeAsync().ConfigureAwait(true);
