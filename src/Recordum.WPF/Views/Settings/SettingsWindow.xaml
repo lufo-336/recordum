@@ -32,33 +32,6 @@
                              IsChecked="{Binding AppFont, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppFont.System}}"/>
                 <RadioButton GroupName="Font" Content="{x:Static res:Strings.Settings_Font_Serif}"
                              IsChecked="{Binding AppFont, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppFont.Serif}}"/>
-
-                <!-- F0-6: due manopole distinte, come le separa Windows. La lingua sceglie il .resx,
-                     il formato sceglie date e numeri — e quindi quale separatore decimale i campi
-                     numerici accettano (W2V-17c). Le voci del formato portano l'esempio accanto: si
-                     sceglie guardando il risultato, non il nome della cultura. -->
-                <TextBlock Text="{x:Static res:Strings.Settings_Language}" FontWeight="SemiBold"
-                           Foreground="{DynamicResource Brush.Text}" Margin="0,18,0,8"/>
-                <RadioButton GroupName="Language" Content="{x:Static res:Strings.Settings_Language_System}" Margin="0,0,0,4"
-                             IsChecked="{Binding UiLanguage, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.System}}"/>
-                <RadioButton GroupName="Language" Content="{x:Static res:Strings.Settings_Language_Italian}" Margin="0,0,0,4"
-                             IsChecked="{Binding UiLanguage, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.Italian}}"/>
-                <RadioButton GroupName="Language" Content="{x:Static res:Strings.Settings_Language_English}"
-                             IsChecked="{Binding UiLanguage, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.English}}"/>
-
-                <TextBlock Text="{x:Static res:Strings.Settings_Format}" FontWeight="SemiBold"
-                           Foreground="{DynamicResource Brush.Text}" Margin="0,18,0,8"/>
-                <RadioButton GroupName="Format" Content="{x:Static res:Strings.Settings_Format_System}" Margin="0,0,0,4"
-                             IsChecked="{Binding RegionalFormat, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.System}}"/>
-                <RadioButton GroupName="Format" Content="{x:Static res:Strings.Settings_Format_Italian}" Margin="0,0,0,4"
-                             IsChecked="{Binding RegionalFormat, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.Italian}}"/>
-                <RadioButton GroupName="Format" Content="{x:Static res:Strings.Settings_Format_English}"
-                             IsChecked="{Binding RegionalFormat, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.English}}"/>
-
-                <TextBlock Text="{x:Static res:Strings.Settings_Culture_RestartNotice}"
-                           Foreground="{DynamicResource Brush.TextMuted}"
-                           FontSize="{StaticResource FontSize.Small}"
-                           TextWrapping="Wrap" Margin="0,10,0,0"/>
             </StackPanel>
         </DataTemplate>
 
@@ -82,6 +55,37 @@
                 <TextBlock Text="{x:Static res:Strings.Settings_General_DailyResetTime_Hint}"
                            FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"
                            Foreground="{DynamicResource Brush.TextMuted}"/>
+
+                <!-- F0-6: la cultura sta in Generale, non in Aspetto — cambia come l'app si comporta
+                     (quali stringhe legge, come scrive le date, quale separatore decimale i campi
+                     accettano: W2V-17c), non come appare. Due manopole distinte, come le separa
+                     Windows. L'esempio sotto e' vivo: segue la scelta e dice di che cosa parla,
+                     invece di lasciare un "2,5" nudo in un'etichetta. -->
+                <TextBlock Text="{x:Static res:Strings.Settings_Language}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Text}" Margin="0,20,0,8"/>
+                <RadioButton GroupName="Language" Content="{x:Static res:Strings.Settings_Culture_System}" Margin="0,0,0,4"
+                             IsChecked="{Binding UiLanguage, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.System}}"/>
+                <RadioButton GroupName="Language" Content="{x:Static res:Strings.Settings_Culture_Italian}" Margin="0,0,0,4"
+                             IsChecked="{Binding UiLanguage, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.Italian}}"/>
+                <RadioButton GroupName="Language" Content="{x:Static res:Strings.Settings_Culture_English}"
+                             IsChecked="{Binding UiLanguage, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.English}}"/>
+
+                <TextBlock Text="{x:Static res:Strings.Settings_Format}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Text}" Margin="0,20,0,8"/>
+                <RadioButton GroupName="Format" Content="{x:Static res:Strings.Settings_Culture_System}" Margin="0,0,0,4"
+                             IsChecked="{Binding RegionalFormat, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.System}}"/>
+                <RadioButton GroupName="Format" Content="{x:Static res:Strings.Settings_Culture_Italian}" Margin="0,0,0,4"
+                             IsChecked="{Binding RegionalFormat, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.Italian}}"/>
+                <RadioButton GroupName="Format" Content="{x:Static res:Strings.Settings_Culture_English}"
+                             IsChecked="{Binding RegionalFormat, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static enums:AppCulture.English}}"/>
+
+                <TextBlock Text="{Binding FormatPreview}" Margin="0,10,0,0" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.Text}"/>
+                <TextBlock Text="{x:Static res:Strings.Settings_Culture_RestartNotice}"
+                           Foreground="{DynamicResource Brush.TextMuted}"
+                           FontSize="{StaticResource FontSize.Small}"
+                           TextWrapping="Wrap" Margin="0,6,0,0"/>
+
             </StackPanel>
         </DataTemplate>
 

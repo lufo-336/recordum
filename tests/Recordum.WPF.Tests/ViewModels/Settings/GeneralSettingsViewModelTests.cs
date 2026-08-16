@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
+using Recordum.WPF.Theming;
 using Recordum.WPF.ViewModels.Settings;
 using Xunit;
 
@@ -13,7 +14,7 @@ public class GeneralSettingsViewModelTests
     public async Task LoadAsync_reads_daily_reset_time()
     {
         await _settings.SetAsync("daily_reset_time", "05:30");
-        var sut = new GeneralSettingsViewModel(_settings);
+        var sut = new GeneralSettingsViewModel(_settings, new CultureService(new FakeAppSettingService()), new FakeClock());
 
         await sut.LoadAsync();
 
@@ -23,7 +24,7 @@ public class GeneralSettingsViewModelTests
     [Fact]
     public async Task Valid_time_is_persisted_on_change()
     {
-        var sut = new GeneralSettingsViewModel(_settings);
+        var sut = new GeneralSettingsViewModel(_settings, new CultureService(new FakeAppSettingService()), new FakeClock());
         await sut.LoadAsync();
 
         sut.DailyResetTime = "06:15";
@@ -35,7 +36,7 @@ public class GeneralSettingsViewModelTests
     public async Task Invalid_time_is_not_persisted()
     {
         await _settings.SetAsync("daily_reset_time", "00:00");
-        var sut = new GeneralSettingsViewModel(_settings);
+        var sut = new GeneralSettingsViewModel(_settings, new CultureService(new FakeAppSettingService()), new FakeClock());
         await sut.LoadAsync();
 
         sut.DailyResetTime = "25:99";

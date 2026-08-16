@@ -13,8 +13,8 @@ public class SettingsWindowViewModelTests
 {
     private static SettingsWindowViewModel CreateSut()
         => new(
-            new SettingsViewModel(new FakeThemeService(), new FakeAppFontService(), new CultureService(new FakeAppSettingService())),
-            new GeneralSettingsViewModel(new FakeAppSettingService()),
+            new SettingsViewModel(new FakeThemeService(), new FakeAppFontService()),
+            new GeneralSettingsViewModel(new FakeAppSettingService(), new CultureService(new FakeAppSettingService()), new FakeClock()),
             new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner()),
             new DiagnosticInfoViewModel(
                 new FakeAppSettingService(), new FakeThemeService(), new FakeWebView2Availability(available: false),

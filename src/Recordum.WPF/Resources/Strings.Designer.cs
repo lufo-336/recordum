@@ -184,13 +184,11 @@ public static class Strings
     public static string Settings_Font_System => Get("Settings.Font.System");
     public static string Settings_Font_Serif => Get("Settings.Font.Serif");
     public static string Settings_Language => Get("Settings.Language");
-    public static string Settings_Language_System => Get("Settings.Language.System");
-    public static string Settings_Language_English => Get("Settings.Language.English");
-    public static string Settings_Language_Italian => Get("Settings.Language.Italian");
     public static string Settings_Format => Get("Settings.Format");
-    public static string Settings_Format_System => Get("Settings.Format.System");
-    public static string Settings_Format_English => Get("Settings.Format.English");
-    public static string Settings_Format_Italian => Get("Settings.Format.Italian");
+    public static string Settings_Culture_System => Get("Settings.Culture.System");
+    public static string Settings_Culture_English => Get("Settings.Culture.English");
+    public static string Settings_Culture_Italian => Get("Settings.Culture.Italian");
+    public static string Settings_Format_Preview => Get("Settings.Format.Preview");
     public static string Settings_Culture_RestartNotice => Get("Settings.Culture.RestartNotice");
     public static string Settings_About => Get("Settings.About");
     public static string Settings_Quit => Get("Settings.Quit");

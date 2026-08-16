@@ -237,28 +237,22 @@ Details: {0}</value>
   </data>
   <!-- F0-6: lingua dell'interfaccia e formato regionale, due manopole distinte. -->
   <data name="Settings.Language" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="Settings.Language.System" xml:space="preserve">
-    <value>Same as the system</value>
-  </data>
-  <data name="Settings.Language.English" xml:space="preserve">
-    <value>English</value>
-  </data>
-  <data name="Settings.Language.Italian" xml:space="preserve">
-    <value>Italiano</value>
+    <value>Interface language</value>
   </data>
   <data name="Settings.Format" xml:space="preserve">
-    <value>Regional format</value>
+    <value>Date and number format</value>
   </data>
-  <data name="Settings.Format.System" xml:space="preserve">
+  <data name="Settings.Culture.System" xml:space="preserve">
     <value>Same as the system</value>
   </data>
-  <data name="Settings.Format.English" xml:space="preserve">
-    <value>English — 8/17/2026 · 2.5</value>
+  <data name="Settings.Culture.English" xml:space="preserve">
+    <value>English</value>
   </data>
-  <data name="Settings.Format.Italian" xml:space="preserve">
-    <value>Italiano — 17/08/2026 · 2,5</value>
+  <data name="Settings.Culture.Italian" xml:space="preserve">
+    <value>Italiano</value>
+  </data>
+  <data name="Settings.Format.Preview" xml:space="preserve">
+    <value>With this choice a date reads {0} and a decimal number reads {1}.</value>
   </data>
   <data name="Settings.Culture.RestartNotice" xml:space="preserve">
     <value>Language and format take effect the next time Recordum starts.</value>

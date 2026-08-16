@@ -15,12 +15,13 @@ namespace Recordum.WPF.Tests.Controls;
 
 /// <summary>F0-6 — the two culture knobs against the real compiled <c>SettingsWindow.xaml</c>. A
 /// ViewModel test cannot see this surface: the radio groups live inside a DataTemplate, so a typo in
-/// an <c>x:Static</c> or a missing resource would surface only when a user opens Settings.</summary>
-public sealed class SettingsAppearanceViewTests
+/// an <c>x:Static</c> or a missing resource would surface only when a user opens Settings. They sit
+/// under <b>General</b>, not Appearance: culture changes behaviour, not looks.</summary>
+public sealed class SettingsCultureViewTests
 {
     private static SettingsWindowViewModel NewVm() => new(
-        new SettingsViewModel(new FakeThemeService(), new FakeAppFontService(), new CultureService(new FakeAppSettingService())),
-        new GeneralSettingsViewModel(new FakeAppSettingService()),
+        new SettingsViewModel(new FakeThemeService(), new FakeAppFontService()),
+        new GeneralSettingsViewModel(new FakeAppSettingService(), new CultureService(new FakeAppSettingService()), new FakeClock()),
         new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner()),
         new DiagnosticInfoViewModel(
             new FakeAppSettingService(), new FakeThemeService(), new FakeWebView2Availability(available: false),
@@ -37,11 +38,11 @@ public sealed class SettingsAppearanceViewTests
     }
 
     [WpfFact]
-    public void Appearance_offers_a_language_and_a_regional_format_group()
+    public void General_offers_a_language_and_a_regional_format_group()
     {
         TestApp.EnsureLoaded();
         var vm = NewVm();
-        vm.SelectInitial(SettingsCategoryId.Appearance);
+        vm.SelectInitial(SettingsCategoryId.General);
         var window = new SettingsWindow(vm)
         {
             Width = 900,
