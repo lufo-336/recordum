@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions.Services;
@@ -95,7 +95,7 @@ public sealed class StreakAggregatorPerfTests
         var graceRec = new GraceDayStreakRecoveryPolicy();
         var manualRec = new ManualStreakRecoveryPolicy();
         var retroRec = new RetroactiveStreakRecoveryPolicy();
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
         return new SchedulingAwareStreakAggregator(
             nodes, configs, completions, pauses, scheduler,
             dailyEval, weeklyEval, occEval, bothEval,

@@ -26,6 +26,11 @@ public partial class App : Application
         // Must be first: any later failure needs the global log to capture it.
         CrashLogger.WireUp();
 
+        // Before any window: WPF bindings format and parse through FrameworkElement.Language, whose
+        // metadata default is en-US regardless of the thread culture (W2V-1 / W2V-17c). The source of
+        // the culture becomes an AppSetting when F0-6 lands; today it is the machine's.
+        CultureBootstrap.Apply(CultureInfo.CurrentCulture);
+
         var collection = new ServiceCollection();
         collection.AddRecordumServices(RecordumOptions.Default());
         _services = collection.BuildServiceProvider();

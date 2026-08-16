@@ -92,6 +92,11 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         events?.SubscribeOnUi(WellKnownEvents.CompletionUpdated, OnRowsInvalidated);
         events?.SubscribeOnUi(WellKnownEvents.CompletionDeleted, OnRowsInvalidated);
         events?.SubscribeOnUi(WellKnownEvents.HabitUpdated, OnRowsInvalidated);
+        // Abstinence (U9) records no completion, so none of the above ever fires for a resistance
+        // habit: the row kept a live clock running on a period that had already closed (W2V-6).
+        events?.SubscribeOnUi(WellKnownEvents.AbstinenceStarted, OnRowsInvalidated);
+        events?.SubscribeOnUi(WellKnownEvents.AbstinenceLapsed, OnRowsInvalidated);
+        events?.SubscribeOnUi(WellKnownEvents.AbstinencePeriodDeleted, OnRowsInvalidated);
     }
 
     private void OnRowsInvalidated(EventEnvelope env) => _ = ReloadPreservingSelectionAsync();

@@ -65,9 +65,18 @@
         <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}"/>
         <Setter Property="Padding" Value="2,4"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <!-- The default red adorner box belongs to another visual language; the underline carries the
+             error state instead (W2V-17c). -->
+        <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
         <Style.Triggers>
             <Trigger Property="IsKeyboardFocused" Value="True">
                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+            </Trigger>
+            <!-- After the focus trigger on purpose: a refused value stays visible while you fix it. -->
+            <Trigger Property="Validation.HasError" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+                <Setter Property="ToolTip"
+                        Value="{Binding (Validation.Errors)/ErrorContent, RelativeSource={RelativeSource Self}}"/>
             </Trigger>
         </Style.Triggers>
     </Style>

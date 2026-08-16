@@ -1,4 +1,4 @@
-namespace Recordum.Plugins.Contracts.Events;
+﻿namespace Recordum.Plugins.Contracts.Events;
 
 public static class WellKnownEvents
 {
@@ -13,6 +13,10 @@ public static class WellKnownEvents
     public static readonly EventName NoteCreated = new("note.created");
     public static readonly EventName NoteUpdated = new("note.updated");
     public static readonly EventName NoteDeleted = new("note.deleted");
+
+    public static readonly EventName AbstinenceStarted = new("abstinence.started");
+    public static readonly EventName AbstinenceLapsed = new("abstinence.lapsed");
+    public static readonly EventName AbstinencePeriodDeleted = new("abstinence.period.deleted");
 
     public static readonly EventName StreakMilestone = new("streak.milestone");
     public static readonly EventName GoalCompleted = new("goal.completed");

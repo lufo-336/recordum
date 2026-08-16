@@ -719,6 +719,10 @@ Details: {0}</value>
   <data name="QuickAdd.Error.NotesRequired" xml:space="preserve">
     <value>A note is required.</value>
   </data>
+  <!-- {0} is the current culture's decimal separator, {1} a worked example ("2.5" / "2,5"). -->
+  <data name="Input.Number.Invalid" xml:space="preserve">
+    <value>Digits and "{0}" as the decimal separator only — for example {1}.</value>
+  </data>
   <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
     <value>At least one value is required.</value>
   </data>

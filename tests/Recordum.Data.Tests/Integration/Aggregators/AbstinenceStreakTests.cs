@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -23,7 +23,7 @@ public sealed class AbstinenceStreakTests
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
         var pauses = new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
         var dailyEval = new DailyStreakModeEvaluator();
         var weeklyEval = new WeeklyStreakModeEvaluator();
         return new SchedulingAwareStreakAggregator(

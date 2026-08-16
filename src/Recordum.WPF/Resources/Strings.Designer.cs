@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System.Globalization;
 using System.Resources;
 
@@ -49,6 +49,7 @@ public static class Strings
     public static string HabitScreen_Timer_Stop => Get("HabitScreen.Timer.Stop");
     public static string HabitScreen_Timer_NextSegment => Get("HabitScreen.Timer.NextSegment");
     public static string QuickAdd_Error_NotesRequired => Get("QuickAdd.Error.NotesRequired");
+    public static string Input_Number_Invalid => Get("Input.Number.Invalid");
     public static string QuickAdd_Error_ValueRequired => Get("QuickAdd.Error.ValueRequired");
     public static string QuickAdd_Error_Unexpected => Get("QuickAdd.Error.Unexpected");
     public static string HabitScreen_Tab_Completion => Get("HabitScreen.Tab.Completion");

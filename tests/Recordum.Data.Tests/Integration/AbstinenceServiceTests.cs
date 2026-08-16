@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -25,7 +25,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         var state = await sut.GetStateAsync(habitId);
 
@@ -39,7 +39,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
         var expectedMs = fx.Clock.UtcNowMs;
 
         await sut.StartAsync(habitId);
@@ -54,7 +54,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
@@ -73,7 +73,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(5));
@@ -92,7 +92,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.LapseAsync(habitId); // no-op: nothing open
 
@@ -108,7 +108,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(3));
@@ -134,7 +134,7 @@ public class AbstinenceServiceTests
         // Arrange: start, lapse (1 closed), start again (1 open). Delete the closed one.
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
@@ -157,7 +157,7 @@ public class AbstinenceServiceTests
         // Arrange: closed period, then an open one. Delete the open -> state falls back to Relapsed.
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
@@ -179,7 +179,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
 
         await sut.StartAsync(habitId);
 

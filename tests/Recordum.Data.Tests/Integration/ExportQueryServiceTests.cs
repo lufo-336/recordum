@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -31,7 +31,7 @@ public sealed class ExportQueryServiceTests
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
         var refData = new ReferenceDataQueryService(fx.Factory);
         // Fresh temp dataRoot per Build() call: none of these tests except the attachment-specific
         // one below ever exercise disk I/O through AttachmentService, so the directory need not exist.
@@ -125,7 +125,7 @@ public sealed class ExportQueryServiceTests
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock);
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
         var refData = new ReferenceDataQueryService(fx.Factory);
         var query = new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp,
             new StubAggregator(), abstinence, attachmentService, refData);

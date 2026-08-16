@@ -698,6 +698,9 @@
   <data name="QuickAdd.Error.NotesRequired" xml:space="preserve">
     <value>È richiesta una nota.</value>
   </data>
+  <data name="Input.Number.Invalid" xml:space="preserve">
+    <value>Solo cifre e "{0}" come separatore decimale — per esempio {1}.</value>
+  </data>
   <data name="QuickAdd.Error.ValueRequired" xml:space="preserve">
     <value>È richiesto almeno un valore.</value>
   </data>

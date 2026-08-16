@@ -1,12 +1,16 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
-public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFactory, IClock clock) : IAbstinenceService
+public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFactory, IClock clock, IEventBus eventBus) : IAbstinenceService
 {
+    private readonly IEventBus _events = eventBus;
+
     public async Task<AbstinenceState> GetStateAsync(Guid habitNodeId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
@@ -40,6 +44,7 @@ public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFac
             StartedAtMs = clock.UtcNowMs,
         });
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        _events.Publish(new AbstinenceChangedPayload(habitNodeId, WellKnownEvents.AbstinenceStarted));
     }
 
     public async Task LapseAsync(Guid habitNodeId, CancellationToken ct = default)
@@ -53,6 +58,7 @@ public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFac
 
         open.EndedAtMs = clock.UtcNowMs;
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        _events.Publish(new AbstinenceChangedPayload(habitNodeId, WellKnownEvents.AbstinenceLapsed));
     }
 
     public async Task<IReadOnlyList<AbstinencePeriod>> ListPeriodsAsync(
@@ -78,7 +84,11 @@ public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFac
             .FirstOrDefaultAsync(p => p.Id == periodId, ct).ConfigureAwait(false);
         if (period is null) return; // guard: unknown id
 
+        // Read before the delete: the payload names the habit whose surfaces have to reload, and
+        // after SaveChanges the entity is detached.
+        var habitNodeId = period.HabitNodeId;
         db.AbstinencePeriods.Remove(period);
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        _events.Publish(new AbstinenceChangedPayload(habitNodeId, WellKnownEvents.AbstinencePeriodDeleted));
     }
 }

@@ -1228,6 +1228,12 @@ non dichiara 14 giorni di astinenza — i giorni scoperti sono la traccia debole
   `FrameworkElement.LanguageProperty` con `XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag)`
   in `App.OnStartup` — una riga, ma **va censito ogni `StringFormat` della UI** perché il difetto è di famiglia,
   non di quel binding. Priorità autore: **alta**.
+  → **`fixed` 2026-08-17** (mini-giro pre-pass, commit `culture`): `CultureBootstrap.Apply(CultureInfo.CurrentCulture)`
+  in `App.OnStartup`, prima di qualsiasi finestra. **Censire i singoli `StringFormat` non serve**: l'override
+  del metadato copre l'intero albero visuale in un colpo solo. I test asseriscono la **conseguenza** (una data
+  bindata rende `14/08/2026`), non il meccanismo. `LanguageFor` è separato da `Apply` perché
+  `OverrideMetadata` si può chiamare **una volta sola** per processo — quindi cambiare cultura richiederà un
+  riavvio, vincolo che F0-6 deve rispettare (già annotato lì).
 - **W2V-2 — Zero-state muto proprio sui tipi che ne hanno più bisogno** (`verified`, screenshot + codice).
   Sintomo: a DB appena seminato *Stop smoking* e *Mood tracker* non mostrano **nessuna** cifra chiave, mentre
   gli altri sei mostrano `×0` / `0 l` / `0 hours` / `—`. Causa: `HomeRowViewModel.cs:228-242` — `LiveClock`,
@@ -1273,6 +1279,14 @@ non dichiara 14 giorni di astinenza — i giorni scoperti sono la traccia debole
   `now − AbstinenceOpenSinceMs` su uno stato ormai chiuso, quindi non è un valore fermo ma **un valore vivo e
   sbagliato**. Fix: pubblicare eventi di astinenza (start / lapse / period-deleted) da `IAbstinenceService` e
   sottoscriverli dove i periodi si leggono (Home, Dettaglio, calendario, quick-add).
+  → **`fixed` 2026-08-17** (mini-giro pre-pass): tre nomi nuovi in `WellKnownEvents`
+  (`abstinence.started` / `.lapsed` / `.period.deleted`) e **un solo** `AbstinenceChangedPayload` per tutti e
+  tre — ogni ascoltatore reagisce allo stesso modo, il nome distingue per chi servisse. `AbstinenceService`
+  pubblica **dopo** `SaveChanges`, e i **tre guard** (secondo Start, Lapse senza periodo aperto, id ignoto)
+  restano muti: un test lo blocca, perché annunciare un cambiamento che non è avvenuto farebbe ricaricare
+  tutti per niente. `HomeViewModel` si iscrive ai tre. **Non toccato** `HabitScreenViewModel.OnAbstinenceChanged`:
+  la schermata ha già un refresh locale via evento C# della quick-add (U9.1) e funziona; ora però il bus
+  renderebbe possibile toglierlo — resta un'occasione di semplificazione, non un difetto (nota per l'Onda 3).
 - **W2V-7 — Il dialog di conferma è una MessageBox di Windows, fuori dalla famiglia visiva** (`verified`,
   screenshot + codice). "Eliminare questa registrazione d'astinenza?" arriva come finestra di sistema chiara,
   con l'icona "?" blu Win32 e i pulsanti Sì/No standard, dentro un'app dark interamente tematizzata. Causa:
@@ -1430,11 +1444,28 @@ builder. È il progetto: il payload la porta come definizione incorporata e la c
   (domande dell'autore, risposte verificate): le celle numeriche sono `TextBox` con binding nudo
   (`HabitScreen.xaml:275/304/312`, nessun `ConverterCulture`, nessuna `ValidationRule`, nessun filtro di
   input), quindi la conversione stringa→`decimal` usa la cultura del `FrameworkElement`, che WPF lascia a
-  **en-US**: si accetta il **punto**, la **virgola no** — mentre la Cronologia *stampa* con la virgola
-  (`Weight: 30,0`, `CurrentCulture`). Un valore alfabetico (o con la virgola) **non** dà errore: il binding
-  fallisce in silenzio, la sorgente resta al valore precedente e il salvataggio registra quello vecchio o
-  niente. È la **stessa radice di W2V-1** (nessun override di `FrameworkElement.LanguageProperty`), qui però
-  non è cosmetica: è un dato che non viene salvato senza dirlo.
+  **en-US**. È la **stessa radice di W2V-1**, qui però non è cosmetica.
+  → **CORREZIONE (2026-08-17), misurata scrivendo il test invece che dedotta dal codice.** La prima
+  descrizione — "la virgola è rifiutata in silenzio, i valori alfabetici pure" — era **sbagliata in
+  entrambe le metà**, e la verità è peggiore su quella che conta:
+  - **`abc` WPF lo segnala già**: la conversione fallisce, il binding va in `Validation.HasError`, la
+    sorgente conserva il valore precedente. Non era silenzioso (mancava solo una resa decente dell'errore,
+    perché il template di default è un riquadro rosso Aero fuori famiglia).
+  - **`2,5` non veniva rifiutato: diventava `25`.** Il convertitore del binding accetta il separatore delle
+    **migliaia**, quindi la virgola in en-US non è un errore, è un raggruppamento. Un valore **sbagliato di
+    dieci volte, scritto senza una parola** — e il fix di W2V-1 da solo avrebbe **ribaltato la trappola sul
+    punto** (`2.5` → 25 in italiano), cioè l'avrebbe spostata addosso all'abitudine di digitazione più
+    probabile. Caratterizzato in `NumericInputRuleTests.Wpf_alone_flags_unreadable_text_but_not_a_misread_number`.
+  → **`fixed` 2026-08-17** (la parte (c); (a) e (b) restano aperte): nuova `NumericInputRule`
+  (`ValidationStep.RawProposedValue`, cioè **prima** della conversione, l'unico punto in cui il testo grezzo
+  esiste ancora) che accetta solo un numero semplice nella cultura corrente — segno, cifre, al massimo un
+  separatore decimale, **nessun raggruppamento**; vuoto è valido, perché svuotare un campo non è un errore.
+  Applicata ai tre campi di registrazione **e** ai due target di obiettivo (builder + Configura): sono i
+  valori che si rileggono come dato. Restano senza regola i campi interi di configurazione (giorni,
+  conteggi, tolleranza, timer) — stesso difetto di classe, blast radius minore, **follow-up**. La resa: lo
+  stile condiviso `TextBox` annulla il riquadro rosso di default e porta l'errore sulla **sottolineatura**
+  (`Brush.Danger`) con la ragione nel ToolTip, dopo il trigger del focus così un valore rifiutato resta
+  visibile mentre lo correggi.
 - **W2V-18 — Contatore e Astinenza sono checkbox in mezzo a una palette di mattoni-bottone** (`verified`,
   autore + codice). Obiezione di grammatica visiva dell'autore: *"perché non sono mattoni anche loro?"*.
   Nel modello **lo sono** — la spec li chiama mattoni-base (`2026-06-12-multivalue-habits-revision-design.md`

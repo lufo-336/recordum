@@ -405,6 +405,31 @@ public class HomeViewModelTests
         _query.HomeCallCount.Should().BeGreaterThan(before);
     }
 
+    /// <summary>W2V-6 — abstinence produces no completion, so before this the Home row learned
+    /// nothing when a period opened or closed: after a relapse the row kept ticking a live clock on a
+    /// period that had already ended, and only an unrelated reload cleared it.</summary>
+    [Theory]
+    [MemberData(nameof(AbstinenceEvents))]
+    public async Task An_abstinence_change_reloads_the_list(EventName eventName)
+    {
+        var bus = new EventBus();
+        _query.HomeRows.Add(SampleRow(name: "abs", type: HabitType.Resistance));
+        var sut = new HomeViewModel(_query, _nodes, _purge, events: bus);
+        await sut.LoadCommand.ExecuteAsync(null);
+        var before = _query.HomeCallCount;
+
+        bus.Publish(new AbstinenceChangedPayload(Guid.NewGuid(), eventName));
+
+        _query.HomeCallCount.Should().BeGreaterThan(before);
+    }
+
+    public static TheoryData<EventName> AbstinenceEvents =>
+    [
+        WellKnownEvents.AbstinenceStarted,
+        WellKnownEvents.AbstinenceLapsed,
+        WellKnownEvents.AbstinencePeriodDeleted,
+    ];
+
     [Fact]
     public async Task QuickAction_that_records_does_not_open_the_detail()
     {

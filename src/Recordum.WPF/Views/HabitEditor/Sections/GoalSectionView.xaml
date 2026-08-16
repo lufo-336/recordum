@@ -1,14 +1,23 @@
-<UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.GoalSectionView"
+﻿<UserControl x:Class="Recordum.WPF.Views.HabitEditor.Sections.GoalSectionView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vms="clr-namespace:Recordum.WPF.ViewModels.HabitEditor.Sections"
              xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core"
-             xmlns:res="clr-namespace:Recordum.WPF.Resources">
+             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:beh="clr-namespace:Recordum.WPF.Behaviors">
     <StackPanel>
         <TextBlock Text="{x:Static res:Strings.Editor_Field_GoalName}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <TextBox Text="{Binding GoalName, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,8"/>
         <TextBlock Text="{x:Static res:Strings.Editor_Field_Target}" Foreground="{DynamicResource Brush.TextMuted}"/>
-        <TextBox Text="{Binding TargetValue, UpdateSourceTrigger=LostFocus}" Margin="0,2,0,8"/>
+        <TextBox Margin="0,2,0,8">
+            <TextBox.Text>
+                <Binding Path="TargetValue" UpdateSourceTrigger="LostFocus">
+                    <Binding.ValidationRules>
+                        <beh:NumericInputRule/>
+                    </Binding.ValidationRules>
+                </Binding>
+            </TextBox.Text>
+        </TextBox>
         <TextBlock Text="{x:Static res:Strings.Editor_Field_Period}" Foreground="{DynamicResource Brush.TextMuted}"/>
         <ComboBox ItemsSource="{Binding Source={StaticResource GoalPeriodTypeValues}}" SelectedItem="{Binding PeriodType}" Margin="0,2,0,8"/>
         <ToggleButton Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{Binding ShowAdvanced}"
