@@ -937,6 +937,20 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 - **Perché non è stato chiuso nello stesso giro**: il seed è `HasData`, quindi correggerlo richiede una migration data-only (stile `SleepRepeatableV215`), esplicitamente fuori dai vincoli di quel piano. Una chiave JSON di distanza dalla correttezza.
 - **Correlato**: `HabitBuilderViewModel.SaveAsTemplateAsync` non è protetto da `CanLaunch`, quindi si può salvare un template con un campo Tempo senza unità che non si potrebbe lanciare — il gate del builder è aggirabile col giro salva→istanzia. Simmetrico al buco preesistente sulle scale.
 
+### R9. `reset_time` è configurabile ovunque e non lo consuma nessuno
+- **Stato**: `verified` (2026-08-19, codice) — alta per il dogfooding, **non** un fix da infilare di striscio.
+- **Scope**: `IResetTimeResolver` è registrato in DI (`ServiceRegistrar.cs:112`) e **non ha un solo chiamante in tutto `src/`**. Il calendario e la heatmap bucketizzano le registrazioni con `DateOnly.FromDateTime(c.CompletedAt)` (`CompletionService.cs:204`, `GetDailyMagnitudeAsync`), cioè mezzanotte civile; gli evaluator di streak (`Services/Evaluators/*`) e le policy di recovery non nominano `ResetTime`. Quindi `reset_time` si configura in due punti d'interfaccia — Impostazioni → Generale (`GeneralSettingsViewModel`) e la sezione ResetTime dell'editor — e **non cambia il comportamento di niente**. Stessa forma di F0-14 (notifiche configurabili senza motore).
+- **Non è una regressione**: `docs/MILESTONES.md:152` lo dichiara esplicitamente rimandato — *"L'engine bucketizza per `CompletedAt` calendar date; il bucketing local-by-reset (consumo di `IResetTimeResolver`) arriva in milestone successiva quando 'today' sarà rivisitato"*. Quella milestone non è mai arrivata.
+- **Sintomo che si vedrà nel dogfooding**: con reset alle 04:00, una registrazione delle 02:30 conta per il giorno prima nelle *intenzioni* dell'utente ma viene dipinta sul giorno dopo in calendario e heatmap, e lo streak la assegna al giorno civile. Colpisce esattamente chi il reset lo imposta (chi si corica tardi).
+- **Perché non si chiude da solo**: tocca streak, heatmap, calendario ed export insieme, e ha un bivio di prodotto vero — o si consuma il risolutore ovunque, o si decide che `reset_time` riguarda **solo** lo streak e si toglie la promessa dall'interfaccia. Sede naturale: **Onda 2.9** ("verità sul core abitudini"), che già ha reset-time nella matrice di parità.
+- **Dipendenza**: la spec `docs/superpowers/specs/2026-08-19-calendar-lens-design.md` §7 assume R9 risolto.
+
+### R10. "Oggi" calcolato in UTC nei marker dell'astinenza
+- **Stato**: `verified` (2026-08-19, codice) — minore, ma è un off-by-one visibile.
+- **Scope**: `HabitScreenViewModel.BuildAbstinenceMarkersAsync` calcola `var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime)` (`HabitScreenViewModel.cs:915`), mentre `CalendarNavigatorViewModel` costruisce il proprio `_today` convertendo in ora locale (`TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone)`). In Italia (UTC+1/+2), fra mezzanotte e le 01:00/02:00 locali i due "oggi" sono **giorni diversi**: la classificazione clean/lapse/gap dei periodi e l'evidenziazione della griglia si disallineano di un giorno.
+- **Fix**: usare la stessa conversione locale del navigatore. Il test lo vuole con un `IClock` fissato a un istante notturno in un fuso positivo.
+- **Correlato**: R9 (stessa famiglia — "quale giorno è questa registrazione").
+
 ---
 
 ## Risolti
