@@ -46,7 +46,7 @@ public sealed class StreakAggregatorPerfTests
         });
 
         var completions = new CompletionService(
-            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         for (var i = 0; i < 365; i++)
         {
             var when = start.AddDays(i).ToDateTime(new TimeOnly(10, 0));
@@ -83,7 +83,7 @@ public sealed class StreakAggregatorPerfTests
         var nodes = new HabitNodeService(
             fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
         var completions = new CompletionService(
-            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var pauses = new StreakPauseService(
             fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
         var scheduler = new ScheduleEvaluator();

@@ -15,7 +15,8 @@ public sealed partial class CompletionService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
     ILogger<CompletionService> logger,
-    IEventBus eventBus) : ICompletionService
+    IEventBus eventBus,
+    IResetTimeResolver resetTimes) : ICompletionService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Completion {Id} recorded for habit {HabitId}")]
     private partial void LogRecorded(Guid id, Guid habitId);
@@ -124,15 +125,17 @@ public sealed partial class CompletionService(
         DateOnly toDate,
         CancellationToken ct = default)
     {
-        var fromMs = new DateTimeOffset(fromDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var toMs = new DateTimeOffset(toDate.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var day = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+        var (from, toExclusive) = day.RangeOf(fromDate, toDate);
+        var fromMs = from.ToUnixTimeMilliseconds();
+        var toMs = toExclusive.ToUnixTimeMilliseconds();
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.Completions.AsNoTracking()
-            .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs <= toMs)
-            .Select(c => new { c.CompletedAt, c.IsRetroactive })
+            .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs < toMs)
+            .Select(c => new { c.CompletedAtMs, c.IsRetroactive })
             .ToListAsync(ct);
         return rows
-            .GroupBy(r => DateOnly.FromDateTime(r.CompletedAt))
+            .GroupBy(r => day.DayOf(r.CompletedAtMs))
             .Select(g => new HeatmapCell(g.Key, g.Count(), g.Count(x => x.IsRetroactive)))
             .OrderBy(c => c.Date)
             .ToList();
@@ -141,17 +144,19 @@ public sealed partial class CompletionService(
     public async ValueTask<IReadOnlyList<DailyValue>> GetDailySumAsync(
         Guid habitNodeId, Guid metricDefinitionId, DateOnly fromDate, DateOnly toDate, CancellationToken ct = default)
     {
-        var fromMs = new DateTimeOffset(fromDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var toMs = new DateTimeOffset(toDate.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var day = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+        var (from, toExclusive) = day.RangeOf(fromDate, toDate);
+        var fromMs = from.ToUnixTimeMilliseconds();
+        var toMs = toExclusive.ToUnixTimeMilliseconds();
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.CompletionValues.AsNoTracking()
             .Where(v => v.MetricDefinitionId == metricDefinitionId
                 && v.Completion.HabitNodeId == habitNodeId
                 && v.Completion.CompletedAtMs >= fromMs
-                && v.Completion.CompletedAtMs <= toMs)
+                && v.Completion.CompletedAtMs < toMs)
             .Select(v => new
             {
-                v.Completion.CompletedAt,
+                v.Completion.CompletedAtMs,
                 Numeric = (decimal?)v.ValueDecimal
                     ?? (decimal?)v.ValueInteger
                     ?? (decimal?)v.ValueSeconds
@@ -159,7 +164,7 @@ public sealed partial class CompletionService(
             })
             .ToListAsync(ct);
         return rows
-            .GroupBy(r => DateOnly.FromDateTime(r.CompletedAt))
+            .GroupBy(r => day.DayOf(r.CompletedAtMs))
             .Select(g => new DailyValue(g.Key, g.Sum(x => x.Numeric)))
             .OrderBy(d => d.Date)
             .ToList();
@@ -168,10 +173,12 @@ public sealed partial class CompletionService(
     public async ValueTask<IReadOnlyList<DailyMagnitude>> GetDailyMagnitudeAsync(
         Guid habitNodeId, int year, int month, CancellationToken ct = default)
     {
+        var day = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
         var first = new DateOnly(year, month, 1);
-        var next = first.AddMonths(1);
-        var fromMs = new DateTimeOffset(first.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var toMs = new DateTimeOffset(next.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds(); // exclusive: [fromMs, toMs) covers the whole month
+        var last = first.AddMonths(1).AddDays(-1);
+        var (from, toExclusive) = day.RangeOf(first, last);
+        var fromMs = from.ToUnixTimeMilliseconds();
+        var toMs = toExclusive.ToUnixTimeMilliseconds();
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var node = await db.HabitNodes.AsNoTracking()
@@ -190,7 +197,6 @@ public sealed partial class CompletionService(
             .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs < toMs)
             .Select(c => new
             {
-                c.CompletedAt,
                 c.CompletedAtMs,
                 Values = c.Values.Select(v => new
                 {
@@ -202,7 +208,7 @@ public sealed partial class CompletionService(
             .ToListAsync(ct);
 
         var result = new List<DailyMagnitude>();
-        foreach (var g in comps.GroupBy(c => DateOnly.FromDateTime(c.CompletedAt)))
+        foreach (var g in comps.GroupBy(c => day.DayOf(c.CompletedAtMs)))
         {
             decimal mag = node.HabitType switch
             {

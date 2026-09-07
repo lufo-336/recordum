@@ -35,7 +35,12 @@ public class AttachmentEndToEndTests
     private static ExportQueryService BuildExportService(EncryptedDbFixture fixture, AttachmentService attachments)
     {
         var bus = new RecordingEventBus();
-        var completions = new CompletionService(fixture.DbFactory, fixture.Clock, NullLogger<CompletionService>.Instance, bus);
+        var resetTimes = new ResetTimeResolver(
+            fixture.DbFactory,
+            new AppSettingService(fixture.DbFactory, fixture.Clock, NullLogger<AppSettingService>.Instance),
+            fixture.Clock,
+            NullLogger<ResetTimeResolver>.Instance);
+        var completions = new CompletionService(fixture.DbFactory, fixture.Clock, NullLogger<CompletionService>.Instance, bus, resetTimes);
         var notes = new NoteService(fixture.DbFactory, fixture.Clock, NullLogger<NoteService>.Instance, bus);
         var metrics = new MetricDefinitionService(fixture.DbFactory, fixture.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fixture.DbFactory, fixture.Clock, NullLogger<GoalService>.Instance);

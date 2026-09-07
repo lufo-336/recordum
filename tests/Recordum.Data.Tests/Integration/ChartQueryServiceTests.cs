@@ -16,7 +16,7 @@ public sealed class ChartQueryServiceTests
         new(fx.Factory,
             fx.Clock,
             new TrendQueryService(fx.Factory, new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance)),
-            new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus()));
+            new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes));
 
     [Fact]
     public async Task BuildModel_action_habit_no_metric_uses_count_per_bucket()

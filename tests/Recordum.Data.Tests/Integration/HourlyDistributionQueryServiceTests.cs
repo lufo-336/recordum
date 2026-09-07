@@ -25,7 +25,7 @@ public sealed class HourlyDistributionQueryServiceTests
 
     private static async Task RecordAt(DbFixture fx, Guid habitId, DateTime utcWhen, bool isRetroactive = false)
     {
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         await svc.RecordAsync(new Completion
         {
             HabitNodeId = habitId,

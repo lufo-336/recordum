@@ -13,7 +13,7 @@ namespace Recordum.Data.Tests.Integration;
 public class ActiveTimerServiceTests
 {
     private static CompletionService NewCompletions(DbFixture fx)
-        => new(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        => new(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
     private static async Task<Guid> SeedHabit(DbFixture fx, HabitType type = HabitType.Counter)
     {

@@ -14,6 +14,98 @@ namespace Recordum.Data.Tests.Integration;
 
 public class CompletionServiceTests
 {
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
+    private static async Task<(DbFixture fx, CompletionService svc, Guid habitId)> SeedLocalAsync(
+        DateTimeOffset now, TimeOnly? reset = null)
+    {
+        var fx = new DbFixture(new FakeClock(now, Plus2));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode
+            {
+                Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action,
+                Name = "h", ResetTime = reset,
+            });
+            await db.SaveChangesAsync();
+        }
+        var svc = new CompletionService(
+            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance,
+            new RecordingEventBus(), fx.ResetTimes);
+        return (fx, svc, habitId);
+    }
+
+    [Fact]
+    public async Task Heatmap_buckets_a_completion_by_its_local_day()
+    {
+        // 2026-08-18T22:30Z = 19 agosto 00:30 in un fuso +2: è del 19, non del 18.
+        var (fx, svc, habitId) = await SeedLocalAsync(new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+        var at = new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero);
+        await svc.RecordAsync(new Completion
+        {
+            HabitNodeId = habitId, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        });
+
+        var cells = await svc.GetHeatmapAsync(habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 20));
+
+        cells.Should().ContainSingle().Which.Date.Should().Be(new DateOnly(2026, 8, 19));
+    }
+
+    [Fact]
+    public async Task Heatmap_window_includes_a_completion_at_the_very_edge_of_the_local_day()
+    {
+        // Il bucket giusto non basta: la finestra deve pescarlo. Con range = [17, 17] e reset 00:00,
+        // una registrazione delle 22:10Z del 16 (= 17 alle 00:10 locali) deve entrare.
+        var (fx, svc, habitId) = await SeedLocalAsync(new DateTimeOffset(2026, 8, 20, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+        var at = new DateTimeOffset(2026, 8, 16, 22, 10, 0, TimeSpan.Zero);
+        await svc.RecordAsync(new Completion
+        {
+            HabitNodeId = habitId, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        });
+
+        var cells = await svc.GetHeatmapAsync(habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 17));
+
+        cells.Should().ContainSingle().Which.Date.Should().Be(new DateOnly(2026, 8, 17));
+    }
+
+    [Fact]
+    public async Task A_reset_time_moves_the_completion_to_the_previous_day()
+    {
+        // Stesso istante, reset 04:00: le 02:30 locali del 19 appartengono al 18.
+        var (fx, svc, habitId) = await SeedLocalAsync(
+            new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero), new TimeOnly(4, 0));
+        await using var _ = fx;
+        var at = new DateTimeOffset(2026, 8, 19, 0, 30, 0, TimeSpan.Zero);
+        await svc.RecordAsync(new Completion
+        {
+            HabitNodeId = habitId, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        });
+
+        var cells = await svc.GetHeatmapAsync(habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 20));
+
+        cells.Should().ContainSingle().Which.Date.Should().Be(new DateOnly(2026, 8, 18));
+    }
+
+    [Fact]
+    public async Task Daily_magnitude_uses_the_same_day_as_the_heatmap()
+    {
+        var (fx, svc, habitId) = await SeedLocalAsync(new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+        var at = new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero);
+        await svc.RecordAsync(new Completion
+        {
+            HabitNodeId = habitId, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        });
+
+        var mags = await svc.GetDailyMagnitudeAsync(habitId, 2026, 8);
+
+        mags.Should().ContainSingle().Which.Date.Should().Be(new DateOnly(2026, 8, 19));
+    }
+
     private static async Task<(DbFixture fx, Guid habitId)> SeedActionAsync(HabitType type = HabitType.Action)
     {
         var fx = new DbFixture();
@@ -28,7 +120,7 @@ public class CompletionServiceTests
     public async Task Record_action_no_values_succeeds()
     {
         var (fx, habitId) = await SeedActionAsync();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var id = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 });
         Assert.NotEqual(Guid.Empty, id);
         await fx.DisposeAsync();
@@ -39,7 +131,7 @@ public class CompletionServiceTests
     {
         // Spec multivalue §4.1: a bare counter tap (+1, no values) is a valid occurrence.
         var (fx, habitId) = await SeedActionAsync(HabitType.Counter);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var id = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 });
         Assert.NotEqual(Guid.Empty, id);
         await fx.DisposeAsync();
@@ -57,7 +149,7 @@ public class CompletionServiceTests
             await db.SaveChangesAsync();
             metricId = metric.Id;
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var id = await svc.RecordAsync(
             new Completion { HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 },
             new[] { new CompletionValue { Id = Guid.NewGuid(), MetricDefinitionId = metricId, SeriesIndex = 0, ValueInteger = 10 } });
@@ -72,7 +164,7 @@ public class CompletionServiceTests
     public async Task Update_retroactive_flag_persists()
     {
         var (fx, habitId) = await SeedActionAsync();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var id = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 });
         await svc.UpdateAsync(id, c => c.IsRetroactive = true);
         await using var db = await fx.Factory.CreateDbContextAsync();
@@ -85,7 +177,7 @@ public class CompletionServiceTests
     {
         var (fx, habitId) = await SeedActionAsync();
         var bus = new RecordingEventBus();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
 
         var newId = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = fx.Clock.UtcNow.UtcDateTime, CompletedAtMs = fx.Clock.UtcNow.ToUnixTimeMilliseconds() });
 
@@ -100,7 +192,7 @@ public class CompletionServiceTests
     {
         var (fx, habitId) = await SeedActionAsync();
         var bus = new RecordingEventBus();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var id = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = fx.Clock.UtcNow.UtcDateTime, CompletedAtMs = 1 });
         bus.Published.Clear();
 
@@ -117,7 +209,7 @@ public class CompletionServiceTests
     {
         var (fx, _) = await SeedActionAsync();
         var bus = new RecordingEventBus();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
 
         await svc.UpdateAsync(Guid.NewGuid(), c => c.IsRetroactive = true);
 
@@ -130,7 +222,7 @@ public class CompletionServiceTests
     {
         var (fx, habitId) = await SeedActionAsync();
         var bus = new RecordingEventBus();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var id = await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = fx.Clock.UtcNow.UtcDateTime, CompletedAtMs = 1 });
         bus.Published.Clear();
 
@@ -147,7 +239,7 @@ public class CompletionServiceTests
     {
         var (fx, _) = await SeedActionAsync();
         var bus = new RecordingEventBus();
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
 
         await svc.DeleteAsync(Guid.NewGuid());
 
@@ -174,7 +266,7 @@ public class CompletionServiceTests
             }
             await db.SaveChangesAsync();
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
         var result = await svc.ListByHabitAsync(
             habitId,
@@ -205,7 +297,7 @@ public class CompletionServiceTests
             }
             await db.SaveChangesAsync();
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
         var result = await svc.ListByHabitAsync(habitId, take: 2);
 
@@ -226,7 +318,7 @@ public class CompletionServiceTests
                 new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = new DateTime(2026, 5, 11, 9, 0, 0, DateTimeKind.Utc), CompletedAtMs = new DateTimeOffset(2026, 5, 11, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds() });
             await db.SaveChangesAsync();
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
         var cells = await svc.GetHeatmapAsync(habitId, new DateOnly(2026, 5, 10), new DateOnly(2026, 5, 12));
 
@@ -256,7 +348,7 @@ public class CompletionServiceTests
             await db.SaveChangesAsync();
             metricId = metric.Id;
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day1 = new DateOnly(2026, 1, 5);
         var day2 = new DateOnly(2026, 1, 6);
         await svc.RecordAsync(
@@ -303,7 +395,7 @@ public class CompletionServiceTests
                 });
             await db.SaveChangesAsync();
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
         var cells = await svc.GetHeatmapAsync(habitId, day, day);
 
@@ -327,7 +419,7 @@ public class CompletionServiceTests
             primaryMetricId = primary.Id;
             secondaryMetricId = secondary.Id;
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 1, 5);
         await svc.RecordAsync(
             new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) },
@@ -358,7 +450,7 @@ public class CompletionServiceTests
             await db.SaveChangesAsync();
             metricId = metric.Id;
         }
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 2, 1);
         await svc.RecordAsync(
             new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) },
@@ -398,7 +490,7 @@ public class CompletionServiceTests
     public async Task Magnitude_resistance_counts_distinct_series_within_one_completion()
     {
         var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Resistance);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 6, 2);
         // One completion with 3 series (SeriesIndex 0, 1, 2)
         await svc.RecordAsync(
@@ -420,7 +512,7 @@ public class CompletionServiceTests
     public async Task Magnitude_counter_counts_occurrences_not_metric_values()
     {
         var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Counter);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 6, 3);
         // Two single-series completions same day (values 60 and 40) → 2 occurrences, not 100.
         await svc.RecordAsync(
@@ -440,7 +532,7 @@ public class CompletionServiceTests
     public async Task Counter_magnitude_counts_bare_occurrence_and_multi_series()
     {
         var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.Counter);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 6, 7);
         // 1 bare completion (floor 1) + 1 completion with 3 distinct series → 1 + 3 = 4.
         await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 9), CompletedAtMs = MsAt(day, 9) });
@@ -463,7 +555,7 @@ public class CompletionServiceTests
     public async Task Magnitude_action_counts_completions()
     {
         var (fx, habitId, _) = await SeedHabitWithMetricAsync(HabitType.Action);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 6, 4);
         // Two completions same day
         await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) });
@@ -479,7 +571,7 @@ public class CompletionServiceTests
     public async Task Magnitude_state_takes_latest_value()
     {
         var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.State);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 6, 5);
         // Two completions same day: value 2 (hour 8) and value 4 (hour 21, larger CompletedAtMs)
         await svc.RecordAsync(
@@ -502,7 +594,7 @@ public class CompletionServiceTests
         // The day has a real registration and must still appear in the magnitude list — the old
         // `if (mag > 0)` filter dropped it, making the calendar cell vanish ("no registration").
         var (fx, habitId, metricId) = await SeedHabitWithMetricAsync(HabitType.State);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var day = new DateOnly(2026, 6, 6);
         await svc.RecordAsync(
             new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(day, 8), CompletedAtMs = MsAt(day, 8) },
@@ -518,7 +610,7 @@ public class CompletionServiceTests
     public async Task Magnitude_excludes_other_months_and_empty_days()
     {
         var (fx, habitId, _) = await SeedHabitWithMetricAsync(HabitType.Action);
-        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        var svc = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var dayJuly = new DateOnly(2026, 7, 1);
         // Completion in July, query for June → empty
         await svc.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = UtcAt(dayJuly, 9), CompletedAtMs = MsAt(dayJuly, 9) });

@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Data;
 using Recordum.Data.Interceptors;
+using Recordum.Data.Services;
 
 namespace Recordum.Data.Tests.Fixtures;
 
@@ -13,12 +15,22 @@ public sealed class DbFixture : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly CommandCounterInterceptor _counter = new();
+    private IResetTimeResolver? _resetTimes;
 
     public IClock Clock { get; }
 
     public FakePluginContext PluginContext { get; }
 
     public IDbContextFactory<RecordumDbContext> Factory { get; }
+
+    /// <summary>Il resolver reale sul DB della fixture: i servizi che risolvono il confine di giornata
+    /// lo prendono da qui. Con FakeClock a fuso UTC e nessun reset configurato, il confine è l'identità
+    /// (mezzanotte UTC) — ed è perché i test scritti prima di R9 restano veri.</summary>
+    public IResetTimeResolver ResetTimes => _resetTimes ??= new ResetTimeResolver(
+        Factory,
+        new AppSettingService(Factory, Clock, NullLogger<AppSettingService>.Instance),
+        Clock,
+        NullLogger<ResetTimeResolver>.Instance);
 
     public DbFixture(
         FakeClock? clock = null,

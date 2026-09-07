@@ -52,7 +52,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         var nodes = new HabitNodeService(
             fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
         var completions = new CompletionService(
-            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var pauses = new StreakPauseService(
             fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
         var scheduler = new ScheduleEvaluator();
@@ -74,7 +74,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
     private static async Task SeedCompletionsAsync(DbFixture fx, Guid habitId, DateOnly start, string pattern)
     {
         var svc = new CompletionService(
-            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         for (var i = 0; i < pattern.Length; i++)
         {
             if (pattern[i] != 'X') continue;
@@ -250,7 +250,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         {
             // 4 completions; day 3 is retroactive backfill — counts even though it's "added later"
             var completions = new CompletionService(
-                fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+                fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
             DateTime At(int i) => new DateOnly(2026, 4, 1).AddDays(i).ToDateTime(new TimeOnly(10, 0));
             long Ms(DateTime t) => new DateTimeOffset(t, TimeSpan.Zero).ToUnixTimeMilliseconds();
             await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(0), CompletedAtMs = Ms(At(0)), IsRetroactive = false });
@@ -273,7 +273,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         try
         {
             var completions = new CompletionService(
-                fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+                fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
             DateTime At(int i) => new DateOnly(2026, 4, 1).AddDays(i).ToDateTime(new TimeOnly(10, 0));
             long Ms(DateTime t) => new DateTimeOffset(t, TimeSpan.Zero).ToUnixTimeMilliseconds();
             await completions.RecordAsync(new Completion { HabitNodeId = habitId, CompletedAt = At(0), CompletedAtMs = Ms(At(0)), IsRetroactive = false });

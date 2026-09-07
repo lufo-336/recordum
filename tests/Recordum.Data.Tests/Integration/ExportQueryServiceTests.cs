@@ -25,7 +25,7 @@ public sealed class ExportQueryServiceTests
     private static ExportQueryService Build(DbFixture fx)
     {
         var bus = new RecordingEventBus();
-        var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
@@ -119,7 +119,7 @@ public sealed class ExportQueryServiceTests
         var attachment = await attachmentService.AddAsync(noteId, sourceFile, default);
 
         var bus = new RecordingEventBus();
-        var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus);
+        var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);

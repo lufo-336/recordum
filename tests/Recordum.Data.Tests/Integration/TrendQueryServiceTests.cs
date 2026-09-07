@@ -44,7 +44,7 @@ public sealed class TrendQueryServiceTests
         DateTime.SpecifyKind(d.ToDateTime(new TimeOnly(hour, 0)), DateTimeKind.Utc);
 
     private static CompletionService NewCompletionService(DbFixture fx) =>
-        new(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus());
+        new(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
     private static MetricDefinitionService NewMetricService(DbFixture fx) =>
         new(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
