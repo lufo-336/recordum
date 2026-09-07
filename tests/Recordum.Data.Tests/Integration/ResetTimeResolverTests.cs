@@ -13,7 +13,7 @@ public class ResetTimeResolverTests
     private static ResetTimeResolver CreateResolver(DbFixture fx)
     {
         var settings = new AppSettingService(fx.Factory, fx.Clock, NullLogger<AppSettingService>.Instance);
-        return new ResetTimeResolver(fx.Factory, settings, NullLogger<ResetTimeResolver>.Instance);
+        return new ResetTimeResolver(fx.Factory, settings, fx.Clock, NullLogger<ResetTimeResolver>.Instance);
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class ResetTimeResolverTests
         }
         var settings = new AppSettingService(fx.Factory, fx.Clock, NullLogger<AppSettingService>.Instance);
         await settings.SetAsync("daily_reset_time", "04:00");
-        var resolver = new ResetTimeResolver(fx.Factory, settings, NullLogger<ResetTimeResolver>.Instance);
+        var resolver = new ResetTimeResolver(fx.Factory, settings, fx.Clock, NullLogger<ResetTimeResolver>.Instance);
 
         var result = await resolver.GetEffectiveResetTimeAsync(habitId);
 
