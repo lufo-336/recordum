@@ -1,5 +1,6 @@
 using System.Globalization;
 using FluentAssertions;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Time;
 using Xunit;
 
@@ -9,6 +10,15 @@ public class DayBoundaryTests
 {
     private static DayBoundary Rome(int resetHour = 0)
         => new(TestTimeZones.RomeLike, new TimeOnly(resetHour, 0));
+
+    /// <summary>Orologio finto per <see cref="DayBoundary.Today"/>: nessuna dipendenza dal
+    /// tempo reale della macchina che esegue il test.</summary>
+    private sealed class FixedClock(DateTimeOffset now, TimeZoneInfo timeZone) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = now;
+        public long UtcNowMs { get; } = now.ToUnixTimeMilliseconds();
+        public TimeZoneInfo LocalTimeZone { get; } = timeZone;
+    }
 
     // --- DayOf: il caso che ha aperto R9 ---
 
@@ -39,6 +49,52 @@ public class DayBoundaryTests
         var utcMinus5 = new DayBoundary(TestTimeZones.Fixed(-5), TimeOnly.MinValue);
         utcMinus5.DayOf(new DateTimeOffset(2026, 8, 19, 1, 0, 0, TimeSpan.Zero))
             .Should().Be(new DateOnly(2026, 8, 18));
+    }
+
+    // --- Gli altri overload di DayOf, e Today ---
+
+    [Fact]
+    public void DayOf_unixMs_honours_local_day_the_same_way_as_DayOf_DateTimeOffset()
+    {
+        // Stesso istante di Half_past_midnight_local_belongs_to_the_local_day_not_the_UTC_one,
+        // passato come millisecondo Unix (la forma di completed_at_ms/started_at_ms/ended_at_ms).
+        var unixMs = new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        Rome().DayOf(unixMs).Should().Be(new DateOnly(2026, 8, 19));
+    }
+
+    [Theory]
+    // I due orari sotto catturano assieme qualunque fuso macchina non-UTC, in entrambe le
+    // direzioni: EF materializza CreatedAt/StreakBrokenAt con Kind=Unspecified, e senza lo
+    // SpecifyKind(Utc) interno a DayOf(DateTime) quel valore verrebbe reinterpretato nel fuso
+    // *locale della macchina* (TimeZoneInfo.Local), non in UTC — un giorno diverso in silenzio,
+    // e diverso a seconda di dove gira il processo. Il primo caso (inizio giornata) è sbagliato
+    // sotto qualunque fuso macchina A EST di UTC (offset positivo, es. l'Italia: coperto da
+    // questa VM); il secondo (fine giornata) sotto qualunque fuso A OVEST (offset negativo,
+    // es. le Americhe). Solo una macchina configurata esattamente su UTC (offset zero) non
+    // discrimina nessuno dei due — vedi il report per la verifica fatta su questa VM.
+    [InlineData("2026-08-19T00:00:00")]
+    [InlineData("2026-08-19T23:00:00")]
+    public void DayOf_DateTime_treats_Unspecified_kind_as_UTC_not_as_the_machines_local_zone(string utcTimestampIso)
+    {
+        var utcTimestamp = DateTime.Parse(utcTimestampIso, CultureInfo.InvariantCulture, DateTimeStyles.None);
+        DayBoundary.Utc.DayOf(utcTimestamp).Should().Be(new DateOnly(2026, 8, 19));
+    }
+
+    [Fact]
+    public void Today_returns_DayOf_of_the_clocks_UtcNow()
+    {
+        // Stesso istante di Half_past_midnight_local_belongs_to_the_local_day_not_the_UTC_one,
+        // ma passato attraverso IClock invece che direttamente.
+        var clock = new FixedClock(
+            new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero), TestTimeZones.RomeLike);
+        Rome().Today(clock).Should().Be(new DateOnly(2026, 8, 19));
+    }
+
+    [Fact]
+    public void Today_guards_against_a_null_clock()
+    {
+        var act = () => Rome().Today(null!);
+        act.Should().Throw<ArgumentNullException>();
     }
 
     // --- RangeOf: la finestra e il giorno devono essere la stessa cosa ---
