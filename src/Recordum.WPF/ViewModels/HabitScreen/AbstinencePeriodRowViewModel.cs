@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -34,6 +35,7 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDi
         IAbstinenceService abstinence,
         IConfirmationDialog confirm,
         IClock clock,
+        DayBoundary day,
         Action<AbstinencePeriodRowViewModel>? onDeleted = null)
     {
         ArgumentNullException.ThrowIfNull(period);
@@ -46,7 +48,7 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDi
         _onDeleted = onDeleted;
         Clock = new LiveElapsedClock(clock);
 
-        var start = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(period.StartedAtMs).UtcDateTime);
+        var start = day.DayOf(period.StartedAtMs);
         if (IsCurrent)
         {
             Clock.Start(period.StartedAtMs);
@@ -60,7 +62,7 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDi
         {
             var startInstant = DateTimeOffset.FromUnixTimeMilliseconds(period.StartedAtMs);
             var endInstant = DateTimeOffset.FromUnixTimeMilliseconds(period.EndedAtMs!.Value);
-            var end = DateOnly.FromDateTime(endInstant.UtcDateTime);
+            var end = day.DayOf(endInstant);
             // The frozen elapsed interval (start→relapse), same stopwatch format as the live clock —
             // a same-day attempt reads "3:20:00", a multi-day one "2g 6:14:09" (not a calendar-day count).
             DurationDisplay = DurationFormat.FormatStopwatch(endInstant - startInstant);

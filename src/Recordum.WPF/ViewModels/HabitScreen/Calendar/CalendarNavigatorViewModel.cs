@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Calendar;
 
@@ -26,12 +27,19 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 {
     /// <summary>Snapped once at construction (per-screen lifetime); a calendar left open past midnight
     /// keeps the construction-time "today" until the screen is reloaded. Intentional for day-granularity.</summary>
-    private readonly DateOnly _today;
+    private DateOnly _today;
+    private readonly IClock _clock;
     private bool _isLoading;
 
     public CalendarNavigatorViewModel(IClock clock)
     {
         ArgumentNullException.ThrowIfNull(clock);
+        _clock = clock;
+        // SelectableYears resta costruito QUI dall'anno locale del clock, non dentro LoadAsync: il
+        // confine puo' cambiare l'anno solo a cavallo del 31 dicembre, la lista copre 15 anni indietro
+        // e uno avanti, e ricostruire una ObservableCollection bindata a ogni caricamento e' come in
+        // questo repo si perdono i dati (4d01f9c, 1d96967). "_today" invece lo rifa' LoadAsync col
+        // confine ricevuto.
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone);
         _today = DateOnly.FromDateTime(localNow);
         WeekdayHeaders = BuildWeekdayHeaders();
@@ -81,8 +89,10 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
 
     public event EventHandler<DateOnly>? SelectedDateChanged;
 
-    public async Task LoadAsync(int year, int month, DateOnly? selected, CancellationToken ct = default)
+    public async Task LoadAsync(int year, int month, DateOnly? selected, DayBoundary day, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(day);
+        _today = day.Today(_clock);
         DisplayYear = year;
         DisplayMonth = month;
         SelectedDate = selected;

@@ -7,6 +7,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -28,7 +29,7 @@ public sealed partial class GoalProgressCardViewModel(
     [ObservableProperty] private bool _isEmpty;
     [ObservableProperty] private string _emptyMessage = string.Empty;
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         var goal = await goals.GetActiveAsync(node.Id, ct).ConfigureAwait(true);
@@ -49,8 +50,8 @@ public sealed partial class GoalProgressCardViewModel(
         IsEmpty = false;
         Name = goal.Name;
         Target = goal.TargetValue;
-        var (from, to) = ResolveRange(goal, node, clock);
-        DaysLeft = ResolveDaysLeft(goal, clock);
+        var (from, to) = ResolveRange(goal, node, day, clock);
+        DaysLeft = ResolveDaysLeft(goal, day, clock);
         PeriodLabel = ResolveLabel(goal);
 
         var fromUtc = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -89,21 +90,21 @@ public sealed partial class GoalProgressCardViewModel(
         return units.FirstOrDefault(u => u.Id == uid)?.Code;
     }
 
-    private static (DateOnly from, DateOnly to) ResolveRange(Goal goal, HabitNode node, IClock clock)
+    private static (DateOnly from, DateOnly to) ResolveRange(Goal goal, HabitNode node, DayBoundary day, IClock clock)
     {
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = day.Today(clock);
         return goal.PeriodType switch
         {
             GoalPeriodType.Fixed => (goal.PeriodStart ?? today, (goal.PeriodEnd ?? today) < today ? goal.PeriodEnd!.Value : today),
             GoalPeriodType.Rolling => (today.AddDays(-((goal.RollingDays ?? 1) - 1)), today),
-            _ => (DateOnly.FromDateTime(node.CreatedAt), today),
+            _ => (day.DayOf(node.CreatedAt), today),
         };
     }
 
-    private static int? ResolveDaysLeft(Goal goal, IClock clock)
+    private static int? ResolveDaysLeft(Goal goal, DayBoundary day, IClock clock)
     {
         if (goal.PeriodType != GoalPeriodType.Fixed || goal.PeriodEnd is null) return null;
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = day.Today(clock);
         var d = goal.PeriodEnd.Value.DayNumber - today.DayNumber;
         return d > 0 ? d : null;
     }

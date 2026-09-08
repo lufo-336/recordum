@@ -6,13 +6,15 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Core.Time;
 namespace Recordum.Data.Services;
 
 public sealed partial class NoteService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
     ILogger<NoteService> logger,
-    IEventBus eventBus) : INoteService
+    IEventBus eventBus,
+    IResetTimeResolver resetTimes) : INoteService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Note {Id} created for habit {HabitId}")]
     private partial void LogCreated(Guid id, Guid habitId);
@@ -80,11 +82,12 @@ public sealed partial class NoteService(
         var notes = await db.Notes.AsNoTracking()
             .Where(n => n.HabitNodeId == habitNodeId)
             .ToListAsync(ct);
+        var day = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
         // Stable anchor: assigned calendar day, else creation day. The tiebreak is creation
         // order (NOT UpdatedAtMs) so editing a note never moves it within its day. Client-side
         // to avoid translating the DateOnly null-coalesce into SQLite (note sets per habit are small).
         return notes
-            .OrderByDescending(n => n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt))
+            .OrderByDescending(n => NoteAnchor.For(n, day))
             .ThenByDescending(n => n.CreatedAt)
             .ToList();
     }

@@ -6,6 +6,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Services;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -64,27 +65,32 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         _subs.Add(bus.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
     }
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    /// <summary>Il confine ricevuto dallo screen: i sei pannelli del Dettaglio lo prendono da qui,
+    /// e i reload interni (eventi bus, cambio range) lo riusano invece di ricalcolarlo.</summary>
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         Node = node;
+        _day = day;
         IsGroup = node.NodeType == NodeType.Group;
         IsHabit = node.NodeType == NodeType.Habit;
         ShowCompletionCharts = IsHabit && node.HabitType != HabitType.Resistance;
         if (IsGroup)
         {
-            await Goal.LoadAsync(node, ct).ConfigureAwait(true);
+            await Goal.LoadAsync(node, day, ct).ConfigureAwait(true);
             return;
         }
         var config = await _configs.GetAsync(node.Id, ct).ConfigureAwait(true);
         var activeGoal = await _goals.GetActiveAsync(node.Id, ct).ConfigureAwait(true);
         await Task.WhenAll(
-            Goal.LoadAsync(node, ct),
-            YearHeatmap.LoadAsync(node, config, activeGoal, ct),
-            StreakSummary.LoadAsync(node, ct),
-            StreakTimeline.LoadAsync(node, ct),
-            Trend.LoadAsync(node, ct),
-            Hourly.LoadAsync(node, ct)
+            Goal.LoadAsync(node, day, ct),
+            YearHeatmap.LoadAsync(node, config, activeGoal, day, ct),
+            StreakSummary.LoadAsync(node, day, ct),
+            StreakTimeline.LoadAsync(node, day, ct),
+            Trend.LoadAsync(node, day, ct),
+            Hourly.LoadAsync(node, day, ct)
         ).ConfigureAwait(true);
     }
 
@@ -104,7 +110,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
             _ => Guid.Empty,
         };
         if (habitId != Node.Id) return;
-        await LoadAsync(Node).ConfigureAwait(true);
+        await LoadAsync(Node, _day).ConfigureAwait(true);
     }
 
     private async void OnNoteEvent(EventEnvelope envelope)
@@ -118,7 +124,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
             _ => Guid.Empty,
         };
         if (habitId != Node.Id) return;
-        await Task.WhenAll(Trend.LoadAsync(Node), Goal.LoadAsync(Node)).ConfigureAwait(true);
+        await Task.WhenAll(Trend.LoadAsync(Node, _day), Goal.LoadAsync(Node, _day)).ConfigureAwait(true);
     }
 
     public void Dispose()

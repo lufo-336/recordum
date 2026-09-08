@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 
@@ -71,7 +72,9 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
 
     /// <summary>Populates the VM from the service. Call after <see cref="QuickAddViewModelBase.Node"/>
     /// is set.</summary>
-    public async Task LoadAsync(CancellationToken ct = default)
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(DayBoundary day, CancellationToken ct = default)
         => await ReloadAsync(ct).ConfigureAwait(true);
 
     private async Task ReloadAsync(CancellationToken ct = default)
@@ -80,7 +83,7 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
         Status      = state.Status;
         _startedMs  = state.CurrentStartedAtMs;
         RelapsedOn  = state.LastEndedAtMs is { } e
-            ? DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(e).UtcDateTime)
+            ? _day.DayOf(e)
             : null;
 
         // CanStart / CanLapse / RelapsedOnDisplay are computed; notify bindings.

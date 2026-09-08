@@ -5,6 +5,7 @@ using Recordum.Plugins.Contracts.Events;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;
 
@@ -34,7 +35,7 @@ public sealed class DetailViewModelTests
         var sut = BuildSut(out _);
         var group = new HabitNode { Id = Guid.NewGuid(), Name = "g", NodeType = NodeType.Group };
 
-        await sut.LoadAsync(group);
+        await sut.LoadAsync(group, DayBoundary.Utc);
 
         Assert.True(sut.IsGroup);
         Assert.False(sut.IsHabit);
@@ -53,7 +54,7 @@ public sealed class DetailViewModelTests
             CreatedAt = DateTime.UtcNow.AddYears(-1),
         };
 
-        await sut.LoadAsync(habit);
+        await sut.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.True(sut.IsHabit);
         Assert.False(sut.IsGroup);
@@ -73,7 +74,7 @@ public sealed class DetailViewModelTests
             HabitType = HabitType.Action,
             CreatedAt = DateTime.UtcNow.AddYears(-1),
         };
-        await sut.LoadAsync(habit);
+        await sut.LoadAsync(habit, DayBoundary.Utc);
 
         bus.Publish(new CompletionRecordedPayload(Guid.NewGuid(), habit.Id, DateTime.UtcNow));
         await Task.Yield();

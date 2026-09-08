@@ -3,6 +3,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
@@ -17,7 +18,7 @@ public class HabitScreenCalendarWiringTests
 
         await vm.LoadAsync(id);
         // Load a month fully in the past so all in-month days are selectable.
-        await vm.Calendar.LoadAsync(2020, 1, selected: null);
+        await vm.Calendar.LoadAsync(2020, 1, selected: null, DayBoundary.Utc);
 
         var cell = vm.Calendar.Cells.First(c => c.InCurrentMonth && !c.IsFuture);
         vm.Calendar.SelectDateCommand.Execute(cell);

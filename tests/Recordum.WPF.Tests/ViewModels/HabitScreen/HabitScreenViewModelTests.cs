@@ -12,6 +12,7 @@ using Recordum.WPF.ViewModels.HabitScreen.Journal;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
@@ -422,7 +423,7 @@ public class HabitScreenViewModelTests
         }
 
         await sut.LoadAsync(id);
-        await sut.Calendar.LoadAsync(2020, 1, selected: null);
+        await sut.Calendar.LoadAsync(2020, 1, selected: null, DayBoundary.Utc);
         var tap = sut.QuickAdd.Should().BeOfType<CounterTapQuickAddViewModel>().Subject;
 
         var busy = sut.Calendar.Cells.First(c => c.InCurrentMonth && c.Date == new DateOnly(2020, 1, 2));

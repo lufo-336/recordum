@@ -3,6 +3,7 @@ using Recordum.Plugins.Contracts.ExtensionPoints;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.Export;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.Export;
 
@@ -12,7 +13,7 @@ public sealed class ExportDialogViewModelTests
     {
         var registry = new ExtensionPointRegistry();
         registry.Register(new ExtensionRegistration(formatter.PluginId, formatter.PointId, formatter));
-        return new ExportDialogViewModel(query ?? new FakeExportQueryService(), jobs, registry, save, new FakeExportTemplateService(), new FakeClock());
+        return new ExportDialogViewModel(query ?? new FakeExportQueryService(), jobs, registry, save, new FakeExportTemplateService(), new FakeClock(), new FakeResetTimeResolver());
     }
 
     [Fact]

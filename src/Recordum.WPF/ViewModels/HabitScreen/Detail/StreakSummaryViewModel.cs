@@ -6,6 +6,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -43,11 +44,11 @@ public sealed partial class StreakSummaryViewModel : ObservableObject, IDisposab
     /// <summary>Caption for the third stat: "Lapses (90d)" for Resistance, "Runs (90d)" otherwise.</summary>
     [ObservableProperty] private string _runsCaption = Strings.Detail_Streak_Runs90;
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
-        var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
-        var allTime = await _aggregator.GetHistoryAsync(node.Id, DateOnly.FromDateTime(node.CreatedAt), today, ct).ConfigureAwait(true);
+        var today = day.Today(_clock);
+        var allTime = await _aggregator.GetHistoryAsync(node.Id, day.DayOf(node.CreatedAt), today, ct).ConfigureAwait(true);
 
         var longest = allTime.OrderByDescending(r => r.Length).FirstOrDefault();
         LongestLength = longest?.Length ?? 0;
@@ -77,7 +78,7 @@ public sealed partial class StreakSummaryViewModel : ObservableObject, IDisposab
 
             var periods90 = await _abstinence.ListPeriodsAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
             RunsLast90Days = periods90.Count(p => p.EndedAtMs is { } e
-                && DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(e).UtcDateTime) >= today.AddDays(-89));
+                && day.DayOf(e) >= today.AddDays(-89));
         }
         else
         {

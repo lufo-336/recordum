@@ -3,6 +3,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;
 
@@ -48,7 +49,7 @@ public sealed class GoalProgressCardViewModelTests
             new FakeReferenceData(),
             new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero)));
 
-        await vm.LoadAsync(Habit());
+        await vm.LoadAsync(Habit(), DayBoundary.Utc);
 
         Assert.True(vm.IsEmpty);
         Assert.False(string.IsNullOrEmpty(vm.EmptyMessage));
@@ -75,7 +76,7 @@ public sealed class GoalProgressCardViewModelTests
         }
 
         var vm = new GoalProgressCardViewModel(goals, completions, new FakeMetricDefinitionService(), new FakeReferenceData(), clock);
-        await vm.LoadAsync(habit);
+        await vm.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.False(vm.IsEmpty);
         Assert.Equal(10m, vm.Target);
@@ -100,7 +101,7 @@ public sealed class GoalProgressCardViewModelTests
         });
 
         var vm = new GoalProgressCardViewModel(goals, new FakeCompletionService(), new FakeMetricDefinitionService(), new FakeReferenceData(), clock);
-        await vm.LoadAsync(habit);
+        await vm.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.Equal(9, vm.DaysLeft);
     }
@@ -157,7 +158,7 @@ public sealed class GoalProgressCardViewModelTests
         var (goals, completions, metrics) = SeedDurationGoal(habit, clock.UtcNow, target: 4m, minutes, 90, 30);
 
         var vm = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
-        await vm.LoadAsync(habit);
+        await vm.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.Equal(2m, vm.Actual);
         Assert.Equal(0.5, vm.PercentComplete, 3);
@@ -173,7 +174,7 @@ public sealed class GoalProgressCardViewModelTests
         var (goals, completions, metrics) = SeedDurationGoal(habit, clock.UtcNow, target: 300m, unitId: null, 90, 30);
 
         var vm = new GoalProgressCardViewModel(goals, completions, metrics, new FakeReferenceData(), clock);
-        await vm.LoadAsync(habit);
+        await vm.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.Equal(120m, vm.Actual);
     }
@@ -215,7 +216,7 @@ public sealed class GoalProgressCardViewModelTests
         };
 
         var vm = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
-        await vm.LoadAsync(habit);
+        await vm.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.Equal(120m, vm.Actual);
     }
@@ -231,7 +232,7 @@ public sealed class GoalProgressCardViewModelTests
         SeedCompletion(completions, habit.Id, clock.UtcNow);
 
         var vm = new GoalProgressCardViewModel(goals, completions, new FakeMetricDefinitionService(), new FakeReferenceData(), clock);
-        await vm.LoadAsync(habit);
+        await vm.LoadAsync(habit, DayBoundary.Utc);
 
         Assert.True(vm.IsDone);
     }

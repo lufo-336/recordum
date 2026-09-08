@@ -25,7 +25,7 @@ public class NoteServiceTests
     private static NoteService NewService(DbFixture fx, out RecordingEventBus bus)
     {
         bus = new RecordingEventBus();
-        return new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
+        return new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
     }
 
     [Fact]

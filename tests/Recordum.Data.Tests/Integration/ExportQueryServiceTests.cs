@@ -28,7 +28,7 @@ public sealed class ExportQueryServiceTests
     {
         var bus = new RecordingEventBus();
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
-        var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
+        var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
@@ -303,7 +303,7 @@ public sealed class ExportQueryServiceTests
 
         var bus = new RecordingEventBus();
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
-        var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus);
+        var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);

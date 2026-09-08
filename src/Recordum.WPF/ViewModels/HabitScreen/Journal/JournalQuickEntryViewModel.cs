@@ -9,6 +9,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Journal;
 
@@ -68,13 +69,18 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         _day = Today();
     }
 
-    private DateOnly Today() => DateOnly.FromDateTime(
-        TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone));
+    private DateOnly Today() => _dayBoundary.Today(_clock);
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    private DayBoundary _dayBoundary = DayBoundary.Utc;
+
+    public async Task LoadAsync(HabitNode node, DayBoundary dayBoundary, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         _habitNodeId = node.Id;
+        // Il confine arriva dallo screen: va impostato PRIMA di ri-derivare il giorno corrente,
+        // altrimenti il composer si apre sul giorno che diceva il vecchio confine.
+        _dayBoundary = dayBoundary;
+        _day = Today();
         Draft = string.Empty;
         ErrorMessage = null;
         PendingPhotos.Clear();
@@ -121,7 +127,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
 
         var ofDay = all
             .Where(n => n.Category == NoteCategory.Diario
-                        && (n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt)) == day)
+                        && NoteAnchor.For(n, _dayBoundary) == day)
             .OrderByDescending(n => n.CreatedAt)
             .ToList();
 

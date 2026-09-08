@@ -471,6 +471,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// diverse e una in UTC. Internal perche lo leggono i test e i pannelli caricati fuori da LoadAsync.</summary>
     internal DayBoundary CurrentDayBoundary => _dayBoundary;
 
+    /// <summary>Il giorno che la colorazione dell'astinenza ha usato nell'ultima costruzione dei
+    /// marker. Serve ai test di R10: senza poterlo leggere, "la griglia e la colorazione concordano"
+    /// non e' una cosa che si possa provare.</summary>
+    internal DateOnly? LastAbstinenceMarkersToday { get; private set; }
+
     private DayBoundary _dayBoundary = DayBoundary.Utc;
 
     /// <summary>The strip is present for any habit subject (even with every column closed), hidden for
@@ -652,7 +657,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (generation != _loadGeneration) return;
 
         if (node.NodeType == NodeType.Group)
-            await Panoramica.LoadAsync(node, ct).ConfigureAwait(true);
+            await Panoramica.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
 
         // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
         CompletionList.IsJournal = node.HabitType == HabitType.Journal;
@@ -660,6 +665,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Un solo posto in tutta la schermata decide a che giorno appartengono le cose (spec R9 §3.3):
         // i pannelli lo ricevono, non lo ricalcolano.
         _dayBoundary = await _resetTimes.GetDayBoundaryAsync(node.Id, ct).ConfigureAwait(true);
+        Records.DayBoundary = _dayBoundary;
+        _periodList.DayBoundary = _dayBoundary;
         if (generation != _loadGeneration) return;
 
         // Config is needed for QuickAdd, TimerControl and the records lists; fetch once, share. Awaited
@@ -670,8 +677,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         var listTask = CompletionList.LoadAsync(node.Id, ct);
         var quickAddTask = BuildQuickAddAsync(node, ct);
-        var notesTask = Notes.LoadAsync(node.Id, ct);
-        var detailTask = Detail.LoadAsync(node, ct);
+        var notesTask = Notes.LoadAsync(node.Id, _dayBoundary, ct);
+        var detailTask = Detail.LoadAsync(node, _dayBoundary, ct);
         var todayTask = TodayStrip.LoadAsync(node, _dayBoundary, ct);
         // Configura already open (restored or carried over from the previous subject): load its editor too.
         var editorTask = IsConfiguraOpen ? Editor.LoadAsync(node.Id, ct) : Task.CompletedTask;
@@ -681,7 +688,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Calendar.CompletedColorHex = node.Color;
         Calendar.NoteColorHex = config?.NoteMarkerColor ?? "#e0b341";
         var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone);
-        await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), ct).ConfigureAwait(true);
+        await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), _dayBoundary, ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
 
         // Mirror the calendar's pre-selected day into QuickAdd so both controls agree before the first click.
@@ -715,7 +722,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             {
                 var composer = new JournalQuickEntryViewModel(
                     _diary, _noteService, _attachments, _openFileDialog, _confirmationDialog, _clock);
-                await composer.LoadAsync(node, ct).ConfigureAwait(true);
+                await composer.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
                 JournalQuickEntry = composer;
                 QuickAdd = null;          // niente editor Markdown per questa abitudine
                 NotifyQuickAddRouting();
@@ -736,7 +743,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         vm.Node = node;
         switch (vm)
         {
-            case AbstinenceQuickAddViewModel ab: await ab.LoadAsync(ct).ConfigureAwait(true); break;
+            case AbstinenceQuickAddViewModel ab: await ab.LoadAsync(_dayBoundary, ct).ConfigureAwait(true); break;
             case MeasuredQuickAddViewModel mq: await mq.LoadMetricsAsync(ct).ConfigureAwait(true); break;
             case CounterSeriesQuickAddViewModel cs: await cs.LoadMetricsAsync(ct).ConfigureAwait(true); break;
             case CounterTapQuickAddViewModel tap: await tap.LoadDayAsync(ct).ConfigureAwait(true); break;
@@ -800,12 +807,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (Node is null) return;
             var reloads = new List<Task>
             {
-                Detail.LoadAsync(Node, CancellationToken.None),
+                Detail.LoadAsync(Node, _dayBoundary, CancellationToken.None),
                 Calendar.JumpAsync(),
                 Records.ReloadAsync(),
                 TodayStrip.LoadAsync(Node, _dayBoundary),
             };
-            if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync());
+            if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync(_dayBoundary));
             await Task.WhenAll(reloads).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceChanged failed: {ex}"); }
@@ -922,7 +929,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         HabitNode node, DateOnly from, DateOnly to, CancellationToken ct)
     {
         var periods = await _abstinence.ListPeriodsAsync(node.Id, from, to, ct).ConfigureAwait(true);
-        var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
+        // R10: era QUI che la colorazione del calendario diceva un giorno e la griglia un altro —
+        // i marker in UTC, il navigatore in locale. Ora la sorgente e' una sola.
+        var today = _dayBoundary.Today(_clock);
+        LastAbstinenceMarkersToday = today;
 
         // Notes still belong on Resistance days (diary/quick notes) even though the coloring is now
         // period-based, so gather note counts for the visible range and merge them into the markers.
@@ -956,9 +966,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Convert raw timestamps to date-range tuples.
         var dayPeriods = periods
             .Select(p => (
-                StartDay: DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime),
+                StartDay: _dayBoundary.DayOf(p.StartedAtMs),
                 EndDay: p.EndedAtMs.HasValue
-                    ? DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.EndedAtMs.Value).UtcDateTime)
+                    ? _dayBoundary.DayOf(p.EndedAtMs.Value)
                     : today,
                 IsClosed: p.EndedAtMs.HasValue))
             .ToList();

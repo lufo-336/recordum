@@ -6,6 +6,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
@@ -40,7 +41,7 @@ public class PanoramicaViewModelTests
         _tree.HomeRows.Add(Row(other, "estraneo", null));
         var sut = CreateSut();
 
-        await sut.LoadAsync(Group(g));
+        await sut.LoadAsync(Group(g), DayBoundary.Utc);
 
         sut.Children.Select(c => c.Name).Should().Equal("diretto", "Sub", "annidato");
         var subRow = sut.Children.Single(c => c.Name == "Sub");
@@ -61,7 +62,7 @@ public class PanoramicaViewModelTests
         _tree.HomeRows.Add(Row(g, "G", null, type: null));
         _tree.HomeRows.Add(Row(sub, "Sub", g, type: null));
         var sut = CreateSut();
-        await sut.LoadAsync(Group(g));
+        await sut.LoadAsync(Group(g), DayBoundary.Utc);
         Guid? selected = null;
         sut.ChildSelected += (_, id) => selected = id;
 
@@ -77,7 +78,7 @@ public class PanoramicaViewModelTests
         _tree.HomeRows.Add(Row(g, "G", null, type: null));
         var sut = CreateSut();
 
-        await sut.LoadAsync(Group(g));
+        await sut.LoadAsync(Group(g), DayBoundary.Utc);
 
         sut.HasChildren.Should().BeFalse();
         sut.TotalChildren.Should().Be(0);
@@ -91,7 +92,7 @@ public class PanoramicaViewModelTests
         _tree.HomeRows.Add(Row(g, "G", null, type: null));
         _tree.HomeRows.Add(Row(h, "figlio", g));
         var sut = CreateSut();
-        await sut.LoadAsync(Group(g));
+        await sut.LoadAsync(Group(g), DayBoundary.Utc);
         Guid? selected = null;
         sut.ChildSelected += (_, id) => selected = id;
 

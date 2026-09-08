@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -33,7 +34,9 @@ public sealed partial class TrendChartViewModel(ITrendQueryService trend, IClock
 
     public event EventHandler<TrendRange>? RangeChanged;
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         Node = node;
@@ -54,7 +57,7 @@ public sealed partial class TrendChartViewModel(ITrendQueryService trend, IClock
     private async Task ReloadAsync(CancellationToken ct)
     {
         if (Node is null) return;
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = _day.Today(clock);
         var (from, gran) = SelectedRange switch
         {
             TrendRange.Days30 => (today.AddDays(-29), TrendGranularity.Daily),

@@ -2,10 +2,11 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
 
-public sealed partial class NoteRowViewModel(Note note) : ObservableObject
+public sealed partial class NoteRowViewModel(Note note, DayBoundary day) : ObservableObject
 {
     public Note Note { get; } = note;
     public Guid Id => Note.Id;
@@ -31,7 +32,7 @@ public sealed partial class NoteRowViewModel(Note note) : ObservableObject
 
     /// <summary>Stable anchor: assigned calendar day, else creation day. Never changes on edit.</summary>
     public string AnchorDateDisplay =>
-        (Note.TargetDate ?? DateOnly.FromDateTime(Note.CreatedAt))
+        NoteAnchor.For(Note, day)
             .ToString("d MMM yyyy", CultureInfo.CurrentCulture);
 
     public bool IsDiario => Note.Category == NoteCategory.Diario;

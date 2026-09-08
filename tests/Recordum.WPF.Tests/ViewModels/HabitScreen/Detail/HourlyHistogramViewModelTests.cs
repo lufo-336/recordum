@@ -2,6 +2,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;
 
@@ -16,7 +17,7 @@ public sealed class HourlyHistogramViewModelTests
         fake.Buckets[14] = 5;
 
         var vm = new HourlyHistogramViewModel(fake, new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero)));
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid() });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid() }, DayBoundary.Utc);
 
         Assert.Equal(24, vm.Buckets.Length);
         Assert.Equal(5, vm.MaxCount);
@@ -27,7 +28,7 @@ public sealed class HourlyHistogramViewModelTests
     {
         var fake = new FakeHourlyDistributionQueryService();
         var vm = new HourlyHistogramViewModel(fake, new FakeClock(new DateTimeOffset(2026, 5, 22, 0, 0, 0, TimeSpan.Zero)));
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid() });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid() }, DayBoundary.Utc);
 
         await vm.SetRangeAsync(TrendRange.Year1);
 

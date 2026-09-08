@@ -5,6 +5,7 @@ using Recordum.Core.Services;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;
 
@@ -19,7 +20,7 @@ public sealed class YearHeatmapViewModelTests
         var vm = new YearHeatmapViewModel(completions, metrics, new IntensityRampResolver(), new FakeAbstinenceService(), clock);
 
         var habit = new HabitNode { Id = Guid.NewGuid(), Name = "h", HabitType = HabitType.Action, NodeType = NodeType.Habit };
-        await vm.LoadAsync(habit, config: null, activeGoal: null);
+        await vm.LoadAsync(habit, config: null, activeGoal: null, DayBoundary.Utc);
 
         Assert.Equal(371, vm.Cells.Count);
         Assert.Contains(vm.Cells, c => c.Date == DateOnly.FromDateTime(clock.UtcNow.UtcDateTime));
@@ -35,7 +36,7 @@ public sealed class YearHeatmapViewModelTests
         completions.HeatmapByHabit[habit.Id] = new List<HeatmapCell> { new(today, 5) };
 
         var vm = new YearHeatmapViewModel(completions, new FakeMetricDefinitionService(), new IntensityRampResolver(), new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(habit, null, null);
+        await vm.LoadAsync(habit, null, null, DayBoundary.Utc);
 
         var todayCell = vm.Cells.Single(c => c.Date == today);
         Assert.Equal(3, todayCell.IntensityStep);
@@ -55,7 +56,7 @@ public sealed class YearHeatmapViewModelTests
 
         var goal = new Goal { TargetValue = 100m, PeriodType = GoalPeriodType.Open };
         var vm = new YearHeatmapViewModel(completions, metrics, new IntensityRampResolver(), new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(habit, null, goal);
+        await vm.LoadAsync(habit, null, goal, DayBoundary.Utc);
 
         // ramp 25/50/75/100 → 50 ∈ [Step2..Step3) → step 3
         var todayCell = vm.Cells.Single(c => c.Date == today);
@@ -81,7 +82,7 @@ public sealed class YearHeatmapViewModelTests
         };
 
         var vm = new YearHeatmapViewModel(new FakeCompletionService(), new FakeMetricDefinitionService(), new IntensityRampResolver(), abstinence, clock);
-        await vm.LoadAsync(habit, null, null);
+        await vm.LoadAsync(habit, null, null, DayBoundary.Utc);
 
         Assert.Equal(4, vm.Cells.Single(c => c.Date == new DateOnly(2026, 5, 11)).IntensityStep); // clean → full
         Assert.Equal(0, vm.Cells.Single(c => c.Date == new DateOnly(2026, 5, 13)).IntensityStep); // relapse day → blank
@@ -96,7 +97,7 @@ public sealed class YearHeatmapViewModelTests
         var habit = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action, NodeType = NodeType.Habit };
 
         var vm = new YearHeatmapViewModel(new FakeCompletionService(), new FakeMetricDefinitionService(), new IntensityRampResolver(), new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(habit, null, null);
+        await vm.LoadAsync(habit, null, null, DayBoundary.Utc);
 
         var future = vm.Cells.Where(c => c.Date > today).ToList();
         Assert.NotEmpty(future);

@@ -5,6 +5,7 @@ using Recordum.WPF.Controls;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.Controls;
 
@@ -17,7 +18,7 @@ public sealed class HourlyHistogramControlSmokeTests
         svc.Buckets[9] = 4;
         svc.Buckets[18] = 2;
         var vm = new HourlyHistogramViewModel(svc, new FakeClock());
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action }, DayBoundary.Utc);
 
         var control = new HourlyHistogramControl { DataContext = vm };
 
@@ -68,7 +69,7 @@ public sealed class HourlyHistogramControlSmokeTests
     {
         var svc = new FakeHourlyDistributionQueryService();
         var vm = new HourlyHistogramViewModel(svc, new FakeClock());
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action }, DayBoundary.Utc);
 
         var control = new HourlyHistogramControl { DataContext = vm };
 

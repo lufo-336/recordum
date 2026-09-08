@@ -2,6 +2,7 @@ using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Calendar;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Calendar;
 
@@ -20,7 +21,7 @@ public class CalendarNavigatorViewModelTests
     public async Task LoadAsync_builds_42_cells_with_correct_in_month_flags()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
 
         sut.Cells.Should().HaveCount(42);
         sut.Cells.Count(c => c.InCurrentMonth).Should().Be(30);
@@ -45,7 +46,7 @@ public class CalendarNavigatorViewModelTests
     public async Task LoadAsync_flags_today_and_future()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
 
         sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 15)).IsToday.Should().BeTrue();
         sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 16)).IsFuture.Should().BeTrue();
@@ -64,7 +65,7 @@ public class CalendarNavigatorViewModelTests
             }));
         var sut = NewSut(out _, provider);
 
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
 
         var c1 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 1));
         c1.TintStep.Should().Be(4);
@@ -95,7 +96,7 @@ public class CalendarNavigatorViewModelTests
             }));
         var sut = NewSut(out _, provider);
 
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
 
         var c2 = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 2));
         c2.TintStep.Should().Be(3);
@@ -118,7 +119,7 @@ public class CalendarNavigatorViewModelTests
     public async Task NextMonth_then_PrevMonth_returns_to_start_and_rolls_year()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 12, selected: null);
+        await sut.LoadAsync(2026, 12, selected: null, DayBoundary.Utc);
 
         await sut.NextCommand.ExecuteAsync(null);
         sut.DisplayYear.Should().Be(2027);
@@ -133,7 +134,7 @@ public class CalendarNavigatorViewModelTests
     public async Task SelectDate_on_past_cell_sets_selection_and_raises_event()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
         DateOnly? raised = null;
         sut.SelectedDateChanged += (_, d) => raised = d;
 
@@ -149,7 +150,7 @@ public class CalendarNavigatorViewModelTests
     public async Task SelectDate_on_future_cell_is_ignored()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
         var future = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 20));
 
         sut.SelectDateCommand.Execute(future);
@@ -162,7 +163,7 @@ public class CalendarNavigatorViewModelTests
     public async Task JumpAsync_preserves_selection_on_rebuilt_cells()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
         sut.SelectDateCommand.Execute(sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10)));
 
         await sut.JumpAsync();
@@ -176,7 +177,7 @@ public class CalendarNavigatorViewModelTests
     public async Task WeekView_builds_seven_cells_around_the_selected_date()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10));
+        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10), DayBoundary.Utc);
 
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Week);
 
@@ -189,7 +190,7 @@ public class CalendarNavigatorViewModelTests
     public async Task YearView_builds_twelve_month_blocks_each_a_six_by_seven_grid()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
 
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
 
@@ -209,7 +210,7 @@ public class CalendarNavigatorViewModelTests
     public async Task Next_in_WeekView_advances_by_seven_days()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10));
+        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10), DayBoundary.Utc);
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Week);
         var firstBefore = sut.Cells[0].Date;
 
@@ -223,7 +224,7 @@ public class CalendarNavigatorViewModelTests
     public async Task Next_in_YearView_advances_by_one_year()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
 
         await sut.NextCommand.ExecuteAsync(null);
@@ -237,7 +238,7 @@ public class CalendarNavigatorViewModelTests
     public async Task YearHeatmap_toggle_builds_378_week_grouped_cells()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
 
         await sut.SetYearHeatmapCommand.ExecuteAsync(true);
@@ -260,7 +261,7 @@ public class CalendarNavigatorViewModelTests
             DateTime.IsLeapYear(y) && (((int)new DateOnly(y, 1, 1).DayOfWeek - firstDow + 7) % 7) == 6);
 
         var sut = NewSut(out _);
-        await sut.LoadAsync(year, 6, selected: null);
+        await sut.LoadAsync(year, 6, selected: null, DayBoundary.Utc);
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
         await sut.SetYearHeatmapCommand.ExecuteAsync(true);
 
@@ -271,7 +272,7 @@ public class CalendarNavigatorViewModelTests
     public async Task YearHeatmap_back_to_months_restores_blocks()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
         await sut.SetYearHeatmapCommand.ExecuteAsync(true);
 
@@ -286,7 +287,7 @@ public class CalendarNavigatorViewModelTests
     public async Task SetViewMode_back_to_Month_restores_42_cells_and_keeps_selection()
     {
         var sut = NewSut(out _);
-        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10));
+        await sut.LoadAsync(2026, 6, selected: new DateOnly(2026, 6, 10), DayBoundary.Utc);
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Year);
 
         await sut.SetViewModeCommand.ExecuteAsync(CalendarViewMode.Month);
@@ -306,7 +307,7 @@ public class CalendarNavigatorViewModelTests
                 new CalendarDayMarker(new DateOnly(2026, 6, 10), TintStep: 4, Number: null, NoteCount: 0),
             }));
         var sut = NewSut(out _, provider);
-        await sut.LoadAsync(2026, 6, selected: null);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
 
         var cell = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10));
         sut.SelectDateCommand.Execute(cell);

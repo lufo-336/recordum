@@ -82,7 +82,7 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         TodayTotalDisplay = Formatting.CounterTotalDisplay.AsRawDuration(isDuration, UnitCode, TodayTotal)
             ?? TodayTotal.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture);
 
-        await _goalCard.LoadAsync(node, ct).ConfigureAwait(true);
+        await _goalCard.LoadAsync(node, day, ct).ConfigureAwait(true);
         HasGoal = !_goalCard.IsEmpty;
         GoalFraction = HasGoal ? Math.Clamp(_goalCard.PercentComplete, 0d, 1d) : 0d;
     }

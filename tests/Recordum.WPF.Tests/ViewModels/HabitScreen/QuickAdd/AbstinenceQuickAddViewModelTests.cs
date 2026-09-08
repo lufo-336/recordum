@@ -5,6 +5,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.QuickAdd;
 
@@ -32,7 +33,7 @@ public class AbstinenceQuickAddViewModelTests
         var (vm, _, _) = Create();
         // FakeAbstinenceService returns NotStarted by default when no state is seeded.
 
-        await vm.LoadAsync();
+        await vm.LoadAsync(DayBoundary.Utc);
 
         vm.Status.Should().Be(AbstinenceStatus.NotStarted);
         vm.CanStart.Should().BeTrue();
@@ -44,7 +45,7 @@ public class AbstinenceQuickAddViewModelTests
     public async Task Start_transitions_to_abstaining_and_raises_changed()
     {
         var (vm, abstinence, clock) = Create();
-        await vm.LoadAsync(); // NotStarted
+        await vm.LoadAsync(DayBoundary.Utc); // NotStarted
 
         // Pre-seed the state the fake service will return after Start.
         abstinence.States[vm.Node!.Id] = new AbstinenceState(
@@ -74,7 +75,7 @@ public class AbstinenceQuickAddViewModelTests
             AbstinenceStatus.Abstaining,
             clock.UtcNow.ToUnixTimeMilliseconds(),
             null);
-        await vm.LoadAsync();
+        await vm.LoadAsync(DayBoundary.Utc);
         vm.Status.Should().Be(AbstinenceStatus.Abstaining);
 
         // Pre-seed the state the fake service will return after Lapse.

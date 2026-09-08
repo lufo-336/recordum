@@ -4,6 +4,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Detail;
 
@@ -19,10 +20,10 @@ public sealed partial class YearHeatmapViewModel(
 
     public ObservableCollection<HeatmapCellViewModel> Cells { get; } = [];
 
-    public async Task LoadAsync(HabitNode node, HabitConfig? config, Goal? activeGoal, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, HabitConfig? config, Goal? activeGoal, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = day.Today(clock);
         var mondayOfTodayWeek = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
         var anchor = mondayOfTodayWeek.AddDays(-(Cols - 1) * Rows);
 
@@ -31,7 +32,7 @@ public sealed partial class YearHeatmapViewModel(
         // gaps stay blank, so the year reads as habit-coloured clean runs broken by relapses.
         if (node.HabitType == HabitType.Resistance)
         {
-            await LoadAbstinenceAsync(node, anchor, today, ct).ConfigureAwait(true);
+            await LoadAbstinenceAsync(node, anchor, today, day, ct).ConfigureAwait(true);
             return;
         }
 
@@ -73,17 +74,17 @@ public sealed partial class YearHeatmapViewModel(
     private static int StepFor(decimal v, IntensityRamp r) =>
         v <= 0 ? 0 : v < r.Step1 ? 1 : v < r.Step2 ? 2 : v < r.Step3 ? 3 : 4;
 
-    private async Task LoadAbstinenceAsync(HabitNode node, DateOnly anchor, DateOnly today, CancellationToken ct)
+    private async Task LoadAbstinenceAsync(HabitNode node, DateOnly anchor, DateOnly today, DayBoundary day, CancellationToken ct)
     {
         var periods = await abstinence.ListPeriodsAsync(node.Id, anchor, today, ct).ConfigureAwait(true);
         var clean = new HashSet<DateOnly>();
         foreach (var p in periods)
         {
-            var start = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime);
+            var start = day.DayOf(p.StartedAtMs);
             var isOpen = p.EndedAtMs is null;
             var end = isOpen
                 ? today
-                : DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.EndedAtMs!.Value).UtcDateTime);
+                : day.DayOf(p.EndedAtMs!.Value);
             // Closed period: the relapse end-day is NOT a clean day (mirrors the Cronologia calendar).
             var lastClean = isOpen ? end : end.AddDays(-1);
             for (var d = start < anchor ? anchor : start; d <= lastClean && d <= today; d = d.AddDays(1))

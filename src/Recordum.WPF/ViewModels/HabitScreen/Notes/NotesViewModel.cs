@@ -12,6 +12,7 @@ using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Notes;
 
@@ -96,12 +97,14 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         };
         if (habitId != _habitNodeId) return;
         var keptSelection = SelectedNote?.Id;
-        await LoadAsync(_habitNodeId).ConfigureAwait(true);
+        await LoadAsync(_habitNodeId, _day).ConfigureAwait(true);
         if (keptSelection is { } sel)
             SelectedNote = Notes.FirstOrDefault(r => r.Id == sel);
     }
 
-    public async Task LoadAsync(Guid habitNodeId, CancellationToken ct = default)
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(Guid habitNodeId, DayBoundary day, CancellationToken ct = default)
     {
         _habitNodeId = habitNodeId;
         var list = await _notes.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(true);
@@ -118,7 +121,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         if (Mode == EntriesRecordsMode.Giorno) ApplyFilter();
     }
 
-    private static DateOnly AnchorOf(Note n) => n.TargetDate ?? DateOnly.FromDateTime(n.CreatedAt);
+    private DateOnly AnchorOf(Note n) => NoteAnchor.For(n, _day);
 
     private void ApplyFilter()
     {
@@ -129,8 +132,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         }
         else
         {
-            var today = DateOnly.FromDateTime(
-                TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone));
+            var today = _day.Today(_clock);
             var (from, to) = EntriesPeriodRange.Resolve(SelectedPeriod, today, CustomFrom, CustomTo);
             filtered = _all.Where(n =>
             {
@@ -141,7 +143,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
 
         var keptSelection = SelectedNote?.Id;
         Notes.Clear();
-        foreach (var n in filtered.OrderByDescending(n => n.UpdatedAtMs)) Notes.Add(new NoteRowViewModel(n));
+        foreach (var n in filtered.OrderByDescending(n => n.UpdatedAtMs)) Notes.Add(new NoteRowViewModel(n, _day));
         if (keptSelection is { } sel) SelectedNote = Notes.FirstOrDefault(r => r.Id == sel);
     }
 
@@ -163,7 +165,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         var draft = new Note { HabitNodeId = _habitNodeId, BodyMd = string.Empty, UpdatedAtMs = _clock.UtcNowMs };
         await _notes.CreateAsync(draft, ct).ConfigureAwait(true);
         _all.Insert(0, draft);
-        var row = new NoteRowViewModel(draft);
+        var row = new NoteRowViewModel(draft, _day);
         Notes.Insert(0, row);
         SelectedNote = row;
     }

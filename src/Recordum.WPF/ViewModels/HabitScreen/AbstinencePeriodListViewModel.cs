@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.WPF.Services;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -19,6 +20,10 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
     [ObservableProperty] private bool _isEmpty = true;
 
     public event EventHandler? Changed;
+
+    /// <summary>Il confine ricevuto dallo screen: le righe delle registrazioni nominano il giorno
+    /// d'inizio e di ricaduta secondo il giorno dell'abitudine, non la data UTC.</summary>
+    internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
 
     public AbstinencePeriodListViewModel(IAbstinenceService abstinence, IConfirmationDialog confirm, IClock clock)
     {
@@ -44,7 +49,7 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
             .ThenByDescending(p => p.StartedAtMs);                // then newest start
         foreach (var p in ordered)
         {
-            var row = new AbstinencePeriodRowViewModel(p, _abstinence, _confirm, _clock, r => Rows.Remove(r));
+            var row = new AbstinencePeriodRowViewModel(p, _abstinence, _confirm, _clock, DayBoundary, r => Rows.Remove(r));
             row.Changed += (_, _) => { IsEmpty = Rows.Count == 0; Changed?.Invoke(this, EventArgs.Empty); };
             Rows.Add(row);
         }

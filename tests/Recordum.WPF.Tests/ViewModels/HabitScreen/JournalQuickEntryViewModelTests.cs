@@ -4,6 +4,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Journal;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
@@ -30,7 +31,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_creates_a_diary_entry_so_the_day_counts_as_done()
     {
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "Insalata di farro";
 
         await sut.SaveCommand.ExecuteAsync(null);
@@ -44,7 +45,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_refuses_an_entry_with_neither_text_nor_photo()
     {
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "   ";
 
         await sut.SaveCommand.ExecuteAsync(null);
@@ -57,7 +58,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_accepts_a_photo_with_no_text()
     {
         var (sut, diary, photos, dialog, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         dialog.MultipleResult = ["C:\\tmp\\piatto.jpg"];
         sut.AddPhotoCommand.Execute(null);
 
@@ -71,7 +72,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Photos_are_attached_only_after_the_note_exists()
     {
         var (sut, diary, photos, dialog, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         dialog.MultipleResult = ["C:\\tmp\\a.jpg"];
         sut.AddPhotoCommand.Execute(null);
 
@@ -91,7 +92,7 @@ public class JournalQuickEntryViewModelTests
     public async Task A_failing_photo_does_not_lose_the_entry()
     {
         var (sut, diary, photos, dialog, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         photos.ThrowOnAdd["C:\\tmp\\rotta.jpg"] = new IOException("locked");
         dialog.MultipleResult = ["C:\\tmp\\rotta.jpg"];
         sut.AddPhotoCommand.Execute(null);
@@ -107,7 +108,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_uses_the_selected_day_so_yesterdays_dinner_lands_on_yesterday()
     {
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         var yesterday = new DateOnly(2026, 8, 7);
         sut.SetDay(yesterday);
         sut.Draft = "cena di ieri";
@@ -121,7 +122,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Delete_asks_for_confirmation_and_removes_the_entry()
     {
         var (sut, diary, _, _, confirm, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "da buttare";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -140,7 +141,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Editing_a_row_updates_the_body_without_creating_a_second_entry()
     {
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -158,7 +159,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Editing_a_row_to_empty_text_is_refused_like_the_composer()
     {
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -180,7 +181,7 @@ public class JournalQuickEntryViewModelTests
         // alza mai. Il gate tiene la scrittura aperta finche' non la rilasciamo, cosi' lo stato
         // "in volo" e' davvero osservabile.
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "cena";
         sut.IsSaving.Should().BeFalse();
 
@@ -200,7 +201,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_sets_IsSaving_during_the_in_row_edit_path_too()
     {
         var (sut, diary, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal());
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -230,7 +231,7 @@ public class JournalQuickEntryViewModelTests
         // fires B (which completes immediately), then releases A: only B's day must survive.
         var (sut, _, _, _, _, notes) = Build();
         var node = Journal();
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         var dayA = new DateOnly(2026, 8, 1);
         var dayB = new DateOnly(2026, 8, 2);
         var noteAId = Guid.NewGuid();

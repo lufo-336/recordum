@@ -7,6 +7,7 @@ using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Notes;
 
@@ -52,7 +53,7 @@ public class NotesViewModelTests
         svc.Store[b.Id] = b;
         svc.Store[c.Id] = c;
 
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
 
         sut.Notes.Select(r => r.Note.BodyMd).Should().Equal("b", "c", "a");
     }
@@ -62,7 +63,7 @@ public class NotesViewModelTests
     {
         var sut = CreateSut(out _, out _, out _);
 
-        await sut.LoadAsync(Guid.NewGuid());
+        await sut.LoadAsync(Guid.NewGuid(), DayBoundary.Utc);
 
         sut.SelectedNote.Should().BeNull();
         sut.EditorMarkdown.Should().Be(string.Empty);
@@ -72,7 +73,7 @@ public class NotesViewModelTests
     public async Task NewAsync_creates_note_and_selects_it()
     {
         var sut = CreateSut(out var svc, out _, out _);
-        await sut.LoadAsync(Guid.NewGuid());
+        await sut.LoadAsync(Guid.NewGuid(), DayBoundary.Utc);
 
         await sut.NewCommand.ExecuteAsync(null);
 
@@ -91,8 +92,8 @@ public class NotesViewModelTests
         var b = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "BBB", UpdatedAtMs = 2 };
         svc.Store[a.Id] = a;
         svc.Store[b.Id] = b;
-        sut.Notes.Add(new NoteRowViewModel(b));
-        sut.Notes.Add(new NoteRowViewModel(a));
+        sut.Notes.Add(new NoteRowViewModel(b, DayBoundary.Utc));
+        sut.Notes.Add(new NoteRowViewModel(a, DayBoundary.Utc));
 
         sut.SelectedNote = sut.Notes[0];
         sut.EditorMarkdown.Should().Be("BBB");
@@ -108,7 +109,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "orig" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
 
         sut.IsDirty.Should().BeFalse();
@@ -123,7 +124,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "orig", UpdatedAtMs = 1 };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         sut.EditorMarkdown = "edited";
 
@@ -139,7 +140,7 @@ public class NotesViewModelTests
     {
         var sut = CreateSut(out _, out _, out _);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
 
         sut.RequestDeleteCommand.Execute(null);
@@ -164,7 +165,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         sut.IsConfirmingDelete = true;
 
@@ -185,8 +186,8 @@ public class NotesViewModelTests
         var n2 = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "2", UpdatedAtMs = 1 };
         svc.Store[n1.Id] = n1;
         svc.Store[n2.Id] = n2;
-        sut.Notes.Add(new NoteRowViewModel(n1));
-        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.Notes.Add(new NoteRowViewModel(n1, DayBoundary.Utc));
+        sut.Notes.Add(new NoteRowViewModel(n2, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         sut.IsConfirmingDelete = true;
 
@@ -201,7 +202,7 @@ public class NotesViewModelTests
     {
         var sut = CreateSut(out var svc, out var bus, out _);
         var habitId = Guid.NewGuid();
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "external", UpdatedAtMs = 100 };
         svc.Store[n.Id] = n;
 
@@ -216,7 +217,7 @@ public class NotesViewModelTests
     {
         var sut = CreateSut(out _, out var bus, out _);
         var habitId = Guid.NewGuid();
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
 
         bus.Publish(new Recordum.Plugins.Contracts.Events.NoteCreatedPayload(Guid.NewGuid(), Guid.NewGuid()));
         await Task.Delay(20);
@@ -231,7 +232,7 @@ public class NotesViewModelTests
         var habitId = Guid.NewGuid();
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "x", UpdatedAtMs = 1 };
         svc.Store[n.Id] = n;
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
         sut.Notes.Should().ContainSingle();
 
         svc.Store.Remove(n.Id);
@@ -247,7 +248,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
 
         sut.SaveCommand.CanExecute(null).Should().BeFalse();
@@ -267,7 +268,7 @@ public class NotesViewModelTests
         [
             new Recordum.Core.Abstractions.Services.Dtos.NoteVersion(Guid.NewGuid(), "v2", new DateTime(2026, 6, 2, 9, 0, 0, DateTimeKind.Utc)),
         ];
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
         var row = sut.Notes.Single();
 
         await sut.ShowHistoryCommand.ExecuteAsync(row);
@@ -285,7 +286,7 @@ public class NotesViewModelTests
         var note = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "v2", UpdatedAtMs = 5 };
         svc.Store[note.Id] = note;
         svc.Versions[note.Id] = [ new Recordum.Core.Abstractions.Services.Dtos.NoteVersion(Guid.NewGuid(), "v1", new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc)) ];
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
         await sut.ShowHistoryCommand.ExecuteAsync(sut.Notes.Single());
 
         sut.History.SelectedVersion = sut.History.Versions[0];
@@ -302,7 +303,7 @@ public class NotesViewModelTests
         var note = new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "x", UpdatedAtMs = 1 };
         svc.Store[note.Id] = note;
         svc.Versions[note.Id] = [];
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
         await sut.ShowHistoryCommand.ExecuteAsync(sut.Notes.Single());
 
         sut.HideHistoryCommand.Execute(null);
@@ -318,7 +319,7 @@ public class NotesViewModelTests
         svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "a", UpdatedAtMs = 1, TargetDate = new DateOnly(2026, 1, 1) };
         svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "b", UpdatedAtMs = 2, TargetDate = new DateOnly(2026, 6, 1) };
 
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
 
         sut.Notes.Should().HaveCount(2);
     }
@@ -330,7 +331,7 @@ public class NotesViewModelTests
         var habitId = Guid.NewGuid();
         svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "kept", UpdatedAtMs = 2, TargetDate = new DateOnly(2026, 6, 19) };
         svc.Store[Guid.NewGuid()] = new Note { HabitNodeId = habitId, BodyMd = "other", UpdatedAtMs = 1, TargetDate = new DateOnly(2026, 6, 18) };
-        await sut.LoadAsync(habitId);
+        await sut.LoadAsync(habitId, DayBoundary.Utc);
 
         sut.SetCalendarDay(new DateOnly(2026, 6, 19));
         sut.Mode = EntriesRecordsMode.Giorno;
@@ -357,7 +358,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg", "C:\\photos\\b.png"];
 
@@ -374,7 +375,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\bad.jpg", "C:\\photos\\good.jpg"];
         attachments.ThrowOnAdd["C:\\photos\\bad.jpg"] = new IOException("locked");
@@ -392,8 +393,8 @@ public class NotesViewModelTests
         var n2 = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "two" };
         svc.Store[n1.Id] = n1;
         svc.Store[n2.Id] = n2;
-        sut.Notes.Add(new NoteRowViewModel(n1));
-        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.Notes.Add(new NoteRowViewModel(n1, DayBoundary.Utc));
+        sut.Notes.Add(new NoteRowViewModel(n2, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         attachments.AddGate = new TaskCompletionSource<bool>();
@@ -418,7 +419,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -446,7 +447,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog, out var confirm);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -465,7 +466,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog, out var confirm);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -488,7 +489,7 @@ public class NotesViewModelTests
         {
             Id = Guid.NewGuid(), NoteId = n.Id, Filename = "existing.png", MimeType = "image/png", FileSizeBytes = 10,
         };
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
 
         sut.SelectedNote = sut.Notes[0];
         await Task.Delay(20);
@@ -508,8 +509,8 @@ public class NotesViewModelTests
         {
             Id = Guid.NewGuid(), NoteId = n1.Id, Filename = "a.png", MimeType = "image/png", FileSizeBytes = 10,
         };
-        sut.Notes.Add(new NoteRowViewModel(n1));
-        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.Notes.Add(new NoteRowViewModel(n1, DayBoundary.Utc));
+        sut.Notes.Add(new NoteRowViewModel(n2, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         await Task.Delay(20);
         sut.Attachments.Should().ContainSingle();
@@ -525,7 +526,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -554,7 +555,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -572,7 +573,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg", "C:\\photos\\b.jpg", "C:\\photos\\c.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -589,7 +590,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg", "C:\\photos\\b.jpg", "C:\\photos\\c.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -606,7 +607,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -625,7 +626,7 @@ public class NotesViewModelTests
         var sut = CreateSut(out var svc, out _, out _, out _, out var dialog);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
-        sut.Notes.Add(new NoteRowViewModel(n));
+        sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);
@@ -646,8 +647,8 @@ public class NotesViewModelTests
         var n2 = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "2" };
         svc.Store[n1.Id] = n1;
         svc.Store[n2.Id] = n2;
-        sut.Notes.Add(new NoteRowViewModel(n1));
-        sut.Notes.Add(new NoteRowViewModel(n2));
+        sut.Notes.Add(new NoteRowViewModel(n1, DayBoundary.Utc));
+        sut.Notes.Add(new NoteRowViewModel(n2, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await sut.AddAttachmentCommand.ExecuteAsync(null);

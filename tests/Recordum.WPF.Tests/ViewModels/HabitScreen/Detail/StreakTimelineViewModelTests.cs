@@ -3,6 +3,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;
 
@@ -17,7 +18,7 @@ public sealed class StreakTimelineViewModelTests
         aggr.Runs.Add(new StreakRun(today.AddDays(-10), today.AddDays(-6), 5));
 
         var vm = new StreakTimelineViewModel(aggr, clock);
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid() });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid() }, DayBoundary.Utc);
 
         Assert.Equal(today.AddDays(-89), vm.RangeFrom);
         Assert.Equal(today, vm.RangeTo);

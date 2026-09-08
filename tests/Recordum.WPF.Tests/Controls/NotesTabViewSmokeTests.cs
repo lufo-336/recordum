@@ -3,6 +3,7 @@ using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.Views.HabitScreen;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.Controls;
 
@@ -37,7 +38,7 @@ public sealed class NotesTabViewSmokeTests
     {
         TestApp.EnsureLoaded();
         var vm = CreateVm(out _, out var dialog);
-        await vm.LoadAsync(Guid.NewGuid());
+        await vm.LoadAsync(Guid.NewGuid(), DayBoundary.Utc);
         await vm.NewCommand.ExecuteAsync(null);
         dialog.MultipleResult = ["C:\\photos\\a.jpg", "C:\\photos\\b.jpg"];
         await vm.AddAttachmentCommand.ExecuteAsync(null);
@@ -74,7 +75,7 @@ public sealed class NotesTabViewSmokeTests
     {
         TestApp.EnsureLoaded();
         var vm = CreateVm(out _, out var dialog);
-        await vm.LoadAsync(Guid.NewGuid());
+        await vm.LoadAsync(Guid.NewGuid(), DayBoundary.Utc);
         await vm.NewCommand.ExecuteAsync(null);
         dialog.MultipleResult = ["C:\\photos\\a.jpg"];
         await vm.AddAttachmentCommand.ExecuteAsync(null);

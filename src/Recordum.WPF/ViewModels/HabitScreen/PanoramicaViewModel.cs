@@ -7,6 +7,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -50,7 +51,7 @@ public sealed partial class PanoramicaViewModel : ObservableObject
         Goal = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
     }
 
-    public async Task LoadAsync(HabitNode group, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode group, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
         var rows = await _tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
@@ -87,7 +88,7 @@ public sealed partial class PanoramicaViewModel : ObservableObject
         TotalChildren = habitCount;
         CompletedToday = completedCount;
         OnPropertyChanged(nameof(HasChildren));
-        await Goal.LoadAsync(group, ct).ConfigureAwait(true);
+        await Goal.LoadAsync(group, day, ct).ConfigureAwait(true);
     }
 
     [RelayCommand]

@@ -6,6 +6,7 @@ using Recordum.WPF.Resources;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;
 
@@ -15,7 +16,7 @@ public sealed class StreakSummaryViewModelTests
     public async Task Empty_streaks_sets_IsEmpty_true()
     {
         var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeAbstinenceService(), new FakeClock());
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow }, DayBoundary.Utc);
 
         Assert.True(vm.IsEmpty);
         Assert.Equal(0, vm.CurrentLength);
@@ -32,7 +33,7 @@ public sealed class StreakSummaryViewModelTests
         aggr.Runs.Add(new StreakRun(today.AddDays(-4), today, 5));
 
         var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime }, DayBoundary.Utc);
 
         Assert.Equal(5, vm.CurrentLength);
     }
@@ -49,7 +50,7 @@ public sealed class StreakSummaryViewModelTests
             IsCurrent: true, BreakReason: StreakBreakReason.Lapse));
 
         var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance, CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance, CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime }, DayBoundary.Utc);
 
         Assert.Equal(0, vm.CurrentLength);
     }
@@ -63,7 +64,7 @@ public sealed class StreakSummaryViewModelTests
         aggr.Runs.Add(new StreakRun(today.AddDays(-10), today.AddDays(-3), 8));
 
         var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime }, DayBoundary.Utc);
 
         Assert.Equal(0, vm.CurrentLength);
     }
@@ -87,7 +88,7 @@ public sealed class StreakSummaryViewModelTests
             Id = nodeId,
             HabitType = HabitType.Resistance,
             CreatedAt = clock.UtcNow.AddYears(-3).UtcDateTime,
-        });
+        }, DayBoundary.Utc);
 
         Assert.Equal("771g 0:00:00", vm.CurrentDisplay);
     }
@@ -106,7 +107,7 @@ public sealed class StreakSummaryViewModelTests
             Id = Guid.NewGuid(),
             HabitType = HabitType.Counter,
             CreatedAt = clock.UtcNow.AddYears(-1).UtcDateTime,
-        });
+        }, DayBoundary.Utc);
 
         Assert.Equal("12", vm.CurrentDisplay);
     }
@@ -120,7 +121,7 @@ public sealed class StreakSummaryViewModelTests
         aggr.Runs.Add(new StreakRun(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 5), 5));
 
         var vm = new StreakSummaryViewModel(aggr, new FakeAbstinenceService(), clock);
-        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) });
+        await vm.LoadAsync(new HabitNode { Id = Guid.NewGuid(), CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }, DayBoundary.Utc);
 
         Assert.Equal(14, vm.LongestLength);
         Assert.Equal(new DateOnly(2025, 1, 1), vm.LongestStartedOn);
@@ -144,7 +145,7 @@ public sealed class StreakSummaryViewModelTests
             Id = nodeId,
             HabitType = HabitType.Resistance,
             CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
-        });
+        }, DayBoundary.Utc);
 
         var expectedDisplay = Recordum.WPF.Formatting.DurationFormat.FormatStopwatch(clock.UtcNow - currentStart);
         vm.CurrentDisplay.Should().Be(expectedDisplay);
@@ -166,7 +167,7 @@ public sealed class StreakSummaryViewModelTests
             Id = nodeId,
             HabitType = HabitType.Resistance,
             CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
-        });
+        }, DayBoundary.Utc);
 
         vm.CurrentDisplay.Should().Be(Recordum.WPF.Resources.Strings.Abstinence_NotStarted);
     }
@@ -198,7 +199,7 @@ public sealed class StreakSummaryViewModelTests
             Id = nodeId,
             HabitType = HabitType.Resistance,
             CreatedAt = clock.UtcNow.AddDays(-200).UtcDateTime,
-        });
+        }, DayBoundary.Utc);
 
         vm.RunsLast90Days.Should().Be(2);
     }
@@ -220,7 +221,7 @@ public sealed class StreakSummaryViewModelTests
         abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, currentStart.ToUnixTimeMilliseconds(), null);
         var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
-        await vm.LoadAsync(node);
+        await vm.LoadAsync(node, DayBoundary.Utc);
 
         vm.CurrentDisplay.Should().Be("3g 6:00:00");
     }
@@ -240,7 +241,7 @@ public sealed class StreakSummaryViewModelTests
         abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, today.AddDays(-10).ToUnixTimeMilliseconds(), null);
         var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
-        await vm.LoadAsync(node);
+        await vm.LoadAsync(node, DayBoundary.Utc);
 
         vm.CurrentDisplay.Should().Be("10g 0:00:00");
     }
@@ -258,7 +259,7 @@ public sealed class StreakSummaryViewModelTests
         };
         var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), new FakeAbstinenceService(), clock);
 
-        await vm.LoadAsync(node);
+        await vm.LoadAsync(node, DayBoundary.Utc);
 
         vm.CurrentDisplay.Should().Be(Recordum.WPF.Resources.Strings.Abstinence_NotStarted);
     }
@@ -281,7 +282,7 @@ public sealed class StreakSummaryViewModelTests
         ];
         var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
-        await vm.LoadAsync(node);
+        await vm.LoadAsync(node, DayBoundary.Utc);
 
         vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
         vm.RunsLast90Days.Should().Be(2);
@@ -300,7 +301,7 @@ public sealed class StreakSummaryViewModelTests
         abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, startMs, null);
         var sut = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.CurrentDisplay.Should().Be("1g 6:00:00");
     }
@@ -314,7 +315,7 @@ public sealed class StreakSummaryViewModelTests
         abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.NotStarted, null, null);
         var sut = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.CurrentDisplay.Should().Be(Strings.Abstinence_NotStarted);
     }

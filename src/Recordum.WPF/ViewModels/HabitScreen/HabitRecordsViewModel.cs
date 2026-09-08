@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Enums;
 using Recordum.Core.Services;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -34,6 +35,10 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private EntriesPeriod _selectedPeriod = EntriesPeriod.Mese;
     [ObservableProperty] private DateOnly? _customFrom;
     [ObservableProperty] private DateOnly? _customTo;
+
+    /// <summary>Il confine ricevuto dallo screen. Le registrazioni si ritagliano sul giorno
+    /// dell'abitudine, non sulla data UTC.</summary>
+    internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
 
     public HabitRecordsViewModel(CompletionListViewModel records, AbstinencePeriodListViewModel periods, IClock clock)
     {
@@ -73,8 +78,7 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     public async Task ApplyPeriodAsync(CancellationToken ct = default)
     {
         if (_nodeId is not { } id) return;
-        var today = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone));
+        var today = DayBoundary.Today(_clock);
         var (from, to) = EntriesPeriodRange.Resolve(SelectedPeriod, today, CustomFrom, CustomTo);
         if (_isResistance) await Periods.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);
         else await Records.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);

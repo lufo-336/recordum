@@ -10,6 +10,7 @@ using Recordum.Plugins.Contracts.Export;
 using Recordum.Plugins.Contracts.ExtensionPoints;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Services;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.Export;
 
@@ -21,6 +22,7 @@ public sealed partial class ExportDialogViewModel : ObservableObject
     private readonly ISaveFileDialog _save;
     private readonly IExportTemplateService _templates;
     private readonly IClock _clock;
+    private readonly IResetTimeResolver _resetTimes;
 
     private ExportSubject _subject = ExportSubject.SingleHabit;
     private Guid? _habitId;
@@ -44,7 +46,7 @@ public sealed partial class ExportDialogViewModel : ObservableObject
 
     public ExportDialogViewModel(
         IExportQueryService query, IExportJobService jobs, IExtensionPointRegistry registry,
-        ISaveFileDialog save, IExportTemplateService templates, IClock clock)
+        ISaveFileDialog save, IExportTemplateService templates, IClock clock, IResetTimeResolver resetTimes)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(jobs);
@@ -53,6 +55,7 @@ public sealed partial class ExportDialogViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(templates);
         ArgumentNullException.ThrowIfNull(clock);
         _query = query; _jobs = jobs; _registry = registry; _save = save; _templates = templates; _clock = clock;
+        _resetTimes = resetTimes;
     }
 
     public async Task LoadTemplatesAsync(CancellationToken ct = default)
@@ -102,7 +105,10 @@ public sealed partial class ExportDialogViewModel : ObservableObject
         if (string.IsNullOrEmpty(path)) return;
 
         var layout = CurrentLayout();
-        var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
+        // Il dialog non ha un'abitudine di riferimento (puo' esportare l'intera libreria): usa il
+        // confine dell'app, come il range dei grafici.
+        var day = await _resetTimes.GetAppDayBoundaryAsync(ct).ConfigureAwait(true);
+        var today = day.Today(_clock);
         var from = ResolveFrom(layout.Range, today);
         var request = new ExportRequest(_subject, _habitId, from, today, layout);
 
