@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -14,6 +15,9 @@ namespace Recordum.Data.Tests.Integration.Aggregators;
 
 public sealed class SchedulingAwareStreakAggregatorTests
 {
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
     private static async Task<(DbFixture fx, SchedulingAwareStreakAggregator aggr, Guid habitId)> SeedAsync(
         ScheduleType st, StreakMode sm, StreakRecovery sr, DateOnly created, int? weeklyTarget = null)
     {
@@ -64,11 +68,58 @@ public sealed class SchedulingAwareStreakAggregatorTests
         var graceRec = new GraceDayStreakRecoveryPolicy();
         var manualRec = new ManualStreakRecoveryPolicy();
         var retroRec = new RetroactiveStreakRecoveryPolicy();
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         return new SchedulingAwareStreakAggregator(
             nodes, configs, completions, pauses, scheduler,
             dailyEval, weeklyEval, occEval, bothEval,
-            noneRec, graceRec, manualRec, retroRec, abstinence, fx.Clock);
+            noneRec, graceRec, manualRec, retroRec, abstinence, fx.Clock, fx.ResetTimes);
+    }
+
+    /// <summary>Seeds a daily habit (default schedule/mode/recovery) with CreatedAt = createdUtc,
+    /// restoring the fixture's clock afterward so it doesn't leak into the caller's "now".</summary>
+    private static async Task<Guid> SeedDailyHabitAsync(DbFixture fx, DateTimeOffset createdUtc)
+    {
+        var clock = (FakeClock)fx.Clock;
+        var original = clock.UtcNow;
+        clock.Set(createdUtc);
+
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode
+            {
+                Id = habitId,
+                NodeType = NodeType.Habit,
+                HabitType = HabitType.Action,
+                Name = "h",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        await configs.UpsertAsync(habitId, c =>
+        {
+            c.ScheduleType = ScheduleType.Daily;
+            c.StreakMode = StreakMode.Daily;
+            c.StreakRecovery = StreakRecovery.None;
+        });
+
+        clock.Set(original);
+        return habitId;
+    }
+
+    /// <summary>Records a single completion at the given instant (not via a day pattern).</summary>
+    private static async Task RecordAtAsync(DbFixture fx, Guid habitId, DateTimeOffset at)
+    {
+        var svc = new CompletionService(
+            fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
+        await svc.RecordAsync(new Completion
+        {
+            HabitNodeId = habitId,
+            CompletedAt = at.UtcDateTime,
+            CompletedAtMs = at.ToUnixTimeMilliseconds(),
+            IsRetroactive = false,
+        });
     }
 
     private static async Task SeedCompletionsAsync(DbFixture fx, Guid habitId, DateOnly start, string pattern)
@@ -87,6 +138,122 @@ public sealed class SchedulingAwareStreakAggregatorTests
                 IsRetroactive = false,
             });
         }
+    }
+
+    [Fact]
+    public async Task A_completion_just_after_local_midnight_counts_for_the_new_day()
+    {
+        // Habit giornaliero creato il 17. Registrazione unica alle 22:30Z del 18 = 19 alle 00:30 locali.
+        // In UTC quella registrazione cadeva il 18 e il 19 risultava mancato: la serie si spezzava.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 6, 0, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedDailyHabitAsync(fx, createdUtc: new DateTimeOffset(2026, 8, 17, 6, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
+            habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
+
+        runs.Should().ContainSingle().Which.End.Should().Be(new DateOnly(2026, 8, 19));
+    }
+
+    [Fact]
+    public async Task With_a_04_00_reset_a_late_night_completion_still_counts_for_the_day_before()
+    {
+        // Chi si corica tardi: registra all'01:30 locale del 19 (23:30Z del 18) con reset 04:00 → è ancora il 18.
+        // È il caso d'uso che rende reset_time una promessa, non una decorazione.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 6, 0, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedDailyHabitAsync(fx, createdUtc: new DateTimeOffset(2026, 8, 17, 6, 0, 0, TimeSpan.Zero));
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var node = await db.HabitNodes.FirstAsync(n => n.Id == habitId);
+            node.ResetTime = new TimeOnly(4, 0);
+            await db.SaveChangesAsync();
+        }
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 23, 30, 0, TimeSpan.Zero));
+
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
+            habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
+
+        runs.Should().ContainSingle().Which.End.Should().Be(new DateOnly(2026, 8, 18));
+    }
+
+    [Fact]
+    public async Task A_habit_created_after_local_midnight_does_not_count_the_previous_local_day()
+    {
+        // CreatedAt = 2026-08-17T22:30Z = 18 alle 00:30 locali. Il 17 è prima della nascita
+        // dell'abitudine, quindi non è programmato e la sua registrazione non apre la serie.
+        // In UTC la nascita cadeva il 17 e quel giorno entrava nella serie: Start 17, lunghezza 3.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 6, 0, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedDailyHabitAsync(fx, createdUtc: new DateTimeOffset(2026, 8, 17, 22, 30, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 17, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero));
+
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
+            habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
+
+        var run = runs.Should().ContainSingle().Subject;
+        run.Start.Should().Be(new DateOnly(2026, 8, 18));
+        run.Length.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task A_run_is_not_current_when_the_local_today_has_already_moved_on()
+    {
+        // Serie chiusa il 18. Orologio alle 22:30Z del 19 = 20 alle 00:30 locali: "oggi" è il 20,
+        // quindi il 18 è vecchio di due giorni e la serie non è più quella corrente.
+        // In UTC "oggi" era ancora il 19 e la serie risultava corrente.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 22, 30, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedDailyHabitAsync(fx, createdUtc: new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 17, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero));
+
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
+            habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 18));
+
+        runs.Should().ContainSingle().Which.IsCurrent.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_manual_break_marked_after_local_midnight_breaks_on_the_new_day()
+    {
+        // StreakBrokenAt = 2026-08-18T22:30Z = 19 alle 00:30 locali. Il 18 (mancato) non spezza
+        // ancora, quindi il 19 riprende la stessa serie: una sola run 16→19 lunga 3.
+        // In UTC la rottura cadeva il 18: la serie si spezzava lì e il 19 ne apriva una seconda.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedDailyHabitAsync(fx, createdUtc: new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+
+        // La config va scritta all'istante di creazione: un upsert successivo lascerebbe uno snapshot
+        // storico che copre i giorni misurati, e Project() non porta StreakBrokenAt (escluso dallo
+        // storico) — la rottura manuale sparirebbe proprio dai giorni che il test guarda.
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        clock.Set(new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+        await configs.UpsertAsync(habitId, c =>
+        {
+            c.StreakRecovery = StreakRecovery.Manual;
+            c.StreakBrokenAt = new DateTime(2026, 8, 18, 22, 30, 0, DateTimeKind.Utc);
+        });
+        clock.Set(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero));
+
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 16, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 17, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero));
+
+        var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
+            habitId, new DateOnly(2026, 8, 15), new DateOnly(2026, 8, 19));
+
+        var run = runs.Should().ContainSingle().Subject;
+        run.Start.Should().Be(new DateOnly(2026, 8, 16));
+        run.End.Should().Be(new DateOnly(2026, 8, 19));
+        run.Length.Should().Be(3);
     }
 
     [Fact]

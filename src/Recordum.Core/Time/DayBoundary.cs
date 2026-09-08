@@ -98,5 +98,10 @@ public sealed record DayBoundary(TimeZoneInfo TimeZone, TimeOnly ResetTime)
     /// <summary>La finestra semiaperta che copre da <paramref name="fromDay"/> a
     /// <paramref name="toDayInclusive"/> compreso.</summary>
     public (DateTimeOffset From, DateTimeOffset ToExclusive) RangeOf(DateOnly fromDay, DateOnly toDayInclusive)
-        => (StartOf(fromDay), StartOf(toDayInclusive.AddDays(1)));
+        // DateOnly.MaxValue non ha un "giorno dopo" rappresentabile: chi lo usa come tetto
+        // inclusivo intende "senza limite superiore", quindi il tetto esclusivo diventa l'infinito
+        // del tipo invece di far esplodere AddDays. Un chiamante reale è AbstinencePeriodListViewModel
+        // (to ?? DateOnly.MaxValue per "tutte le registrazioni").
+        => (StartOf(fromDay),
+            toDayInclusive == DateOnly.MaxValue ? DateTimeOffset.MaxValue : StartOf(toDayInclusive.AddDays(1)));
 }

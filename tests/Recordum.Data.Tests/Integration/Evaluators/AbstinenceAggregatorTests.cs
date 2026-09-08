@@ -23,7 +23,7 @@ public sealed class AbstinenceAggregatorTests
         var configs    = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var pauses     = new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         var dailyEval  = new DailyStreakModeEvaluator();
         var weeklyEval = new WeeklyStreakModeEvaluator();
         return new SchedulingAwareStreakAggregator(
@@ -36,7 +36,8 @@ public sealed class AbstinenceAggregatorTests
             new ManualStreakRecoveryPolicy(),
             new RetroactiveStreakRecoveryPolicy(),
             abstinence,
-            fx.Clock);
+            fx.Clock,
+            fx.ResetTimes);
     }
 
     private static async Task<(DbFixture fx, FakeClock clock, Guid habitId)> SeedHabitAsync(DateOnly created)

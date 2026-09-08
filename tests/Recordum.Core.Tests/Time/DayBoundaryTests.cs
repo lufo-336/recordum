@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using FluentAssertions;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Time;
@@ -119,6 +119,20 @@ public class DayBoundaryTests
         var (from, toExclusive) = b.RangeOf(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31));
         from.Should().Be(b.StartOf(new DateOnly(2026, 8, 1)));
         toExclusive.Should().Be(b.StartOf(new DateOnly(2026, 9, 1)));
+    }
+
+    [Fact]
+    public void RangeOf_with_MaxValue_as_the_ceiling_means_no_upper_bound()
+    {
+        // DateOnly.MaxValue non ha un giorno dopo: senza il caso speciale, AddDays(1) esplode.
+        // Chi passa MaxValue come tetto inclusivo intende "tutto" (AbstinencePeriodListViewModel
+        // fa `to ?? DateOnly.MaxValue`), quindi il tetto esclusivo è l'infinito del tipo.
+        var b = Rome(4);
+
+        var (from, toExclusive) = b.RangeOf(new DateOnly(2026, 8, 1), DateOnly.MaxValue);
+
+        from.Should().Be(b.StartOf(new DateOnly(2026, 8, 1)));
+        toExclusive.Should().Be(DateTimeOffset.MaxValue);
     }
 
     // --- Ora legale: la classe di bug che questo piano può introdurre ---

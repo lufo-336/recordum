@@ -3,6 +3,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.Data.Services.Aggregators;
 
@@ -39,7 +40,8 @@ public sealed class SchedulingAwareStreakAggregator(
     [FromKeyedServices(StreakRecovery.Manual)] IStreakRecoveryPolicy manualRec,
     [FromKeyedServices(StreakRecovery.Retroactive)] IStreakRecoveryPolicy retroRec,
     IAbstinenceService abstinence,
-    IClock clock) : IStreakAggregator
+    IClock clock,
+    IResetTimeResolver resetTimes) : IStreakAggregator
 {
     public async ValueTask<IReadOnlyList<StreakRun>> GetHistoryAsync(
         Guid habitNodeId, DateOnly fromDate, DateOnly toDate, CancellationToken ct = default)
@@ -51,16 +53,18 @@ public sealed class SchedulingAwareStreakAggregator(
         if (habitNode is null || habitNode.NodeType != NodeType.Habit)
             return Array.Empty<StreakRun>();
 
+        var dayBoundary = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+
         if (habitNode.HabitType == HabitType.Resistance)
-            return await ComputeAbstinenceAsync(habitNode, fromDate, toDate, ct).ConfigureAwait(false);
+            return await ComputeAbstinenceAsync(habitNode, fromDate, toDate, dayBoundary, ct).ConfigureAwait(false);
 
         // F0-2a: a habit with no config row behaves as a default daily habit instead of having no streaks.
         var cfg = await configs.GetAsync(habitNodeId, ct).ConfigureAwait(false)
                   ?? new HabitConfig { HabitNodeId = habitNodeId };
 
         var history = await configs.ListHistoryAsync(habitNodeId, ct).ConfigureAwait(false);
-        var timeline = new HabitConfigTimeline(cfg, history);
-        var habitCreatedDate = DateOnly.FromDateTime(habitNode.CreatedAt);
+        var timeline = new HabitConfigTimeline(cfg, history, dayBoundary);
+        var habitCreatedDate = dayBoundary.DayOf(habitNode.CreatedAt);
 
         var heatmap = await completions.GetHeatmapAsync(habitNodeId, fromDate, toDate, ct).ConfigureAwait(false);
         var dailyLive = heatmap.ToDictionary(c => c.Date, c => c.Count - c.RetroactiveCount);
@@ -93,7 +97,7 @@ public sealed class SchedulingAwareStreakAggregator(
         var missesInWindow = 0;
         var windowAnchor = (DateOnly?)null;
 
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = dayBoundary.Today(clock);
 
         for (var day = fromDate; day <= toDate; day = day.AddDays(1))
         {
@@ -146,7 +150,7 @@ public sealed class SchedulingAwareStreakAggregator(
             if (cfgForDay.StreakRecovery == StreakRecovery.Manual)
             {
                 if (cfgForDay.StreakBrokenAt is { } brokenAt
-                    && DateOnly.FromDateTime(brokenAt) <= day
+                    && dayBoundary.DayOf(brokenAt) <= day
                     && runStart is { } rsm)
                 {
                     runs.Add(new StreakRun(rsm, runEnd, length, false, recoveriesUsed, StreakBreakReason.Manual));
@@ -187,11 +191,11 @@ public sealed class SchedulingAwareStreakAggregator(
     // "relapsed, not resumed" and is not counted. Pauses freeze a run (neither clean nor break). The
     // open period is the current run. Schedule/mode/recovery do not apply. See spec 2026-06-28.
     private async ValueTask<IReadOnlyList<StreakRun>> ComputeAbstinenceAsync(
-        HabitNode habitNode, DateOnly fromDate, DateOnly toDate, CancellationToken ct)
+        HabitNode habitNode, DateOnly fromDate, DateOnly toDate, DayBoundary day, CancellationToken ct)
     {
-        var createdDate = DateOnly.FromDateTime(habitNode.CreatedAt);
+        var createdDate = day.DayOf(habitNode.CreatedAt);
         var lifeStart = createdDate < fromDate ? createdDate : fromDate; // full life for true lengths (CR11)
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = day.Today(clock);
 
         var periods = await abstinence.ListPeriodsAsync(habitNode.Id, lifeStart, toDate, ct).ConfigureAwait(false);
         if (periods.Count == 0) return Array.Empty<StreakRun>();
@@ -210,11 +214,11 @@ public sealed class SchedulingAwareStreakAggregator(
         var runs = new List<StreakRun>();
         foreach (var p in periods)
         {
-            var startDay = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime);
+            var startDay = day.DayOf(p.StartedAtMs);
             var isOpen = p.EndedAtMs is null;
             var endDay = isOpen
                 ? today
-                : DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.EndedAtMs!.Value).UtcDateTime);
+                : day.DayOf(p.EndedAtMs!.Value);
             if (startDay > toDate) continue;
             if (endDay < startDay) endDay = startDay;
 

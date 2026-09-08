@@ -1,4 +1,5 @@
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.Data.Services.Aggregators;
 
@@ -6,16 +7,20 @@ internal sealed class HabitConfigTimeline
 {
     private readonly HabitConfig _current;
     private readonly HabitConfigHistory[] _history;
+    private readonly DayBoundary _day;
 
-    public HabitConfigTimeline(HabitConfig current, IReadOnlyList<HabitConfigHistory> history)
+    public HabitConfigTimeline(HabitConfig current, IReadOnlyList<HabitConfigHistory> history, DayBoundary day)
     {
         _current = current;
         _history = history.OrderBy(h => h.ValidFrom).ToArray();
+        _day = day;
     }
 
     public HabitConfig ResolveFor(DateOnly date)
     {
-        var dt = date.ToDateTime(TimeOnly.MaxValue);
+        // L'ultimo istante del giorno secondo il confine dell'abitudine, non le 23:59:59 UTC:
+        // la config che vale per un giorno è quella in vigore quando quel giorno finisce.
+        var dt = _day.RangeOf(date).ToExclusive.UtcDateTime.AddTicks(-1);
         for (var i = 0; i < _history.Length; i++)
         {
             var h = _history[i];

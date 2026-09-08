@@ -23,20 +23,24 @@ public sealed class AbstinenceStreakTests
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var pauses = new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
-        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         var dailyEval = new DailyStreakModeEvaluator();
         var weeklyEval = new WeeklyStreakModeEvaluator();
         return new SchedulingAwareStreakAggregator(
             nodes, configs, completions, pauses, new ScheduleEvaluator(),
             dailyEval, weeklyEval, new OccurrencesStreakModeEvaluator(), new BothStreakModeEvaluator(dailyEval, weeklyEval),
             new NoneStreakRecoveryPolicy(), new GraceDayStreakRecoveryPolicy(),
-            new ManualStreakRecoveryPolicy(), new RetroactiveStreakRecoveryPolicy(), abstinence, fx.Clock);
+            new ManualStreakRecoveryPolicy(), new RetroactiveStreakRecoveryPolicy(), abstinence, fx.Clock, fx.ResetTimes);
     }
 
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
     // created = habit CreatedAt; clock is left AT created so the interceptor stamps CreatedAt correctly.
-    private static async Task<(DbFixture fx, FakeClock clock, Guid habitId)> SeedResistanceAsync(DateOnly created)
+    private static async Task<(DbFixture fx, FakeClock clock, Guid habitId)> SeedResistanceAsync(
+        DateOnly created, TimeZoneInfo? tz = null)
     {
-        var clock = new FakeClock(new DateTimeOffset(created.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+        var clock = new FakeClock(new DateTimeOffset(created.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero), tz);
         var fx = new DbFixture(clock);
         var habitId = Guid.NewGuid();
         await using var db = await fx.Factory.CreateDbContextAsync();
@@ -60,6 +64,83 @@ public sealed class AbstinenceStreakTests
             EndedAtMs = end.HasValue ? ToMs(end.Value) : null,
         });
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>Seeds an abstinence_period row at an exact instant (not a day-rounded one).</summary>
+    private static async Task SeedPeriodAtAsync(
+        DbFixture fx, Guid habitId, DateTimeOffset startedAt, DateTimeOffset? endedAt = null)
+    {
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.AbstinencePeriods.Add(new AbstinencePeriod
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = habitId,
+            StartedAtMs = startedAt.ToUnixTimeMilliseconds(),
+            EndedAtMs = endedAt?.ToUnixTimeMilliseconds(),
+        });
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task An_abstinence_period_started_after_local_midnight_starts_on_the_new_day()
+    {
+        // StartedAtMs = 2026-08-18T22:30Z → il periodo comincia il 19 locale, non il 18.
+        var (fx, clock, id) = await SeedResistanceAsync(new DateOnly(2026, 8, 17), Plus2);
+        try
+        {
+            await SeedPeriodAtAsync(fx, id, new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+            clock.Set(new DateTimeOffset(2026, 8, 19, 6, 0, 0, TimeSpan.Zero));
+            var aggr = BuildAggregator(fx);
+
+            var runs = await aggr.GetHistoryAsync(id, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
+
+            runs.Should().ContainSingle().Which.Start.Should().Be(new DateOnly(2026, 8, 19));
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task An_open_period_runs_to_the_local_today()
+    {
+        // Orologio alle 22:30Z del 19 = 20 alle 00:30 locali: il periodo aperto arriva al 20.
+        // In UTC "oggi" era ancora il 19 e il contatore dei giorni puliti restava indietro di uno.
+        var (fx, clock, id) = await SeedResistanceAsync(new DateOnly(2026, 8, 15), Plus2);
+        try
+        {
+            await SeedPeriodAtAsync(fx, id, new DateTimeOffset(2026, 8, 16, 10, 0, 0, TimeSpan.Zero));
+            clock.Set(new DateTimeOffset(2026, 8, 19, 22, 30, 0, TimeSpan.Zero));
+
+            var runs = await BuildAggregator(fx).GetHistoryAsync(
+                id, new DateOnly(2026, 8, 15), new DateOnly(2026, 8, 20));
+
+            var run = runs.Should().ContainSingle().Subject;
+            run.End.Should().Be(new DateOnly(2026, 8, 20));
+            run.Length.Should().Be(5); // 16, 17, 18, 19, 20
+        }
+        finally { await fx.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task A_period_ended_after_local_midnight_ends_on_the_new_day()
+    {
+        // EndedAtMs = 2026-08-18T22:30Z = 19 alle 00:30 locali: la ricaduta appartiene al 19.
+        // In UTC il periodo si chiudeva il 18 e il 19 spariva dalla serie.
+        var (fx, clock, id) = await SeedResistanceAsync(new DateOnly(2026, 8, 15), Plus2);
+        try
+        {
+            await SeedPeriodAtAsync(fx, id,
+                new DateTimeOffset(2026, 8, 16, 10, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+            clock.Set(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero));
+
+            var runs = await BuildAggregator(fx).GetHistoryAsync(
+                id, new DateOnly(2026, 8, 15), new DateOnly(2026, 8, 20));
+
+            var run = runs.Should().ContainSingle().Subject;
+            run.End.Should().Be(new DateOnly(2026, 8, 19));
+            run.Length.Should().Be(4); // 16, 17, 18, 19
+        }
+        finally { await fx.DisposeAsync(); }
     }
 
     [Fact]

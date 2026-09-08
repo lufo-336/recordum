@@ -7,7 +7,11 @@ using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
-public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFactory, IClock clock, IEventBus eventBus) : IAbstinenceService
+public sealed class AbstinenceService(
+    IDbContextFactory<RecordumDbContext> dbFactory,
+    IClock clock,
+    IEventBus eventBus,
+    IResetTimeResolver resetTimes) : IAbstinenceService
 {
     private readonly IEventBus _events = eventBus;
 
@@ -66,11 +70,13 @@ public sealed class AbstinenceService(IDbContextFactory<RecordumDbContext> dbFac
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
 
-        var fromMs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var toMs = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var day = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+        var (fromInstant, toExclusive) = day.RangeOf(from, to);
+        var fromMs = fromInstant.ToUnixTimeMilliseconds();
+        var toMs = toExclusive.ToUnixTimeMilliseconds();
         return await db.AbstinencePeriods.AsNoTracking()
             .Where(p => p.HabitNodeId == habitNodeId
-                        && p.StartedAtMs <= toMs
+                        && p.StartedAtMs < toMs
                         && (p.EndedAtMs == null || p.EndedAtMs >= fromMs))
             .OrderBy(p => p.StartedAtMs)
             .ToListAsync(ct).ConfigureAwait(false);

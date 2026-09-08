@@ -31,7 +31,7 @@ public class AbstinenceEventsTests
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
         var bus = new RecordingEventBus();
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes);
 
         await sut.StartAsync(habitId);
 
@@ -47,7 +47,7 @@ public class AbstinenceEventsTests
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
         var bus = new RecordingEventBus();
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes);
         await sut.StartAsync(habitId);
         bus.Published.Clear();
 
@@ -64,9 +64,12 @@ public class AbstinenceEventsTests
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
         var bus = new RecordingEventBus();
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes);
         await sut.StartAsync(habitId);
-        var period = (await sut.ListPeriodsAsync(habitId, DateOnly.MinValue, DateOnly.MaxValue))[0];
+        // DateOnly.MaxValue as an inclusive upper bound has no representable "day after" for the
+        // half-open RangeOf window R9 introduced; back off one day, which is still an effectively
+        // unbounded future for "every period this habit has ever had".
+        var period = (await sut.ListPeriodsAsync(habitId, DateOnly.MinValue, DateOnly.MaxValue.AddDays(-1)))[0];
         bus.Published.Clear();
 
         await sut.DeletePeriodAsync(period.Id);
@@ -86,7 +89,7 @@ public class AbstinenceEventsTests
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
         var bus = new RecordingEventBus();
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes);
 
         await sut.LapseAsync(habitId);            // nothing open
         await sut.DeletePeriodAsync(Guid.NewGuid()); // unknown id

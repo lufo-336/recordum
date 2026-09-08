@@ -25,7 +25,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         var state = await sut.GetStateAsync(habitId);
 
@@ -39,7 +39,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         var expectedMs = fx.Clock.UtcNowMs;
 
         await sut.StartAsync(habitId);
@@ -54,7 +54,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
@@ -73,7 +73,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(5));
@@ -92,7 +92,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.LapseAsync(habitId); // no-op: nothing open
 
@@ -108,7 +108,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(3));
@@ -134,7 +134,7 @@ public class AbstinenceServiceTests
         // Arrange: start, lapse (1 closed), start again (1 open). Delete the closed one.
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
@@ -157,7 +157,7 @@ public class AbstinenceServiceTests
         // Arrange: closed period, then an open one. Delete the open -> state falls back to Relapsed.
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.StartAsync(habitId);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromDays(1));
@@ -179,7 +179,7 @@ public class AbstinenceServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedResistanceHabit(fx);
-        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus());
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
 
         await sut.StartAsync(habitId);
 
@@ -187,5 +187,56 @@ public class AbstinenceServiceTests
 
         await using var db = await fx.Factory.CreateDbContextAsync();
         (await db.AbstinencePeriods.CountAsync()).Should().Be(1);
+    }
+
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
+    private static async Task SeedPeriodAtAsync(
+        DbFixture fx, Guid habitId, DateTimeOffset startedAt, DateTimeOffset? endedAt = null)
+    {
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.AbstinencePeriods.Add(new AbstinencePeriod
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = habitId,
+            StartedAtMs = startedAt.ToUnixTimeMilliseconds(),
+            EndedAtMs = endedAt?.ToUnixTimeMilliseconds(),
+        });
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task ListPeriods_excludes_a_period_that_starts_on_the_next_local_day()
+    {
+        // StartedAtMs = 2026-08-18T23:00Z = 19 all'01:00 locali: chiedendo fino al 18 non deve uscire.
+        // La finestra UTC arrivava alle 23:59:59.999Z del 18 e lo pescava.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedResistanceHabit(fx);
+        await SeedPeriodAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 23, 0, 0, TimeSpan.Zero));
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
+
+        var periods = await sut.ListPeriodsAsync(habitId, new DateOnly(2026, 8, 15), new DateOnly(2026, 8, 18));
+
+        periods.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListPeriods_includes_a_period_that_ended_early_on_the_first_local_day()
+    {
+        // EndedAtMs = 2026-08-17T22:30Z = 18 alle 00:30 locali: chiedendo dal 18 deve uscire.
+        // La finestra UTC partiva dalle 00:00Z del 18 e lo scartava.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2);
+        await using var fx = new DbFixture(clock);
+        var habitId = await SeedResistanceHabit(fx);
+        await SeedPeriodAtAsync(fx, habitId,
+            new DateTimeOffset(2026, 8, 16, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 8, 17, 22, 30, 0, TimeSpan.Zero));
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
+
+        var periods = await sut.ListPeriodsAsync(habitId, new DateOnly(2026, 8, 18), new DateOnly(2026, 8, 20));
+
+        periods.Should().ContainSingle();
     }
 }
