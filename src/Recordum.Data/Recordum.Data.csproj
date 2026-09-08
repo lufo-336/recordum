@@ -11,7 +11,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.*" />
+    <!-- .Sqlite.Core, NON .Sqlite: il pacchetto completo tira dentro SQLitePCLRaw.bundle_e_sqlite3,
+         che spedisce un SQLitePCLRaw.batteries_v2.dll con lo STESSO nome di quello di
+         bundle_e_sqlcipher. Nell output ne sopravvive uno solo — vince la versione piu alta — e se
+         vince e_sqlite3 il provider registrato e quello in chiaro: PRAGMA key diventa un no-op
+         silenzioso e il database viene scritto NON cifrato. .Sqlite.Core da lo stesso provider EF
+         senza portarsi dietro il bundle. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="9.0.*" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.*" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.*" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.*" />

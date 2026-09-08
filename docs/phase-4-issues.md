@@ -1513,3 +1513,43 @@ builder. È il progetto: il payload la porta come definizione incorporata e la c
   sono chiare; è l'**etichetta** a nominare il concetto interno invece di porre la domanda ("Aprendo il
   diario, cosa vuoi fare?"). Compare identica nel builder e in Configura → Registrazione. Copy, non
   comportamento — ma è la prima cosa che si legge di U7.
+
+## SEC-1 — La cifratura del database era spenta (trovato 2026-09-08, `fixed`)
+
+- **Stato**: `fixed` (2026-09-08). Trovato di rimbalzo mentre eseguivo R9: 14 test rossi (12 Data +
+  2 WPF) che, guardati uno per uno, erano **tutti e soli** quelli che toccano la cifratura.
+- **Sintomo**: `SqlCipherConnectionFactoryTests.Open_with_wrong_key_throws_on_first_read` non
+  lanciava più; `BootstrapSmokeTests` idem; ogni test di backup moriva su
+  `SQLite Error 1: 'no such function: sqlcipher_export'`.
+- **Causa**: `Recordum.Data` referenziava `Microsoft.EntityFrameworkCore.Sqlite` — il pacchetto
+  **completo**, non `.Sqlite.Core` — che si porta dietro `SQLitePCLRaw.bundle_e_sqlite3`.
+  Quel bundle e `SQLitePCLRaw.bundle_e_sqlcipher` spediscono **entrambi** un assembly che si chiama
+  `SQLitePCLRaw.batteries_v2.dll`: nella cartella di output ne sopravvive uno solo. Quando vince
+  quello in chiaro, `Batteries_V2.Init()` registra il provider `e_sqlite3`, **`PRAGMA key` diventa
+  un no-op silenzioso** e il database viene scritto **non cifrato** — senza errore, senza warning.
+- **Perché è comparsa da sola**: nessun commit l'ha rotta. `project.assets.json` risolveva
+  `bundle_e_sqlcipher/2.1.11` (il nostro riferimento esplicito, `2.1.*`) e
+  `bundle_e_sqlite3/2.1.12` (transitivo). Finché il bundle in chiaro stava sotto la 2.1.11 poteva
+  vincere il cipher; uscita la 2.1.12 l'ha scavalcato. È cambiato **il mondo esterno sotto un
+  wildcard di versione**, ed è per questo che CLAUDE.md registra la suite Data tutta verde
+  all'11 agosto e questa sessione l'ha trovata rossa.
+- **Fix**: `Microsoft.EntityFrameworkCore.Sqlite.Core` al posto di `.Sqlite`, in
+  `src/Recordum.Data` **e** in `tests/Recordum.Data.Tests` (stesso identico difetto nel progetto di
+  test). Dopo il fix `bundle_e_sqlite3` sparisce dagli assets e nell'output resta solo
+  `e_sqlcipher.dll`. Suite: **Data 482 / WPF 1022 / Core 143 / Plugins 66, zero rosse.**
+- **Guard**: `SqlCipherProviderGuardTests.The_active_sqlite_provider_is_sqlcipher_not_plain_sqlite`
+  — `PRAGMA cipher_version` deve tornare una versione. Gli altri test di cifratura *rilevavano* già
+  il problema, ma il loro rosso si legge come "problema d'ambiente" e si archivia: questo lo nomina
+  e dice cosa controllare. Provato rosso rimettendo `.Sqlite` nel csproj.
+- **Lezioni**:
+  1. **Un rosso che sembra ambiente va provato, non archiviato.** Qui bastava uno `git stash` per
+     vedere che falliva anche su `HEAD` pulito — e da lì è venuto tutto il resto.
+  2. **Due pacchetti che spediscono lo stesso nome di assembly sono un conflitto silenzioso**, e se
+     uno dei due decide se i dati sono cifrati, il silenzio è il difetto peggiore possibile.
+  3. **La prima versione del guard era sbagliata e passava lo stesso.** `SELECT sqlcipher_export IS
+     NOT NULL` non chiama la funzione: un identificatore nudo è una **colonna**, quindi l'errore
+     diceva `no such column` e l'assert (che cercava `no such function`) lo lasciava passare. Solo
+     eseguendolo nella configurazione rotta si è visto. *Misurato, non dedotto* — la stessa lezione
+     di W2V-17c.
+- **Non fatto** (deliberato): **non** ho pinnato le versioni. Pinnare non chiude il meccanismo — un
+  *nuovo* pacchetto transitivo potrebbe reintrodurre un bundle domani lo stesso. Il guard sì.
