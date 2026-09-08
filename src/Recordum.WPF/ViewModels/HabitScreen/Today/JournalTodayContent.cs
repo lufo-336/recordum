@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
@@ -27,7 +28,9 @@ public sealed partial class JournalTodayContent : ObservableObject, ITodayConten
         _uiPrefs = uiPrefs;
     }
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    // Il gesto primario del journal non dipende dal giorno: il confine si accetta per contratto e
+    // non si usa, invece di dare a questo tipo una LoadAsync tutta sua.
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         var prefs = await _uiPrefs.GetAsync(node.Id, ct).ConfigureAwait(true);

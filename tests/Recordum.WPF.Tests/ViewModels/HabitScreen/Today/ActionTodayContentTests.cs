@@ -5,6 +5,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
@@ -27,7 +28,7 @@ public class ActionTodayContentTests
     public async Task ToggleDone_from_not_done_records_a_completion_and_flips_IsDoneToday()
     {
         var (sut, completions, _, _, _, node) = NewSut();
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.IsDoneToday.Should().BeFalse();
 
         await sut.ToggleDoneCommand.ExecuteAsync(null);
@@ -45,7 +46,7 @@ public class ActionTodayContentTests
         {
             Id = cid, HabitNodeId = node.Id, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = clock.UtcNowMs,
         };
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.IsDoneToday.Should().BeTrue();
 
         await sut.ToggleDoneCommand.ExecuteAsync(null);
@@ -62,7 +63,7 @@ public class ActionTodayContentTests
         streaks.Runs.Add(new StreakRun(today.AddDays(-4), today, 5, IsCurrent: true));
         streaks.Runs.Add(new StreakRun(today.AddDays(-20), today.AddDays(-10), 3, IsCurrent: false));
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.CurrentStreak.Should().Be(5);
     }
@@ -79,7 +80,7 @@ public class ActionTodayContentTests
         Add(Now.AddDays(-1).AddHours(2)); // same day → still one distinct day
         Add(Now.AddDays(-5));
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Pct30.Should().Be((int)System.Math.Round(100.0 * 2 / 30.0, System.MidpointRounding.AwayFromZero));
     }
@@ -88,14 +89,14 @@ public class ActionTodayContentTests
     public async Task UsualHour_is_the_peak_bucket_and_null_when_empty()
     {
         var (sut, _, _, hourly, _, node) = NewSut();
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.UsualHour.Should().BeNull();           // all buckets zero
         sut.HasUsualHour.Should().BeFalse();
 
         hourly.Buckets = new int[24];
         hourly.Buckets[8] = 5;
         hourly.Buckets[20] = 2;
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.HasUsualHour.Should().BeTrue();
         sut.UsualHour.Should().NotBeNullOrEmpty();  // peak at hour 8

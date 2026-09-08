@@ -9,6 +9,7 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.Quick;
@@ -276,11 +277,11 @@ public sealed partial class HomeRowViewModel : ObservableObject
 
     /// <summary>Computes the off-critical-path key figures (currently: Streak) after the row is rendered.
     /// No-op for the synchronous kinds. Safe to call in parallel for the visible rows.</summary>
-    public async Task LoadKeyFigureAsync(CancellationToken ct = default)
+    public async Task LoadKeyFigureAsync(DayBoundary day, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(day);
         if (KeyFigureKind != KeyFigureKind.Streak || _streaks is null || _clock is null) return;
-        var today = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
+        var today = day.Today(_clock);
         var runs = await _streaks.GetHistoryAsync(HabitNodeId, today.AddYears(-1), today, ct).ConfigureAwait(true);
         var length = runs.FirstOrDefault(r => r.IsCurrent)?.Length ?? 0;
         // Zero-state shows a muted ×0 instead of hiding the chip: an empty right zone made the

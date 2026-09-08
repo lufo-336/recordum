@@ -3,6 +3,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
@@ -69,7 +70,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
 
     /// <summary>Builds and loads the per-type content for <paramref name="node"/>. Disposes any previous
     /// content first. Unknown/group types clear the strip.</summary>
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
 
@@ -83,7 +84,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
             _ => null,
         };
 
-        if (next is not null) await next.LoadAsync(node, ct).ConfigureAwait(true);
+        if (next is not null) await next.LoadAsync(node, day, ct).ConfigureAwait(true);
         SetContent(next);
     }
 

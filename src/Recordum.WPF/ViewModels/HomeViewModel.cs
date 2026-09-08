@@ -9,6 +9,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.WPF.Behaviors;
@@ -30,6 +31,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private readonly IHabitUiPrefsService? _uiPrefs;
     private readonly IStreakAggregator? _streaks;
     private readonly IClock? _clock;
+    private readonly IResetTimeResolver? _resetTimes;
     private readonly HomeClockTicker _clockTicker = new();
     private Dictionary<Guid, HabitUiPrefs> _prefsByNode = new();
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
@@ -71,7 +73,8 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         IEventBus? events = null,
         IHabitUiPrefsService? uiPrefs = null,
         IStreakAggregator? streaks = null,
-        IClock? clock = null)
+        IClock? clock = null,
+        IResetTimeResolver? resetTimes = null)
     {
         _query = query;
         _nodes = nodes;
@@ -81,6 +84,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         _uiPrefs = uiPrefs;
         _streaks = streaks;
         _clock = clock;
+        _resetTimes = resetTimes;
 
         // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete) must
         // refresh the row indicators (sparkline / completed-today); a habit edit (name/color/icon
@@ -490,7 +494,21 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         if (_streaks is null || _clock is null) return;
         var rows = Rows.Where(r => r.KeyFigureKind == KeyFigureKind.Streak).ToList();
         if (rows.Count == 0) return;
-        await Task.WhenAll(rows.Select(r => r.LoadKeyFigureAsync()));
+
+        // L'unico punto WPF che carica N abitudini insieme: il confine si risolve in BATCH. Con la
+        // versione singola qui tornerebbero N cascate reset_time, una per riga.
+        // Senza resolver il confine e DayBoundary.Utc, cioe l identita: e il comportamento pre-R9,
+        // e tiene in piedi i test che costruiscono la Home senza quel servizio.
+        var appDay = _resetTimes is null
+            ? DayBoundary.Utc
+            : await _resetTimes.GetAppDayBoundaryAsync().ConfigureAwait(true);
+        var boundaries = _resetTimes is null
+            ? new Dictionary<Guid, DayBoundary>()
+            : (IReadOnlyDictionary<Guid, DayBoundary>)await _resetTimes
+                .GetDayBoundariesAsync(rows.Select(r => r.HabitNodeId).ToList())
+                .ConfigureAwait(true);
+        await Task.WhenAll(rows.Select(r => r.LoadKeyFigureAsync(
+            boundaries.TryGetValue(r.HabitNodeId, out var b) ? b : appDay)));
     }
 
     private IEnumerable<(HomeTreeRow Row, int Level)> OrderHierarchically(IReadOnlyList<HomeTreeRow> rows)

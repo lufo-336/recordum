@@ -5,6 +5,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
@@ -41,7 +42,7 @@ public class CounterTodayContentTests
         completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 2.0m) };
         completions.MagnitudeByHabit[node.Id] = new List<DailyMagnitude> { new(today, 5m) }; // decoy: differs from the sum
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.TodayTotal.Should().Be(2.0m);
         sut.UnitCode.Should().Be(litre.Code);
@@ -60,7 +61,7 @@ public class CounterTodayContentTests
         metrics.Store[metric.Id] = metric;
         completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 90m) };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.TodayTotal.Should().Be(1.5m);
         sut.UnitCode.Should().Be("minutes");
@@ -78,7 +79,7 @@ public class CounterTodayContentTests
         metrics.Store[metric.Id] = metric;
         completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 720m) };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.TodayTotalDisplay.Should().Be("12:00");
     }
@@ -94,7 +95,7 @@ public class CounterTodayContentTests
         metrics.Store[metric.Id] = metric;
         completions.DailySumByKey[(node.Id, metric.Id)] = new List<DailyValue> { new(today, 90m) };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         // 1.5 minutes: the unit label carries the meaning, so no h:mm override.
         sut.TodayTotalDisplay.Should().Be(1.5m.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture));
@@ -108,7 +109,7 @@ public class CounterTodayContentTests
         var today = DateOnly.FromDateTime(Now.UtcDateTime);
         completions.MagnitudeByHabit[node.Id] = new List<DailyMagnitude> { new(today, 3m) };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.TodayTotal.Should().Be(3m); // 3 taps
     }
@@ -118,7 +119,7 @@ public class CounterTodayContentTests
     {
         var (sut, _, _, _, _, node) = NewSut();
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.TodayTotal.Should().Be(0m);
         sut.HasGoal.Should().BeFalse();
@@ -144,7 +145,7 @@ public class CounterTodayContentTests
             { Id = id, HabitNodeId = node.Id, CompletedAt = when.UtcDateTime, CompletedAtMs = when.ToUnixTimeMilliseconds() };
         }
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.HasGoal.Should().BeTrue();
         sut.GoalFraction.Should().BeApproximately(0.4, 0.001);
@@ -154,7 +155,7 @@ public class CounterTodayContentTests
     public async Task Record_raises_an_open_record_module_action()
     {
         var (sut, _, _, _, _, node) = NewSut();
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         TodayContentAction? raised = null;
         sut.ActionRequested += (_, a) => raised = a;
 

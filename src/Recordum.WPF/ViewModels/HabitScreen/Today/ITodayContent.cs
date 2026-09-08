@@ -1,4 +1,5 @@
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
@@ -8,8 +9,11 @@ namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 public interface ITodayContent
 {
     /// <summary>Populates the content for <paramref name="node"/>. Called once per subject load and on
-    /// the host's reload paths.</summary>
-    Task LoadAsync(HabitNode node, CancellationToken ct = default);
+    /// the host's reload paths.
+    /// <para><paramref name="day"/> e' il confine di giornata dell'abitudine, gia' risolto dallo screen
+    /// (spec R9 §3.3): i pannelli lo <b>ricevono</b>, non lo ricalcolano. Prima erano tre formule
+    /// diverse per "oggi" fra questi cinque file, e una era in UTC.</para></summary>
+    Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default);
 }
 
 /// <summary>Optional companion interface for content that mutates state without a bus event (abstinence

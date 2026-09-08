@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
@@ -48,7 +49,9 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
         _clock = clock;
     }
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         _habitId = node.Id;
@@ -92,7 +95,7 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
     /// a value exists. Reads the day magnitude (same source the calendar uses).</summary>
     private async Task<(int Index, bool HasValue)> ReadTodayIndexAsync(CancellationToken ct)
     {
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
+        var today = _day.Today(_clock);
         var mags = await _completions.GetDailyMagnitudeAsync(_habitId, today.Year, today.Month, ct).ConfigureAwait(true);
         var todayMag = mags.FirstOrDefault(m => m.Date == today);
         if (todayMag is null) return (0, false);
@@ -119,11 +122,9 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
         if (_metricId is not { } metricId) return;
 
         // Last-wins for the day: drop any existing completion(s) recorded today, then record the new value.
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
-        var localMidnight = today.ToDateTime(TimeOnly.MinValue);
-        var offset = _clock.LocalTimeZone.GetUtcOffset(localMidnight);
-        var dayStart = new DateTimeOffset(localMidnight, offset);
-        var existing = await _completions.ListByHabitAsync(_habitId, dayStart, dayStart.AddDays(1)).ConfigureAwait(true);
+        var today = _day.Today(_clock);
+        var (dayStart, dayEnd) = _day.RangeOf(today);
+        var existing = await _completions.ListByHabitAsync(_habitId, dayStart, dayEnd).ConfigureAwait(true);
         foreach (var c in existing) await _completions.DeleteAsync(c.Id).ConfigureAwait(true);
 
         var draft = new Completion

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
@@ -41,10 +42,13 @@ public sealed partial class ActionTodayContent : ObservableObject, ITodayContent
         _clock = clock;
     }
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         _habitId = node.Id;
+        _day = day;
         await ReloadAsync(ct).ConfigureAwait(true);
     }
 
@@ -52,11 +56,10 @@ public sealed partial class ActionTodayContent : ObservableObject, ITodayContent
 
     private async Task ReloadAsync(CancellationToken ct)
     {
-        var nowLocal = TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone);
-        var today = DateOnly.FromDateTime(nowLocal.DateTime);
+        var today = _day.Today(_clock);
 
         // Done today = any completion inside today's local-day window; keep the newest id to undo.
-        var (dayStart, dayEnd) = LocalDayWindow(today);
+        var (dayStart, dayEnd) = _day.RangeOf(today);
         var todays = await _completions.ListByHabitAsync(_habitId, dayStart, dayEnd, ct: ct).ConfigureAwait(true);
         _todayCompletionId = todays.OrderByDescending(c => c.CompletedAtMs).FirstOrDefault()?.Id;
         IsDoneToday = todays.Count > 0;
@@ -66,25 +69,16 @@ public sealed partial class ActionTodayContent : ObservableObject, ITodayContent
         CurrentStreak = runs.FirstOrDefault(r => r.IsCurrent)?.Length ?? 0;
 
         // % of the last 30 days with at least one completion (distinct local days ÷ 30).
-        var (win30Start, _) = LocalDayWindow(today.AddDays(-29));
+        var (win30Start, _) = _day.RangeOf(today.AddDays(-29));
         var last30 = await _completions.ListByHabitAsync(_habitId, win30Start, dayEnd, ct: ct).ConfigureAwait(true);
         var distinctDays = last30
-            .Select(c => DateOnly.FromDateTime(
-                TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(c.CompletedAtMs), _clock.LocalTimeZone).DateTime))
+            .Select(c => _day.DayOf(c.CompletedAtMs))
             .Distinct().Count();
         Pct30 = (int)Math.Round(100.0 * distinctDays / 30.0, MidpointRounding.AwayFromZero);
 
         // Usual hour: the peak bucket over the last 90 days, or null when there is no data.
         var hours = await _hourly.GetHourlyAsync(_habitId, today.AddDays(-89), today, ct).ConfigureAwait(true);
         UsualHour = ResolveUsualHour(hours);
-    }
-
-    private (DateTimeOffset Start, DateTimeOffset End) LocalDayWindow(DateOnly day)
-    {
-        var localMidnight = day.ToDateTime(TimeOnly.MinValue);
-        var offset = _clock.LocalTimeZone.GetUtcOffset(localMidnight);
-        var start = new DateTimeOffset(localMidnight, offset);
-        return (start, start.AddDays(1));
     }
 
     private static string? ResolveUsualHour(IReadOnlyList<int> hours)

@@ -4,6 +4,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
@@ -20,7 +21,7 @@ public class JournalTodayContentTests
     public async Task Gesture_defaults_to_Diary_with_null_prefs_and_raises_the_diary_action()
     {
         var (sut, _, node) = NewSut();
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.Gesture.Should().Be(JournalPrimaryGesture.Diary);
         sut.IsQuickNote.Should().BeFalse();
         TodayContentAction? raised = null;
@@ -36,7 +37,7 @@ public class JournalTodayContentTests
     {
         var (sut, prefs, node) = NewSut();
         prefs.Store[node.Id] = new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote };
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.IsQuickNote.Should().BeTrue();
         TodayContentAction? raised = null;
         sut.ActionRequested += (_, a) => raised = a;

@@ -5,6 +5,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
@@ -33,7 +34,7 @@ public class StateTodayContentTests
         var scaleId = refData.Scales[0].Id;
         metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, scaleId, JsonSerializer.Serialize(new[] { "Bad", "OK", "Good" }));
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Min.Should().Be(0);
         sut.Max.Should().Be(2);           // 3 labels → indices 0..2
@@ -48,7 +49,7 @@ public class StateTodayContentTests
         scale.LabelsJson = JsonSerializer.Serialize(new[] { "X", "Y", "Z" });        // template labels
         metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, scale.Id, JsonSerializer.Serialize(new[] { "A", "B", "C" })); // override
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.SliderValue = 0;
         sut.CurrentLabel.Should().Be("A");   // metric override wins over template
@@ -66,7 +67,7 @@ public class StateTodayContentTests
         completions.Store[priorId] = new Completion
         { Id = priorId, HabitNodeId = node.Id, CompletedAt = Now.UtcDateTime, CompletedAtMs = Now.ToUnixTimeMilliseconds() };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.SliderValue = 2;
         await sut.RecordCommand.ExecuteAsync(null);
 
@@ -79,7 +80,7 @@ public class StateTodayContentTests
     {
         var (sut, _, _, _, node) = NewSut();   // no metric seeded
 
-        var act = async () => await sut.LoadAsync(node);
+        var act = async () => await sut.LoadAsync(node, DayBoundary.Utc);
 
         await act.Should().NotThrowAsync();
         sut.Max.Should().BeGreaterThan(0);     // fallback numeric range

@@ -13,6 +13,7 @@ using Recordum.WPF.ViewModels.HabitScreen.Detail;
 using Recordum.WPF.ViewModels.HabitScreen.Journal;
 using Recordum.WPF.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
+using Recordum.Core.Time;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Recordum.WPF.Services;
 
@@ -45,6 +46,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IClock _clock;
     private readonly IAppSettingService _appSettings;
     private readonly IHabitUiPrefsService _uiPrefs;
+    private readonly IResetTimeResolver _resetTimes;
     private readonly Recordum.Core.IAttachmentService _attachments;
     private readonly IOpenFileDialog _openFileDialog;
     private readonly IConfirmationDialog _confirmationDialog;
@@ -464,6 +466,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// subject; only shown for a habit (not a group).</summary>
     public TodayStripViewModel TodayStrip { get; }
 
+    /// <summary>Il confine di giornata dell abitudine corrente, risolto UNA volta da LoadAsync e
+    /// distribuito ai pannelli (spec R9 §3.3). Prima ogni pannello se lo ricalcolava, con tre formule
+    /// diverse e una in UTC. Internal perche lo leggono i test e i pannelli caricati fuori da LoadAsync.</summary>
+    internal DayBoundary CurrentDayBoundary => _dayBoundary;
+
+    private DayBoundary _dayBoundary = DayBoundary.Utc;
+
     /// <summary>The strip is present for any habit subject (even with every column closed), hidden for
     /// groups and when nothing is loaded — so a habit is never a blank landing.</summary>
     public bool ShowTodayStrip => HasNode && !IsGroupNode;
@@ -529,7 +538,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IConfirmationDialog confirmationDialog,
         Recordum.Core.IAttachmentService attachments,
         IOpenFileDialog openFileDialog,
-        IHabitUiPrefsService uiPrefs)
+        IHabitUiPrefsService uiPrefs,
+        IResetTimeResolver resetTimes)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(uiPrefs);
@@ -563,6 +573,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _clock = clock;
         _appSettings = appSettings;
         _uiPrefs = uiPrefs;
+        _resetTimes = resetTimes;
         _attachments = attachments;
         _openFileDialog = openFileDialog;
         _confirmationDialog = confirmationDialog;
@@ -646,6 +657,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
         CompletionList.IsJournal = node.HabitType == HabitType.Journal;
 
+        // Un solo posto in tutta la schermata decide a che giorno appartengono le cose (spec R9 §3.3):
+        // i pannelli lo ricevono, non lo ricalcolano.
+        _dayBoundary = await _resetTimes.GetDayBoundaryAsync(node.Id, ct).ConfigureAwait(true);
+        if (generation != _loadGeneration) return;
+
         // Config is needed for QuickAdd, TimerControl and the records lists; fetch once, share. Awaited
         // before the parallel block because the lists must know the series names BEFORE they populate.
         var config = await _configs.GetAsync(node.Id, ct).ConfigureAwait(true);
@@ -656,7 +672,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var quickAddTask = BuildQuickAddAsync(node, ct);
         var notesTask = Notes.LoadAsync(node.Id, ct);
         var detailTask = Detail.LoadAsync(node, ct);
-        var todayTask = TodayStrip.LoadAsync(node, ct);
+        var todayTask = TodayStrip.LoadAsync(node, _dayBoundary, ct);
         // Configura already open (restored or carried over from the previous subject): load its editor too.
         var editorTask = IsConfiguraOpen ? Editor.LoadAsync(node.Id, ct) : Task.CompletedTask;
         await Task.WhenAll(listTask, quickAddTask, notesTask, detailTask, todayTask, editorTask).ConfigureAwait(true);
@@ -761,7 +777,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             {
                 CompletionList.LoadAsync(Node.Id),
                 Records.ReloadAsync(),
-                TodayStrip.LoadAsync(Node),
+                TodayStrip.LoadAsync(Node, _dayBoundary),
                 Calendar.JumpAsync(),
             };
             // The tap quick-add counts the day in a local field it bumps per tap, so a completion
@@ -787,7 +803,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 Detail.LoadAsync(Node, CancellationToken.None),
                 Calendar.JumpAsync(),
                 Records.ReloadAsync(),
-                TodayStrip.LoadAsync(Node),
+                TodayStrip.LoadAsync(Node, _dayBoundary),
             };
             if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync());
             await Task.WhenAll(reloads).ConfigureAwait(true);

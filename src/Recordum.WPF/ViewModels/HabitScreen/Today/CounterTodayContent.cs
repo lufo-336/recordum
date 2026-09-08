@@ -4,6 +4,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
@@ -47,10 +48,11 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         _goalCard = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
     }
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_clock.UtcNow, _clock.LocalTimeZone).DateTime);
+        ArgumentNullException.ThrowIfNull(day);
+        var today = day.Today(_clock);
 
         var metrics = await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true);
         var primary = metrics.OrderBy(m => m.SortOrder).FirstOrDefault();

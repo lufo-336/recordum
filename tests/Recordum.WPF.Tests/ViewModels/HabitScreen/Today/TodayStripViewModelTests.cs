@@ -4,6 +4,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
@@ -21,7 +22,7 @@ public class TodayStripViewModelTests
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Group, HabitType = null, Name = "g" };
 
-        var act = async () => await sut.LoadAsync(node);
+        var act = async () => await sut.LoadAsync(node, DayBoundary.Utc);
 
         await act.Should().NotThrowAsync();
         sut.Content.Should().BeNull();
@@ -33,7 +34,7 @@ public class TodayStripViewModelTests
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "r" };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Content.Should().BeOfType<ResistanceTodayContent>();
     }
@@ -44,7 +45,7 @@ public class TodayStripViewModelTests
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "a" };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Content.Should().BeOfType<ActionTodayContent>();
     }
@@ -55,7 +56,7 @@ public class TodayStripViewModelTests
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Counter, Name = "c" };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Content.Should().BeOfType<CounterTodayContent>();
     }
@@ -66,7 +67,7 @@ public class TodayStripViewModelTests
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.State, Name = "s" };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Content.Should().BeOfType<StateTodayContent>();
     }
@@ -77,7 +78,7 @@ public class TodayStripViewModelTests
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "j" };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Content.Should().BeOfType<JournalTodayContent>();
     }
@@ -87,7 +88,7 @@ public class TodayStripViewModelTests
     {
         var sut = NewSut();
         var node = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "j" };
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         TodayContentAction? bubbled = null;
         sut.ActionRequested += (_, a) => bubbled = a;
 

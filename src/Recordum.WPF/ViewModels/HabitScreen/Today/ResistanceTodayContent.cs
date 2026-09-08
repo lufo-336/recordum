@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
 
@@ -38,10 +39,13 @@ public sealed partial class ResistanceTodayContent : ObservableObject, ITodayCon
         Clock = new LiveElapsedClock(clock);
     }
 
-    public async Task LoadAsync(HabitNode node, CancellationToken ct = default)
+    private DayBoundary _day = DayBoundary.Utc;
+
+    public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         _habitId = node.Id;
+        _day = day;
         await ReloadAsync(ct).ConfigureAwait(true);
     }
 
@@ -54,10 +58,10 @@ public sealed partial class ResistanceTodayContent : ObservableObject, ITodayCon
         else
             Clock.Stop();
 
-        var today = DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
+        var today = _day.Today(_clock);
         var from = today.AddDays(-90);
         var periods = await _abstinence.ListPeriodsAsync(_habitId, from, today, ct).ConfigureAwait(true);
-        var fromMs = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var fromMs = _day.RangeOf(from).From.ToUnixTimeMilliseconds();
         AttemptsLast90Days = periods.Count(p => p.StartedAtMs >= fromMs);
     }
 

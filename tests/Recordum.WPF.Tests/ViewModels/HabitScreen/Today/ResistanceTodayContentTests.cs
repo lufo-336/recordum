@@ -5,6 +5,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.Today;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Today;
 
@@ -31,7 +32,7 @@ public class ResistanceTodayContentTests
         };
         abstinence.States[node.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, startedMs, null);
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.Status.Should().Be(AbstinenceStatus.Abstaining);
         sut.CanLapse.Should().BeTrue();
@@ -43,7 +44,7 @@ public class ResistanceTodayContentTests
     public async Task Start_when_NotStarted_opens_a_period_and_raises_Changed()
     {
         var (sut, abstinence, node) = NewSut();
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.Status.Should().Be(AbstinenceStatus.NotStarted);
         var raised = 0;
         sut.Changed += (_, _) => raised++;
@@ -60,7 +61,7 @@ public class ResistanceTodayContentTests
     {
         var (sut, abstinence, node) = NewSut();
         await abstinence.StartAsync(node.Id);
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
         sut.CanLapse.Should().BeTrue();
         var raised = 0;
         sut.Changed += (_, _) => raised++;
@@ -84,7 +85,7 @@ public class ResistanceTodayContentTests
             new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = node.Id, StartedAtMs = Now.AddDays(-200).ToUnixTimeMilliseconds(), EndedAtMs = Now.AddDays(-199).ToUnixTimeMilliseconds() },
         };
 
-        await sut.LoadAsync(node);
+        await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.AttemptsLast90Days.Should().Be(2);
     }

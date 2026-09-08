@@ -8,6 +8,7 @@ using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Xunit;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels;
 
@@ -208,7 +209,7 @@ public class HomeRowViewModelTests
         sut.KeyFigureText.Should().BeEmpty(); // lazy: not computed until load
         sut.ShowKeyFigure.Should().BeFalse();
 
-        await sut.LoadKeyFigureAsync();
+        await sut.LoadKeyFigureAsync(DayBoundary.Utc);
 
         sut.KeyFigureText.Should().Be("×12");
         sut.ShowKeyFigure.Should().BeTrue();
@@ -223,7 +224,7 @@ public class HomeRowViewModelTests
             new FakeHabitNodeService(), new FakePurgeService(),
             uiPrefs: null, streaks: new FakeStreakAggregator(), clock: new FakeClock());
 
-        await sut.LoadKeyFigureAsync();
+        await sut.LoadKeyFigureAsync(DayBoundary.Utc);
 
         sut.KeyFigureText.Should().Be("×0");
         sut.ShowKeyFigure.Should().BeTrue();
@@ -239,7 +240,7 @@ public class HomeRowViewModelTests
             new FakeHabitNodeService(), new FakePurgeService(),
             uiPrefs: null, streaks: aggregator, clock: new FakeClock());
 
-        await sut.LoadKeyFigureAsync();
+        await sut.LoadKeyFigureAsync(DayBoundary.Utc);
 
         sut.IsKeyFigureZero.Should().BeFalse();
     }
