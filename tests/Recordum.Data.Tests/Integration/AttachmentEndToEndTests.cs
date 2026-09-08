@@ -49,7 +49,7 @@ public class AttachmentEndToEndTests
         var abstinence = new AbstinenceService(fixture.DbFactory, fixture.Clock, new RecordingEventBus(), resetTimes);
         var refData = new ReferenceDataQueryService(fixture.DbFactory);
         return new ExportQueryService(fixture.DbFactory, fixture.Clock, completions, notes, metrics, goals, configs,
-            ramp, new StubAggregator(), abstinence, attachments, refData);
+            ramp, new StubAggregator(), abstinence, attachments, refData, resetTimes);
     }
 
     [Fact]

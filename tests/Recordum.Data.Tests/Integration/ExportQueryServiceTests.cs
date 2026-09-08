@@ -22,7 +22,9 @@ public sealed class ExportQueryServiceTests
             => ValueTask.FromResult<IReadOnlyList<StreakRun>>([]);
     }
 
-    private static ExportQueryService Build(DbFixture fx)
+    private static ExportQueryService Build(DbFixture fx) => Build(fx, new StubAggregator());
+
+    private static ExportQueryService Build(DbFixture fx, IStreakAggregator streaks)
     {
         var bus = new RecordingEventBus();
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
@@ -37,7 +39,188 @@ public sealed class ExportQueryServiceTests
         // one below ever exercise disk I/O through AttachmentService, so the directory need not exist.
         var attachments = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext,
             Path.Combine(Path.GetTempPath(), "recordum-export-tests-" + Guid.NewGuid().ToString("N")));
-        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, new StubAggregator(), abstinence, attachments, refData);
+        return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, streaks, abstinence, attachments, refData, fx.ResetTimes);
+    }
+
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
+    /// <summary>Il motore streak vero, non lo stub: serve ai test che confrontano il summary
+    /// dell'export con cio' che il Dettaglio mostra sugli stessi dati.</summary>
+    private static IStreakAggregator RealAggregator(DbFixture fx)
+    {
+        var bus = new RecordingEventBus();
+        var nodes = new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
+        var pauses = new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
+        var abstinence = new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes);
+        var dailyEval = new Recordum.Data.Services.Evaluators.DailyStreakModeEvaluator();
+        var weeklyEval = new Recordum.Data.Services.Evaluators.WeeklyStreakModeEvaluator();
+        return new Recordum.Data.Services.Aggregators.SchedulingAwareStreakAggregator(
+            nodes, configs, completions, pauses, new Recordum.Data.Services.Evaluators.ScheduleEvaluator(),
+            dailyEval, weeklyEval,
+            new Recordum.Data.Services.Evaluators.OccurrencesStreakModeEvaluator(),
+            new Recordum.Data.Services.Evaluators.BothStreakModeEvaluator(dailyEval, weeklyEval),
+            new Recordum.Data.Services.Policies.NoneStreakRecoveryPolicy(),
+            new Recordum.Data.Services.Policies.GraceDayStreakRecoveryPolicy(),
+            new Recordum.Data.Services.Policies.ManualStreakRecoveryPolicy(),
+            new Recordum.Data.Services.Policies.RetroactiveStreakRecoveryPolicy(),
+            abstinence, fx.Clock, fx.ResetTimes);
+    }
+
+    private static async Task<Guid> SeedDailyActionAsync(DbFixture fx, DateTimeOffset createdUtc)
+    {
+        var clock = (FakeClock)fx.Clock;
+        var original = clock.UtcNow;
+        clock.Set(createdUtc);
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
+            await db.SaveChangesAsync();
+        }
+        await new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance)
+            .UpsertAsync(habitId, c =>
+            {
+                c.ScheduleType = ScheduleType.Daily;
+                c.StreakMode = StreakMode.Daily;
+                c.StreakRecovery = StreakRecovery.None;
+            });
+        clock.Set(original);
+        return habitId;
+    }
+
+    private static async Task RecordAtAsync(DbFixture fx, Guid habitId, DateTimeOffset at)
+    {
+        await new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes)
+            .RecordAsync(new Completion
+            {
+                HabitNodeId = habitId,
+                CompletedAt = at.UtcDateTime,
+                CompletedAtMs = at.ToUnixTimeMilliseconds(),
+                IsRetroactive = false,
+            });
+    }
+
+    [Fact]
+    public async Task Exported_range_includes_a_completion_recorded_after_local_midnight()
+    {
+        // Export di [19, 19] in fuso +2: la registrazione delle 22:30Z del 18 e' del 19 per l'utente
+        // e deve comparire nel file. Con la finestra UTC il file usciva vuoto e l'utente archiviava
+        // un giorno che, secondo il programma stesso, aveva una registrazione.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2));
+        var habitId = await SeedDailyActionAsync(fx, new DateTimeOffset(2026, 8, 17, 6, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId,
+            new DateOnly(2026, 8, 19), new DateOnly(2026, 8, 19), new ExportLayout());
+        var model = await Build(fx).BuildAsync(request);
+
+        Assert.Single(model.Habits);
+        Assert.Single(model.Habits[0].Completions);
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_summary_agrees_with_the_streak_engine_on_the_same_data()
+    {
+        // Il summary stampa "current"/"longest": devono essere gli stessi numeri che il Dettaglio
+        // mostra, non una seconda opinione — e devono essere quelli del giorno locale. Tre giorni
+        // consecutivi, l'ultimo registrato alle 22:30Z del 18 (= 19 locale): la serie e' 3.
+        // In UTC il 19 risultava mancato e la serie si fermava a 2.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 19, 6, 0, 0, TimeSpan.Zero), Plus2));
+        var habitId = await SeedDailyActionAsync(fx, new DateTimeOffset(2026, 8, 17, 6, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 17, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero));
+        await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+
+        var from = new DateOnly(2026, 8, 17);
+        var to = new DateOnly(2026, 8, 19);
+        var aggregator = RealAggregator(fx);
+        var model = await Build(fx, aggregator).BuildAsync(
+            new ExportRequest(ExportSubject.SingleHabit, habitId, from, to, new ExportLayout()));
+
+        var runs = await aggregator.GetHistoryAsync(habitId, from, to);
+        var engineLongest = runs.Max(r => r.Length);
+        var summary = model.Habits[0].Summary;
+
+        Assert.Equal(3, summary.LongestStreak);
+        Assert.Equal(engineLongest, summary.LongestStreak);
+        await fx.DisposeAsync();
+    }
+
+    private static async Task<Guid> SeedResistanceAsync(DbFixture fx)
+    {
+        var habitId = Guid.NewGuid();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "Stop smoking" });
+        await db.SaveChangesAsync();
+        return habitId;
+    }
+
+    private static async Task SeedPeriodAtAsync(DbFixture fx, Guid habitId, DateTimeOffset startedAt, DateTimeOffset? endedAt = null)
+    {
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.AbstinencePeriods.Add(new AbstinencePeriod
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = habitId,
+            StartedAtMs = startedAt.ToUnixTimeMilliseconds(),
+            EndedAtMs = endedAt?.ToUnixTimeMilliseconds(),
+        });
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Le celle pulite della heatmap dell'export, per un'abitudine resistance.</summary>
+    private static async Task<int> CleanCellsAsync(DbFixture fx, Guid habitId)
+    {
+        var model = await Build(fx).BuildAsync(new ExportRequest(
+            ExportSubject.SingleHabit, habitId,
+            new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), new ExportLayout()));
+        return model.Habits[0].Heatmap.Count;
+    }
+
+    [Fact]
+    public async Task Export_heatmap_starts_a_period_on_its_local_day()
+    {
+        // Periodo aperto iniziato alle 22:30Z del 18 = 19 alle 00:30 locali. Orologio al 20 (stesso
+        // giorno in UTC e in locale, cosi' il test isola l'inizio del periodo): puliti 19 e 20 = 2.
+        // In UTC il periodo cominciava il 18 e la heatmap dell'export dipingeva un giorno in piu'.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2));
+        var habitId = await SeedResistanceAsync(fx);
+        await SeedPeriodAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+
+        Assert.Equal(2, await CleanCellsAsync(fx, habitId));
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_heatmap_ends_a_period_on_its_local_day()
+    {
+        // Periodo chiuso alle 22:30Z del 18 = ricaduta il 19 locale, quindi l'ultimo giorno pulito
+        // e' il 18: puliti 16, 17, 18 = 3. In UTC la ricaduta cadeva il 18 e i puliti erano 2.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2));
+        var habitId = await SeedResistanceAsync(fx);
+        await SeedPeriodAtAsync(fx, habitId,
+            new DateTimeOffset(2026, 8, 16, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
+
+        Assert.Equal(3, await CleanCellsAsync(fx, habitId));
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Export_heatmap_runs_an_open_period_to_the_local_today()
+    {
+        // Orologio alle 22:30Z del 19 = 20 alle 00:30 locali: il periodo aperto arriva al 20.
+        // Puliti dal 16 al 20 = 5. In UTC "oggi" era il 19 e la heatmap si fermava a 4.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 19, 22, 30, 0, TimeSpan.Zero), Plus2));
+        var habitId = await SeedResistanceAsync(fx);
+        await SeedPeriodAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 16, 10, 0, 0, TimeSpan.Zero));
+
+        Assert.Equal(5, await CleanCellsAsync(fx, habitId));
+        await fx.DisposeAsync();
     }
 
     [Fact]
@@ -128,7 +311,7 @@ public sealed class ExportQueryServiceTests
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         var refData = new ReferenceDataQueryService(fx.Factory);
         var query = new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp,
-            new StubAggregator(), abstinence, attachmentService, refData);
+            new StubAggregator(), abstinence, attachmentService, refData, fx.ResetTimes);
 
         var request = new ExportRequest(ExportSubject.SingleHabit, habitId,
             new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25), new ExportLayout());

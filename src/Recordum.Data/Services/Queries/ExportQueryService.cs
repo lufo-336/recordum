@@ -4,6 +4,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.Plugins.Contracts.Export;
 
 namespace Recordum.Data.Services.Queries;
@@ -20,7 +21,8 @@ public sealed class ExportQueryService(
     IStreakAggregator streaks,
     IAbstinenceService abstinence,
     IAttachmentService attachments,
-    IReferenceDataQueryService refData) : IExportQueryService
+    IReferenceDataQueryService refData,
+    IResetTimeResolver resetTimes) : IExportQueryService
 {
     private const int HeatmapCols = 53;
     private const int HeatmapRows = 7;
@@ -59,8 +61,13 @@ public sealed class ExportQueryService(
 
     private async Task<ExportHabitModel> BuildHabitAsync(HabitNode node, ExportRequest request, CancellationToken ct)
     {
-        var fromUtc = new DateTimeOffset(request.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var toUtc = new DateTimeOffset(request.To.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+        // Il confine e' quello dell'abitudine esportata, risolto qui dentro e non una volta per tutte:
+        // un export di libreria copre abitudini con reset_time diversi, ed e' tutto il punto della cascata.
+        var day = await resetTimes.GetDayBoundaryAsync(node.Id, ct).ConfigureAwait(false);
+        var (fromUtc, toExclusive) = day.RangeOf(request.From, request.To);
+        // ListByHabitAsync ha il limite superiore inclusivo: l'ultimo istante che appartiene ancora
+        // alla finestra semiaperta e' un tick prima del suo estremo.
+        var toUtc = toExclusive.AddTicks(-1);
 
         var isResistance = node.HabitType == HabitType.Resistance;
         List<ExportPeriodRow> periodRows = [];
@@ -139,10 +146,10 @@ public sealed class ExportQueryService(
             }
         }
 
-        var summary = await BuildSummaryAsync(node, request, metricList, metricUnits, ct).ConfigureAwait(false);
+        var summary = await BuildSummaryAsync(node, request, metricList, metricUnits, day, ct).ConfigureAwait(false);
         if (isResistance) summary = summary with { TotalCompletions = periodRows.Count };
         var heatmap = request.Layout.Heatmap
-            ? await BuildHeatmapAsync(node, ct).ConfigureAwait(false)
+            ? await BuildHeatmapAsync(node, day, ct).ConfigureAwait(false)
             : new List<ExportHeatmapCell>();
 
         return new ExportHabitModel(node.Id, node.Name, node.HabitType?.ToString() ?? "", node.Color,
@@ -154,15 +161,15 @@ public sealed class ExportQueryService(
         ExportRequest request,
         IReadOnlyList<MetricDefinition> metricList,
         IReadOnlyDictionary<Guid, string?> metricUnits,
+        DayBoundary day,
         CancellationToken ct)
     {
         var runs = await streaks.GetHistoryAsync(node.Id, request.From, request.To, ct).ConfigureAwait(false);
         var current = runs.FirstOrDefault(r => r.IsCurrent)?.Length ?? 0;
         var longest = runs.Count == 0 ? 0 : runs.Max(r => r.Length);
 
-        var fromUtc = new DateTimeOffset(request.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var toUtc = new DateTimeOffset(request.To.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
-        var total = (await completions.ListByHabitAsync(node.Id, fromUtc, toUtc, take: null, ct).ConfigureAwait(false)).Count;
+        var (fromUtc, toExclusive) = day.RangeOf(request.From, request.To);
+        var total = (await completions.ListByHabitAsync(node.Id, fromUtc, toExclusive.AddTicks(-1), take: null, ct).ConfigureAwait(false)).Count;
 
         var goal = await goals.GetActiveAsync(node.Id, ct).ConfigureAwait(false);
         decimal? target = goal?.TargetValue;
@@ -193,9 +200,9 @@ public sealed class ExportQueryService(
         return new ExportSummary(current, longest, total, actual, target) { GoalUnit = goalUnit };
     }
 
-    private async Task<IReadOnlyList<ExportHeatmapCell>> BuildHeatmapAsync(HabitNode node, CancellationToken ct)
+    private async Task<IReadOnlyList<ExportHeatmapCell>> BuildHeatmapAsync(HabitNode node, DayBoundary day, CancellationToken ct)
     {
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = day.Today(clock);
         var mondayOfTodayWeek = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
         var anchor = mondayOfTodayWeek.AddDays(-(HeatmapCols - 1) * HeatmapRows);
 
@@ -205,11 +212,9 @@ public sealed class ExportQueryService(
             var clean = new HashSet<DateOnly>();
             foreach (var p in periods)
             {
-                var s = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(p.StartedAtMs).UtcDateTime);
+                var s = day.DayOf(p.StartedAtMs);
                 var isOpen = p.EndedAtMs is null;
-                var e = p.EndedAtMs is { } end
-                    ? DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(end).UtcDateTime)
-                    : today;
+                var e = p.EndedAtMs is { } end ? day.DayOf(end) : today;
                 // Closed period: the relapse end-day is NOT a clean day (mirrors YearHeatmapViewModel.LoadAbstinenceAsync / Cronologia calendar).
                 var lastClean = isOpen ? e : e.AddDays(-1);
                 for (var d = s < anchor ? anchor : s; d <= lastClean && d <= today; d = d.AddDays(1)) clean.Add(d);
