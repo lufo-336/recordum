@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -12,11 +12,48 @@ namespace Recordum.Data.Tests.Integration;
 
 public sealed class ChartQueryServiceTests
 {
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
     private static ChartQueryService Build(DbFixture fx) =>
         new(fx.Factory,
             fx.Clock,
-            new TrendQueryService(fx.Factory, new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance)),
-            new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes));
+            new TrendQueryService(fx.Factory, new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance), fx.ResetTimes),
+            new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes),
+            fx.ResetTimes);
+
+    [Fact]
+    public async Task Chart_range_30d_ends_on_the_local_today()
+    {
+        // Orologio alle 22:30Z del 18 in fuso +2 = 19 alle 00:30 locali: "oggi" e' il 19, non il 18
+        // come diceva UTC. Il range "30d" e' quindi [21 luglio, 19 agosto] e l'ultimo punto della
+        // serie e' quello del 19 — la registrazione fatta a mezzanotte locale, che in UTC cadeva
+        // fuori dal range e faceva finire il grafico un giorno prima.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero), Plus2));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
+            void Add(DateTimeOffset at) => db.Completions.Add(new Completion
+            {
+                Id = Guid.NewGuid(), HabitNodeId = habitId,
+                CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+            });
+            Add(new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero)); // mezzogiorno locale del 18
+            Add(new DateTimeOffset(2026, 8, 18, 22, 0, 0, TimeSpan.Zero)); // mezzanotte locale del 19
+            await db.SaveChangesAsync();
+        }
+        var chartSvc = new ChartService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<ChartService>.Instance);
+        var chartId = await chartSvc.CreateAsync(
+            new Chart { Name = "Runs", ChartType = "line", ConfigJson = new ChartConfig(Range: "30d", Bucket: "daily").ToJson() },
+            new[] { new ChartSeries { Id = Guid.NewGuid(), HabitNodeId = habitId, Label = "Runs", SortOrder = 0 } });
+
+        var model = await Build(fx).BuildModelAsync(chartId, isDark: false);
+
+        var lastLabel = model.Series.Single().Points[^1].Label;
+        Assert.Equal("2026-08-19", lastLabel);
+        await fx.DisposeAsync();
+    }
 
     [Fact]
     public async Task BuildModel_action_habit_no_metric_uses_count_per_bucket()

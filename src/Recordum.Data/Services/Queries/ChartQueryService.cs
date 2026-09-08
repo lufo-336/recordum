@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.Plugins.Contracts.Charts;
 
 namespace Recordum.Data.Services.Queries;
@@ -11,7 +12,8 @@ public sealed class ChartQueryService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
     ITrendQueryService trends,
-    ICompletionService completions) : IChartQueryService
+    ICompletionService completions,
+    IResetTimeResolver resetTimes) : IChartQueryService
 {
 
     private const string DarkText = "#E6E6E6";
@@ -42,7 +44,11 @@ public sealed class ChartQueryService(
 
         var kind = ChartKindParser.Parse(chart.ChartType);
         var config = ChartConfig.Parse(chart.ConfigJson);
-        var (from, to) = ResolveRange(config);
+        // Il range di un grafico usa il confine dell'APP, non quello della prima serie: un chart puo'
+        // avere serie su abitudini con reset_time diversi, e "ultimi 30 giorni" e' una scelta di
+        // presentazione trasversale, non una proprieta' di una singola abitudine.
+        var appDay = await resetTimes.GetAppDayBoundaryAsync(ct).ConfigureAwait(false);
+        var (from, to) = ResolveRange(config, appDay, clock);
         var granularity = config.Bucket.Equals("weekly", StringComparison.OrdinalIgnoreCase)
             ? TrendGranularity.Weekly : TrendGranularity.Daily;
 
@@ -64,9 +70,9 @@ public sealed class ChartQueryService(
         return new ChartRenderModel(kind, chart.Name, seriesModels, xAxis, yAxis, theme);
     }
 
-    private (DateOnly from, DateOnly to) ResolveRange(ChartConfig config)
+    private static (DateOnly from, DateOnly to) ResolveRange(ChartConfig config, DayBoundary day, IClock clock)
     {
-        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+        var today = day.Today(clock);
         return config.Range switch
         {
             "30d" => (today.AddDays(-29), today),

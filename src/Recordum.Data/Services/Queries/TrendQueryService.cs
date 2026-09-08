@@ -1,18 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.Core.Time;
 
 namespace Recordum.Data.Services.Queries;
 
 public sealed class TrendQueryService(
     IDbContextFactory<RecordumDbContext> dbFactory,
-    IMetricDefinitionService metrics) : ITrendQueryService
+    IMetricDefinitionService metrics,
+    IResetTimeResolver resetTimes) : ITrendQueryService
 {
     public async ValueTask<IReadOnlyList<TrendPoint>> GetTrendAsync(
         Guid habitNodeId, DateOnly fromDate, DateOnly toDate, TrendGranularity granularity, CancellationToken ct = default)
     {
-        var fromMs = new DateTimeOffset(fromDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var toMs = new DateTimeOffset(toDate.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var day = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+        var (from, toExclusive) = day.RangeOf(fromDate, toDate);
+        var fromMs = from.ToUnixTimeMilliseconds();
+        var toMs = toExclusive.ToUnixTimeMilliseconds();
 
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         var habit = await db.HabitNodes.AsNoTracking().FirstOrDefaultAsync(h => h.Id == habitNodeId, ct).ConfigureAwait(false);
@@ -22,16 +26,16 @@ public sealed class TrendQueryService(
             .OrderBy(m => m.SortOrder).FirstOrDefault();
 
         var completions = await db.Completions.AsNoTracking()
-            .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs <= toMs)
+            .Where(c => c.HabitNodeId == habitNodeId && c.CompletedAtMs >= fromMs && c.CompletedAtMs < toMs)
             .Select(c => new CompletionProjection(
-                c.CompletedAt,
+                c.CompletedAtMs,
                 c.Values.Select(v => new ValueProjection(v.MetricDefinitionId, v.ValueInteger, v.ValueDecimal, v.ValueSeconds)).ToList()))
             .ToListAsync(ct).ConfigureAwait(false);
 
         if (completions.Count == 0) return Array.Empty<TrendPoint>();
 
         return completions
-            .GroupBy(c => BucketKey(DateOnly.FromDateTime(c.CompletedAt), granularity))
+            .GroupBy(c => BucketKey(day.DayOf(c.CompletedAtMs), granularity))
             .OrderBy(g => g.Key)
             .Select(g =>
             {
@@ -72,6 +76,6 @@ public sealed class TrendQueryService(
         _ => date,
     };
 
-    private sealed record CompletionProjection(DateTime CompletedAt, List<ValueProjection> Values);
+    private sealed record CompletionProjection(long CompletedAtMs, List<ValueProjection> Values);
     private sealed record ValueProjection(Guid MetricDefinitionId, long? ValueInteger, decimal? ValueDecimal, int? ValueSeconds);
 }

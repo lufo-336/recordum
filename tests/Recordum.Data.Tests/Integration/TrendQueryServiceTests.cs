@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -50,7 +50,38 @@ public sealed class TrendQueryServiceTests
         new(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
 
     private static TrendQueryService NewSut(DbFixture fx) =>
-        new(fx.Factory, NewMetricService(fx));
+        new(fx.Factory, NewMetricService(fx), fx.ResetTimes);
+
+    private static readonly TimeZoneInfo Plus2 =
+        TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
+    [Fact]
+    public async Task Trend_buckets_a_completion_by_its_local_day()
+    {
+        // Registrazione alle 22:30Z del 18 in un fuso +2: il punto appartiene al 19.
+        // In UTC finiva nel bucket del 18, e l'andamento raccontava un giorno che non c'era stato.
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2));
+        var habit = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "h" };
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(habit);
+            await db.SaveChangesAsync();
+        }
+        var at = new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero);
+        await NewCompletionService(fx).RecordAsync(new Completion
+        {
+            HabitNodeId = habit.Id,
+            CompletedAt = at.UtcDateTime,
+            CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        });
+
+        var points = await NewSut(fx).GetTrendAsync(
+            habit.Id, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 20), TrendGranularity.Daily);
+
+        var point = Assert.Single(points);
+        Assert.Equal(new DateOnly(2026, 8, 19), point.Bucket);
+        await fx.DisposeAsync();
+    }
 
     [Fact]
     public async Task Counter_sums_primary_metric_per_day()
