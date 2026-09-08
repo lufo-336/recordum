@@ -2,9 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Data;
 using Recordum.Data.Security;
+using Recordum.Data.Services;
 using Recordum.Data.Services.Queries;
 using Recordum.Data.Tests.Fixtures;
 using Xunit;
@@ -60,7 +62,13 @@ public class SqlCipherOverheadTests
             var factory = new SingleConnectionFactory(opts);
             using (var ctx = factory.CreateDbContext()) ctx.Database.EnsureCreated();
             await PerfDataSeeder.SeedAsync(factory);
-            var q = new HabitTreeQueryService(factory, new FakeClock());
+            var perfClock = new FakeClock();
+            var perfResetTimes = new ResetTimeResolver(
+                factory,
+                new AppSettingService(factory, perfClock, NullLogger<AppSettingService>.Instance),
+                perfClock,
+                NullLogger<ResetTimeResolver>.Instance);
+            var q = new HabitTreeQueryService(factory, perfClock, perfResetTimes);
             for (int i = 0; i < 3; i++) _ = await q.GetHomeTreeAsync();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < 10; i++) _ = await q.GetHomeTreeAsync();

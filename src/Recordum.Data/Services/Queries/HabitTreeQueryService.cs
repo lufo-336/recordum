@@ -7,12 +7,14 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.Data.Services.Queries;
 
 public sealed class HabitTreeQueryService(
     IDbContextFactory<RecordumDbContext> dbFactory,
-    IClock clock) : IHabitTreeQueryService
+    IClock clock,
+    IResetTimeResolver resetTimes) : IHabitTreeQueryService
 {
     public ValueTask<IReadOnlyList<HomeTreeRow>> GetHomeTreeAsync(CancellationToken ct = default)
         => BuildRowsAsync(n => n.DeletedAt == null, ct);
@@ -25,33 +27,63 @@ public sealed class HabitTreeQueryService(
         CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var today = clock.UtcNow.UtcDateTime.Date;
-        var startMs = new DateTimeOffset(today.AddDays(-13), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var endMs = new DateTimeOffset(today.AddDays(1), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var todayMs = new DateTimeOffset(today, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        // Un confine PER ABITUDINE, risolto in UNA passata: due abitudini con reset_time diversi
+        // vedono giorni diversi nello stesso istante, ed e' tutto il punto della cascata. La versione
+        // batch del resolver esiste per questo: qui una await per riga sarebbe una query per riga.
+        var nodeIds = await db.HabitNodes.IgnoreQueryFilters().AsNoTracking()
+            .Where(predicate).Select(n => n.Id).ToListAsync(ct);
+        var boundaries = await resetTimes.GetDayBoundariesAsync(nodeIds, ct).ConfigureAwait(false);
+        var appDay = await resetTimes.GetAppDayBoundaryAsync(ct).ConfigureAwait(false);
 
-        var dayBuckets = await db.Completions
+        var dayCache = new Dictionary<Guid, (DayBoundary Boundary, DateOnly Today)>();
+        (DayBoundary Boundary, DateOnly Today) DayOf(Guid habitNodeId)
+        {
+            if (!dayCache.TryGetValue(habitNodeId, out var cached))
+            {
+                var resolved = boundaries.TryGetValue(habitNodeId, out var found) ? found : appDay;
+                cached = (resolved, resolved.Today(clock));
+                dayCache[habitNodeId] = cached;
+            }
+            return cached;
+        }
+
+        // L'unico posto che traduce un istante in una colonna della striscia: 0 = 13 giorni fa,
+        // 13 = oggi, secondo il confine dell'abitudine. NON e' piu' una divisione per 86.400.000 —
+        // il giorno dipende dall'abitudine e non dura sempre 24 ore (ora legale).
+        int? IndexOf(Guid habitNodeId, long ms)
+        {
+            var (boundary, todayForHabit) = DayOf(habitNodeId);
+            var offset = todayForHabit.DayNumber - boundary.DayOf(ms).DayNumber;
+            return offset is >= 0 and < 14 ? 13 - offset : null;
+        }
+
+        // La finestra da leggere e' l'unione delle finestre: il primo inizio e l'ultima fine fra
+        // tutti i confini, cosi' una query sola copre abitudini con reset diversi.
+        var windows = boundaries.Values.Append(appDay)
+            .Select(b => { var t = b.Today(clock); return b.RangeOf(t.AddDays(-13), t); })
+            .ToList();
+        var startMs = windows.Min(w => w.From).ToUnixTimeMilliseconds();
+        var endMs = windows.Max(w => w.ToExclusive).ToUnixTimeMilliseconds();
+
+        var windowRows = await db.Completions
             .AsNoTracking()
             .Where(c => c.CompletedAtMs >= startMs && c.CompletedAtMs < endMs)
-            .GroupBy(c => new
-            {
-                c.HabitNodeId,
-                DayOffset = (int)((c.CompletedAtMs - startMs) / 86_400_000),
-            })
-            .Select(g => new { g.Key.HabitNodeId, g.Key.DayOffset, Count = g.Count() })
+            .Select(c => new { c.HabitNodeId, c.CompletedAtMs })
             .ToListAsync(ct);
 
-        var bucketsByHabit = dayBuckets
-            .GroupBy(b => b.HabitNodeId)
-            .ToDictionary(g => g.Key, g =>
+        var bucketsByHabit = new Dictionary<Guid, ImmutableArray<int>>();
+        var completedToday = new HashSet<Guid>();
+        foreach (var g in windowRows.GroupBy(r => r.HabitNodeId))
+        {
+            var arr = new int[14];
+            foreach (var row in g)
             {
-                var arr = new int[14];
-                foreach (var b in g)
-                {
-                    if (b.DayOffset is >= 0 and < 14) arr[b.DayOffset] = b.Count;
-                }
-                return ImmutableArray.Create(arr);
-            });
+                if (IndexOf(g.Key, row.CompletedAtMs) is not { } i) continue;
+                arr[i]++;
+                if (i == 13) completedToday.Add(g.Key);
+            }
+            bucketsByHabit[g.Key] = ImmutableArray.Create(arr);
+        }
 
         var emptyHeatmap14 = ImmutableArray.Create(new int[14]);
 
@@ -105,7 +137,7 @@ public sealed class HabitTreeQueryService(
                 cv.ValueSeconds,
             })
             .ToListAsync(ct);
-        var todayValueRows = windowValueRows.Where(r => r.CompletedAtMs >= todayMs).ToList();
+        var todayValueRows = windowValueRows.Where(r => IndexOf(r.HabitNodeId, r.CompletedAtMs) == 13).ToList();
         var counterTotalsByHabit = todayValueRows
             .GroupBy(r => r.HabitNodeId)
             .ToDictionary(
@@ -122,10 +154,10 @@ public sealed class HabitTreeQueryService(
             .ToDictionary(g => g.Key, g =>
             {
                 var arr = new decimal?[14];
-                foreach (var day in g.GroupBy(r => (int)((r.CompletedAtMs - startMs) / 86_400_000)))
+                foreach (var day in g.GroupBy(r => IndexOf(g.Key, r.CompletedAtMs)))
                 {
-                    if (day.Key is >= 0 and < 14)
-                        arr[day.Key] = day.Sum(r => r.ValueDecimal ?? (decimal?)r.ValueInteger ?? (decimal?)r.ValueSeconds ?? 0m);
+                    if (day.Key is { } i)
+                        arr[i] = day.Sum(r => r.ValueDecimal ?? (decimal?)r.ValueInteger ?? (decimal?)r.ValueSeconds ?? 0m);
                 }
                 return ImmutableArray.Create(arr);
             });
@@ -134,12 +166,12 @@ public sealed class HabitTreeQueryService(
             .ToDictionary(g => g.Key, g =>
             {
                 var arr = new decimal?[14];
-                foreach (var day in g.GroupBy(r => (int)((r.CompletedAtMs - startMs) / 86_400_000)))
+                foreach (var day in g.GroupBy(r => IndexOf(g.Key, r.CompletedAtMs)))
                 {
-                    if (day.Key is >= 0 and < 14)
+                    if (day.Key is { } i)
                     {
                         var last = day.OrderByDescending(r => r.CompletedAtMs).First();
-                        arr[day.Key] = last.ValueDecimal ?? (decimal?)last.ValueInteger ?? (decimal?)last.ValueSeconds;
+                        arr[i] = last.ValueDecimal ?? (decimal?)last.ValueInteger ?? (decimal?)last.ValueSeconds;
                     }
                 }
                 return ImmutableArray.Create(arr);
@@ -169,6 +201,15 @@ public sealed class HabitTreeQueryService(
             .GroupBy(p => p.HabitNodeId)
             .ToDictionary(g => g.Key, g =>
             {
+                // Le 14 finestre del giorno secondo il confine DI QUESTA abitudine, calcolate una
+                // volta sola: non sono 14 fette da 24 ore a partire da un unico startMs.
+                var (bandBoundary, bandToday) = DayOf(g.Key);
+                var dayWindows = new (long Start, long End)[14];
+                for (var i = 0; i < 14; i++)
+                {
+                    var (s, e) = bandBoundary.RangeOf(bandToday.AddDays(i - 13));
+                    dayWindows[i] = (s.ToUnixTimeMilliseconds(), e.ToUnixTimeMilliseconds());
+                }
                 var arr = new int[14];
                 foreach (var p in g)
                 {
@@ -176,8 +217,7 @@ public sealed class HabitTreeQueryService(
                     var pEnd = p.EndedAtMs ?? nowMs;
                     for (var i = 0; i < 14; i++)
                     {
-                        var dayStart = startMs + (long)i * 86_400_000;
-                        var dayEnd = dayStart + 86_400_000;
+                        var (dayStart, dayEnd) = dayWindows[i];
                         if (pStart < dayEnd && pEnd >= dayStart) arr[i] = 4; // abstaining that day → full band step
                     }
                 }
@@ -204,7 +244,6 @@ public sealed class HabitTreeQueryService(
                     .OrderByDescending(c => c.CompletedAtMs)
                     .Select(c => (DateTime?)c.CompletedAt)
                     .FirstOrDefault(),
-                IsCompletedToday = db.Completions.Any(c => c.HabitNodeId == n.Id && c.CompletedAtMs >= todayMs),
                 ChildCount = db.HabitNodes.Count(child => child.ParentId == n.Id && child.DeletedAt == null),
             })
             .ToListAsync(ct);
@@ -294,7 +333,7 @@ public sealed class HabitTreeQueryService(
                     HabitType: r.HabitType,
                     LastCompletionAt: r.LastCompletionAt,
                     CurrentStreakCount: 0,
-                    IsCompletedToday: r.IsCompletedToday,
+                    IsCompletedToday: completedToday.Contains(r.Id),
                     PinScope: r.PinScope,
                     ChildCount: r.ChildCount,
                     IsArchived: r.IsArchived,

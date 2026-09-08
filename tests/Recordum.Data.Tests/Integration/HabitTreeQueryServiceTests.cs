@@ -13,11 +13,89 @@ public class HabitTreeQueryServiceTests
 {
     private static readonly int[] ExpectedSevenDayBuckets = [1, 0, 0, 0, 0, 0, 2];
 
+    private static async Task<Guid> AddHabitAsync(DbFixture fx, string name, TimeOnly? resetTime = null)
+    {
+        var id = Guid.NewGuid();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.HabitNodes.Add(new HabitNode
+        {
+            Id = id,
+            NodeType = NodeType.Habit,
+            HabitType = HabitType.Action,
+            Name = name,
+            ResetTime = resetTime,
+        });
+        await db.SaveChangesAsync();
+        return id;
+    }
+
+    private static async Task AddCompletionAsync(DbFixture fx, Guid habitId, DateTimeOffset at)
+    {
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.Completions.Add(new Completion
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = habitId,
+            CompletedAt = at.UtcDateTime,
+            CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        });
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Two_habits_with_different_resets_get_different_strips_from_the_same_completion_time()
+    {
+        // Stessa registrazione (22:30Z del 18 = 19 alle 00:30 locali), due abitudini: una senza
+        // reset (per lei e' oggi, il 19) e una con reset 04:00 (per lei e' ancora ieri, il 18).
+        // Se la striscia le trattasse uguale, il confine per-abitudine sarebbe finto.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 6, 0, 0, TimeSpan.Zero), TestTimeZones.Fixed(2));
+        await using var fx = new DbFixture(clock);
+        var plain = await AddHabitAsync(fx, "plain");
+        var lateReset = await AddHabitAsync(fx, "late", new TimeOnly(4, 0));
+        var at = new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero);
+        await AddCompletionAsync(fx, plain, at);
+        await AddCompletionAsync(fx, lateReset, at);
+
+        var rows = await new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes).GetHomeTreeAsync();
+
+        var plainStrip = rows.Single(r => r.HabitNodeId == plain).CompletionsLast14Days;
+        var lateStrip = rows.Single(r => r.HabitNodeId == lateReset).CompletionsLast14Days;
+        plainStrip[13].Should().Be(1);   // oggi
+        lateStrip[13].Should().Be(0);    // per lei oggi e' ancora vuoto
+        lateStrip[12].Should().Be(1);    // ieri
+    }
+
+    [Fact]
+    public async Task The_strip_does_not_shift_across_a_daylight_saving_change()
+    {
+        // Finestra 19 marzo - 1 aprile 2026, che contiene il 29 marzo: giorno di 23 ore. Una
+        // registrazione per ogni giorno deve dare 14 quadretti pieni, non 13 pieni e uno doppio.
+        //
+        // Le registrazioni sono alle 00:30 LOCALI, non a mezzogiorno: con la divisione per
+        // 86.400.000 le fette scivolano di un ora dopo il cambio, e mezzogiorno ha undici ore di
+        // margine dentro la fetta, quindi non se ne accorge. A ridosso della mezzanotte si', ed e
+        // li che il difetto morde davvero — chi registra a tarda notte.
+        var tz = TestTimeZones.RomeLike;
+        var nowLocal = new DateTime(2026, 4, 1, 10, 0, 0);
+        var clock = new FakeClock(new DateTimeOffset(nowLocal, tz.GetUtcOffset(nowLocal)), tz);
+        await using var fx = new DbFixture(clock);
+        var habitId = await AddHabitAsync(fx, "daily");
+        for (var d = new DateOnly(2026, 3, 19); d <= new DateOnly(2026, 4, 1); d = d.AddDays(1))
+        {
+            var justAfterMidnight = d.ToDateTime(new TimeOnly(0, 30));
+            await AddCompletionAsync(fx, habitId, new DateTimeOffset(justAfterMidnight, tz.GetUtcOffset(justAfterMidnight)));
+        }
+
+        var rows = await new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes).GetHomeTreeAsync();
+
+        rows.Single().CompletionsLast14Days.Should().AllSatisfy(v => v.Should().Be(1));
+    }
+
     [Fact]
     public async Task Empty_db_returns_empty_list()
     {
         await using var fx = new DbFixture();
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         Assert.Empty(await q.GetHomeTreeAsync());
     }
 
@@ -32,7 +110,7 @@ public class HabitTreeQueryServiceTests
             db.HabitNodes.AddRange(alive, dead);
             await db.SaveChangesAsync();
         }
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var rows = await q.GetHomeTreeAsync();
         Assert.Single(rows);
         Assert.Equal(alive.Id, rows[0].HabitNodeId);
@@ -51,7 +129,7 @@ public class HabitTreeQueryServiceTests
             db.Completions.Add(completion);
             await db.SaveChangesAsync();
         }
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var rows = await q.GetHomeTreeAsync();
         Assert.True(rows.Single().IsCompletedToday);
     }
@@ -75,7 +153,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var rows = await q.GetHomeTreeAsync();
         rows.Single(r => r.HabitNodeId == habitId).PinScope.Should().Be(PinScope.Global);
     }
@@ -93,7 +171,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var rows = await q.GetHomeTreeAsync();
         rows.Single(r => r.HabitNodeId == groupId).ChildCount.Should().Be(2);
     }
@@ -109,7 +187,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var rows = await q.GetHomeTreeAsync();
         rows.Single(r => r.HabitNodeId == id).IsArchived.Should().BeTrue();
     }
@@ -131,7 +209,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var rows = await q.GetHomeTreeAsync();
         rows.Single(r => r.HabitNodeId == habitId).CompletionsLast7Days
             .Should().BeEquivalentTo(ExpectedSevenDayBuckets);
@@ -150,7 +228,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var rows = await q.GetTrashTreeAsync();
         rows.Should().ContainSingle().Which.HabitNodeId.Should().Be(trashed);
     }
@@ -174,7 +252,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TagIds.Should().BeEquivalentTo(new[] { tagA, tagB });
     }
@@ -190,7 +268,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TagIds.Should().BeEmpty();
     }
@@ -225,7 +303,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayCounterTotal.Should().Be(22);
         row.TodayCounterUnitCode.Should().Be("reps");
@@ -262,7 +340,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         // 90 stored seconds shown in minutes = 1.5, NOT "90 minutes" (raw seconds + label).
         row.TodayCounterTotal.Should().Be(1.5m);
@@ -293,7 +371,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayCounterTotal.Should().Be(3m);
     }
@@ -327,7 +405,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayCounterTotal.Should().Be(0m);
     }
@@ -360,7 +438,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayCounterTotal.Should().Be(720m);
         row.TodayCounterUnitCode.Should().BeNull();
@@ -386,7 +464,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayCounterTotal.Should().Be(720m); // 720 pages must never read as "12:00"
         row.TodayCounterIsDuration.Should().BeFalse();
@@ -421,7 +499,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.ValuesLast14Days.Length.Should().Be(14);
         row.ValuesLast14Days[13].Should().Be(22m);
@@ -457,7 +535,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.ValuesLast14Days[12].Should().Be(3m);
         row.ValuesLast14Days[13].Should().BeNull();
@@ -474,7 +552,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.ValuesLast14Days.IsDefaultOrEmpty.Should().BeTrue();
     }
@@ -508,7 +586,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayStateValue.Should().Be(3);
         row.TodayStateLabel.Should().Be("Bene");
@@ -551,7 +629,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayStateValue.Should().Be(3);
         row.TodayStateLabel.Should().Be("Bene");
@@ -594,7 +672,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.TodayStateValue.Should().Be(3);
         row.TodayStateLabel.Should().Be("Bene");
@@ -614,7 +692,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.AbstinenceStatus.Should().Be(AbstinenceStatus.Abstaining);
         row.AbstinenceOpenSinceMs.Should().Be(startedAtMs);
@@ -636,7 +714,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.CompletionsLast14Days.Length.Should().Be(14);
         // the abstaining days (indices 10..13) are filled; earlier days are empty
@@ -662,7 +740,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.AbstinenceStatus.Should().Be(AbstinenceStatus.Relapsed);
         row.AbstinenceOpenSinceMs.Should().BeNull();
@@ -688,7 +766,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.CompletionsLast14Days.Length.Should().Be(14);
         row.CompletionsLast14Days[3].Should().Be(1);
@@ -711,7 +789,7 @@ public class HabitTreeQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock);
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.JournalEntriesThisWeek.Should().Be(2);
     }

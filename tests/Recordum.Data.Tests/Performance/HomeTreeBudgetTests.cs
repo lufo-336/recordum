@@ -13,7 +13,7 @@ public class HomeTreeBudgetTests
     {
         await using var fx = new DbFixture();
         await PerfDataSeeder.SeedAsync(fx.Factory);
-        var q = new HabitTreeQueryService(fx.Factory, fx.Clock);
+        var q = new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes);
 
         for (int i = 0; i < 3; i++) _ = await q.GetHomeTreeAsync();
 
