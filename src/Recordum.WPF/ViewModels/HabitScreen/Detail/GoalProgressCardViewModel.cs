@@ -54,8 +54,10 @@ public sealed partial class GoalProgressCardViewModel(
         DaysLeft = ResolveDaysLeft(goal, day, clock);
         PeriodLabel = ResolveLabel(goal);
 
-        var fromUtc = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var toUtc = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        // B11: la finestra deve pescare esattamente cio' che il confine poi bucketizza in [from, to].
+        // RangeOf e' semiaperta, il filtro del servizio e' inclusivo al millisecondo.
+        var (fromUtc, toExclusive) = day.RangeOf(from, to);
+        var toUtc = toExclusive == DateTimeOffset.MaxValue ? toExclusive : toExclusive.AddMilliseconds(-1);
         var list = await completions.ListByHabitAsync(node.Id, fromUtc, toUtc, take: null, ct).ConfigureAwait(true);
 
         if (goal.MetricDefinitionId is { } metricId)

@@ -40,6 +40,7 @@ public sealed partial class TrendChartViewModel(ITrendQueryService trend, IClock
     {
         ArgumentNullException.ThrowIfNull(node);
         Node = node;
+        _day = day;
         ChartKind = node.HabitType is HabitType.Counter or HabitType.Resistance or HabitType.State
             ? TrendChartKind.Line
             : TrendChartKind.Bar;

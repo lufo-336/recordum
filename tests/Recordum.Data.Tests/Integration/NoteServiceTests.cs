@@ -28,6 +28,35 @@ public class NoteServiceTests
         return new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
     }
 
+    /// <summary>A12. L'ancora di una nota — data dichiarata, altrimenti giorno di creazione — si
+    /// legge secondo il confine dell'abitudine, non secondo la data UTC. Scritta alle 00:40 locali del
+    /// 19 (22:40Z del 18) in fuso +2, la nota appartiene al 19 e sta in cima anche se un'altra nota,
+    /// creata dopo, e' dichiarata del 18.</summary>
+    [Fact]
+    public async Task ListByHabitAsync_orders_by_the_anchor_of_the_habits_day_not_the_UTC_date()
+    {
+        var clock = new FakeClock(
+            new DateTimeOffset(2026, 8, 18, 22, 40, 0, TimeSpan.Zero), TestTimeZones.Fixed(2));
+        var (fx, habitId) = await SeedHabitAsync(clock);
+        var sut = NewService(fx, out _);
+
+        // Senza data dichiarata: l'ancora e' il giorno di creazione, cioe' il 19 secondo il confine
+        // (il 18 se si guarda l'UTC).
+        var afterMidnight = await sut.CreateAsync(new Note { HabitNodeId = habitId, BodyMd = "dopo mezzanotte" });
+        // Creata dopo, ma dichiarata del 18: e' l'ordine di creazione a spareggiare le ancore pari,
+        // quindi con l'ancora sbagliata questa passerebbe davanti.
+        clock.Advance(TimeSpan.FromMinutes(20));
+        await sut.CreateAsync(new Note
+        {
+            HabitNodeId = habitId, BodyMd = "dichiarata del 18", TargetDate = new DateOnly(2026, 8, 18),
+        });
+
+        var list = await sut.ListByHabitAsync(habitId);
+
+        list.Should().HaveCount(2);
+        list[0].Id.Should().Be(afterMidnight);
+    }
+
     [Fact]
     public async Task CreateAsync_persists_row_and_publishes_NoteCreated()
     {

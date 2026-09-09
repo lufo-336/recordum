@@ -107,6 +107,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     public async Task LoadAsync(Guid habitNodeId, DayBoundary day, CancellationToken ct = default)
     {
         _habitNodeId = habitNodeId;
+        _day = day;
         var list = await _notes.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(true);
         _all = list.ToList();
         ApplyFilter();

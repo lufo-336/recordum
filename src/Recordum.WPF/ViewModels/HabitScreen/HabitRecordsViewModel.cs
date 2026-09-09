@@ -37,8 +37,20 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private DateOnly? _customTo;
 
     /// <summary>Il confine ricevuto dallo screen. Le registrazioni si ritagliano sul giorno
-    /// dell'abitudine, non sulla data UTC.</summary>
-    internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
+    /// dell'abitudine, non sulla data UTC. Il setter lo passa ai due figli: la lista attiva non deve
+    /// poter ritagliare su un giorno diverso da quello con cui questo pannello ha risolto il periodo.</summary>
+    internal DayBoundary DayBoundary
+    {
+        get => _dayBoundary;
+        set
+        {
+            _dayBoundary = value;
+            Records.DayBoundary = value;
+            Periods.DayBoundary = value;
+        }
+    }
+
+    private DayBoundary _dayBoundary = DayBoundary.Utc;
 
     public HabitRecordsViewModel(CompletionListViewModel records, AbstinencePeriodListViewModel periods, IClock clock)
     {

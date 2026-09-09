@@ -70,12 +70,17 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
 
     // ---- load ----
 
-    /// <summary>Populates the VM from the service. Call after <see cref="QuickAddViewModelBase.Node"/>
-    /// is set.</summary>
+    /// <summary>Il confine ricevuto dallo screen: il giorno dell'ultima ricaduta si nomina secondo il
+    /// giorno dell'abitudine, non secondo la data UTC.</summary>
     private DayBoundary _day = DayBoundary.Utc;
 
+    /// <summary>Populates the VM from the service. Call after <see cref="QuickAddViewModelBase.Node"/>
+    /// is set.</summary>
     public async Task LoadAsync(DayBoundary day, CancellationToken ct = default)
-        => await ReloadAsync(ct).ConfigureAwait(true);
+    {
+        _day = day;
+        await ReloadAsync(ct).ConfigureAwait(true);
+    }
 
     private async Task ReloadAsync(CancellationToken ct = default)
     {

@@ -4,6 +4,7 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.WPF.Formatting;
 using Recordum.WPF.Resources;
 
@@ -29,6 +30,11 @@ public sealed partial class CompletionListViewModel : ObservableObject
     /// ("Night"/"Nap") instead of the positional fallback (W23-VF3). Null/blank entries fall back.</summary>
     public string? SeriesLabelsJson { get; set; }
 
+    /// <summary>Il confine ricevuto dallo screen (B12). La finestra [da, a] si ritaglia sul giorno
+    /// dell'abitudine: con reset 04:00 una registrazione dell'una di notte appartiene al giorno prima,
+    /// e la mezzanotte UTC la pescherebbe nel giorno sbagliato.</summary>
+    internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
+
     public CompletionListViewModel(ICompletionService completions, IMetricDefinitionService metrics,
         IReferenceDataQueryService refData, IDiaryService diary)
     {
@@ -51,8 +57,10 @@ public sealed partial class CompletionListViewModel : ObservableObject
     public async Task LoadRangeAsync(Guid habitNodeId, DateOnly? from, DateOnly? to, CancellationToken ct = default)
     {
         NodeId = habitNodeId;
-        var fromTs = from is { } f ? new DateTimeOffset(f.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : (DateTimeOffset?)null;
-        var toTs = to is { } t ? new DateTimeOffset(t.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero) : (DateTimeOffset?)null;
+        // RangeOf e' semiaperta, il filtro del servizio e' inclusivo al millisecondo: il tetto e'
+        // l'ultimo millisecondo del giorno, non il primo istante di quello dopo.
+        var fromTs = from is { } f ? DayBoundary.StartOf(f) : (DateTimeOffset?)null;
+        var toTs = to is { } t ? DayBoundary.RangeOf(t).ToExclusive.AddMilliseconds(-1) : (DateTimeOffset?)null;
         var list = await _completions.ListByHabitAsync(habitNodeId, fromTs, toTs, ct: ct).ConfigureAwait(true);
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
         await PopulateAsync(list, lookup, ct).ConfigureAwait(true);

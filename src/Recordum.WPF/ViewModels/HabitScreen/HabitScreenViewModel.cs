@@ -665,8 +665,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Un solo posto in tutta la schermata decide a che giorno appartengono le cose (spec R9 §3.3):
         // i pannelli lo ricevono, non lo ricalcolano.
         _dayBoundary = await _resetTimes.GetDayBoundaryAsync(node.Id, ct).ConfigureAwait(true);
+        // Records lo gira ai suoi due figli (registrazioni e periodi); CompletionList e' l'altra
+        // istanza, quella della Cronologia, e va servita a parte.
         Records.DayBoundary = _dayBoundary;
-        _periodList.DayBoundary = _dayBoundary;
+        CompletionList.DayBoundary = _dayBoundary;
         if (generation != _loadGeneration) return;
 
         // Config is needed for QuickAdd, TimerControl and the records lists; fetch once, share. Awaited
@@ -687,8 +689,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         Calendar.CompletedColorHex = node.Color;
         Calendar.NoteColorHex = config?.NoteMarkerColor ?? "#e0b341";
-        var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(_clock.UtcNow.UtcDateTime, _clock.LocalTimeZone);
-        await Calendar.LoadAsync(todayLocal.Year, todayLocal.Month, DateOnly.FromDateTime(todayLocal), _dayBoundary, ct).ConfigureAwait(true);
+        // A39: il mese aperto e il giorno preselezionato vengono dal confine, non dall'ora locale
+        // nuda — o con reset 04:00 il calendario si apre sul giorno dopo rispetto a tutto il resto.
+        var today = _dayBoundary.Today(_clock);
+        await Calendar.LoadAsync(today.Year, today.Month, today, _dayBoundary, ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
 
         // Mirror the calendar's pre-selected day into QuickAdd so both controls agree before the first click.
