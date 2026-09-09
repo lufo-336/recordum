@@ -886,14 +886,17 @@ public async Task The_real_HomeViewModel_lists_the_habits_of_a_seeded_database()
         sp.GetRequiredService<IHabitNodeService>(),
         sp.GetRequiredService<IPurgeService>());
 
-    await sut.LoadAsync();                         // verificare il nome esatto del comando/metodo
+    await sut.LoadCommand.ExecuteAsync(null);
 
     sut.Rows.Should().NotBeEmpty();
-    sut.State.Should().Be(HomeState.Ready);        // verificare il nome esatto dello stato
+    sut.State.Should().Be(HomeState.Loaded);
 }
 ```
 
-**Prima di scriverlo, leggere `src/Recordum.WPF/ViewModels/HomeViewModel.cs`** e usare i nomi veri del metodo di caricamento e dell'enum di stato: questo blocco ne indovina la forma, non la firma.
+**Nomi verificati sul codice il 2026-09-09** (non indovinarli di nuovo): `LoadAsync` è **privato** — è un
+`[RelayCommand]`, quindi dall'esterno si invoca `LoadCommand.ExecuteAsync(null)`. L'enum è
+`HomeState { Loading, Loaded, Empty, Error }`: **non esiste `Ready`**. Un albero seminato con tre nodi
+finisce in `Loaded`.
 
 - [ ] **Step 2: Collegare i file, uno per uno**
 
@@ -974,7 +977,7 @@ Il messaggio deve dire **quanti file è stato necessario collegare** e se qualcu
 - Test: `tests/Recordum.Avalonia.Tests/HomeViewTests.cs`
 
 **Interfaces:**
-- Consumes: `HomeViewModel.Rows` (`ObservableCollection<HomeRowViewModel>`), e per ogni riga almeno `Name`, `ColorHex`, `IndentLevel` — **leggere `HomeRowViewModel.cs` per i nomi veri** delle proprietà prima di scrivere i binding.
+- Consumes: `HomeViewModel.Rows` (`ObservableCollection<HomeRowViewModel>`). Proprietà di riga **verificate sul codice il 2026-09-09**: `Name` (`[ObservableProperty]`), `ColorHex` (`string`), `IndentLevel` (`int`), `HabitNodeId` (`Guid`), `HabitType` (`HabitType?`, null = gruppo), `IsGroup`, `IsCompletedToday`.
 - Produces: `HomeView` (`UserControl`) con `DataContext` di tipo `HomeViewModel`.
 
 - [ ] **Step 1: Scrivere il test che fallisce**
@@ -1033,7 +1036,8 @@ git commit -m "feat(avalonia): la Home mostra l'albero delle abitudini"
 - Test: `tests/Recordum.Avalonia.Tests/QuickActionTests.cs`
 
 **Interfaces:**
-- Consumes: il comando di completamento rapido esposto da `HomeRowViewModel` / `QuickActionHandlerSelector` — **leggere `src/Recordum.WPF/ViewModels/Quick/` e la riga corrispondente di `HabitRowTemplate.xaml`** per capire come lo invoca WPF, e invocarlo allo stesso modo.
+- Consumes: `HomeRowViewModel.QuickActionCommand` (generato da `[RelayCommand] private async Task QuickActionAsync(CancellationToken)`), `HomeRowViewModel.HabitNodeId`, `HomeRowViewModel.HabitType`.
+- **Vincolo verificato sul codice, non ovvio**: il comando ha `CanExecute = nameof(CanQuickAction)`, e `CanQuickAction` è `!IsGroup && HabitType is not null && _quickActionSelector is not null`. Quindi **il `QuickActionHandlerSelector` va passato a `HomeViewModel`** (quarto/quinto parametro opzionale) o il comando non è mai eseguibile e il test fallisce senza dire perché. Registrarlo in `SliceServices` e passarlo dove il Task 5 costruiva il VM con tre soli argomenti.
 
 - [ ] **Step 1: Scrivere il test che fallisce**
 
@@ -1049,9 +1053,9 @@ public async Task Tapping_an_action_habit_records_a_completion_that_outlives_the
         await SliceInitializer.InitializeAsync(sp, default);
         var vm = await BuildHomeAsync(sp);
         var row = vm.Rows.First(r => r.HabitType == HabitType.Action);
-        habitId = row.Id;
+        habitId = row.HabitNodeId;
 
-        await row.QuickCompleteCommand.ExecuteAsync(null);   // nome vero da verificare
+        await row.QuickActionCommand.ExecuteAsync(null);
     }
 
     // Nuovo contenitore = nuova connessione: prova che il dato è sul disco, non in memoria.
