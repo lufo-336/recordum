@@ -1189,7 +1189,23 @@ adjudicano preferibilmente col dogfooding, E21):
 
 **Difetto del seed emerso da F3 — nuovo:**
 
-- **W25-2 — Il template ufficiale "Workout log" crea un'abitudine mai programmata** · `verified` (alta) ·
+- **W25-2 — Il template ufficiale "Workout log" crea un'abitudine mai programmata** · `fixed` (2026-09-10,
+  migration data-only **`WorkoutLogWeeklyTargetV218`**, schema **2.18**) · Il seed dichiara ora
+  `"schedule_type":"WeeklyX"` con `"schedule_weekly_target":3` — **tre volte a settimana, i giorni che
+  vuoi**. È anche l'unica lettura coerente con lo `streak_mode: "Weekly"` che il payload già portava:
+  `SpecificDays` lì dentro era un residuo, non una scelta. Scartata l'alternativa "giorni fissi
+  lun/mer/ven": un template spedito indovinerebbe la settimana di uno sconosciuto, e chi li vuole fissi
+  li mette da Configura (principio 8 — il template dà il mattone, non la settimana di qualcun altro).
+  Nota di modello emersa decidendo: **la scelta non tocca la correlabilità dei dati**, perché statistiche
+  e incroci leggono le completions e i loro istanti, non lo `schedule_type` — che decide solo in quali
+  giorni l'abitudine è attesa e come si calcola la streak. **Guard**:
+  `No_shipped_template_ships_a_schedule_that_never_comes_due` percorre tutti i template ufficiali e
+  fallisce sulle tre forme non programmabili (SpecificDays senza giorni, WeeklyX senza target,
+  EveryXDays senza intervallo), provato rosso contro il seed vecchio; più il test specifico
+  `Shipped_Workout_log_template_materializes_a_schedule_that_comes_due`. Aggiornata anche la fixture di
+  `BuilderTemplateParityTests`, che fin qui **documentava** il difetto. **Le abitudini già istanziate dal
+  vecchio template restano non programmate**: sono dati utente, coperte dal "nessun backfill" — si
+  sistemano da Configura. Testo originale del finding:
   il payload dichiara `"schedule_type":"SpecificDays"` ma **non dice quali giorni**, e
   `ScheduleEvaluator.MatchesDayMask(date, null)` è `false` per ogni data: l'abitudine istanziata dal
   template non scade mai e la sua streak resta a zero per sempre. Non è un difetto del builder — che ora

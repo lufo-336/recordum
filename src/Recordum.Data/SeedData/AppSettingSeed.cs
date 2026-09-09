@@ -14,6 +14,7 @@ public static class AppSettingSeed
     private static readonly DateTime SeedDateV215 = new(2026, 7, 17, 0, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime SeedDateV216 = new(2026, 8, 8, 0, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime SeedDateV217 = new(2026, 8, 8, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime SeedDateV218 = new(2026, 9, 10, 0, 0, 0, DateTimeKind.Utc);
 
     public static IReadOnlyList<AppSetting> All { get; } =
     [
@@ -34,6 +35,6 @@ public static class AppSettingSeed
         new AppSetting { Key = "backup.auto.retention_count", Value = "8",        UpdatedAt = SeedDateV27 },
         new AppSetting { Key = "backup.auto.last_run_utc",    Value = "",         UpdatedAt = SeedDateV27 },
         new AppSetting { Key = "backup.auto.path",            Value = "",         UpdatedAt = SeedDateV27 },
-        new AppSetting { Key = "schema_version",              Value = "2.17",     UpdatedAt = SeedDateV217 },
+        new AppSetting { Key = "schema_version",              Value = "2.18",     UpdatedAt = SeedDateV218 },
     ];
 }

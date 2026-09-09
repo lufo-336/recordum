@@ -343,6 +343,70 @@ public class HabitTemplateServiceTests
     }
 
     [Fact]
+    public async Task Shipped_Workout_log_template_materializes_a_schedule_that_comes_due()
+    {
+        // W25-2: il seed dichiarava SpecificDays senza dire QUALI giorni, e MatchesDayMask(date, null)
+        // è false per ogni data — l'abitudine istanziata non scadeva mai e la sua streak restava a zero
+        // per sempre. Ora dichiara WeeklyX con target 3, che è anche l'unica lettura coerente con lo
+        // streak_mode Weekly che il seed già portava. Legge il payload SEMINATO, non uno scritto qui.
+        await using var fx = new DbFixture();
+        var workoutLogId = Guid.Parse("00000003-0000-0000-0000-000000000002");
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+            (await db.HabitTemplates.SingleAsync(t => t.Id == workoutLogId)).Name.Should().Be("Workout log");
+
+        var newId = await CreateSut(fx).InstantiateAsync(workoutLogId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var cfg = await db2.HabitConfigs.SingleAsync(c => c.HabitNodeId == newId);
+        cfg.ScheduleType.Should().Be(ScheduleType.WeeklyX);
+        cfg.ScheduleWeeklyTarget.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task No_shipped_template_ships_a_schedule_that_never_comes_due()
+    {
+        // Il gemello del guard di R7, per il programma invece che per le unità: qualunque template
+        // ufficiale si spedisca, nessuno può dichiarare una forma di schedule che non è mai
+        // programmata — SpecificDays senza giorni, WeeklyX senza target, EveryXDays senza intervallo.
+        // Sono tre modi diversi di creare un'abitudine che non scade mai e non fa mai streak.
+        await using var fx = new DbFixture();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var payloads = await db.HabitTemplates.Where(t => t.IsOfficial)
+            .Select(t => new { t.Name, t.PayloadJson }).ToListAsync();
+        payloads.Should().NotBeEmpty();
+
+        foreach (var t in payloads)
+        {
+            var root = System.Text.Json.JsonDocument.Parse(t.PayloadJson).RootElement;
+            if (!root.TryGetProperty("config", out var cfg)) continue;
+            var type = cfg.TryGetProperty("schedule_type", out var st) ? st.GetString() : null;
+
+            switch (type)
+            {
+                case "SpecificDays":
+                    var days = cfg.TryGetProperty("schedule_days_json", out var d) ? d.GetString() : null;
+                    days.Should().NotBeNullOrWhiteSpace(
+                        $"the '{t.Name}' template schedules specific days without saying which");
+                    days.Should().NotBe("[]",
+                        $"the '{t.Name}' template schedules an empty set of days");
+                    break;
+                case "WeeklyX":
+                    var target = cfg.TryGetProperty("schedule_weekly_target", out var w) ? w.GetInt32() : (int?)null;
+                    target.Should().BeGreaterThan(0,
+                        $"the '{t.Name}' template asks for X times a week without saying X");
+                    break;
+                case "EveryXDays":
+                    var every = cfg.TryGetProperty("schedule_every_x_days", out var e) ? e.GetInt32() : (int?)null;
+                    every.Should().BeGreaterThan(0,
+                        $"the '{t.Name}' template repeats every X days without saying X");
+                    break;
+                default:
+                    break;   // Daily / Monthly / Custom / assente: nessun campo obbligatorio da controllare
+            }
+        }
+    }
+
+    [Fact]
     public async Task InstantiateAsync_applies_the_journal_gesture_from_the_payload()
     {
         await using var fx = new DbFixture();

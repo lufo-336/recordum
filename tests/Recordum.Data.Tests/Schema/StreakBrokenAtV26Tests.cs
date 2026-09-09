@@ -34,7 +34,7 @@ public sealed class StreakBrokenAtV26Tests : IClassFixture<SchemaFixture>
 
         cmd.CommandText = "SELECT value FROM app_settings WHERE key = 'schema_version';";
         var version = (string?)await cmd.ExecuteScalarAsync();
-        // schema_version is now "2.17" after FoodDiaryQuickNoteV217 migration runs on top
-        Assert.Equal("2.17", version);
+        // schema_version is now "2.18" after WorkoutLogWeeklyTargetV218 migration runs on top
+        Assert.Equal("2.18", version);
     }
 }

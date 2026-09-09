@@ -65,12 +65,13 @@ public class BuilderTemplateParityTests
         {
             vm.Name = "Workout log";
             vm.Color = "#e85d4a";
-            // Il seed dichiara SpecificDays ma NON dice quali giorni, quindi la fixture non ne
-            // seleziona nessuno: e' l'unico modo di essere fedeli al payload. Conseguenza (W25-2 a
-            // tracker): questa composizione NON e' lanciabile — il gate introdotto dalla review 2.5
-            // (F3) la rifiuta, perche' un SpecificDays senza giorni non e' mai programmato. Il difetto
-            // e' del template spedito, non del builder.
-            vm.Schedule.ScheduleType = ScheduleType.SpecificDays;
+            // W25-2 chiuso: il seed dichiarava SpecificDays senza dire quali giorni, e la fixture era
+            // costretta a non selezionarne nessuno per restare fedele al payload — cioe' a comporre
+            // un'abitudine che il gate della review 2.5 (F3) giustamente rifiuta, perche' non sarebbe
+            // mai scaduta. Ora dichiara "tre volte a settimana", che e' anche l'unica lettura coerente
+            // con lo streak_mode Weekly che il seed gia' portava.
+            vm.Schedule.ScheduleType = ScheduleType.WeeklyX;
+            vm.Schedule.WeeklyTarget = 3;
             vm.Schedule.StreakMode = StreakMode.Weekly;
             vm.Schedule.StreakRecovery = StreakRecovery.None;
             AddField(vm, FieldNature.Time, "Duration", unit: "minutes");
