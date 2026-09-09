@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+    Porting 1:1 di src/Recordum.WPF/Resources/Tokens.xaml + Light.xaml + Dark.xaml — 43 chiavi,
+    stesso nome chiave dei tre file WPF, così le due shell si confrontano chiave per chiave.
+    NON è un file di produzione: è la sonda probe (branch avalonia-linux-slice) che misura quanto
+    del linguaggio visivo di Recordum sopravvive al passaggio da WPF a FluentTheme.
+
+    Differenza di meccanismo rispetto a WPF: là Light.xaml e Dark.xaml sono DUE ResourceDictionary
+    separati, scambiati per intero da ThemeService (swap del MergedDictionaries a runtime). Qui le
+    due varianti vivono nello STESSO file, sotto ResourceDictionary.ThemeDictionaries con chiave
+    "Light"/"Dark": è Avalonia stesso a risolvere quale Brush.* usare in base a
+    Window.ActualThemeVariant (o Application.RequestedThemeVariant), non serve un servizio nostro
+    che scambia dizionari. Le chiavi non themed (FontSize.*, Font.*, Layout.*) restano al livello
+    superiore del ResourceDictionary, fuori da ThemeDictionaries, perché non cambiano con la
+    variante.
+    -->
+
+    <!-- Font sizes — invarianti, identiche ai valori WPF. -->
+    <x:Double x:Key="FontSize.Body">14</x:Double>
+    <x:Double x:Key="FontSize.Small">12</x:Double>
+    <x:Double x:Key="FontSize.Heading">15</x:Double>
+
+    <!-- Font.Default in WPF è Palatino Linotype (con fallback Book Antiqua/Georgia), scelto a
+         runtime da AppFontService (AppSetting ui.font) — una decisione dell'autore, non del tema.
+         Palatino non esiste su Linux: qui usiamo uno stack serif di sistema con fallback sans,
+         SOLO per far rendere qualcosa di leggibile nella sonda. La scelta del font per la vera
+         shell Avalonia resta all'autore — non la stiamo anticipando qui. -->
+    <FontFamily x:Key="Font.System">Segoe UI, Ubuntu, Cantarell, Noto Sans, DejaVu Sans, sans-serif</FontFamily>
+    <FontFamily x:Key="Font.Serif">Georgia, Noto Serif, Liberation Serif, DejaVu Serif, serif</FontFamily>
+    <FontFamily x:Key="Font.Default">Georgia, Noto Serif, Liberation Serif, DejaVu Serif, serif</FontFamily>
+
+    <!-- Layout — stessi numeri di WPF Tokens.xaml (px WPF ~= DIP Avalonia, 1:1 a questa densità). -->
+    <x:Double x:Key="Layout.RowHeight">36</x:Double>
+    <x:Double x:Key="Layout.AccentBarWidth">4</x:Double>
+    <x:Double x:Key="Layout.IndentPerLevel">24</x:Double>
+    <x:Double x:Key="Layout.HeatmapCell">10</x:Double>
+    <x:Double x:Key="Layout.HeatmapGap">2</x:Double>
+
+    <!-- Brush.* — identiche ai colori WPF (stessi hex), risolte per variante da Avalonia stesso. -->
+    <ResourceDictionary.ThemeDictionaries>
+
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="Brush.Background"      Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="Brush.Surface"         Color="#FFF7F7F8"/>
+            <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="Brush.Border"          Color="#FFE4E4E7"/>
+            <SolidColorBrush x:Key="Brush.Text"            Color="#FF18181B"/>
+            <SolidColorBrush x:Key="Brush.TextMuted"       Color="#FF71717A"/>
+            <SolidColorBrush x:Key="Brush.Accent"          Color="#FF3B82F6"/>
+            <SolidColorBrush x:Key="Brush.OnAccent"        Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="Brush.Success"         Color="#FF16A34A"/>
+            <SolidColorBrush x:Key="Brush.Danger"          Color="#FFDC2626"/>
+            <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FFEFEFF1"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level0"  Color="#FFEFEFF1"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level1"  Color="#FF9BE9A8"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF40C463"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level3"  Color="#FF30A14E"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level4"  Color="#FF216E39"/>
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="Brush.Background"      Color="#FF09090B"/>
+            <SolidColorBrush x:Key="Brush.Surface"         Color="#FF18181B"/>
+            <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FF27272A"/>
+            <SolidColorBrush x:Key="Brush.Border"          Color="#FF3F3F46"/>
+            <SolidColorBrush x:Key="Brush.Text"            Color="#FFFAFAFA"/>
+            <SolidColorBrush x:Key="Brush.TextMuted"       Color="#FFA1A1AA"/>
+            <SolidColorBrush x:Key="Brush.Accent"          Color="#FF60A5FA"/>
+            <SolidColorBrush x:Key="Brush.OnAccent"        Color="#FF09090B"/>
+            <SolidColorBrush x:Key="Brush.Success"         Color="#FF4ADE80"/>
+            <SolidColorBrush x:Key="Brush.Danger"          Color="#FFF87171"/>
+            <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FF27272A"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level0"  Color="#FF27272A"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level1"  Color="#FF0E4429"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF006D32"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level3"  Color="#FF26A641"/>
+            <SolidColorBrush x:Key="Brush.Heatmap.Level4"  Color="#FF39D353"/>
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

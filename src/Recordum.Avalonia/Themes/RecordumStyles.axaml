@@ -1,0 +1,64 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+    Sonda (branch avalonia-linux-slice): a differenza di BaseStyles.xaml in WPF (1046 righe, 34
+    tipi di controllo riscritti da zero), qui c'è SOLO quello che il brief chiede e che FluentTheme
+    non dà già di default con i soli token. Ogni Style qui sotto è una decisione di design di
+    Recordum (non un'undo di un default dated), e lo dice nel commento.
+
+    Deliberatamente NON qui: ComboBox, CheckBox, Slider, Expander, TabControl — il default
+    FluentTheme di questi controlli è già "modern flat neutral" nello spirito del linguaggio
+    visivo di Recordum (§9 CLAUDE.md: tono serio, no candy, motion restrained). La sonda li
+    esercita con la sola colorazione a token (via override delle chiavi ThemeResource di Fluent,
+    non con un ControlTheme nostro) — vedi ThemeProbeView.axaml.
+    -->
+
+    <!-- Pulsante primario: Fluent colora i pulsanti in Background/Foreground neutri di default,
+         con l'enfasi (Classes="accent") legata al colore di sistema — non al nostro Brush.Accent.
+         Qui puntiamo esplicitamente ai nostri token: 4 Setter, non un ControlTemplate. -->
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.OnAccent}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Opacity" Value="0.9"/>
+    </Style>
+
+    <!-- Pulsante "quiet"/ghost: nessun bordo, nessuno sfondo, testo muto finché non è a fuoco/hover
+         — Fluent non ha una variante equivalente pronta all'uso (le sue Classes standard sono
+         Accent/Danger, pensate per l'accento di sistema, non per un pulsante "silenzioso"). -->
+    <Style Selector="Button.ghost">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+    </Style>
+
+    <!-- TextBox "underline" minimale (Obsidian-like, CLAUDE.md §9): stessa identica idea del
+         commento WPF — "il default onora Background/BorderBrush/BorderThickness, non serve un
+         ControlTemplate nuovo" — vale anche qui: il tema di default di Avalonia disegna il
+         bordo dentro un Border con BorderThickness da TemplateBinding, quindi bastano i Setter. -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="Padding" Value="2,4"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text}"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+    <!-- Setter diretto su BorderBrush (non su una parte del template): il default TextBox lo
+         espone via TemplateBinding, quindi arriva al bordo senza dover conoscere il nome interno
+         della parte — stesso principio del commento sopra. -->
+    <Style Selector="TextBox:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+
+</Styles>
