@@ -51,9 +51,16 @@ public sealed partial class PanoramicaViewModel : ObservableObject
         Goal = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
     }
 
+    /// <summary>Il confine con cui è stato fatto l'ultimo caricamento. Serve al test di I1: senza
+    /// poterlo leggere, "il gruppo ha ricevuto il confine giusto" non è una cosa che si possa provare —
+    /// il campo dello screen a fine caricamento è corretto comunque, ed è proprio ciò che rendeva il
+    /// difetto invisibile.</summary>
+    internal DayBoundary? LastLoadedBoundary { get; private set; }
+
     public async Task LoadAsync(HabitNode group, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
+        LastLoadedBoundary = day;
         var rows = await _tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
         var byParent = rows.ToLookup(r => r.ParentId);
         Children.Clear();

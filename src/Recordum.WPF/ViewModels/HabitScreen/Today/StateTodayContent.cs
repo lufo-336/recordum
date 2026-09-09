@@ -49,12 +49,16 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
         _clock = clock;
     }
 
+    /// <summary>Il confine ricevuto dallo screen. Lo usano sia la lettura del valore di oggi sia la
+    /// FINESTRA del last-wins in <see cref="RecordAsync"/>: con un confine sbagliato quest'ultima
+    /// cancella le registrazioni del giorno vicino, non di quello che l'utente sta compilando.</summary>
     private DayBoundary _day = DayBoundary.Utc;
 
     public async Task LoadAsync(HabitNode node, DayBoundary day, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         _habitId = node.Id;
+        _day = day;
 
         await ResolveScaleAsync(ct).ConfigureAwait(true);
 
@@ -123,7 +127,10 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
 
         // Last-wins for the day: drop any existing completion(s) recorded today, then record the new value.
         var today = _day.Today(_clock);
-        var (dayStart, dayEnd) = _day.RangeOf(today);
+        // Tetto inclusivo al millisecondo come vuole il filtro del servizio: qui conta il doppio,
+        // perché questa finestra decide quali registrazioni CANCELLARE (last-wins).
+        var (dayStart, dayEndExclusive) = _day.RangeOf(today);
+        var dayEnd = dayEndExclusive.AddMilliseconds(-1);
         var existing = await _completions.ListByHabitAsync(_habitId, dayStart, dayEnd).ConfigureAwait(true);
         foreach (var c in existing) await _completions.DeleteAsync(c.Id).ConfigureAwait(true);
 

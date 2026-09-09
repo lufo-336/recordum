@@ -1576,3 +1576,77 @@ builder. È il progetto: il payload la porta come definizione incorporata e la c
      di W2V-17c.
 - **Non fatto** (deliberato): **non** ho pinnato le versioni. Pinnare non chiude il meccanismo — un
   *nuovo* pacchetto transitivo potrebbe reintrodurre un bundle domani lo stesso. Il guard sì.
+
+
+## Review di branch R9 (2026-09-10) — due Critical, un Important, tutti chiusi
+
+Review sull'**intero diff** del branch (`4c63af7..8961005`, 136 file), non per-task: è la forma che
+nell'ultimo anno ha trovato ciò che le review per-task non potevano vedere (C1/C2 dell'Onda 2.4, i sei
+findings della 2.5). Il piano R9 aveva **predetto la forma** del difetto — *"una superficie dimenticata,
+un sito marcato C in §0 che nessun task ha toccato"* — e la predizione era giusta due volte su tre.
+
+**Chiusi in questo giro:**
+
+- **R9-C1 — `StateTodayContent` riceveva il confine e non lo assegnava** (`fixed`). Il **quarto** caso
+  della stessa famiglia dei tre trovati nel WIP: `_day` restava `DayBoundary.Utc` per sempre, quindi
+  A54/A55/B15 erano convertiti solo in apparenza. La seconda conseguenza è **perdita di dati**:
+  `RecordAsync` fa last-wins cancellando le completion nella finestra del giorno, e con la finestra in
+  UTC alle 00:30 locali del 19 cancellava il valore registrato alle 20:00 del **18**. Passato perché
+  `TodayStripDayBoundaryTests` copriva Action, Resistance, Counter e HomeRow — **non State**. Ora c'è
+  anche il quinto test.
+- **R9-C2 — `RangeOf` esplodeva su `DateOnly.MinValue`, e un chiamante glielo passa** (`fixed`).
+  Regressione **introdotta da questo branch**: `AbstinencePeriodListViewModel` scrive
+  `from ?? DateOnly.MinValue` per "tutte le registrazioni", e `StartOf(0001-01-01)` in un fuso a offset
+  **positivo** costruisce un istante che in UTC cade nell'anno 0 → `ArgumentOutOfRangeException`. Su
+  un'abitudine Resistance bastava scegliere Registrazioni → periodo "Tutto". Invisibile ai test perché
+  l'unico che passa `MinValue` gira su `DbFixture`, il cui `FakeClock` ha fuso **UTC** (offset zero).
+  `MinValue` è ora sentinella simmetrica a `MaxValue`; il test lo prova in un fuso Rome-like, non in UTC.
+- **R9-I1 — la Panoramica di un gruppo riceveva il confine del soggetto precedente** (`fixed`). Il
+  `_dayBoundary` si risolveva **dopo** il ramo `if (node.NodeType == NodeType.Group)`: al primo
+  caricamento il gruppo prendeva `DayBoundary.Utc`, dopo un'abitudine con reset 04:00 prendeva quello
+  dell'abitudine — stato di un soggetto che sanguina su un altro. Risoluzione spostata sopra ogni
+  pannello; `PanoramicaViewModel.LastLoadedBoundary` rende la cosa **osservabile**, perché il campo
+  dello screen a fine caricamento è corretto comunque ed è ciò che rendeva il difetto invisibile.
+- **R9-M4 — bound esclusivo passato a un filtro inclusivo** (`fixed`). `ActionTodayContent` e
+  `StateTodayContent` passavano `RangeOf(...).ToExclusive` a `ListByHabitAsync`, che filtra
+  `CompletedAtMs <= tMs`: un millisecondo di sovrapposizione col giorno dopo. Difetto preesistente
+  (`LocalDayWindow` faceva lo stesso), ma la stessa domanda aveva **due risposte nello stesso branch**.
+- **R9-M5 — `ThrowIfNull(resetTimes)` mancante** dove tutti gli altri parametri erano guardati (`fixed`).
+
+**Aperti, deliberatamente — nessuno blocca il merge:**
+
+- **R9-M1 — il guard anti-regressione è a granularità di file** (`reported`).
+  `DayDerivationGuardTests` salta l'**intero file** whitelistato: una derivazione nuova dentro
+  `QuickAddViewModelBase.cs` non verrebbe mai vista. Inoltre il pattern è `UtcNow.UtcDateTime.Date`,
+  mentre §0 contava tre siti scritti `.UtcDateTime.Date` **senza** `UtcNow` davanti: quella forma oggi
+  non esiste più, ma il guard non la riprenderebbe. Fix: whitelist per `file:pattern` (o marcatore di
+  riga) e secondo pattern allargato.
+- **R9-M2 — `RetroactiveNoonBackfill`: N+1, flag non atomico, idempotenza con un'eccezione geografica**
+  (`reported`). Una `FirstAsync` per ogni riga spostata dentro il loop, all'avvio su DB cifrato;
+  `SaveChangesAsync` e la scrittura del flag non sono nella stessa transazione, quindi un crash fra le
+  due fa rigirare il passo. E rigirando **non è idempotente ovunque**: `declared` si ricava dalla data
+  UTC dell'istante, che dopo il primo giro è mezzogiorno locale — con offset in (−12, +12) la data UTC
+  coincide e nulla si muove, ma a **UTC+13/+14** mezzogiorno locale cade nel giorno UTC precedente e
+  ogni giro sposterebbe la riga indietro di un giorno. Non è un rischio per l'autore; la docstring però
+  dice "idempotente" senza condizioni. O flag nella stessa transazione, o si nomina il limite.
+- **R9-M3 — il range dei grafici usa il confine dell'app, i bucket quello dell'abitudine**
+  (`reported`). Scelta dichiarata e difendibile (un chart può avere serie su abitudini diverse), ma la
+  conseguenza non è scritta: con `reset_time` 04:00 il bucket agli estremi del range può risultare
+  tagliato rispetto a ciò che la heatmap della stessa abitudine mostra.
+- **R9-M6 — `CalendarNavigatorViewModel._today` è leggibile prima di `LoadAsync`** (`reported`).
+  Il commento dice "le celle nascono solo dentro LoadAsync", ma `:298` (`_weekAnchor = SelectedDate ?? _today`)
+  legge il campo dal cambio di vista: con `SelectedDate` null e nessun load, l'ancora finisce nell'anno 1.
+  Nel flusso reale non capita; un `DateOnly?` renderebbe l'invariante **verificabile** invece che documentata.
+- **R9-M7 — `HabitTreeQueryService` ha spostato un `GROUP BY` SQL in memoria** (`reported`). Inevitabile
+  (il bucket dipende dall'abitudine e i giorni non durano 24 ore) e `HomeTreeBudgetTests` resta verde, ma
+  ora il costo scala col **numero di registrazioni**, non di abitudini: va accanto al budget E20.
+- **R9-M8 — `CompletionRowViewModel.Display` mostra ancora l'ora UTC** (`reported`). La modifica inline
+  converte ora dal fuso dell'abitudine in entrambe le direzioni, ma `Display` no. Oggi invisibile perché
+  quell'editor **non ha superficie XAML**; il giorno che ce l'avrà, riga ed editor mostreranno due orari
+  diversi. Vale per tutte le righe della Cronologia, quindi è una decisione di presentazione, non un fix
+  da infilare qui.
+
+**Difetti del piano, non dell'esecuzione** (da correggere in §0 quando lo si rilegge): la tabella non
+elenca `PanoramicaViewModel`/il goal di gruppo fra i siti — da cui I1 — e classifica B4 come semplice
+"converti" senza notare che il suo chiamante passa `DateOnly.MinValue` come sentinella — da cui C2.
+Entrambi sono buchi dell'**audit**: la tabella §0 è ora aggiornata con le due righe mancanti.

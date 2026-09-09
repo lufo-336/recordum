@@ -98,10 +98,14 @@ public sealed record DayBoundary(TimeZoneInfo TimeZone, TimeOnly ResetTime)
     /// <summary>La finestra semiaperta che copre da <paramref name="fromDay"/> a
     /// <paramref name="toDayInclusive"/> compreso.</summary>
     public (DateTimeOffset From, DateTimeOffset ToExclusive) RangeOf(DateOnly fromDay, DateOnly toDayInclusive)
-        // DateOnly.MaxValue non ha un "giorno dopo" rappresentabile: chi lo usa come tetto
-        // inclusivo intende "senza limite superiore", quindi il tetto esclusivo diventa l'infinito
-        // del tipo invece di far esplodere AddDays. Un chiamante reale è AbstinencePeriodListViewModel
-        // (to ?? DateOnly.MaxValue per "tutte le registrazioni").
-        => (StartOf(fromDay),
+        // I due estremi del tipo sono sentinelle, e vanno trattati come tali in ENTRAMBE le direzioni:
+        // il chiamante reale è AbstinencePeriodListViewModel, che per "tutte le registrazioni" scrive
+        // `from ?? DateOnly.MinValue, to ?? DateOnly.MaxValue`.
+        // - MaxValue non ha un "giorno dopo" rappresentabile: AddDays esploderebbe.
+        // - MinValue non ha un istante rappresentabile in un fuso a offset POSITIVO: la mezzanotte
+        //   dell'anno 1 letta in UTC cade nell'anno 0, e DateTimeOffset lancia. Il difetto non si
+        //   vedeva con DayBoundary.Utc (offset zero) — è per questo che il test lo prova in un fuso
+        //   Rome-like, non in UTC.
+        => (fromDay == DateOnly.MinValue ? DateTimeOffset.MinValue : StartOf(fromDay),
             toDayInclusive == DateOnly.MaxValue ? DateTimeOffset.MaxValue : StartOf(toDayInclusive.AddDays(1)));
 }

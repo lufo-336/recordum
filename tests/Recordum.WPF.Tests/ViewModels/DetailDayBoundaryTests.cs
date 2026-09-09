@@ -212,6 +212,32 @@ public class DetailDayBoundaryTests
         periods.DayBoundary.Should().Be(Boundary);
     }
 
+    /// <summary>I1. Il confine si risolve PRIMA di qualunque pannello, ramo gruppo compreso: la
+    /// Panoramica veniva caricata sopra la riga che lo risolve, quindi riceveva il confine del
+    /// soggetto precedente — o <see cref="DayBoundary.Utc"/> al primo caricamento.</summary>
+    [Fact]
+    public async Task A_group_gets_its_own_boundary_not_the_one_of_the_habit_selected_before()
+    {
+        var resetTimes = new FakeResetTimeResolver();
+        var (sut, nodes, _) = CreateScreen(new FakeClock(LateOn18, Plus2), resetTimes);
+        var habit = Habit(HabitType.Action);
+        var group = new HabitNode
+        {
+            Id = Guid.NewGuid(), NodeType = NodeType.Group, Name = "g", Color = "#808080",
+        };
+        nodes.Store[habit.Id] = habit;
+        nodes.Store[group.Id] = group;
+        var habitBoundary = new DayBoundary(Plus2, new TimeOnly(4, 0));
+        var groupBoundary = new DayBoundary(Plus2, TimeOnly.MinValue);
+        resetTimes.PerHabit[habit.Id] = habitBoundary;
+        resetTimes.PerHabit[group.Id] = groupBoundary;
+
+        await sut.LoadAsync(habit.Id);
+        await sut.LoadAsync(group.Id);
+
+        sut.Panoramica.LastLoadedBoundary.Should().Be(groupBoundary);
+    }
+
     // ---- helpers ------------------------------------------------------------------
 
     private static void SeedCompletion(FakeCompletionService completions, Guid habitId, DateTimeOffset when)
@@ -232,6 +258,10 @@ public class DetailDayBoundaryTests
     /// fissa entrambi, e con quelli "oggi" del confine e data UTC coincidono sempre.</summary>
     private static (HabitScreenViewModel Vm, FakeHabitNodeService Nodes, FakeAbstinenceService Abstinence)
         CreateScreen(FakeClock clock, DayBoundary boundary)
+        => CreateScreen(clock, new FakeResetTimeResolver(boundary));
+
+    private static (HabitScreenViewModel Vm, FakeHabitNodeService Nodes, FakeAbstinenceService Abstinence)
+        CreateScreen(FakeClock clock, FakeResetTimeResolver resetTimes)
     {
         var nodes = new FakeHabitNodeService();
         var metrics = new FakeMetricDefinitionService();
@@ -250,7 +280,7 @@ public class DetailDayBoundaryTests
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, new FakeEventBus(), new FakeWebView2Availability(available: true), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver(boundary));
+            new FakeAttachmentService(), new FakeOpenFileDialog(), uiPrefs, resetTimes);
         return (vm, nodes, abstinence);
     }
 }

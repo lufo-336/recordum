@@ -564,6 +564,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(goals);
         ArgumentNullException.ThrowIfNull(ramp);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(resetTimes);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(availability);
         _nodes = nodes;
@@ -656,20 +657,23 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         await RestoreColumnsForSubjectAsync(node, ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
 
-        if (node.NodeType == NodeType.Group)
-            await Panoramica.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
-
-        // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
-        CompletionList.IsJournal = node.HabitType == HabitType.Journal;
-
         // Un solo posto in tutta la schermata decide a che giorno appartengono le cose (spec R9 §3.3):
-        // i pannelli lo ricevono, non lo ricalcolano.
+        // i pannelli lo ricevono, non lo ricalcolano. Va risolto PRIMA di qualunque pannello, ramo
+        // gruppo compreso: caricare la Panoramica sopra questa riga le consegnava il confine del
+        // soggetto PRECEDENTE (o DayBoundary.Utc al primo caricamento), cioe' lo stato di un soggetto
+        // che sanguina su un altro — la classe di difetto che i generation-guard esistono per evitare.
         _dayBoundary = await _resetTimes.GetDayBoundaryAsync(node.Id, ct).ConfigureAwait(true);
         // Records lo gira ai suoi due figli (registrazioni e periodi); CompletionList e' l'altra
         // istanza, quella della Cronologia, e va servita a parte.
         Records.DayBoundary = _dayBoundary;
         CompletionList.DayBoundary = _dayBoundary;
         if (generation != _loadGeneration) return;
+
+        if (node.NodeType == NodeType.Group)
+            await Panoramica.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
+
+        // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
+        CompletionList.IsJournal = node.HabitType == HabitType.Journal;
 
         // Config is needed for QuickAdd, TimerControl and the records lists; fetch once, share. Awaited
         // before the parallel block because the lists must know the series names BEFORE they populate.

@@ -54,6 +54,7 @@ public sealed partial class ExportDialogViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(save);
         ArgumentNullException.ThrowIfNull(templates);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(resetTimes);
         _query = query; _jobs = jobs; _registry = registry; _save = save; _templates = templates; _clock = clock;
         _resetTimes = resetTimes;
     }

@@ -10,18 +10,26 @@ public sealed class FakeResetTimeResolver(DayBoundary? boundary = null) : IReset
 {
     private readonly DayBoundary _boundary = boundary ?? DayBoundary.Utc;
 
+    /// <summary>Confini per singola abitudine, quando un test deve distinguere due soggetti — è
+    /// l'unico modo di provare che un pannello ha ricevuto il confine del soggetto GIUSTO invece di
+    /// quello precedente. Le abitudini non elencate ricadono sul confine di default.</summary>
+    public Dictionary<Guid, DayBoundary> PerHabit { get; } = [];
+
+    private DayBoundary For(Guid habitNodeId)
+        => PerHabit.TryGetValue(habitNodeId, out var b) ? b : _boundary;
+
     public ValueTask<TimeOnly> GetEffectiveResetTimeAsync(Guid habitNodeId, CancellationToken ct = default)
-        => ValueTask.FromResult(_boundary.ResetTime);
+        => ValueTask.FromResult(For(habitNodeId).ResetTime);
 
     public ValueTask<DayBoundary> GetDayBoundaryAsync(Guid habitNodeId, CancellationToken ct = default)
-        => ValueTask.FromResult(_boundary);
+        => ValueTask.FromResult(For(habitNodeId));
 
     public ValueTask<IReadOnlyDictionary<Guid, DayBoundary>> GetDayBoundariesAsync(
         IReadOnlyCollection<Guid> habitNodeIds, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(habitNodeIds);
         IReadOnlyDictionary<Guid, DayBoundary> map =
-            habitNodeIds.Distinct().ToDictionary(id => id, _ => _boundary);
+            habitNodeIds.Distinct().ToDictionary(id => id, For);
         return ValueTask.FromResult(map);
     }
 

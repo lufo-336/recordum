@@ -103,6 +103,34 @@ public class TodayStripDayBoundaryTests
         sut.TodayTotal.Should().Be(3m);
     }
 
+    /// <summary>A54/A55/B15. Il quinto pannello della fascia — quello che la prima stesura di questo
+    /// file NON copriva, ed è esattamente il buco da cui il difetto è passato: <see cref="StateTodayContent"/>
+    /// riceveva il confine e non lo assegnava, quindi leggeva (e cancellava) sul giorno UTC.</summary>
+    [Fact]
+    public async Task State_reads_todays_value_through_the_reset_time_it_is_given()
+    {
+        // 02:40 locali del 19 con reset 04:00: "oggi" è ancora il 18, e il valore registrato il 18
+        // dev'essere quello che lo slider ripropone. Con il confine UTC il pannello cercava il 19,
+        // non trovava nulla e mostrava lo slider al minimo come se la giornata fosse vuota.
+        var clock = new FakeClock(EarlyMorningOf19, Plus2);
+        var completions = new FakeCompletionService();
+        var metrics = new FakeMetricDefinitionService();
+        var refData = new FakeReferenceData();
+        var node = Habit(HabitType.State);
+        metrics.Store[Guid.NewGuid()] = new MetricDefinition
+        {
+            Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0,
+            ScaleTemplateId = refData.Scales[0].Id, Name = "mood",
+        };
+        completions.MagnitudeByHabit[node.Id] = [new DailyMagnitude(new DateOnly(2026, 8, 18), 3m)];
+        var sut = new StateTodayContent(completions, metrics, refData, clock);
+
+        await sut.LoadAsync(node, LateReset);
+
+        sut.LastValueLabel.Should().NotBeNull();
+        sut.SliderValue.Should().Be(2);   // magnitudine 3 = indice 2 (il valore memorizzato è 1-based)
+    }
+
     [Fact]
     public async Task Home_row_streak_asks_for_the_window_of_the_boundary_it_is_given()
     {

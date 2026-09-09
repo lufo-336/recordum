@@ -103,6 +103,7 @@ Legenda: **C** = converti · **P** = lascia, è presentazione · **D** = lascia,
 | A55 | `StateTodayContent:122` | "oggi" (last-wins della giornata) | **C** | 8 |
 | A56 | `HomeRowViewModel:282` | "oggi" della cifra chiave streak (già locale) | **C** | 8 |
 | A57 | `QuickAddViewModelBase:34` (`.UtcDateTime.Date`) | data iniziale del quick-add | **C** | 10 |
+| A59 | `PanoramicaViewModel` → `Goal.LoadAsync` (goal di gruppo) | **mancava in questa tabella**: aggiunta dopo la review di branch, che ci ha trovato I1 — il gruppo riceveva il confine del soggetto precedente perché lo screen risolveva `_dayBoundary` dopo il ramo gruppo | **C** | 9 |
 | A58 | `QuickAddViewModelBase:51` (`.UtcDateTime.Date`) | "oggi" per decidere `IsRetroactive` | **C** | 10 |
 
 **Lo scisma, misurato**: 22 di questi calcolano già "oggi" in locale (A25, A38, A39, A43, A47, A50–A52, A54–A56 e i loro derivati), 14 in UTC. Fra mezzanotte e le 02:00 le due metà indicano **giorni diversi** — è la famiglia di cui R10 è un campione. Dopo questo piano il modo di calcolare "oggi" è **uno**.
@@ -114,7 +115,7 @@ Legenda: **C** = converti · **P** = lascia, è presentazione · **D** = lascia,
 | B1 | `CompletionService:127-128` (heatmap) | **C** | 3 |
 | B2 | `CompletionService:144-145` (somma giornaliera) | **C** | 3 |
 | B3 | `CompletionService:173-174` (magnitudine mensile) | **C** | 3 |
-| B4 | `AbstinenceService:69-70` (`ListPeriodsAsync`) | **C** | 4 |
+| B4 | `AbstinenceService:69-70` (`ListPeriodsAsync`) — **attenzione**: il chiamante (`AbstinencePeriodListViewModel`) passa `DateOnly.MinValue`/`MaxValue` come **sentinelle** per "tutte le registrazioni". `RangeOf` deve trattarle entrambe, o `StartOf(MinValue)` lancia in ogni fuso a offset positivo (R9-C2) | **C** | 4 |
 | B5 | `HabitConfigTimeline:18` (fine giornata per risolvere la config del giorno) | **C** | 4 |
 | B6 | `HourlyDistributionQueryService:14-15` | **C** | 5 |
 | B7 | `TrendQueryService:14-15` | **C** | 5 |

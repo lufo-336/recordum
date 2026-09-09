@@ -122,6 +122,31 @@ public class DayBoundaryTests
     }
 
     [Fact]
+    public void RangeOf_with_MinValue_as_the_floor_means_no_lower_bound()
+    {
+        // Il gemello del caso MaxValue, e lo stesso chiamante: AbstinencePeriodListViewModel fa
+        // `from ?? DateOnly.MinValue` per "tutte le registrazioni". Senza il caso speciale,
+        // StartOf(0001-01-01) costruisce un DateTimeOffset il cui UTC cade nell'anno 0 — e lanciava,
+        // ma SOLO in un fuso a offset positivo: con DayBoundary.Utc l'offset è zero e non si vede.
+        // Per questo il fuso qui è Rome-like e non UTC.
+        var b = Rome(4);
+
+        var (from, toExclusive) = b.RangeOf(DateOnly.MinValue, new DateOnly(2026, 8, 31));
+
+        from.Should().Be(DateTimeOffset.MinValue);
+        toExclusive.Should().Be(b.StartOf(new DateOnly(2026, 9, 1)));
+    }
+
+    [Fact]
+    public void RangeOf_from_MinValue_to_MaxValue_is_the_whole_timeline()
+    {
+        var (from, toExclusive) = Rome(4).RangeOf(DateOnly.MinValue, DateOnly.MaxValue);
+
+        from.Should().Be(DateTimeOffset.MinValue);
+        toExclusive.Should().Be(DateTimeOffset.MaxValue);
+    }
+
+    [Fact]
     public void RangeOf_with_MaxValue_as_the_ceiling_means_no_upper_bound()
     {
         // DateOnly.MaxValue non ha un giorno dopo: senza il caso speciale, AddDays(1) esplode.

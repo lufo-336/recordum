@@ -59,7 +59,10 @@ public sealed partial class ActionTodayContent : ObservableObject, ITodayContent
         var today = _day.Today(_clock);
 
         // Done today = any completion inside today's local-day window; keep the newest id to undo.
-        var (dayStart, dayEnd) = _day.RangeOf(today);
+        // RangeOf è semiaperta ma il filtro del servizio è inclusivo al millisecondo: senza il -1ms
+        // la finestra si mangia il primo istante del giorno dopo.
+        var (dayStart, dayEndExclusive) = _day.RangeOf(today);
+        var dayEnd = dayEndExclusive.AddMilliseconds(-1);
         var todays = await _completions.ListByHabitAsync(_habitId, dayStart, dayEnd, ct: ct).ConfigureAwait(true);
         _todayCompletionId = todays.OrderByDescending(c => c.CompletedAtMs).FirstOrDefault()?.Id;
         IsDoneToday = todays.Count > 0;
