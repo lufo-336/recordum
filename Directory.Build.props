@@ -30,6 +30,14 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">linux-$(_HostArch)</RuntimeIdentifier>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">osx-$(_HostArch)</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
+    <!-- UseAppHost=false di default: workaround per il lock CreateAppHost di DriveFS sulla VM
+         Windows primaria (mount Google Drive), non serve/non nuoce sulle altre macchine. Sta qui
+         come PROPERTY DI PROGETTO — sovrascrivibile da un singolo .csproj (es. un progetto xunit
+         v3, che pretende l'apphost nativo e fallisce la build senza) — e non da riga di comando:
+         una property globale (-p:UseAppHost=false) vince sempre su qualunque assegnazione nel
+         .csproj, quindi passarla a mano rompe di nuovo quel progetto. Il default vive qui apposta
+         perché sia raggirabile per-progetto quando serve. -->
+    <UseAppHost>false</UseAppHost>
     <!-- NU1903: SQLitePCLRaw.lib.e_sqlite3 (transitive via EF Core Sqlite) is flagged for
          CVE-2025-6965 (SQLite < 3.50.2 memory corruption). It affects ALL 2.1.x releases and
          NO patched SQLitePCLRaw package exists yet, so it cannot be resolved by upgrading.

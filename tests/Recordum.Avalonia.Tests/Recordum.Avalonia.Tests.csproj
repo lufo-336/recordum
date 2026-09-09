@@ -9,12 +9,12 @@
          out-of-process richiede un apphost nativo (OutputType Exe), non la classica libreria
          di test in-process di VSTest v2. -->
     <OutputType>Exe</OutputType>
-    <!-- Ridondante col default (OutputType Exe + RuntimeIdentifier => apphost nativo), ma
-         esplicito apposta: xunit v3 fallisce la build senza apphost nativo (vedi sopra), e
-         un -p:UseAppHost=false passato da riga di comando è una "global property" che
-         un'assegnazione nel .csproj NON PUÒ sovrascrivere (verificato: la build fallisce lo
-         stesso). Quindi: mai passare -p:UseAppHost=false quando si builda questo progetto,
-         da solo o dentro la build dell'intera soluzione. -->
+    <!-- xunit v3 fallisce la build senza apphost nativo (vedi sopra). Directory.Build.props
+         imposta UseAppHost=false di default (workaround DriveFS sulla VM Windows): qui lo
+         sovrascriviamo a true, ed essendo entrambe property di progetto vince davvero — a
+         differenza di un -p:UseAppHost=false passato da riga di comando, che è una "global
+         property" e batte qualunque assegnazione nel .csproj (per questo il default vive nel
+         .props, sovrascrivibile per-progetto, e non si passa più a mano da riga di comando). -->
     <UseAppHost>true</UseAppHost>
   </PropertyGroup>
 
