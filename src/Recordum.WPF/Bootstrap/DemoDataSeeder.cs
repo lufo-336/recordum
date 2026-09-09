@@ -4,6 +4,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -23,12 +24,18 @@ public sealed class DemoDataSeeder(
     IAppSettingService settings,
     IHabitTreeQueryService tree,
     IClock clock,
+    IResetTimeResolver resetTimes,
     IDbContextFactory<RecordumDbContext> dbFactory)
 {
     private const string MarkerKey = "dev.demo_seeded";
     private const int Days = 100;
 
     private readonly Random _rng = new(42);
+
+    /// <summary>Il confine dell'app, risolto in cima a ogni seed. Il seeder demo deve produrre i dati
+    /// che il resto dell'applicazione considera corretti: se seminasse sul giorno UTC creerebbe proprio
+    /// il difetto che R9 elimina.</summary>
+    private DayBoundary _day = DayBoundary.Utc;
 
     private static readonly string[] DayNotePhrases =
     [
@@ -64,8 +71,8 @@ public sealed class DemoDataSeeder(
     {
         if (await settings.GetAsync(MarkerKey, ct).ConfigureAwait(false) is not null) return;
 
-        var today = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone));
+        _day = await resetTimes.GetAppDayBoundaryAsync(ct).ConfigureAwait(false);
+        var today = _day.Today(clock);
         var start = today.AddDays(-Days);
 
         // ---- tags ----
@@ -185,8 +192,8 @@ public sealed class DemoDataSeeder(
         var defs = (await metrics.ListByHabitAsync(row.HabitNodeId, ct).ConfigureAwait(false))
             .OrderBy(m => m.SortOrder).ToList();
 
-        var today = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone));
+        _day = await resetTimes.GetAppDayBoundaryAsync(ct).ConfigureAwait(false);
+        var today = _day.Today(clock);
         var start = today.AddDays(-90);
 
         for (var day = start; day <= today; day = day.AddDays(1))
@@ -260,7 +267,7 @@ public sealed class DemoDataSeeder(
         long Ms(DateOnly day, int hour)
         {
             var at = day.ToDateTime(new TimeOnly(hour, 0));
-            return new DateTimeOffset(at, clock.LocalTimeZone.GetUtcOffset(at)).ToUnixTimeMilliseconds();
+            return new DateTimeOffset(at, _day.TimeZone.GetUtcOffset(at)).ToUnixTimeMilliseconds();
         }
         // 3 closed periods + 1 OPEN started ~3 weeks ago → live multi-week clean timer + relapse markers.
         var periods = new[]
@@ -298,12 +305,16 @@ public sealed class DemoDataSeeder(
 
     private Completion Draft(Guid habitId, DateOnly day, int fromHour, int toHour, string? notesBody = null)
     {
-        var at = day.ToDateTime(new TimeOnly(_rng.Next(fromHour, toHour + 1), _rng.Next(60)));
+        // L'ora del giorno resta sparsa (la distribuzione oraria della demo vive di questo): quello che
+        // cambia e' che l'orario di parete si converte una volta sola, col fuso del confine, e le due
+        // colonne raccontano lo stesso istante — prima CompletedAt teneva l'ora locale e _ms l'UTC.
+        var wall = day.ToDateTime(new TimeOnly(_rng.Next(fromHour, toHour + 1), _rng.Next(60)));
+        var at = new DateTimeOffset(wall, _day.TimeZone.GetUtcOffset(wall));
         return new Completion
         {
             HabitNodeId = habitId,
-            CompletedAt = at,
-            CompletedAtMs = new DateTimeOffset(at, clock.LocalTimeZone.GetUtcOffset(at)).ToUnixTimeMilliseconds(),
+            CompletedAt = at.UtcDateTime,
+            CompletedAtMs = at.ToUnixTimeMilliseconds(),
             Notes = notesBody,
             IsRetroactive = _rng.NextDouble() < 0.10,
         };

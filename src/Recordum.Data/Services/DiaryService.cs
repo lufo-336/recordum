@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 
@@ -14,7 +15,8 @@ public sealed partial class DiaryService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
     ILogger<DiaryService> logger,
-    IEventBus eventBus) : IDiaryService
+    IEventBus eventBus,
+    IResetTimeResolver resetTimes) : IDiaryService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Diary entry {NoteId} saved for habit {HabitId}")]
     private partial void LogSaved(Guid noteId, Guid habitId);
@@ -26,11 +28,16 @@ public sealed partial class DiaryService(
             ?? throw new HabitNodeNotFoundException(habitNodeId);
         _ = habit;
 
+        // A11/B16: il giorno di "oggi" e l'istante di una voce retroattiva vengono dal confine
+        // dell'abitudine. Mezzanotte UTC poteva cadere nel giorno prima appena il confine è locale.
+        var boundary = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+        bool retro = day != boundary.Today(clock);
+        var instant = retro ? boundary.NoonOf(day) : clock.UtcNow;
+        var ts = instant.UtcDateTime;
+        var ms = instant.ToUnixTimeMilliseconds();
+        // La nota è stata scritta adesso anche quando la voce è datata ieri: la creazione è un fatto,
+        // la data della voce un'intenzione. Restano due istanti diversi (famiglia C, spec §5).
         var now = clock.UtcNow.UtcDateTime;
-        var today = DateOnly.FromDateTime(now);
-        bool retro = day != today;
-        var ts = retro ? DateTime.SpecifyKind(day.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc) : now;
-        var ms = new DateTimeOffset(ts, TimeSpan.Zero).ToUnixTimeMilliseconds();
 
         var completion = new Completion
         {

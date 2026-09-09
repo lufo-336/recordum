@@ -2,6 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Resources;
+using Recordum.Core.Time;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 using Xunit;
@@ -17,6 +18,84 @@ public class QuickAddViewModelBaseTests
         var sut = new ActionQuickAddViewModel(new FakeCompletionService(), clock);
 
         sut.CompletionDate.Should().Be(new DateTime(2026, 5, 21));
+    }
+
+    // ---- R9 Task 10: le retroattive si stampigliano a mezzogiorno locale ----------
+
+    private static readonly TimeZoneInfo Plus2 = TestTimeZones.Fixed(2);
+
+    private static ActionQuickAddViewModel Sut(FakeCompletionService cs, FakeClock clock, DayBoundary day, DateTime date)
+        => new(cs, clock)
+        {
+            Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Action },
+            DayBoundary = day,
+            CompletionDate = date,
+        };
+
+    /// <summary>Una retroattiva per il 15 agosto in fuso +2 si salva alle 10:00Z, cioè mezzogiorno
+    /// locale. Prima era mezzanotte UTC — che col confine locale cade nel 14.</summary>
+    [Fact]
+    public async Task A_retroactive_entry_lands_at_local_noon_of_the_day_it_names()
+    {
+        var cs = new FakeCompletionService();
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 9, 0, 0, TimeSpan.Zero), Plus2);
+        var sut = Sut(cs, clock, new DayBoundary(Plus2, TimeOnly.MinValue), new DateTime(2026, 8, 15));
+
+        await sut.SaveAsync();
+
+        cs.LastRecord!.IsRetroactive.Should().BeTrue();
+        cs.LastRecord.CompletedAt.Should().Be(new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc));
+    }
+
+    /// <summary>Il test che dà senso a "mezzogiorno": qualunque reset fra 00:00 e 06:00, il giorno
+    /// dell'istante salvato non si muove.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    public async Task A_retroactive_entry_stays_on_its_day_for_any_plausible_reset(int resetHour)
+    {
+        var cs = new FakeCompletionService();
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 9, 0, 0, TimeSpan.Zero), Plus2);
+        var day = new DayBoundary(Plus2, new TimeOnly(resetHour, 0));
+        var sut = Sut(cs, clock, day, new DateTime(2026, 8, 15));
+
+        await sut.SaveAsync();
+
+        day.DayOf(cs.LastRecord!.CompletedAtMs).Should().Be(new DateOnly(2026, 8, 15));
+    }
+
+    /// <summary>29 marzo 2026 dura 23 ore, 25 ottobre ne dura 25: mezzogiorno esiste comunque, e
+    /// l'istante salvato appartiene al giorno che l'utente ha nominato.</summary>
+    [Theory]
+    [InlineData(2026, 3, 29)]
+    [InlineData(2026, 10, 25)]
+    public async Task A_retroactive_entry_stays_on_its_day_across_a_daylight_saving_change(int y, int m, int d)
+    {
+        var cs = new FakeCompletionService();
+        var rome = TestTimeZones.RomeLike;
+        var clock = new FakeClock(new DateTimeOffset(2026, 11, 10, 9, 0, 0, TimeSpan.Zero), rome);
+        var day = new DayBoundary(rome, new TimeOnly(4, 0));
+        var sut = Sut(cs, clock, day, new DateTime(y, m, d));
+
+        await sut.SaveAsync();
+
+        day.DayOf(cs.LastRecord!.CompletedAtMs).Should().Be(new DateOnly(y, m, d));
+    }
+
+    /// <summary>Non si tocca ciò che non è retroattivo: adesso è adesso. Alle 00:40 locali del 19
+    /// (22:40Z del 18) una registrazione per il 19 è di oggi, e in UTC sembrerebbe futura.</summary>
+    [Fact]
+    public async Task An_entry_for_today_keeps_the_current_instant_and_is_not_retroactive()
+    {
+        var cs = new FakeCompletionService();
+        var now = new DateTimeOffset(2026, 8, 18, 22, 40, 0, TimeSpan.Zero);
+        var clock = new FakeClock(now, Plus2);
+        var sut = Sut(cs, clock, new DayBoundary(Plus2, TimeOnly.MinValue), new DateTime(2026, 8, 19));
+
+        await sut.SaveAsync();
+
+        cs.LastRecord!.IsRetroactive.Should().BeFalse();
+        cs.LastRecord.CompletedAt.Should().Be(now.UtcDateTime);
     }
 }
 

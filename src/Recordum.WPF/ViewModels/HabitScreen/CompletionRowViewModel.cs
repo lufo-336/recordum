@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 
@@ -11,6 +12,10 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     private readonly Action<CompletionRowViewModel>? _onDeleted;
     private readonly string? _overrideNotes;
     private readonly Func<Guid, CancellationToken, Task>? _deleteOverride;
+
+    /// <summary>Il confine dell'abitudine, dalla lista che possiede la riga. Serve alla modifica a
+    /// mano della data: l'utente scrive un orario di parete, non un istante UTC.</summary>
+    private readonly DayBoundary _day;
 
     public Completion Completion { get; }
     public IReadOnlyList<CompletionValue> Values { get; }
@@ -40,7 +45,8 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         IReadOnlyList<string>? fieldDisplays = null,
         string? overrideNotes = null,
         Func<Guid, CancellationToken, Task>? deleteOverride = null,
-        bool canInlineEdit = true)
+        bool canInlineEdit = true,
+        DayBoundary? dayBoundary = null)
     {
         ArgumentNullException.ThrowIfNull(completion);
         ArgumentNullException.ThrowIfNull(completions);
@@ -52,17 +58,27 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         _overrideNotes = overrideNotes;
         _deleteOverride = deleteOverride;
         CanInlineEdit = canInlineEdit;
+        _day = dayBoundary ?? DayBoundary.Utc;
         EditedNotes = completion.Notes;
-        EditedDate = completion.CompletedAt;
+        EditedDate = ToWallTime(completion.CompletedAt);
     }
 
     [RelayCommand]
     private void BeginEdit()
     {
         EditedNotes = Notes;
-        EditedDate = CompletedAt;
+        EditedDate = ToWallTime(CompletedAt);
         IsEditing = true;
     }
+
+    /// <summary>L'istante salvato, letto come orologio di parete nel fuso dell'abitudine — la forma in
+    /// cui un umano lo scriverebbe. <see cref="Display"/> mostra ancora l'ora UTC: è un debito di
+    /// presentazione più vecchio di R9 e vale per tutte le righe della Cronologia, non solo per questa,
+    /// quindi non lo si cambia qui di soppiatto. Oggi la differenza non si vede: l'editor inline non ha
+    /// superficie in XAML.</summary>
+    private DateTime ToWallTime(DateTime utcTimestamp)
+        => TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(utcTimestamp, DateTimeKind.Utc), _day.TimeZone);
 
     [RelayCommand]
     private void CancelEdit() => IsEditing = false;
@@ -71,8 +87,12 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     private async Task SaveEditAsync(CancellationToken ct)
     {
         var newNotes = EditedNotes;
-        var newDate = DateTime.SpecifyKind(EditedDate, DateTimeKind.Utc);
-        var newMs = new DateTimeOffset(newDate, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        // L'utente modifica un orario di parete: convertirlo dal fuso dell'abitudine, non dichiararlo
+        // UTC. IsRetroactive NON cambia: spostare la data a mano non trasforma una registrazione live
+        // in retroattiva, e cambiarlo qui altererebbe i conteggi di recovery Retroactive.
+        var edited = new DateTimeOffset(EditedDate, _day.TimeZone.GetUtcOffset(EditedDate));
+        var newDate = edited.UtcDateTime;
+        var newMs = edited.ToUnixTimeMilliseconds();
         await _completions.UpdateAsync(Id, c =>
         {
             c.Notes = newNotes;

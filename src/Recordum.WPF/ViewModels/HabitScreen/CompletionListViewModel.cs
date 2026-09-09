@@ -87,7 +87,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
                 fieldDisplays: BuildFieldDisplays(c.Values, lookup, ParseLabels(SeriesLabelsJson)),
                 overrideNotes: overrideNotes,
                 deleteOverride: del,
-                canInlineEdit: !IsJournal));
+                canInlineEdit: !IsJournal,
+                dayBoundary: DayBoundary));
         }
     }
 

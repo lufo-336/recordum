@@ -25,7 +25,30 @@ public class DiaryServiceTests
     private static DiaryService NewService(DbFixture fx, out RecordingEventBus bus)
     {
         bus = new RecordingEventBus();
-        return new DiaryService(fx.Factory, fx.Clock, NullLogger<DiaryService>.Instance, bus);
+        return new DiaryService(fx.Factory, fx.Clock, NullLogger<DiaryService>.Instance, bus, fx.ResetTimes);
+    }
+
+    /// <summary>A11/B16. Una voce di diario datata a un giorno passato si stampiglia a mezzogiorno
+    /// locale di quel giorno: mezzanotte UTC, col confine locale, cadeva nel giorno prima — e la voce
+    /// spariva dal giorno che l'utente aveva scelto.</summary>
+    [Fact]
+    public async Task A_diary_entry_for_a_past_day_lands_at_local_noon()
+    {
+        var clock = new FakeClock(
+            new DateTimeOffset(2026, 8, 19, 9, 0, 0, TimeSpan.Zero), TestTimeZones.Fixed(2));
+        var (fx, habitId) = await SeedJournalAsync(clock);
+        var sut = NewService(fx, out _);
+        var entryDay = new DateOnly(2026, 8, 15);
+
+        await sut.SaveEntryAsync(habitId, entryDay, "ieri l'altro");
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var completion = await db.Completions.SingleAsync(c => c.HabitNodeId == habitId);
+        completion.IsRetroactive.Should().BeTrue();
+        completion.CompletedAt.Should().Be(new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc));
+        // E, la cosa che conta davvero: l'istante appartiene al giorno nominato, non a quello prima.
+        var boundary = await fx.ResetTimes.GetDayBoundaryAsync(habitId);
+        boundary.DayOf(completion.CompletedAtMs).Should().Be(entryDay);
     }
 
     [Fact]

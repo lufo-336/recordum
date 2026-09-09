@@ -745,6 +745,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         };
         if (vm is null) { QuickAdd = null; return; }
         vm.Node = node;
+        // Il confine prima di ogni Load: il quick-add ci decide la data iniziale e se una
+        // registrazione e' retroattiva, e CompletionDate e' stata costruita col default.
+        vm.DayBoundary = _dayBoundary;
+        vm.CompletionDate = _dayBoundary.Today(_clock).ToDateTime(TimeOnly.MinValue);
         switch (vm)
         {
             case AbstinenceQuickAddViewModel ab: await ab.LoadAsync(_dayBoundary, ct).ConfigureAwait(true); break;

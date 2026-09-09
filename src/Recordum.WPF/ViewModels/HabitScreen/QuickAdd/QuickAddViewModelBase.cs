@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Time;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
@@ -25,13 +26,20 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private bool _isSaving;
 
+    /// <summary>Il confine di giornata dell'abitudine selezionata, impostato dallo screen subito dopo
+    /// aver costruito il quick-add. Default <see cref="DayBoundary.Utc"/> per i test che non lo
+    /// impostano — con fuso UTC e reset a mezzanotte è l'identità, cioè il comportamento pre-R9.</summary>
+    public DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
+
     protected QuickAddViewModelBase(ICompletionService completions, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(completions);
         ArgumentNullException.ThrowIfNull(clock);
         Completions = completions;
         Clock = clock;
-        CompletionDate = clock.UtcNow.UtcDateTime.Date;
+        // A57: la data iniziale è il giorno del confine. Lo screen assegna DayBoundary dopo la
+        // costruzione, quindi qui vale ancora il default: la riassegna insieme al confine.
+        CompletionDate = DayBoundary.Today(clock).ToDateTime(TimeOnly.MinValue);
     }
 
     public abstract Task SaveAsync(CancellationToken ct = default);
@@ -44,15 +52,22 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
         ErrorMessage = Strings.QuickAdd_Error_Unexpected;
     }
 
-    /// <summary>Builds (timestamp, isRetroactive) for the current CompletionDate vs clock.Today.</summary>
+    /// <summary>Costruisce (istante, ms, retroattiva) per <see cref="CompletionDate"/>.
+    /// <para>Una registrazione per oggi si stampiglia <b>adesso</b>. Una retroattiva per il giorno D si
+    /// stampiglia a <b>mezzogiorno locale di D</b>: sta dentro il giorno per qualunque reset plausibile
+    /// (00:00–06:00) e regge il cambio d'ora, mentre la vecchia mezzanotte UTC poteva cadere nel giorno
+    /// prima non appena il confine è diventato locale (spec R9 §5).</para></summary>
     protected (DateTime Timestamp, long Ms, bool IsRetroactive) ResolveCompletionTimestamp()
     {
-        var date = CompletionDate.Date;
-        var today = Clock.UtcNow.UtcDateTime.Date;
-        var ts = date == today
-            ? Clock.UtcNow.UtcDateTime
-            : DateTime.SpecifyKind(date, DateTimeKind.Utc);
-        var ms = new DateTimeOffset(ts, TimeSpan.Zero).ToUnixTimeMilliseconds();
-        return (ts, ms, date != today);
+        var date = DateOnly.FromDateTime(CompletionDate.Date);
+        var today = DayBoundary.Today(Clock);                                  // A58
+        if (date == today)
+        {
+            var now = Clock.UtcNow;
+            return (now.UtcDateTime, now.ToUnixTimeMilliseconds(), false);
+        }
+
+        var noon = DayBoundary.NoonOf(date);
+        return (noon.UtcDateTime, noon.ToUnixTimeMilliseconds(), true);
     }
 }
