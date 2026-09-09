@@ -25,8 +25,12 @@ public delegate Task<CalendarMarkers> CalendarMarkerProvider(DateOnly from, Date
 /// </summary>
 public sealed partial class CalendarNavigatorViewModel : ObservableObject
 {
-    /// <summary>Snapped once at construction (per-screen lifetime); a calendar left open past midnight
-    /// keeps the construction-time "today" until the screen is reloaded. Intentional for day-granularity.</summary>
+    /// <summary>Il giorno corrente secondo il confine, impostato da <see cref="LoadAsync"/> e tenuto
+    /// per la durata dello screen: un calendario lasciato aperto oltre la mezzanotte conserva quel
+    /// giorno finché non si ricarica. Intenzionale, la granularità è il giorno.
+    /// <para>Prima del primo caricamento vale <c>default</c>: non si deriva un "oggi" provvisorio
+    /// dall'ora locale nuda, che è esattamente il secondo modo di calcolarlo che R9 elimina — e le
+    /// celle nascono solo dentro LoadAsync, quindi nessuno lo legge prima.</para></summary>
     private DateOnly _today;
     private readonly IClock _clock;
     private bool _isLoading;
@@ -41,9 +45,8 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         // questo repo si perdono i dati (4d01f9c, 1d96967). "_today" invece lo rifa' LoadAsync col
         // confine ricevuto.
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(clock.UtcNow.UtcDateTime, clock.LocalTimeZone);
-        _today = DateOnly.FromDateTime(localNow);
         WeekdayHeaders = BuildWeekdayHeaders();
-        SelectableYears = Enumerable.Range(_today.Year - 15, 17).ToList(); // 15 back, current, 1 forward
+        SelectableYears = Enumerable.Range(localNow.Year - 15, 17).ToList(); // 15 back, current, 1 forward
     }
 
     public CalendarMarkerProvider? MarkerProvider { get; set; }
