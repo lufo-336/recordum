@@ -11,12 +11,24 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <!-- Dev is Windows-only (WPF). Pinning the RID makes every build RID-specific so it
-         emits ONLY win-x64 native assets, instead of copying SkiaSharp/sqlcipher/QuestPDF
-         natives for all ~8 RIDs (osx/linux/win-x86/arm64…) into bin/. Framework-dependent
-         (SelfContained=false) keeps output small — no bundled .NET runtime. Phase 5 (web)
-         and Phase 7 (MAUI) build their own projects and re-resolve the RIDs they need. -->
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- Un RID solo, quello della macchina che builda: ogni build è RID-specific ed emette solo
+         i nativi che servono (SkiaSharp/sqlcipher/QuestPDF), invece di copiarli per ~8 RID
+         (osx/linux/win-x86/arm64…) in bin/ — la differenza è ~530 MB contro ~2.6 GB.
+         Framework-dependent (SelfContained=false) tiene l'output piccolo: nessun runtime .NET
+         incluso. Le fasi 5 (mobile) e 6 costruiscono i propri progetti e ri-risolvono i RID che
+         servono a loro.
+         Windows resta fissato a win-x64 (è la macchina di sviluppo primaria e il target di
+         spedizione). Altrove si prende il RID dell'host, così Core/Data/Plugins — che sono
+         net10.0 e portabili per progetto — si costruiscono e si testano davvero su Linux e su
+         macOS, nativi inclusi. Un RID esplicito da riga di comando vince su entrambi. -->
+    <!-- NB: qui NON si può usare $(NETCoreSdkPortableRuntimeIdentifier) — il .NET SDK lo definisce
+         dopo Directory.Build.props, quindi arriverebbe vuoto e il RID sparirebbe del tutto, che è
+         esattamente il build "tutti i RID" che questo blocco evita (misurato: output senza
+         sottocartella RID). L'architettura la si chiede a RuntimeInformation, che è valutabile qui. -->
+    <_HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</_HostArch>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">linux-$(_HostArch)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">osx-$(_HostArch)</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <!-- NU1903: SQLitePCLRaw.lib.e_sqlite3 (transitive via EF Core Sqlite) is flagged for
          CVE-2025-6965 (SQLite < 3.50.2 memory corruption). It affects ALL 2.1.x releases and

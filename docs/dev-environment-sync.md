@@ -1,4 +1,4 @@
-# Sincronizzazione ambiente Claude Code — VM ↔ Mac
+# Sincronizzazione ambiente Claude Code — VM ↔ Mac ↔ Linux
 
 > **Nota operativa interna** (non è codice né stringa utente). Serve a tenere allineati i due ambienti da cui si lavora a Recordum con Claude Code. Questo file **viaggia via git**, quindi è leggibile da entrambe le macchine. Tienilo aggiornato come fonte di verità sullo stato degli ambienti.
 
@@ -6,6 +6,7 @@
 
 - **Primario — VM Windows**: `C:\Users\luca.foglia\Documents\recordum` (PowerShell, `taskkill`, RID `win-x64`).
 - **Secondario — Mac**: `/Users/lucafoglia/Desktop/recordum` (usato quando la VM non è raggiungibile).
+- **Secondario — Linux (Fedora)**: `~/dev/recordum`, clone da GitHub (aggiunto 2026-09-09). Vedi la sezione dedicata in fondo: si builda tutto e si testano davvero **Core, Data, Plugins ed ExportEngine**; **WPF e ChartEngine no**, e non è un difetto di configurazione.
 - Esiste anche una copia su **Google Drive** (`.../Other computers/Il mio PC/Documents/recordum`).
 
 ## Cosa viaggia da solo, via git ✓
@@ -239,3 +240,59 @@ Sessione breve aperta sulla **terza postazione**: la copia su **Google Drive Fil
 4. Poi sweep visivo R-* accumulato + CR5/CR13/CR20/CR22 + restore corrotto runtime (CR1–CR4) + **CR8** (regen ModelSnapshot a 2.11), come da handoff 2026-06-25.
 
 > **Promemoria sync**: nessun remote git. Questi commit/doc viaggiano alla VM **solo via sincronizzazione file di Drive** (incluso `.git`) — fragile. Per evitare conflitti di working tree, far sincronizzare Drive **a tree pulito** prima di lavorare sulla VM. La configurazione di un remote vero resta consigliata e aperta.
+
+
+## Linux (Fedora) — aggiunto 2026-09-09
+
+Terza macchina, clone GitHub in `~/dev/recordum`. Serve sapere **cosa ci si può fare davvero**, perché la risposta non è né "tutto" né "niente".
+
+### Cosa gira, cosa no
+
+| | Su Linux |
+|---|---|
+| Build dell'**intera** soluzione (`-p:EnableWindowsTargeting=true`) | ✅ |
+| `Recordum.Core.Tests` · `Recordum.Data.Tests` · `Recordum.Plugins.Tests` · `Recordum.Plugins.ExportEngine.Tests` | ✅ girano |
+| **SQLCipher** (DB cifrato, `PRAGMA cipher_version`) | ✅ funziona — l'encryption non è una cosa Windows |
+| `Recordum.WPF.Tests` | ❌ serve `Microsoft.WindowsDesktop.App`, che su Linux **non esiste** |
+| `Recordum.Plugins.ChartEngine.Tests` | ❌ `net10.0-windows` (ospita le view LiveCharts2 WPF) |
+| I 18 test **DPAPI** dentro `Recordum.Data.Tests` | ❌ `ProtectedData` è Windows-only — l'astrazione `IDbKeyProvider` esiste apposta, e `PassphraseKeyProvider` (Argon2id) è portabile |
+
+Conteggi di riferimento su Fedora (2026-09-09, fine R9): **Core 143 · Data 476/494 (i 18 rossi sono tutti e soli i DPAPI) · Plugins 66 · ExportEngine 37**.
+
+### Prerequisito
+
+Nessun `dotnet` di sistema: SDK userland, senza root.
+
+```bash
+curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh && chmod +x dotnet-install.sh
+./dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+export PATH="$HOME/.dotnet:$PATH"
+```
+
+### Comandi
+
+Da **2026-09-09 non serve più passare il RID a mano**: `Directory.Build.props` fissa `win-x64` su Windows e altrove prende il RID dell'host (`linux-x64`, `osx-arm64`). Il nativo di SkiaSharp per Linux/macOS è una `PackageReference` condizionata all'OS in `Recordum.Plugins.ExportEngine`: senza, l'assembly managed si carica e poi esplode al primo tipo (`DllNotFoundException: libSkiaSharp`) — e il runner **aborte a metà**, quindi il totale test sembra più basso invece che rosso.
+
+```bash
+dotnet build Recordum.slnx -p:UseAppHost=false -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Core.Tests            -p:UseAppHost=false -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Data.Tests            -p:UseAppHost=false -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Plugins.Tests         -p:UseAppHost=false -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Plugins.ExportEngine.Tests -p:UseAppHost=false -p:EnableWindowsTargeting=true
+```
+
+`EnableWindowsTargeting=true` serve perché la soluzione contiene progetti `net10.0-windows`: senza, il restore li rifiuta e non compila **niente**.
+
+### Identità git
+
+Il clone nuovo non aveva `user.name`/`user.email` (i commit falliscono con *"Author identity unknown"*). Impostati **locali al repo**, non globali:
+
+```bash
+git config user.name "Luca Foglia" && git config user.email "luca.foglia@edu-its.it"
+```
+
+### Cosa vuol dire per il prodotto
+
+Il confine non è arbitrario: cinque progetti su sette sono `net10.0` e **portabili per costruzione** — è la promessa di §4 di CLAUDE.md ("Core/Data/Plugins riutilizzati senza modifiche in Fase 5 e 7"), e questa è la prima volta che qualcuno la verifica su una macchina non-Windows. Windows-only è la **shell**: WPF (`Microsoft.WindowsDesktop.App` non esiste su Linux e non esisterà) e il *renderer* dei chart, mentre il lato query dei chart sta già in `Recordum.Data`.
+
+Un desktop Linux visualizzabile richiederebbe quindi **una UI diversa, non un port del core**. Nota per quando se ne parlerà: **MAUI (Fase 5) non copre il desktop Linux** — fa Android/iOS/Mac/Windows. Le strade reali sono **Avalonia** (il parente stretto di WPF) o la **PWA** già prevista fra le fasi future.
