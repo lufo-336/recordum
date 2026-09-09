@@ -110,6 +110,8 @@ public static class ServiceRegistrar
         services.AddScoped<IRecentColorStore, RecentColorStore>();
         services.AddScoped<IFavoriteColorStore, FavoriteColorStore>();
         services.AddScoped<IResetTimeResolver, ResetTimeResolver>();
+        // Passo di manutenzione R9, eseguito una volta dall'ApplicationInitializer.
+        services.AddScoped<Recordum.Data.Maintenance.RetroactiveNoonBackfill>();
         services.AddScoped<IScheduleEvaluator, Data.Services.Evaluators.ScheduleEvaluator>();
         services.AddSingleton<IIntensityRampResolver, IntensityRampResolver>();
         services.AddKeyedScoped<IStreakModeEvaluator, Data.Services.Evaluators.DailyStreakModeEvaluator>(StreakMode.Daily);

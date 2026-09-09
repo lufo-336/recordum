@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Data;
+using Recordum.Data.Maintenance;
 using Recordum.Data.Security;
 using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
@@ -16,7 +17,8 @@ public sealed class ApplicationInitializer(
     IChartEngineActivator chartEngine,
     IExportEngineActivator exportEngine,
     IWebView2Availability webView2,
-    BackupSchedulerHost backupHost)
+    BackupSchedulerHost backupHost,
+    RetroactiveNoonBackfill retroBackfill)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -31,6 +33,12 @@ public sealed class ApplicationInitializer(
 
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         await db.Database.MigrateAsync(ct).ConfigureAwait(false);
+
+        // Manutenzione una tantum R9: le retroattive salvate a mezzanotte UTC vanno a mezzogiorno
+        // locale. Dopo le migrazioni (ha bisogno dello schema aggiornato), prima di tutto cio' che
+        // legge giorni. Nessun try/catch: se fallisce deve fallire l'avvio come una migrazione
+        // fallita — un backfill saltato in silenzio e' peggio di un avvio che si lamenta.
+        await retroBackfill.RunAsync(ct).ConfigureAwait(false);
 
         _ = pluginManager.ListEnabled();
 
