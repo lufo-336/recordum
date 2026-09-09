@@ -454,3 +454,6 @@ tools/plugin-api-ts/dist/
 # Visual verification sessions (screenshots + report) — local evidence, not repo history.
 # Findings that matter get promoted into docs/phase-4-issues.md, which IS tracked.
 docs/verification/
+
+# Avalonia headless screenshot probe output (Task 2, ScreenshotProbeTests) — local evidence, not repo history.
+tests/Recordum.Avalonia.Tests/**/Screenshots/
