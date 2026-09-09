@@ -1189,7 +1189,7 @@ adjudicano preferibilmente col dogfooding, E21):
 
 **Difetto del seed emerso da F3 — nuovo:**
 
-- **W25-2 — Il template ufficiale "Workout log" crea un'abitudine mai programmata** · `fixed` (2026-09-10,
+- **W25-2 — Il template ufficiale "Workout log" crea un'abitudine mai programmata** · `fixed` (2026-09-09,
   migration data-only **`WorkoutLogWeeklyTargetV218`**, schema **2.18**) · Il seed dichiara ora
   `"schedule_type":"WeeklyX"` con `"schedule_weekly_target":3` — **tre volte a settimana, i giorni che
   vuoi**. È anche l'unica lettura coerente con lo `streak_mode: "Weekly"` che il payload già portava:
@@ -1578,7 +1578,7 @@ builder. È il progetto: il payload la porta come definizione incorporata e la c
   *nuovo* pacchetto transitivo potrebbe reintrodurre un bundle domani lo stesso. Il guard sì.
 
 
-## Review di branch R9 (2026-09-10) — due Critical, un Important, tutti chiusi
+## Review di branch R9 (2026-09-09) — due Critical, un Important, tutti chiusi
 
 Review sull'**intero diff** del branch (`4c63af7..8961005`, 136 file), non per-task: è la forma che
 nell'ultimo anno ha trovato ciò che le review per-task non potevano vedere (C1/C2 dell'Onda 2.4, i sei
