@@ -255,6 +255,7 @@ Terza macchina, clone GitHub in `~/dev/recordum`. Serve sapere **cosa ci si può
 | **SQLCipher** (DB cifrato, `PRAGMA cipher_version`) | ✅ funziona — l'encryption non è una cosa Windows |
 | `Recordum.WPF.Tests` | ❌ serve `Microsoft.WindowsDesktop.App`, che su Linux **non esiste** |
 | `Recordum.Plugins.ChartEngine.Tests` | ❌ `net10.0-windows` (ospita le view LiveCharts2 WPF) |
+| `Recordum.Avalonia.Tests` (headless, Avalonia.Headless.XUnit) | ✅ gira — prima suite di **interfaccia** del progetto che gira davvero su Linux |
 | I 18 test **DPAPI** dentro `Recordum.Data.Tests` | ❌ `ProtectedData` è Windows-only — l'astrazione `IDbKeyProvider` esiste apposta, e `PassphraseKeyProvider` (Argon2id) è portabile |
 
 Conteggi di riferimento su Fedora (2026-09-09, fine R9): **Core 143 · Data 476/494 (i 18 rossi sono tutti e soli i DPAPI) · Plugins 66 · ExportEngine 37**.
@@ -273,12 +274,14 @@ export PATH="$HOME/.dotnet:$PATH"
 
 Da **2026-09-09 non serve più passare il RID a mano**: `Directory.Build.props` fissa `win-x64` su Windows e altrove prende il RID dell'host (`linux-x64`, `osx-arm64`). Il nativo di SkiaSharp per Linux/macOS è una `PackageReference` condizionata all'OS in `Recordum.Plugins.ExportEngine`: senza, l'assembly managed si carica e poi esplode al primo tipo (`DllNotFoundException: libSkiaSharp`) — e il runner **aborte a metà**, quindi il totale test sembra più basso invece che rosso.
 
+Da **2026-09-09 non si passa più `-p:UseAppHost=false` a mano**: è il default in `Directory.Build.props` (workaround per il lock `CreateAppHost` di DriveFS sulla VM Windows), e passarlo da riga di comando è una *global property* che vince su qualunque override nel `.csproj` — il che ora **rompe** la build della soluzione, perché `tests/Recordum.Avalonia.Tests` (xunit v3) sovrascrive quel default a `true` apposta e xunit v3 pretende l'apphost nativo.
+
 ```bash
-dotnet build Recordum.slnx -p:UseAppHost=false -p:EnableWindowsTargeting=true
-dotnet test tests/Recordum.Core.Tests            -p:UseAppHost=false -p:EnableWindowsTargeting=true
-dotnet test tests/Recordum.Data.Tests            -p:UseAppHost=false -p:EnableWindowsTargeting=true
-dotnet test tests/Recordum.Plugins.Tests         -p:UseAppHost=false -p:EnableWindowsTargeting=true
-dotnet test tests/Recordum.Plugins.ExportEngine.Tests -p:UseAppHost=false -p:EnableWindowsTargeting=true
+dotnet build Recordum.slnx -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Core.Tests            -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Data.Tests            -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Plugins.Tests         -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Plugins.ExportEngine.Tests -p:EnableWindowsTargeting=true
 ```
 
 `EnableWindowsTargeting=true` serve perché la soluzione contiene progetti `net10.0-windows`: senza, il restore li rifiuta e non compila **niente**.
