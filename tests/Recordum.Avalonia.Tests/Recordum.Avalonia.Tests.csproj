@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Avalonia.Headless.XUnit 12.1.2 depends on xunit.v3 (xunit.v3.extensibility.core 3.2.2),
+         non su xunit v2: il pacchetto "xunit" 2.9.3 usato altrove nel repo (Recordum.Data.Tests)
+         non è compatibile con l'attributo [AvaloniaFact]. Serve "xunit.v3", e il runner v3
+         out-of-process richiede un apphost nativo (OutputType Exe), non la classica libreria
+         di test in-process di VSTest v2. -->
+    <OutputType>Exe</OutputType>
+    <!-- Ridondante col default (OutputType Exe + RuntimeIdentifier => apphost nativo), ma
+         esplicito apposta: xunit v3 fallisce la build senza apphost nativo (vedi sopra), e
+         un -p:UseAppHost=false passato da riga di comando è una "global property" che
+         un'assegnazione nel .csproj NON PUÒ sovrascrivere (verificato: la build fallisce lo
+         stesso). Quindi: mai passare -p:UseAppHost=false quando si builda questo progetto,
+         da solo o dentro la build dell'intera soluzione. -->
+    <UseAppHost>true</UseAppHost>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.2" />
+    <PackageReference Include="FluentAssertions" Version="7.2.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Recordum.Avalonia/Recordum.Avalonia.csproj" />
+  </ItemGroup>
+</Project>
