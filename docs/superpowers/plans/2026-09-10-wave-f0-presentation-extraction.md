@@ -1543,6 +1543,8 @@ Atteso: restano **`CultureBootstrap.cs`** e **`IWebView2Availability.cs`**. Il s
 
 - [ ] **Step 5: Riscrivere i namespace ovunque**
 
+(La sostituzione è **globale sul file**, non limitata alle righe `using`: un riferimento pienamente qualificato in mezzo a un'espressione — il Task 2 ne ha trovato uno in `StreakSummaryViewModelTests.cs:150` — verrebbe altrimenti mancato in silenzio.)
+
 ```bash
 cd /home/lucafrog/dev/recordum
 for ns in ViewModels Resources Services Bootstrap; do
@@ -1576,9 +1578,15 @@ Ogni riga trovata va completata con `;assembly=Recordum.Presentation`.
 dotnet build Recordum.slnx -p:EnableWindowsTargeting=true --nologo 2>&1 | grep -E 'error' | head -20
 ```
 
-Ogni errore nomina un file. Le due famiglie attese:
+Ogni errore nomina un file. Le **tre** famiglie attese:
+
 - `CS0246` in `src/Recordum.Presentation/`: **un file è entrato e non doveva** — usa un tipo WPF. Riportalo in `src/Recordum.WPF/` e annota perché.
 - `CS0246`/`MC3074` in `src/Recordum.WPF/` o `.axaml`: manca un `using` o un `;assembly=`. Aggiungilo.
+- **`CS0103`/`CS0246` su un nome scritto senza `using` e senza qualificazione completa** — es. `Converters.HabitColorTint` dentro un file del namespace `Recordum.Presentation.ViewModels.*`, o `ViewModels.HomeRowViewModel` dentro un file rimasto in `Recordum.WPF.*`. **La sed dello Step 5 è cieca a questi**, perché nel testo non compare mai la stringa `Recordum.WPF.` da sostituire: il riferimento funzionava per la **ricerca nel namespace contenitore** di C#, cioè risaliva da `Recordum.WPF.ViewModels.Foo` a `Recordum.WPF` e trovava lì il fratello. Spezzato l'albero in due assembly, quella risalita non arriva più a destinazione. **Si corregge aggiungendo lo `using` esplicito**, mai spostando il file per far tornare la risalita.
+
+  *Non è un'ipotesi*: il Task 2, che ha mosso **due soli file**, ne ha incontrati tre — `HomeRowViewModel.cs`, `HabitScreenViewModel.cs`, `CounterTodayContent.cs` nominavano `Formatting.CounterTotalDisplay` esattamente così. Muovendo 126 ViewModel più servizi, stringhe e bootstrap, aspettatene molti di più.
+
+  Le coppie a rischio sono quelle che questo task **separa**: un ViewModel che risale a `Converters`, `Behaviors`, `Selectors`, `Theming`, `Helpers`, `Interop`; e all'inverso una view, un converter o un behavior rimasti in WPF che risalgono a `ViewModels`. Ciò che trasloca *insieme* (ViewModel, `Resources`, `Formatting`, e le metà portabili di `Services` e `Bootstrap`) si ripara da sé, perché la risalita trova il fratello sotto il nuovo tetto `Recordum.Presentation`.
 
 Ripeti finché la build è pulita. **Non aggiungere `-windows` a `Recordum.Presentation` per far sparire un errore**: quell'errore è il confine che fa il suo lavoro.
 
