@@ -7,6 +7,7 @@
 > `2026-09-09-avalonia-controls-probe.md`, `2026-09-09-avalonia-editor-probe.md` e
 > `2026-09-10-avalonia-live-preview-probe.md`, riassunte in CLAUDE.md §7.
 > Resta valido quanto già eseguito (Task 1-2 del piano); **i Task 3-9 non vanno eseguiti come scritti**.
+> **Sostituito da** `docs/superpowers/specs/2026-09-10-avalonia-as-the-platform-design.md` (2026-09-10), che struttura la migrazione in nove onde `F0`–`F8`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
