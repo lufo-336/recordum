@@ -22,6 +22,7 @@
 - **Baseline da cui si parte** (misurata il 2026-09-10): build 0 errori / 39 warning; `Recordum.Core.Tests` **145**, `Recordum.Data.Tests` **478** (+18 DPAPI, Windows-only per natura), `Recordum.Plugins.Tests` **66**, `Recordum.Plugins.ExportEngine.Tests` **37**, `Recordum.Avalonia.Tests` **12**.
 - **Stringhe utente** in `.resx`, English-first. Una stringa nuova = 3 edit: `Strings.resx` + `Strings.it.resx` + accessor a mano in `Strings.Designer.cs`. **`Strings.Designer.cs` va editato via shell** (`python`/`sed`/heredoc): `guard-generated.js` blocca Edit/Write su qualunque `*.Designer.cs`. Questo piano non aggiunge stringhe nuove.
 - **Mai `DateTime.UtcNow`/`Now`**: il tempo passa da `IClock`. **Mai derivare un giorno da un istante** fuori da `DayBoundary`: `DayDerivationGuardTests` fallisce.
+- **`tests/Recordum.UI.Tests` è l'unico progetto di test SENZA `<Using Include="Xunit" />`** nel proprio `.csproj`: ogni file che usa `[Fact]` o `Assert` lì dentro ha bisogno di un `using Xunit;` esplicito (`[AvaloniaFact]` no — vive in `Avalonia.Headless.XUnit`). Senza, il compilatore si ferma su `CS0246` per `Fact`, **prima** di arrivare a valutare il resto del file — e maschera qualunque errore il test fosse nato per dimostrare.
 - **`InitializeComponent()`, mai `AvaloniaXamlLoader.Load(this)`**: il secondo carica lo XAML ma non cabla i campi `x:Name`, e il guasto è un `NullReferenceException` a runtime senza nessun errore di compilazione.
 - **Un test di regressione va provato contro il codice rotto**: dove il piano lo chiede, disattivare il fix, vedere il rosso, ripristinare. Un test che non può fallire è peggio di nessun test.
 - **Footer di ogni commit**:
@@ -82,6 +83,8 @@ Atteso: `0 Error(s)`, e `Passed! - Failed: 0, Passed: 12`.
 Crea `tests/Recordum.Avalonia.Tests/NamespaceShadowingTests.cs` (nella cartella **vecchia**, di proposito):
 
 ```csharp
+using Xunit;
+
 namespace Recordum.Avalonia.Tests;
 
 public class NamespaceShadowingTests
@@ -134,7 +137,14 @@ sed -i 's/Finché il progetto si chiama Recordum.UI/Finché il progetto si chiam
 grep -rn 'Recordum\.Avalonia' src tests Recordum.slnx --include='*.cs' --include='*.axaml' --include='*.csproj' --include='*.slnx' | grep -v '/obj/' | grep -v '/bin/'
 ```
 
-Atteso dall'ultimo `grep`: **nessun output**.
+Atteso dall'ultimo `grep`: **esattamente un hit**, la riga di commento in `NamespaceShadowingTests.cs` che nomina il nome storico al passato — la sed correttiva qui sopra ce l'ha appena rimessa apposta. Non è un refuso da inseguire: è il riferimento giusto, e non deve essere "corretto" per far tornare il conto a zero. Che non ce ne siano altri lo dice:
+
+```bash
+grep -rn 'Recordum\.Avalonia' src tests Recordum.slnx --include='*.cs' --include='*.axaml' --include='*.csproj' --include='*.slnx' \
+  | grep -v '/obj/' | grep -v '/bin/' | grep -v 'NamespaceShadowingTests.cs'
+```
+
+Atteso: **nessun output**.
 
 - [ ] **Step 6: Ripulire gli artefatti di build della vecchia cartella**
 
@@ -1867,6 +1877,7 @@ In `src/Recordum.UI/Themes/Tokens.axaml`, sostituisci lo stack serif di ripiego 
 ```csharp
 using Avalonia.Media;
 using Avalonia.Headless.XUnit;
+using Xunit;
 
 namespace Recordum.UI.Tests;
 
@@ -2092,7 +2103,7 @@ public partial class StreakTimelineControl : UserControl
 
 - [ ] **Step 4: Scrivere il test-screenshot**
 
-`tests/Recordum.UI.Tests/ControlsScreenshotTests.cs`: costruisci una finestra con i due controlli alimentati da ViewModel veri, e cattura in chiaro e scuro con `ScreenshotProbeTests.Capture`, sullo stesso modello di `HeatmapStripScreenshotTests.cs`.
+`tests/Recordum.UI.Tests/ControlsScreenshotTests.cs` (ricorda `using Xunit;` — v. Global Constraints): costruisci una finestra con i due controlli alimentati da ViewModel veri, e cattura in chiaro e scuro con `ScreenshotProbeTests.Capture`, sullo stesso modello di `HeatmapStripScreenshotTests.cs`.
 
 **Due regole non negoziabili per questo test**, entrambe già pagate una volta:
 
