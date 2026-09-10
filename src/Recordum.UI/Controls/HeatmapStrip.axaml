@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Recordum.UI.Controls.HeatmapStrip">
+    <!--
+    Porting di Views/HeatmapStrip.xaml WPF (branch avalonia-linux-slice, sonda controlli).
+    Differenza voluta rispetto all'originale: niente ItemsControl+ItemTemplate. In WPF l'XAML
+    dichiarava un ItemsControl con un DataTemplate a 6 binding (Width/Height/Margin/Radius/
+    VAlign/Brush) sopra un record C# creato apposta per essere "bindabile". Qui il progetto ha
+    AvaloniaUseCompiledBindingsByDefault=true: un ItemTemplate del genere richiederebbe un
+    x:DataType che punti al record Cell (renderlo internal/public solo per lo scopo dei binding)
+    o disattivare le compiled binding sul template con x:CompileBindings="False", perdendo la
+    verifica a compile-time che il resto del progetto ha. Dato che i valori sono già calcolati
+    in C# — non c'è nessun dato "vivo" da tenere sincronizzato con l'elemento visuale dopo la
+    creazione — un pannello riempito direttamente in code-behind (Cells.Children) è la via più
+    diretta: stessa forma finale, zero indirezione di binding per celle che non cambiano più una
+    volta create. Vedi il report per il dettaglio.
+    -->
+    <StackPanel x:Name="Cells" Orientation="Horizontal" Height="16"/>
+</UserControl>

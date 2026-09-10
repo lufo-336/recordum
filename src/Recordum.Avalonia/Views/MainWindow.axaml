@@ -1,6 +1,0 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="Recordum.Avalonia.Views.MainWindow"
-        Title="Recordum" Width="1000" Height="700">
-  <TextBlock Name="Placeholder" Text="Recordum" Margin="24" FontSize="24"/>
-</Window>

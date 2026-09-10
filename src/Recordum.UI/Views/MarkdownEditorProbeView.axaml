@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ctrl="using:Recordum.UI.Controls"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="520"
+             x:Class="Recordum.UI.Views.MarkdownEditorProbeView"
+             Background="{DynamicResource Brush.Background}"
+             FontFamily="{DynamicResource Font.Default}"
+             FontSize="{DynamicResource FontSize.Body}">
+
+  <!--
+  Sonda editor (branch avalonia-linux-slice, NON una feature): renderizza
+  Controls/MarkdownEditorControl.axaml con markdown realistico (titoli, grassetto, lista, link,
+  code block) — deliverable #2 del probe editor. NON è una vista di produzione: nessun'altra
+  parte dell'app la referenzia (stesso principio isolante di ThemeProbeView/HeatmapStripProbeView).
+  -->
+
+  <Grid RowDefinitions="Auto,*" Margin="16">
+    <TextBlock Grid.Row="0" Text="MarkdownEditorControl — sorgente e anteprima"
+               FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
+               Foreground="{DynamicResource Brush.Text}" Margin="0,0,0,10"/>
+    <Border Grid.Row="1"
+            Background="{DynamicResource Brush.SurfaceElevated}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1" CornerRadius="6">
+      <ctrl:MarkdownEditorControl x:Name="Editor"/>
+    </Border>
+  </Grid>
+
+</UserControl>
