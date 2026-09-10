@@ -335,7 +335,13 @@ public class NoWpfReferenceTests
     /// quest'ultimo vale <c>.NETCoreApp,Version=v10.0</c> per ENTRAMBI i TFM — misurato sugli assembly
     /// di questo repo, `Recordum.Core` (net10.0) non porta attributi di piattaforma mentre
     /// `Recordum.WPF` (net10.0-windows) porta <c>TargetPlatformAttribute("Windows7.0")</c> — quindi
-    /// un'asserzione su FrameworkName sarebbe verde in entrambi i casi, cioè inerte.</para></summary>
+    /// un'asserzione su FrameworkName sarebbe verde in entrambi i casi, cioè inerte.</para>
+    /// <para>I cancelli contro un `-windows` di troppo sono in realtà DUE, in serie, e questo è il
+    /// secondo: mettendo `-windows` sul solo `Recordum.Presentation`, il restore fallisce prima con
+    /// <c>NU1201</c> — un progetto di test `net10.0` non può referenziare un progetto
+    /// `net10.0-windows` — e il test non arriva nemmeno a girare. Questa asserzione serve quando
+    /// qualcuno aggira il primo cancello mettendo `-windows` a entrambi i progetti, che è
+    /// esattamente il modo in cui un errore di confine verrebbe "fatto sparire".</para></summary>
     [Fact]
     public void Presentation_targets_a_platform_neutral_framework()
     {
