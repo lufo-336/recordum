@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
-using Recordum.WPF.Formatting;
+using Recordum.Presentation.Formatting;
 using Recordum.WPF.Resources;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;

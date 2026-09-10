@@ -6,6 +6,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Presentation.Formatting;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.ViewModels.HabitEditor;
 using Recordum.WPF.ViewModels.HabitScreen.Calendar;
@@ -1127,7 +1128,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             mag = Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(rawSum, isDuration, unit);
             // No time unit to convert into: mag is still raw seconds, so render it as h:mm:ss rather
             // than letting the strip print "720" where the records list reads "12:00" (W23-VF2).
-            durationText = Formatting.CounterTotalDisplay.AsRawDuration(isDuration, unit, mag);
+            durationText = CounterTotalDisplay.AsRawDuration(isDuration, unit, mag);
         }
         var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unit, scaleLabels, durationText);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);

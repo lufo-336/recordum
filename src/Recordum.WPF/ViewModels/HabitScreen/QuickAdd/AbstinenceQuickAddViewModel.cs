@@ -3,7 +3,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
-using Recordum.WPF.Formatting;
+using Recordum.Presentation.Formatting;
 using Recordum.WPF.Resources;
 using Recordum.Core.Time;
 

@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
-using Recordum.WPF.Formatting;
+using Recordum.Presentation.Formatting;
 using Recordum.WPF.Resources;
 using Recordum.WPF.Services;
 using Recordum.Core.Time;

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 SENZA -windows, deliberatamente: è questo che rende il confine
+         dell'estrazione auto-verificante. Qualunque file che tocchi System.Windows
+         non compila qui, quindi non può entrarci per distrazione. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Recordum.Core\Recordum.Core.csproj" />
+    <ProjectReference Include="..\Recordum.Data\Recordum.Data.csproj" />
+    <ProjectReference Include="..\Recordum.Plugins\Recordum.Plugins.csproj" />
+    <ProjectReference Include="..\Recordum.Plugins.Contracts\Recordum.Plugins.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

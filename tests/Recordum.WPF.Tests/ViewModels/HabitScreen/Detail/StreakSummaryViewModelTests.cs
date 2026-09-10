@@ -147,7 +147,7 @@ public sealed class StreakSummaryViewModelTests
             CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
         }, DayBoundary.Utc);
 
-        var expectedDisplay = Recordum.WPF.Formatting.DurationFormat.FormatStopwatch(clock.UtcNow - currentStart);
+        var expectedDisplay = Recordum.Presentation.Formatting.DurationFormat.FormatStopwatch(clock.UtcNow - currentStart);
         vm.CurrentDisplay.Should().Be(expectedDisplay);
         vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
     }

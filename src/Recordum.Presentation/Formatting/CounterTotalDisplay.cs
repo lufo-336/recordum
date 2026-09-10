@@ -1,6 +1,6 @@
 using Recordum.Core.Formatting;
 
-namespace Recordum.WPF.Formatting;
+namespace Recordum.Presentation.Formatting;
 
 /// <summary>Rendering rule for a Counter's daily total when the primary metric is a duration (U8).
 /// A Seconds metric stores value_seconds; when its unit is a time unit the total is converted

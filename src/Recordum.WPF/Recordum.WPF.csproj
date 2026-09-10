@@ -7,6 +7,7 @@
     <ProjectReference Include="..\Recordum.Plugins.ChartEngine\Recordum.Plugins.ChartEngine.csproj" />
     <ProjectReference Include="..\Recordum.Plugins.Contracts\Recordum.Plugins.Contracts.csproj" />
     <ProjectReference Include="..\Recordum.Plugins.ExportEngine\Recordum.Plugins.ExportEngine.csproj" />
+    <ProjectReference Include="..\Recordum.Presentation\Recordum.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
-using Recordum.WPF.Formatting;
+using Recordum.Presentation.Formatting;
 
 namespace Recordum.WPF.ViewModels.HabitScreen;
 

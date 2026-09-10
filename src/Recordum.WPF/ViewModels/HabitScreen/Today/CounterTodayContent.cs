@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
+using Recordum.Presentation.Formatting;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Today;
@@ -79,7 +80,7 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
 
         // A duration with no time unit is still raw seconds: render it as h:mm:ss so this total agrees
         // with the records list; every other case keeps the plain number the view always showed.
-        TodayTotalDisplay = Formatting.CounterTotalDisplay.AsRawDuration(isDuration, UnitCode, TodayTotal)
+        TodayTotalDisplay = CounterTotalDisplay.AsRawDuration(isDuration, UnitCode, TodayTotal)
             ?? TodayTotal.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture);
 
         await _goalCard.LoadAsync(node, day, ct).ConfigureAwait(true);

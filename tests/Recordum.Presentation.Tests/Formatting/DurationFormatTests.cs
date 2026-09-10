@@ -1,8 +1,8 @@
 using FluentAssertions;
-using Recordum.WPF.Formatting;
+using Recordum.Presentation.Formatting;
 using Xunit;
 
-namespace Recordum.WPF.Tests.Formatting;
+namespace Recordum.Presentation.Tests.Formatting;
 
 public class DurationFormatTests
 {

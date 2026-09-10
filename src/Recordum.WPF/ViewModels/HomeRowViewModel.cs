@@ -10,7 +10,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
-using Recordum.WPF.Formatting;
+using Recordum.Presentation.Formatting;
 using Recordum.WPF.Resources;
 using Recordum.WPF.ViewModels.Quick;
 
@@ -247,7 +247,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         var total = row.TodayCounterTotal ?? 0m;
         // A duration total that no time unit converted is still raw seconds: show it as h:mm:ss so the
         // row agrees with the records list, and skip the unit label (the format carries the meaning).
-        if (Formatting.CounterTotalDisplay.AsRawDuration(row.TodayCounterIsDuration, row.TodayCounterUnitCode, total) is { } duration)
+        if (CounterTotalDisplay.AsRawDuration(row.TodayCounterIsDuration, row.TodayCounterUnitCode, total) is { } duration)
             return duration;
         var value = total.ToString("0.##", CultureInfo.CurrentCulture);
         var unit = row.TodayCounterUnitCode;

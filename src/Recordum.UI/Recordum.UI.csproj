@@ -30,5 +30,6 @@
     <ProjectReference Include="../Recordum.Core/Recordum.Core.csproj" />
     <ProjectReference Include="../Recordum.Data/Recordum.Data.csproj" />
     <ProjectReference Include="../Recordum.Plugins.Contracts/Recordum.Plugins.Contracts.csproj" />
+    <ProjectReference Include="../Recordum.Presentation/Recordum.Presentation.csproj" />
   </ItemGroup>
 </Project>

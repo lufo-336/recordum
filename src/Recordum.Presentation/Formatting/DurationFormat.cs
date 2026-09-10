@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Recordum.WPF.Formatting;
+namespace Recordum.Presentation.Formatting;
 
 /// <summary>Parse/format di durate per la cella tempo (spec multivalue §4.1, scelta A: mask mm:ss).
 /// Solo cifre = mm:ss compattato ("130" → 1:30). Format auto-scala: mm:ss → h:mm:ss → "Ng h:mm:ss" → "Na Ng".</summary>
