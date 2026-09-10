@@ -93,8 +93,11 @@ public class NamespaceShadowingTests
         // radice del framework. Finché il progetto si chiama Recordum.Avalonia, la ricerca trova
         // PRIMA quel namespace, che non ha un membro `Threading`, e questa riga non compila:
         // serve `global::Avalonia.Threading.Dispatcher`. Dopo la rinomina compila da sé.
-        var dispatcher = Avalonia.Threading.Dispatcher.UIThread;
-        Assert.NotNull(dispatcher);
+        // L'assert è deliberatamente su typeof e non su Dispatcher.UIThread: la prova che questo
+        // test porta è di COMPILAZIONE (prima della rinomina il file non compilava affatto), e un
+        // assert a runtime potrebbe fallire per una ragione diversa — nessuna piattaforma Avalonia
+        // inizializzata in un [Fact] semplice — rendendo il rosso ambiguo.
+        Assert.Equal("Avalonia.Threading.Dispatcher", typeof(Avalonia.Threading.Dispatcher).FullName);
     }
 }
 ```
@@ -1670,13 +1673,21 @@ grep -rl 'Recordum\.WPF\.Tests' tests/Recordum.Presentation.Tests --include='*.c
 grep -rn 'Recordum\.Presentation\.Tests' tests/Recordum.WPF.Tests --include='*.cs' | head
 ```
 
-- [ ] **Step 4: Far vedere Presentation.Tests ai test WPF rimasti**
+- [ ] **Step 4: Cablare i due riferimenti fra progetti di test**
 
 I 23 file rimasti in `Recordum.WPF.Tests` usano fixture che ora vivono in `Recordum.Presentation.Tests`. In `tests/Recordum.WPF.Tests/Recordum.WPF.Tests.csproj`, aggiungi:
 
 ```xml
     <ProjectReference Include="..\Recordum.Presentation.Tests\Recordum.Presentation.Tests.csproj" />
 ```
+
+E `TickingClockTests` (Step 6) usa `FakeTickSourceFactory`, che vive in `Recordum.Core.Tests` perché è il doppio di un'astrazione di Core ed è lì che il Task 3 la prova. In `tests/Recordum.Presentation.Tests/Recordum.Presentation.Tests.csproj`:
+
+```xml
+    <ProjectReference Include="..\Recordum.Core.Tests\Recordum.Core.Tests.csproj" />
+```
+
+(Un progetto di test che ne referenzia un altro è lo schema che questo stesso task introduce una riga più su per le fixture: entrambi sono xunit 2.9.3, quindi si vedono. Il vincolo che NON si può violare è mescolare le due major — `Recordum.UI.Tests` è xunit.v3 e resta isolato.)
 
 - [ ] **Step 5: Compilare e correggere**
 
