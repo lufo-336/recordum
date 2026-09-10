@@ -599,8 +599,14 @@ public interface ITickSource : IDisposable
     /// <summary>Avvia il battito. Chiamarlo su una sorgente già avviata non ha effetto.</summary>
     void Start();
 
+    // CA1716: `Stop` collide con una parola riservata di VB, e con AnalysisLevel=latest-recommended
+    // + TreatWarningsAsErrors quell'analizzatore è un ERRORE di build. Si sopprime invece di
+    // rinominare: `Stop()` è il nome che il Task 4 userà su quattro classi, ed è il nome che la
+    // stessa forma ha già in DispatcherTimer. Stesso pattern di IAbstinenceService.cs:22.
+#pragma warning disable CA1716
     /// <summary>Ferma il battito senza disporre la sorgente: si può riavviare.</summary>
     void Stop();
+#pragma warning restore CA1716
 }
 
 /// <summary>Crea sorgenti di battito. Iniettato al posto di <c>new DispatcherTimer(...)</c>:
