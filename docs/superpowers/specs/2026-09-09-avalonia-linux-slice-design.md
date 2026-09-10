@@ -1,5 +1,13 @@
 # Recordum su Linux — fetta verticale Avalonia: design
 
+> **⚠️ SUPERATO NELLO SCOPE (2026-09-10).** Questo spec descrive una *fetta verticale per Linux*.
+> Dopo le quattro sonde di misura l'autore ha deciso che **Avalonia è la piattaforma** — sostituisce
+> WPF e assorbe la Fase 5 (MAUI) e la futura Web/PWA. Le misure che devono guidare la riscrittura
+> stanno in `docs/design/2026-09-09-avalonia-theme-probe.md`,
+> `2026-09-09-avalonia-controls-probe.md`, `2026-09-09-avalonia-editor-probe.md` e
+> `2026-09-10-avalonia-live-preview-probe.md`, riassunte in CLAUDE.md §7.
+> Resta valido quanto già eseguito (Task 1-2 del piano); **i Task 3-9 non vanno eseguiti come scritti**.
+
 > **Stato**: approvata in brainstorming il 2026-09-09. Il piano d'implementazione si scrive da questa spec.
 > **Non è** il porting dell'applicazione: è la fetta che decide se il porting vale la pena, e a che costo.
 
