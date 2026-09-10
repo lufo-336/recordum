@@ -1021,6 +1021,45 @@ Ogni classe dell'anello 2 e 3 guadagna un parametro finale **opzionale** `ITickS
 | `ViewModels/HabitScreen/HabitScreenViewModel.cs` | passa `ticks` a `AbstinencePeriodListViewModel`, `DetailViewModel`, `TodayStripViewModel`, `MeasuredQuickAddViewModel`, `CounterSeriesQuickAddViewModel` |
 | `ViewModels/HabitBuilder/HabitBuilderViewModel.cs` | costruisce `SamplePreviewFactory(clock)` — nessun parametro da aggiungere, la fabbrica nulla è dentro |
 
+- [ ] **Step 6-bis: Chiudere la lacuna `Start()` dopo `Dispose()`**
+
+Trovata dalla review del Task 3, e da chiudere **adesso** perché è ora che quattro classi cominciano a dipendere da questo contratto. In entrambe le `DispatcherTickSource` (WPF e `Recordum.UI`), `Start()` non ha una guardia post-`Dispose()`: chiamarlo dopo aver disposto **riavvia il timer nativo**. La catena `Tick` resta staccata, quindi non c'è un difetto funzionale visibile — ma il timer di piattaforma continua a battere, radicato dal dispatcher, per sempre. È esattamente la perdita contro cui i commenti di quelle classi mettono in guardia.
+
+Non è una regressione dell'onda: `LiveElapsedClock.Start()` ha **la stessa lacuna già spedita in produzione** (verificato). Ma l'astrazione è il posto dove si chiude una volta invece che quattro, ed è per questo che si fa qui e non nelle quattro classi.
+
+In entrambi i file, aggiungi il campo e la guardia:
+
+```csharp
+        private bool _disposed;
+
+        public void Start()
+        {
+            if (_disposed) return;
+            _timer.Start();
+        }
+```
+
+e in `Dispose()`, prima di tutto il resto, `_disposed = true;`. `FakeTickSource` (Task 3) ha già questa semantica, quindi dopo questo step il fake e la produzione dicono la stessa cosa — che è la sola condizione per cui un test verde contro il fake significhi qualcosa sulla produzione.
+
+Il test che lo copre vive in `Recordum.Core.Tests`, accanto agli altri quattro:
+
+```csharp
+    [Fact]
+    public void A_disposed_source_does_not_restart()
+    {
+        var factory = new FakeTickSourceFactory();
+        var ticks = 0;
+        var source = factory.Create(TimeSpan.FromSeconds(1));
+        source.Tick += (_, _) => ticks++;
+
+        source.Dispose();
+        source.Start();      // misuso: dopo Dispose non deve riaccendere niente
+        factory.TickAll();
+
+        Assert.Equal(0, ticks);
+    }
+```
+
 - [ ] **Step 7: Anello 4 — registrare la fabbrica nella DI**
 
 In `src/Recordum.WPF/Bootstrap/ServiceRegistrar.cs`, accanto alle altre registrazioni di servizio:
