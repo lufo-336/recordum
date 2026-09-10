@@ -24,7 +24,7 @@
 - **Mai `DateTime.UtcNow`/`Now`**: il tempo passa da `IClock`. **Mai derivare un giorno da un istante** fuori da `DayBoundary`: `DayDerivationGuardTests` fallisce.
 - **`tests/Recordum.UI.Tests` è l'unico progetto di test SENZA `<Using Include="Xunit" />`** nel proprio `.csproj`: ogni file che usa `[Fact]` o `Assert` lì dentro ha bisogno di un `using Xunit;` esplicito (`[AvaloniaFact]` no — vive in `Avalonia.Headless.XUnit`). Senza, il compilatore si ferma su `CS0246` per `Fact`, **prima** di arrivare a valutare il resto del file — e maschera qualunque errore il test fosse nato per dimostrare.
 - **`InitializeComponent()`, mai `AvaloniaXamlLoader.Load(this)`**: il secondo carica lo XAML ma non cabla i campi `x:Name`, e il guasto è un `NullReferenceException` a runtime senza nessun errore di compilazione.
-- **Un test di regressione va provato contro il codice rotto**: dove il piano lo chiede, disattivare il fix, vedere il rosso, ripristinare. Un test che non può fallire è peggio di nessun test.
+- **Un test di regressione va provato contro il codice rotto**: dove il piano lo chiede, disattivare il fix, vedere il rosso, ripristinare. Un test che non può fallire è peggio di nessun test. **Vale anche per i test di guardia** — quelli che sorvegliano un invariante invece di una regressione: la prima stesura di `NoWpfReferenceTests` asseriva su `TargetFrameworkAttribute.FrameworkName`, che vale `.NETCoreApp,Version=v10.0` **sia** per `net10.0` **sia** per `net10.0-windows`, quindi il guard contro il TFM sbagliato era verde per costruzione. Se un test dichiara di sorvegliare qualcosa, il piano deve dire **come lo si è visto scattare**.
 - **Footer di ogni commit**:
   ```
   Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
@@ -330,15 +330,19 @@ public class NoWpfReferenceTests
     }
 
     /// <summary>Il TFM stesso: se qualcuno aggiungesse -windows, il test sopra continuerebbe a
-    /// passare finché nessuno USA WPF. Questo scatta subito.</summary>
+    /// passare finché nessuno USA davvero un tipo WPF. Questo scatta subito.
+    /// <para>Guarda <c>TargetPlatformAttribute</c> e NON <c>TargetFrameworkAttribute.FrameworkName</c>:
+    /// quest'ultimo vale <c>.NETCoreApp,Version=v10.0</c> per ENTRAMBI i TFM — misurato sugli assembly
+    /// di questo repo, `Recordum.Core` (net10.0) non porta attributi di piattaforma mentre
+    /// `Recordum.WPF` (net10.0-windows) porta <c>TargetPlatformAttribute("Windows7.0")</c> — quindi
+    /// un'asserzione su FrameworkName sarebbe verde in entrambi i casi, cioè inerte.</para></summary>
     [Fact]
     public void Presentation_targets_a_platform_neutral_framework()
     {
-        var tfm = typeof(DurationFormat).Assembly
-            .GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>()!
-            .FrameworkName;
+        var platform = typeof(DurationFormat).Assembly
+            .GetCustomAttribute<System.Runtime.Versioning.TargetPlatformAttribute>();
 
-        Assert.Equal(".NETCoreApp,Version=v10.0", tfm);
+        Assert.Null(platform);
     }
 }
 ```
