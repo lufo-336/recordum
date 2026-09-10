@@ -284,17 +284,31 @@ Elencate qui perché non vengano riscoperte una per volta.
 La pila di §2.1 porta **47 file sorgente WPF e 46 file di test (9 nuovi, 37 modificati) che non sono mai stati
 eseguiti** — i test di R9 e quelli delle cuciture compilano e basta, perché la suite WPF non gira su Linux.
 
-**Non è debito del porting: è debito di R9**, e si salda prima di cominciare. Ordine:
+**Non è debito del porting: è debito di R9.** Le due cose che la prima stesura di questa spec metteva
+insieme — *eseguire* la suite di R9 e *mergiare* R9 in `main` — sono separabili, e solo la prima tocca il
+porting (riformulato il 2026-09-10, dopo i Task 1-3 dell'onda `F0`):
 
-1. sulla VM: suite WPF completa, serializzata (`-- xUnit.ParallelizeTestCollections=false`, gotcha W24-E1);
-2. gli step "rosso-prima" dei task WPF di R9, mai eseguiti;
-3. verifica a schermo di R9 (lo storico si **ri-interpreta** passando a locale: un numero di streak può cambiare
-   al primo avvio — è corretto, non è una regressione, e va detto prima e non scoperto);
-4. merge di `r9-day-boundary` in `main`.
+- **Blocca il Task 7, e solo lui**: una singola esecuzione della suite WPF di R9 sulla VM, serializzata
+  (`-- xUnit.ParallelizeTestCollections=false`, gotcha W24-E1). La ragione è precisa e non è la
+  diagnosticabilità: è che **il Task 7 rinomina 126 file**, e far atterrare eventuali correzioni di R9
+  *attraverso* una rinomina di quella taglia è l'unico scenario davvero brutto dell'onda. Una esecuzione
+  dice se quel rischio esiste.
+- **Non blocca niente**: gli step "rosso-prima" dei task WPF di R9, la verifica a schermo, e il merge in
+  `main`. Si fanno quando conviene.
 
-Solo dopo si estrae `Recordum.Presentation`, che rinomina il namespace di 201 file di test. **Farlo prima
-renderebbe un rosso non diagnosticabile** — è la stessa trappola che la vecchia spec nominava, con i ruoli
-scambiati.
+**La diagnosi non è ambigua come la prima stesura temeva.** L'estrazione è meccanica: sposta file e
+rinomina namespace, non cambia comportamento. Dopo il Task 7 un **errore di compilazione** è
+dell'estrazione, un **assert che fallisce** è di R9 — si distinguono per il tipo, senza bisogno di un
+baseline verde. E c'è un rovescio che vale la pena dire: dopo il Task 8, **cinque dei nove test nuovi di
+R9 girano su Linux per la prima volta**, quindi l'estrazione *riduce* il debito di R9 invece di esserne
+bloccata.
+
+**Rischio dichiarato per la verifica a schermo di R9**, da dire prima e non da scoprire: passando da UTC a
+locale lo storico si **ri-interpreta**, e un numero di streak può cambiare al primo avvio. È corretto, non
+è una regressione.
+
+Il comando pronto per la VM sta in [`docs/dev-environment-sync.md`](../../dev-environment-sync.md), sezione
+*"Handoff per la VM — onda F0"*.
 
 I 9 test nuovi mai eseguiti: `NumericInputRuleTests`, `CultureBootstrapTests`, `SettingsCultureViewTests`,
 `CultureServiceTests`, `DetailDayBoundaryTests`, `TodayStripDayBoundaryTests`, `GeneralSettingsCultureTests`,

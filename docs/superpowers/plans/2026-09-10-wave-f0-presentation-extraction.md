@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Prerequisito bloccante** (spec §14): `r9-day-boundary` **atterrato in `main`** con la suite WPF completa verde sulla VM. Questo piano lo dà per fatto e **non lo esegue**. Se `git log --oneline main | head -1` non contiene R9, fermarsi e dirlo.
+- **Prerequisito, e blocca solo il Task 7** (spec §14, riformulato il 2026-09-10): **una esecuzione** della suite WPF di R9 sulla VM, verde. Non serve che R9 sia mergiato in `main`, né che abbia avuto la sua verifica a schermo — quelle sono igiene del repo e si fanno quando conviene. La ragione del vincolo è che il **Task 7 rinomina 126 file**, e far atterrare eventuali correzioni di R9 attraverso una rinomina di quella taglia è l'unico scenario davvero brutto dell'onda. **I Task 1-6 non sono bloccati**: sono verificati dal compilatore, e la suite WPF non è eseguibile su Linux comunque. Il comando pronto sta in `docs/dev-environment-sync.md`, sezione *"Handoff per la VM — onda F0"*.
 - **Branch**: si lavora su `avalonia-linux-slice`. **Mai commit su `main`**: l'hook `guard-main.js` legge il branch *prima* di eseguire, quindi un comando composto che parte da `main` viene negato per intero anche se contiene un `git checkout -b`. Cambiare branch in una chiamata separata.
 - **Ambiente Linux, SDK userland**: `export DOTNET_ROOT="$HOME/.dotnet" PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"` all'inizio di ogni sessione di shell.
 - **La soluzione è `Recordum.slnx`**, non `.sln`.

@@ -299,3 +299,69 @@ git config user.name "Luca Foglia" && git config user.email "luca.foglia@edu-its
 Il confine non è arbitrario: cinque progetti su sette sono `net10.0` e **portabili per costruzione** — è la promessa di §4 di CLAUDE.md ("Core/Data/Plugins riutilizzati senza modifiche in Fase 5 e 7"), e questa è la prima volta che qualcuno la verifica su una macchina non-Windows. Windows-only è la **shell**: WPF (`Microsoft.WindowsDesktop.App` non esiste su Linux e non esisterà) e il *renderer* dei chart, mentre il lato query dei chart sta già in `Recordum.Data`.
 
 Un desktop Linux visualizzabile richiederebbe quindi **una UI diversa, non un port del core**. Nota per quando se ne parlerà: **MAUI (Fase 5) non copre il desktop Linux** — fa Android/iOS/Mac/Windows. Le strade reali sono **Avalonia** (il parente stretto di WPF) o la **PWA** già prevista fra le fasi future.
+
+---
+
+## Handoff per la VM — onda F0 (Avalonia come piattaforma), 2026-09-10
+
+Una cosa sola da eseguire, e **solo quando serve**: sblocca il Task 7 dell'onda `F0` (la traslocazione
+dei 126 ViewModel in `Recordum.Presentation`). Fino ad allora il porting prosegue su Linux senza
+toccare la VM.
+
+### Perché serve
+
+Il Task 7 **rinomina 126 file**. Se R9 avesse bisogno di correzioni, farle atterrare *attraverso* una
+rinomina di quella taglia è l'unico scenario davvero brutto dell'intera onda. Questa esecuzione dice se
+quel rischio esiste — niente di più. **Non** serve mergiare R9 in `main`, **non** serve la verifica a
+schermo: quelle si fanno quando conviene.
+
+Il debito che copre: `r9-day-boundary` porta **47 file sorgente WPF e 46 file di test (9 nuovi) mai
+eseguiti**, perché la suite WPF non gira su Linux.
+
+### Il comando
+
+PowerShell, dalla radice del repo sulla VM:
+
+```powershell
+# 1) R9 da solo — è questa la risposta che serve
+git checkout r9-day-boundary
+dotnet test tests\Recordum.WPF.Tests --nologo -- xUnit.ParallelizeTestCollections=false
+
+# 2) facoltativo: lo stesso sul branch del porting, che aggiunge i Task 1-3 dell'onda F0
+#    (8 file di ViewModel toccati, sole righe di `using`, + un file nuovo in Services/)
+git checkout avalonia-linux-slice
+dotnet test tests\Recordum.WPF.Tests --nologo -- xUnit.ParallelizeTestCollections=false
+```
+
+### Tre cose da sapere prima di lanciarlo
+
+1. **La serializzazione non è opzionale.** `-- xUnit.ParallelizeTestCollections=false` è il workaround
+   di **W24-E1**: in parallelo la suite WPF su questa VM si appende **a zero fallimenti**. Se si appende
+   lo stesso, **rilanciare, non indagare**.
+2. **Non passare `-p:UseAppHost=false`.** Non è più un flag da riga di comando: è il default in
+   `Directory.Build.props`, e da CLI diventa una *global property* che rompe la build di
+   `tests/Recordum.UI.Tests` (xunit.v3 pretende l'apphost nativo).
+3. **Gotcha DriveFS.** `git status` può segnalare file **modificati che non lo sono** — worktree, indice
+   e HEAD con lo stesso hash — e questo basta a far rifiutare un `git checkout`. Si sblocca con
+   `git checkout -- <file>`, che sul contenuto è un no-op.
+
+### Cosa riportare indietro
+
+La riga finale di ciascuna esecuzione, così com'è:
+
+```
+Passed!  - Failed: 0, Passed: NNN, Skipped: 0, Total: NNN
+```
+
+Se è **verde**: il Task 7 è sbloccato, e non serve altro dalla VM per un pezzo.
+Se è **rossa**: i nomi dei test falliti bastano. Non serve indagare sulla VM — è esattamente
+l'informazione per cui questa esecuzione esiste, e va decisa prima di rinominare 126 file.
+
+### Cosa NON fare in questa sessione
+
+Il merge di `r9-day-boundary` in `main`, gli step "rosso-prima" dei task WPF di R9, e la verifica a
+schermo. Sono tutti rimandabili e nessuno blocca il porting. **Nota per quando li farai**: la pila è
+`main → wave-2-visual-pass (10 commit) → r9 (20 commit)`, quindi mergiare R9 fa atterrare **anche** il
+pass visivo dell'Onda 2 — è una scelta da fare sapendola. E alla verifica a schermo, un numero di streak
+**può cambiare al primo avvio**: passando da UTC a locale lo storico si ri-interpreta. È corretto, non è
+una regressione.
