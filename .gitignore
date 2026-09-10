@@ -456,4 +456,4 @@ tools/plugin-api-ts/dist/
 docs/verification/
 
 # Avalonia headless screenshot probe output (Task 2, ScreenshotProbeTests) — local evidence, not repo history.
-tests/Recordum.Avalonia.Tests/**/Screenshots/
+tests/Recordum.UI.Tests/**/Screenshots/
