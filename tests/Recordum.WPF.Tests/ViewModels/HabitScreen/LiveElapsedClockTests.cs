@@ -6,8 +6,8 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
 public class LiveElapsedClockTests
 {
-    // Uses the project's FakeClock. In headless tests Application.Current is null,
-    // so no DispatcherTimer is created; Start() still computes Display once.
+    // Uses the project's FakeClock. Tests pass a null ITickSourceFactory explicitly, so no tick
+    // source is created; Start() still computes Display once.
     [Fact]
     public void Start_computes_display_from_started_instant()
     {

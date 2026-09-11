@@ -65,8 +65,16 @@ public class TickSourceTests
         Assert.Equal(0, ticks);
     }
 
+    /// <summary>Documenta il contratto del FAKE, non della produzione: questo assembly referenzia
+    /// solo <c>Recordum.Core</c>, quindi non può vedere <c>DispatcherTickSourceFactory</c> (WPF o
+    /// Avalonia). La guardia equivalente sulla sorgente reale — <c>Recordum.UI.Services.
+    /// DispatcherTickSourceFactory</c> — è provata in
+    /// <c>Recordum.UI.Tests.DispatcherTickSourceTests.A_disposed_source_does_not_restart</c>, l'unico
+    /// progetto di test che referenzia una delle due implementazioni reali (review Task 4, giro 1:
+    /// questo test si chiamava come quello e sembrava coprire lo stesso rischio, ma un test che
+    /// dichiara di sorvegliare la produzione e sorveglia invece il fake è peggio di nessun test).</summary>
     [Fact]
-    public void A_disposed_source_does_not_restart()
+    public void Fake_source_does_not_restart_after_dispose()
     {
         var factory = new FakeTickSourceFactory();
         var ticks = 0;

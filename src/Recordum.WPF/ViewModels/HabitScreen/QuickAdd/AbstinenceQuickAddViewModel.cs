@@ -11,7 +11,7 @@ namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 /// <summary>Quick-add panel for Resistance (abstinence) habits.
 /// Shows the live clean-streak elapsed time and offers Inizio / Ricaduta actions.
 /// Does not record completions — all state is owned by <see cref="IAbstinenceService"/>.</summary>
-public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
+public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase, IDisposable
 {
     private readonly IAbstinenceService _abstinence;
     private readonly ITickSource? _tick;
@@ -126,4 +126,13 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
 
     /// <summary>Abstinence has no "save completion" step — Start/Lapse are the actions.</summary>
     public override Task SaveAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+    /// <summary>Ferma e dispone la sorgente del battito. Senza questo, una scheda chiusa mentre
+    /// l'abitudine sta astenendo lascia il timer nativo acceso per sempre — <see cref="_tick"/> resta
+    /// avviato da <see cref="ReloadAsync"/>, e nessuno lo fermava mai perché questa classe non era
+    /// <see cref="IDisposable"/> (review Task 4, giro 1: né <c>HabitScreenViewModel</c> 495 né 625,
+    /// che già cercano <c>is IDisposable</c> sul quick-add uscente, potevano trovare qualcosa da
+    /// fermare). <see cref="QuickAddViewModelBase"/> non implementa <see cref="IDisposable"/>, quindi
+    /// non c'è una base da incatenare.</summary>
+    public void Dispose() => _tick?.Dispose();
 }

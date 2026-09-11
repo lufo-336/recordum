@@ -418,7 +418,7 @@ public class CounterSeriesQuickAddViewModelTests
 
         vm.Dispose();
 
-        // ChronoClock display is reset and no exception is thrown (the DispatcherTimer, if any, is detached).
+        // ChronoClock display is reset and no exception is thrown (its tick source, if any, is detached).
         Assert.Equal(string.Empty, vm.ChronoClock.Display);
     }
 }
