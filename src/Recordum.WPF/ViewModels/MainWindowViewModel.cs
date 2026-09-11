@@ -1,6 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.WPF.Services;
 using Recordum.WPF.ViewModels.Backup;
@@ -17,6 +18,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IExportDialogLauncher _exportLauncher;
     private readonly IBackupDialogLauncher _backupLauncher;
     private readonly ISettingsWindowLauncher _settingsLauncher;
+    private readonly IApplicationLifetime _lifetime;
 
     public HomeViewModel Home { get; }
 
@@ -49,7 +51,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IExportDialogLauncher exportLauncher,
         IBackupDialogLauncher backupLauncher,
         BackupHistoryViewModel backupHistory,
-        ISettingsWindowLauncher settingsLauncher)
+        ISettingsWindowLauncher settingsLauncher,
+        IApplicationLifetime lifetime)
     {
         ArgumentNullException.ThrowIfNull(home);
         ArgumentNullException.ThrowIfNull(appSettings);
@@ -60,6 +63,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(backupLauncher);
         ArgumentNullException.ThrowIfNull(backupHistory);
         ArgumentNullException.ThrowIfNull(settingsLauncher);
+        ArgumentNullException.ThrowIfNull(lifetime);
         Home = home;
         _appSettings = appSettings;
         TimerStatusBar = timerStatusBar;
@@ -69,6 +73,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _backupLauncher = backupLauncher;
         BackupHistory = backupHistory;
         _settingsLauncher = settingsLauncher;
+        _lifetime = lifetime;
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
         Home.GroupCreated += OnHomeGroupCreated;
@@ -141,7 +146,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         => Home.Rows.FirstOrDefault(r => r.HabitNodeId == id)?.Name ?? string.Empty;
 
     [RelayCommand]
-    private static void Quit() => System.Windows.Application.Current?.Shutdown();
+    private void Quit() => _lifetime.Shutdown();
 
     private async void OnHomePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {

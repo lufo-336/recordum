@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Recordum.Core.Abstractions;
 
 namespace Recordum.WPF.ViewModels.HabitScreen.Calendar;
 
@@ -18,8 +19,17 @@ public sealed partial class CalendarDayCellViewModel : ObservableObject
 
     /// <summary>Habit color used as the tint source for this cell (set by the calendar from the host color).
     /// Observable so the tint MultiBinding re-reads it: the navigator assigns it after the cell is bound,
-    /// and a non-notifying property would leave the MultiBinding holding the stale default.</summary>
+    /// and a non-notifying property would leave the MultiBinding holding the stale default.
+    /// <para>This is the habit's own color (a real value, e.g. user-chosen), never a theme token — it stays
+    /// populated even on a <see cref="MarkerTint.Danger"/> day. <see cref="Tint"/> is what decides whether
+    /// the view renders this color or overrides it with the theme's danger brush.</para></summary>
     [ObservableProperty] private string _tintColorHex = "#808080";
+
+    /// <summary>Which tint the view should render for this cell: the habit color in <see cref="TintColorHex"/>
+    /// (<see cref="MarkerTint.Default"/>) or the theme's danger brush (<see cref="MarkerTint.Danger"/>),
+    /// resolved by the view against the current theme — never photographed into a hex at load time.
+    /// Observable for the same reason as <see cref="TintColorHex"/>.</summary>
+    [ObservableProperty] private MarkerTint _tint = MarkerTint.Default;
 
     public bool HasNote => NoteCount > 0;
     public bool ShowNoteCount => NoteCount > 1;

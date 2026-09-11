@@ -227,6 +227,7 @@ public static class ServiceRegistrar
         services.AddSingleton<BackupSchedulerHost>();
         services.AddScoped<IBackupSchedulerRunner, BackupSchedulerRunnerAdapter>();
 
+        services.AddSingleton<IApplicationLifetime, WpfApplicationLifetime>();
         services.AddTransient<MainWindowViewModel>();
 
         // Main window.

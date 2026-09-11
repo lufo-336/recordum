@@ -57,6 +57,7 @@
                             <MultiBinding Converter="{StaticResource HabitColorTint}">
                                 <Binding Path="TintColorHex"/>
                                 <Binding Path="TintStep"/>
+                                <Binding Path="Tint"/>
                             </MultiBinding>
                         </Border.Background>
                     </Border>
@@ -120,6 +121,7 @@
                             <MultiBinding Converter="{StaticResource HabitColorTint}">
                                 <Binding Path="TintColorHex"/>
                                 <Binding Path="TintStep"/>
+                                <Binding Path="Tint"/>
                             </MultiBinding>
                         </Border.Background>
                     </Border>
@@ -181,6 +183,7 @@
                             <MultiBinding Converter="{StaticResource HabitColorTint}">
                                 <Binding Path="TintColorHex"/>
                                 <Binding Path="TintStep"/>
+                                <Binding Path="Tint"/>
                             </MultiBinding>
                         </Border.Background>
                     </Border>

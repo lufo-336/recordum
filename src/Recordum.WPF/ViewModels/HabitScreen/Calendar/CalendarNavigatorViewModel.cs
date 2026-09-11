@@ -8,9 +8,11 @@ using Recordum.Core.Time;
 namespace Recordum.WPF.ViewModels.HabitScreen.Calendar;
 
 /// <summary>Presentation-ready marker per un giorno (il host calcola tint/numero/note).
-/// <para><see cref="TintColorHex"/> overrides the navigator's <see cref="CalendarNavigatorViewModel.CompletedColorHex"/>
-/// for this specific day (e.g. danger red on a lapse day). Null = fall back to the habit color.</para></summary>
-public sealed record CalendarDayMarker(DateOnly Date, int TintStep, string? Number, int NoteCount, string? TintColorHex = null);
+/// <para><see cref="Tint"/> sceglie fra il colore di completamento del navigatore
+/// (<see cref="CalendarNavigatorViewModel.CompletedColorHex"/>, il default) e quello di pericolo
+/// per questo giorno specifico (es. una ricaduta) — non sovrascrive <c>CompletedColorHex</c> con un
+/// esadecimale proprio: la view risolve la tinta contro il tema corrente.</para></summary>
+public sealed record CalendarDayMarker(DateOnly Date, int TintStep, string? Number, int NoteCount, MarkerTint Tint = MarkerTint.Default);
 
 /// <summary>Day-markers for a date range, supplied by the host.</summary>
 public sealed record CalendarMarkers(IReadOnlyList<CalendarDayMarker> Days);
@@ -240,6 +242,7 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         foreach (var cell in cells)
         {
             cell.TintColorHex = CompletedColorHex;
+            cell.Tint = MarkerTint.Default;
             cell.TintStep = 0;
             cell.Number = null;
             cell.NoteCount = 0;
@@ -252,7 +255,8 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         {
             if (byDate.TryGetValue(cell.Date, out var m))
             {
-                cell.TintColorHex = m.TintColorHex ?? CompletedColorHex;
+                cell.TintColorHex = CompletedColorHex;   // sempre il colore dell'abitudine
+                cell.Tint = m.Tint;                      // la tinta decide se sovrascriverlo
                 cell.TintStep = m.TintStep;
                 cell.Number = m.Number;
                 cell.NoteCount = m.NoteCount;

@@ -961,14 +961,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         foreach (var t in noteMonthTasks)
             foreach (var n in t.Result) noteByDate[n.Date] = n.Count;
 
-        // Resolve danger color from the WPF resource dictionary (null in headless/unit-test context).
-        const string FallbackDangerHex = "#FFF87171";
-        var dangerHex = FallbackDangerHex;
-        var dangerBrush = System.Windows.Application.Current?.TryFindResource("Brush.Danger")
-            as System.Windows.Media.SolidColorBrush;
-        if (dangerBrush is not null)
-            dangerHex = dangerBrush.Color.ToString(System.Globalization.CultureInfo.InvariantCulture); // #AARRGGBB e.g. "#FFF87171"
-
         if (periods.Count == 0)
         {
             // No abstinence periods yet, but note-only days must still render their badges.
@@ -1020,15 +1012,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             {
                 if (hit.IsClosed && day == hit.EndDay)
                     // Lapse day: end of a closed period → danger color, full intensity.
-                    days.Add(new CalendarDayMarker(day, TintStep: 4, Number: null, NoteCount: noteCount, TintColorHex: dangerHex));
+                    days.Add(new CalendarDayMarker(day, TintStep: 4, Number: null, NoteCount: noteCount, Tint: MarkerTint.Danger));
                 else
-                    // Clean day: inside a period (not the lapse end) → habit color (null = CompletedColorHex).
-                    days.Add(new CalendarDayMarker(day, TintStep: 3, Number: null, NoteCount: noteCount, TintColorHex: null));
+                    // Clean day: inside a period (not the lapse end) → habit color (default tint).
+                    days.Add(new CalendarDayMarker(day, TintStep: 3, Number: null, NoteCount: noteCount));
             }
             else if (day > firstStart)
             {
                 // Gap day: after the first period started, not covered by any period → faint danger tint.
-                days.Add(new CalendarDayMarker(day, TintStep: 1, Number: null, NoteCount: noteCount, TintColorHex: dangerHex));
+                days.Add(new CalendarDayMarker(day, TintStep: 1, Number: null, NoteCount: noteCount, Tint: MarkerTint.Danger));
             }
             else if (noteCount > 0)
             {
