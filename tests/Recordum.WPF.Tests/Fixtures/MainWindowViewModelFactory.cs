@@ -30,7 +30,7 @@ public static class MainWindowViewModelFactory
             new FakeChartService(), new FakeChartQueryService(),
             new ExtensionPointRegistry(),
             new ChartBuilderViewModel(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService(),
-                new FakeChartQueryService(), new ExtensionPointRegistry()));
+                new FakeChartQueryService(), new ExtensionPointRegistry(), null));
         var exportLauncher = new FakeExportDialogLauncher();
         var backupLauncher = launcher ?? new FakeBackupDialogLauncher();
         var backupLog = log ?? new FakeBackupLogService();

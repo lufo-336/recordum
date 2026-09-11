@@ -29,7 +29,8 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
         IReferenceDataQueryService refData,
         IClock clock,
         IActiveTimerService timers,
-        IHabitConfigService configs) : base(completions, clock, timers)
+        IHabitConfigService configs,
+        ITickSourceFactory? ticks = null) : base(completions, clock, timers, ticks)
     {
         _metrics = metrics;
         _refData = refData;

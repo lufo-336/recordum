@@ -18,7 +18,7 @@ public sealed class ChartBuilderViewModelTests
 
     private static ChartBuilderViewModel BuildVm(
         FakeChartService charts, FakeHabitTreeQueryService tree, FakeMetricDefinitionService metrics) =>
-        new(charts, tree, metrics, new FakeChartQueryService(), new ExtensionPointRegistry());
+        new(charts, tree, metrics, new FakeChartQueryService(), new ExtensionPointRegistry(), null);
 
     private static ChartSeriesRowViewModel BuildRow(
         FakeMetricDefinitionService metrics, params HomeTreeRow[] habits) =>

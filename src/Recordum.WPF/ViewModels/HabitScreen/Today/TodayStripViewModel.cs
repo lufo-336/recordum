@@ -24,6 +24,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
     private readonly IGoalService _goals;
     private readonly IHabitUiPrefsService _uiPrefs;
     private readonly IClock _clock;
+    private readonly ITickSourceFactory? _ticks;
 
     /// <summary>The per-type content for the current subject, or <c>null</c> for a type with no strip
     /// (groups, or a type whose content has not been built yet).</summary>
@@ -46,7 +47,8 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         IReferenceDataQueryService refData,
         IGoalService goals,
         IHabitUiPrefsService uiPrefs,
-        IClock clock)
+        IClock clock,
+        ITickSourceFactory? ticks = null)
     {
         ArgumentNullException.ThrowIfNull(abstinence);
         ArgumentNullException.ThrowIfNull(completions);
@@ -66,6 +68,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
         _goals = goals;
         _uiPrefs = uiPrefs;
         _clock = clock;
+        _ticks = ticks;
     }
 
     /// <summary>Builds and loads the per-type content for <paramref name="node"/>. Disposes any previous
@@ -76,7 +79,7 @@ public sealed partial class TodayStripViewModel : ObservableObject, IDisposable
 
         ITodayContent? next = node.HabitType switch
         {
-            HabitType.Resistance => new ResistanceTodayContent(_abstinence, _clock),
+            HabitType.Resistance => new ResistanceTodayContent(_abstinence, _clock, _ticks),
             HabitType.Action => new ActionTodayContent(_completions, _streaks, _hourly, _clock),
             HabitType.Counter => new CounterTodayContent(_completions, _metrics, _refData, _goals, _clock),
             HabitType.State => new StateTodayContent(_completions, _metrics, _refData, _clock),

@@ -58,6 +58,9 @@ public static class ServiceRegistrar
         services.AddSingleton<IAppFontService, AppFontService>();
         services.AddSingleton<ICultureService, CultureService>();
         services.AddSingleton<IWebView2Availability, WebView2Availability>();
+        // Il battito dell'interfaccia: una sola fabbrica per il processo, ogni consumatore crea la
+        // propria sorgente col proprio intervallo. La gemella Avalonia si registra nella sua shell.
+        services.AddSingleton<ITickSourceFactory, DispatcherTickSourceFactory>();
 
         // Security: DPAPI by default. Passphrase opt-in via IKeyTransitionService.
 #pragma warning disable CA1416 // Windows-only target for Fase 3 WPF.

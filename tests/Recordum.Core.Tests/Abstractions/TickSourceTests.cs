@@ -64,4 +64,19 @@ public class TickSourceTests
 
         Assert.Equal(0, ticks);
     }
+
+    [Fact]
+    public void A_disposed_source_does_not_restart()
+    {
+        var factory = new FakeTickSourceFactory();
+        var ticks = 0;
+        var source = factory.Create(TimeSpan.FromSeconds(1));
+        source.Tick += (_, _) => ticks++;
+
+        source.Dispose();
+        source.Start();      // misuso: dopo Dispose non deve riaccendere niente
+        factory.TickAll();
+
+        Assert.Equal(0, ticks);
+    }
 }

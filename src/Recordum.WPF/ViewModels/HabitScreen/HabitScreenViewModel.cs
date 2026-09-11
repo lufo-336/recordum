@@ -51,6 +51,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly Recordum.Core.IAttachmentService _attachments;
     private readonly IOpenFileDialog _openFileDialog;
     private readonly IConfirmationDialog _confirmationDialog;
+    private readonly ITickSourceFactory? _ticks;
     private readonly AbstinencePeriodListViewModel _periodList;
     private readonly List<IDisposable> _subscriptions = [];
 
@@ -545,7 +546,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Recordum.Core.IAttachmentService attachments,
         IOpenFileDialog openFileDialog,
         IHabitUiPrefsService uiPrefs,
-        IResetTimeResolver resetTimes)
+        IResetTimeResolver resetTimes,
+        ITickSourceFactory? ticks = null)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(uiPrefs);
@@ -584,17 +586,18 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _attachments = attachments;
         _openFileDialog = openFileDialog;
         _confirmationDialog = confirmationDialog;
+        _ticks = ticks;
         Editor = editor;
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
-        _periodList = new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock);
+        _periodList = new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock, ticks);
         _periodList.Changed += OnAbstinenceChanged;
         Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), _periodList, clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock);
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
-        Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events);
+        Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
-        TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock);
+        TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock, ticks);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
         // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
         TodayStrip.Changed += OnAbstinenceChanged;
@@ -743,9 +746,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             HabitType.Action => new ActionQuickAddViewModel(_completions, _clock),
             HabitType.Counter => await BuildCounterQuickAddAsync(ct).ConfigureAwait(true),
-            HabitType.Resistance => new AbstinenceQuickAddViewModel(_completions, _abstinence, _clock),
+            HabitType.Resistance => new AbstinenceQuickAddViewModel(_completions, _abstinence, _clock, _ticks),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock, _diary),
-            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers),
+            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _ticks),
             _ => null,
         };
         if (vm is null) { QuickAdd = null; return; }
@@ -772,7 +775,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (defs.Count == 0)
                 return new CounterTapQuickAddViewModel(_completions, _clock);
             var cfg = await _configs.GetAsync(node.Id, c).ConfigureAwait(true);
-            var vm = new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _configs);
+            var vm = new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _configs, _ticks);
             vm.SetRegistrationConfig(cfg?.Repeatable ?? false, cfg?.SeriesLabelsJson);
             return vm;
         }

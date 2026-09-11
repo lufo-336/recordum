@@ -36,7 +36,8 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDi
         IConfirmationDialog confirm,
         IClock clock,
         DayBoundary day,
-        Action<AbstinencePeriodRowViewModel>? onDeleted = null)
+        Action<AbstinencePeriodRowViewModel>? onDeleted = null,
+        ITickSourceFactory? ticks = null)
     {
         ArgumentNullException.ThrowIfNull(period);
         ArgumentNullException.ThrowIfNull(abstinence);
@@ -46,7 +47,7 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDi
         _abstinence = abstinence;
         _confirm = confirm;
         _onDeleted = onDeleted;
-        Clock = new LiveElapsedClock(clock);
+        Clock = new LiveElapsedClock(clock, ticks);
 
         var start = day.DayOf(period.StartedAtMs);
         if (IsCurrent)

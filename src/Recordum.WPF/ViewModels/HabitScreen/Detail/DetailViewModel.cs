@@ -43,7 +43,8 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         IHabitConfigService configs,
         IAbstinenceService abstinence,
         IClock clock,
-        IEventBus bus)
+        IEventBus bus,
+        ITickSourceFactory? ticks = null)
     {
         ArgumentNullException.ThrowIfNull(goals);
         ArgumentNullException.ThrowIfNull(bus);
@@ -51,7 +52,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
         _configs = configs;
         Goal = new GoalProgressCardViewModel(goals, completions, metrics, refData, clock);
         YearHeatmap = new YearHeatmapViewModel(completions, metrics, ramp, abstinence, clock);
-        StreakSummary = new StreakSummaryViewModel(streaks, abstinence, clock);
+        StreakSummary = new StreakSummaryViewModel(streaks, abstinence, clock, ticks);
         StreakTimeline = new StreakTimelineViewModel(streaks, clock);
         Trend = new TrendChartViewModel(trend, clock);
         Hourly = new HourlyHistogramViewModel(hourly, clock);
@@ -130,7 +131,7 @@ public sealed partial class DetailViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Trend.RangeChanged -= OnTrendRangeChanged;
-        StreakSummary.Dispose(); // stops the abstinence live clock (its DispatcherTimer)
+        StreakSummary.Dispose(); // stops the abstinence live clock (its tick source)
         foreach (var s in _subs) s.Dispose();
         _subs.Clear();
     }

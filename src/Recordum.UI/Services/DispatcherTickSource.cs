@@ -12,6 +12,7 @@ public sealed class DispatcherTickSourceFactory : ITickSourceFactory
     private sealed class DispatcherTickSource : ITickSource
     {
         private readonly DispatcherTimer _timer;
+        private bool _disposed;
 
         public DispatcherTickSource(TimeSpan interval)
         {
@@ -23,11 +24,17 @@ public sealed class DispatcherTickSourceFactory : ITickSourceFactory
 
         private void OnTick(object? sender, EventArgs e) => Tick?.Invoke(this, EventArgs.Empty);
 
-        public void Start() => _timer.Start();
+        public void Start()
+        {
+            if (_disposed) return;
+            _timer.Start();
+        }
+
         public void Stop() => _timer.Stop();
 
         public void Dispose()
         {
+            _disposed = true;
             _timer.Stop();
             _timer.Tick -= OnTick;
             Tick = null;

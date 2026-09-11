@@ -14,6 +14,7 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
     private readonly IAbstinenceService _abstinence;
     private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
+    private readonly ITickSourceFactory? _ticks;
 
     public ObservableCollection<AbstinencePeriodRowViewModel> Rows { get; } = [];
 
@@ -25,11 +26,12 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
     /// d'inizio e di ricaduta secondo il giorno dell'abitudine, non la data UTC.</summary>
     internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
 
-    public AbstinencePeriodListViewModel(IAbstinenceService abstinence, IConfirmationDialog confirm, IClock clock)
+    public AbstinencePeriodListViewModel(IAbstinenceService abstinence, IConfirmationDialog confirm, IClock clock, ITickSourceFactory? ticks = null)
     {
         _abstinence = abstinence;
         _confirm = confirm;
         _clock = clock;
+        _ticks = ticks;
     }
 
     public Task LoadDayAsync(Guid habitNodeId, DateOnly day, CancellationToken ct = default)
@@ -40,7 +42,7 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
         var periods = await _abstinence.ListPeriodsAsync(
             habitNodeId, from ?? DateOnly.MinValue, to ?? DateOnly.MaxValue, ct).ConfigureAwait(true);
 
-        // Dispose the outgoing rows first: the open-period row owns a running DispatcherTimer that the
+        // Dispose the outgoing rows first: the open-period row owns a running tick source that the
         // dispatcher roots, so a bare Clear() would orphan a still-ticking clock on every reload.
         foreach (var r in Rows) r.Dispose();
         Rows.Clear();
@@ -49,7 +51,7 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
             .ThenByDescending(p => p.StartedAtMs);                // then newest start
         foreach (var p in ordered)
         {
-            var row = new AbstinencePeriodRowViewModel(p, _abstinence, _confirm, _clock, DayBoundary, r => Rows.Remove(r));
+            var row = new AbstinencePeriodRowViewModel(p, _abstinence, _confirm, _clock, DayBoundary, r => Rows.Remove(r), _ticks);
             row.Changed += (_, _) => { IsEmpty = Rows.Count == 0; Changed?.Invoke(this, EventArgs.Empty); };
             Rows.Add(row);
         }

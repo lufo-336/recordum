@@ -17,12 +17,12 @@ public sealed partial class StreakSummaryViewModel : ObservableObject, IDisposab
     private readonly IClock _clock;
     private readonly LiveElapsedClock _liveClock;
 
-    public StreakSummaryViewModel(IStreakAggregator aggregator, IAbstinenceService abstinence, IClock clock)
+    public StreakSummaryViewModel(IStreakAggregator aggregator, IAbstinenceService abstinence, IClock clock, ITickSourceFactory? ticks = null)
     {
         _aggregator = aggregator;
         _abstinence = abstinence;
         _clock = clock;
-        _liveClock = new LiveElapsedClock(clock);
+        _liveClock = new LiveElapsedClock(clock, ticks);
         // Forward each 1s tick to the bound CurrentDisplay so the Detail streak number stays live.
         _liveClock.PropertyChanged += (_, e) =>
         {

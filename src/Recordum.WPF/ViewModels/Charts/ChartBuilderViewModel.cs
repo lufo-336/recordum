@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
@@ -20,10 +20,9 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
     private readonly IChartQueryService _query;
     private readonly IExtensionPointRegistry _registry;
 
-    // Debounces the live preview: coalesces a burst of edits into a single re-render ~300ms after
-    // the last one. Created only under a running WPF app — null in headless tests, which call
-    // RefreshPreviewAsync directly. A stopped DispatcherTimer is not rooted by the dispatcher.
-    private readonly DispatcherTimer? _previewTimer;
+    // Smorza l'anteprima viva: accorpa una raffica di modifiche in un solo ri-render ~300ms dopo
+    // l'ultima. null = nessuno smorzamento, i test chiamano RefreshPreviewAsync direttamente.
+    private readonly ITickSource? _previewTick;
 
     private Guid? _editingId;
 
@@ -42,7 +41,7 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
 
     public ChartBuilderViewModel(
         IChartService charts, IHabitTreeQueryService tree, IMetricDefinitionService metrics,
-        IChartQueryService query, IExtensionPointRegistry registry)
+        IChartQueryService query, IExtensionPointRegistry registry, ITickSourceFactory? ticks)
     {
         _charts = charts;
         _tree = tree;
@@ -50,12 +49,9 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
         _query = query;
         _registry = registry;
 
-        // Dispatcher unavailable in headless unit-test environments (Application.Current is null).
-        if (System.Windows.Application.Current is not null)
-        {
-            _previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            _previewTimer.Tick += OnPreviewTick;
-        }
+        _previewTick = ticks?.Create(TimeSpan.FromMilliseconds(300));
+        if (_previewTick is not null)
+            _previewTick.Tick += OnPreviewTick;
     }
 
     /// <summary>Theme flag pushed in by the workspace when it opens the builder, so the live preview themes correctly.</summary>
@@ -193,14 +189,14 @@ public sealed partial class ChartBuilderViewModel : ObservableObject
     // so a burst of edits collapses to one refresh. No-op in headless tests (timer is null there).
     private void RaisePreviewRequested()
     {
-        if (_previewTimer is null) return;
-        _previewTimer.Stop();
-        _previewTimer.Start();
+        if (_previewTick is null) return;
+        _previewTick.Stop();
+        _previewTick.Start();
     }
 
     private void OnPreviewTick(object? sender, EventArgs e)
     {
-        _previewTimer?.Stop();   // one-shot: fire once per debounce window, not repeatedly
+        _previewTick?.Stop();   // one-shot: fire once per debounce window, not repeatedly
         _ = RefreshPreviewAsync();
     }
 

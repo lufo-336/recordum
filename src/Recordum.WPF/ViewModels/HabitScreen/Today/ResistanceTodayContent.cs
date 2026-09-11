@@ -30,13 +30,13 @@ public sealed partial class ResistanceTodayContent : ObservableObject, ITodayCon
     /// abstinence state (Detail streak, calendar markers, records, quick-add).</summary>
     public event EventHandler? Changed;
 
-    public ResistanceTodayContent(IAbstinenceService abstinence, IClock clock)
+    public ResistanceTodayContent(IAbstinenceService abstinence, IClock clock, ITickSourceFactory? ticks = null)
     {
         ArgumentNullException.ThrowIfNull(abstinence);
         ArgumentNullException.ThrowIfNull(clock);
         _abstinence = abstinence;
         _clock = clock;
-        Clock = new LiveElapsedClock(clock);
+        Clock = new LiveElapsedClock(clock, ticks);
     }
 
     private DayBoundary _day = DayBoundary.Utc;

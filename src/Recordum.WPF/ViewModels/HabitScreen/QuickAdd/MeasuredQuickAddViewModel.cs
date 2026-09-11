@@ -15,7 +15,8 @@ public sealed partial class MeasuredQuickAddViewModel(
     IMetricDefinitionService metrics,
     IReferenceDataQueryService refData,
     IClock clock,
-    IActiveTimerService timers) : SeriesQuickAddViewModelBase(completions, clock, timers)
+    IActiveTimerService timers,
+    ITickSourceFactory? ticks = null) : SeriesQuickAddViewModelBase(completions, clock, timers, ticks)
 {
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;

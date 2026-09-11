@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
@@ -15,24 +14,22 @@ namespace Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
 public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase
 {
     private readonly IAbstinenceService _abstinence;
-    private readonly DispatcherTimer? _tick;
+    private readonly ITickSource? _tick;
     private long? _startedMs;
 
     public AbstinenceQuickAddViewModel(
         ICompletionService completions,
         IAbstinenceService abstinence,
-        IClock clock)
+        IClock clock,
+        ITickSourceFactory? ticks)
         : base(completions, clock)
     {
         ArgumentNullException.ThrowIfNull(abstinence);
         _abstinence = abstinence;
 
-        // Dispatcher unavailable in headless unit-test environments.
-        if (System.Windows.Application.Current is not null)
-        {
-            _tick = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _tick = ticks?.Create(TimeSpan.FromSeconds(1));
+        if (_tick is not null)
             _tick.Tick += (_, _) => RefreshElapsed();
-        }
     }
 
     // ---- observable state ----

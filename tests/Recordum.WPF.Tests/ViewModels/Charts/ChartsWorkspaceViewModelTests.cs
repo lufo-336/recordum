@@ -15,7 +15,7 @@ public sealed class ChartsWorkspaceViewModelTests
             renderer.PluginId, renderer.PointId, renderer));
         return new ChartsWorkspaceViewModel(svc, new FakeChartQueryService(), registry,
             new ChartBuilderViewModel(svc, new FakeHabitTreeQueryService(), new FakeMetricDefinitionService(),
-                new FakeChartQueryService(), registry));
+                new FakeChartQueryService(), registry, null));
     }
 
     [Fact]

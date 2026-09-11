@@ -15,7 +15,7 @@ public class HomeClockTickerTests
     [Fact]
     public void TickNow_invokes_all_registered_callbacks()
     {
-        using var ticker = new HomeClockTicker();
+        using var ticker = new HomeClockTicker(null);
         int a = 0, b = 0;
         ticker.Register(() => a++);
         ticker.Register(() => b++);
@@ -30,7 +30,7 @@ public class HomeClockTickerTests
     [Fact]
     public void Clear_stops_fan_out()
     {
-        using var ticker = new HomeClockTicker();
+        using var ticker = new HomeClockTicker(null);
         int a = 0;
         ticker.Register(() => a++);
 
@@ -43,7 +43,7 @@ public class HomeClockTickerTests
     [Fact]
     public void Dispose_stops_fan_out()
     {
-        var ticker = new HomeClockTicker();
+        var ticker = new HomeClockTicker(null);
         int a = 0;
         ticker.Register(() => a++);
 
@@ -63,7 +63,7 @@ public class HomeClockTickerTests
         row.IsResistanceClock.Should().BeTrue();
         row.KeyFigureText.Should().Be("0:00:00");
 
-        using var ticker = new HomeClockTicker();
+        using var ticker = new HomeClockTicker(null);
         ticker.Register(row.RefreshClock);
 
         // one second later the display must visibly change (seconds shown so the row ticks live)

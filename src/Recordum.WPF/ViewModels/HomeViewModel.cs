@@ -32,7 +32,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private readonly IStreakAggregator? _streaks;
     private readonly IClock? _clock;
     private readonly IResetTimeResolver? _resetTimes;
-    private readonly HomeClockTicker _clockTicker = new();
+    private readonly HomeClockTicker _clockTicker;
     private Dictionary<Guid, HabitUiPrefs> _prefsByNode = new();
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
@@ -74,7 +74,8 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         IHabitUiPrefsService? uiPrefs = null,
         IStreakAggregator? streaks = null,
         IClock? clock = null,
-        IResetTimeResolver? resetTimes = null)
+        IResetTimeResolver? resetTimes = null,
+        ITickSourceFactory? ticks = null)
     {
         _query = query;
         _nodes = nodes;
@@ -85,6 +86,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         _streaks = streaks;
         _clock = clock;
         _resetTimes = resetTimes;
+        _clockTicker = new HomeClockTicker(ticks);
 
         // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete) must
         // refresh the row indicators (sparkline / completed-today); a habit edit (name/color/icon

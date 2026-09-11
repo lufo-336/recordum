@@ -15,8 +15,8 @@ namespace Recordum.WPF.Tests.ViewModels.Charts;
 
 /// <summary>
 /// Task 12 — the builder's live preview. Tests drive <see cref="ChartBuilderViewModel.RefreshPreviewAsync"/>
-/// directly (there is no <c>Application.Current</c> in a headless host, so the debounce
-/// <c>DispatcherTimer</c> is never created — which is exactly why the guard exists).
+/// directly (no <see cref="Recordum.Core.Abstractions.ITickSourceFactory"/> is supplied here, so the
+/// debounce tick source is never created — which is exactly why the guard exists).
 /// </summary>
 public sealed class ChartBuilderPreviewTests
 {
@@ -32,7 +32,7 @@ public sealed class ChartBuilderPreviewTests
     }
 
     private static ChartBuilderViewModel BuildVm(IChartQueryService query, IExtensionPointRegistry registry) =>
-        new(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService(), query, registry);
+        new(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService(), query, registry, null);
 
     [Fact]
     public async Task RefreshPreview_with_a_selected_habit_renders_a_non_null_view()

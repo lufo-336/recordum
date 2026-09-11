@@ -1,46 +1,44 @@
-using System.Windows.Threading;
+using Recordum.Core.Abstractions;
 
 namespace Recordum.WPF.ViewModels.Home;
 
 /// <summary>
-/// A single 1-second ticker shared by the whole Home list: resistance rows register a refresh
-/// callback and one <see cref="DispatcherTimer"/> fans out to all of them each second (spec §2 —
-/// one timer for the list, not one per row). The timer is created only under a running WPF app
-/// (null in headless tests, where <see cref="TickNow"/> drives the fan-out manually). A running
-/// DispatcherTimer is rooted by the dispatcher, so the owner MUST <see cref="Clear"/> on reload
-/// and <see cref="Dispose"/> on teardown or it keeps ticking and leaks.
+/// Un solo battito da 1 secondo condiviso da tutta la lista Home: le righe di astinenza registrano
+/// una callback di refresh e una sola sorgente le serve tutte (spec §2 — un timer per la lista, non
+/// uno per riga). <paramref name="ticks"/> null = non si batte: è il caso dei test headless, dove
+/// <see cref="TickNow"/> pilota il fan-out a mano. Una sorgente in moto è radicata dal dispatcher,
+/// quindi il proprietario DEVE <see cref="Clear"/> a ogni ricarica e <see cref="Dispose"/> allo
+/// smontaggio, o continua a battere e perde memoria.
 /// </summary>
 public sealed class HomeClockTicker : IDisposable
 {
-    private readonly DispatcherTimer? _timer;
+    private readonly ITickSource? _tick;
     private readonly List<Action> _callbacks = new();
 
-    public HomeClockTicker()
+    public HomeClockTicker(ITickSourceFactory? ticks)
     {
-        if (System.Windows.Application.Current is not null)
-        {
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _timer.Tick += OnTick;
-        }
+        _tick = ticks?.Create(TimeSpan.FromSeconds(1));
+        if (_tick is not null)
+            _tick.Tick += OnTick;
     }
 
-    /// <summary>Registers a per-tick callback (a resistance row's clock refresh) and starts the timer.</summary>
+    /// <summary>Registra una callback per battito (il refresh dell'orologio di una riga di astinenza) e avvia la sorgente.</summary>
     public void Register(Action tick)
     {
         ArgumentNullException.ThrowIfNull(tick);
         _callbacks.Add(tick);
-        _timer?.Start();
+        _tick?.Start();
     }
 
-    /// <summary>Drops all callbacks and stops the timer. Called before each Home rebuild.</summary>
+    /// <summary>Scarta tutte le callback e ferma la sorgente. Chiamata prima di ogni ricostruzione della Home.</summary>
     public void Clear()
     {
         _callbacks.Clear();
-        _timer?.Stop();
+        _tick?.Stop();
     }
 
-    /// <summary>Invokes every registered callback once. Wired to the timer tick; also the manual
-    /// entry point for headless tests. A snapshot guards against callbacks mutating the list.</summary>
+    /// <summary>Invoca una volta ogni callback registrata. Cablata al battito, ed è anche l'ingresso
+    /// manuale per i test. Una copia difende dalle callback che mutano la lista.</summary>
     public void TickNow()
     {
         foreach (var cb in _callbacks.ToArray())
@@ -52,7 +50,10 @@ public sealed class HomeClockTicker : IDisposable
     public void Dispose()
     {
         Clear();
-        if (_timer is not null)
-            _timer.Tick -= OnTick;
+        if (_tick is not null)
+        {
+            _tick.Tick -= OnTick;
+            _tick.Dispose();
+        }
     }
 }

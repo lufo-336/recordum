@@ -132,6 +132,6 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     public void Dispose()
     {
         _reloadCts?.Dispose();
-        Periods.Dispose(); // stops any live period-row clock (its DispatcherTimer)
+        Periods.Dispose(); // stops any live period-row clock (its tick source)
     }
 }

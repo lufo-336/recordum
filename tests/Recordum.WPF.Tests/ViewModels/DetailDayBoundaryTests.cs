@@ -166,7 +166,7 @@ public class DetailDayBoundaryTests
         var node = Habit(HabitType.Resistance);
         abstinence.States[node.Id] = new AbstinenceState(
             AbstinenceStatus.Relapsed, null, LateOn18.ToUnixTimeMilliseconds());
-        var sut = new AbstinenceQuickAddViewModel(new FakeCompletionService(), abstinence, new FakeClock(LateOn18, Plus2))
+        var sut = new AbstinenceQuickAddViewModel(new FakeCompletionService(), abstinence, new FakeClock(LateOn18, Plus2), null)
         {
             Node = node,
         };

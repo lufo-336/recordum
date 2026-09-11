@@ -25,7 +25,7 @@ public sealed class ChartsWorkspaceE2ETests
         svc.Store[id] = new Chart { Id = id, Name = "A", ChartType = "line" };
         var vm = new ChartsWorkspaceViewModel(svc, new FakeChartQueryService(), registry,
             new ChartBuilderViewModel(svc, new FakeHabitTreeQueryService(), new FakeMetricDefinitionService(),
-                new FakeChartQueryService(), registry));
+                new FakeChartQueryService(), registry, null));
 
         await vm.LoadAsync();
         await vm.SelectAsync(vm.Charts[0]);

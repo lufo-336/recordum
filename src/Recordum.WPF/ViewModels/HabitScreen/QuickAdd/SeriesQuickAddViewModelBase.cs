@@ -18,15 +18,15 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
     [ObservableProperty] private bool _chronoRunning;
 
     /// <summary>Live-ticking elapsed readout shown next to the running duration cell (U8). One timer
-    /// per habit, so one shared clock. MUST be disposed with the VM (the DispatcherTimer leaks otherwise).</summary>
+    /// per habit, so one shared clock. MUST be disposed with the VM (the tick source leaks otherwise).</summary>
     public LiveElapsedClock ChronoClock { get; }
 
-    protected SeriesQuickAddViewModelBase(ICompletionService completions, IClock clock, IActiveTimerService timers)
+    protected SeriesQuickAddViewModelBase(ICompletionService completions, IClock clock, IActiveTimerService timers, ITickSourceFactory? ticks = null)
         : base(completions, clock)
     {
         ArgumentNullException.ThrowIfNull(timers);
         _timers = timers;
-        ChronoClock = new LiveElapsedClock(Clock);
+        ChronoClock = new LiveElapsedClock(Clock, ticks);
     }
 
     /// <summary>Per-cell stopwatch: start runs an active_timer (Stopwatch); stop pours the elapsed
@@ -58,7 +58,7 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
         }
     }
 
-    /// <summary>Stops any running chrono and detaches the clock's DispatcherTimer so the VM can be
+    /// <summary>Stops any running chrono and detaches the clock's tick source so the VM can be
     /// collected when the screen swaps or tears down the quick-add.</summary>
     public void Dispose()
     {

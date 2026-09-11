@@ -112,12 +112,12 @@ public sealed class SamplePreviewFactory(IClock clock)
                     CurrentLabel = SampleStep(FirstMeasured(input)),
                 };
             case HabitType.Resistance:
-                var resistance = new ResistanceTodayContent(new SampleServices.NoAbstinence(), _clock)
+                var resistance = new ResistanceTodayContent(new SampleServices.NoAbstinence(), _clock, NullTickSourceFactory.Instance)
                 {
                     Status = AbstinenceStatus.Abstaining,
                     AttemptsLast90Days = 1,
                 };
-                // Set, never Start(): a ticking DispatcherTimer in a preview would both leak and
+                // Set, never Start(): a ticking source in a preview would both leak and
                 // contradict the determinism the sample data is built on (spec §3, constraint 3).
                 resistance.Clock.Display = SampleCleanStreak;
                 return resistance;

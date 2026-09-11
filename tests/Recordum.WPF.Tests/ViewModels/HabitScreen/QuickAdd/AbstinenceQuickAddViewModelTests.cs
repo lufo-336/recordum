@@ -19,7 +19,7 @@ public class AbstinenceQuickAddViewModelTests
         var clock = new FakeClock(Epoch);
         var abstinence = new FakeAbstinenceService();
         var completions = new FakeCompletionService();
-        var vm = new AbstinenceQuickAddViewModel(completions, abstinence, clock)
+        var vm = new AbstinenceQuickAddViewModel(completions, abstinence, clock, null)
         {
             Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Resistance }
         };
