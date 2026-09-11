@@ -1176,25 +1176,57 @@ namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 
 public class CalendarDangerTintTests
 {
-    [Fact]
-    public void A_lapse_day_declares_the_danger_tint_without_naming_a_color()
-    {
-        // Il giorno di una ricaduta dichiara la TINTA, non l'esadecimale: risolverlo qui
-        // significherebbe (a) chiedere un brush a Application.Current da un ViewModel, e
-        // (b) fotografare il colore al caricamento, così che un cambio di tema non lo aggiorni
-        // finché il calendario non ricarica.
-        var marker = new CalendarDayMarker(
-            new DateOnly(2026, 9, 10), TintStep: 4, Number: null, NoteCount: 0, Tint: MarkerTint.Danger);
+    // ATTENZIONE: la prima stesura di questo piano prescriveva qui due test che costruivano un
+    // CalendarDayMarker e asserivano sulla sua stessa proprietà. **Non potevano fallire**: che un
+    // argomento del costruttore primario di un record arrivi alla propria proprietà lo garantisce il
+    // compilatore. Era il quarto test inerte di quest'onda. Il difetto vero — ApplyMarkersAsync che
+    // torna a scrivere un hex di pericolo dentro TintColorHex — vive nella CELLA, dopo il percorso
+    // reale, quindi il test deve attraversarlo e leggere la cella.
 
-        Assert.Equal(MarkerTint.Danger, marker.Tint);
+    private static CalendarNavigatorViewModel NewSut(CalendarMarkerProvider provider)
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero));
+        return new CalendarNavigatorViewModel(clock)
+        {
+            CompletedColorHex = "#e08a4a",
+            NoteColorHex = "#e0b341",
+            MarkerProvider = provider,
+        };
     }
 
     [Fact]
-    public void An_ordinary_day_defaults_to_the_neutral_tint()
+    public async Task A_lapse_day_keeps_the_habit_color_hex_and_carries_the_danger_tint()
     {
-        var marker = new CalendarDayMarker(new DateOnly(2026, 9, 10), TintStep: 2, Number: null, NoteCount: 0);
+        CalendarMarkerProvider provider = (from, to, ct) => Task.FromResult(
+            new CalendarMarkers(new[]
+            {
+                new CalendarDayMarker(new DateOnly(2026, 6, 10), TintStep: 4, Number: null, NoteCount: 0, Tint: MarkerTint.Danger),
+            }));
+        var sut = NewSut(provider);
 
-        Assert.Equal(MarkerTint.Default, marker.Tint);
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
+
+        var cell = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 10));
+        cell.Tint.Should().Be(MarkerTint.Danger);
+        // È QUESTA l'asserzione che conta: l'anti-pattern la rompe, la prima no.
+        cell.TintColorHex.Should().Be("#e08a4a");
+    }
+
+    [Fact]
+    public async Task An_ordinary_day_gets_the_default_tint_and_the_habit_color_hex()
+    {
+        CalendarMarkerProvider provider = (from, to, ct) => Task.FromResult(
+            new CalendarMarkers(new[]
+            {
+                new CalendarDayMarker(new DateOnly(2026, 6, 11), TintStep: 3, Number: null, NoteCount: 0),
+            }));
+        var sut = NewSut(provider);
+
+        await sut.LoadAsync(2026, 6, selected: null, DayBoundary.Utc);
+
+        var cell = sut.Cells.Single(c => c.Date == new DateOnly(2026, 6, 11));
+        cell.Tint.Should().Be(MarkerTint.Default);
+        cell.TintColorHex.Should().Be("#e08a4a");
     }
 }
 ```
