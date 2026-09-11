@@ -117,10 +117,13 @@ public class TodayStripDayBoundaryTests
         var metrics = new FakeMetricDefinitionService();
         var refData = new FakeReferenceData();
         var node = Habit(HabitType.State);
+        // Etichette esplicite: la scala del fake non ha MinValue/MaxValue, quindi senza etichette
+        // avrebbe un solo gradino (Max = 0) e il Clamp schiaccerebbe a 0 qualunque indice letto.
         metrics.Store[Guid.NewGuid()] = new MetricDefinition
         {
             Id = Guid.NewGuid(), HabitNodeId = node.Id, SortOrder = 0,
             ScaleTemplateId = refData.Scales[0].Id, Name = "mood",
+            LabelsJson = """["1","2","3","4","5"]""",
         };
         completions.MagnitudeByHabit[node.Id] = [new DailyMagnitude(new DateOnly(2026, 8, 18), 3m)];
         var sut = new StateTodayContent(completions, metrics, refData, clock);
