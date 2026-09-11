@@ -323,15 +323,24 @@ eseguiti**, perché la suite WPF non gira su Linux.
 PowerShell, dalla radice del repo sulla VM:
 
 ```powershell
-# 1) R9 da solo — è questa la risposta che serve
+# 1) R9 da solo — è questa la risposta che sblocca il Task 7, ed è la prima per un motivo
 git checkout r9-day-boundary
 dotnet test tests\Recordum.WPF.Tests --nologo -- xUnit.ParallelizeTestCollections=false
 
-# 2) facoltativo: lo stesso sul branch del porting, che aggiunge i Task 1-3 dell'onda F0
-#    (8 file di ViewModel toccati, sole righe di `using`, + un file nuovo in Services/)
+# 2) poi il branch del porting, che aggiunge i Task 1-5 dell'onda F0
 git checkout avalonia-linux-slice
 dotnet test tests\Recordum.WPF.Tests --nologo -- xUnit.ParallelizeTestCollections=false
 ```
+
+**L'ordine non è cosmetico: serve a sapere di chi è la colpa se qualcosa è rosso.** I Task 1-5 hanno
+toccato **50 file** fra `src/Recordum.WPF` e i suoi test, e non sono più solo righe di `using` come
+quando questa sezione è stata scritta la prima volta: ci sono le firme di quattordici costruttori
+cambiate dalla cascata del battito (Task 4), il modello della tinta del calendario e un terzo valore
+nel `HabitColorTintConverter` (Task 5). **Nessuna di quelle modifiche è mai stata eseguita**, perché
+la suite WPF non gira su Linux — sono tutte verificate dal solo compilatore.
+
+Quindi: se la (1) è verde e la (2) è rossa, il problema è del porting e lo sistemo io. Se è rossa
+già la (1), è R9. Senza la (1) prima, le due cose sono indistinguibili.
 
 ### Tre cose da sapere prima di lanciarlo
 
@@ -353,7 +362,9 @@ La riga finale di ciascuna esecuzione, così com'è:
 Passed!  - Failed: 0, Passed: NNN, Skipped: 0, Total: NNN
 ```
 
-Se è **verde**: il Task 7 è sbloccato, e non serve altro dalla VM per un pezzo.
+Se sono **entrambe verdi**: il Task 7 è sbloccato, e non serve altro dalla VM per un pezzo — con in più la
+conferma che i Task 1-5 non hanno rotto niente, che è la sola prova possibile per 50 file che qui si
+possono solo compilare.
 Se è **rossa**: i nomi dei test falliti bastano. Non serve indagare sulla VM — è esattamente
 l'informazione per cui questa esecuzione esiste, e va decisa prima di rinominare 126 file.
 
