@@ -4,6 +4,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Core.Services;
 using Recordum.Core.Time;
+using Recordum.Plugins.Contracts.Events;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels.HabitScreen;
 using Recordum.WPF.ViewModels.HabitScreen.Detail;
@@ -210,6 +211,60 @@ public class DetailDayBoundaryTests
 
         records.DayBoundary.Should().Be(Boundary);
         periods.DayBoundary.Should().Be(Boundary);
+    }
+
+    // ---- lacune trovate dalle sonde "rosso prima" sulla VM (2026-09-11) --------------
+
+    /// <summary>Il <see cref="DetailViewModel"/> conserva il confine solo per i reload scatenati dal bus
+    /// (registrazione, modifica, eliminazione): senza <c>_day = day</c> il primo caricamento resta giusto
+    /// — i pannelli ricevono il confine per parametro — ma il reload dopo una registrazione torna in UTC.
+    /// Nessun test percorreva quel ramo: la sonda che toglieva l'assegnazione restava verde.</summary>
+    [Fact]
+    public async Task Detail_reload_after_a_completion_event_keeps_the_boundary()
+    {
+        var trends = new FakeTrendQueryService();
+        var bus = new FakeEventBus();
+        var sut = new DetailViewModel(
+            new FakeGoalService(), new FakeStreakAggregator(), trends,
+            new FakeHourlyDistributionQueryService(), new FakeCompletionService(),
+            new FakeMetricDefinitionService(), new FakeReferenceData(), new IntensityRampResolver(),
+            new FakeHabitConfigService(), new FakeAbstinenceService(), new FakeClock(LateOn18, Plus2), bus);
+        var node = Habit(HabitType.Counter);
+        await sut.LoadAsync(node, Boundary);
+        var callsAfterLoad = trends.Calls;
+
+        bus.Publish(new CompletionRecordedPayload(Guid.NewGuid(), node.Id, LateOn18.UtcDateTime));
+        await Task.Yield();
+
+        trends.Calls.Should().BeGreaterThan(callsAfterLoad);   // il reload c'è stato: il test non passa a vuoto
+        trends.LastTo.Should().Be(The19th);
+    }
+
+    /// <summary>La modifica a mano dell'orario di una registrazione: l'utente legge e scrive un orario
+    /// di parete nel fuso dell'abitudine. La riga riceve il confine dalla lista; senza, EditedDate
+    /// mostrerebbe l'ora UTC e il salvataggio sposterebbe l'istante di due ore. L'editor inline oggi non
+    /// ha superficie XAML (R9-M8): per questo nessuno se ne sarebbe accorto.</summary>
+    [Fact]
+    public async Task Inline_edit_reads_and_writes_wall_time_in_the_habit_zone()
+    {
+        var completions = new FakeCompletionService();
+        var at = new DateTimeOffset(2026, 8, 18, 22, 0, 0, TimeSpan.Zero);   // 00:00 del 19 in fuso +2
+        var completion = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(),
+            CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+        };
+        completions.Store[completion.Id] = completion;
+        var sut = new CompletionRowViewModel(completion, completions, dayBoundary: Boundary);
+
+        sut.EditedDate.Should().Be(new DateTime(2026, 8, 19, 0, 0, 0));
+
+        sut.EditedDate = new DateTime(2026, 8, 19, 1, 30, 0);
+        await sut.SaveEditCommand.ExecuteAsync(null);
+
+        var expected = new DateTimeOffset(2026, 8, 18, 23, 30, 0, TimeSpan.Zero);
+        completion.CompletedAt.Should().Be(expected.UtcDateTime);
+        completion.CompletedAtMs.Should().Be(expected.ToUnixTimeMilliseconds());
     }
 
     /// <summary>I1. Il confine si risolve PRIMA di qualunque pannello, ramo gruppo compreso: la
