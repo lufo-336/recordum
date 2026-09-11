@@ -1140,7 +1140,11 @@ EOF
 
 Restano due agganci, di natura diversa: uno è un'**azione** che il ViewModel chiede (uscire), l'altro è un **valore** che legge (un colore del tema). Dopo questo task nessun ViewModel nomina più `Application.Current`.
 
-Il secondo è anche un difetto: `HabitScreenViewModel` risolve `Brush.Danger` **una volta**, al caricamento dei marker del calendario, e ne fotografa l'esadecimale dentro `CalendarDayMarker.TintColorHex`. Se l'utente cambia tema, il calendario tiene il colore vecchio finché non ricarica. La correzione — il ViewModel dichiara *quale* tinta, la view la risolve — toglie l'aggancio **e** il difetto.
+Il secondo porta anche un guadagno architetturale: sparisce l'esadecimale di ripiego `"#FFF87171"` scritto a mano accanto a un token che esisteva già, e il ViewModel smette di conoscere i brush.
+
+> **Correzione (2026-09-11, dall'esecuzione del task).** La prima stesura di questa sezione affermava che lo spostamento **chiude anche un difetto**: il calendario terrebbe il colore vecchio al cambio di tema finché non ricarica, e risolvere nella view lo sistemerebbe. **È falso**, e l'esecutore l'ha verificato tracciando la catena WPF. Il `Border.Background` è un **`MultiBinding`**, non un `{DynamicResource}`: uno swap di `Application.Resources.MergedDictionaries` invalida automaticamente solo le proprietà `{DynamicResource}`, mai quelle guidate da un binding. Quindi sia il codice vecchio (risolveva nel ViewModel a ogni `ReloadAsync`) sia quello nuovo (risolve nel converter, rieseguito anch'esso a ogni `ReloadAsync` perché le celle si ricreano da zero) si aggiornano **alla stessa cadenza**: al prossimo reload del calendario, non al flip del tema.
+>
+> Il difetto quindi **resta**, immutato: il calendario non si ridipinge al cambio di tema finché non ricarica. Non è una regressione di quest'onda e non si chiude qui — la sua casa naturale è l'**Onda 3** (coerenza estetica), dove vive la rifinitura del cambio tema, e servirebbe una sottoscrizione a `IThemeService.EffectiveThemeChanged` che forzi un reload del calendario. Nessuna esiste oggi, né prima né dopo.
 
 **Files:**
 - Create: `src/Recordum.Core/Abstractions/IApplicationLifetime.cs`
