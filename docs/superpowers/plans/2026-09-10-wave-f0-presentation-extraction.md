@@ -22,6 +22,7 @@
 - **Baseline da cui si parte** (misurata il 2026-09-10): build 0 errori / 39 warning; `Recordum.Core.Tests` **145**, `Recordum.Data.Tests` **478** (+18 DPAPI, Windows-only per natura), `Recordum.Plugins.Tests` **66**, `Recordum.Plugins.ExportEngine.Tests` **37**, `Recordum.Avalonia.Tests` **12**.
 - **Stringhe utente** in `.resx`, English-first. Una stringa nuova = 3 edit: `Strings.resx` + `Strings.it.resx` + accessor a mano in `Strings.Designer.cs`. **`Strings.Designer.cs` va editato via shell** (`python`/`sed`/heredoc): `guard-generated.js` blocca Edit/Write su qualunque `*.Designer.cs`. Questo piano non aggiunge stringhe nuove.
 - **Mai `DateTime.UtcNow`/`Now`**: il tempo passa da `IClock`. **Mai derivare un giorno da un istante** fuori da `DayBoundary`: `DayDerivationGuardTests` fallisce.
+- **Un `grep` per `new NomeClasse(` non trova tutti i siti di costruzione.** C# permette il `new` *target-typed*: `ChartBuilderViewModelTests.cs:21` scrive `new(charts, tree, metrics, …)` dentro un helper il cui tipo di ritorno dà il tipo, e nessuna ricerca per nome lo vede. Nel Task 4 questo ha nascosto **due** siti su undici, trovati solo dal compilatore. Conseguenza operativa per ogni task che cambia una firma: **l'elenco autorevole dei siti è l'output del compilatore, mai un `grep`** — il grep serve a orientarsi, non a chiudere.
 - **`tests/Recordum.UI.Tests` è l'unico progetto di test SENZA `<Using Include="Xunit" />`** nel proprio `.csproj`: ogni file che usa `[Fact]` o `Assert` lì dentro ha bisogno di un `using Xunit;` esplicito (`[AvaloniaFact]` no — vive in `Avalonia.Headless.XUnit`). Senza, il compilatore si ferma su `CS0246` per `Fact`, **prima** di arrivare a valutare il resto del file — e maschera qualunque errore il test fosse nato per dimostrare.
 - **`InitializeComponent()`, mai `AvaloniaXamlLoader.Load(this)`**: il secondo carica lo XAML ma non cabla i campi `x:Name`, e il guasto è un `NullReferenceException` a runtime senza nessun errore di compilazione.
 - **Un test di regressione va provato contro il codice rotto**: dove il piano lo chiede, disattivare il fix, vedere il rosso, ripristinare. Un test che non può fallire è peggio di nessun test. **Vale anche per i test di guardia** — quelli che sorvegliano un invariante invece di una regressione: la prima stesura di `NoWpfReferenceTests` asseriva su `TargetFrameworkAttribute.FrameworkName`, che vale `.NETCoreApp,Version=v10.0` **sia** per `net10.0` **sia** per `net10.0-windows`, quindi il guard contro il TFM sbagliato era verde per costruzione. Se un test dichiara di sorvegliare qualcosa, il piano deve dire **come lo si è visto scattare**.
@@ -796,7 +797,7 @@ La cascata è **tre anelli e poi la DI**, mappata sul codice e non dedotta:
 | 1 — chi crea un timer | `HomeClockTicker`, `LiveElapsedClock`, `AbstinenceQuickAddViewModel`, `ChartBuilderViewModel` |
 | 2 — chi costruisce l'anello 1 | `HomeViewModel` (campo `= new()`), `AbstinencePeriodListViewModel`, `DetailViewModel`, `TodayStripViewModel`, `SamplePreviewFactory`, `MeasuredQuickAddViewModel`, `CounterSeriesQuickAddViewModel` |
 | 3 — chi costruisce l'anello 2 | `HabitScreenViewModel` (cinque di loro), `HabitBuilderViewModel` (`SamplePreviewFactory`) |
-| 4 | `ServiceRegistrar`: `HomeViewModel`, `HabitScreenViewModel`, `HabitBuilderViewModel`, `AbstinenceQuickAddViewModel`, `ChartBuilderViewModel` sono risolti dal contenitore |
+| 4 | `ServiceRegistrar`: `HomeViewModel`, `HabitScreenViewModel`, `HabitBuilderViewModel`, `ChartBuilderViewModel` sono risolti dal contenitore. **`AbstinenceQuickAddViewModel` NO**: non è registrato da nessuna parte, lo costruisce `HabitScreenViewModel:749` con un `new` nudo — è un **sesto** sito di costruzione, e va nell'anello 3 insieme agli altri cinque che quella classe crea (verificato: `grep AbstinenceQuickAddViewModel ServiceRegistrar.cs` non trova nulla) |
 
 **Regola di forma, che decide il rischio.** Sull'**anello 1** il parametro è **obbligatorio** (posizionale, tipo nullable `ITickSourceFactory?`): così il compilatore elenca ogni singolo sito di costruzione e nessun ramo di produzione può restare senza battito in silenzio. Sugli **anelli 2 e 3** è **opzionale con default `null`**, così i circa trenta siti di costruzione nei test WPF continuano a compilare invariati. `null` significa esattamente ciò che significava `Application.Current is null`: questa istanza non batte.
 
@@ -1088,10 +1089,12 @@ Ripeti finché il `grep` non torna vuoto: ogni errore residuo nomina il file e l
 - [ ] **Step 9: Verificare che i timer siano spariti dai ViewModel**
 
 ```bash
-grep -rn 'System\.Windows\.Threading\|DispatcherTimer' src/Recordum.WPF/ViewModels --include='*.cs' | grep -v '^\s*//' | grep -v '///'
+grep -rn 'System\.Windows\.Threading\|DispatcherTimer' src/Recordum.WPF/ViewModels --include='*.cs'
 ```
 
-Atteso: **nessun output** (restano solo eventuali menzioni nei commenti, che vanno riscritte se dicono ancora "DispatcherTimer").
+Atteso: **nessun output, commenti inclusi.**
+
+**Niente filtri**, e la ragione è doppia. La prima: un commento che descrive un meccanismo che non c'è più è una trappola per il prossimo che legge, quindi va riscritto, non escluso. La seconda è che il filtro non funzionerebbe comunque — `grep -rn` prefissa ogni riga con `file:riga:`, quindi un `| grep -v '^\s*//'` a valle **non matcha mai nulla** e lascia passare tutto (provato). Un commento in coda a una riga di codice sfuggirebbe due volte.
 
 - [ ] **Step 10: Eseguire e vedere il verde**
 
