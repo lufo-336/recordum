@@ -5,7 +5,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Controls;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.Tests.ViewModels.HabitScreen;
+using Recordum.Presentation.Tests.ViewModels.HabitScreen;
 using Recordum.WPF.Views.HabitScreen;
 using Xunit;
 

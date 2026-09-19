@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Recordum.Presentation\Recordum.Presentation.csproj" />
+    <ProjectReference Include="..\Recordum.Core.Tests\Recordum.Core.Tests.csproj" />
   </ItemGroup>
 
 </Project>

@@ -19,10 +19,13 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <!-- Fakes moved to Recordum.Presentation.Tests with the ViewModel tests; the view tests still use them. -->
+    <Using Include="Recordum.Presentation.Tests.Fixtures" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Recordum.WPF\Recordum.WPF.csproj" />
+    <ProjectReference Include="..\Recordum.Presentation.Tests\Recordum.Presentation.Tests.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.Tests;
 
+[Collection(ProcessGlobalCultureCollection.Name)]
 public class StringsResourceTests
 {
     /// <summary>Le stringhe traslocate con i ViewModel: se il nome del manifest embedded non coincide con
