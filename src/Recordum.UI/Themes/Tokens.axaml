@@ -23,13 +23,14 @@
     <x:Double x:Key="FontSize.Heading">15</x:Double>
 
     <!-- Font.Default in WPF è Palatino Linotype (con fallback Book Antiqua/Georgia), scelto a
-         runtime da AppFontService (AppSetting ui.font) — una decisione dell'autore, non del tema.
-         Palatino non esiste su Linux: qui usiamo uno stack serif di sistema con fallback sans,
-         SOLO per far rendere qualcosa di leggibile nella sonda. La scelta del font per la vera
-         shell Avalonia resta all'autore — non la stiamo anticipando qui. -->
+         runtime da AppFontService (AppSetting ui.font). Palatino non esiste su Linux: la versione
+         Avalonia spedisce UNA faccia serif imbustata (sotto), identica su ogni OS. -->
     <FontFamily x:Key="Font.System">Segoe UI, Ubuntu, Cantarell, Noto Sans, DejaVu Sans, sans-serif</FontFamily>
-    <FontFamily x:Key="Font.Serif">Georgia, Noto Serif, Liberation Serif, DejaVu Serif, serif</FontFamily>
-    <FontFamily x:Key="Font.Default">Georgia, Noto Serif, Liberation Serif, DejaVu Serif, serif</FontFamily>
+    <FontFamily x:Key="Font.Serif">avares://Recordum.UI/Fonts/#Source Serif 4,Georgia,Noto Serif,Liberation Serif,serif</FontFamily>
+    <!-- Il serif di spedizione (Source Serif 4, OFL), imbustato in Fonts/ e servito da avares://.
+         Lo stack di sistema resta come ultima spiaggia se la risorsa non si risolve, mai come
+         prima scelta. -->
+    <FontFamily x:Key="Font.Default">avares://Recordum.UI/Fonts/#Source Serif 4,Georgia,Noto Serif,Liberation Serif,serif</FontFamily>
 
     <!-- Layout — stessi numeri di WPF Tokens.xaml (px WPF ~= DIP Avalonia, 1:1 a questa densità). -->
     <x:Double x:Key="Layout.RowHeight">36</x:Double>

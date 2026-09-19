@@ -27,6 +27,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Il font viaggia dentro l'assembly: una faccia sola, identica su Linux, Windows e macOS.
+         Un ripiego per-OS (Palatino qui, Noto Serif là) darebbe a Recordum un aspetto diverso su
+         ogni macchina, che è il contrario di ciò che l'Onda 3 chiede. Source Serif 4 (SIL OFL 1.1,
+         release Adobe 4.005R): TTF statici Regular/Italic/Bold/BoldItalic, tutti famiglia
+         "Source Serif 4". Il testo della licenza (Fonts/OFL.txt) viene imbustato con i font, così
+         viaggia insieme al binario. -->
+    <AvaloniaResource Include="Fonts/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Recordum.Core/Recordum.Core.csproj" />
     <ProjectReference Include="../Recordum.Data/Recordum.Data.csproj" />
     <ProjectReference Include="../Recordum.Plugins.Contracts/Recordum.Plugins.Contracts.csproj" />
