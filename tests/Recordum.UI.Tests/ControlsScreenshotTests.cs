@@ -94,6 +94,23 @@ public class ControlsScreenshotTests
         ScreenshotProbeTests.Capture(window, "streak-timeline-dark");
     }
 
+    [AvaloniaFact]
+    public void Streak_timeline_redraws_with_the_new_accent_when_the_theme_variant_flips_after_first_draw()
+    {
+        var sut = new StreakTimelineControl { DataContext = NewTimeline(), Width = 400 };
+        var window = new Window { Content = sut, Width = 420, Height = 60, RequestedThemeVariant = ThemeVariant.Light };
+        window.Show();
+        Pump();
+
+        Color FillColor() => ((ISolidColorBrush)sut.GetVisualDescendants().OfType<Rectangle>().First().Fill!).Color;
+        FillColor().Should().Be(Color.Parse("#3B82F6"));
+
+        window.RequestedThemeVariant = ThemeVariant.Dark; // DOPO il primo disegno
+        Pump();
+
+        FillColor().Should().Be(Color.Parse("#60A5FA"));
+    }
+
     // ── Year heatmap ────────────────────────────────────────────────────────
 
     private static (YearHeatmapControl Sut, Window Window) ShowYear(ThemeVariant variant)
@@ -134,6 +151,39 @@ public class ControlsScreenshotTests
                     .Distinct().Should().ContainSingle().Which.Should().Be(Color.Parse(ramp[step]));
             }
             ScreenshotProbeTests.Capture(window, $"year-heatmap-{variantName.ToLowerInvariant()}");
+        }
+        finally
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Default;
+        }
+    }
+
+    [AvaloniaFact]
+    public void Year_heatmap_grid_is_7_rows_by_53_columns_and_fills_ROW_MAJOR()
+    {
+        // Documenta la geometria e il riempimento per righe (come nell'originale WPF: UniformGrid è
+        // row-major, quindi un anno vero si legge come 7 righe di giorni consecutivi, NON come
+        // colonne-settimana stile GitHub — difetto pre-esistente, registrato a parte). Se un giorno
+        // il riempimento diventa per colonne, le ultime due asserzioni falliscono: si cambia il test
+        // sapendolo, insieme al layout.
+        var (sut, _) = ShowYear(ThemeVariant.Light);
+        try
+        {
+            var cells = Cells(sut); // ordine di ItemsControl = ordine di Cells nel VM
+            cells.Should().HaveCount(371);
+
+            // Bounds è relativo al ContentPresenter di ogni item: le posizioni vere si prendono
+            // rispetto al controllo.
+            var pos = cells.Select(c => c.TranslatePoint(new Point(0, 0), sut)!.Value).ToList();
+
+            pos.Select(p => p.X).Distinct().Should().HaveCount(53, "53 colonne");
+            pos.Select(p => p.Y).Distinct().Should().HaveCount(7, "7 righe");
+
+            // Row-major: la cella 1 sta a destra della 0 sulla stessa riga; la 53 va a capo, stessa colonna della 0.
+            pos[1].X.Should().BeGreaterThan(pos[0].X);
+            pos[1].Y.Should().Be(pos[0].Y);
+            pos[53].X.Should().Be(pos[0].X);
+            pos[53].Y.Should().BeGreaterThan(pos[0].Y);
         }
         finally
         {
