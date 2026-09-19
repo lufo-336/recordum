@@ -10,16 +10,6 @@ namespace Recordum.WPF.Behaviors;
 
 public static class TreeDragDropBehavior
 {
-    public enum DropZone
-    {
-        Before,
-        Onto,
-        After,
-    }
-
-    /// <summary>Resolved drop intent: new parent, the sibling to anchor next to (null = append), and side.</summary>
-    public readonly record struct DropPlan(Guid? Parent, Guid? Anchor, bool PlaceAfter);
-
     public static readonly DependencyProperty EnabledProperty = DependencyProperty.RegisterAttached(
         "Enabled",
         typeof(bool),
@@ -38,18 +28,6 @@ public static class TreeDragDropBehavior
         relative < 0.4 ? DropZone.Before :
         relative < 0.7 ? DropZone.Onto :
         DropZone.After;
-
-    /// <summary>
-    /// Pure mapping from a hovered zone+target to a drop plan.
-    /// Onto a group → append inside it. Onto a habit → sibling after it. Before/After → reorder around the target.
-    /// </summary>
-    public static DropPlan ResolveDrop(DropZone zone, bool targetIsGroup, Guid targetId, Guid? targetParentId) => zone switch
-    {
-        DropZone.Onto when targetIsGroup => new DropPlan(targetId, null, false),
-        DropZone.Before => new DropPlan(targetParentId, targetId, false),
-        // After, and Onto-on-a-habit, both place the row right after the target among its siblings.
-        _ => new DropPlan(targetParentId, targetId, true),
-    };
 
     /// <summary>Risale l'albero visuale dal punto dato al primo <see cref="FrameworkElement"/> il cui
     /// <c>Style</c> è (reference-equal) lo <paramref name="style"/> dato. Usato per trovare la card di
@@ -197,7 +175,7 @@ public static class TreeDragDropBehavior
         if (ic.DataContext is not HomeViewModel home) return;
 
         var zone = ResolveZone(e.GetPosition(fe).Y / Math.Max(1, fe.ActualHeight));
-        var plan = ResolveDrop(zone, target.IsGroup, target.HabitNodeId, target.ParentId);
+        var plan = DropResolver.ResolveDrop(zone, target.IsGroup, target.HabitNodeId, target.ParentId);
         await home.ApplyDropAsync(src, plan);
     }
 }

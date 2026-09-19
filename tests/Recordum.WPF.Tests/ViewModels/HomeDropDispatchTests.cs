@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
-using Recordum.WPF.Behaviors;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.ViewModels;
 using Xunit;
@@ -32,7 +31,7 @@ public class HomeDropDispatchTests
 
         var src = sut.Rows.Single(r => r.Name == "a");
         var target = sut.Rows.Single(r => r.Name == "b");
-        var plan = new TreeDragDropBehavior.DropPlan(target.ParentId, target.HabitNodeId, true);
+        var plan = new DropPlan(target.ParentId, target.HabitNodeId, true);
 
         await sut.ApplyDropAsync(src, plan);
 
@@ -56,7 +55,7 @@ public class HomeDropDispatchTests
 
         var src = sut.Rows.Single(r => r.Name == "a");
         var target = sut.Rows.Single(r => r.Name == "b");
-        await sut.ApplyDropAsync(src, new TreeDragDropBehavior.DropPlan(target.ParentId, target.HabitNodeId, true));
+        await sut.ApplyDropAsync(src, new DropPlan(target.ParentId, target.HabitNodeId, true));
 
         _query.HomeCallCount.Should().BeGreaterThan(fetchesBefore);
     }
@@ -72,7 +71,7 @@ public class HomeDropDispatchTests
 
         var src = sut.Rows.Single(r => r.Name == "a");
         var group = sut.Rows.Single(r => r.Name == "g");
-        var plan = new TreeDragDropBehavior.DropPlan(group.HabitNodeId, null, false);
+        var plan = new DropPlan(group.HabitNodeId, null, false);
 
         await sut.ApplyDropAsync(src, plan);
 

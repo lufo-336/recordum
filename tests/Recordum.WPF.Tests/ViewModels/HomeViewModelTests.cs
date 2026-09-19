@@ -46,7 +46,7 @@ public class HomeViewModelTests
         _nodes.NextException = new Recordum.Core.Errors.HabitNodeNotFoundException(System.Guid.NewGuid());
 
         var act = async () => await sut.ApplyDropAsync(
-            src, new Recordum.WPF.Behaviors.TreeDragDropBehavior.DropPlan(null, null, false));
+            src, new DropPlan(null, null, false));
 
         await act.Should().NotThrowAsync();
     }

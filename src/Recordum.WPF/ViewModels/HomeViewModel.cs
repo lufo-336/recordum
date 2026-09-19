@@ -243,7 +243,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     /// single row → MoveAndReorderAsync. A fine-grained reorder (anchor != null) forces
     /// Manual sort so the new order is visible and sticks.
     /// </summary>
-    public async Task ApplyDropAsync(HomeRowViewModel src, TreeDragDropBehavior.DropPlan plan)
+    public async Task ApplyDropAsync(HomeRowViewModel src, DropPlan plan)
     {
         if (await TryBulkMoveAsync(src, plan.Parent))
             return; // bulk path reparents and reloads by itself
