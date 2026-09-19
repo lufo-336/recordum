@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Recordum.Presentation.ViewModels.HabitScreen;assembly=Recordum.Presentation"
+             xmlns:vmd="clr-namespace:Recordum.Presentation.ViewModels.HabitScreen.Detail;assembly=Recordum.Presentation"
+             xmlns:conv="clr-namespace:Recordum.UI.Converters"
+             x:Class="Recordum.UI.Controls.YearHeatmapControl"
+             x:DataType="vmd:YearHeatmapViewModel">
+  <UserControl.Resources>
+    <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
+  </UserControl.Resources>
+  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+    <ItemsControl x:Name="CellsHost" ItemsSource="{Binding Cells}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="7" Columns="53" FlowDirection="LeftToRight"/>
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:HeatmapCellViewModel">
+          <Border Width="11" Height="11" Margin="1"
+                  CornerRadius="2"
+                  Background="{Binding IntensityStep, Converter={StaticResource IntensityStepToBrush}}"
+                  ToolTip.Tip="{Binding TooltipText}"
+                  ToolTip.ShowDelay="300"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
+</UserControl>
