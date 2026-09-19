@@ -1,13 +1,13 @@
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Services;
 using Recordum.Plugins.ExtensionPoints;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.Services;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.Backup;
-using Recordum.WPF.ViewModels.Charts;
-using Recordum.WPF.ViewModels.Timer;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Backup;
+using Recordum.Presentation.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.Timer;
+using Recordum.Presentation.ViewModels.Workspace;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

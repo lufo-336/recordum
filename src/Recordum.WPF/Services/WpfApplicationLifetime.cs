@@ -1,5 +1,7 @@
 using Recordum.Core.Abstractions;
 
+using Recordum.Presentation.Services;
+
 namespace Recordum.WPF.Services;
 
 /// <summary>IApplicationLifetime su WPF. Muore con la shell; la gemella Avalonia chiuderà

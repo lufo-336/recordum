@@ -1,7 +1,9 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
+
+using Recordum.Presentation.Services;
 
 namespace Recordum.WPF.Services;
 

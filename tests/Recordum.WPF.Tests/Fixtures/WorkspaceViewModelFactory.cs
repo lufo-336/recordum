@@ -1,5 +1,5 @@
-using Recordum.WPF.ViewModels.HabitScreen;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.Workspace;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

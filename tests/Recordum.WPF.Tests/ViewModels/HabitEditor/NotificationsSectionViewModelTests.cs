@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.Resources;
+using Recordum.Presentation.Resources;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitEditor;
-using Recordum.WPF.ViewModels.HabitEditor.Sections;
+using Recordum.Presentation.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitEditor.Sections;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitEditor;

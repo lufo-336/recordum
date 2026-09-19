@@ -2,7 +2,7 @@ using System.Globalization;
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.ViewModels.HabitScreen.Notes;
+using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 using Xunit;
 using Recordum.Core.Time;
 
@@ -34,7 +34,7 @@ public class NoteRowViewModelTests
     {
         var n = new Note { Id = Guid.NewGuid(), BodyMd = "" };
         var sut = new NoteRowViewModel(n, DayBoundary.Utc);
-        sut.Summary.Should().Be(Recordum.WPF.Resources.Strings.Notes_Untitled);
+        sut.Summary.Should().Be(Recordum.Presentation.Resources.Strings.Notes_Untitled);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class NoteRowViewModelTests
         }, DayBoundary.Utc);
 
         row.IsDiario.Should().BeTrue();
-        row.CategoryLabel.Should().Be(Recordum.WPF.Resources.Strings.Notes_Category_Diary);
+        row.CategoryLabel.Should().Be(Recordum.Presentation.Resources.Strings.Notes_Category_Diary);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class NoteRowViewModelTests
         var row = new NoteRowViewModel(new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" }, DayBoundary.Utc);
 
         row.IsDiario.Should().BeFalse();
-        row.CategoryLabel.Should().Be(Recordum.WPF.Resources.Strings.Notes_Category_Quick);
+        row.CategoryLabel.Should().Be(Recordum.Presentation.Resources.Strings.Notes_Category_Quick);
     }
 
     [Fact]

@@ -5,7 +5,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Charts;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.Charts;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Charts;

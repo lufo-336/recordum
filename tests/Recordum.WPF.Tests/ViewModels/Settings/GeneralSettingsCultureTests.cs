@@ -3,7 +3,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.Theming;
-using Recordum.WPF.ViewModels.Settings;
+using Recordum.Presentation.ViewModels.Settings;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Settings;

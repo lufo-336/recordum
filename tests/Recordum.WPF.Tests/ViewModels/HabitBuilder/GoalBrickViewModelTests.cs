@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
-using Recordum.WPF.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitBuilder;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitBuilder;

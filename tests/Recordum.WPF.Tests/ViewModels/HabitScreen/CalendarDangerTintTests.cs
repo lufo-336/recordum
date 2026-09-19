@@ -2,7 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Time;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen.Calendar;
+using Recordum.Presentation.ViewModels.HabitScreen.Calendar;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using Recordum.Core.Enums;
-using Recordum.WPF.Resources;
+using Recordum.Presentation.Resources;
 
 namespace Recordum.WPF.Converters;
 

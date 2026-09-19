@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Timer;
+using Recordum.Presentation.ViewModels.Timer;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Services;

@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Threading;
-using Recordum.WPF.ViewModels.Timer;
+using Recordum.Presentation.ViewModels.Timer;
 
 namespace Recordum.WPF.Views.Timer;
 

@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen.Calendar;
+using Recordum.Presentation.ViewModels.HabitScreen.Calendar;
 using Xunit;
 using Recordum.Core.Time;
 

@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
-using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.Views;
 

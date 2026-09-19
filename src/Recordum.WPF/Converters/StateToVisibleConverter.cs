@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
-using Recordum.WPF.ViewModels;
+using Recordum.Presentation.ViewModels;
 
 namespace Recordum.WPF.Converters;
 

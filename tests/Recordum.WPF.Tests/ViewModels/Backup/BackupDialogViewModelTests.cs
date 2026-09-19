@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Backup;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Backup;
+using Recordum.Presentation.ViewModels.Backup;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Backup;

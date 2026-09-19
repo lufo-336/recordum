@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Navigation;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen;
 
 namespace Recordum.WPF.Views.HabitScreen;
 

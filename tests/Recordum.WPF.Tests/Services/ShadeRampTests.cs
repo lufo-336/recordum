@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Services;

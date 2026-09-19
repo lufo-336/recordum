@@ -1,3 +1,4 @@
+using Recordum.WPF.Bootstrap;
 using System.IO;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -8,11 +9,11 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data;
 using Recordum.Plugins.Contracts.Hosting;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.HabitEditor;
-using Recordum.WPF.ViewModels.Quick;
-using Recordum.WPF.ViewModels.Timer;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.Quick;
+using Recordum.Presentation.ViewModels.Timer;
 using FluentAssertions;
 
 namespace Recordum.WPF.Tests;

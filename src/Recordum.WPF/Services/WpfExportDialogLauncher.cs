@@ -1,7 +1,9 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using Recordum.WPF.ViewModels.Export;
+using Recordum.Presentation.ViewModels.Export;
 using Recordum.WPF.Views;
+
+using Recordum.Presentation.Services;
 
 namespace Recordum.WPF.Services;
 

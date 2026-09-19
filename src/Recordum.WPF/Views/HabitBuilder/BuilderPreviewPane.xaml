@@ -3,9 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:pvm="clr-namespace:Recordum.WPF.ViewModels.HabitBuilder.Preview"
+             xmlns:pvm="clr-namespace:Recordum.Presentation.ViewModels.HabitBuilder.Preview;assembly=Recordum.Presentation"
              xmlns:v="clr-namespace:Recordum.WPF.Views"
-             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:res="clr-namespace:Recordum.Presentation.Resources;assembly=Recordum.Presentation"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance pvm:BuilderPreviewModel, IsDesignTimeCreatable=False}">
     <UserControl.Resources>

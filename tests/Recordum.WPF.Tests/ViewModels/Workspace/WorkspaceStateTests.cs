@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.ViewModels.Workspace;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Workspace;

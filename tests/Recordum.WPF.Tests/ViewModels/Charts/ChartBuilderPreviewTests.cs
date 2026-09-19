@@ -8,7 +8,7 @@ using Recordum.Plugins.Contracts.ExtensionPoints;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.Charts;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Charts;

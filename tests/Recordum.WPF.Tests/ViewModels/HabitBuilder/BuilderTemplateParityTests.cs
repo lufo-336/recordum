@@ -4,9 +4,9 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.SeedData;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitBuilder;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitBuilder;

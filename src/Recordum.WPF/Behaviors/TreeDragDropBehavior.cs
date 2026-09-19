@@ -4,7 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using Recordum.WPF.Interop;
-using Recordum.WPF.ViewModels;
+using Recordum.Presentation.ViewModels;
 
 namespace Recordum.WPF.Behaviors;
 

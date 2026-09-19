@@ -1,9 +1,9 @@
 using Microsoft.Web.WebView2.Core;
 using Recordum.Core.Services;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.Services;
-using Recordum.WPF.ViewModels.HabitEditor;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitScreen;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

@@ -1,7 +1,7 @@
 using Recordum.Core.Abstractions.Security;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Contracts.Manifest;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

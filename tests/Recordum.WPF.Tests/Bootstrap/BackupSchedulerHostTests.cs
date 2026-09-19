@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Backup;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Bootstrap;

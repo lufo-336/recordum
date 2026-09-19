@@ -1,4 +1,4 @@
-using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Recordum.WPF.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.Charts;
 
 namespace Recordum.WPF.Views;
 

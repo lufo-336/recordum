@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
+using Recordum.Presentation.Services;
+
 namespace Recordum.WPF.Services;
 
 public sealed partial class ScreenColorPicker : IScreenColorPicker

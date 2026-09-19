@@ -2,6 +2,8 @@ using System.IO;
 using Microsoft.Win32;
 using Recordum.Core.Enums;
 
+using Recordum.Presentation.Services;
+
 namespace Recordum.WPF.Services;
 
 public sealed class WpfSaveFileDialog : ISaveFileDialog

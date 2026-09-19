@@ -2,7 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Quick;
+using Recordum.Presentation.ViewModels.Quick;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Quick;

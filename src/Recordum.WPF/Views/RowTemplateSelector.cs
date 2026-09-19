@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using Recordum.WPF.ViewModels;
+using Recordum.Presentation.ViewModels;
 
 namespace Recordum.WPF.Views;
 

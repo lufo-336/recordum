@@ -2,10 +2,10 @@ using System.IO;
 using FluentAssertions;
 using Microsoft.Web.WebView2.Core;
 using Recordum.Core.Models;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
-using Recordum.WPF.ViewModels.HabitScreen.Notes;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 using Xunit;
 using Recordum.Core.Time;
 

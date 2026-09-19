@@ -6,7 +6,7 @@ using Recordum.Plugins.Hosting;
 using Recordum.Plugins.Management;
 using Recordum.Plugins.Permissions;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.Charts;
 using Xunit;
 
 namespace Recordum.WPF.Tests.E2E;

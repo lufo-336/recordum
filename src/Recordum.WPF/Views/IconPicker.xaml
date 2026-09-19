@@ -4,7 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:Recordum.WPF.Views"
-             xmlns:res="clr-namespace:Recordum.WPF.Resources"
+             xmlns:res="clr-namespace:Recordum.Presentation.Resources;assembly=Recordum.Presentation"
              mc:Ignorable="d">
     <StackPanel Orientation="Horizontal">
         <!-- Trigger: current icon preview (opens popup) -->

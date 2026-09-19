@@ -6,11 +6,11 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Contracts.Manifest;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.Resources;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.DiagnosticInfo;
+using Recordum.Presentation.ViewModels.DiagnosticInfo;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.DiagnosticInfo;

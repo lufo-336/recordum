@@ -1,4 +1,4 @@
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

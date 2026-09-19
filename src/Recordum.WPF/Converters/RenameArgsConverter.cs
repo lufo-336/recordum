@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Windows.Data;
-using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.Converters;
 

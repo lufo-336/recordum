@@ -6,8 +6,8 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.HabitScreen.Today;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.HabitScreen.Today;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels;

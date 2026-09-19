@@ -4,7 +4,7 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen;
 using Xunit;
 using Recordum.Core.Time;
 

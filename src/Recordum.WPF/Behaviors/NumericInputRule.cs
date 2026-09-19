@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Windows.Controls;
-using Recordum.WPF.Resources;
+using Recordum.Presentation.Resources;
 
 namespace Recordum.WPF.Behaviors;
 

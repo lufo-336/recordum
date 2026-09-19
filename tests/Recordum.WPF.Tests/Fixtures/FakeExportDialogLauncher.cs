@@ -1,4 +1,4 @@
-using Recordum.WPF.ViewModels.Export;
+using Recordum.Presentation.ViewModels.Export;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

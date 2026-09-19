@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Input;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.ViewModels.Workspace;
 
 namespace Recordum.WPF.Views.Workspace;
 

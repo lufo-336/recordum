@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
+using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
 namespace Recordum.WPF.Selectors;
 

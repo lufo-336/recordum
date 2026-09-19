@@ -3,9 +3,9 @@ using System.Windows.Media;
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.WPF.Controls;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitBuilder;
 using Recordum.WPF.Views.HabitBuilder;
 using Xunit;
 

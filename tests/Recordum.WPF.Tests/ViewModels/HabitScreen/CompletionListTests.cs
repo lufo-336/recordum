@@ -2,7 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
@@ -158,8 +158,8 @@ public class CompletionListViewModelTests
         var displays = sut.Rows.Single().FieldDisplays;
         displays.Should().HaveCount(2); // one line per series, not four jumbled fields
 #pragma warning disable CA1863 // test-only formatting of a localized series label
-        var series1 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.WPF.Resources.Strings.HabitBuilder_SeriesRow, 1);
-        var series2 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.WPF.Resources.Strings.HabitBuilder_SeriesRow, 2);
+        var series1 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.Presentation.Resources.Strings.HabitBuilder_SeriesRow, 1);
+        var series2 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.Presentation.Resources.Strings.HabitBuilder_SeriesRow, 2);
 #pragma warning restore CA1863
         displays[0].Should().StartWith(series1).And.Contain("Count: 1").And.Contain("Reps: 10");
         displays[1].Should().StartWith(series2).And.Contain("Count: 2").And.Contain("Reps: 12");
@@ -268,7 +268,7 @@ public class CompletionListViewModelTests
 
         var displays = sut.Rows.Single().FieldDisplays;
 #pragma warning disable CA1863 // test-only formatting of a localized series label
-        var series2 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.WPF.Resources.Strings.HabitBuilder_SeriesRow, 2);
+        var series2 = string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.Presentation.Resources.Strings.HabitBuilder_SeriesRow, 2);
 #pragma warning restore CA1863
         displays[0].Should().StartWith("Night —");
         displays[1].Should().StartWith(series2);

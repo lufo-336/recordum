@@ -25,17 +25,19 @@ using Recordum.Plugins.Permissions;
 using Recordum.Plugins.Routing;
 using Recordum.WPF.Theming;
 using Recordum.WPF.Services;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.Backup;
-using Recordum.WPF.ViewModels.Charts;
-using Recordum.WPF.ViewModels.DiagnosticInfo;
-using Recordum.WPF.ViewModels.Export;
-using Recordum.WPF.ViewModels.HabitBuilder;
-using Recordum.WPF.ViewModels.HabitEditor;
-using Recordum.WPF.ViewModels.HabitScreen;
-using Recordum.WPF.ViewModels.Quick;
-using Recordum.WPF.ViewModels.Workspace;
-using Recordum.WPF.ViewModels.Timer;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Backup;
+using Recordum.Presentation.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.DiagnosticInfo;
+using Recordum.Presentation.ViewModels.Export;
+using Recordum.Presentation.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.Quick;
+using Recordum.Presentation.ViewModels.Workspace;
+using Recordum.Presentation.ViewModels.Timer;
 using Recordum.WPF.Views;
 
 namespace Recordum.WPF.Bootstrap;
@@ -58,6 +60,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IAppFontService, AppFontService>();
         services.AddSingleton<ICultureService, CultureService>();
         services.AddSingleton<IWebView2Availability, WebView2Availability>();
+        services.AddSingleton<IEditorAvailability>(sp => sp.GetRequiredService<IWebView2Availability>());
         // Il battito dell'interfaccia: una sola fabbrica per il processo, ogni consumatore crea la
         // propria sorgente col proprio intervallo. La gemella Avalonia si registra nella sua shell.
         services.AddSingleton<ITickSourceFactory, DispatcherTickSourceFactory>();
@@ -151,8 +154,8 @@ public static class ServiceRegistrar
         // ViewModels.
         services.AddTransient<HomeViewModel>();
         services.AddTransient<SettingsViewModel>();
-        services.AddTransient<ViewModels.Settings.GeneralSettingsViewModel>();
-        services.AddTransient<ViewModels.Settings.SettingsWindowViewModel>();
+        services.AddTransient<Recordum.Presentation.ViewModels.Settings.GeneralSettingsViewModel>();
+        services.AddTransient<Recordum.Presentation.ViewModels.Settings.SettingsWindowViewModel>();
         services.AddSingleton<ISettingsWindowLauncher, WpfSettingsWindowLauncher>();
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();

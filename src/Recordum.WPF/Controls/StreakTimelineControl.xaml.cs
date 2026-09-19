@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Recordum.WPF.ViewModels.HabitScreen.Detail;
+using Recordum.Presentation.ViewModels.HabitScreen.Detail;
 
 namespace Recordum.WPF.Controls;
 

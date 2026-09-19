@@ -4,8 +4,8 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.Home;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Home;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Home;

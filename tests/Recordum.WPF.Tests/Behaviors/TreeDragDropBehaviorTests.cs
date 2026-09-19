@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Behaviors;
-using Recordum.WPF.ViewModels;
+using Recordum.Presentation.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using Xunit;

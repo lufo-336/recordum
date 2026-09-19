@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
 

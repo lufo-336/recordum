@@ -2,7 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen.Journal;
+using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 using Xunit;
 using Recordum.Core.Time;
 

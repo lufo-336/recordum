@@ -1,11 +1,12 @@
+using Recordum.WPF.Bootstrap;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Data;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.ViewModels.HabitBuilder;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.ViewModels.HabitBuilder;
 using Xunit;
 
 namespace Recordum.WPF.Tests.E2E;

@@ -1,3 +1,4 @@
+using Recordum.WPF.Bootstrap;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
@@ -5,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using FluentAssertions;
 using Recordum.WPF.Behaviors;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
 using Xunit;
 

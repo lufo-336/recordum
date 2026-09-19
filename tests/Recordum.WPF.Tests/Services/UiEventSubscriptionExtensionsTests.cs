@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Events;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Services;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Services;

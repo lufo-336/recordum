@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.Workspace;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Workspace;
@@ -33,7 +33,7 @@ public class WorkspaceViewModelTests
         var (sut, _) = WorkspaceViewModelFactory.Create();
         var id = Guid.NewGuid();
 
-        await sut.OpenSubjectAsync(id, Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
+        await sut.OpenSubjectAsync(id, Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
 
         sut.Tabs.Should().ContainSingle();
         sut.Tabs[0].IsPreview.Should().BeTrue();
@@ -46,10 +46,10 @@ public class WorkspaceViewModelTests
     public async Task Second_single_open_replaces_the_preview_tab()
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();
-        await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
+        await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
         var second = Guid.NewGuid();
 
-        await sut.OpenSubjectAsync(second, Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Peso");
+        await sut.OpenSubjectAsync(second, Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Peso");
 
         sut.Tabs.Should().ContainSingle();
         sut.Tabs[0].SubjectId.Should().Be(second);
@@ -61,10 +61,10 @@ public class WorkspaceViewModelTests
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();
         var id = Guid.NewGuid();
-        await sut.OpenSubjectAsync(id, Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa", pin: true);
-        await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Peso", pin: true);
+        await sut.OpenSubjectAsync(id, Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Peso", pin: true);
 
-        await sut.OpenSubjectAsync(id, Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
+        await sut.OpenSubjectAsync(id, Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
 
         sut.Tabs.Where(t => t.SubjectId == id).Should().ContainSingle();
         sut.ActiveSubjectTab!.SubjectId.Should().Be(id);
@@ -75,7 +75,7 @@ public class WorkspaceViewModelTests
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();
 
-        await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.WPF.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa", pin: true);
+        await sut.OpenSubjectAsync(Guid.NewGuid(), Recordum.Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa", pin: true);
 
         sut.Tabs[0].IsPreview.Should().BeFalse();
     }

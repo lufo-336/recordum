@@ -2,9 +2,9 @@ using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.Resources;
+using Recordum.Presentation.Resources;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen.Detail;
+using Recordum.Presentation.ViewModels.HabitScreen.Detail;
 using Xunit;
 using Recordum.Core.Time;
 
@@ -149,7 +149,7 @@ public sealed class StreakSummaryViewModelTests
 
         var expectedDisplay = Recordum.Presentation.Formatting.DurationFormat.FormatStopwatch(clock.UtcNow - currentStart);
         vm.CurrentDisplay.Should().Be(expectedDisplay);
-        vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
+        vm.RunsCaption.Should().Be(Recordum.Presentation.Resources.Strings.Detail_Streak_Lapses90);
     }
 
     /// <summary>Brief test (b): Resistance + Relapsed/NotStarted → CurrentDisplay == Abstinence_NotStarted.</summary>
@@ -169,7 +169,7 @@ public sealed class StreakSummaryViewModelTests
             CreatedAt = clock.UtcNow.AddDays(-100).UtcDateTime,
         }, DayBoundary.Utc);
 
-        vm.CurrentDisplay.Should().Be(Recordum.WPF.Resources.Strings.Abstinence_NotStarted);
+        vm.CurrentDisplay.Should().Be(Recordum.Presentation.Resources.Strings.Abstinence_NotStarted);
     }
 
     /// <summary>Brief test (c): RunsLast90Days == number of periods closed in the last 90 days.</summary>
@@ -261,7 +261,7 @@ public sealed class StreakSummaryViewModelTests
 
         await vm.LoadAsync(node, DayBoundary.Utc);
 
-        vm.CurrentDisplay.Should().Be(Recordum.WPF.Resources.Strings.Abstinence_NotStarted);
+        vm.CurrentDisplay.Should().Be(Recordum.Presentation.Resources.Strings.Abstinence_NotStarted);
     }
 
     [WpfFact]
@@ -284,7 +284,7 @@ public sealed class StreakSummaryViewModelTests
 
         await vm.LoadAsync(node, DayBoundary.Utc);
 
-        vm.RunsCaption.Should().Be(Recordum.WPF.Resources.Strings.Detail_Streak_Lapses90);
+        vm.RunsCaption.Should().Be(Recordum.Presentation.Resources.Strings.Detail_Streak_Lapses90);
         vm.RunsLast90Days.Should().Be(2);
     }
 

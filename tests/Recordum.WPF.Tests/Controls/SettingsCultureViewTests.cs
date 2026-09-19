@@ -4,10 +4,10 @@ using System.Windows.Media;
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
 using Recordum.WPF.Theming;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.Backup;
-using Recordum.WPF.ViewModels.DiagnosticInfo;
-using Recordum.WPF.ViewModels.Settings;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Backup;
+using Recordum.Presentation.ViewModels.DiagnosticInfo;
+using Recordum.Presentation.ViewModels.Settings;
 using Recordum.WPF.Views.Settings;
 using Xunit;
 

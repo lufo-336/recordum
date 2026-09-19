@@ -3,7 +3,7 @@ using Recordum.Core.Models;
 using Recordum.Core.Services;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen.Detail;
+using Recordum.Presentation.ViewModels.HabitScreen.Detail;
 using Xunit;
 using Recordum.Core.Time;
 

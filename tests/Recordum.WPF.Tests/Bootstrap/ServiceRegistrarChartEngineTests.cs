@@ -1,7 +1,8 @@
+using Recordum.WPF.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Data.Services.Queries;
 using Recordum.Plugins.ChartEngine;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Bootstrap;

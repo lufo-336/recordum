@@ -1,8 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using Recordum.Plugins.ChartEngine.Builders;
-using Recordum.WPF.Resources;
-using Recordum.WPF.ViewModels.HabitScreen.Detail;
+using Recordum.Presentation.Resources;
+using Recordum.Presentation.ViewModels.HabitScreen.Detail;
 
 namespace Recordum.WPF.Controls;
 

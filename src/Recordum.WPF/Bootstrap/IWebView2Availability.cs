@@ -1,20 +1,38 @@
 using System.IO;
 using Microsoft.Web.WebView2.Core;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Diagnostics;
 
 namespace Recordum.WPF.Bootstrap;
 
-public interface IWebView2Availability
+/// <summary>WPF-shell extension of <see cref="IEditorAvailability"/>: adds the WebView2 environment
+/// handle the markdown control needs. Dies with WebView2 at F4.</summary>
+public interface IWebView2Availability : IEditorAvailability
 {
-    bool IsAvailable { get; }
     CoreWebView2Environment? Environment { get; }
-    Task ProbeAsync();
 }
 
 public sealed class WebView2Availability : IWebView2Availability
 {
     public bool IsAvailable { get; private set; }
     public CoreWebView2Environment? Environment { get; private set; }
+
+#pragma warning disable CA1031 // non-fatal probe — runtime or git missing is expected
+    string IEditorAvailability.RuntimeVersion
+    {
+        get
+        {
+            try
+            {
+                return CoreWebView2Environment.GetAvailableBrowserVersionString();
+            }
+            catch
+            {
+                return Recordum.Presentation.Resources.Strings.Diagnostic_NotAvailable;
+            }
+        }
+    }
+#pragma warning restore CA1031
 
     public async Task ProbeAsync()
     {

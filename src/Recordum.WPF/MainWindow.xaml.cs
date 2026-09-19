@@ -6,9 +6,9 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using Recordum.WPF.Controls;
-using Recordum.WPF.ViewModels;
-using Recordum.WPF.ViewModels.HabitScreen;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.Workspace;
 
 namespace Recordum.WPF;
 

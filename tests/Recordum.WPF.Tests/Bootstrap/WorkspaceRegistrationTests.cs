@@ -1,8 +1,9 @@
+using Recordum.WPF.Bootstrap;
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.ViewModels.Workspace;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.ViewModels.Workspace;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Bootstrap;

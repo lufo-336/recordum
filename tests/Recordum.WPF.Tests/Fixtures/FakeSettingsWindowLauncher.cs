@@ -1,5 +1,5 @@
-using Recordum.WPF.Services;
-using Recordum.WPF.ViewModels.Settings;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels.Settings;
 
 namespace Recordum.WPF.Tests.Fixtures;
 

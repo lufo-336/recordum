@@ -1,6 +1,6 @@
 using System.IO;
 using FluentAssertions;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Bootstrap;

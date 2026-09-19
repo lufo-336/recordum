@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using Recordum.WPF.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitBuilder;
 using Recordum.WPF.Views.HabitBuilder;
 
 namespace Recordum.WPF.Views;
@@ -23,7 +23,7 @@ public sealed class WpfHabitBuilderLauncher(IServiceProvider services) : IHabitB
         var view = new HabitBuilderView { DataContext = vm };
         var window = new Window
         {
-            Title = Recordum.WPF.Resources.Strings.HabitBuilder_Title,
+            Title = Recordum.Presentation.Resources.Strings.HabitBuilder_Title,
             // 720 for the composition column + 360 for the live preview pane (Onda 2.5 T9).
             Width = 1080,
             Height = 640,

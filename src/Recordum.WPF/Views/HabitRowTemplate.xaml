@@ -1,8 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:vm="clr-namespace:Recordum.WPF.ViewModels"
+                    xmlns:vm="clr-namespace:Recordum.Presentation.ViewModels;assembly=Recordum.Presentation"
                     xmlns:v="clr-namespace:Recordum.WPF.Views"
-                    xmlns:res="clr-namespace:Recordum.WPF.Resources"
+                    xmlns:res="clr-namespace:Recordum.Presentation.Resources;assembly=Recordum.Presentation"
                     xmlns:b="clr-namespace:Recordum.WPF.Behaviors"
                     xmlns:enums="clr-namespace:Recordum.Core.Enums;assembly=Recordum.Core">
     <DataTemplate x:Key="HabitRowTemplate" DataType="{x:Type vm:HomeRowViewModel}">

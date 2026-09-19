@@ -5,12 +5,12 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.Bootstrap;
+using Recordum.Presentation.Bootstrap;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
-using Recordum.WPF.ViewModels.HabitScreen.Journal;
-using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
-using Recordum.WPF.ViewModels.HabitScreen.Today;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen.Journal;
+using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
+using Recordum.Presentation.ViewModels.HabitScreen.Today;
 using Xunit;
 using Recordum.Core.Time;
 
@@ -72,10 +72,10 @@ public class HabitScreenViewModelTests
         var configs = new FakeHabitConfigService();
         var goals = new FakeGoalService();
         var settings = new FakeAppSettingService();
-        var editor = new Recordum.WPF.ViewModels.HabitEditor.HabitEditorViewModel(
+        var editor = new Recordum.Presentation.ViewModels.HabitEditor.HabitEditorViewModel(
             nodes, configs, goals, metrics, new FakeNotificationService(), new FakeTagService(),
-            settings, new FakeReferenceData(), new Recordum.WPF.Services.RecentColorStore(settings),
-            new Recordum.WPF.Services.FavoriteColorStore(settings),
+            settings, new FakeReferenceData(), new Recordum.Presentation.Services.RecentColorStore(settings),
+            new Recordum.Presentation.Services.FavoriteColorStore(settings),
             new FakeScreenColorPicker(),
             uiPrefs);
         return new HabitScreenViewModel(

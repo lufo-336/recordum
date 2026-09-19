@@ -1,5 +1,5 @@
 using Recordum.Core.Models;
-using Recordum.WPF.ViewModels.Charts;
+using Recordum.Presentation.ViewModels.Charts;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.Charts;

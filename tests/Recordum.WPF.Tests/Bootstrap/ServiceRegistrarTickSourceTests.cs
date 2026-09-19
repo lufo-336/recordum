@@ -1,7 +1,9 @@
-using Microsoft.Extensions.DependencyInjection;
-using Recordum.Core.Abstractions;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Recordum.Core.Abstractions;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Services;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Bootstrap;

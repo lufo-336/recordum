@@ -4,11 +4,12 @@ using System.Windows;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Theming;
+using Recordum.Presentation.Bootstrap;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Diagnostics;
 using CoreThemeMode = Recordum.Core.Enums.ThemeMode;
 using CoreAppFont = Recordum.Core.Enums.AppFont;
-using Recordum.WPF.Resources;
+using Recordum.Presentation.Resources;
 
 namespace Recordum.WPF;
 

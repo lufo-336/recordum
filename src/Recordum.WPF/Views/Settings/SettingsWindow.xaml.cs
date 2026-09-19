@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
-using Recordum.WPF.ViewModels.Backup;
-using Recordum.WPF.ViewModels.Settings;
+using Recordum.Presentation.ViewModels.Backup;
+using Recordum.Presentation.ViewModels.Settings;
 
 namespace Recordum.WPF.Views.Settings;
 

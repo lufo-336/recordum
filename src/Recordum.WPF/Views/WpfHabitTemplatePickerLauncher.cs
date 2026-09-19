@@ -1,7 +1,7 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using Recordum.WPF.ViewModels.HabitBuilder;
-using Recordum.WPF.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitEditor;
 
 namespace Recordum.WPF.Views;
 

@@ -3,7 +3,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitEditor.Sections;
+using Recordum.Presentation.ViewModels.HabitEditor.Sections;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitEditor;

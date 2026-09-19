@@ -10,6 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- I ViewModel hanno membri internal (seam di test, DayBoundary letto dai test): prima del
+         trasloco erano visibili al progetto di test perche stavano in Recordum.WPF. -->
+    <InternalsVisibleTo Include="Recordum.WPF.Tests" />
+    <InternalsVisibleTo Include="Recordum.Presentation.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.*" />
   </ItemGroup>

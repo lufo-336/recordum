@@ -2,7 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen;
@@ -75,7 +75,7 @@ public class HabitScreenColumnsTests
         // The strip's primary gesture bubbles OpenQuickNote → the host opens the Diario column, which
         // hosts the quick-note composer for this habit (Onda 2.4: the gesture no longer points at Note,
         // where there is no composer).
-        var content = (Recordum.WPF.ViewModels.HabitScreen.Today.JournalTodayContent)sut.TodayStrip.Content!;
+        var content = (Recordum.Presentation.ViewModels.HabitScreen.Today.JournalTodayContent)sut.TodayStrip.Content!;
         content.PrimaryCommand.Execute(null);
 
         sut.IsDiarioOpen.Should().BeTrue();

@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.WPF.Converters;
-using Recordum.WPF.Resources;
+using Recordum.Presentation.Resources;
 using Xunit;
 
 namespace Recordum.WPF.Tests.Converters;

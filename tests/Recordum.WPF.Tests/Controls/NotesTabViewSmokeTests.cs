@@ -1,6 +1,6 @@
 using System.Windows;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitScreen.Notes;
+using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 using Recordum.WPF.Views.HabitScreen;
 using Xunit;
 using Recordum.Core.Time;

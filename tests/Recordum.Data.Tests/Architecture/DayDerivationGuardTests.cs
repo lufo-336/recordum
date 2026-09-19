@@ -23,9 +23,9 @@ public class DayDerivationGuardTests
             "il giorno DICHIARATO da una riga già scritta va riletto come fu scritto (Task 11)",
         ["Recordum.WPF/Converters/DateOnlyToDateTimeConverter.cs"] =
             "presentazione: converte il DateTime del DatePicker, non un istante (A21/B19)",
-        ["Recordum.WPF/ViewModels/HabitScreen/QuickAdd/QuickAddViewModelBase.cs"] =
+        ["Recordum.Presentation/ViewModels/HabitScreen/QuickAdd/QuickAddViewModelBase.cs"] =
             "CompletionDate è il giorno che l'utente ha scelto sul picker, non un istante da bucketizzare",
-        ["Recordum.WPF/ViewModels/HabitScreen/QuickAdd/JournalQuickAddViewModel.cs"] =
+        ["Recordum.Presentation/ViewModels/HabitScreen/QuickAdd/JournalQuickAddViewModel.cs"] =
             "CompletionDate.Date è già un giorno di dominio scelto dall'utente, non un istante (A49)",
     };
 

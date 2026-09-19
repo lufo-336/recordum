@@ -6,6 +6,7 @@ using Recordum.Data.Security;
 using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.ExportEngine;
+using Recordum.Presentation.Bootstrap;
 
 namespace Recordum.WPF.Bootstrap;
 

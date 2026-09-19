@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Markup;
 using Recordum.Core.Enums;
+using Recordum.Presentation.Services;
 
 namespace Recordum.WPF.Bootstrap;
 
@@ -21,19 +22,10 @@ public static class CultureBootstrap
 {
     private static bool s_visualTreeLanguageSet;
 
-    /// <summary>The culture a choice stands for. <see cref="AppCulture.System"/> defers to the default
-    /// the caller supplies — the OS display language for the UI, the OS regional format for numbers —
-    /// rather than to one global machine culture, so the two knobs keep Windows' own distinction.</summary>
-    public static CultureInfo Resolve(AppCulture choice, CultureInfo systemDefault)
-    {
-        ArgumentNullException.ThrowIfNull(systemDefault);
-        return choice switch
-        {
-            AppCulture.English => CultureInfo.GetCultureInfo("en-US"),
-            AppCulture.Italian => CultureInfo.GetCultureInfo("it-IT"),
-            _ => systemDefault,
-        };
-    }
+    /// <summary>The culture a choice stands for; the resolution itself lives in Recordum.Presentation
+    /// (<see cref="CultureResolution"/>) so ViewModels can use it without the WPF shell.</summary>
+    public static CultureInfo Resolve(AppCulture choice, CultureInfo systemDefault) =>
+        CultureResolution.Resolve(choice, systemDefault);
 
     /// <summary>The <see cref="XmlLanguage"/> a culture maps to. Separate from <see cref="Apply"/> so
     /// the mapping is testable for cultures the process cannot actually switch to.</summary>

@@ -50,7 +50,7 @@ public partial class ColorSwatchPicker : UserControl
     {
         var self = (ColorSwatchPicker)d;
         self.Shades.Clear();
-        foreach (var c in Services.ShadeRamp.For((string)e.NewValue)) self.Shades.Add(c);
+        foreach (var c in Presentation.Services.ShadeRamp.For((string)e.NewValue)) self.Shades.Add(c);
     }
 
     public static readonly DependencyProperty RecentColorsProperty = DependencyProperty.Register(

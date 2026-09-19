@@ -16,7 +16,7 @@ public partial class WorkspaceRibbon : UserControl
     private void OnRibbonEmptyClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (IsInsideButton(e.OriginalSource as DependencyObject)) return;
-        if (DataContext is Recordum.WPF.ViewModels.MainWindowViewModel { Home.SelectedRow: not null } vm)
+        if (DataContext is Recordum.Presentation.ViewModels.MainWindowViewModel { Home.SelectedRow: not null } vm)
             vm.Home.SelectedRow = null;
     }
 

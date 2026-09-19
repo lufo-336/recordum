@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.ViewModels.HabitScreen.QuickAdd;
+using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.QuickAdd;

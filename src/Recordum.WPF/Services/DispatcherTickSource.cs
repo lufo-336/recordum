@@ -1,6 +1,8 @@
 using System.Windows.Threading;
 using Recordum.Core.Abstractions;
 
+using Recordum.Presentation.Services;
+
 namespace Recordum.WPF.Services;
 
 /// <summary>ITickSourceFactory su DispatcherTimer di WPF. Muore con la shell WPF: la gemella

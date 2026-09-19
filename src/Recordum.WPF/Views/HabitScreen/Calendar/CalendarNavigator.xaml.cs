@@ -1,5 +1,5 @@
 using System.Windows.Controls;
-using Recordum.WPF.ViewModels.HabitScreen.Calendar;
+using Recordum.Presentation.ViewModels.HabitScreen.Calendar;
 
 namespace Recordum.WPF.Views.HabitScreen.Calendar;
 

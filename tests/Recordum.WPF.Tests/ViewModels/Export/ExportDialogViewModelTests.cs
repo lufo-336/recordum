@@ -2,7 +2,7 @@ using Recordum.Core.Enums;
 using Recordum.Plugins.Contracts.ExtensionPoints;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.Export;
+using Recordum.Presentation.ViewModels.Export;
 using Recordum.Core.Time;
 
 namespace Recordum.WPF.Tests.ViewModels.Export;

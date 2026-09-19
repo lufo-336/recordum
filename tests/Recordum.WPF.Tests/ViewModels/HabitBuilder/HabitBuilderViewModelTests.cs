@@ -2,11 +2,11 @@ using System.Text.Json;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
-using Recordum.WPF.Resources;
-using Recordum.WPF.Services;
+using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels.HabitBuilder;
-using Recordum.WPF.ViewModels.HabitBuilder.Preview;
+using Recordum.Presentation.ViewModels.HabitBuilder;
+using Recordum.Presentation.ViewModels.HabitBuilder.Preview;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitBuilder;

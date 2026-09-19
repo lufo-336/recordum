@@ -1,3 +1,4 @@
+using Recordum.WPF.Bootstrap;
 using System.IO;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -5,8 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
-using Recordum.WPF.Bootstrap;
-using Recordum.WPF.ViewModels.HabitScreen;
+using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.ViewModels.HabitScreen;
 using Xunit;
 
 namespace Recordum.WPF.Tests.ViewModels.HabitScreen.Detail;

@@ -1,8 +1,8 @@
 <UserControl x:Class="Recordum.WPF.Views.EmptyState"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:res="clr-namespace:Recordum.WPF.Resources"
-             xmlns:vm="clr-namespace:Recordum.WPF.ViewModels">
+             xmlns:res="clr-namespace:Recordum.Presentation.Resources;assembly=Recordum.Presentation"
+             xmlns:vm="clr-namespace:Recordum.Presentation.ViewModels;assembly=Recordum.Presentation">
     <!-- A centered icon + line, instead of a single faint grey sentence. Icon and text both vary
          by the active Home tab (an empty Active list = a seedling to plant; Archived = dormant;
          Trash = clean). "An empty screen is an invitation to act." -->

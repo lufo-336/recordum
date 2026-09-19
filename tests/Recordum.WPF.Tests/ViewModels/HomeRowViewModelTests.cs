@@ -6,7 +6,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.ViewModels;
+using Recordum.Presentation.ViewModels;
 using Xunit;
 using Recordum.Core.Time;
 
