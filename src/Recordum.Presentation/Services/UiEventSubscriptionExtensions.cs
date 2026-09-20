@@ -7,7 +7,7 @@ namespace Recordum.Presentation.Services;
 /// Subscribes to <see cref="IEventBus"/> events with marshaling onto the UI thread.
 /// </summary>
 /// <remarks>
-/// <see cref="EventBus"/> invokes handlers synchronously on the publisher's thread, which is often a
+/// <c>EventBus</c> (Recordum.Plugins) invokes handlers synchronously on the publisher's thread, which is often a
 /// thread-pool thread (completion/note services record with <c>ConfigureAwait(false)</c>). View-model
 /// handlers that touch view-bound <c>ObservableCollection</c>s would then mutate them off the UI thread
 /// and crash with a cross-thread <see cref="System.NotSupportedException"/>. Marshaling at the

@@ -36,11 +36,28 @@ public class TickingClockTests
         using var sut = new HomeClockTicker(ticks);
         var a = 0;
         sut.Register(() => a++);
+        Assert.Equal(1, ticks.RunningCount);   // Register avvia la sorgente
 
         sut.Clear();
-        ticks.TickAll();
 
+        // Si osserva la SORGENTE: svuotare le callback da solo basterebbe a tenere a == 0, e un
+        // Stop() cancellato lascerebbe una sorgente che batte a vuoto per sempre.
+        Assert.Equal(0, ticks.RunningCount);
+        ticks.TickAll();
         Assert.Equal(0, a);
+    }
+
+    [Fact]
+    public void Home_ticker_disposes_its_source()
+    {
+        var ticks = new FakeTickSourceFactory();
+        var sut = new HomeClockTicker(ticks);
+        sut.Register(() => { });
+        Assert.Equal(1, ticks.RunningCount);
+
+        sut.Dispose();
+
+        Assert.Equal(0, ticks.RunningCount);
     }
 
     [Fact]
@@ -73,11 +90,29 @@ public class TickingClockTests
         var clock = new FakeClock(DateTimeOffset.Parse("2026-09-10T12:00:00Z", CultureInfo.InvariantCulture));
         using var sut = new LiveElapsedClock(clock, ticks);
         sut.Start(clock.UtcNowMs - 5_000);
+        Assert.Equal(1, ticks.RunningCount);
 
         sut.Stop();
+
+        // Il Display vuoto verrebbe comunque da Stop() (azzera _startedMs): la prova che la sorgente
+        // smette davvero di battere e' lo stato della sorgente.
+        Assert.Equal(0, ticks.RunningCount);
         clock.Advance(TimeSpan.FromSeconds(60));
         ticks.TickAll();
-
         Assert.Equal(string.Empty, sut.Display);
+    }
+
+    [Fact]
+    public void Live_clock_disposes_its_source()
+    {
+        var ticks = new FakeTickSourceFactory();
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-09-10T12:00:00Z", CultureInfo.InvariantCulture));
+        var sut = new LiveElapsedClock(clock, ticks);
+        sut.Start(clock.UtcNowMs - 5_000);
+        Assert.Equal(1, ticks.RunningCount);
+
+        sut.Dispose();
+
+        Assert.Equal(0, ticks.RunningCount);
     }
 }

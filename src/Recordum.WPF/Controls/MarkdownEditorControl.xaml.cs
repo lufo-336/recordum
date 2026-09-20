@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Web.WebView2.Core;
+using Recordum.Presentation.Services;
 using Recordum.WPF.Bootstrap;
 
 namespace Recordum.WPF.Controls;
@@ -70,11 +71,14 @@ public partial class MarkdownEditorControl : UserControl
     }
 
     public static readonly DependencyProperty AvailabilityProperty =
-        DependencyProperty.Register(nameof(Availability), typeof(IWebView2Availability), typeof(MarkdownEditorControl),
+        DependencyProperty.Register(nameof(Availability), typeof(IEditorAvailability), typeof(MarkdownEditorControl),
             new PropertyMetadata(null, OnAvailabilityChanged));
-    public IWebView2Availability? Availability
+    /// <summary>Declared as the portable <see cref="IEditorAvailability"/> (what the ViewModels expose) so the
+    /// binding never depends on WPF's interface conversion; the WebView2 environment handle is read by
+    /// pattern-matching to <see cref="IWebView2Availability"/> where it is needed.</summary>
+    public IEditorAvailability? Availability
     {
-        get => (IWebView2Availability?)GetValue(AvailabilityProperty);
+        get => (IEditorAvailability?)GetValue(AvailabilityProperty);
         set => SetValue(AvailabilityProperty, value);
     }
 
@@ -94,7 +98,7 @@ public partial class MarkdownEditorControl : UserControl
     private async Task TryInitAsync()
     {
         if (_isDisposed) return;
-        if (Availability is null || !Availability.IsAvailable || Availability.Environment is null)
+        if (Availability is not IWebView2Availability webView2 || !webView2.IsAvailable || webView2.Environment is null)
         {
             ActivateFallback();
             return;
@@ -105,7 +109,7 @@ public partial class MarkdownEditorControl : UserControl
         if (_initStarted || WebView.CoreWebView2 is not null) return;
         _initStarted = true;
 
-        await WebView.EnsureCoreWebView2Async(Availability.Environment).ConfigureAwait(true);
+        await WebView.EnsureCoreWebView2Async(webView2.Environment).ConfigureAwait(true);
         var core = WebView.CoreWebView2!;
         var assetsRoot = Path.Combine(AppContext.BaseDirectory, "Resources", "EditorAssets");
         core.SetVirtualHostNameToFolderMapping(

@@ -5,7 +5,7 @@ namespace Recordum.Presentation.Formatting;
 
 /// <summary>Single source of truth for localizing <see cref="StreakMode"/>/<see cref="StreakRecovery"/>
 /// (Onda 2.5 T3, F0-11: never show a raw enum name). Consumed by
-/// <see cref="StreakModeLabelConverter"/>/<see cref="StreakRecoveryLabelConverter"/> (the builder's
+/// <c>StreakModeLabelConverter</c>/<c>StreakRecoveryLabelConverter</c> (in Recordum.WPF; the builder's
 /// Schedule brick ComboBoxes bind through these) and by
 /// <c>ScheduleBrickViewModel.BuildSummary</c> (the collapsed Summary is plain text, not a binding a
 /// converter can sit on). Was previously duplicated as parallel switch expressions in the converters

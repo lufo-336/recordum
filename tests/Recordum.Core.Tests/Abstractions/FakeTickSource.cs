@@ -11,6 +11,12 @@ public sealed class FakeTickSourceFactory : ITickSourceFactory
 
     public IReadOnlyList<TimeSpan> RequestedIntervals => _created.Select(s => s.Interval).ToArray();
 
+    /// <summary>Quante sorgenti create battono ora (avviate, non fermate, non disposte). È ciò che
+    /// permette a un test di osservare il ciclo di vita della SORGENTE, non solo gli effetti a valle:
+    /// una sorgente che continua a battere dopo lo smontaggio è esattamente la perdita che ITickSource
+    /// esiste per evitare.</summary>
+    public int RunningCount => _created.Count(s => s.IsRunning);
+
     public ITickSource Create(TimeSpan interval)
     {
         var source = new FakeTickSource(interval);
@@ -31,6 +37,7 @@ public sealed class FakeTickSourceFactory : ITickSourceFactory
         private bool _disposed;
 
         public TimeSpan Interval { get; } = interval;
+        public bool IsRunning => _running && !_disposed;
         public event EventHandler? Tick;
 
         public void Start() => _running = !_disposed;
