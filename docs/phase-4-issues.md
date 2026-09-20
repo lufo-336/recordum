@@ -1650,3 +1650,62 @@ un sito marcato C in §0 che nessun task ha toccato"* — e la predizione era gi
 elenca `PanoramicaViewModel`/il goal di gruppo fra i siti — da cui I1 — e classifica B4 come semplice
 "converti" senza notare che il suo chiamante passa `DateOnly.MinValue` come sentinella — da cui C2.
 Entrambi sono buchi dell'**audit**: la tabella §0 è ora aggiornata con le due righe mancanti.
+
+## Onda F0 — review finale di branch (2026-09-20): residui e scoperte (`F0-*`)
+
+Estrazione di `Recordum.Presentation` (piano `2026-09-10-wave-f0-presentation-extraction.md`). La review
+finale (opus, `bb6c645..HEAD`) ha dato "With fixes", 0 Critical; il fix wave ha chiuso I1/M1/M2/M3/M7.
+Restano questi, ciascuno con la sua ragione.
+
+- **F0-Q1 — `QuitCommand` non ha consumatori e ha una dipendenza obbligatoria** (`reported`,
+  **decisione dell'autore**). `MainWindowViewModel.QuitCommand` non è legato a nessun XAML né code-behind;
+  la stringa `Settings.Quit` esiste in entrambi i `.resx` senza binding; ed è l'**unico** consumatore di
+  `IApplicationLifetime`, che F0 ha reso `ThrowIfNull` nel costruttore. Stessa forma di A9/R8: o è
+  un'**affordance persa** (cablare una voce "Esci") o è **scaffolding morto** (cancellare comando + stringa +
+  iniezione). Non lasciarlo com'è: il seam esiste per un comando che nessuno può invocare.
+- **F0-M4 — la guardia di C1 copre solo la metà lettura di `StateTodayContent`** (`reported`, ereditato da
+  R9). `RecordAsync` (`StateTodayContent.cs:129-140`) decide con `_day.RangeOf(today)` quali registrazioni
+  cancellare (last-wins): era la metà che perdeva dati. `StateTodayContentTests` passa `DayBoundary.Utc`
+  a ogni chiamata, quindi nulla fallisce se la finestra torna alla clock. Test a basso costo: completion
+  alle 20:00 di D−1 con confine `+02:00 / 04:00`, `RecordAsync` alle 00:30 di D, asserire che la riga D−1
+  sopravviva.
+- **F0-M5 — `ChartBuilderViewModel` possiede un `ITickSource` e non è `IDisposable`** (`reported`).
+  Limitato in pratica (debounce a un colpo, ≤300 ms, fermato da `OnPreviewTick`), ma in quella finestra il
+  VM è tenuto in vita dal dispatcher e può rendere un'anteprima in un VM scartato.
+- **F0-M6 — nomi di file/tipo poco scopribili** (`reported`, estetica): `MarkerTint` vive in
+  `Core/Abstractions/IApplicationLifetime.cs`; `ViewModels/DropPlan.cs` contiene `DropZone` + `DropPlan` +
+  `DropResolver`.
+- **F0-T1 — la fixture `FakeReferenceData` ha una scala "Mood (1-5)" con Min/Max a 0** (`reported`,
+  preesistente): un nome che mente sul proprio intervallo. Ha reso *impossibile da passare* la guardia di C1
+  finché non l'ha corretta il test locale; il prossimo autore di un test State/scala ricade nella stessa
+  trappola. Una riga nella fixture (o un commento "nessun range di proposito") la chiude.
+- **F0-T2 — i test di ViewModel Settings restano in `Recordum.WPF.Tests`** (`reported`, informativo):
+  `GeneralSettingsViewModelTests`, `GeneralSettingsCultureTests`, `SettingsWindowViewModelTests` dipendono da
+  `CultureService`/`ThemeService`/`AppFontService`, che vivono in `Recordum.WPF.Theming`. Sono servizi che
+  un'onda successiva vorrà portabili.
+- **F0-Y1 — heatmap-anno riempita per righe** (`reported`, **pre-esistente in WPF**, probabile causa di A5).
+  `YearHeatmapViewModel` emette `anchor.AddDays(i)` per i=0..370 consecutivi (anchor = lunedì) e
+  `UniformGrid Rows=7 Columns=53` li dispone per **riga**: un anno reale si legge come 7 righe di giorni
+  successivi, non come colonne-settimana stile GitHub. Il test `Year_heatmap_grid_is_7_rows_by_53_columns_and_fills_ROW_MAJOR`
+  lo documenta, così correggerlo (emissione column-major nel VM, o pannello diverso) farà scattare un test
+  *consapevolmente*. Da fare nel VM, non in un porting.
+- **F0-Y2 — il re-tint live del calendario al cambio tema non c'è** (`reported`, Onda 3). Il
+  `HabitColorTintConverter` legge `Brush.Danger` imperativamente dentro un `MultiBinding` le cui tre sorgenti
+  (`TintColorHex`, `TintStep`, `Tint`) non cambiano a un cambio di tema, e `App.ApplyTheme` invalida solo i
+  `DynamicResource`. Non è una regressione (prima era uguale); serve una sottoscrizione a
+  `IThemeService.EffectiveThemeChanged` che forzi un reload. Un commento di F0 prometteva il contrario
+  ed è stato corretto.
+- **F0-F1 — `FontWeight.SemiBold` risolve sul Bold** (`reported`, informativo). Source Serif 4 è spedito in
+  Regular/Italic/Bold/BoldItalic; il Semibold statico ha due nomi di famiglia nel file ed è stato lasciato
+  fuori. I titoli dell'editor (`MarkdownLivePreviewColorizer.cs:54`) escono Bold, non semi. Nessun test per
+  lo stack di ripiego; `Font.System` resta sans di sistema (l'aspetto non è ancora identico ovunque per il
+  testo sans).
+- **F0-D1 — debito verso la VM** (`open`, **gate di merge**). `Recordum.WPF.Tests` (38 file) e tutta R9 WPF
+  non sono mai stati eseguiti. Tre costrutti F0 falliscono solo a runtime su Windows: `IApplicationLifetime`
+  obbligatorio in `MainWindowViewModel` (registrato a `ServiceRegistrar.cs:233`, gate `BootstrapSmokeTests`),
+  la registrazione forwarder di `IEditorAvailability` e di `ITickSourceFactory`
+  (`ServiceRegistrarTickSourceTests` asserisce il tipo concreto), e `SubscribeOnUi` su
+  `SynchronizationContext`. Comando in `docs/dev-environment-sync.md` §"Handoff per la VM — onda F0".
+  Se il primo dei due giri è rosso il colpevole è R9, se lo è solo il secondo è il porting.
+  Se anche il rosso è di R9, il fix dovrà atterrare attraverso la rinomina di 126 file (rischio accettato
+  dall'autore scavalcando il prerequisito del Task 7).
