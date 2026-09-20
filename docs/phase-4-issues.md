@@ -1709,3 +1709,8 @@ Restano questi, ciascuno con la sua ragione.
   Se il primo dei due giri è rosso il colpevole è R9, se lo è solo il secondo è il porting.
   Se anche il rosso è di R9, il fix dovrà atterrare attraverso la rinomina di 126 file (rischio accettato
   dall'autore scavalcando il prerequisito del Task 7).
+- **F0-T3 — nessun test asserisce che `HomeClockTicker.Register` riavvii la sorgente dopo `Clear()`**
+  (`reported`, trovato dalla mutazione del re-reviewer). Sostituire lo `Stop()` di `Clear()` con un
+  `Dispose()` non fa fallire nessun test (10/10 verdi), ma la sorgente disposta ignora ogni `Start()`
+  successivo: l'orologio della Home morirebbe dopo il primo reload. Non è il leak che `TickingClockTests`
+  sorveglia — è il suo opposto — e si chiude con un test "Register dopo Clear ridà `RunningCount == 1`".
