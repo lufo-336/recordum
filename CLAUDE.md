@@ -275,6 +275,27 @@ Suite **Core 118 / Data 445 / WPF 988 / Plugins 66 / ExportEngine 37 / ChartEngi
 
 *Conteggi su Linux a fine onda*: **Core 150 / Presentation 918 / UI 27 / Plugins 66 / ExportEngine 37 / Data 478 (+18 DPAPI, Windows-only)**. WPF e ChartEngine si compilano soltanto.
 
+**Progresso 2026-09-20 (piano dell'onda F1 — Home — scritto, NON eseguito).** Piano
+[`docs/superpowers/plans/2026-09-20-wave-f1-home.md`](docs/superpowers/plans/2026-09-20-wave-f1-home.md),
+13 task, dalla spec §6 riga F1: dopo l'esecuzione `Recordum.UI` dovrà aprire il DB cifrato vero, sbloccarlo
+(DPAPI su Windows, passphrase Argon2id con cache altrove — nessuna strada esisteva ancora per crearne uno
+nuovo), mostrare l'albero Home con le righe vive (tinta, rinomina, menu, drag & drop) dentro una finestra
+col proprio chrome. Scritto da quattro autori in parallelo, ciascuno con codice **verificato per davvero**
+in un worktree usa-e-getta (build+test rosso→verde) prima di essere trascritto in prosa; il controller ha
+riconciliato i tre punti dove i blocchi si toccavano senza essersi visti (la firma vera di
+`IDbUnlockService`, che vive in Core perché Data non può referenziare Presentation) e ha scritto
+l'intestazione e il Task 13 di chiusura. **Tredici finding di prodotto già raccolti per il tracker** (da
+scrivere lì al Task 13, a esecuzione fatta): due difetti già presenti in WPF scoperti portando il codice
+fedelmente (un commento falso sulla verifica della chiave, cinque icone disegnate storte), il resto
+conseguenze misurate di Avalonia 12 (niente fantasma nel drag & drop — non c'è `QueryContinueDrag`; il
+chrome della finestra **ignorato da X11**, verificato solo su Linux, checklist a 7 punti pronta per la VM).
+
+**Da qui in poi**: il piano non è ancora stato eseguito. `Recordum.UI` oggi (prima di eseguirlo) resta ciò
+che l'onda F0 ha lasciato — quattro view di sonda, i token, il font imbustato, tre controlli portati
+(`HeatmapStrip`, `YearHeatmapControl`, `StreakTimelineControl`) — **nessun container DI, nessuna finestra
+vera, nessuna Home**: `App.axaml.cs` fa solo `new MainWindow()`. L'esecuzione (subagent-driven, come F0) è
+il prossimo passo.
+
 ### Storico stati milestone
 
 Spostato in [`docs/MILESTONES.md`](docs/MILESTONES.md). Quel file è il companion "a scalare" — consultalo quando devi ricostruire decisioni passate, deviazioni dai plan, schema delta dettagliati, o known quirks per milestone (3.1 → 3.10b + avanzamento Fase 4 giorno per giorno). Le memorie utente `recordum-milestone-3-x-spec` restano l'altra fonte sintetica.
