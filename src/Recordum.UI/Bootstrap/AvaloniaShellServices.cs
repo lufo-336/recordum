@@ -29,9 +29,10 @@ public static class AvaloniaShellServices
         // Application.Current.ApplicationLifetime non esiste ancora quando questo metodo gira
         // (App.axaml.cs lo chiama prima di OnFrameworkInitializationCompleted, v. Task 11): la
         // lambda è quindi una fabbrica valutata alla RISOLUZIONE, non alla registrazione, quando il
-        // framework l'ha già assegnata. Il cast a IControlledApplicationLifetime fallisce rumorosamente
-        // (InvalidCastException, non un null silenzioso) se un domani girasse su un lifetime diverso
-        // dal classic-desktop — che oggi è l'unico che questa shell registra (Program.cs).
+        // framework l'ha già assegnata. Il cast a IControlledApplicationLifetime su un lifetime diverso
+        // dal classic-desktop ritorna null (non InvalidCastException), e il successivo Shutdown() su
+        // null lancia NRE — che è il timeout che avverte il developer (meglio di una silenzio a runtime).
+        // Oggi è l'unico che questa shell registra (Program.cs).
         services.AddSingleton<Core.Abstractions.IApplicationLifetime>(_ =>
             new AvaloniaApplicationLifetime((IControlledApplicationLifetime)Application.Current!.ApplicationLifetime!));
 

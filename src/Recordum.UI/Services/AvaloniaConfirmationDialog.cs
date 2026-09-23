@@ -49,6 +49,9 @@ public sealed class AvaloniaConfirmationDialog(Func<Window?> ownerResolver) : IC
         var tcs = new TaskCompletionSource<bool>();
         dialog.YesButton.Click += (_, _) => { tcs.TrySetResult(true); dialog.Close(); };
         dialog.NoButton.Click += (_, _) => { tcs.TrySetResult(false); dialog.Close(); };
+        // Se l'utente chiude la finestra via X / Alt+F4 senza premere un bottone, di default rispondi false.
+        // TrySetResult(true) dal Yes button (eseguito prima di Close()) vince comunque.
+        dialog.Closed += (_, _) => tcs.TrySetResult(false);
         dialog.Show();
         return tcs.Task;
     }

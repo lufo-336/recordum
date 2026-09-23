@@ -1,6 +1,9 @@
+using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Theming;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels.Backup;
 using Recordum.Presentation.ViewModels.Export;
@@ -14,9 +17,12 @@ namespace Recordum.UI.Tests.Bootstrap;
 
 /// <summary>Ogni interfaccia registrata come Null da <see cref="AvaloniaShellServices.AddRecordumAvaloniaShell"/>
 /// risolve dal container e si comporta come "annullato"/"non disponibile" — mai come una conferma
-/// silenziosa. Non risolve qui <c>IApplicationLifetime</c>/<c>IThemeService</c>/<c>IConfirmationDialog</c>:
-/// le loro fabbriche leggono <c>Application.Current.ApplicationLifetime</c>, che un container di solo
-/// DI (senza una finestra Avalonia aperta) non ha — sono provate altrove (AvaloniaThemeServiceTests,
+/// silenziosa. I quattro servizi reali (<c>ITickSourceFactory</c>, <c>IApplicationLifetime</c>,
+/// <c>IThemeService</c>, <c>IConfirmationDialog</c>) si testano insieme in
+/// <see cref="All_four_real_services_resolve_in_headless"/> via <c>[AvaloniaFact]</c> — in headless
+/// <c>Application.Current.ApplicationLifetime</c> è null, e il cast a <c>IControlledApplicationLifetime</c>
+/// non lancia: la registrazione funziona anyway (il NRE verrebbe solo a Shutdown se il lifetime fosse
+/// davvero null). Le singole implementazioni sono provate altrove (AvaloniaThemeServiceTests,
 /// AvaloniaConfirmationDialogTests, AvaloniaApplicationLifetimeTests) costruendole a mano.</summary>
 public class AvaloniaShellServicesTests
 {
@@ -26,6 +32,21 @@ public class AvaloniaShellServicesTests
         services.AddSingleton<IAppSettingService, FakeAppSettingService>();
         services.AddRecordumAvaloniaShell();
         return services.BuildServiceProvider();
+    }
+
+    [AvaloniaFact]
+    public void All_four_real_services_resolve_in_headless()
+    {
+        // La registrazione dei quattro servizi reali richiede Application.Current.ApplicationLifetime
+        // (disponibile in un [AvaloniaFact]). Provare che tutti e quattro si risolvono è cruciale:
+        // cancellare uno (es. ITickSourceFactory) causa NRE in OnStartup.
+        var sp = BuildProvider();
+
+        // Se uno di questi GetRequiredService fallisce, il test dirà quale manca
+        sp.GetRequiredService<ITickSourceFactory>().Should().NotBeNull();
+        sp.GetRequiredService<IApplicationLifetime>().Should().NotBeNull();
+        sp.GetRequiredService<IThemeService>().Should().NotBeNull();
+        sp.GetRequiredService<IConfirmationDialog>().Should().NotBeNull();
     }
 
     [Fact]

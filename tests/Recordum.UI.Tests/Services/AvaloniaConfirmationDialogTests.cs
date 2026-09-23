@@ -70,6 +70,56 @@ public class AvaloniaConfirmationDialogTests
     }
 
     [AvaloniaFact]
+    public async Task With_no_owner_clicking_No_resolves_false()
+    {
+        var sut = new AvaloniaConfirmationDialog(() => null);
+        ConfirmationWindow? dialog = null;
+        sut.DialogCreatedForTests += w => dialog = w;
+
+        var task = sut.ConfirmAsync("Elimina", "Sei sicuro?");
+        Dispatcher.UIThread.RunJobs();
+
+        Click(dialog!, dialog!.NoButton);
+
+        (await task).Should().BeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task Closing_dialog_via_X_without_owner_resolves_false()
+    {
+        // L'utente chiude la finestra via X senza premere un bottone — di default rispondi false
+        // (il handler Closed nella no-owner path risolve false).
+        var sut = new AvaloniaConfirmationDialog(() => null);
+        ConfirmationWindow? dialog = null;
+        sut.DialogCreatedForTests += w => dialog = w;
+
+        var task = sut.ConfirmAsync("Elimina", "Sei sicuro?");
+        Dispatcher.UIThread.RunJobs();
+
+        dialog!.Close(); // Chiudi senza premere alcun bottone
+
+        (await task).Should().BeFalse("chiudere senza premere un bottone deve risolvere false");
+    }
+
+    [AvaloniaFact]
+    public async Task Closing_dialog_via_X_with_owner_resolves_false()
+    {
+        // Con owner (ShowDialog<bool>(owner)), chiudere la finestra ritorna false nativamente.
+        var owner = new Window { Width = 200, Height = 100 };
+        owner.Show();
+        var sut = new AvaloniaConfirmationDialog(() => owner);
+        ConfirmationWindow? dialog = null;
+        sut.DialogCreatedForTests += w => dialog = w;
+
+        var task = sut.ConfirmAsync("Elimina", "Sei sicuro?");
+        Dispatcher.UIThread.RunJobs();
+
+        dialog!.Close(); // Chiudi senza premere alcun bottone
+
+        (await task).Should().BeFalse("ShowDialog con owner ritorna false per Close senza parametro");
+    }
+
+    [AvaloniaFact]
     public void The_dialog_shows_the_title_and_message_it_was_given()
     {
         var window = new ConfirmationWindow("Elimina abitudine", "Non si può annullare.");

@@ -49,6 +49,8 @@ public class AvaloniaThemeServiceTests
         var sut = new AvaloniaThemeService(settings, Application.Current!);
         await sut.InitializeAsync();
 
+        // Esercita la transizione: Dark → System (non solo Initialize con System già il default)
+        await sut.SetModeAsync(ThemeMode.Dark);
         await sut.SetModeAsync(ThemeMode.System);
 
         Application.Current!.RequestedThemeVariant.Should().Be(ThemeVariant.Default);
