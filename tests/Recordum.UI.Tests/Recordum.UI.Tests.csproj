@@ -29,4 +29,12 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Recordum.UI/Recordum.UI.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Il sorgente delle icone come risorsa incorporata di QUESTO assembly. Il compilatore Avalonia
+         non lascia il testo di un .axaml leggibile da AssetLoader nell'assembly di produzione, e i
+         test dei tratti (IconCatalogTests) hanno bisogno delle stringhe dei path per guardarne i
+         segmenti. È lo stesso file, non una copia: se cambia, cambia anche qui. -->
+    <EmbeddedResource Include="../../src/Recordum.UI/Themes/Icons.axaml" LogicalName="Icons.axaml" />
+  </ItemGroup>
 </Project>
