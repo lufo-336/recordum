@@ -1600,4 +1600,10 @@
   <data name="Unlock.Failed" xml:space="preserve">
     <value>Impossibile sbloccare i dati. Controlla i permessi della cartella e riprova.</value>
   </data>
+  <data name="Dialog.Yes" xml:space="preserve">
+    <value>Sì</value>
+  </data>
+  <data name="Dialog.No" xml:space="preserve">
+    <value>No</value>
+  </data>
 </root>

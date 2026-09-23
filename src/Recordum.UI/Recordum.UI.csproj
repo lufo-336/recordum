@@ -37,6 +37,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Costruttori/hook test-friendly a visibilità internal (AvaloniaConfirmationDialog,
+         gemello dell'InternalsVisibleTo che Recordum.WPF già usa per ThemeService). -->
+    <InternalsVisibleTo Include="Recordum.UI.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Recordum.Core/Recordum.Core.csproj" />
     <ProjectReference Include="../Recordum.Data/Recordum.Data.csproj" />
     <ProjectReference Include="../Recordum.Plugins.Contracts/Recordum.Plugins.Contracts.csproj" />

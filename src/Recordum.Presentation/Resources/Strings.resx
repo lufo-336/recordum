@@ -1622,4 +1622,13 @@ Details: {0}</value>
   <data name="Unlock.Failed" xml:space="preserve">
     <value>Could not unlock your data. Check the folder permissions and try again.</value>
   </data>
+  <!-- Generic Yes/No confirmation dialog (Avalonia shell, F1 Task 5): AvaloniaConfirmationDialog
+       needs its own button captions, unlike WPF's native MessageBox.Show(YesNo) which the OS
+       localizes for free. -->
+  <data name="Dialog.Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Dialog.No" xml:space="preserve">
+    <value>No</value>
+  </data>
 </root>

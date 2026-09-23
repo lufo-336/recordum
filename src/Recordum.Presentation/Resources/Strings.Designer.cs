@@ -563,6 +563,10 @@ public static class Strings
     // Icon picker
     public static string IconPicker_SearchPrompt => Get("IconPicker.SearchPrompt");
 
+    // Generic Yes/No confirmation dialog (Avalonia shell, F1 Task 5)
+    public static string Dialog_Yes => Get("Dialog.Yes");
+    public static string Dialog_No => Get("Dialog.No");
+
     // Unlock
     public static string Unlock_Title => Get("Unlock.Title");
     public static string Unlock_CreateHeading => Get("Unlock.CreateHeading");
