@@ -1564,4 +1564,40 @@
   <data name="IconPicker.SearchPrompt" xml:space="preserve">
     <value>Cerca icone</value>
   </data>
+  <data name="Unlock.Title" xml:space="preserve">
+    <value>Sblocca Recordum</value>
+  </data>
+  <data name="Unlock.CreateHeading" xml:space="preserve">
+    <value>Crea una passphrase per i tuoi dati</value>
+  </data>
+  <data name="Unlock.CreateHint" xml:space="preserve">
+    <value>I tuoi dati sono cifrati con questa passphrase (almeno 12 caratteri). Non si può recuperare: se la perdi, i dati sono persi.</value>
+  </data>
+  <data name="Unlock.EnterHeading" xml:space="preserve">
+    <value>Inserisci la tua passphrase</value>
+  </data>
+  <data name="Unlock.PassphraseLabel" xml:space="preserve">
+    <value>Passphrase</value>
+  </data>
+  <data name="Unlock.ConfirmLabel" xml:space="preserve">
+    <value>Conferma la passphrase</value>
+  </data>
+  <data name="Unlock.Submit" xml:space="preserve">
+    <value>Continua</value>
+  </data>
+  <data name="Unlock.WrongPassphrase" xml:space="preserve">
+    <value>Passphrase errata. Riprova.</value>
+  </data>
+  <data name="Unlock.TooShort" xml:space="preserve">
+    <value>La passphrase deve avere almeno 12 caratteri.</value>
+  </data>
+  <data name="Unlock.Mismatch" xml:space="preserve">
+    <value>Le due passphrase non coincidono.</value>
+  </data>
+  <data name="Unlock.Unsupported" xml:space="preserve">
+    <value>Questo database è stato creato su Windows e non può essere aperto qui. Ripristina invece un backup .recbak.</value>
+  </data>
+  <data name="Unlock.Failed" xml:space="preserve">
+    <value>Impossibile sbloccare i dati. Controlla i permessi della cartella e riprova.</value>
+  </data>
 </root>

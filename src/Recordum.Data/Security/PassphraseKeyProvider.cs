@@ -7,7 +7,8 @@ namespace Recordum.Data.Security;
 
 public sealed class PassphraseKeyProvider : IDbKeyProvider
 {
-    private const int MinPassphraseLength = 12;
+    /// <summary>Lunghezza minima in caratteri; la fa rispettare anche <see cref="DbUnlockService"/> prima di costruire il provider.</summary>
+    public const int MinPassphraseLength = 12;
     private readonly byte[] _passphraseBytes;
     private readonly string _saltPath;
 

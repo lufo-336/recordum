@@ -563,6 +563,20 @@ public static class Strings
     // Icon picker
     public static string IconPicker_SearchPrompt => Get("IconPicker.SearchPrompt");
 
+    // Unlock
+    public static string Unlock_Title => Get("Unlock.Title");
+    public static string Unlock_CreateHeading => Get("Unlock.CreateHeading");
+    public static string Unlock_CreateHint => Get("Unlock.CreateHint");
+    public static string Unlock_EnterHeading => Get("Unlock.EnterHeading");
+    public static string Unlock_PassphraseLabel => Get("Unlock.PassphraseLabel");
+    public static string Unlock_ConfirmLabel => Get("Unlock.ConfirmLabel");
+    public static string Unlock_Submit => Get("Unlock.Submit");
+    public static string Unlock_WrongPassphrase => Get("Unlock.WrongPassphrase");
+    public static string Unlock_TooShort => Get("Unlock.TooShort");
+    public static string Unlock_Mismatch => Get("Unlock.Mismatch");
+    public static string Unlock_Unsupported => Get("Unlock.Unsupported");
+    public static string Unlock_Failed => Get("Unlock.Failed");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
