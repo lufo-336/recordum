@@ -59,6 +59,7 @@
             <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF40C463"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level3"  Color="#FF30A14E"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level4"  Color="#FF216E39"/>
+            <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -78,6 +79,7 @@
             <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF006D32"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level3"  Color="#FF26A641"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level4"  Color="#FF39D353"/>
+            <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

@@ -1,0 +1,51 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+    Stili globali (F1 Task 2). A differenza di BaseStyles.xaml in WPF (1046 righe, quasi tutte
+    "undo Aero" — v. la sonda docs/design/2026-09-09-avalonia-theme-probe.md), qui la maggior parte
+    dei controlli elencati dal piano NON ha bisogno di un ControlTemplate: FluentTheme è già una base
+    piatta moderna che coincide col linguaggio di Recordum. La ritinta che serve davvero non è per
+    controllo ma GLOBALE — l'accento di sistema (App.axaml, FluentTheme.Palettes) — perché CheckBox
+    checked, ComboBoxItem/ListBoxItem selezionati, hover dei MenuItem, thumb dello ScrollBar sono
+    TUTTI legati a SystemAccentColor (il blu di Windows #0078D7 di default), non al nostro
+    Brush.Accent: senza quella ritinta ogni popup avrebbe un blu diverso da bottoni/CTA. Verificato
+    per riflessione (TryGetResource("SystemAccentColor") prima/dopo) e a schermo (gallery screenshot
+    nei due temi, vedi Step 5).
+
+    Classificazione per controllo, verificata nello screenshot della galleria (Step 5), stesso
+    metodo della sonda-tema:
+    - ContextMenu / MenuItem: Classe A. Pannello arrotondato con ombra, hover a tinta accento,
+      nessuna colonna-icone riservata quando l'icona è null — già il default Fluent, ora sul nostro
+      blu grazie alla ritinta della palette. Nessun ControlTemplate.
+    - ToolTip: Classe A. Pannello arrotondato + ombra di serie; ToolTipContentMaxWidth Fluent = 320,
+      lo stesso numero che WPF fissava a mano (coincidenza verificata, non uno zero-caso).
+    - ComboBox (chrome + popup + ComboBoxItem): Classe A. Stessa famiglia di popup arrotondato-con-
+      ombra di ContextMenu; riga selezionata già tinta con l'accento (ora il nostro).
+    - CheckBox: Classe A. Il glifo piatto Fluent più la ritinta d'accento riproducono il quadratino
+      blu pieno con spunta bianca di WPF senza un ControlTemplate.
+    - ScrollViewer / ScrollBar: Classe A. Barra sottile piatta di serie.
+    - Button di base (nessuna classe): Classe A. `Button.primary`/`Button.ghost` (RecordumStyles.axaml,
+      sonda F0) restano gli UNICI stili Button — un Button senza classe usa il chrome Fluent com'è.
+    - ListBoxItem: Classe A per la selezione (tinta d'accento, angoli arrotondati già di serie); un
+      solo Setter esplicito sotto per l'angolo, non perché serva a schermo ma per lo stesso principio
+      con cui WPF teneva `Recordum.HabitBlock` a `CornerRadius=6`: un numero nostro, non un default
+      che potrebbe cambiare a un aggiornamento di Fluent (CLAUDE.md §11, "Esplicito > implicito").
+    - Separator (nei ContextMenu): l'UNICA vera eccezione. FluentTheme non espone una chiave di
+      risorsa dedicata al suo colore (verificato: nessuna "MenuFlyoutSeparatorBackground" nell'
+      assembly, a differenza delle altre famiglie sopra) — il colore che si vede nello screenshot è
+      quello che il tema decide di suo. WPF lo forzava esplicitamente a Brush.Border tramite
+      `{x:Static MenuItem.SeparatorStyleKey}`; qui si fa lo stesso con un selettore di tipo, per lo
+      stesso motivo (un divisore è geometria di layout, non un colore che deve seguire l'umore del
+      tema di sistema).
+    -->
+
+    <Style Selector="Separator">
+        <Setter Property="Background" Value="{DynamicResource Brush.Border}"/>
+    </Style>
+
+    <Style Selector="ListBoxItem">
+        <Setter Property="CornerRadius" Value="5"/>
+    </Style>
+
+</Styles>
