@@ -129,6 +129,9 @@ public sealed class DbUnlockService : IDbUnlockService
     private async Task<UnlockResult> EnterAsync(string passphrase, CancellationToken ct)
     {
         if (IsTooShort(passphrase)) return new UnlockResult(UnlockOutcome.PassphraseTooShort, null);
+        // Open è ReadWriteCreate: con un NeedsPassphrase stantio (il file è sparito) creerebbe un database
+        // vuoto e qualunque passphrase di 12+ caratteri "sbloccherebbe". Come CreateAsync, non lo si fa.
+        if (!HasDatabase()) return new UnlockResult(UnlockOutcome.Failed, null);
 
         SqliteConnection.ClearAllPools();   // v. la nota di classe: il pool ignorerebbe la chiave sbagliata
         var provider = new CachingKeyProvider(new PassphraseKeyProvider(passphrase, _paths.SaltFilePath));

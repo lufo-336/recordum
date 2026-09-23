@@ -159,6 +159,46 @@ public sealed class DbUnlockServiceTests : IDisposable
         Assert.Equal(UnlockOutcome.WrongPassphrase, wrong.Outcome);
     }
 
+    [Fact]
+    public async Task A_wrong_passphrase_is_rejected_even_when_a_pooled_connection_was_keyed_with_the_right_one()
+    {
+        // Una connessione già chiavata giusta (l'interceptor di EF, un secondo sblocco nello stesso
+        // processo) resta nel pool: Open() applica la chiave con PRAGMA key DOPO l'apertura, quindi il
+        // pool la restituirebbe ancora sbloccata. Solo il ClearAllPools() in testa a EnterAsync lo evita
+        // (quello nel finally di CanRead ripulisce soltanto ciò che CanRead ha aperto lui).
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+        await SeedAsync(_paths.DatabasePath, created.Provider!);
+        using (var key = await created.Provider!.GetKeyAsync())
+        using (var conn = SqlCipherConnectionFactory.Open(_paths.DatabasePath, key))
+        {
+            // Una lettura vera: senza, la connessione non ha ancora toccato il file e il pool non la
+            // trattiene "già chiavata" (misurato). Poi dispose SENZA ClearAllPools(): torna nel pool.
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT count(*) FROM sqlite_master";
+            cmd.ExecuteScalar();
+        }
+
+        var wrong = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong);
+
+        Assert.Equal(UnlockOutcome.WrongPassphrase, wrong.Outcome);
+    }
+
+    [Fact]
+    public async Task Entering_a_passphrase_with_no_database_fails_and_creates_nothing()
+    {
+        // Uno stato NeedsPassphrase stantio (il file è sparito): Open() è ReadWriteCreate, quindi senza
+        // guardia creerebbe un DB vuoto e QUALUNQUE passphrase di 12+ caratteri "sbloccherebbe".
+        await File.WriteAllBytesAsync(_paths.SaltFilePath, RandomNumberGenerator16());
+
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase);
+
+        Assert.Equal(UnlockOutcome.Failed, result.Outcome);
+        Assert.Null(result.Provider);
+        Assert.False(File.Exists(_paths.DatabasePath));
+    }
+
+    private static byte[] RandomNumberGenerator16() => System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+
     [Theory]
     [InlineData("")]
     [InlineData("short")]
