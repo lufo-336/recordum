@@ -2,12 +2,12 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Theming;
 using Recordum.Core.Enums;
 
-namespace Recordum.WPF.Theming;
+namespace Recordum.Presentation.Services;
 
 /// <summary>
 /// Persists the UI font choice (AppSetting <c>ui.font</c>) and raises <see cref="FontChanged"/>.
 /// The actual resource swap (<c>Font.Default</c>) lives in <c>App.ApplyFont</c>, mirroring how
-/// <see cref="ThemeService"/> / <c>App.ApplyTheme</c> split state from the WPF resource update.
+/// the shell theme service / <c>App.ApplyTheme</c> split state from the shell's resource update.
 /// </summary>
 public sealed class AppFontService(IAppSettingService settings) : IAppFontService
 {

@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using FluentAssertions;
 using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.Theming;
+using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.Backup;
 using Recordum.Presentation.ViewModels.DiagnosticInfo;

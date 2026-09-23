@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
-using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.Theming;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.Tests.Fixtures;
 using Xunit;
 
-namespace Recordum.WPF.Tests.Theming;
+namespace Recordum.Presentation.Tests.Services;
 
 /// <summary>F0-6 (selettore) — the two culture knobs persist independently: an app in English whose
 /// dates and decimals stay Italian is the case that made them two knobs instead of one.</summary>

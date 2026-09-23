@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
-using Recordum.WPF.Tests.Fixtures;
-using Recordum.WPF.Theming;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.Tests.Fixtures;
 using Xunit;
 
-namespace Recordum.WPF.Tests.Theming;
+namespace Recordum.Presentation.Tests.Services;
 
 public class AppFontServiceTests
 {

@@ -2,13 +2,13 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Theming;
 using Recordum.Core.Enums;
 
-namespace Recordum.WPF.Theming;
+namespace Recordum.Presentation.Services;
 
 /// <summary>
 /// Persists the two culture choices (AppSettings <c>ui.language</c> and <c>ui.format</c>). Mirrors
 /// <see cref="AppFontService"/>, minus the change event: neither choice can be applied to a running
 /// process, so there is nothing for a listener to do — <c>App.OnStartup</c> reads them once through
-/// <see cref="Bootstrap.CultureBootstrap"/> and Settings tells the user the change lands at the next
+/// <c>CultureBootstrap</c> and Settings tells the user the change lands at the next
 /// start.
 /// </summary>
 public sealed class CultureService(IAppSettingService settings) : ICultureService
