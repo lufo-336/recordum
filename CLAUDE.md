@@ -290,11 +290,26 @@ fedelmente (un commento falso sulla verifica della chiave, cinque icone disegnat
 conseguenze misurate di Avalonia 12 (niente fantasma nel drag & drop — non c'è `QueryContinueDrag`; il
 chrome della finestra **ignorato da X11**, verificato solo su Linux, checklist a 7 punti pronta per la VM).
 
-**Da qui in poi**: il piano non è ancora stato eseguito. `Recordum.UI` oggi (prima di eseguirlo) resta ciò
-che l'onda F0 ha lasciato — quattro view di sonda, i token, il font imbustato, tre controlli portati
-(`HeatmapStrip`, `YearHeatmapControl`, `StreakTimelineControl`) — **nessun container DI, nessuna finestra
-vera, nessuna Home**: `App.axaml.cs` fa solo `new MainWindow()`. L'esecuzione (subagent-driven, come F0) è
-il prossimo passo.
+**Progresso 2026-09-23/24 (onda F1 in esecuzione — Task 1-5 di 13 chiusi, sessione sospesa a metà del Task 6).**
+Esecuzione subagent-driven sul branch `avalonia-linux-slice` (pushato fino al Task 5, HEAD `df059b2`).
+**Chiusi e rivisti**: T1 icone Lucide (58) + 5 convertitori; T2 stili globali + ritinta accento; T3 bootstrap
+portabile (`AddRecordumCore`, `CoreInitializer`, `AppFontService`/`CultureService` spostati in Presentation);
+T4 sblocco del DB (`CachingKeyProvider`, `DbUnlockService`, `IDbUnlockService` in **Core**, `UnlockViewModel`);
+T5 servizi UI (tema, uscita, conferma) + dodici `Null*`. Split di modelli scelto dall'autore: implementatori
+Haiku su T1/T2/T5 e Sonnet altrove, review Sonnet con **Opus su T4, T10 (chrome) e review finale**, controller
+Sonnet. Le review hanno trovato difetti veri anche in questa onda (T4: nessun test falliva togliendo la
+`ClearAllPools()` che impedisce a una passphrase errata di risultare valida; T5: quattro registrazioni DI mai
+risolte da un test, e il dialog di conferma senza owner restava appeso alla X) — tutti chiusi con test provati
+rossi. **Per riprendere**: il ledger locale (git-ignored, unica copia) è in
+`.superpowers/sdd/2026-09-20-wave-f1-home/progress.md` — fidati di quello e di `git log`, non del contesto.
+Il **lavoro parziale del Task 6** (righe Home: `HabitRow`, `GroupRow`, `HomeRowTemplate`,
+`InlineRenameBehavior`, fixture `HomeFakes`, un test) **non è committato su `avalonia-linux-slice`**: l'agente
+è stato fermato a metà, il test non compilava (manca `using Avalonia;`), quindi vive sul branch
+**`wip/f1-task6`** (un solo commit sopra `avalonia-linux-slice`). Per riprenderlo:
+`git checkout avalonia-linux-slice && git merge --ff-only wip/f1-task6 && git reset --soft HEAD~1`
+(i file tornano in staging, il branch resta pulito), poi si ri-dispatcha il Task 6 dicendo
+all'implementatore di **ripartire da quei file** invece che da zero. Dal Task 7 in poi, come da piano.
+Il tool `SendMessage` è *deferred*: caricarlo con ToolSearch prima di riprendere un implementatore.
 
 ### Storico stati milestone
 
