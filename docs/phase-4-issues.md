@@ -1743,7 +1743,7 @@ Restano questi, ciascuno con la sua ragione.
   fuori. I titoli dell'editor (`MarkdownLivePreviewColorizer.cs:54`) escono Bold, non semi. Nessun test per
   lo stack di ripiego; `Font.System` resta sans di sistema (l'aspetto non è ancora identico ovunque per il
   testo sans).
-- **F0-D1 — debito verso la VM** (`open`, **gate di merge**). *Aggiornato il 2026-09-25*: la metà R9 è chiusa — la suite
+- **F0-D1 — debito verso la VM** (`verified-fixed` 2026-09-25: la CI su Windows, run `36179927020`, ha eseguito la suite WPF dopo la rinomina — verde; il primo run aveva trovato solo due difetti di test, corretti in `f27d3a7`). *Storia, aggiornata il 2026-09-25*: la metà R9 è chiusa — la suite
   WPF di R9 è verde sulla VM dall'11/09 (§"Verifica sulla VM di R9"), e i tre commit relativi sono stati riportati su questo
   branch (i due test nuovi ora in `Recordum.Presentation.Tests`, la fixture State tenuta nella versione di F0). Resta la metà
   F0: `Recordum.WPF.Tests` (38 file) dopo la rinomina non è mai stato eseguito. Tre costrutti F0 falliscono solo a runtime su Windows: `IApplicationLifetime`
