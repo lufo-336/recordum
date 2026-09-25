@@ -21,9 +21,9 @@
 | Task | Cosa | Stato |
 |---|---|---|
 | 0.1 | Riconciliare R9 nella pila | ✅ `28ff31e` (949 verdi in Presentation, due test riprovati rossi) |
-| 0.2 | CI GitHub Actions | ✅ workflow su GitHub (primo run `36154875389`: Linux verde; Windows v. esito in §0.2) |
+| 0.2 | CI GitHub Actions | ✅ primo run `36154875389`: Linux verde; Windows con due rossi, **entrambi difetti di test** (condivisione del file su Windows, test che dipendeva dalla lingua) — corretti in `f27d3a7`. Nessuna regressione di F0: la suite WPF dopo la rinomina ha girato su Windows |
 | 0.3 | Backup e restore testati anche su Linux | ✅ fixture con chiave fissa; 10 test di backup/restore girano su Linux per la prima volta; `CrossMachineRestoreTests` + `made-on-linux-v2.18.recbak` (provato rosso); Data su Linux 526/526 con 8 `WindowsOnly` esclusi |
-| 0.4 | Sblocco sicuro | ☐ |
+| 0.4 | Sblocco sicuro | ◐ primitive in Data (`b933731`): `ReconcileOrphans`, salt `CreateNew` + fsync, log dell'eccezione, `DataDirectoryLock` — sette test, tutti provati rossi. **Restano i collegamenti**: avvio Avalonia (Task 11 di F1) e WPF (`App.OnStartup`). Il `db.key` DPAPI non cambia: la sua corsa la chiude il lock |
 | 0.5 | Privacy dei file su Linux | ☐ |
 | 0.6 | Cartella dati sovrascrivibile | ☐ |
 | 0.7 | Chiave dell'auto-backup dietro un'astrazione | ☐ (la metà Linux aspetta D3) |

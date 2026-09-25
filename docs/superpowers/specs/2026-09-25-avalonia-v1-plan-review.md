@@ -321,8 +321,9 @@ task tocca WPF oltre lo spostamento del Task 3.
 
 **Da decidere e aggiungere prima dei Task 9-11** (dalle revisioni del codice T1-T5, riverificate):
 
-- **Task 11** — oltre al `CrashLogger`, un sink di log su file (0600) e il log dell'eccezione nel `catch` di
-  `DbUnlockService.UnlockAsync` (`:95`). Oggi ogni errore di sblocco — salt corrotto, permessi, disco pieno, pagina 1 corrotta che
+- **Task 11** — oltre al `CrashLogger`, un sink di log su file (0600) passato a `DbUnlockService` (che dal Passo 0
+  registra l'eccezione nel `catch` di `UnlockAsync`); e all'avvio, in quest'ordine: `DataDirectoryLock.TryAcquire` (seconda
+  istanza → messaggio e uscita), `ReconcileOrphans()`, poi `DetectState()` (task 0.4 del Passo 0). Oggi ogni errore di sblocco — salt corrotto, permessi, disco pieno, pagina 1 corrotta che
   SQLite riporta come codice 26, cioè "passphrase sbagliata" — produce lo stesso messaggio e nessuna traccia.
 - **Task 9** — i comandi Backup/Ripristina/Export del ribbon puntano a launcher `Null` sempre abilitati: nasconderli o
   disabilitarli finché le loro onde non arrivano.
