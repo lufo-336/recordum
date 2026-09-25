@@ -144,6 +144,13 @@ grafo.
 
 ## 0.9 — Sonda sul provider di cifratura (RV-2)
 
+**Punti di partenza** (wiki di SQLitePCL.raw *"SQLite encryption options"*, letta il 2026-09-25): tre strade. **SEE**
+(del team SQLite, a pagamento, **non** compatibile con i DB SQLCipher). **SQLCipher di Zetetic** (open source; build NuGet
+da Zetetic a pagamento, o dal servizio di build di SourceGear). **SQLite3 Multiple Ciphers** (open source, compatibile
+con i DB SQLCipher; anche il suo `bundle_e_sqlite3mc` è deprecato, resta il servizio di build SourceGear). Da verificare
+nella sonda: i pacchetti NuGet che l'autore di SQLite3MC pubblica direttamente, il costo del servizio SourceGear, e se
+compilarsi i nativi da soli sia sostenibile per un progetto di una persona.
+
 Un rapporto in `docs/design/` che risponde, misurando: (1) quale sostituto di `bundle_e_sqlcipher` (build Zetetic; SQLite3 Multiple
 Ciphers) apre un DB SQLCipher 4 creato oggi; (2) cosa sostituisce `sqlcipher_export` in backup e restore; (3) cosa sostituisce
 `PRAGMA cipher_version` nel guard di SEC-1; (4) FTS5 disponibile (Onda 5.4); (5) licenza compatibile col MIT del repo. **Nessun
