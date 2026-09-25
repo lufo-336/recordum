@@ -16,6 +16,7 @@ public sealed class FakeBackupStoragePaths : IBackupStoragePaths
     public string AttachmentsDirectory => "C:/fake/attachments";
     public string BackupsDirectory => "C:/fake/backups";
     public string AutoBackupKeyPath => "C:/fake/autobackup.key";
+    public string TempDirectory => "C:/fake/tmp";
 }
 
 public sealed class FakePluginManagerDiag : IPluginManager

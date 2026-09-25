@@ -13,6 +13,7 @@ namespace Recordum.Presentation.Bootstrap;
 /// Triggered by the <c>--seed-demo</c> command-line flag; idempotent via the
 /// <c>dev.demo_seeded</c> AppSetting marker. Deterministic (fixed Random seed).</summary>
 public sealed class DemoDataSeeder(
+    RecordumOptions options,
     IHabitNodeService nodes,
     IHabitConfigService configs,
     IMetricDefinitionService metrics,
@@ -69,6 +70,7 @@ public sealed class DemoDataSeeder(
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
+        EnsureNotRealData();
         if (await settings.GetAsync(MarkerKey, ct).ConfigureAwait(false) is not null) return;
 
         _day = await resetTimes.GetAppDayBoundaryAsync(ct).ConfigureAwait(false);
@@ -182,8 +184,20 @@ public sealed class DemoDataSeeder(
     /// quantity with trend, Seconds = activity durations, scale = weighted. Counter with fields → 1–4
     /// series/day with ~10% of fields left empty; bare counter → N bare occurrences. No marker:
     /// repeated runs add more data. Triggered by <c>--seed-habit &lt;name&gt;</c>.</summary>
+    /// <summary>I dati finti non finiscono mai nei dati veri (decisione B del Passo 0, 2026-09-25): sulla stessa
+    /// macchina lo sviluppo e il dogfooding condividerebbero la cartella di default.</summary>
+    private void EnsureNotRealData()
+    {
+        if (options.IsDefaultLocation)
+            throw new InvalidOperationException(
+                "--seed-demo / --seed-habit write fake data and refuse the real data folder. "
+                + $"Point the app at a scratch folder with {RecordumOptions.DataDirectoryArgument} <folder> "
+                + $"or {RecordumOptions.DataDirectoryVariable}.");
+    }
+
     public async Task SeedHabitAsync(string name, CancellationToken ct = default)
     {
+        EnsureNotRealData();
         var rows = await tree.GetHomeTreeAsync(ct).ConfigureAwait(false);
         var row = rows.FirstOrDefault(r =>
             string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase) && r.HabitType is not null)

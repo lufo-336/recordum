@@ -1,14 +1,19 @@
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Backup;
+using Recordum.Data.Backup;
 
 namespace Recordum.Presentation.Bootstrap;
 
 public sealed class BackupSchedulerHost(
     IServiceScopeFactory scopes,
     ILogger<BackupSchedulerHost> log,
-    BackupSchedulerOptions options) : IDisposable
+    BackupSchedulerOptions options,
+    IBackupStoragePaths paths,
+    IClock clock) : IDisposable
 {
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _cts;
@@ -56,22 +61,40 @@ public sealed class BackupSchedulerHost(
         }
     }
 
-    private static void CleanupOrphanTempDirs()
+    /// <summary>I resti di un backup o di un restore interrotti sono dump del database in chiaro: si distruggono
+    /// come il backup distrugge i propri (CR4). Stanno nella cartella dati; la temp di sistema si guarda ancora per i
+    /// resti delle versioni precedenti, che scrivevano lì — su Linux leggibili da ogni utente locale (RV-4).</summary>
+    private void CleanupOrphanTempDirs()
     {
-        try
+        var cutoff = clock.UtcNow.UtcDateTime.AddHours(-1);
+        WipeOlderThan(paths.TempDirectory, "*", cutoff);
+        WipeOlderThan(Path.GetTempPath(), "recordum-bk-*", cutoff);
+        WipeOlderThan(Path.GetTempPath(), "recordum-rs-*", cutoff);
+    }
+
+    private void WipeOlderThan(string dir, string pattern, DateTime cutoff)
+    {
+        if (!Directory.Exists(dir)) return;
+        foreach (var entry in Directory.EnumerateFileSystemEntries(dir, pattern))
         {
-            var cutoff = DateTime.UtcNow.AddHours(-1);
-            foreach (var d in Directory.EnumerateDirectories(Path.GetTempPath(), "recordum-bk-*"))
+            try
             {
-                try
+                if (Directory.Exists(entry))
                 {
-                    if (Directory.GetCreationTimeUtc(d) < cutoff)
-                        Directory.Delete(d, recursive: true);
+                    if (Directory.GetCreationTimeUtc(entry) < cutoff) SecureWipe.DeleteDirectory(entry);
                 }
-                catch { }
+                else if (File.GetCreationTimeUtc(entry) < cutoff)
+                {
+                    SecureWipe.DeleteFile(entry);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+#pragma warning disable CA1848
+                log.LogWarning(ex, "could not wipe the leftover {Entry}", entry);
+#pragma warning restore CA1848
             }
         }
-        catch { }
     }
 
     public void Dispose()

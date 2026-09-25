@@ -22,20 +22,7 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
 
     /// <summary>Opzioni puntate a una cartella temporanea. NON <c>RecordumOptions.Default()</c>, che
     /// crea cartelle nel profilo vero dell'utente.</summary>
-    private RecordumOptions Options()
-    {
-        Directory.CreateDirectory(Path.Combine(_dir, "attachments"));
-        Directory.CreateDirectory(Path.Combine(_dir, "backups"));
-        return new RecordumOptions
-        {
-            DatabasePath = Path.Combine(_dir, "recordum.db"),
-            KeyFilePath = Path.Combine(_dir, "db.key"),
-            SaltFilePath = Path.Combine(_dir, "db.salt"),
-            AttachmentsDirectory = Path.Combine(_dir, "attachments"),
-            BackupsDirectory = Path.Combine(_dir, "backups"),
-            AutoBackupKeyPath = Path.Combine(_dir, "autobackup.key"),
-        };
-    }
+    private RecordumOptions Options() => RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, _dir], _ => null);
 
     public void Dispose()
     {
@@ -169,6 +156,48 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         // produrre un'app che parte su un DB che non può leggere.
         await Assert.ThrowsAsync<Microsoft.Data.Sqlite.SqliteException>(
             () => provider2.GetRequiredService<CoreInitializer>().InitializeAsync());
+    }
+
+    [Fact]
+    public async Task Attachments_follow_the_data_directory_of_the_options()
+    {
+        // Prima AttachmentService si ricavava la radice da LocalApplicationData per conto suo: con --data-dir
+        // il database finiva nella cartella scelta e le foto in quella vera (decisione B del Passo 0).
+        var options = Options();
+        var services = new ServiceCollection();
+        services.AddRecordumCore(options);
+        services.AddShellDoubles(new FixedKeyProvider(new byte[KeyMaterial.LengthBytes]));
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        var path = scope.ServiceProvider.GetRequiredService<Recordum.Core.IAttachmentService>()
+            .ResolveAbsolutePath(new Recordum.Core.Models.Attachment { Id = Guid.NewGuid(), NoteId = Guid.NewGuid(), Filename = "p.jpg" });
+
+        Assert.StartsWith(options.DataDirectory + Path.DirectorySeparatorChar, path, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_demo_seeder_refuses_the_real_data_folder()
+    {
+        var o = Options();
+        var real = new RecordumOptions
+        {
+            DataDirectory = o.DataDirectory, IsDefaultLocation = true, DatabasePath = o.DatabasePath,
+            KeyFilePath = o.KeyFilePath, SaltFilePath = o.SaltFilePath, AttachmentsDirectory = o.AttachmentsDirectory,
+            BackupsDirectory = o.BackupsDirectory, AutoBackupKeyPath = o.AutoBackupKeyPath, TempDirectory = o.TempDirectory,
+        };
+        var services = new ServiceCollection();
+        services.AddRecordumCore(real);
+        services.AddShellDoubles(new FixedKeyProvider(new byte[KeyMaterial.LengthBytes]));
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var seeder = scope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
+
+        var seed = await Assert.ThrowsAsync<InvalidOperationException>(() => seeder.SeedAsync());
+        var habit = await Assert.ThrowsAsync<InvalidOperationException>(() => seeder.SeedHabitAsync("Water"));
+
+        Assert.Contains(RecordumOptions.DataDirectoryArgument, seed.Message, StringComparison.Ordinal);
+        Assert.Contains(RecordumOptions.DataDirectoryArgument, habit.Message, StringComparison.Ordinal);
     }
 
     private sealed class SpyStartupStep : IStartupStep

@@ -34,6 +34,8 @@ public class BuilderTemplateRoundTripE2ETests
                 AttachmentsDirectory = Path.Combine(temp.FullName, "attachments"),
                 BackupsDirectory = Path.Combine(temp.FullName, "backups"),
                 AutoBackupKeyPath = Path.Combine(temp.FullName, "autobackup.key"),
+                DataDirectory = temp.FullName,
+                TempDirectory = Path.Combine(temp.FullName, "tmp"),
             };
             Directory.CreateDirectory(options.AttachmentsDirectory);
             Directory.CreateDirectory(options.BackupsDirectory);

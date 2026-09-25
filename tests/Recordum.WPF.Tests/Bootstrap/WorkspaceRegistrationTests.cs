@@ -12,7 +12,7 @@ public sealed class WorkspaceRegistrationTests
 {
     private static ServiceProvider BuildProvider() =>
         new ServiceCollection()
-            .AddRecordumServices(new RecordumOptions { DatabasePath = ":memory:", KeyFilePath = "k", SaltFilePath = "s", AttachmentsDirectory = "a", BackupsDirectory = "b", AutoBackupKeyPath = "ak" })
+            .AddRecordumServices(new RecordumOptions { DatabasePath = ":memory:", KeyFilePath = "k", SaltFilePath = "s", AttachmentsDirectory = "a", BackupsDirectory = "b", AutoBackupKeyPath = "ak", DataDirectory = "d", TempDirectory = "t" })
             .BuildServiceProvider();
 
     [Fact]

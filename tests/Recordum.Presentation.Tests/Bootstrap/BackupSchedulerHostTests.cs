@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Backup;
 using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Tests.Fixtures;
 using Xunit;
 
 namespace Recordum.Presentation.Tests.Bootstrap;
@@ -37,7 +38,9 @@ public class BackupSchedulerHostTests
         using var host = new BackupSchedulerHost(
             provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<BackupSchedulerHost>.Instance,
-            options);
+            options,
+            new FakeBackupStoragePaths(),
+            new FakeClock(DateTimeOffset.UnixEpoch));
 
         host.Initialize();
         await Task.Delay(400);
@@ -54,7 +57,9 @@ public class BackupSchedulerHostTests
         using var host = new BackupSchedulerHost(
             provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<BackupSchedulerHost>.Instance,
-            new BackupSchedulerOptions { InitialDelay = TimeSpan.FromMinutes(5), Interval = TimeSpan.FromMinutes(5) });
+            new BackupSchedulerOptions { InitialDelay = TimeSpan.FromMinutes(5), Interval = TimeSpan.FromMinutes(5) },
+            new FakeBackupStoragePaths(),
+            new FakeClock(DateTimeOffset.UnixEpoch));
 
         host.Initialize();
         var second = () => host.Initialize();

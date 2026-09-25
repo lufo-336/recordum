@@ -21,7 +21,7 @@ public sealed class ServiceRegistrarTickSourceTests
     public void Resolves_the_dispatcher_tick_source_factory()
     {
         var services = new ServiceCollection()
-            .AddRecordumServices(new RecordumOptions { DatabasePath = ":memory:", KeyFilePath = "k", SaltFilePath = "s", AttachmentsDirectory = "a", BackupsDirectory = "b", AutoBackupKeyPath = "ak" });
+            .AddRecordumServices(new RecordumOptions { DatabasePath = ":memory:", KeyFilePath = "k", SaltFilePath = "s", AttachmentsDirectory = "a", BackupsDirectory = "b", AutoBackupKeyPath = "ak", DataDirectory = "d", TempDirectory = "t" });
         using var sp = services.BuildServiceProvider();
 
         // Tipo concreto, non solo NotNull: una registrazione sostituita per sbaglio con un'altra

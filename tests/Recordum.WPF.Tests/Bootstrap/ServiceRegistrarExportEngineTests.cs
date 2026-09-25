@@ -14,7 +14,7 @@ public sealed class ServiceRegistrarExportEngineTests
     public void Resolves_export_engine_activator_and_query_and_job_services()
     {
         var services = new ServiceCollection()
-            .AddRecordumServices(new RecordumOptions { DatabasePath = ":memory:", KeyFilePath = "k", SaltFilePath = "s", AttachmentsDirectory = "a", BackupsDirectory = "b", AutoBackupKeyPath = "ak" });
+            .AddRecordumServices(new RecordumOptions { DatabasePath = ":memory:", KeyFilePath = "k", SaltFilePath = "s", AttachmentsDirectory = "a", BackupsDirectory = "b", AutoBackupKeyPath = "ak", DataDirectory = "d", TempDirectory = "t" });
         using var sp = services.BuildServiceProvider();
         Assert.NotNull(sp.GetRequiredService<IExportEngineActivator>());
         using var scope = sp.CreateScope();

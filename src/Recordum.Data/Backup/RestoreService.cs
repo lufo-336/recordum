@@ -29,7 +29,8 @@ public sealed class RestoreService(
         if (!File.Exists(sourcePath))
             throw new RestoreException("invalid_format", $"Backup file not found: {sourcePath}");
 
-        var tempZip = Path.Combine(Path.GetTempPath(), $"recordum-rs-{Guid.NewGuid():N}.zip");
+        Directory.CreateDirectory(paths.TempDirectory);   // può mancare se qualcuno l'ha svuotata ad app aperta
+        var tempZip = Path.Combine(paths.TempDirectory, $"recordum-rs-{Guid.NewGuid():N}.zip");
         try
         {
             await using (var src = File.OpenRead(sourcePath))
@@ -82,8 +83,9 @@ public sealed class RestoreService(
 
         // 3. Decrypt + extract into a STAGING area, re-encrypt there, then swap atomically (CR1).
         //    The live DB and attachments are not touched until both new copies are fully built.
-        var tempZip = Path.Combine(Path.GetTempPath(), $"recordum-rs-{Guid.NewGuid():N}.zip");
-        var tempPlainDb = Path.Combine(Path.GetTempPath(), $"recordum-rs-{Guid.NewGuid():N}.db");
+        Directory.CreateDirectory(paths.TempDirectory);
+        var tempZip = Path.Combine(paths.TempDirectory, $"recordum-rs-{Guid.NewGuid():N}.zip");
+        var tempPlainDb = Path.Combine(paths.TempDirectory, $"recordum-rs-{Guid.NewGuid():N}.db");
         var dbPath = paths.DatabasePath;
         var attachDir = paths.AttachmentsDirectory;
         // Stage NEXT TO the targets so the final move is an atomic same-volume rename.

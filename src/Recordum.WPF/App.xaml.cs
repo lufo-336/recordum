@@ -28,7 +28,7 @@ public partial class App : Application
         CrashLogger.WireUp();
 
         var collection = new ServiceCollection();
-        collection.AddRecordumServices(RecordumOptions.Default());
+        collection.AddRecordumServices(RecordumOptions.Resolve(e.Args, Environment.GetEnvironmentVariable));
         _services = collection.BuildServiceProvider();
 
         try

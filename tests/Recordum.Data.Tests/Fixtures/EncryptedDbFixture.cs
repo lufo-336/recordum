@@ -61,10 +61,12 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         var attachmentsDir = Path.Combine(rootDir, "attachments");
         var backupsDir = Path.Combine(rootDir, "backups");
         var autoBackupKeyPath = Path.Combine(rootDir, "autobackup.key");
+        var tempDir = Path.Combine(rootDir, "tmp");
         Directory.CreateDirectory(attachmentsDir);
         Directory.CreateDirectory(backupsDir);
+        Directory.CreateDirectory(tempDir);
 
-        var options = new TestBackupPaths(dbPath, keyPath, saltPath, attachmentsDir, backupsDir, autoBackupKeyPath);
+        var options = new TestBackupPaths(dbPath, keyPath, saltPath, attachmentsDir, backupsDir, autoBackupKeyPath, tempDir);
         var keyProvider = new FixedKeyProvider(RandomNumberGenerator.GetBytes(KeyMaterial.LengthBytes));
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero));
 
@@ -175,7 +177,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         string SaltFilePath,
         string AttachmentsDirectory,
         string BackupsDirectory,
-        string AutoBackupKeyPath) : IBackupStoragePaths;
+        string AutoBackupKeyPath,
+        string TempDirectory) : IBackupStoragePaths;
 
     private sealed class EncryptedBackupLogService(IDbContextFactory<RecordumDbContext> dbFactory) : IBackupLogService
     {

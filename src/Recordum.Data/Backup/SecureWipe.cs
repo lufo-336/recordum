@@ -8,7 +8,7 @@ namespace Recordum.Data.Backup;
 /// Not a hard guarantee on copy-on-write / wear-levelled storage, but matches the threat model
 /// (casual forensic recovery of a just-deleted plaintext copy).
 /// </summary>
-internal static class SecureWipe
+public static class SecureWipe
 {
     public static void DeleteFile(string path)
     {

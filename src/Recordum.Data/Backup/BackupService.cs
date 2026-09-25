@@ -35,7 +35,7 @@ public sealed class BackupService(
         var parent = Path.GetDirectoryName(destinationPath);
         if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
 
-        var tempDir = Path.Combine(Path.GetTempPath(), $"recordum-bk-{Guid.NewGuid():N}");
+        var tempDir = Path.Combine(paths.TempDirectory, $"recordum-bk-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
         var tempDb = Path.Combine(tempDir, "recordum.db");
         var tempAttachments = Path.Combine(tempDir, "attachments");

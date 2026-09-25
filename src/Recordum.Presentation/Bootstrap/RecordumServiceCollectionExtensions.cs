@@ -91,7 +91,9 @@ public static class RecordumServiceCollectionExtensions
         services.AddScoped<Recordum.Core.IAttachmentService>(sp => new Data.Services.AttachmentService(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IClock>(),
-            sp.GetRequiredService<IPluginContext>()));
+            sp.GetRequiredService<IPluginContext>(),
+            // La radice dalle opzioni, non ricavata di nuovo: con --data-dir le foto devono seguire il resto.
+            options.DataDirectory));
         services.AddScoped<IDiaryService, Data.Services.DiaryService>();
         services.AddScoped<IGoalService, GoalService>();
         services.AddScoped<IMetricDefinitionService, MetricDefinitionService>();

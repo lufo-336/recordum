@@ -43,6 +43,8 @@ public sealed class BootstrapSmokeTests : IDisposable
             AttachmentsDirectory = Path.Combine(Path.GetDirectoryName(_dbPath)!, "attachments"),
             BackupsDirectory = Path.Combine(Path.GetDirectoryName(_dbPath)!, "backups"),
             AutoBackupKeyPath = Path.Combine(Path.GetDirectoryName(_dbPath)!, "autobackup.key"),
+            DataDirectory = Path.GetDirectoryName(_dbPath)!,
+            TempDirectory = Path.Combine(Path.GetDirectoryName(_dbPath)!, "tmp"),
         });
         _services = collection.BuildServiceProvider();
     }
