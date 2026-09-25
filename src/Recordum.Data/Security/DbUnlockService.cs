@@ -1,5 +1,8 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Errors;
 
@@ -21,26 +24,38 @@ namespace Recordum.Data.Security;
 /// con una chiave casuale, e il commento in <c>ApplicationInitializer</c> che dice il contrario è
 /// falso). E <c>ClearAllPools()</c> fra i tentativi: una connessione già chiavata che il pool
 /// restituisce ignora una chiave sbagliata successiva, e la lettura "riuscirebbe".</para></summary>
-public sealed class DbUnlockService : IDbUnlockService
+public sealed partial class DbUnlockService : IDbUnlockService
 {
     private const int SaltLengthBytes = 16;
     private const int SqliteNotADatabase = 26;
 
     private readonly IDbStoragePaths _paths;
     private readonly Func<IDbKeyProvider>? _platformKey;
+    private readonly ILogger<DbUnlockService> _logger;
+
+    [LoggerMessage(EventId = 1, Level = LogLevel.Error, Message = "Unlock failed in state {State}")]
+    private partial void LogUnlockFailed(Exception exception, DbUnlockState state);
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Database missing: {Old}, left by an interrupted restore, is back in place")]
+    private partial void LogRecovered(string old);
+
+    [LoggerMessage(EventId = 3, Level = LogLevel.Warning, Message = "Salt without a database moved aside to {Aside}")]
+    private partial void LogSaltSetAside(string aside);
 
     /// <summary>Con la chiave di piattaforma del sistema: DPAPI su Windows, nessuna altrove.</summary>
-    public DbUnlockService(IDbStoragePaths paths) : this(paths, DefaultPlatformKey(paths))
+    public DbUnlockService(IDbStoragePaths paths, ILogger<DbUnlockService>? logger = null)
+        : this(paths, DefaultPlatformKey(paths), logger)
     {
     }
 
     /// <param name="platformKeyFactory">La chiave che custodisce il sistema, o <c>null</c> se questo
     /// sistema non ne ha. Esplicita perché così i test la fingono su Linux (e provano il ramo Windows).</param>
-    public DbUnlockService(IDbStoragePaths paths, Func<IDbKeyProvider>? platformKeyFactory)
+    public DbUnlockService(IDbStoragePaths paths, Func<IDbKeyProvider>? platformKeyFactory, ILogger<DbUnlockService>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         _paths = paths;
         _platformKey = platformKeyFactory;
+        _logger = logger ?? NullLogger<DbUnlockService>.Instance;
     }
 
     private static Func<IDbKeyProvider>? DefaultPlatformKey(IDbStoragePaths paths)
@@ -58,6 +73,29 @@ public sealed class DbUnlockService : IDbUnlockService
     {
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("DPAPI esiste solo su Windows.");
         return new DpapiKeyProvider(keyFile);
+    }
+
+    public OrphanReconciliation ReconcileOrphans()
+    {
+        if (!File.Exists(_paths.SaltFilePath) || HasDatabase()) return OrphanReconciliation.None;
+
+        // Il nome che RestoreService dà al database vecchio fra i due spostamenti: se il processo è morto lì,
+        // il database dell'utente è questo, e il salt presente è il suo.
+        var old = _paths.DatabasePath + ".old";
+        if (File.Exists(old))
+        {
+            File.Move(old, _paths.DatabasePath, overwrite: true);   // al più sovrascrive un file vuoto (HasDatabase è false)
+            LogRecovered(old);
+            return OrphanReconciliation.RecoveredInterruptedRestore;
+        }
+
+        // Il timbro è quello del salt stesso: dice quando era nato, senza chiedere l'ora a nessuno.
+        var stamp = File.GetLastWriteTimeUtc(_paths.SaltFilePath).ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        var aside = $"{_paths.SaltFilePath}.orphan-{stamp}";
+        if (File.Exists(aside)) aside += "-" + Guid.NewGuid().ToString("N")[..8];
+        File.Move(_paths.SaltFilePath, aside);
+        LogSaltSetAside(aside);
+        return OrphanReconciliation.SaltSetAside;
     }
 
     public DbUnlockState DetectState()
@@ -97,6 +135,8 @@ public sealed class DbUnlockService : IDbUnlockService
         {
             // Tutto ciò che un disco, un permesso o un salt rovinato possono dare: "non riuscito", non
             // "passphrase errata". Dirlo all'utente sbagliato lo manderebbe a riprovare all'infinito.
+            // La causa vera, che l'utente non vede, resta nel log.
+            LogUnlockFailed(ex, state);
             SqliteConnection.ClearAllPools();
             return new UnlockResult(UnlockOutcome.Failed, null);
         }
@@ -183,12 +223,16 @@ public sealed class DbUnlockService : IDbUnlockService
         var dir = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
-        var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write, Share = FileShare.None };
+        // CreateNew, mai Create: un salt che esiste già appartiene a un database (anche a uno che sta nascendo
+        // in un'altra istanza), e troncarlo lo renderebbe illeggibile per sempre. Gli orfani li ha già spostati
+        // ReconcileOrphans; se qui ne compare uno, l'IOException diventa Failed in UnlockAsync.
+        var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None };
         // Il file nasce già 600: chmod DOPO la scrittura lascerebbe una finestra in cui è leggibile
         // col umask di default.
         if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-        using (var fs = new FileStream(path, options)) fs.Write(salt);
-        // UnixCreateMode vale solo alla creazione: un salt orfano preesistente conserva i suoi permessi.
-        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        using var fs = new FileStream(path, options);
+        fs.Write(salt);
+        // SQLite sincronizza ogni commit del database che da questo salt dipende: il salt non può restare in cache.
+        fs.Flush(flushToDisk: true);
     }
 }

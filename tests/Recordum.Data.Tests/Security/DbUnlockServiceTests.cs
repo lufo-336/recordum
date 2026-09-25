@@ -1,4 +1,6 @@
+using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Data.Security;
 using Xunit;
@@ -237,24 +239,78 @@ public sealed class DbUnlockServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task An_orphan_salt_with_no_database_is_replaced()
+    public async Task An_orphan_salt_is_set_aside_never_replaced()
     {
-        await File.WriteAllBytesAsync(_paths.SaltFilePath, new byte[16]);           // sedici zeri
+        // Decisione A del Passo 0 (2026-09-25): un salt senza database si sposta di lato, non si tronca mai.
+        // Se il suo database esiste da qualche altra parte, quel salt è l'unico modo di riaprirlo.
+        var zeros = new byte[16];
+        await File.WriteAllBytesAsync(_paths.SaltFilePath, zeros);
+        var sut = Linux();
 
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+        Assert.Equal(OrphanReconciliation.SaltSetAside, sut.ReconcileOrphans());
 
-        Assert.Equal(UnlockOutcome.Unlocked, result.Outcome);
-        Assert.NotEqual(new byte[16], await File.ReadAllBytesAsync(_paths.SaltFilePath));
+        var aside = Assert.Single(Directory.GetFiles(_dir, "db.salt.orphan-*"));
+        Assert.Equal(zeros, await File.ReadAllBytesAsync(aside));
+        Assert.Equal(DbUnlockState.NeedsCreation, sut.DetectState());
+        Assert.Equal(UnlockOutcome.Unlocked, (await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase)).Outcome);
+        Assert.NotEqual(zeros, await File.ReadAllBytesAsync(_paths.SaltFilePath));
     }
 
     [Fact]
-    public async Task The_salt_is_owner_only_on_unix_even_when_it_replaces_a_looser_file()
+    public async Task A_restore_interrupted_between_its_two_moves_gets_the_database_back()
+    {
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+        await SeedAsync(_paths.DatabasePath, created.Provider!);
+        SqliteConnection.ClearAllPools();
+        File.Move(_paths.DatabasePath, _paths.DatabasePath + ".old");   // RestoreService muore fra le due File.Move
+        var sut = Linux();
+
+        Assert.Equal(OrphanReconciliation.RecoveredInterruptedRestore, sut.ReconcileOrphans());
+
+        Assert.Equal(DbUnlockState.NeedsPassphrase, sut.DetectState());
+        Assert.Equal(UnlockOutcome.Unlocked, (await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase)).Outcome);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task With_nothing_orphaned_reconciliation_touches_nothing(bool withDatabase)
+    {
+        if (withDatabase)
+        {
+            var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+            await SeedAsync(_paths.DatabasePath, created.Provider!);
+        }
+        var before = Directory.GetFiles(_dir).Order().ToArray();
+
+        Assert.Equal(OrphanReconciliation.None, Linux().ReconcileOrphans());
+        Assert.Equal(before, Directory.GetFiles(_dir).Order().ToArray());
+    }
+
+    [Fact]
+    public async Task Creation_never_truncates_a_salt_that_appeared_meanwhile()
+    {
+        // La corsa fra due istanze al primo avvio: la seconda arriva qui con NeedsCreation quando la prima ha
+        // già scritto il suo salt. Troncarlo renderebbe illeggibile il database che la prima sta creando.
+        var theirs = RandomNumberGenerator.GetBytes(16);
+        await File.WriteAllBytesAsync(_paths.SaltFilePath, theirs);
+
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+
+        Assert.Equal(UnlockOutcome.Failed, result.Outcome);
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(_paths.SaltFilePath));
+    }
+
+    [Fact]
+    public async Task A_looser_orphan_is_set_aside_and_the_new_salt_is_owner_only()
     {
         if (OperatingSystem.IsWindows()) return;                                    // ACL, non modi Unix
         await File.WriteAllBytesAsync(_paths.SaltFilePath, new byte[16]);
         File.SetUnixFileMode(_paths.SaltFilePath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+        var sut = Linux();
 
-        await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+        sut.ReconcileOrphans();
+        await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
 
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(_paths.SaltFilePath));
     }
@@ -267,6 +323,32 @@ public sealed class DbUnlockServiceTests : IDisposable
         await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
 
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(_paths.SaltFilePath));
+    }
+
+    [Fact]
+    public async Task An_unlock_failure_leaves_its_cause_in_the_log()
+    {
+        // L'utente vede un solo "non riuscito" per ogni causa: la causa vera deve restare da qualche parte.
+        File.WriteAllBytes(_paths.DatabasePath, [1, 2, 3]);
+        await File.WriteAllBytesAsync(_paths.SaltFilePath, new byte[5]);            // salt di lunghezza sbagliata
+        var log = new ListLogger();
+
+        var result = await new DbUnlockService(_paths, platformKeyFactory: null, log)
+            .UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase);
+
+        Assert.Equal(UnlockOutcome.Failed, result.Outcome);
+        var entry = Assert.Single(log.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.NotNull(entry.Exception);
+    }
+
+    private sealed class ListLogger : ILogger<DbUnlockService>
+    {
+        public List<(LogLevel Level, Exception? Exception)> Entries { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Entries.Add((logLevel, exception));
     }
 
     [Fact]

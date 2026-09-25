@@ -18,6 +18,21 @@ public enum DbUnlockState
     Unsupported,
 }
 
+/// <summary>Che cosa ha fatto <see cref="IDbUnlockService.ReconcileOrphans"/>.</summary>
+public enum OrphanReconciliation
+{
+    /// <summary>Niente da sistemare.</summary>
+    None,
+
+    /// <summary>Mancava il database ma c'era <c>recordum.db.old</c>, lasciato da un ripristino interrotto fra i
+    /// due spostamenti: è tornato al suo posto.</summary>
+    RecoveredInterruptedRestore,
+
+    /// <summary>C'era un salt senza database e nessun <c>.old</c>: il salt è stato spostato di lato
+    /// (<c>db.salt.orphan-…</c>), mai cancellato, e la creazione riparte da zero.</summary>
+    SaltSetAside,
+}
+
 public enum UnlockOutcome
 {
     Unlocked,
@@ -34,6 +49,12 @@ public sealed record UnlockResult(UnlockOutcome Outcome, IDbKeyProvider? Provide
 /// un <see cref="IDbKeyProvider"/>, che è già Core.</summary>
 public interface IDbUnlockService
 {
+    /// <summary>Da chiamare <b>prima</b> di <see cref="DetectState"/>: sistema un salt rimasto senza database
+    /// (decisione A del Passo 0, 2026-09-25). Non distrugge mai niente — o rimette al suo posto il database di un
+    /// ripristino interrotto, o sposta di lato il salt. Senza questo passo la creazione riscriverebbe il salt, e un
+    /// database rimasto altrove (un <c>.old</c>) diventerebbe illeggibile per sempre.</summary>
+    OrphanReconciliation ReconcileOrphans();
+
     /// <summary>Guarda i file su disco (nessuna apertura del database, nessuna derivazione della chiave).</summary>
     DbUnlockState DetectState();
 

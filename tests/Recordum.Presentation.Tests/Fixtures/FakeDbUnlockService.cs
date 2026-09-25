@@ -16,6 +16,8 @@ public sealed class FakeDbUnlockService : IDbUnlockService
     public void Enqueue(UnlockOutcome outcome, IDbKeyProvider? provider = null) =>
         _results.Enqueue(new UnlockResult(outcome, provider));
 
+    public OrphanReconciliation ReconcileOrphans() => OrphanReconciliation.None;
+
     public DbUnlockState DetectState() => State;
 
     public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default)
