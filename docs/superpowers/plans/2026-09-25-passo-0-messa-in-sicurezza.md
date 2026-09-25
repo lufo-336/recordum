@@ -21,7 +21,7 @@
 | Task | Cosa | Stato |
 |---|---|---|
 | 0.1 | Riconciliare R9 nella pila | ✅ `28ff31e` (949 verdi in Presentation, due test riprovati rossi) |
-| 0.2 | CI GitHub Actions | ☐ |
+| 0.2 | CI GitHub Actions | ◐ tratti `WindowsOnly` pushati (`c2822e5`); `.github/workflows/ci.yml` scritto ma **non ancora tracciato**: il push è rifiutato finché il token di `gh` non ha lo scope `workflow` (`gh auth refresh -h github.com -s workflow`, lo esegue l'autore) |
 | 0.3 | Backup e restore testati anche su Linux | ☐ |
 | 0.4 | Sblocco sicuro | ☐ |
 | 0.5 | Privacy dei file su Linux | ☐ |
