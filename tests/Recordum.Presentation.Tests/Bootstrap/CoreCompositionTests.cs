@@ -134,7 +134,10 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         // "SQLite format 3\0".)
         Assert.True(File.Exists(options.DatabasePath));
         var header = new byte[16];
-        await using (var fs = File.OpenRead(options.DatabasePath)) _ = await fs.ReadAsync(header);
+        // FileShare.ReadWrite: SQLite tiene il file aperto in scrittura, e su Windows File.OpenRead (FileShare.Read)
+        // fallisce con "used by another process" — su Linux la condivisione non è obbligatoria e passava.
+        await using (var fs = new FileStream(options.DatabasePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            _ = await fs.ReadAsync(header);
         Assert.NotEqual("SQLite format 3\0", System.Text.Encoding.ASCII.GetString(header));
 
         await using var scope = provider.CreateAsyncScope();

@@ -12,10 +12,18 @@ namespace Recordum.WPF.Tests.Converters;
 /// covered <c>ScheduleBrickViewModel.BuildSummary</c>'s local switch, leaving the converter classes —
 /// the real UI code path — with no coverage of their own; a revert to raw <c>value.ToString()</c>, or a
 /// copy-paste swap between the two switch statements, would have passed the suite undetected).</summary>
-public class StreakModeAndRecoveryLabelConverterTests
+/// <para>Gira in italiano: in inglese tre etichette coincidono col nome dell'enum ("Daily", "Weekly", "Both"),
+/// e il guardiano <c>NotBe(value.ToString())</c> non saprebbe distinguere una traduzione da un <c>ToString()</c>
+/// grezzo. Passava sulla VM (Windows in italiano) e falliva sul runner della CI (in inglese).</para>
+public sealed class StreakModeAndRecoveryLabelConverterTests : IDisposable
 {
     private readonly StreakModeLabelConverter _mode = new();
     private readonly StreakRecoveryLabelConverter _recovery = new();
+    private readonly CultureInfo? _previousCulture = Strings.Culture;
+
+    public StreakModeAndRecoveryLabelConverterTests() => Strings.Culture = new CultureInfo("it-IT");
+
+    public void Dispose() => Strings.Culture = _previousCulture;
 
     [Theory]
     [InlineData(StreakMode.Daily)]
