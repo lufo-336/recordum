@@ -26,4 +26,8 @@
     <ProjectReference Include="..\..\src\Recordum.Core\Recordum.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- .recbak creati su un'altra macchina: CrossMachineRestoreTests li ripristina qui (Passo 0, task 0.3). -->
+    <None Update="Fixtures/Backups/*.recbak" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -1,6 +1,3 @@
-#pragma warning disable CA1416   // Windows-only (DpapiKeyProvider in EncryptedDbFixture)
-
-using System.Runtime.Versioning;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Backup;
@@ -10,8 +7,6 @@ using Xunit;
 
 namespace Recordum.Data.Tests.Backup;
 
-[SupportedOSPlatform("windows")]
-[Trait("Category", "WindowsOnly")]
 public class BackupServiceTests
 {
     private const string Pass = "passphrase-1234567890";

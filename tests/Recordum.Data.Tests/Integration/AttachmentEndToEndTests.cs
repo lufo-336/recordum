@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1416   // Windows-only (DpapiKeyProvider in EncryptedDbFixture)
-
-using System.Runtime.Versioning;
+﻿
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -20,8 +18,6 @@ namespace Recordum.Data.Tests.Integration;
 /// services (no fakes) — attach two photos, export, back up, wipe the live copies, restore, and
 /// verify both the raw attachment rows/files AND a fresh export are correct on the far side.
 /// </summary>
-[SupportedOSPlatform("windows")]
-[Trait("Category", "WindowsOnly")]
 public class AttachmentEndToEndTests
 {
     private const string Pass = "passphrase-1234567890";

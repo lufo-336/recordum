@@ -1,5 +1,3 @@
-#pragma warning disable CA1416   // Windows-only (DpapiKeyProvider)
-
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,8 +19,9 @@ namespace Recordum.Data.Tests.Fixtures;
 
 /// <summary>
 /// Creates a real SQLCipher-encrypted database in a temp directory, suitable for backup/restore integration tests.
+/// The key is a fixed random one, not DPAPI: backup and restore must run on Linux too (they are the bridge between
+/// the two dogfooding machines). DPAPI itself is covered by <c>DpapiKeyProviderTests</c>.
 /// </summary>
-[SupportedOSPlatform("windows")]
 public sealed class EncryptedDbFixture : IAsyncDisposable
 {
     public string RootDir { get; }
@@ -66,7 +65,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         Directory.CreateDirectory(backupsDir);
 
         var options = new TestBackupPaths(dbPath, keyPath, saltPath, attachmentsDir, backupsDir, autoBackupKeyPath);
-        var keyProvider = new DpapiKeyProvider(keyPath);
+        var keyProvider = new FixedKeyProvider(RandomNumberGenerator.GetBytes(KeyMaterial.LengthBytes));
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Initialize encrypted DB: open with key, run migrations
@@ -144,6 +143,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
 
     public BackupScheduler NewScheduler() => new(DbFactory, NewBackupService(), Options, Clock);
 
+    [SupportedOSPlatform("windows")]   // the auto-backup key is still DPAPI-wrapped (Passo 0, task 0.7)
     public void WriteAutoBackupKey(string passphrase)
     {
         var raw = Encoding.UTF8.GetBytes(passphrase);
@@ -159,6 +159,15 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
     }
 
     // ── Inner types ─────────────────────────────────────────────────────────
+
+    /// <summary>Returns a COPY every time: <see cref="KeyMaterial.Dispose"/> zeroes the bytes, and callers dispose.</summary>
+    private sealed class FixedKeyProvider(byte[] key) : IDbKeyProvider
+    {
+        public string ProviderId => "fixed";
+
+        public ValueTask<KeyMaterial> GetKeyAsync(CancellationToken ct = default) =>
+            ValueTask.FromResult(new KeyMaterial((byte[])key.Clone()));
+    }
 
     public sealed record TestBackupPaths(
         string DatabasePath,
