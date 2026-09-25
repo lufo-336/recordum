@@ -70,6 +70,10 @@
     <value>Recordum failed to start</value>
     <comment>Title of the fatal startup error dialog.</comment>
   </data>
+  <data name="Startup.AlreadyRunning" xml:space="preserve">
+    <value>Recordum is already open. Switch to the window that is already running.</value>
+    <comment>A second copy was started on the same data folder: only one may use it at a time (Passo 0, task 0.4).</comment>
+  </data>
   <data name="StartupErrorMessage" xml:space="preserve">
     <value>Recordum could not initialize. The application will exit.
 

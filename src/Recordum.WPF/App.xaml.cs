@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Theming;
+using Recordum.Data.Security;
 using Recordum.Presentation.Bootstrap;
 using Recordum.WPF.Bootstrap;
 using Recordum.WPF.Diagnostics;
@@ -19,6 +20,7 @@ public partial class App : Application
         CompositeFormat.Parse(Strings.StartupErrorMessage);
 
     private ServiceProvider? _services;
+    private DataDirectoryLock? _dataLock;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -27,8 +29,20 @@ public partial class App : Application
         // Must be first: any later failure needs the global log to capture it.
         CrashLogger.WireUp();
 
+        var options = RecordumOptions.Resolve(e.Args, Environment.GetEnvironmentVariable);
+
+        // Un'istanza sola per cartella dati (Passo 0, task 0.4): la prende anche la shell Avalonia, e su Windows le due
+        // shell condividono la cartella — aperte insieme sullo stesso database darebbero SQLITE_BUSY (B-dbLock) o peggio.
+        _dataLock = DataDirectoryLock.TryAcquire(options.DataDirectory);
+        if (_dataLock is null)
+        {
+            MessageBox.Show(Strings.Startup_AlreadyRunning, Strings.AppTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+            Shutdown(exitCode: 0);
+            return;
+        }
+
         var collection = new ServiceCollection();
-        collection.AddRecordumServices(RecordumOptions.Resolve(e.Args, Environment.GetEnvironmentVariable));
+        collection.AddRecordumServices(options);
         _services = collection.BuildServiceProvider();
 
         try
@@ -98,6 +112,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _services?.Dispose();
+        _dataLock?.Dispose();
         base.OnExit(e);
     }
 }

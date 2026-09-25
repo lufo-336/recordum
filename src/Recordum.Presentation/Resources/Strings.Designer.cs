@@ -125,6 +125,7 @@ public static class Strings
     public static string MainWindowPlaceholder => Get(nameof(MainWindowPlaceholder));
     public static string StartupErrorTitle => Get(nameof(StartupErrorTitle));
     public static string StartupErrorMessage => Get(nameof(StartupErrorMessage));
+    public static string Startup_AlreadyRunning => Get("Startup.AlreadyRunning");
 
     // Home screen tabs
     public static string Home_Tab_Active => Get("Home.Tab.Active");
