@@ -329,6 +329,25 @@ F8); **merge in `main` a ogni onda chiusa**; piani da F2 fatti di **decisioni, i
 (sblocco su Linux, prima di F2) e D7 (chrome su Linux, prima del Task 10). L'errata del piano F1 è già applicata (cinque errori
 verificati, nota in testa al file).
 
+**Passo 0 in esecuzione (2026-09-25, stessa sessione della revisione).** Piano
+[`docs/superpowers/plans/2026-09-25-passo-0-messa-in-sicurezza.md`](docs/superpowers/plans/2026-09-25-passo-0-messa-in-sicurezza.md)
+(formato D5: decisioni, interfacce, test), tabella di stato in testa al piano. **Fatti**: 0.1 R9 riconciliato nella pila
+(`main` = `911ed24`); 0.2 **CI GitHub Actions** (job Linux + Windows, WPF serializzata, PNG headless negli artefatti; i test
+che dipendono da DPAPI portano `Category=WindowsOnly`, esclusi solo su Linux) — il primo run completo su Windows dopo la
+rinomina di F0 ha trovato soltanto due difetti di test, F0-D1 chiuso; 0.3 backup e restore girano anche su Linux (fixture
+con chiave fissa) e un `.recbak` fatto su Linux si ripristina su Windows (`CrossMachineRestoreTests`); 0.4 sblocco sicuro
+(`ReconcileOrphans`, salt `CreateNew` + fsync, log, `DataDirectoryLock` anche in WPF); 0.5 cartelle dati 0700 su Unix e file
+in chiaro solo in `TempDirectory` (guardia `SystemTempGuardTests`); 0.6 `RecordumOptions.Resolve` (`--data-dir` /
+`RECORDUM_DATA_DIR`), foto che seguono l'override, `--seed-demo` che rifiuta i dati veri; 0.7 `IAutoBackupKeyStore` in Core,
+`DpapiAutoBackupKeyStore` in Data, scheduler che si spegne scrivendolo nel log; 0.8 `Directory.Packages.props` senza
+wildcard + **EF Core 10.0.12**. **Restano**: 0.9 sonda sul provider di cifratura (D9), 0.10 documenti (questo file sotto i
+15 KB, indice del tracker, ledger), il key store Linux (D3), e nella shell Avalonia i collegamenti del Task 11 di F1 (lock,
+`ReconcileOrphans`, `Resolve`, sink di log). *Gotcha nuovi*: la regola `Backup*/` del `.gitignore` di Visual Studio esclude
+qualunque cartella `Backups/` (una fixture non era mai entrata nel repo — l'ha scoperto la CI); in un test, fissare la
+cultura quando si confrontano etichette con i nomi dell'enum (in inglese coincidono); su Windows `File.OpenRead` fallisce su
+un DB che SQLite tiene aperto (usare `FileShare.ReadWrite`); il push di un file in `.github/workflows/` chiede al token di
+`gh` lo scope `workflow`.
+
 ### Storico stati milestone
 
 Spostato in [`docs/MILESTONES.md`](docs/MILESTONES.md). Quel file è il companion "a scalare" — consultalo quando devi ricostruire decisioni passate, deviazioni dai plan, schema delta dettagliati, o known quirks per milestone (3.1 → 3.10b + avanzamento Fase 4 giorno per giorno). Le memorie utente `recordum-milestone-3-x-spec` restano l'altra fonte sintetica.
