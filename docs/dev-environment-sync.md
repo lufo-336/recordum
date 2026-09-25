@@ -300,6 +300,28 @@ Il confine non è arbitrario: cinque progetti su sette sono `net10.0` e **portab
 
 Un desktop Linux visualizzabile richiederebbe quindi **una UI diversa, non un port del core**. Nota per quando se ne parlerà: **MAUI (Fase 5) non copre il desktop Linux** — fa Android/iOS/Mac/Windows. Le strade reali sono **Avalonia** (il parente stretto di WPF) o la **PWA** già prevista fra le fasi future.
 
+
+## Log sessione 2026-09-11 (VM Windows) — handoff per Linux
+
+Sessione breve sulla VM per chiudere ciò che Linux non può eseguire di R9. Branch **`r9-day-boundary`**, pushato.
+
+### Fatto
+
+- Pull dei 9 commit arrivati da Linux (R9 chiuso + review di branch, W25-2 / schema 2.18, RID per-host, spec+piano Avalonia).
+- Build completo della soluzione sulla VM col nuovo `Directory.Build.props`: **0 errori** (il RID per-host non rompe Windows).
+- **Tutte le suite sulla VM**: Core 145 · Data 496 (i 18 DPAPI inclusi, qui girano) · WPF 1044 · Plugins 66 · ExportEngine 37 · ChartEngine 18.
+- **Sonde "rosso prima"** di tutti i siti WPF di R9, due lacune di copertura chiuse con test nuovi, un test con fixture sbagliata corretto — dettaglio in `docs/phase-4-issues.md` §"Verifica sulla VM di R9".
+
+### Da riprendere
+
+- **Su Linux**: nulla di R9 è bloccato lì. Il lavoro naturale è la **fetta Avalonia** (`origin/avalonia-linux-slice`, piano `2026-09-09-avalonia-linux-slice.md`). Nota: il suo Task 4 tocca test WPF che **su Linux compilano ma non girano** — vanno rilanciati sulla VM, come qui.
+- **Sulla VM, con l'autore**: la **verifica a schermo di R9** (il `reset_time` ora ha effetto; un numero di streak può cambiare al primo avvio ed è corretto), il **backfill sul DB vero** solo dopo backup (Task 11 Step 7, disciplina E21), poi il **merge** di `r9-day-boundary`.
+
+### Gotcha di questa VM
+
+- **Commit con messaggio multilinea**: una here-string PowerShell passata a `git commit -m` è stata **negata da un guard** con un messaggio senza senso (*"Remove-Item on system path '/' is blocked"*) — il comando non conteneva alcun `Remove-Item`. Scrivere il messaggio in un file e usare `git commit -F <file>`.
+- **Filtri `dotnet test`**: filtrare per **nome di classe**, non di file (v. `QuickAddViewModelBaseTests` nel tracker), e leggere sempre il totale eseguito: un filtro che non seleziona niente somiglia a una sonda verde.
+
 ---
 
 ## Handoff per la VM — onda F0 (Avalonia come piattaforma), 2026-09-10

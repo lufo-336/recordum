@@ -174,6 +174,9 @@ UserExecute)` e chmod 0700 se esiste già. Mezza giornata.
   mergiabile da due settimane.
 - **Proposta**: merge di `r9-day-boundary` nella pila (i due test nuovi vanno portati in `Recordum.Presentation.Tests`, la fixture
   si riconcilia), documenti corretti; poi `main` avanza (RV-1, D4).
+- **Fatto** (2026-09-25): `r9-day-boundary` è mergiato nella pila. I due test nuovi girano in `Recordum.Presentation.Tests`
+  (949 verdi su Linux) e sono stati riprovati rossi rompendo `DetailViewModel` e `CompletionRowViewModel`; la fixture State resta
+  quella di F0; F0-D1 è ristretto alla sola metà F0.
 
 ### RV-11 · Nessuna CI
 

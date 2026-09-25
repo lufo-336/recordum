@@ -1651,6 +1651,49 @@ elenca `PanoramicaViewModel`/il goal di gruppo fra i siti — da cui I1 — e cl
 "converti" senza notare che il suo chiamante passa `DateOnly.MinValue` come sentinella — da cui C2.
 Entrambi sono buchi dell'**audit**: la tabella §0 è ora aggiornata con le due righe mancanti.
 
+
+## Verifica sulla VM di R9 (2026-09-11) — suite WPF e sonde "rosso prima"
+
+Il branch era stato scritto su Linux, dove la suite WPF non può girare: i test WPF di R9 **compilavano
+ma non erano mai stati eseguiti**, né visti rossi. Sulla VM:
+
+- **Suite complete**: Core 145 / Data 496 (DPAPI inclusi) / WPF 1044 (serializzata) / Plugins 66 /
+  ExportEngine 37 / ChartEngine 18 — tutte verdi.
+- **Un solo rosso al primo run, ed era il test**: `TodayStripDayBoundaryTests.State_reads_todays_value_through_the_reset_time_it_is_given`
+  (quello aggiunto per R9-C1). La scala del `FakeReferenceData` non ha `MinValue`/`MaxValue` né
+  etichette, quindi `StateTodayContent` risolveva un solo gradino (`Max = 0`) e il `Clamp` schiacciava a
+  0 l'indice letto — il valore del 18 veniva trovato (`LastValueLabel` non null). Etichette esplicite
+  sulla metrica (`23be772`), provato rosso senza `_day = day`.
+- **Sonde "rosso prima"**: una rottura isolata per volta, test delle classi R9 rilanciati, file
+  ripristinato con `git checkout`. Tutte rosse sul test atteso:
+
+  | Sonda | Rottura | Rosso |
+  |---|---|---|
+  | Task 8 (piano) | `ResistanceTodayContent`: oggi in UTC | `Resistance_today_uses_the_same_today_as_its_siblings` |
+  | Task 9 (piano) | `BuildAbstinenceMarkersAsync`: oggi in UTC | `Abstinence_markers_use_the_same_today_as_the_calendar` |
+  | Task 10 (piano) | retroattiva a mezzanotte UTC | i tre test retroattivi, casi DST compresi |
+  | I1 | ramo gruppo sopra la risoluzione del confine | `A_group_gets_its_own_boundary_…` (e solo lui) |
+  | C1 | `StateTodayContent` senza `_day = day` | `State_reads_todays_value_…` |
+  | WIP | `TrendChartViewModel` / `NotesViewModel` / `AbstinenceQuickAddViewModel` senza `_day = day` | i rispettivi tre test |
+  | — | `ActionTodayContent` senza `_day = day`; `CounterTodayContent`, `HomeRowViewModel`, `GoalProgressCardViewModel` con oggi in UTC | i rispettivi quattro test |
+
+- **Due sonde restavano verdi, ed era copertura mancante** (non difetti del codice):
+  - `DetailViewModel` senza `_day = day`: il campo serve **solo ai reload scatenati dal bus**
+    (`CompletionRecorded/Updated/Deleted`, note del journal). Il primo caricamento passa il confine per
+    parametro e resta giusto, ma il reload dopo una registrazione tornava in UTC senza che nessun test lo
+    vedesse. Chiuso con `Detail_reload_after_a_completion_event_keeps_the_boundary` (un contatore di chiamate
+    su `FakeTrendQueryService` impedisce che passi a vuoto rileggendo la finestra del primo load).
+  - `CompletionRowViewModel` che ignora il confine: serve **solo alla modifica inline dell'orario**, senza
+    superficie XAML (R9-M8). Chiuso con `Inline_edit_reads_and_writes_wall_time_in_the_habit_zone`
+    (lettura come orario di parete + round-trip del salvataggio).
+  Entrambi provati rossi contro la rottura corrispondente.
+- **Gotcha del filtro**: `QuickAddViewModelTests.cs` contiene la classe `QuickAddViewModelBaseTests`. Un
+  `--filter FullyQualifiedName~QuickAddViewModelTests` **non** la seleziona: la prima sonda del Task 10
+  sembrava verde perché i suoi test non giravano. Filtrare per nome di classe, e controllare sempre il
+  totale eseguito.
+- **Non fatto qui**: la verifica a schermo (Windows, con l'autore) e il Task 11 Step 7 — il backfill sul
+  DB vero, che vuole prima la disciplina dati di E21 (backup, prova su copia).
+
 ## Onda F0 — review finale di branch (2026-09-20): residui e scoperte (`F0-*`)
 
 Estrazione di `Recordum.Presentation` (piano `2026-09-10-wave-f0-presentation-extraction.md`). La review
@@ -1700,8 +1743,10 @@ Restano questi, ciascuno con la sua ragione.
   fuori. I titoli dell'editor (`MarkdownLivePreviewColorizer.cs:54`) escono Bold, non semi. Nessun test per
   lo stack di ripiego; `Font.System` resta sans di sistema (l'aspetto non è ancora identico ovunque per il
   testo sans).
-- **F0-D1 — debito verso la VM** (`open`, **gate di merge**). `Recordum.WPF.Tests` (38 file) e tutta R9 WPF
-  non sono mai stati eseguiti. Tre costrutti F0 falliscono solo a runtime su Windows: `IApplicationLifetime`
+- **F0-D1 — debito verso la VM** (`open`, **gate di merge**). *Aggiornato il 2026-09-25*: la metà R9 è chiusa — la suite
+  WPF di R9 è verde sulla VM dall'11/09 (§"Verifica sulla VM di R9"), e i tre commit relativi sono stati riportati su questo
+  branch (i due test nuovi ora in `Recordum.Presentation.Tests`, la fixture State tenuta nella versione di F0). Resta la metà
+  F0: `Recordum.WPF.Tests` (38 file) dopo la rinomina non è mai stato eseguito. Tre costrutti F0 falliscono solo a runtime su Windows: `IApplicationLifetime`
   obbligatorio in `MainWindowViewModel` (registrato a `ServiceRegistrar.cs:233`, gate `BootstrapSmokeTests`),
   la registrazione forwarder di `IEditorAvailability` e di `ITickSourceFactory`
   (`ServiceRegistrarTickSourceTests` asserisce il tipo concreto), e `SubscribeOnUi` su
