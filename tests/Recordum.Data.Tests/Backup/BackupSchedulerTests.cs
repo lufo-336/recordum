@@ -9,6 +9,7 @@ using Xunit;
 namespace Recordum.Data.Tests.Backup;
 
 [SupportedOSPlatform("windows")]
+[Trait("Category", "WindowsOnly")]
 public class BackupSchedulerTests
 {
     private const string Pass = "passphrase-1234567890";

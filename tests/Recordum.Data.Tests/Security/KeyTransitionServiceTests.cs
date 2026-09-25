@@ -9,6 +9,7 @@ using Xunit;
 namespace Recordum.Data.Tests.Security;
 
 [SupportedOSPlatform("windows")]
+[Trait("Category", "WindowsOnly")]
 public class KeyTransitionServiceTests
 {
     [Fact]

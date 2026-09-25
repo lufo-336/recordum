@@ -21,6 +21,7 @@ namespace Recordum.Data.Tests.Integration;
 /// verify both the raw attachment rows/files AND a fresh export are correct on the far side.
 /// </summary>
 [SupportedOSPlatform("windows")]
+[Trait("Category", "WindowsOnly")]
 public class AttachmentEndToEndTests
 {
     private const string Pass = "passphrase-1234567890";
