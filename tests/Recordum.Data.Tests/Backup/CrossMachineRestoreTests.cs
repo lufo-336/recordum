@@ -9,7 +9,7 @@ namespace Recordum.Data.Tests.Backup;
 
 /// <summary>
 /// Il ponte fra le due macchine del dogfooding (decisione D1, 2026-09-25): un <c>.recbak</c> fatto su un sistema deve
-/// ripristinarsi sull'altro. I file in <c>Fixtures/Backups/</c> sono stati creati una volta e committati; la CI li
+/// ripristinarsi sull'altro. I file in <c>Fixtures/CrossMachine/</c> sono stati creati una volta e committati; la CI li
 /// ripristina sia nel job Linux sia in quello Windows, quindi un file fatto su Linux viene aperto davvero su Windows.
 /// <para>Quando lo schema sale oltre 2.18 questo test deve continuare a passare: è la promessa di E17 ("un backup
 /// della versione precedente si ripristina").</para>
@@ -26,7 +26,7 @@ public class CrossMachineRestoreTests
         var fixture = await EncryptedDbFixture.SeedAsync();
         try
         {
-            var source = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Backups", file);
+            var source = Path.Combine(AppContext.BaseDirectory, "Fixtures", "CrossMachine", file);
 
             await fixture.NewRestoreService().RestoreAsync(source, Pass, new RestoreOptions(SkipSafetySnapshot: true));
 

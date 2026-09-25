@@ -4,6 +4,12 @@ using Recordum.UI;
 
 [assembly: AvaloniaTestApplication(typeof(Recordum.UI.Tests.TestAppBuilder))]
 
+// Una sola Application headless per tutto l'assembly, e diverse classi hanno [Fact] semplici che creano oggetti
+// Avalonia (pennelli, geometrie) sui thread del pool: in parallelo a un [AvaloniaFact] di un'altra classe, il cleanup
+// di quest'ultimo può fallire con "The calling thread cannot access this object" — visto una volta sul runner
+// Windows della CI (AvaloniaThemeServiceTests, run 36179927020), mai in locale. In serie la suite costa 5-7 s.
+[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]
+
 namespace Recordum.UI.Tests;
 
 public static class TestAppBuilder

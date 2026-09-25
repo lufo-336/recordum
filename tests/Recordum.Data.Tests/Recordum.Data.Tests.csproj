@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <!-- .recbak creati su un'altra macchina: CrossMachineRestoreTests li ripristina qui (Passo 0, task 0.3). -->
-    <None Update="Fixtures/Backups/*.recbak" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Non "Backups/": la regola Backup*/ del .gitignore di Visual Studio la escluderebbe dal repository. -->
+    <None Update="Fixtures/CrossMachine/*.recbak" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
