@@ -1,18 +1,36 @@
-#pragma warning disable CA1416   // Windows-only (DpapiKeyProvider in EncryptedDbFixture)
-
-using System.Runtime.Versioning;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Recordum.Core.Abstractions.Security;
+using Recordum.Data.Backup;
 using Recordum.Data.Tests.Fixtures;
 using Xunit;
 
 namespace Recordum.Data.Tests.Backup;
 
-[SupportedOSPlatform("windows")]
-[Trait("Category", "WindowsOnly")]
+/// <summary>Lo scheduler chiede la passphrase a un <see cref="IAutoBackupKeyStore"/> invece di aprire il file con
+/// DPAPI da sé (Passo 0, task 0.7): con un key store in memoria questi test girano anche su Linux. DPAPI è coperto
+/// da <c>DpapiAutoBackupKeyStoreTests</c>.</summary>
 public class BackupSchedulerTests
 {
     private const string Pass = "passphrase-1234567890";
+
+    private sealed class MemoryKeyStore(string? key) : IAutoBackupKeyStore
+    {
+        public bool HasKey() => key is not null;
+        public void WriteKey(string passphrase) => key = passphrase;
+        public void DeleteKey() => key = null;
+        public string? ReadKey() => key;
+    }
+
+    private sealed class ListLogger : ILogger<BackupScheduler>
+    {
+        public List<LogLevel> Levels { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Levels.Add(logLevel);
+    }
 
     [Fact]
     public async Task RunDueAsync_runs_when_overdue_and_updates_last_run()
@@ -20,9 +38,8 @@ public class BackupSchedulerTests
         var fixture = await EncryptedDbFixture.SeedAsync();
         try
         {
-            fixture.WriteAutoBackupKey(Pass);
             // last_run = empty (overdue)
-            var sched = fixture.NewScheduler();
+            var sched = fixture.NewScheduler(new MemoryKeyStore(Pass));
             await sched.RunDueAsync();
 
             await using var db = await fixture.DbFactory.CreateDbContextAsync();
@@ -39,14 +56,13 @@ public class BackupSchedulerTests
         var fixture = await EncryptedDbFixture.SeedAsync();
         try
         {
-            fixture.WriteAutoBackupKey(Pass);
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
             {
                 var s = await db.AppSettings.FirstAsync(x => x.Key == "backup.auto.last_run_utc");
                 s.Value = fixture.Clock.UtcNow.ToString("O");
                 await db.SaveChangesAsync();
             }
-            var sched = fixture.NewScheduler();
+            var sched = fixture.NewScheduler(new MemoryKeyStore(Pass));
             await sched.RunDueAsync();
 
             Directory.EnumerateFiles(fixture.Options.BackupsDirectory, "auto-*.recbak").Should().BeEmpty();
@@ -55,18 +71,21 @@ public class BackupSchedulerTests
     }
 
     [Fact]
-    public async Task RunDueAsync_self_disables_when_dpapi_key_missing()
+    public async Task Without_a_key_the_auto_backup_switches_itself_off_and_says_so()
     {
         var fixture = await EncryptedDbFixture.SeedAsync();
         try
         {
-            // Don't write the auto-backup key file → key missing
-            var sched = fixture.NewScheduler();
+            var log = new ListLogger();
+            var sched = fixture.NewScheduler(new MemoryKeyStore(null), log);
             await sched.RunDueAsync();
 
             await using var db = await fixture.DbFactory.CreateDbContextAsync();
             var enabled = await db.AppSettings.AsNoTracking().FirstAsync(x => x.Key == "backup.auto.enabled");
             enabled.Value.Should().Be("false");
+            sched.IsEnabled.Should().BeFalse();
+            log.Levels.Should().ContainSingle().Which.Should().Be(LogLevel.Warning, "prima si spegneva in silenzio (RV-5)");
+            Directory.EnumerateFiles(fixture.Options.BackupsDirectory, "auto-*.recbak").Should().BeEmpty();
         }
         finally { await fixture.DisposeAsync(); }
     }

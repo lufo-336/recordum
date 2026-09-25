@@ -1,4 +1,4 @@
-using Recordum.Presentation.Services;
+using Recordum.Core.Abstractions.Security;
 
 namespace Recordum.Presentation.Tests.Fixtures;
 
@@ -9,4 +9,5 @@ public sealed class FakeAutoBackupKeyStore : IAutoBackupKeyStore
     public bool HasKey() => Has;
     public void WriteKey(string passphrase) { Written = passphrase; Has = true; }
     public void DeleteKey() { Has = false; Written = null; }
+    public string? ReadKey() => Has ? Written : null;
 }

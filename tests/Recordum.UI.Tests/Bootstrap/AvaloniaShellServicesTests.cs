@@ -1,6 +1,7 @@
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Theming;
@@ -131,13 +132,16 @@ public class AvaloniaShellServicesTests
     }
 
     [Fact]
-    public void Auto_backup_key_store_resolves_and_reports_no_key()
+    public void Auto_backup_key_store_resolves_reports_no_key_and_refuses_to_pretend_it_saved_one()
     {
         var sp = BuildProvider();
         var store = sp.GetRequiredService<IAutoBackupKeyStore>();
         store.HasKey().Should().BeFalse();
-        var act = () => { store.WriteKey("whatever-12345"); store.DeleteKey(); };
-        act.Should().NotThrow();
+        store.ReadKey().Should().BeNull();
+        var write = () => store.WriteKey("whatever-12345");
+        write.Should().Throw<NotSupportedException>();
+        var delete = () => store.DeleteKey();
+        delete.Should().NotThrow();
     }
 
     [Fact]

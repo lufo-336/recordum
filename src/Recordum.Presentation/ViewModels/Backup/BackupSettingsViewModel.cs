@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Presentation.Services;
 

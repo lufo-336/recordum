@@ -1,23 +1,25 @@
-#pragma warning disable CA1416   // ProtectedData is Windows-only
 
 using System.Globalization;
-using System.Runtime.Versioning;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Backup;
 
 namespace Recordum.Data.Backup;
 
-[SupportedOSPlatform("windows")]
-public sealed class BackupScheduler(
+public sealed partial class BackupScheduler(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IBackupService backupService,
     IBackupStoragePaths paths,
+    IAutoBackupKeyStore keys,
+    ILogger<BackupScheduler> logger,
     IClock clock) : IBackupScheduler
 {
+    [LoggerMessage(EventId = 1, Level = LogLevel.Warning,
+        Message = "Auto-backup switched off: no readable passphrase in the key store")]
+    private partial void LogSelfDisabled();
+
     public bool IsEnabled { get; private set; } = true;
     public DateTime? NextRunUtc { get; private set; }
 
@@ -33,8 +35,10 @@ public sealed class BackupScheduler(
         IsEnabled = enabled;
         if (!enabled) return;
 
-        // Self-disable if the auto-backup key file is missing
-        if (!File.Exists(paths.AutoBackupKeyPath))
+        // Senza una passphrase leggibile l'auto-backup non può girare: si spegne, e ora lo scrive nel log. Prima si
+        // spegneva in silenzio, e l'utente continuava a credere che i suoi dati fossero salvati (RV-5).
+        var passphrase = keys.ReadKey();
+        if (passphrase is null)
         {
             if (settings.TryGetValue("backup.auto.enabled", out var s))
             {
@@ -43,27 +47,7 @@ public sealed class BackupScheduler(
                 await db.SaveChangesAsync(ct).ConfigureAwait(false);
             }
             IsEnabled = false;
-            return;
-        }
-
-        string passphrase;
-        try
-        {
-            var wrapped = await File.ReadAllBytesAsync(paths.AutoBackupKeyPath, ct).ConfigureAwait(false);
-            var raw = ProtectedData.Unprotect(wrapped, optionalEntropy: null, DataProtectionScope.CurrentUser);
-            passphrase = Encoding.UTF8.GetString(raw);
-            CryptographicOperations.ZeroMemory(raw);
-        }
-        catch
-        {
-            // DPAPI failure → self-disable
-            if (settings.TryGetValue("backup.auto.enabled", out var s))
-            {
-                s.Value = "false";
-                s.UpdatedAt = clock.UtcNow.UtcDateTime;
-                await db.SaveChangesAsync(ct).ConfigureAwait(false);
-            }
-            IsEnabled = false;
+            LogSelfDisabled();
             return;
         }
 

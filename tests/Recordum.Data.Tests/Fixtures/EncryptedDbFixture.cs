@@ -1,8 +1,8 @@
-using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
@@ -143,15 +143,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         new AesGcmBackupCipher(), new BackupArchiveReader(),
         NewBackupService(), PluginManager, Clock);
 
-    public BackupScheduler NewScheduler() => new(DbFactory, NewBackupService(), Options, Clock);
-
-    [SupportedOSPlatform("windows")]   // the auto-backup key is still DPAPI-wrapped (Passo 0, task 0.7)
-    public void WriteAutoBackupKey(string passphrase)
-    {
-        var raw = Encoding.UTF8.GetBytes(passphrase);
-        var wrapped = ProtectedData.Protect(raw, null, DataProtectionScope.CurrentUser);
-        File.WriteAllBytes(Options.AutoBackupKeyPath, wrapped);
-    }
+    public BackupScheduler NewScheduler(IAutoBackupKeyStore keys, ILogger<BackupScheduler>? logger = null) =>
+        new(DbFactory, NewBackupService(), Options, keys, logger ?? NullLogger<BackupScheduler>.Instance, Clock);
 
     public async ValueTask DisposeAsync()
     {

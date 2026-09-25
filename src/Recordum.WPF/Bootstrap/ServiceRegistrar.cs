@@ -215,14 +215,14 @@ public static class ServiceRegistrar
             sp.GetRequiredService<IBackupService>(),
             sp.GetRequiredService<IPluginManager>(),
             sp.GetRequiredService<IClock>()));
-#pragma warning disable CA1416
         services.AddScoped<IBackupScheduler>(sp => new BackupScheduler(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IBackupService>(),
             sp.GetRequiredService<IBackupStoragePaths>(),
+            sp.GetRequiredService<IAutoBackupKeyStore>(),
+            sp.GetRequiredService<ILogger<BackupScheduler>>(),
             sp.GetRequiredService<IClock>()));
-#pragma warning restore CA1416
-        services.AddSingleton<IAutoBackupKeyStore, WpfAutoBackupKeyStore>();
+        services.AddSingleton<IAutoBackupKeyStore>(_ => new DpapiAutoBackupKeyStore(options.AutoBackupKeyPath));
         services.AddTransient<BackupDialogViewModel>();
         services.AddTransient<RestoreDialogViewModel>();
         services.AddTransient<BackupHistoryViewModel>();

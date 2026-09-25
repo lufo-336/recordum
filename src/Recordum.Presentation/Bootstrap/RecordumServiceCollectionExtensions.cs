@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
@@ -196,13 +197,13 @@ public static class RecordumServiceCollectionExtensions
             sp.GetRequiredService<IBackupService>(),
             sp.GetRequiredService<IPluginManager>(),
             sp.GetRequiredService<IClock>()));
-#pragma warning disable CA1416
         services.AddScoped<IBackupScheduler>(sp => new BackupScheduler(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IBackupService>(),
             sp.GetRequiredService<IBackupStoragePaths>(),
+            sp.GetRequiredService<IAutoBackupKeyStore>(),
+            sp.GetRequiredService<ILogger<BackupScheduler>>(),
             sp.GetRequiredService<IClock>()));
-#pragma warning restore CA1416
         services.AddTransient<BackupDialogViewModel>();
         services.AddTransient<RestoreDialogViewModel>();
         services.AddTransient<BackupHistoryViewModel>();
