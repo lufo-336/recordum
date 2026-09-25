@@ -7,6 +7,16 @@
 
 ---
 
+> **Emendamento 2026-09-25** — revisione in [`2026-09-25-avalonia-v1-plan-review.md`](2026-09-25-avalonia-v1-plan-review.md),
+> con quattro decisioni dell'autore. (1) Prima di altro porting, un **Passo 0** di messa in sicurezza: SEC-1 non era mai arrivato in
+> `main`; il bundle SQLCipher è deprecato e porta SQLite 3.39.2; lo sblocco può riscrivere il salt di un DB vero; su Linux il backup
+> scrive un dump in chiaro in `/tmp` e l'auto-backup si spegne da solo. (2) **Dogfooding su Windows e su Linux** (D1): **F2 si
+> allarga** — nota veloce, backup e restore incrociato fra le due macchine, e su Linux picker dei template e builder. (3) **Niente
+> promemoria prima del dogfooding** (D2): la regola di convivenza di §7 resta intatta, E14 torna dopo F8. (4) **Merge in `main`
+> adesso e a ogni onda chiusa** (D4), non più "a F8". (5) I piani da F2 sono fatti di **decisioni, interfacce e test** (D5), non di
+> codice completo. Le Onde 2.9, 3, 4 e 5 e gli exit criteria riletti per Avalonia sono in §6-§7 della revisione; §14 di questa spec è
+> superato: R9 è stato eseguito sulla VM l'11/09.
+
 ## 1. Cosa decide questa spec, e cosa non ri-discute
 
 **Non ri-discute la scelta del framework.** Avalonia **è** la piattaforma: sostituisce la shell WPF e assorbe

@@ -1,6 +1,9 @@
 # Revisione del percorso verso la v1.0 su Avalonia — problemi, piano rivisto, previsione d'uso
 
 > **Data**: 2026-09-25 · **Branch**: `avalonia-linux-slice` a `0d8323a` · **Stato**: revisione — *propone*, decide l'autore (§9).
+> **Decise dall'autore lo stesso giorno**: D1 = dogfooding su **entrambi** i sistemi · D2 = **niente promemoria** prima del
+> dogfooding (E14 dopo F8) · D4 = la pila in `main` **adesso**, poi a ogni onda chiusa · D5 = piani da F2 fatti di **decisioni,
+> interfacce e test**. Le conseguenze sono già scritte in §6 (Passo 3), §7 e §9; le altre sei decisioni restano aperte.
 >
 > **Cosa è stato rivisto**: la spec di piattaforma (`2026-09-10-avalonia-as-the-platform-design.md`, onde F0–F8), la mappa
 > v1.0 (`2026-07-03-v1-redefinition-plan-design.md`, E1–E21), il piano F1 (`2026-09-20-wave-f1-home.md`, Task 6–13 ancora da
@@ -54,6 +57,9 @@ cancello di ogni onda invece di un'Onda 3 senza casa.
   SEC-1 ha misurato come "`PRAGMA key` diventa un no-op". `main` è ferma al 2026-08-12.
 - **Proposta**: portare in `main` la pila fino a R9 (RV-10) — o, come passo minimo, un hotfix con il solo `feae26b` più
   `SqlCipherProviderGuardTests`.
+- **Decisione D4**: la pila fino a R9 va in `main` adesso. `main` è antenato di `r9-day-boundary` (33 commit, SEC-1 compreso,
+  suite verde sulla VM l'11/09), quindi è un fast-forward. **Lo esegue l'autore**: da una sessione Claude il classificatore della
+  modalità automatica blocca l'aggiornamento di `main` (e l'hook `guard-main.js` vieta commit e push su `main`).
 
 ### RV-2 · SQLCipher deprecato, con uno SQLite del 2022 — *decidere prima dei dati veri; bloccante per la v1.0*
 
@@ -210,7 +216,8 @@ La spec Avalonia (§6) ordina solo il porting; la mappa v1.0 (§10) ordina ancor
 documenti dice dove finiscono E14 (promemoria), l'Onda 2.9 (E15, E20), l'Onda 3 (E8), l'Onda 5 (E19), l'Onda 4 (E10-E12, E17),
 né cosa diventa E13 ("suite Data+WPF verdi sulla VM"). In più la regola di convivenza della spec (§7: *"nessuna feature nuova su
 nessuna delle due finché la piattaforma non è una sola"*) vieta E14 fino a F8, mentre la mappa ne fa un prerequisito del
-dogfooding. → Una mappa sola (§6 di questo documento) e gli exit criteria riletti (§7).
+dogfooding. → Una mappa sola (§6 di questo documento) e gli exit criteria riletti (§7). **Risolta con D2**: il dogfooding parte
+senza promemoria, quindi il congelamento resta intatto e E14 torna dopo F8.
 
 ### P-2 · La soglia di dogfooding (F2) non regge
 
@@ -428,19 +435,28 @@ I passi 0 e 2 girano su Linux senza interfaccia e si possono affiancare a F1.
 **Passo 2 — Batch Presentation** (affiancato): P-6; le cancellazioni di P-7; l'importer delle foto (ridimensiona e toglie i
 metadati, RV-7a); il formato `.recbak` v2 a blocchi (RV-7b) — quest'ultimo può slittare al Passo 7, **non oltre la v1.0**.
 
-**Passo 3 — F2 ridefinita: "si usa ogni giorno".** Oggi, i quick-add dei cinque tipi, `TimerStatusBar` (come da spec), più:
-- la nota veloce (`JournalQuickEntryView`, da F4);
-- il backup: scheduler avviato, key store per sistema operativo, "Backup ora", restore, storico (da F6; su Linux RV-5);
+**Passo 3 — F2 ridefinita: "si usa ogni giorno", su Windows e su Linux** (D1 = entrambi, D2 = niente promemoria). Oggi, i
+quick-add dei cinque tipi, `TimerStatusBar` (come da spec), più:
+- la nota veloce (`JournalQuickEntryView`, da F4) — e l'editor del diario se il manifesto lo chiede (§5.5);
+- il backup su **tutti e due** i sistemi: scheduler avviato, key store per sistema (DPAPI su Windows senza passare da WPF, su Linux
+  secondo D3), "Backup ora", restore, storico (da F6; RV-5);
+- **il restore incrociato**: un `.recbak` fatto su Windows si ripristina su Linux e viceversa. È il ponte fra le due macchine (un DB
+  Windows su Linux è `Unsupported` per costruzione). Il formato non dovrebbe dipendere dalla piattaforma — il DB viaggia come dump e
+  si ricifra con la chiave locale — ma nessun test l'ha mai provato: serve un test di andata e ritorno, e i due job della CI lo
+  rendono reale;
+- per Linux: il picker dei template e il builder (da F5), perché lì WPF non c'è e senza di loro non si crea la prima abitudine; lo
+  sblocco secondo D3 (fino alla decisione: passphrase con cache, come oggi);
+- per Windows: il lock di istanza singola (RV-3) vale **anche fra WPF e Avalonia** — stessa cartella dati, e due shell aperte
+  insieme sono il rischio `SQLITE_BUSY` di B-dbLock. WPF lo prende come correzione di un difetto di dati, che il congelamento ammette;
 - il percorso retroattivo e la verifica a schermo di R9 (§5.3, punto 2);
-- secondo D1: su Linux anche il picker dei template, il builder (da F5) e lo sblocco senza passphrase quotidiana (D3); su Windows
-  basta il resto;
-- secondo D2: il motore minimo di E14 (un promemoria al giorno), come eccezione dichiarata al congelamento — solo Avalonia;
 - il ricontrollo dei `W2V` della sezione §3 della checklist del pass visivo.
 
-Esce quando il manifesto (§5.5) è coperto.
+**Niente promemoria** (D2): `NotificationsSectionView` non si porta in F5 finché non arriva E14, dopo F8 (P-7). F2 esce quando il
+manifesto (§5.5) è coperto su entrambe le macchine.
 
-**Passo 4 — ★ Dogfooding (E21) su Avalonia**, con la disciplina dati resa strutturale (RV-6). Findings `DF-*`. Dopo almeno due
-settimane: riordino dell'Onda 5, partendo dall'ipotesi del §5.4.
+**Passo 4 — ★ Dogfooding (E21) su Avalonia, su Windows e su Linux**, senza promemoria, con `.recbak` come ponte fra le due macchine e
+la disciplina dati resa strutturale (RV-6). Findings `DF-*`. Dopo almeno due settimane: riordino dell'Onda 5, partendo
+dall'ipotesi del §5.4.
 
 **Passo 5 — F3 → F4 → F5 → F6 → F7**, ognuna chiusa da: review di branch, CI verde su Linux e Windows, checklist del linguaggio in
 chiaro e in scuro con i PNG (P-5), verifica a schermo su Windows e su GNOME, merge in `main` (P-8). In F7 prima i grafici del
@@ -448,8 +464,8 @@ Dettaglio, poi il builder dei grafici (D6).
 
 **Passo 6 — F8**: WPF si spegne, secondo i criteri della spec (§7), che a questo punto sono in gran parte già maturati.
 
-**Passo 7 — Verso il pubblico**: Onda 2.9 su Avalonia (E15, E20) → Onda 5 riordinata, con la fattibilità su Linux scritta voce per
-voce (P-3) → Onda 4 su due sistemi: packaging Windows (Velopack) e Linux (canale deciso), onboarding, `/security-review` (provider
+**Passo 7 — Verso il pubblico**: E14 (promemoria, con i vincoli di P-3; il più utile è uno al giorno, §5.3 punto 5) → Onda 2.9 su
+Avalonia (E15, E20) → Onda 5 riordinata, con la fattibilità su Linux scritta voce per voce (P-3) → Onda 4 su due sistemi: packaging Windows (Velopack) e Linux (canale deciso), onboarding, `/security-review` (provider
 di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno un secondo ambiente Linux.
 
 ---
@@ -469,13 +485,13 @@ di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno u
 | E10, E11 | Onboarding; packaging su macchina pulita | Windows **e** Linux (Fedora GNOME + un secondo ambiente) |
 | E12 | `/security-review` senza findings alti | + provider di cifratura manutenuto (RV-2) + permessi Linux (RV-4) |
 | E13 | Suite Data+WPF verdi sulla VM | **CI verde su Linux e Windows** per tutte le suite |
-| E14 | Promemoria minimi (toast ad app aperta/tray) | un promemoria giornaliero di sistema sui due OS; tray solo dove esiste (P-3) |
+| E14 | Promemoria minimi (toast ad app aperta/tray) | **dopo F8** (D2): un promemoria giornaliero di sistema sui due OS; tray solo dove esiste (P-3) |
 | E15, E16 | Verità sul core; template = composizione | invariati, su Avalonia |
 | E17 | Aggiornamento sicuro | + lettura dei `.recbak` v1 e v2; percorso di aggiornamento su entrambi i sistemi |
 | E18 | Impostazioni complete | invariato (F6) |
 | E19 | Onda 5 | riordinata, con la fattibilità su Linux dichiarata per ogni voce |
 | E20 | Avvio → Home interattiva ≤ 3 s | misurato da "sblocco concesso" (keyring o passphrase inviata); Argon2id a budget separato |
-| E21 | Dogfooding ≥ 4 settimane | su Avalonia, sul sistema scelto in D1, con i dati isolati dallo sviluppo (RV-6) |
+| E21 | Dogfooding ≥ 4 settimane | su Avalonia, su Windows **e** Linux (D1), senza promemoria (D2), con `.recbak` come ponte e i dati isolati dallo sviluppo (RV-6) |
 
 ---
 
@@ -501,18 +517,27 @@ di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno u
 
 ## 9. Decisioni per l'autore
 
-| # | Decisione | Opzioni | Proposta |
-|---|---|---|---|
-| D1 | Su quale sistema fai dogfooding? | Linux (GNOME Wayland) / Windows (VM) | Linux, se è lì che passi la giornata. Cambia il perimetro di F2 (P-2) |
-| D2 | Promemoria prima del dogfooding? | sì, come eccezione al congelamento (solo Avalonia) / no | sì, minimo: un promemoria al giorno (§5.3, punto 5) |
-| D3 | Sblocco su Linux | portachiavi di sistema (Secret Service) / file 0600 "ricorda su questo dispositivo" / passphrase a ogni avvio | portachiavi, con ripiego sulla passphrase |
-| D4 | Politica di merge | la pila in `main` adesso, poi ogni onda alla chiusura / tenere la pila fino a F8 | adesso: oggi `main` è insicura (RV-1) |
-| D5 | Formato dei piani da F2 | decisioni + interfacce + test / codice completo come F1 | decisioni + interfacce + test |
-| D6 | Builder dei grafici | in v1.0 / 1.1 | decidere a F7, dopo i grafici del Dettaglio |
-| D7 | Chrome della finestra su Linux | decorazioni native / chrome custom con maniglie fatte in casa (piano F1) | native su Linux, custom dove l'hint è onorato |
-| D8 | CI | repo privato a minuti limitati / repo pubblico prima | a scelta: la CI serve in entrambi i casi |
-| D9 | Provider di cifratura | build Zetetic / SQLite3 Multiple Ciphers / altro | dopo la sonda (RV-2) |
-| D10 | Foto | ridimensionare e togliere i metadati all'import / conservare gli originali | ridimensionare; "conserva l'originale" solo se qualcuno lo chiede |
+| # | Decisione | Opzioni | Proposta | Esito |
+|---|---|---|---|---|
+| D1 | Su quale sistema fai dogfooding? | Linux (GNOME Wayland) / Windows (VM) / entrambi | Linux | **Entrambi** (2026-09-25) → F2 su due sistemi, con il restore incrociato come ponte (§6, Passo 3) |
+| D2 | Promemoria prima del dogfooding? | sì, minimo / sì, completo / no | sì, minimo | **No** (2026-09-25) → E14 dopo F8; il congelamento delle feature resta intatto |
+| D3 | Sblocco su Linux | portachiavi di sistema (Secret Service) / file 0600 "ricorda su questo dispositivo" / passphrase a ogni avvio | portachiavi, con ripiego sulla passphrase | aperta — **serve prima di F2** |
+| D4 | Politica di merge | la pila in `main` adesso, poi ogni onda / solo l'hotfix SEC-1 | adesso | **Adesso + ogni onda** (2026-09-25) → `main` ← `r9-day-boundary` in fast-forward, lo esegue l'autore; F0 dopo che la suite WPF ha girato su Windows; poi ogni onda F alla chiusura |
+| D5 | Formato dei piani da F2 | decisioni + interfacce + test / codice completo come F1 / worktree del piano = implementazione | decisioni + interfacce + test | **Decisioni + interfacce + test** (2026-09-25), ≤ 2.000 righe per onda |
+| D6 | Builder dei grafici | in v1.0 / 1.1 | decidere a F7 | aperta — si decide a F7, dopo i grafici del Dettaglio |
+| D7 | Chrome della finestra su Linux | decorazioni native / chrome custom con maniglie fatte in casa (piano F1) | native su Linux, custom dove l'hint è onorato | aperta — **serve prima del Task 10 di F1** |
+| D8 | CI | repo privato a minuti limitati / repo pubblico prima | a scelta: la CI serve in entrambi i casi | aperta — serve al Passo 0.4 |
+| D9 | Provider di cifratura | build Zetetic / SQLite3 Multiple Ciphers / altro | dopo la sonda (RV-2) | aperta — la sonda è al Passo 0.3 |
+| D10 | Foto | ridimensionare e togliere i metadati all'import / conservare gli originali | ridimensionare; "conserva l'originale" solo se qualcuno lo chiede | aperta — serve al Passo 2 |
+
+**Il merge di D4, pronto da eseguire** (dal tuo terminale, o col prefisso `!` in una sessione):
+
+```bash
+git checkout main && git merge --ff-only r9-day-boundary && git push origin main && git checkout avalonia-linux-slice
+```
+
+Dopo, sul branch Avalonia resta da riconciliare R9 (RV-10: i due test nuovi della VM in `Recordum.Presentation.Tests`, la fixture
+State rifatta due volte): è il primo lavoro del Passo 0.
 
 ---
 

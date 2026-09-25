@@ -311,6 +311,22 @@ Il **lavoro parziale del Task 6** (righe Home: `HabitRow`, `GroupRow`, `HomeRowT
 all'implementatore di **ripartire da quei file** invece che da zero. Dal Task 7 in poi, come da piano.
 Il tool `SendMessage` è *deferred*: caricarlo con ToolSearch prima di riprendere un implementatore.
 
+**Revisione 2026-09-25 — leggila prima di riprendere il Task 6.** Revisione del percorso v1.0 su Avalonia fatta coi plugin
+(feature-dev, pr-review-toolkit, ponytail, context7), ogni finding riverificato:
+[`docs/superpowers/specs/2026-09-25-avalonia-v1-plan-review.md`](docs/superpowers/specs/2026-09-25-avalonia-v1-plan-review.md).
+**Prima del Task 6 viene il Passo 0** (§6 della revisione): (a) `main` costruisce ancora un DB **in chiaro** — SEC-1 non ci è mai
+arrivato; il fast-forward `main` ← `r9-day-boundary` è deciso (D4) ma **lo esegue l'autore a mano**: il classificatore della
+modalità automatica blocca l'aggiornamento di `main` da una sessione Claude; (b) `SQLitePCLRaw.bundle_e_sqlcipher` 2.1.11 è
+**deprecato** (NuGet, "Legacy") e il suo nativo contiene **SQLite 3.39.2** (CVE-2025-6965, invisibile all'audit): sonda sul
+sostituto prima dei dati veri; (c) `DbUnlockService` riscrive il salt quando trova "salt senza DB", non c'è lock di istanza
+singola, il salt non viene sincronizzato su disco; (d) su Linux backup e restore scrivono il dump in chiaro in `/tmp`, e
+l'auto-backup (DPAPI dentro `BackupScheduler`, in Data) si spegne da solo; (e) i tre commit della VM di R9 (11/09, suite verde)
+non sono sulla pila: vanno riconciliati. **Decisioni dell'autore**: dogfooding su **Windows e Linux** (F2 si allarga: nota
+veloce, backup e restore incrociato, su Linux picker dei template e builder); **niente promemoria** prima del dogfooding (E14 dopo
+F8); **merge in `main` a ogni onda chiusa**; piani da F2 fatti di **decisioni, interfacce e test**. Aperte e urgenti: D3
+(sblocco su Linux, prima di F2) e D7 (chrome su Linux, prima del Task 10). L'errata del piano F1 è già applicata (cinque errori
+verificati, nota in testa al file).
+
 ### Storico stati milestone
 
 Spostato in [`docs/MILESTONES.md`](docs/MILESTONES.md). Quel file è il companion "a scalare" — consultalo quando devi ricostruire decisioni passate, deviazioni dai plan, schema delta dettagliati, o known quirks per milestone (3.1 → 3.10b + avanzamento Fase 4 giorno per giorno). Le memorie utente `recordum-milestone-3-x-spec` restano l'altra fonte sintetica.
