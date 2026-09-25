@@ -314,9 +314,9 @@ Il tool `SendMessage` è *deferred*: caricarlo con ToolSearch prima di riprender
 **Revisione 2026-09-25 — leggila prima di riprendere il Task 6.** Revisione del percorso v1.0 su Avalonia fatta coi plugin
 (feature-dev, pr-review-toolkit, ponytail, context7), ogni finding riverificato:
 [`docs/superpowers/specs/2026-09-25-avalonia-v1-plan-review.md`](docs/superpowers/specs/2026-09-25-avalonia-v1-plan-review.md).
-**Prima del Task 6 viene il Passo 0** (§6 della revisione): (a) `main` costruisce ancora un DB **in chiaro** — SEC-1 non ci è mai
-arrivato; il fast-forward `main` ← `r9-day-boundary` è deciso (D4) ma **lo esegue l'autore a mano**: il classificatore della
-modalità automatica blocca l'aggiornamento di `main` da una sessione Claude; (b) `SQLitePCLRaw.bundle_e_sqlcipher` 2.1.11 è
+**Prima del Task 6 viene il Passo 0** (§6 della revisione): (a) ~~`main` costruisce un DB in chiaro~~ → **risolto il 2026-09-25**: l'autore
+ha portato `main` in fast-forward a `911ed24` (R9 + SEC-1); i merge in `main` li esegue l'autore, perché da una sessione Claude
+il classificatore della modalità automatica blocca l'aggiornamento di `main`; (b) `SQLitePCLRaw.bundle_e_sqlcipher` 2.1.11 è
 **deprecato** (NuGet, "Legacy") e il suo nativo contiene **SQLite 3.39.2** (CVE-2025-6965, invisibile all'audit): sonda sul
 sostituto prima dei dati veri; (c) `DbUnlockService` riscrive il salt quando trova "salt senza DB", non c'è lock di istanza
 singola, il salt non viene sincronizzato su disco; (d) su Linux backup e restore scrivono il dump in chiaro in `/tmp`, e

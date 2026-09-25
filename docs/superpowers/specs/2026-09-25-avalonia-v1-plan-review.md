@@ -4,6 +4,7 @@
 > **Decise dall'autore lo stesso giorno**: D1 = dogfooding su **entrambi** i sistemi · D2 = **niente promemoria** prima del
 > dogfooding (E14 dopo F8) · D4 = la pila in `main` **adesso**, poi a ogni onda chiusa · D5 = piani da F2 fatti di **decisioni,
 > interfacce e test**. Le conseguenze sono già scritte in §6 (Passo 3), §7 e §9; le altre sei decisioni restano aperte.
+> **RV-1 chiuso lo stesso giorno**: l'autore ha portato `main` in fast-forward a `911ed24` (`d6cc97e..911ed24`, SEC-1 compreso).
 >
 > **Cosa è stato rivisto**: la spec di piattaforma (`2026-09-10-avalonia-as-the-platform-design.md`, onde F0–F8), la mappa
 > v1.0 (`2026-07-03-v1-redefinition-plan-design.md`, E1–E21), il piano F1 (`2026-09-20-wave-f1-home.md`, Task 6–13 ancora da
@@ -60,6 +61,7 @@ cancello di ogni onda invece di un'Onda 3 senza casa.
 - **Decisione D4**: la pila fino a R9 va in `main` adesso. `main` è antenato di `r9-day-boundary` (33 commit, SEC-1 compreso,
   suite verde sulla VM l'11/09), quindi è un fast-forward. **Lo esegue l'autore**: da una sessione Claude il classificatore della
   modalità automatica blocca l'aggiornamento di `main` (e l'hook `guard-main.js` vieta commit e push su `main`).
+- **Fatto** (2026-09-25): `main` = `911ed24`, pushato.
 
 ### RV-2 · SQLCipher deprecato, con uno SQLite del 2022 — *decidere prima dei dati veri; bloccante per la v1.0*
 
@@ -522,7 +524,7 @@ di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno u
 | D1 | Su quale sistema fai dogfooding? | Linux (GNOME Wayland) / Windows (VM) / entrambi | Linux | **Entrambi** (2026-09-25) → F2 su due sistemi, con il restore incrociato come ponte (§6, Passo 3) |
 | D2 | Promemoria prima del dogfooding? | sì, minimo / sì, completo / no | sì, minimo | **No** (2026-09-25) → E14 dopo F8; il congelamento delle feature resta intatto |
 | D3 | Sblocco su Linux | portachiavi di sistema (Secret Service) / file 0600 "ricorda su questo dispositivo" / passphrase a ogni avvio | portachiavi, con ripiego sulla passphrase | aperta — **serve prima di F2** |
-| D4 | Politica di merge | la pila in `main` adesso, poi ogni onda / solo l'hotfix SEC-1 | adesso | **Adesso + ogni onda** (2026-09-25) → `main` ← `r9-day-boundary` in fast-forward, lo esegue l'autore; F0 dopo che la suite WPF ha girato su Windows; poi ogni onda F alla chiusura |
+| D4 | Politica di merge | la pila in `main` adesso, poi ogni onda / solo l'hotfix SEC-1 | adesso | **Adesso + ogni onda** (2026-09-25) → `main` ← `r9-day-boundary` in fast-forward, **eseguito dall'autore** (`911ed24`); F0 dopo che la suite WPF ha girato su Windows; poi ogni onda F alla chiusura |
 | D5 | Formato dei piani da F2 | decisioni + interfacce + test / codice completo come F1 / worktree del piano = implementazione | decisioni + interfacce + test | **Decisioni + interfacce + test** (2026-09-25), ≤ 2.000 righe per onda |
 | D6 | Builder dei grafici | in v1.0 / 1.1 | decidere a F7 | aperta — si decide a F7, dopo i grafici del Dettaglio |
 | D7 | Chrome della finestra su Linux | decorazioni native / chrome custom con maniglie fatte in casa (piano F1) | native su Linux, custom dove l'hint è onorato | aperta — **serve prima del Task 10 di F1** |
