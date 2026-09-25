@@ -1,0 +1,42 @@
+<Project>
+  <!-- Versioni esatte, in un posto solo (Passo 0, task 0.8). SEC-1 era nato da un wildcard: "9.0.*" e "2.1.*"
+       lasciavano entrare un pacchetto nuovo a ogni restore, e un giorno uno di questi ha spento la cifratura del
+       database senza che nessun commit l'avesse chiesto. Qui non ci sono più wildcard: una versione cambia solo con
+       un commit che la cambia. Niente lock file: con il RID per-host (win-x64 / linux-x64) cambierebbe per sistema. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- UI -->
+    <PackageVersion Include="Avalonia" Version="12.1.2" />
+    <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.2" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.4" />
+    <PackageVersion Include="Markdown.Avalonia" Version="12.0.0-a3" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <!-- Dati e cifratura -->
+    <PackageVersion Include="EFCore.NamingConventions" Version="9.0.0" />
+    <PackageVersion Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.20" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.20" />
+    <!-- Export e grafici -->
+    <PackageVersion Include="QuestPDF" Version="2026.5.0" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.macOS" Version="3.119.4" />
+    <!-- Test -->
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="Xunit.StaFact" Version="1.2.69" />
+  </ItemGroup>
+</Project>

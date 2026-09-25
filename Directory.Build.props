@@ -38,13 +38,10 @@
          .csproj, quindi passarla a mano rompe di nuovo quel progetto. Il default vive qui apposta
          perché sia raggirabile per-progetto quando serve. -->
     <UseAppHost>false</UseAppHost>
-    <!-- NU1903: SQLitePCLRaw.lib.e_sqlite3 (transitive via EF Core Sqlite) is flagged for
-         CVE-2025-6965 (SQLite < 3.50.2 memory corruption). It affects ALL 2.1.x releases and
-         NO patched SQLitePCLRaw package exists yet, so it cannot be resolved by upgrading.
-         Practical risk for Recordum is low: offline-first, local encrypted DB, no user-supplied
-         SQL (the CVE needs crafted SQL). Keep it a VISIBLE warning (not silenced via NoWarn) so
-         it stays on the radar, but don't fail the build. REMOVE this line once SQLitePCLRaw
-         ships SQLite >= 3.50.2 and bump the package. -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1903</WarningsNotAsErrors>
+    <!-- NU1903 non è più declassato (Passo 0, 2026-09-25): dopo SEC-1 SQLitePCLRaw.lib.e_sqlite3 non è nel grafo,
+         quindi quella riga non proteggeva più niente, e un avviso di vulnerabilità alta su un pacchetto torna a
+         fermare la build. Il rischio CVE-2025-6965 vero sta altrove e l'audit NuGet non lo vede: il nativo di
+         SQLitePCLRaw.bundle_e_sqlcipher 2.1.11 (deprecato, "Legacy") contiene SQLite 3.39.2. La strada è cambiare
+         provider di cifratura: revisione 2026-09-25 RV-2, sonda al task 0.9, decisione D9. -->
   </PropertyGroup>
 </Project>

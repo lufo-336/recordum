@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="QuestPDF" Version="2026.5.0" />
-    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="QuestPDF" />
+    <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 
   <!-- Il nativo di SkiaSharp arriva con un pacchetto per RID. Su Windows lo porta SkiaSharp stesso;
@@ -23,11 +23,11 @@
        (System.DllNotFoundException: libSkiaSharp). Condizionato all'OS che builda, così il grafo di
        pacchetti di Windows — la macchina di sviluppo primaria e il target di spedizione — non cambia. -->
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" />
   </ItemGroup>
 
 </Project>
