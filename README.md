@@ -107,8 +107,8 @@ history is in [`docs/MILESTONES.md`](docs/MILESTONES.md).
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the pieces fit together (start here).
 - [`CLAUDE.md`](CLAUDE.md) — the dense project-context digest (invariants, schema, conventions).
-- [`docs/`](docs/) — design specs and plans (`docs/superpowers/`), decisions
-  ([`docs/decisions/`](docs/decisions/)), the plugin API (`docs/plugin-api.md`), and UI design
+- [`docs/`](docs) — design specs and plans (`docs/superpowers/`), decisions
+  ([`docs/decisions/`](docs/decisions)), the plugin API (`docs/plugin-api.md`), and UI design
   mockups (`docs/design/`).
 
 ---

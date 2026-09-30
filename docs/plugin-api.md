@@ -2,7 +2,7 @@
 
 > **Status — Phase 3 (2026-05).** This document describes the contract that ships in Milestone 3.1. The runtime that loads external plugins (`.rmpk` packages, WebView2 host, custom-scheme bridge, permission UI) ships in **Phase 7**. Phase 3 publishes the contract — C# types in `Recordum.Plugins.Contracts`, TypeScript types in `tools/plugin-api-ts/`, the manifest JSON Schema, and a single in-process host — so that first-party features built between now and Phase 7 (Chart Engine in 3.9, Export System in 3.10) consume the same surface external plugins will use later.
 
-For the design rationale see [`docs/superpowers/specs/2026-05-13-plugin-system-design.md`](./superpowers/specs/2026-05-13-plugin-system-design.md). This file is the developer-facing reference. The spec is authoritative when the two disagree.
+For the design rationale see [`docs/superpowers/specs/2026-05-13-plugin-system-design.md`](superpowers/specs/2026-05-13-plugin-system-design.md). This file is the developer-facing reference. The spec is authoritative when the two disagree.
 
 ---
 
