@@ -11,7 +11,8 @@ gamificarla. Autore: Luca Foglia (ITS, Torino). Licenza MIT. Namespace `Recordum
 
 ## 2. Principi (non negoziabili)
 
-1. **Offline-first**: dati sul dispositivo; sync solo tramite il cloud dell'utente, mai un server nostro.
+1. **Offline-first**: dati sul dispositivo; la sync passerà dal cloud dell'utente. Un server nostro è un'ipotesi lontana
+   anni e solo opzionale: l'app non ne dipenderà mai.
 2. **Nessun account obbligatorio.**
 3. **Privacy by default**: AI spenta al primo avvio; niente esce dal dispositivo senza consenso informato.
 4. **Complessità per composizione**: gruppi di abitudini semplici, mai opzioni gonfiate sulla singola abitudine.

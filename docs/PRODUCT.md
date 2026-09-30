@@ -55,8 +55,9 @@ template, e ogni template ufficiale si può ricostruire a mano nel builder.
 
 ## Cosa Recordum non è
 
-- **Non è un servizio**: niente account, niente server nostro. I dati stanno sul dispositivo, cifrati. La
-  sincronizzazione arriverà attraverso un cloud dell'utente (Dropbox, Drive, OneDrive, iCloud).
+- **Non è un servizio**: funziona senza account e senza server. I dati stanno sul dispositivo, cifrati. La
+  sincronizzazione arriverà attraverso un cloud dell'utente (Dropbox, Drive, OneDrive, iCloud); un server nostro, se mai
+  ci sarà, sarà un'opzione fra anni, e l'app non ne dipenderà.
 - **Non è un gioco**: niente badge, punti, classifiche, frasi motivazionali, animazioni che premiano.
 - **Non è una lista di cose da fare**, e non riduce un'abitudine a una casella.
 - **Non è un dispositivo medico**: registra, non diagnostica.
@@ -89,4 +90,6 @@ dettagliati stanno in `docs/ROADMAP.md`.
 
 Senza date, prima la v1.0: l'app per il telefono dallo stesso codice di interfaccia (Avalonia), con il backup `.recbak`
 come ponte fra i dispositivi; la sincronizzazione attraverso il cloud dell'utente; plugin e marketplace; la versione web;
-statistiche e correlazioni, anche con l'AI, solo con consenso esplicito e con l'AI spenta al primo avvio.
+statistiche e correlazioni, anche con l'AI, solo con consenso esplicito e con l'AI spenta al primo avvio. Molto più in
+là — si parla di anni — forse una sincronizzazione con un server nostro, sempre opzionale (confermato dall'autore il
+2026-09-30).
