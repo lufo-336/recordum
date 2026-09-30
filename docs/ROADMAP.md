@@ -13,7 +13,10 @@
 - **Passo 0** (messa in sicurezza): 0.1-0.8 e 0.10 fatti — documenti riorganizzati: `PRODUCT.md`, questa pagina, il
   nuovo `CLAUDE.md`, l'archivio delle spec chiuse (`docs/superpowers/archive/`), l'indice in testa al tracker. Resta la
   sonda sul provider di cifratura (0.9).
-- **Prossimo**: 0.9, poi il Task 6 di F1.
+- **Prossimo**: 0.9, poi il Task 6 di F1. **Per riprendere il Task 6**: `git cherry-pick --no-commit wip/f1-task6`
+  (il lavoro a metà — 9 file nuovi in `Recordum.UI` — si applica pulito sullo stato attuale; il merge fast-forward
+  indicato prima non funziona più, perché il branch è andato avanti col Passo 0), poi si ri-affida il Task 6 dicendo di
+  partire da quei file. Manca ancora `using Avalonia;` in `RowCardTintTests`.
 
 ## Il percorso
 
