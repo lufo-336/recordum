@@ -2,7 +2,7 @@
 
 > **Formato** (decisione D5 dell'autore, 2026-09-25): decisioni, interfacce, obblighi di test, trappole. Il codice lo scrive chi
 > esegue, dentro questi confini. **Spec**: la revisione `docs/superpowers/specs/2026-09-25-avalonia-v1-plan-review.md` (§1-§2 per
-> i problemi, §6 Passo 0, §9 decisioni). **Branch**: `avalonia-linux-slice`. **Ambiente**: Linux (Fedora), vincoli in CLAUDE.md §8
+> i problemi, §6 Passo 0, §9 decisioni). **Branch**: `avalonia-linux-slice`. **Ambiente**: Linux (Fedora), vincoli in CLAUDE.md §7-§10
 > e nei *Global Constraints* del piano F1 — in particolare: mai `-p:UseAppHost=false` da riga di comando; `Strings.Designer.cs` si
 > edita solo via shell; ogni test di regressione si prova rosso contro il codice rotto; niente commit su `main` (i merge in `main`
 > li esegue l'autore).
@@ -29,7 +29,7 @@
 | 0.7 | Chiave dell'auto-backup dietro un'astrazione | ◐ `IAutoBackupKeyStore` in Core con `ReadKey()`, `DpapiAutoBackupKeyStore` in Data, scheduler che si spegne scrivendolo nel log, `Null` che non finge. **Restano**: il key store Linux (decisione D3) e l'avvio dello scheduler nella shell Avalonia (F2) |
 | 0.8 | Versioni esatte + EF Core 10 | ✅ `Directory.Packages.props` senza wildcard (`89fdca4`), EF Core 10.0.12 + companions (`3b9bca3`), `has-pending-model-changes` pulito, NU1903 non più declassato |
 | 0.9 | Sonda sul provider di cifratura | ☐ (decisione D9 sul risultato) |
-| 0.10 | Documenti: CLAUDE.md ≤ 15 KB, indice del tracker, ledger | ☐ |
+| 0.10 | Documenti | ◐ `docs/PRODUCT.md`, `docs/ROADMAP.md`, CLAUDE.md riscritto (103 → 12,8 KB, cronaca e storia dello schema in `MILESTONES.md`). **Restano**: indice di una pagina in testa al tracker, archivio delle spec e dei piani chiusi, `progress.md` dei ledger in `docs/` |
 
 ---
 

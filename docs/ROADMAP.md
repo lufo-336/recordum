@@ -10,8 +10,9 @@
   su Linux e su Windows.
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`), oggi a metà
   dell'onda F1 (Task 1-5 di 13).
-- **Passo 0** (messa in sicurezza): 0.1-0.8 fatti; restano la sonda sul provider di cifratura (0.9) e i documenti (0.10,
-  in corso: questa pagina, `PRODUCT.md`, il nuovo `CLAUDE.md`).
+- **Passo 0** (messa in sicurezza): 0.1-0.8 fatti; 0.10 quasi: `PRODUCT.md`, questa pagina e il nuovo `CLAUDE.md`
+  (12,8 KB, la cronaca è passata in `MILESTONES.md`); mancano l'indice del tracker e l'archivio delle spec chiuse. Resta
+  la sonda sul provider di cifratura (0.9).
 - **Prossimo**: 0.9, poi il Task 6 di F1.
 
 ## Il percorso
