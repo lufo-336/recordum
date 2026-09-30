@@ -29,7 +29,7 @@
 | 0.7 | Chiave dell'auto-backup dietro un'astrazione | ◐ `IAutoBackupKeyStore` in Core con `ReadKey()`, `DpapiAutoBackupKeyStore` in Data, scheduler che si spegne scrivendolo nel log, `Null` che non finge. **Restano**: il key store Linux (decisione D3) e l'avvio dello scheduler nella shell Avalonia (F2) |
 | 0.8 | Versioni esatte + EF Core 10 | ✅ `Directory.Packages.props` senza wildcard (`89fdca4`), EF Core 10.0.12 + companions (`3b9bca3`), `has-pending-model-changes` pulito, NU1903 non più declassato |
 | 0.9 | Sonda sul provider di cifratura | ☐ (decisione D9 sul risultato) |
-| 0.10 | Documenti | ◐ `docs/PRODUCT.md`, `docs/ROADMAP.md`, CLAUDE.md riscritto (103 → 12,8 KB, cronaca e storia dello schema in `MILESTONES.md`). **Restano**: indice di una pagina in testa al tracker, archivio delle spec e dei piani chiusi, `progress.md` dei ledger in `docs/` |
+| 0.10 | Documenti | ✅ `docs/PRODUCT.md`, `docs/ROADMAP.md`, CLAUDE.md riscritto (103 → 12,8 KB, cronaca e storia dello schema in `MILESTONES.md`), 106 spec e piani in `docs/superpowers/archive/`, indice in testa al tracker. Il ledger locale non va copiato in `docs/`: il punto di ripresa ora sono le tabelle di stato dei piani e "Dove siamo" della roadmap, entrambi committati |
 
 ---
 

@@ -6,6 +6,65 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
+## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-09-30)
+
+> Una pagina per sapere cosa è ancora aperto e **dove si chiude**. Il dettaglio di ogni voce sta più sotto, nella sezione
+> della sua onda. I problemi trovati dalla revisione del 2026-09-25 (`RV-*`) sono nel piano del Passo 0, non qui; i
+> finding di F1 (`F1-*`) arriveranno col Task 13. **Quando una voce cambia stato, si aggiorna anche questo indice.**
+
+**Prima del dogfooding — logica da correggere in `Recordum.Presentation` (lotto P-6 della revisione), con test provati rossi**
+- **F0-Y1 = A5** — la heatmap-anno si riempie per righe (le righe in basso verdi tutto l'anno) · `reported`
+- **W2V-15** — il builder compone un diario con una durata che nessuna superficie sa registrare · `verified`
+- **W2V-5** — il cerchietto del calendario dice tre cose diverse a seconda del tipo · `verified`
+- **W2V-10** — con Lancia disabilitato l'hint elenca tutte le condizioni, non quella che manca · `verified`
+- **W2V-12** — il simbolo di un'unità non compare da nessuna parte · `verified`
+- **W2V-13** — due unità con lo stesso nome nel picker, a schermo lo slug · `verified`
+- **W2V-14** — i mattoni illegali non sono disabilitati: il click è muto · `verified`
+- **W2V-17 (a, b)** — "Decimali" insegna il modello sbagliato; l'input numerico non dice le sue regole · `verified`
+- **W2V-20** — "gesto primario" è gergo di progetto · `verified`
+- **F0-M4, F0-M5, F0-Q1, F0-T3** — residui di F0: guardia di C1 a metà, timer del chart builder non disposto,
+  `QuitCommand` senza consumatori, nessun test che il ticker riparta dopo `Clear()` · `reported`
+- **R9-M1…M8** — i minori della review di R9 · `reported`
+
+**Da ricontrollare sulle schermate Avalonia, onda per onda**
+- **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
+  nell'albero stretto), F0-12 (banda bianca in tema scuro), W2V-7 (conferma: su Avalonia è già una finestra nostra)
+- **F2 Registrazione** — la sezione §3 della checklist del pass visivo (tap counter, somma, cronometro, export)
+- **F3 Dettaglio** — W2V-4 (il cerchietto copre il numero del giorno), U4 (numero scentrato nel cerchio della heatmap),
+  F0-Y2 (il calendario non si ritinge al cambio di tema), R8 (la card Goal non porta a Configura)
+- **F4 Diario** — W2V-8 (il composer non dice dove scrivere), B14 (editor di completamento o colonna Note)
+- **F5 Configura e builder** — W2V-9, W2V-11 (unità e scale non si modificano né si cancellano), W2V-16, W2V-18,
+  W2V-19, A8 (le sezioni sbordano dalla colonna), A12 (l'autosalvataggio non si percepisce), W23-VF4 (il cronometro non
+  si scopre dal builder), W23-VF5 (le abitudini "cronometro" di prima restano escluse)
+- **F6 Impostazioni, backup, export** — F0-8 (il dialog "Crea backup" è opaco), F0-10 (l'errore di restore esce come
+  codice grezzo), F0-T2 (i test di Settings sono ancora in `Recordum.WPF.Tests`)
+- **F7 Grafici** — A4 = W23-VF7 (grafici del Dettaglio vuoti, card bianche in tema scuro), W1a-VF1 (LiveCharts in tema
+  scuro)
+
+**Le decide il dogfooding — questioni di modello**
+- **CM-1** — "ripetibile" inerte sui tap-counter · **CM-2** — Sonno: totale o sessioni · **CM-3** — durata e unità
+  separate (in parte risolta: l'unità è obbligatoria) · **CM-4** — più metriche durata e più cronometri (`active_timer` è
+  UNIQUE per abitudine) · **W23-VF8** — il badge del calendario conta le occorrenze, il totale somma
+
+**Verso il pubblico — dopo F8**
+- **F0-14** — le notifiche si configurano ma nessun motore le fa scattare (E14)
+- **F0-6** — l'app in inglese di default (il selettore di lingua c'è già) e il seeder demo
+- **0.3-residuo** — auto-backup osservato nel tempo; passphrase opt-in provata con un backup fresco
+- **R5, A10** — accessibilità: nomi e pattern di automazione nelle onde, l'audit completo dopo la v1.0
+
+**Ambiente e note informative**
+- **W24-E1** — la suite WPF in parallelo può appendersi: la CI la serializza, e sparisce con WPF a F8
+- **F0-F1** — `SemiBold` risolve sul Bold (Source Serif 4 è spedito senza il peso 600) · **F0-M6** — nomi di file e tipi
+  poco scopribili · **F0-T1** — la fixture `FakeReferenceData` ha una scala 1-5 con Min/Max a 0
+- **A11** — click sintetici sull'albero WPF senza effetto: superato insieme a WPF
+
+**Chiuse, anche dove il titolo più sotto dice ancora "aperto"**
+- **B1** (salvataggio note) `fixed` · **B11** (builder e registrazione) `verified-fixed` · **B-calYearRender**
+  `verified-fixed` · **CR8** chiuso dalla migration `AbstinencePeriodV212` · **U3, U5** `verified-fixed` · **U6, U8, U10**
+  fatti nelle Onde 2.1, 2.3, 2.2 · **F0-13** (selezione o completato, Onda 2.2) · **A6** (parola del tipo tolta, 2.1-bis)
+- **Superate**: **B2** (tema dell'editor Toast UI: l'editor sparisce con F4) · **B3** ("tante altre cose non
+  funzionano", maggio: triata voce per voce da allora)
+
 ## Onda 0 — Verità di base (checklist di verifica, dal piano v1.0 2026-07-03)
 
 > Mappa: `docs/superpowers/specs/2026-07-03-v1-redefinition-plan-design.md`. Nessun fix in questa sessione: solo misurare e registrare. Per ogni voce: **stato** (OK / rotto / brutto) + **sintomo esatto** (cosa, dove, screenshot se serve). I findings nuovi diventano voci del tracker.
@@ -309,6 +368,7 @@ Suite Data: **338 pass**, 17 fail = solo Backup/Security (DPAPI/SQLCipher Window
 - **Cosa**: apriva un context per i lookup, poi `metrics.CreateAsync` per ogni metrica (ciascuna apre+salva), poi context per i segmenti, poi `goals.CreateAsync`. Ogni apertura ri-esegue `PRAGMA key` → hazard SQLITE_BUSY (già attutito da `busy_timeout`, ora eliminato alla radice).
 
 ### CR8. Seed `schema_version = "2.9"` stale rispetto a HEAD (2.11)
+- **Chiuso** (2026-07-01): la migration `AbstinencePeriodV212` ha riallineato il seed a 2.12.
 - **Stato**: `triaged` — **rimandato alla VM** (serve `dotnet ef`) · gravità **bassa**
 - **Dove**: `src/Recordum.Data/SeedData/AppSettingSeed.cs:31` (era indicato `:925`, riga stale)
 - **Triage 2026-06-23 cont.**: il valore `2.9` è in `HasData` → finisce nel **ModelSnapshot** (`RecordumDbContextModelSnapshot.cs:262`). `InitialSchema` semina `2.3` (riga 678); fu bumpato a `2.9` con `NoteHistoryV29` ma `CounterReclassV210`/`NoteCategoryV211` hanno bumpato solo via `UpdateData`, lasciando il costante a `2.9` mentre **HEAD reale è 2.11** (`NoteCategoryV211`, non 2.10 come dice CR/CLAUDE.md). **Impatto runtime = zero**: il guard CR2 legge lo `schema_version` reale dal DB vivo. Allinearlo richiede rigenerare lo snapshot (`dotnet ef migrations add`), non installato su Mac e file sotto guardrail → **da fare sulla VM**.
@@ -830,7 +890,7 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 - XAML: `DayCellTemplate` con ring/capsula contrast-aware, `YearMonthTemplate`+`YearCellTemplate` (mini-mese), `HeatCellTemplate`, sub-toggle, due body Anno (mini-mesi / heatmap).
 - Test VM: `CalendarNavigatorViewModelTests` 17 verdi (view modes, heatmap toggle, blocks).
 
-### B-calYearRender. Le celle-giorno in ANNO non si renderizzano (BLOCCANTE, aperto)
+### B-calYearRender. Le celle-giorno in ANNO non si renderizzano (chiuso: `verified-fixed` 2026-06-11)
 - **Stato**: `verified-fixed` (2026-06-11, commit `3c97ead`, utente "ci siamo"). **Root cause**: i Button delle celle Anno (`YearCellTemplate`/`HeatCellTemplate`) non impostavano `HorizontalContentAlignment/VerticalContentAlignment="Stretch"`, quindi ereditavano Left/Top dal `Control` e il ContentPresenter del template chrome dimensionava il Grid (solo-Border-background) alla sua desired size 0×0 → celle invisibili (si vedeva solo il `Border Bd` del template = bordo "oggi" arrotondato + il Path nota con desired 6×6). Fix: aggiunto lo Stretch a entrambi i template (come già faceva `DayCellTemplate`). **Follow-up della stessa sessione** (vedi "Stato al 2026-06-11 (continuazione)"): Settimana/Mese a dimensione fissa via `CalendarNavigatorViewModel.CellSize` (no ballooning, header allineato), base grigia delle celle, splitter senza rimbalzo.
 - **Stato (storico)**: `triaged` (root cause parziale, fix tentati insufficienti).
 - **Sintomo**: in **Anno → Mesi** i mini-mesi mostrano solo il nome del mese; in **Anno → Heatmap** la griglia è vuota. In entrambi i casi si vedono solo il **bordo "oggi"** (come un ovale/anello sottile) e i **triangoli nota** fluttuanti — le celle-giorno (quadratini tint/base) **collassano o non appaiono**. **Mese e Settimana funzionano** (Mese verificato bello dall'utente).
@@ -851,7 +911,7 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 
 ---
 
-## Aperti — bloccanti
+## Ex "Aperti — bloccanti" (tutte chiuse o superate: stato nell'indice in testa)
 
 ### B11. L'abitudine costruita non riflette la configurazione nell'abitudine funzionale
 - **Stato**: `verified-fixed` (2026-06-09) — registrazione multi-metrica confermata sul build (Quantità+Scala registra entrambe con unità; Resistance con serie mostra "Aggiungi serie"; "Registrazioni del giorno" elenca valori leggibili con unità). Vedi "Stato al 2026-06-09".
@@ -903,7 +963,7 @@ Suite **WPF 415** verdi (build 0/0) modulo un flaky pre-esistente (vedi sotto).
 
 ---
 
-## Aperti — rifinitura
+## Rifinitura R1-R10 (stato di ciascuna nell'indice in testa)
 
 ### R1. Theming Pass 2 — chrome flat per Button/TabItem/ComboBox
 - **Stato**: `fixed` (Theming Pass 1→3, vedi CLAUDE.md Fase 4; tracker allineato 2026-06-11) — Button/TabItem/ComboBox hanno ControlTemplate flat in `BaseStyles.xaml` (Border + ContentPresenter, hover/focus all'accent).
