@@ -37,8 +37,15 @@ dogfooding non le eserciterà.
 ## Due macchine senza sincronizzazione — decisa (D11)
 
 **Decisione dell'autore (2026-09-30): una casa dei dati.** Una macchina tiene i dati veri per tutto il dogfooding;
-l'altra serve per sviluppo e prove, con `--data-dir`. Quale delle due: *da scegliere* (conviene quella dove si segna la
-sera, che è quando si registra di più).
+l'altra serve per sviluppo e prove, con `--data-dir`. **La casa è Linux** (Fedora, GNOME su Wayland): è la macchina
+della sera, quando si registra di più. È anche la macchina di sviluppo, quindi lì convivono i dati veri (cartella
+predefinita) e quelli di sviluppo (`--data-dir`): la separazione del Passo 0 è ciò che li tiene distinti.
+
+**Conseguenza sull'ordine di F2**: il dogfooding parte quando il manifesto è coperto **su Linux** — sblocco dal
+portachiavi (D3), template e builder, backup automatico con la chiave nel portachiavi, import delle foto (D10), e un modo
+stabile di lanciare la build di `main` (per esempio una `dotnet publish` in Release con un file `.desktop`, che serve anche
+all'identità dell'app per i portal di sistema). Windows segue con dati di prova: le stesse funzioni servono comunque per
+il pubblico.
 
 Il perché: ogni macchina ha il suo database, e il ripristino di un `.recbak` **sostituisce**, non unisce. Se fra un
 trasferimento e l'altro si segnasse su tutte e due, le registrazioni di una delle due andrebbero perse. Le strade che

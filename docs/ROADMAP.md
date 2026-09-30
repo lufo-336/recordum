@@ -24,8 +24,8 @@
 2. **F1 — Home su Avalonia** · ◐ Task 1-5 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
    Il Task 10 segue D7 (su Linux la barra di sistema); il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
    il log (Passo 0).
-3. **F2 — "si usa ogni giorno"** · ☐ · esce quando il **manifesto delle abitudini vere dell'autore**
-   (`docs/DOGFOODING.md`) è coperto su Windows e su Linux. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
+3. **F2 — "si usa ogni giorno"** · ☐ · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
+   (`docs/DOGFOODING.md`) è coperto **su Linux**, la casa dei dati (D11); Windows segue con dati di prova. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
    manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica
    di R9 a schermo.
 4. **★ Dogfooding** · ☐ · su Windows e su Linux, senza promemoria, con i dati di sviluppo separati (`--data-dir`). Dura
@@ -53,7 +53,7 @@ portachiavi di sistema (Secret Service: GNOME Keyring, KWallet), con la passphra
 custodisce la chiave dell'auto-backup; si realizza in F2. **D10** le foto all'import si ridimensionano e si puliscono dai
 metadati per impostazione predefinita, con tre opzioni per l'utente (anche "solo pulisci" e "tieni gli originali"): il
 predefinito serve già in F2, perché il diario del cibo con le foto si usa dal primo giorno. **D11** durante il dogfooding
-una macchina è la casa dei dati veri, l'altra serve per sviluppo e prove con `--data-dir` (quale delle due: da scegliere).
+la casa dei dati veri è **Linux** (la macchina della sera); Windows serve per sviluppo e prove con `--data-dir`.
 Il manifesto delle abitudini sta in `docs/DOGFOODING.md`.
 
 ## Criteri di rilascio

@@ -536,7 +536,7 @@ di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno u
 | D9 | Provider di cifratura | build Zetetic / SQLite3 Multiple Ciphers / altro | dopo la sonda (RV-2) | aperta — la sonda è al Passo 0.3 |
 | D10 | Foto | ridimensionare e togliere i metadati all'import / conservare gli originali | ridimensionare; "conserva l'originale" solo se qualcuno lo chiede | **Ridimensiona e pulisci per impostazione predefinita** (2026-09-30), con la scelta fra le tre opzioni per l'utente; il predefinito serve già in F2 |
 
-| D11 | Due macchine senza sync: dove stanno i dati veri durante il dogfooding | una casa dei dati / ping-pong di backup / sync minima anticipata | una casa dei dati | **Una casa dei dati** (2026-09-30): l'altra macchina per sviluppo e prove con `--data-dir`; la macchina è da scegliere |
+| D11 | Due macchine senza sync: dove stanno i dati veri durante il dogfooding | una casa dei dati / ping-pong di backup / sync minima anticipata | una casa dei dati | **Una casa dei dati** (2026-09-30): la casa è **Linux** (la macchina della sera); Windows per sviluppo e prove con `--data-dir` |
 
 **Il merge di D4, pronto da eseguire** (dal tuo terminale, o col prefisso `!` in una sessione):
 
