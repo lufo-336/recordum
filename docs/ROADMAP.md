@@ -12,9 +12,10 @@
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`), oggi a metà
   dell'onda F1 (Task 1-5 di 13).
 - **Passo 0** (messa in sicurezza): 0.1-0.8 e 0.10 fatti — documenti riorganizzati: `PRODUCT.md`, questa pagina, il
-  nuovo `CLAUDE.md`, l'archivio delle spec chiuse (`docs/superpowers/archive/`), l'indice in testa al tracker. Resta la
-  sonda sul provider di cifratura (0.9).
-- **Prossimo**: 0.9, poi il Task 6 di F1. **Per riprendere il Task 6**: `git cherry-pick --no-commit wip/f1-task6`
+  nuovo `CLAUDE.md`, l'archivio delle spec chiuse (`docs/superpowers/archive/`), l'indice in testa al tracker. Fatta
+  anche la sonda sul provider di cifratura (0.9): il rapporto è `docs/design/2026-09-30-encryption-provider-probe.md`
+  e propone SQLite3 Multiple Ciphers; **D9 aspetta l'autore**. Del Passo 0 resta solo la parte di 0.7 rimandata a F2.
+- **Prossimo**: il Task 6 di F1. **Per riprendere il Task 6**: `git cherry-pick --no-commit wip/f1-task6`
   (il lavoro a metà — 9 file nuovi in `Recordum.UI` — si applica pulito sullo stato attuale; il merge fast-forward
   indicato prima non funziona più, perché il branch è andato avanti col Passo 0), poi si ri-affida il Task 6 dicendo di
   partire da quei file. Verificato il 2026-09-30: compila, e sono rossi due test di `RowCardTintTests` (sfondo a riposo e
@@ -22,7 +23,8 @@
 
 ## Il percorso
 
-1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde.
+1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde (manca il key store
+   Linux di 0.7, che si fa in F2).
 2. **F1 — Home su Avalonia** · ◐ Task 1-5 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
    Il Task 10 segue D7 (su Linux la barra di sistema); il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
    il log (Passo 0).
@@ -44,7 +46,7 @@
 
 | # | Decisione | Serve entro |
 |---|---|---|
-| D9 | Provider di cifratura al posto del bundle SQLCipher deprecato | dopo la sonda 0.9, prima dei dati veri |
+| D9 | Provider di cifratura al posto del bundle SQLCipher deprecato. Sonda fatta: la proposta è SQLite3 Multiple Ciphers col formato SQLCipher 4 invariato (`docs/design/2026-09-30-encryption-provider-probe.md`) | prima dei dati veri, cioè prima del dogfooding |
 | D6 | Builder dei grafici nella v1.0 o nella 1.1 | F7 |
 | D8 | Repository pubblico (minuti di CI illimitati) o privato | quando si decide di pubblicare |
 

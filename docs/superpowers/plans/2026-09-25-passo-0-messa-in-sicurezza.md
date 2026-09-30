@@ -28,7 +28,7 @@
 | 0.6 | Cartella dati sovrascrivibile | ✅ `0b7d0c8`: `RecordumOptions.Resolve(args, env)` (WPF lo usa già; Avalonia al Task 11), `AttachmentService` segue le opzioni, `--seed-demo` rifiuta i dati veri, hook per Linux |
 | 0.7 | Chiave dell'auto-backup dietro un'astrazione | ◐ `IAutoBackupKeyStore` in Core con `ReadKey()`, `DpapiAutoBackupKeyStore` in Data, scheduler che si spegne scrivendolo nel log, `Null` che non finge. **Restano**, in F2: il key store Linux — deciso il 2026-09-30 (D3): portachiavi di sistema via Secret Service, lo stesso dello sblocco del DB — e l'avvio dello scheduler nella shell Avalonia |
 | 0.8 | Versioni esatte + EF Core 10 | ✅ `Directory.Packages.props` senza wildcard (`89fdca4`), EF Core 10.0.12 + companions (`3b9bca3`), `has-pending-model-changes` pulito, NU1903 non più declassato |
-| 0.9 | Sonda sul provider di cifratura | ☐ (decisione D9 sul risultato) |
+| 0.9 | Sonda sul provider di cifratura | ✅ rapporto `docs/design/2026-09-30-encryption-provider-probe.md`: SQLite3 Multiple Ciphers (NuGet dell'autore, MIT, SQLite 3.53.4) apre e riscrive i DB SQLCipher 4 senza convertirli; il cambio provato su una copia è di 7 file e lascia verdi le suite portabili. **La decisione D9 resta dell'autore**; nessun provider è cambiato nel codice |
 | 0.10 | Documenti | ✅ `docs/PRODUCT.md`, `docs/ROADMAP.md`, CLAUDE.md riscritto (103 → 12,8 KB, cronaca e storia dello schema in `MILESTONES.md`), 106 spec e piani in `docs/superpowers/archive/`, indice in testa al tracker. Il ledger locale non va copiato in `docs/`: il punto di ripresa ora sono le tabelle di stato dei piani e "Dove siamo" della roadmap, entrambi committati |
 
 ---
