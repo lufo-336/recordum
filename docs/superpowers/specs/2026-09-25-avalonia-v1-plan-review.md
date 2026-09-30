@@ -527,11 +527,11 @@ di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno u
 |---|---|---|---|---|
 | D1 | Su quale sistema fai dogfooding? | Linux (GNOME Wayland) / Windows (VM) / entrambi | Linux | **Entrambi** (2026-09-25) → F2 su due sistemi, con il restore incrociato come ponte (§6, Passo 3) |
 | D2 | Promemoria prima del dogfooding? | sì, minimo / sì, completo / no | sì, minimo | **No** (2026-09-25) → E14 dopo F8; il congelamento delle feature resta intatto |
-| D3 | Sblocco su Linux | portachiavi di sistema (Secret Service) / file 0600 "ricorda su questo dispositivo" / passphrase a ogni avvio | portachiavi, con ripiego sulla passphrase | aperta — **serve prima di F2** |
+| D3 | Sblocco su Linux | portachiavi di sistema (Secret Service) / file 0600 "ricorda su questo dispositivo" / passphrase a ogni avvio | portachiavi, con ripiego sulla passphrase | **Portachiavi di sistema** (2026-09-30), passphrase come ripiego; custodisce anche la chiave dell'auto-backup; in F2 |
 | D4 | Politica di merge | la pila in `main` adesso, poi ogni onda / solo l'hotfix SEC-1 | adesso | **Adesso + ogni onda** (2026-09-25) → `main` ← `r9-day-boundary` in fast-forward, **eseguito dall'autore** (`911ed24`); F0 dopo che la suite WPF ha girato su Windows; poi ogni onda F alla chiusura |
 | D5 | Formato dei piani da F2 | decisioni + interfacce + test / codice completo come F1 / worktree del piano = implementazione | decisioni + interfacce + test | **Decisioni + interfacce + test** (2026-09-25), ≤ 2.000 righe per onda |
 | D6 | Builder dei grafici | in v1.0 / 1.1 | decidere a F7 | aperta — si decide a F7, dopo i grafici del Dettaglio |
-| D7 | Chrome della finestra su Linux | decorazioni native / chrome custom con maniglie fatte in casa (piano F1) | native su Linux, custom dove l'hint è onorato | aperta — **serve prima del Task 10 di F1** |
+| D7 | Chrome della finestra su Linux | decorazioni native / chrome custom con maniglie fatte in casa (piano F1) | native su Linux, custom dove l'hint è onorato | **Di sistema su Linux** (2026-09-30); la nostra barra dove l'hint è onorato (Windows) |
 | D8 | CI | repo privato a minuti limitati / repo pubblico prima | a scelta: la CI serve in entrambi i casi | aperta — serve al Passo 0.4 |
 | D9 | Provider di cifratura | build Zetetic / SQLite3 Multiple Ciphers / altro | dopo la sonda (RV-2) | aperta — la sonda è al Passo 0.3 |
 | D10 | Foto | ridimensionare e togliere i metadati all'import / conservare gli originali | ridimensionare; "conserva l'originale" solo se qualcuno lo chiede | aperta — serve al Passo 2 |

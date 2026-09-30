@@ -22,12 +22,12 @@
 
 1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde.
 2. **F1 — Home su Avalonia** · ◐ Task 1-5 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
-   Prima del Task 10 serve D7; il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
+   Il Task 10 segue D7 (su Linux la barra di sistema); il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
    il log (Passo 0).
 3. **F2 — "si usa ogni giorno"** · ☐ · esce quando il **manifesto delle abitudini vere dell'autore** è coperto su Windows
    e su Linux. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
-   manuale con restore da un altro computer, su Linux anche template, builder e sblocco secondo D3, la verifica di R9 a
-   schermo.
+   manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica
+   di R9 a schermo.
 4. **★ Dogfooding** · ☐ · su Windows e su Linux, senza promemoria, con i dati di sviluppo separati (`--data-dir`). Dura
    almeno quattro settimane; dopo due si rivede lo scope con i dati dell'uso vero.
 5. **F3 Dettaglio → F4 Diario → F5 Configura e builder → F6 Impostazioni ed export → F7 Grafici** · ☐ · ogni onda chiude
@@ -42,15 +42,16 @@
 
 | # | Decisione | Serve entro |
 |---|---|---|
-| D7 | Barra del titolo su Linux: quella di sistema o la nostra | Task 10 di F1 |
-| D3 | Sblocco su Linux senza passphrase a ogni avvio (portachiavi, file 0600, o no) | F2 |
 | D9 | Provider di cifratura al posto del bundle SQLCipher deprecato | dopo la sonda 0.9, prima dei dati veri |
 | D10 | Foto: ridimensionare e togliere i metadati all'import | F4 |
 | D6 | Builder dei grafici nella v1.0 o nella 1.1 | F7 |
 | D8 | Repository pubblico (minuti di CI illimitati) o privato | quando si decide di pubblicare |
 
 Decise il 2026-09-25: D1 dogfooding su Windows **e** Linux; D2 niente promemoria prima del dogfooding; D4 merge in `main`
-a ogni onda chiusa; D5 piani fatti di decisioni, interfacce e test.
+a ogni onda chiusa; D5 piani fatti di decisioni, interfacce e test. Decise il 2026-09-30: **D7** su Linux la barra del
+titolo di sistema (la nostra resta dove il sistema la supporta, cioè Windows); **D3** su Linux lo sblocco passa dal
+portachiavi di sistema (Secret Service: GNOME Keyring, KWallet), con la passphrase come ripiego — lo stesso portachiavi
+custodisce la chiave dell'auto-backup; si realizza in F2.
 
 ## Criteri di rilascio
 
