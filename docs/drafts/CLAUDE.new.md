@@ -1,0 +1,165 @@
+# Recordum — contesto per Claude Code
+
+> **Perché** esiste: `docs/PRODUCT.md`. **Dove siamo**: `docs/ROADMAP.md`. Questo file dice **come si lavora** qui: le
+> regole e le trappole già pagate. La cronaca delle sessioni sta in `docs/MILESTONES.md`, non qui.
+
+## 1. Cos'è
+
+Editor di abitudini offline, cifrato, senza account: cinque tipi (azione, contatore, astinenza, diario, stato) che si
+compongono in gruppi. Serve chi vuole *capire* la propria vita (salute, allenamento, scrittura, astinenza, diario), non
+gamificarla. Autore: Luca Foglia (ITS, Torino). Licenza MIT. Namespace `Recordum`.
+
+## 2. Principi (non negoziabili)
+
+1. **Offline-first**: dati sul dispositivo; sync solo tramite il cloud dell'utente, mai un server nostro.
+2. **Nessun account obbligatorio.**
+3. **Privacy by default**: AI spenta al primo avvio; niente esce dal dispositivo senza consenso informato.
+4. **Complessità per composizione**: gruppi di abitudini semplici, mai opzioni gonfiate sulla singola abitudine.
+5. **Profondità senza intimidazione**: uso base in 30 s, il resto con progressive disclosure.
+6. **Open source**, niente paywall sulle funzioni base.
+7. **English-first**: ogni stringa utente in `.resx` dalla prima riga (inglese, poi italiano).
+8. **Template = composizione salvata**: se un template fa X, l'utente può fare X nel builder, e ogni composizione si salva
+   come template (guardia: `BuilderTemplateParityTests`; un template nuovo vuole una fixture lì).
+
+In dubbio: privacy > convenienza · composizione > opzioni · profondità nascosta > schermata che nasconde funzioni ·
+esplicito > implicito (soprattutto cascade e mapping EF).
+
+## 3. Dove siamo
+
+v1.0 in arrivo **su Avalonia** (Windows + Linux); WPF è congelata e si spegne all'onda F8. Stato e prossimo passo:
+`docs/ROADMAP.md` — **a fine sessione si aggiorna quella pagina**, non si aggiunge cronaca qui. Findings: tracker
+`docs/phase-4-issues.md` (stati `reported / verified / triaged / in-progress / fixed / verified-fixed`).
+
+## 4. Architettura
+
+| Progetto | Ruolo |
+|---|---|
+| `Recordum.Core` | dominio e astrazioni (`IClock`, `DayBoundary`, contratti di sicurezza). C# puro. |
+| `Recordum.Data` | EF Core + SQLCipher, servizi, query, migrazioni, backup/restore. |
+| `Recordum.Plugins.Contracts` / `.Plugins` | contratti e host in-process dei plugin first-party. |
+| `Recordum.Presentation` | `net10.0`, **zero UI**: ViewModel (CommunityToolkit.Mvvm), `Strings`, servizi portabili, bootstrap (`AddRecordumCore`, `CoreInitializer`, `RecordumOptions`). Referenzia Data: i ViewModel usano i servizi di query direttamente. |
+| `Recordum.UI` | shell **Avalonia 12** — la v1.0. |
+| `Recordum.WPF` | shell vecchia, congelata: si tocca solo per difetti di dati o sicurezza. |
+| `Plugins.ChartEngine` / `.ExportEngine` | grafici (renderer WPF, da spezzare a F7) ed export (PDF, HTML, MD, JSON, CSV). |
+
+Dettagli: `docs/ARCHITECTURE.md`. Autorità tecnica: il codice, le migrazioni e `ARCHITECTURE.md`; per il sistema plugin,
+provenance e cifratura la spec `docs/superpowers/specs/2026-05-13-plugin-system-design.md` (§2.4, §11). I `.docx` di un
+tempo non fanno più testo.
+
+**Il confine di Presentation lo impone il compilatore**: TFM `net10.0`, mai `-windows` (quell'errore è il confine che
+lavora); `NoWpfReferenceTests` asserisce `TargetPlatformAttribute` null. Un ViewModel che ha bisogno dell'host lo chiede
+tramite un'astrazione (`ITickSource`, `IApplicationLifetime`, `IClipboard`, `IEditorAvailability`, `IConfirmationDialog`,
+dialog e launcher) e non legge mai un pennello da un dizionario di risorse (dichiara un'intenzione, es. `MarkerTint`). Ogni
+astrazione nuova: due implementazioni (WPF, UI) e un test della registrazione DI — un servizio mancante compila e muore
+all'avvio.
+
+**Plugin**: un servizio che crea entità per conto di un plugin lo fa dentro uno scope con `IPluginContext.PluginId`
+valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoint`, senza scorciatoie.
+
+## 5. Dominio e dati — invarianti
+
+- Tutto è un `HabitNode` (albero via `parent_id`): abitudine o gruppo. **Astinenza** = periodi in `abstinence_period`
+  (`IAbstinenceService`), non completion. **Sessione** = contatore con `timer_mode='session'`, non un sesto tipo.
+- **Il giorno di un istante si chiede a `DayBoundary`** (da `IResetTimeResolver`: reset dell'abitudine → dei gruppi →
+  `daily_reset_time`). Si risolve **una volta** in cima all'operazione e si passa giù; per più abitudini la versione
+  batch. Una retroattiva si stampiglia a `NoonOf(giorno)`. Mai `DateOnly.FromDateTime(clock.UtcNow…)`, mai finestre a
+  mezzanotte UTC (`DayDerivationGuardTests`, `DayBoundaryParityTests`). `reset_time` non è versionato: cambiarlo
+  reinterpreta lo storico.
+- **Mai `DateTime.UtcNow/Now`**: il tempo passa da `IClock`.
+- `TimestampInterceptor` compila `CreatedAt`, `UpdatedAt`, `UpdatedAtMs` e `CreatedByPluginId`: i servizi non li scrivono.
+- Scale: `labels_json` della metrica vince su quello del template di scala; il valore salvato è sempre l'intero.
+- `active_timer`: un solo timer per abitudine (UNIQUE), ed è il perno del recupero dopo un crash.
+- `HabitConfigHistory` fotografa ogni modifica della config (tranne id, timestamp, `quick_complete`, `ai_data_sharing`,
+  `reset_time`, `streak_broken_at`).
+- SQLite: booleani INTEGER 0/1; date TEXT ISO 8601; `updated_at_ms`/`completed_at_ms` INTEGER Unix ms (LWW per la sync);
+  enum TEXT + CHECK; JSON in TEXT. `Note` ha solo `updated_at_ms`.
+- `created_by_plugin_id` solo sulle entità top-level (`habit_node`, `habit_template`, `export_template`, `chart`), mai
+  sugli eventi figli. Soft delete solo su `HabitNode` (filtro globale; `IgnoreQueryFilters()` per cestino e diagnostica).
+- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.18**. Chi scrive `HabitConfig`/`Goal` fuori dai
+  servizi si porta il proprio gate (`ValidateCrossFields`, `ck_goal_period_consistency`).
+- **Migrazioni**: `dotnet ef migrations add <Nome> --project src/Recordum.Data --startup-project src/Recordum.Data`
+  (startup = Data, non WPF). Nel file generato aggiungere `#pragma warning disable CA1861` dopo `#nullable disable`. Un
+  bump di `schema_version` tocca 8 riferimenti nei test, nomi dei metodi compresi. Mai editare a mano `*.Designer.cs` e
+  `*ModelSnapshot.cs` di EF.
+
+## 6. Sicurezza e dati dell'utente
+
+- Chiave del DB sempre da `IDbKeyProvider`: DPAPI su Windows; altrove passphrase Argon2id dietro `CachingKeyProvider`
+  (l'interceptor chiede la chiave a ogni connessione). Passphrase persa = dati persi.
+- All'avvio, in quest'ordine: `RecordumOptions.Resolve(args, env)` (`--data-dir` / `RECORDUM_DATA_DIR`),
+  `DataDirectoryLock.TryAcquire`, `ReconcileOrphans()`, `DetectState()`. Un salt esistente non si tronca mai.
+- Passphrase sbagliata si riconosce con una **lettura** (`SqliteException` 26), non con l'apertura; `ClearAllPools()` fra
+  i tentativi (una connessione in pool già chiavata ignora la chiave sbagliata).
+- Su Unix cartella dati 0700; i file in chiaro di backup/restore solo in `TempDirectory`, mai nella temp di sistema
+  (`SystemTempGuardTests`). `--seed-demo` rifiuta la cartella dei dati veri.
+- Il bundle `SQLitePCLRaw.bundle_e_sqlcipher` 2.1.11 è deprecato e contiene SQLite 3.39.2: sostituirlo è la decisione D9.
+  La guardia di SEC-1 (`SqlCipherProviderGuardTests`) deve restare verde.
+- Prima di rendere pubblico qualcosa: `/security-review`.
+
+## 7. Test
+
+- **Un test di regressione si prova contro il codice rotto**: si rompe, si vede il rosso, si ripristina.
+- Un parametro di stato nuovo va provato con un caso in cui il **default** risponde diverso (il "parametro muto").
+- Un difetto di conversione o formattazione **si misura**, non si deduce.
+- Test che confrontano etichette localizzate: fissare la cultura (in inglese alcune etichette coincidono con l'enum).
+- Su Windows, per leggere un file che SQLite tiene aperto: `FileShare.ReadWrite`.
+- Test che dipendono da DPAPI: `[Trait("Category", "WindowsOnly")]`; su Linux `--filter "Category!=WindowsOnly"`.
+- Filtri `dotnet test` per **nome di classe**, e controllare il totale eseguito: un filtro vuoto sembra verde.
+- Quando cambia una firma, l'elenco dei chiamanti lo dà il compilatore, non un `grep`: un `new(...)` senza tipo li nasconde.
+- **Avalonia**: `InitializeComponent()`, mai `AvaloniaXamlLoader.Load(this)`; `x:DataType` su ogni view e template
+  (binding compilati); in headless il primo controllo può non fare il layout (si prima con una vista diversa,
+  `RunJobs()` + `ForceRenderTimerTick()`), e un PNG non prova niente senza un'asserzione strutturale; un `[Fact]` che
+  tocca tipi Avalonia va reso `[AvaloniaFact]`; l'assembly UI gira senza parallelismo. `Recordum.UI.Tests` è xunit v3
+  (serve `using Xunit;`, mai referenziare `Presentation.Tests`).
+
+## 8. Trappole di interfaccia già pagate
+
+- Un `ContentControl` con `ContentTemplate` statico costruisce il template anche con `Content` null o nascosto: serve un
+  selettore che torni null o un `Content` davvero null. Verificare cercando nell'intera view.
+- Mai svuotare una collezione che è `ItemsSource` bindata two-way senza sospendere la persistenza e riaffermare il valore
+  dopo (`4d01f9c`: dati azzerati).
+- `AsyncRelayCommand.ExecuteAsync` non consulta `CanExecute`: la guardia va anche dentro il metodo.
+- WPF formatta e interpreta con `FrameworkElement.Language` (en-US di default): `CultureBootstrap` all'avvio,
+  `NumericInputRule` sui campi numerici; la cultura si fissa una volta per processo, quindi cambiarla richiede il riavvio.
+  Avalonia con binding compilati usa la cultura del thread.
+
+## 9. Come si lavora
+
+- **Branch**: si lavora su un branch; il merge in `main` lo esegue l'autore (da una sessione Claude l'aggiornamento di
+  `main` è bloccato). L'hook `guard-main.js` legge il branch *prima* del comando: cambiare branch in una chiamata separata.
+- Aggiornato un `.md` → commit e push subito sul branch di lavoro.
+- **Hook del progetto** (`.claude/hooks/`): niente commit o push su `main`; niente modifiche a mano ai file generati da
+  EF; cancellare i dati dell'utente (cartella dati, `.recbak`) chiede conferma.
+- **Stringhe**: `Strings.resx` + `Strings.it.resx` + accessor in `src/Recordum.Presentation/Resources/Strings.Designer.cs`,
+  che è mantenuto a mano e si edita **solo via shell** (l'hook `guard-generated.js` blocca Edit/Write sui `*.Designer.cs`).
+- **Piani**: decisioni, interfacce, obblighi di test e trappole — non codice da ricopiare. Ogni onda si chiude con una
+  review dell'intero branch (trova ciò che le review per task non vedono) e con la CI verde.
+- **Macchine**: Fedora (sviluppo quotidiano), VM Windows (WPF e controlli a schermo), Mac secondario. Cosa viaggia e cosa
+  no: `docs/dev-environment-sync.md`. Il plugin `superpowers` va installato su ogni macchina.
+
+## 10. Build, test, CI
+
+```bash
+export DOTNET_ROOT="$HOME/.dotnet" PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"   # Linux, SDK utente
+dotnet build Recordum.slnx -p:EnableWindowsTargeting=true
+dotnet test tests/Recordum.Data.Tests --filter "Category!=WindowsOnly"                # Linux
+dotnet test tests/Recordum.WPF.Tests -- xUnit.ParallelizeTestCollections=false         # solo Windows, serializzata
+```
+
+- **Mai `-p:UseAppHost=false` da riga di comando**: è già il default in `Directory.Build.props`, e da riga di comando
+  rompe `Recordum.UI.Tests` (xunit v3 vuole l'apphost). RID per host (win-x64 / linux-x64), `SelfContained=false`.
+- Versioni dei pacchetti **esatte** in `Directory.Packages.props` (niente wildcard: SEC-1 è nato da uno). EF Core 10.
+- `TreatWarningsAsErrors` è globale: un warning nuovo rompe la build.
+- **CI** (`.github/workflows/ci.yml`): job Linux (suite portabili) e Windows (tutte, WPF serializzata); i PNG headless negli
+  artefatti; i push di sola documentazione non la fanno partire. Un push che tocca `.github/workflows/` vuole lo scope
+  `workflow` nel token di `gh`.
+- La regola `Backup*/` del `.gitignore` di Visual Studio esclude qualunque cartella `Backups/`.
+- VM Windows su Google Drive: `git status` può mostrare file modificati che non lo sono; si sblocca con
+  `git checkout -- <file>`.
+
+## 11. Linguaggio visivo
+
+Serio ma caldo; tipografia e spazio; serif (Source Serif 4) per diario e marchio; il colore identifica un'abitudine (barra
+di 4 px sulla riga, heatmap a 5 gradini), non decora; icone Lucide, mai emoji nell'interfaccia; chiaro e scuro curati
+uguali; movimento contenuto; niente gamification. Editor delle abitudini a tre livelli: sempre visibili nome, tipo, colore,
+icona; sezioni chiuse per il resto; opzioni rare dietro "Avanzate". Dettagli: `docs/PRODUCT.md` §"Come si presenta".
