@@ -6,8 +6,8 @@
 
 ## Dove siamo — 2026-09-30
 
-- **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato. `main` = `911ed24` (R9 + SEC-1). CI GitHub Actions verde
-  su Linux e su Windows.
+- **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato. `main` = `6f721e3` (2026-09-30: R9, F0, F1 fino al Task 5,
+  Passo 0 e documenti riorganizzati; fast-forward eseguito dall'autore). CI GitHub Actions verde su Linux e su Windows.
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`), oggi a metà
   dell'onda F1 (Task 1-5 di 13).
 - **Passo 0** (messa in sicurezza): 0.1-0.8 e 0.10 fatti — documenti riorganizzati: `PRODUCT.md`, questa pagina, il
