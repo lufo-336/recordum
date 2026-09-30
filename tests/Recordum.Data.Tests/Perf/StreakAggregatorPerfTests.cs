@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Recordum.Data.Tests.Perf;
 
-[Trait("category", "perf")]
+[Trait("Category", "Performance")]
 public sealed class StreakAggregatorPerfTests
 {
     [Fact]

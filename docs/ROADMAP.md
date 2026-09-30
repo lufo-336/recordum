@@ -16,7 +16,8 @@
 - **Prossimo**: 0.9, poi il Task 6 di F1. **Per riprendere il Task 6**: `git cherry-pick --no-commit wip/f1-task6`
   (il lavoro a metà — 9 file nuovi in `Recordum.UI` — si applica pulito sullo stato attuale; il merge fast-forward
   indicato prima non funziona più, perché il branch è andato avanti col Passo 0), poi si ri-affida il Task 6 dicendo di
-  partire da quei file. Manca ancora `using Avalonia;` in `RowCardTintTests`.
+  partire da quei file. Verificato il 2026-09-30: compila, e sono rossi due test di `RowCardTintTests` (sfondo a riposo e
+  sfondo da selezionata): la tinta della riga è la parte da finire.
 
 ## Il percorso
 

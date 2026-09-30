@@ -152,7 +152,8 @@ dotnet test tests/Recordum.WPF.Tests -- xUnit.ParallelizeTestCollections=false  
 - Versioni dei pacchetti **esatte** in `Directory.Packages.props` (niente wildcard: SEC-1 è nato da uno). EF Core 10.
 - `TreatWarningsAsErrors` è globale: un warning nuovo rompe la build.
 - **CI** (`.github/workflows/ci.yml`): job Linux (suite portabili) e Windows (tutte, WPF serializzata); i PNG headless negli
-  artefatti; i push di sola documentazione non la fanno partire. Un push che tocca `.github/workflows/` vuole lo scope
+  artefatti; i push di sola documentazione non la fanno partire. I test di prestazioni (`Category=Performance`) non girano
+  in CI: su un runner condiviso i tempi oscillano; si eseguono in locale. Un push che tocca `.github/workflows/` vuole lo scope
   `workflow` nel token di `gh`.
 - La regola `Backup*/` del `.gitignore` di Visual Studio esclude qualunque cartella `Backups/`.
 - VM Windows su Google Drive: `git status` può mostrare file modificati che non lo sono; si sblocca con
