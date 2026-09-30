@@ -534,7 +534,9 @@ di cifratura e permessi Linux inclusi), beta su Windows, Fedora GNOME e almeno u
 | D7 | Chrome della finestra su Linux | decorazioni native / chrome custom con maniglie fatte in casa (piano F1) | native su Linux, custom dove l'hint è onorato | **Di sistema su Linux** (2026-09-30); la nostra barra dove l'hint è onorato (Windows) |
 | D8 | CI | repo privato a minuti limitati / repo pubblico prima | a scelta: la CI serve in entrambi i casi | aperta — serve al Passo 0.4 |
 | D9 | Provider di cifratura | build Zetetic / SQLite3 Multiple Ciphers / altro | dopo la sonda (RV-2) | aperta — la sonda è al Passo 0.3 |
-| D10 | Foto | ridimensionare e togliere i metadati all'import / conservare gli originali | ridimensionare; "conserva l'originale" solo se qualcuno lo chiede | aperta — serve al Passo 2 |
+| D10 | Foto | ridimensionare e togliere i metadati all'import / conservare gli originali | ridimensionare; "conserva l'originale" solo se qualcuno lo chiede | **Ridimensiona e pulisci per impostazione predefinita** (2026-09-30), con la scelta fra le tre opzioni per l'utente; il predefinito serve già in F2 |
+
+| D11 | Due macchine senza sync: dove stanno i dati veri durante il dogfooding | una casa dei dati / ping-pong di backup / sync minima anticipata | una casa dei dati | **Una casa dei dati** (2026-09-30): l'altra macchina per sviluppo e prove con `--data-dir`; la macchina è da scegliere |
 
 **Il merge di D4, pronto da eseguire** (dal tuo terminale, o col prefisso `!` in una sessione):
 

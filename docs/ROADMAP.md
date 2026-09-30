@@ -24,8 +24,8 @@
 2. **F1 — Home su Avalonia** · ◐ Task 1-5 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
    Il Task 10 segue D7 (su Linux la barra di sistema); il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
    il log (Passo 0).
-3. **F2 — "si usa ogni giorno"** · ☐ · esce quando il **manifesto delle abitudini vere dell'autore** è coperto su Windows
-   e su Linux. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
+3. **F2 — "si usa ogni giorno"** · ☐ · esce quando il **manifesto delle abitudini vere dell'autore**
+   (`docs/DOGFOODING.md`) è coperto su Windows e su Linux. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
    manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica
    di R9 a schermo.
 4. **★ Dogfooding** · ☐ · su Windows e su Linux, senza promemoria, con i dati di sviluppo separati (`--data-dir`). Dura
@@ -43,7 +43,6 @@
 | # | Decisione | Serve entro |
 |---|---|---|
 | D9 | Provider di cifratura al posto del bundle SQLCipher deprecato | dopo la sonda 0.9, prima dei dati veri |
-| D10 | Foto: ridimensionare e togliere i metadati all'import | F4 |
 | D6 | Builder dei grafici nella v1.0 o nella 1.1 | F7 |
 | D8 | Repository pubblico (minuti di CI illimitati) o privato | quando si decide di pubblicare |
 
@@ -51,7 +50,11 @@ Decise il 2026-09-25: D1 dogfooding su Windows **e** Linux; D2 niente promemoria
 a ogni onda chiusa; D5 piani fatti di decisioni, interfacce e test. Decise il 2026-09-30: **D7** su Linux la barra del
 titolo di sistema (la nostra resta dove il sistema la supporta, cioè Windows); **D3** su Linux lo sblocco passa dal
 portachiavi di sistema (Secret Service: GNOME Keyring, KWallet), con la passphrase come ripiego — lo stesso portachiavi
-custodisce la chiave dell'auto-backup; si realizza in F2.
+custodisce la chiave dell'auto-backup; si realizza in F2. **D10** le foto all'import si ridimensionano e si puliscono dai
+metadati per impostazione predefinita, con tre opzioni per l'utente (anche "solo pulisci" e "tieni gli originali"): il
+predefinito serve già in F2, perché il diario del cibo con le foto si usa dal primo giorno. **D11** durante il dogfooding
+una macchina è la casa dei dati veri, l'altra serve per sviluppo e prove con `--data-dir` (quale delle due: da scegliere).
+Il manifesto delle abitudini sta in `docs/DOGFOODING.md`.
 
 ## Criteri di rilascio
 
