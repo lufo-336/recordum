@@ -99,6 +99,45 @@ public class ShellIntegrationTests(ITestOutputHelper output)
     }
 
     [AvaloniaFact]
+    public async Task Esc_in_the_rename_box_cancels_the_rename_even_with_a_tab_open()
+    {
+        // F1 review I3: con un tab aperto (quasi sempre, dopo aver selezionato la riga) il gestore in tunnel della
+        // finestra prendeva l'Esc, chiudeva una colonna e marcava l'evento gestito: la casella non lo vedeva mai,
+        // la rinomina restava aperta e al primo LostFocus il nome scartato veniva SALVATO.
+        var window = await OpenSeededAsync();
+        var vm = (MainWindowViewModel)window.DataContext!;
+        var row = vm.Home.Rows.First(r => !r.IsGroup);
+        var original = row.Name;
+
+        vm.Home.SelectedRow = row;
+        for (var i = 0; i < 100 && vm.Workspace.Tabs.Count == 0; i++)
+        {
+            await Task.Delay(20);
+            Dispatcher.UIThread.RunJobs();
+        }
+        vm.Workspace.ActiveSubjectTab.Should().NotBeNull("il test non prova niente senza un tab aperto");
+
+        row.BeginRenameCommand.Execute(null);
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        var box = window.GetVisualDescendants().OfType<TextBox>().Single(b => ReferenceEquals(b.DataContext, row) && b.IsVisible);
+        box.Focus();
+        box.Text = "NomeDaScartare";
+        Dispatcher.UIThread.RunJobs();
+        window.FocusManager!.GetFocusedElement().Should().BeSameAs(box);
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        row.IsRenaming.Should().BeFalse("Esc nella casella annulla la rinomina");
+        row.Name.Should().Be(original);
+        // E se il fuoco esce adesso non c'e' piu' niente da salvare.
+        window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "RibbonToggle").Focus();
+        Dispatcher.UIThread.RunJobs();
+        row.Name.Should().Be(original, "il nome scartato non deve essere salvato dal LostFocus");
+    }
+
+    [AvaloniaFact]
     public async Task The_home_load_stays_within_a_generous_budget_and_the_number_is_printed()
     {
         await ShellFixture.Shared.SeedAsync();   // fuori dalla misura: semina una volta sola

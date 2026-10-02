@@ -181,6 +181,11 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null) return;
 
+        // Esc dentro una casella di testo e' della casella (annulla la rinomina): il gestore in tunnel lo vede per
+        // primo e, se lo prendesse, la casella non lo riceverebbe mai e il nome scartato verrebbe salvato al
+        // LostFocus (review F1, I3). Ctrl+1/2/3 restano globali, come in WPF.
+        if (e.Key == Key.Escape && e.Source is TextBox) return;
+
         // Esc con una selezione multipla: la si annulla prima di ogni gestione di colonna.
         if (e.Key == Key.Escape && _viewModel.Home.HasMultiSelection)
         {
