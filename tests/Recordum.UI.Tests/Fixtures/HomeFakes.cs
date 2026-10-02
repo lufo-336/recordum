@@ -15,7 +15,9 @@ public sealed class FakeHabitNodeService : IHabitNodeService
     public ValueTask MoveAsync(Guid id, Guid? newParentId, CancellationToken ct = default) => ValueTask.CompletedTask;
     public ValueTask MoveAndReorderAsync(Guid id, Guid? newParentId, Guid? anchorSiblingId, bool placeAfter, CancellationToken ct = default)
     { ReorderCalls.Add((id, newParentId, anchorSiblingId, placeAfter)); return ValueTask.CompletedTask; }
-    public ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default) => ValueTask.CompletedTask;
+    public List<Guid> SoftDeleted { get; } = new();
+    public ValueTask SoftDeleteAsync(Guid id, CancellationToken ct = default)
+    { SoftDeleted.Add(id); return ValueTask.CompletedTask; }
     public ValueTask RestoreAsync(Guid id, CancellationToken ct = default) => ValueTask.CompletedTask;
     public ValueTask<HabitNode?> GetAsync(Guid id, CancellationToken ct = default) => ValueTask.FromResult<HabitNode?>(null);
     public ValueTask SetPinScopeAsync(Guid id, PinScope scope, CancellationToken ct = default) => ValueTask.CompletedTask;

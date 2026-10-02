@@ -4,9 +4,11 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views;
@@ -141,16 +143,56 @@ public class HomeViewTests
     [AvaloniaFact]
     public void Delete_acts_on_the_selected_row_even_without_focus_inside_it()
     {
-        var (w, _, vm, _) = Show(Guid.NewGuid());
+        var id = Guid.NewGuid();
+        var (w, _, vm, nodes) = Show(id);
         vm.SelectRowCommand.Execute(vm.Roots[0]);
         Dispatcher.UIThread.RunJobs();
+        nodes.SoftDeleted.Should().BeEmpty("il test non prova niente se prima del tasto è già cancellato");
 
         w.KeyPress(Key.Delete, RawInputModifiers.None, PhysicalKey.Delete, "");
         Dispatcher.UIThread.RunJobs();
 
-        // La riga esiste ancora nel ViewModel (il servizio è un doppio), ma il comando è passato:
-        // il punto è che il tasto raggiunge la riga selezionata senza che il fuoco sia dentro di essa.
-        vm.SelectedRow.Should().NotBeNull();
+        nodes.SoftDeleted.Should().Equal(new[] { id },
+            "il tasto raggiunge la riga selezionata senza che il fuoco sia dentro di essa");
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void A_detached_view_no_longer_listens_for_shortcuts_on_the_window()
+    {
+        // Allo stacco GetTopLevel(this) è già null: senza un riferimento tenuto da parte il gestore
+        // sul TopLevel restava appeso e Ctrl+F veniva "gestito" da una vista ormai fuori dall'albero.
+        var (w, view, _, _) = Show(Guid.NewGuid());
+        var handled = false;
+        w.AddHandler(InputElement.KeyDownEvent, (_, e) => handled = e.Handled, RoutingStrategies.Bubble, handledEventsToo: true);
+        w.Content = new Border();
+        Dispatcher.UIThread.RunJobs();
+        view.GetVisualParent().Should().BeNull("il test non prova niente se la vista è ancora agganciata");
+
+        w.KeyPress(Key.F, RawInputModifiers.Control, PhysicalKey.F, "f");
+        Dispatcher.UIThread.RunJobs();
+
+        handled.Should().BeFalse();
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void The_error_branch_is_built_and_its_retry_button_reloads()
+    {
+        // L'Error usa un binding a riflessione ($parent[HomeView].DataContext) che il compilatore non controlla.
+        var (w, view, vm, _) = Show(Guid.NewGuid());
+        vm.State = HomeState.Error;
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        view.GetVisualDescendants().OfType<HabitRow>().Should().BeEmpty();
+        var retry = view.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, Strings.Home_Error_Retry));
+        retry.Command.Should().BeSameAs(vm.RetryCommand);
+
+        retry.Command!.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        vm.State.Should().Be(HomeState.Loaded);
         w.Close();
     }
 }

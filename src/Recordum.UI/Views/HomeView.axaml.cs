@@ -13,6 +13,8 @@ public partial class HomeView : UserControl
     private const double DragThreshold = 5;
 
     private Point? _pressPoint;
+    // Il TopLevel va tenuto da parte: allo stacco GetTopLevel(this) è già null e il gestore resterebbe appeso.
+    private TopLevel? _top;
 
     public HomeView()
     {
@@ -30,12 +32,14 @@ public partial class HomeView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        TopLevel.GetTopLevel(this)?.AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
+        _top = TopLevel.GetTopLevel(this);
+        _top?.AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        TopLevel.GetTopLevel(this)?.RemoveHandler(KeyDownEvent, OnKeyDownTunnel);
+        _top?.RemoveHandler(KeyDownEvent, OnKeyDownTunnel);
+        _top = null;
         base.OnDetachedFromVisualTree(e);
     }
 
