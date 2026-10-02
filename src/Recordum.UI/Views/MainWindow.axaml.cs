@@ -154,13 +154,20 @@ public partial class MainWindow : Window
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        // Il risultato dell'estensione non e' definitivo a Opened: la piattaforma puo' riportarlo (o
+        // cambiarlo) dopo, e i pulsanti di didascalia devono seguirlo.
+        if (change.Property == IsExtendedIntoWindowDecorationsProperty)
+            ApplyChrome(change.GetNewValue<bool>());
+
+        // Una finestra massimizzata con chrome nostro puo' sfondare l'area di lavoro del bordo di
+        // ridimensionamento invisibile. WPF compensava con un margine 7 scritto a mano; qui il
+        // numero lo dice la piattaforma, e lo puo' cambiare anche senza che cambi lo stato.
+        if (change.Property == WindowStateProperty || change.Property == OffScreenMarginProperty)
+            RootGrid.Margin = WindowState == WindowState.Maximized ? OffScreenMargin : default;
+
         if (change.Property != WindowStateProperty) return;
         var maximized = WindowState == WindowState.Maximized;
         MaxIcon.Data = GlyphFor(WindowState);
-        // Una finestra massimizzata con chrome nostro puo' sfondare l'area di lavoro del bordo di
-        // ridimensionamento invisibile. WPF compensava con un margine 7 scritto a mano; qui il
-        // numero lo dice la piattaforma.
-        RootGrid.Margin = maximized ? OffScreenMargin : default;
         MaxButton.SetValue(AutomationProperties.NameProperty,
             maximized ? Presentation.Resources.Strings.Window_Restore : Presentation.Resources.Strings.Window_Maximize);
     }

@@ -29,16 +29,35 @@ public static class CrashLogger
 
     public static string? LogPath => _logPath;
 
-    public static void WireUp()
+    private const UnixFileMode OwnerDirectory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+    private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
+    /// <param name="logDirectory">Solo per i test: sostituisce <c>%LocalAppData%/Recordum/logs</c>, cosi' un
+    /// test non scrive nella cartella vera dell'utente.</param>
+    public static void WireUp(string? logDirectory = null)
     {
         if (_wired) return;
         _wired = true;
         try
         {
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var dir = Path.Combine(appData, "Recordum", "logs");
-            Directory.CreateDirectory(dir);
+            var dir = logDirectory ?? Path.Combine(appData, "Recordum", "logs");
             _logPath = Path.Combine(dir, "recordum.log");
+            if (OperatingSystem.IsWindows())
+            {
+                Directory.CreateDirectory(dir);   // %LocalAppData% e' gia' privata per ACL
+            }
+            else
+            {
+                // Lo stack trace puo' portare nomi di abitudini e percorsi: col umask di default cartella e file
+                // nascerebbero 0755/0644, leggibili da ogni utente locale. Una cartella dei log o un file
+                // preesistenti piu' larghi vengono ristretti.
+                // .NET applica la mode alla sola cartella foglia: il padre ("Recordum") si crea a parte, se manca.
+                if (Path.GetDirectoryName(dir) is { Length: > 0 } parent) Directory.CreateDirectory(parent, OwnerDirectory);
+                Directory.CreateDirectory(dir, OwnerDirectory);
+                File.SetUnixFileMode(dir, OwnerDirectory);
+                if (File.Exists(_logPath)) File.SetUnixFileMode(_logPath, OwnerFile);
+            }
 
             WriteHeader();
 
@@ -137,7 +156,12 @@ public static class CrashLogger
         {
             try
             {
-                File.AppendAllText(path, text + Environment.NewLine);
+                // UnixCreateMode vale solo alla creazione, e Append crea il file alla prima scrittura (e se
+                // sparisce a meta' sessione): e' qui, non in WireUp, che il file nasce 0600.
+                var options = new FileStreamOptions { Mode = FileMode.Append, Access = FileAccess.Write, Share = FileShare.Read };
+                if (!OperatingSystem.IsWindows()) options.UnixCreateMode = OwnerFile;
+                using var stream = new FileStream(path, options);
+                stream.Write(new UTF8Encoding(false).GetBytes(text + Environment.NewLine));
             }
             catch (IOException)
             {
@@ -151,6 +175,8 @@ public static class CrashLogger
         }
     }
 
+    // Eccezione alla regola "il tempo passa da IClock": e' un logger statico che parte prima della DI, quindi senza
+    // IClock, e usa l'istante solo come timestamp di riga.
     private static string Now() =>
         DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
 

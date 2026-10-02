@@ -5,6 +5,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
@@ -28,7 +29,7 @@ public class MainWindowTests
         return (window, vm);
     }
 
-    [Theory]
+    [AvaloniaTheory]
     [InlineData(1280, 760, 1600, 900, 1280, 760)]   // ci sta: invariata
     [InlineData(1280, 760, 1280, 672, 1280, 672)]   // schermo RDP basso: si accorcia
     [InlineData(1280, 760, 1024, 768, 1024, 760)]   // solo la larghezza eccede
@@ -41,7 +42,7 @@ public class MainWindowTests
         height.Should().Be(expectedH);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void Resolve_columns_covers_the_four_shell_states()
     {
         // Panoramica: nessun tab aperto -> la Home prende tutto, niente divisore.
@@ -138,6 +139,31 @@ public class MainWindowTests
         window.IsExtendedIntoWindowDecorations.Should().BeFalse("la piattaforma headless non accoglie la richiesta");
         window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CloseButton")
             .IsVisible.Should().BeFalse();
+    }
+
+    [AvaloniaFact]
+    public void The_caption_buttons_follow_the_platform_when_it_reports_the_extension_after_opening()
+    {
+        var (window, _) = Open();
+        Button Close() => window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CloseButton");
+        Close().IsVisible.Should().BeFalse("la finestra headless parte senza estensione");
+
+        // La proprieta' e' di sola lettura (DirectProperty con setter privato): la si guida dalla
+        // stessa strada della piattaforma vera, il callback IWindowImpl.ExtendClientAreaToDecorationsChanged.
+        // Il membro di IWindowImpl non e' accessibile (protected internal): lo si legge per riflessione.
+        var report = (Action<bool>)typeof(IWindowImpl)
+            .GetProperty("ExtendClientAreaToDecorationsChanged",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(window.PlatformImpl)!;
+
+        report(true);
+        Dispatcher.UIThread.RunJobs();
+        window.IsExtendedIntoWindowDecorations.Should().BeTrue();
+        Close().IsVisible.Should().BeTrue("la piattaforma ha accolto la richiesta dopo Opened");
+
+        report(false);
+        Dispatcher.UIThread.RunJobs();
+        Close().IsVisible.Should().BeFalse("e se la ritira i pulsanti si nascondono di nuovo");
     }
 
     [AvaloniaFact]
