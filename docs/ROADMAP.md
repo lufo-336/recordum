@@ -17,12 +17,13 @@
   checklist a schermo su Windows e su GNOME (l'autore; l'handoff è in `docs/dev-environment-sync.md`); il merge in `main`
   (l'autore).
 - **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"): la Home con 300 righe impiega ≈ 3,8 s a caldo
-  contro il budget di 500 ms (**F1-PERF1**, da chiudere prima del dogfooding); `recordum.db`/`-wal`/`-shm` nascono 0644
+  contro il budget di 500 ms (**F1-PERF1**: non blocca il merge di F1, va chiuso prima del dogfooding); `recordum.db`/`-wal`/`-shm` nascono 0644
   (**F1-SEC1**, nel `/security-review`); rail e Ctrl+4/Ctrl+5 sono spenti finché F2, F6 e F7 non li riaccendono
   (**F1-RAIL1**).
 - **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
+- Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
 - **Prossimo**: la review di branch di F1; poi F2.
 
 ## Il percorso

@@ -424,8 +424,8 @@ La checklist **vera** sta nel piano `docs/superpowers/plans/2026-09-20-wave-f1-h
 2026-10-02" (D7): una lista per **Linux** (GNOME, meglio su Wayland: una sola barra, quella di sistema; trascinamento, snap,
 ombra e ridimensionamento sono del sistema; i nostri pulsanti di didascalia non si vedono) e una per **Windows** 10 e 11 (la
 nostra barra con riduci/ingrandisci/chiudi visibili, glifo centrale che cambia, snap layout su Windows 11, massimizzata
-senza sfondare la barra delle applicazioni, ☰ che apre e chiude il rail). Il vecchio elenco a 7 punti sotto l'errata e
-il ripiego con maniglie fatte in casa **non esistono più**. In più, su Windows: il glifo di "riduci a icona" deve comparire
+senza sfondare la barra delle applicazioni, ☰ che apre e chiude il rail). L'errata vince: il vecchio elenco a 7 punti che il piano
+conserva sotto di lei è superato, e il ripiego con maniglie fatte in casa è stato tolto (D7). In più, su Windows: il glifo di "riduci a icona" deve comparire
 (finding `F1-ICON1` del tracker).
 
 ```powershell

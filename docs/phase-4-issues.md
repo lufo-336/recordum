@@ -6,7 +6,7 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
-## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-09-30)
+## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-10-02)
 
 > Una pagina per sapere cosa è ancora aperto e **dove si chiude**. Il dettaglio di ogni voce sta più sotto, nella sezione
 > della sua onda. I problemi trovati dalla revisione del 2026-09-25 (`RV-*`) sono nel piano del Passo 0, non qui; i
@@ -1883,7 +1883,7 @@ Restano questi, ciascuno con la sua ragione.
   `/security-review` prima di rendere pubblico qualcosa.** `reported`.
 - **F1-RAIL1 — Pulsanti del rail e scorciatoie spenti finché non ha senso accenderli.** Sono `IsVisible="False"`
   (statico, con un commento nel XAML che nomina l'onda) per non mostrare comandi che non fanno niente: **Grafici** (F7;
-  con il suo `Border` ospite), **Backup** e il separatore sotto di lui (F2), **Esporta** (F6), **Diagnostica** e
+  con il suo `Border` ospite), il separatore sopra **Backup**, fra i pulsanti dei workspace e le azioni, e **Backup** stesso (F2), **Esporta** (F6), **Diagnostica** e
   **Impostazioni** (F6, tutti e due puntano a `NullSettingsWindowLauncher`). Omesse anche le scorciatoie **Ctrl+4**
   (Grafici, F7) e **Ctrl+5** (Cronologia backup, F6) in `MainWindow.axaml`. Ogni onda riaccende le sue: toglie
   l'`IsVisible="False"`, riaggiunge la scorciatoia, e riprova il test dei pulsanti visibili del rail. Resta visibile

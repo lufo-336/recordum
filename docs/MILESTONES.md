@@ -518,7 +518,7 @@ rossi. **Per riprendere**: il ledger locale (git-ignored, unica copia) è in
 Il **lavoro parziale del Task 6** (righe Home: `HabitRow`, `GroupRow`, `HomeRowTemplate`,
 `InlineRenameBehavior`, fixture `HomeFakes`, un test) **non è committato su `avalonia-linux-slice`**: l'agente
 è stato fermato a metà, il test non compilava (manca `using Avalonia;`), quindi vive sul branch
-**`wip/f1-task6`** (un solo commit sopra `avalonia-linux-slice`). Per riprenderlo:
+**`wip/f1-task6`** (superato: il Task 6 è chiuso a `aaa676b`; un solo commit sopra `avalonia-linux-slice`). Per riprenderlo:
 `git checkout avalonia-linux-slice && git merge --ff-only wip/f1-task6 && git reset --soft HEAD~1`
 (i file tornano in staging, il branch resta pulito), poi si ri-dispatcha il Task 6 dicendo
 all'implementatore di **ripartire da quei file** invece che da zero. Dal Task 7 in poi, come da piano.
@@ -561,7 +561,7 @@ un DB che SQLite tiene aperto (usare `FileShare.ReadWrite`); il push di un file 
 
 **Progresso 2026-10-02 (onda F1 — Home: codice completo, non ancora chiusa).** Piano
 `2026-09-20-wave-f1-home.md`, 13 task su `avalonia-linux-slice` (`aaa676b`…`6200ede` per i Task 6-12): un implementatore
-per task, in sequenza, e una review dopo ciascuno (Sonnet; Opus sui Task 10 e 11, che toccano chrome e avvio). Nessun
+per task, in sequenza, e una review dopo ciascuno (Sonnet; Opus sui Task 4, 10 e 11: sblocco, chrome e avvio). Nessun
 Critical; una tornata di correzione sui Task 4, 5, 7, 10 e 11. Finding a tracker: `docs/phase-4-issues.md`, sezione "Onda F1".
 
 *Cosa esiste ora.* `Recordum.UI` si avvia da sé su Linux e apre il database cifrato vero: lock della cartella dati,
