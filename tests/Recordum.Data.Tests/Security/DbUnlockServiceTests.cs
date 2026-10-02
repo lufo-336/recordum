@@ -342,6 +342,35 @@ public sealed class DbUnlockServiceTests : IDisposable
         Assert.NotNull(entry.Exception);
     }
 
+    [Fact]
+    public async Task An_unexpected_failure_is_logged_and_still_propagates()
+    {
+        // La libreria nativa che non si carica (il rischio D9 su Linux) non e' fra le eccezioni che il servizio
+        // converte in "non riuscito": risale alla finestra, che mostra un messaggio generico. La traccia deve
+        // restare nel log comunque, e il comportamento verso il chiamante non cambia.
+        var log = new ListLogger();
+        var sut = new DbUnlockService(_paths, () => throw new DllNotFoundException("libe_sqlcipher.so"), log);
+
+        var thrown = await Assert.ThrowsAsync<DllNotFoundException>(
+            () => sut.UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase));
+
+        var entry = Assert.Single(log.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Same(thrown, entry.Exception);
+    }
+
+    [Fact]
+    public async Task A_cancelled_unlock_is_not_logged_as_a_failure()
+    {
+        var log = new ListLogger();
+        var sut = new DbUnlockService(_paths, () => throw new OperationCanceledException(), log);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => sut.UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase));
+
+        Assert.Empty(log.Entries);
+    }
+
     private sealed class ListLogger : ILogger<DbUnlockService>
     {
         public List<(LogLevel Level, Exception? Exception)> Entries { get; } = [];

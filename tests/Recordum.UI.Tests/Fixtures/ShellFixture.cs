@@ -41,20 +41,22 @@ public sealed class ShellFixture
             {
                 provider.Dispose();
             }
-            catch (InvalidOperationException)
+#pragma warning disable CA1031 // un gestore di ProcessExit che lancia puo' far cadere l'host di test: tutto best effort
+            catch (Exception)
             {
-                // I singleton con affinita' al thread dell'interfaccia (ViewModel che toccano controlli)
-                // lanciano dal thread di chiusura: la chiusura e' best effort, ma la cartella si toglie lo stesso.
+                // Il Dispose lancia davvero (singleton con affinita' al thread UI, InvalidOperationException): non
+                // deve impedire di togliere la cartella.
             }
             try
             {
                 SqliteConnection.ClearAllPools();
                 if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception)
             {
                 // best effort: a fine processo non c'e' nessuno a cui dirlo
             }
+#pragma warning restore CA1031
         };
         return new ShellFixture { Services = provider, Options = options };
     }

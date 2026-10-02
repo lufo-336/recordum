@@ -140,6 +140,21 @@ public sealed partial class DbUnlockService : IDbUnlockService
             SqliteConnection.ClearAllPools();
             return new UnlockResult(UnlockOutcome.Failed, null);
         }
+        catch (Exception ex) when (LogUnexpected(ex, state))
+        {
+            // Mai raggiunto: il filtro registra e ritorna false, cosi' l'eccezione risale invariata.
+            throw;
+        }
+    }
+
+    /// <summary>Filtro d'eccezione che non cattura: registra ogni guasto che il <c>when</c> sopra non
+    /// riconosce (libreria nativa SQLCipher che non si carica, memoria per Argon2, un bug) e lo lascia
+    /// risalire. Senza questo l'unica traccia sarebbe il messaggio generico della finestra, e la causa
+    /// vera andrebbe persa. Registra lo stato e l'eccezione, mai la passphrase ne' la chiave.</summary>
+    private bool LogUnexpected(Exception ex, DbUnlockState state)
+    {
+        if (ex is not OperationCanceledException) LogUnlockFailed(ex, state);
+        return false;
     }
 
     private async Task<UnlockResult> UnlockWithPlatformKeyAsync(CancellationToken ct)

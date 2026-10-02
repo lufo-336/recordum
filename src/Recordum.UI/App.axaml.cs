@@ -33,7 +33,12 @@ public partial class App : Application
             // Esplicito, e prima di qualunque finestra: chiudere la finestra di sblocco non deve
             // spegnere l'applicazione. Torna a OnMainWindowClose quando la finestra vera esiste.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            desktop.Exit += (_, _) => { _services?.Dispose(); _dataLock?.Dispose(); };
+            desktop.Exit += (_, _) =>
+            {
+                // finally: il lock della cartella dati si rilascia anche se la chiusura del contenitore lancia.
+                try { _services?.Dispose(); }
+                finally { _dataLock?.Dispose(); }
+            };
             _ = StartAsync(desktop);
         }
 

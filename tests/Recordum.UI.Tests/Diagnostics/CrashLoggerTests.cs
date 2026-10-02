@@ -69,6 +69,7 @@ public class CrashLoggerTests
             }
 
             var log = File.ReadAllText(CrashLogger.LogPath!);
+            log.Should().Contain(marker, "il GC non ha finalizzato il Task nei tentativi: non e' un difetto dell'aggancio");
             // Il marker compare due volte in una voce sola (AggregateException + interna): si contano le voci.
             log.Split("] TaskScheduler.UnobservedTaskException").Count(entry => entry.Contains(marker, StringComparison.Ordinal))
                 .Should().Be(1, "un guasto non osservato compare una volta nel log: con i gestori agganciati due volte, due");

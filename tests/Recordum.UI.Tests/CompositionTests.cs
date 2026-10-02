@@ -156,6 +156,33 @@ public class CompositionTests
     }
 
     [AvaloniaFact]
+    public async Task The_unlock_window_cannot_be_closed_while_an_unlock_is_in_flight()
+    {
+        var service = new GatedUnlockService();
+        var viewModel = new UnlockViewModel(service, DbUnlockState.NeedsPassphrase) { Passphrase = "una-passphrase-lunga" };
+        var window = new UnlockWindow(viewModel);
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var submit = viewModel.SubmitCommand.ExecuteAsync(null);
+        viewModel.IsBusy.Should().BeTrue("lo sblocco e' in volo");
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+        closed.Should().BeFalse("chiudere a meta' di uno sblocco spegnerebbe il processo dentro CreateAsync");
+
+        service.Release();
+        await submit;
+        viewModel.IsBusy.Should().BeFalse();
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+        closed.Should().BeTrue("a sblocco finito la finestra si chiude come sempre");
+    }
+
+    [AvaloniaFact]
     public void The_fatal_window_shows_the_message_and_the_log_path()
     {
         var window = new FatalErrorWindow("qualcosa e' andato storto", "/tmp/recordum.log");
@@ -190,6 +217,23 @@ public class CompositionTests
         {
             CrashLogger.ResetForTests();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private sealed class GatedUnlockService : IDbUnlockService
+    {
+        private readonly TaskCompletionSource _gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Release() => _gate.SetResult();
+
+        public OrphanReconciliation ReconcileOrphans() => OrphanReconciliation.None;
+
+        public DbUnlockState DetectState() => DbUnlockState.NeedsPassphrase;
+
+        public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default)
+        {
+            await _gate.Task;
+            return new UnlockResult(UnlockOutcome.WrongPassphrase, null);
         }
     }
 
