@@ -5,6 +5,7 @@
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:v="using:Recordum.UI.Views"
              xmlns:rows="using:Recordum.UI.Views.Rows"
+             xmlns:beh="using:Recordum.UI.Behaviors"
              x:Class="Recordum.UI.Views.HomeView"
              x:DataType="vm:HomeViewModel"
              Background="{DynamicResource Brush.Background}">
@@ -156,6 +157,7 @@
                               DataContext="{Binding $parent[v:HomeView].DataContext}"
                               x:DataType="vm:HomeViewModel">
                   <ItemsControl x:Name="RowsHost"
+                                beh:TreeDragDropBehavior.Enabled="True"
                                 ItemsSource="{CompiledBinding Roots}"
                                 ItemTemplate="{x:Static rows:HomeRowTemplate.Instance}"/>
                 </ScrollViewer>

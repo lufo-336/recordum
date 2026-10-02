@@ -1819,3 +1819,12 @@ Restano questi, ciascuno con la sua ragione.
   `Dispose()` non fa fallire nessun test (10/10 verdi), ma la sorgente disposta ignora ogni `Start()`
   successivo: l'orologio della Home morirebbe dopo il primo reload. Non è il leak che `TickingClockTests`
   sorveglia — è il suo opposto — e si chiude con un test "Register dopo Clear ridà `RunningCount == 1`".
+
+## Onda F1 — Home su Avalonia (`F1-*`)
+
+- **F1-DND1 — la Home su Avalonia non ha il fantasma del trascinamento** (`reported`, rifinitura, non parità).
+  La versione Avalonia della Home non ha il fantasma del trascinamento. Avalonia 12 non espone né
+  `QueryContinueDrag` né un'API di immagine trascinata (verificato per reflection sul pacchetto 12.1.2), e gli
+  eventi di movimento del puntatore non arrivano all'applicazione mentre il ciclo di trascinamento del sistema è
+  attivo: la riga sorgente si limita a sfumare a 0,4 di opacità. `src/Recordum.WPF/Behaviors/DragGhost.cs` e
+  `Interop/NativeMethods.cs` restano solo per WPF, congelato. Da riconsiderare come rifinitura, non come parità.

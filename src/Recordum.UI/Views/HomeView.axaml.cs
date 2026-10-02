@@ -4,14 +4,12 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Recordum.Presentation.ViewModels;
+using Recordum.UI.Behaviors;
 
 namespace Recordum.UI.Views;
 
 public partial class HomeView : UserControl
 {
-    // Task 8 la sostituirà con TreeDragDropBehavior.DragThreshold (stessa soglia: 5 px).
-    private const double DragThreshold = 5;
-
     private Point? _pressPoint;
     // Il TopLevel va tenuto da parte: allo stacco GetTopLevel(this) è già null e il gestore resterebbe appeso.
     private TopLevel? _top;
@@ -70,7 +68,7 @@ public partial class HomeView : UserControl
         if (DataContext is not HomeViewModel home) return;
         if (e.InitialPressMouseButton != MouseButton.Left) return;
         // Un press-drag non è un clic (D4): oltre la soglia del trascinamento non si seleziona.
-        if (press is { } p && Distance(p, e.GetPosition(this)) >= DragThreshold) return;
+        if (press is { } p && Distance(p, e.GetPosition(this)) >= TreeDragDropBehavior.DragThreshold) return;
 
         var (row, interactive) = Probe(e.Source);
         if (interactive) return;
