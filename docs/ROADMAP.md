@@ -4,28 +4,28 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-09-30
+## Dove siamo — 2026-10-02
 
 - **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1 fino al
   Task 5, Passo 0, documenti riorganizzati, errata del piano F1; fast-forward chiesto dall'autore). CI verde su Linux
   e su Windows, anche su `main`. I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`), oggi a metà
-  dell'onda F1 (Task 1-5 di 13).
+  dell'onda F1 (Task 1-6 di 13).
 - **Passo 0** (messa in sicurezza): 0.1-0.8 e 0.10 fatti — documenti riorganizzati: `PRODUCT.md`, questa pagina, il
   nuovo `CLAUDE.md`, l'archivio delle spec chiuse (`docs/superpowers/archive/`), l'indice in testa al tracker. Fatta
   anche la sonda sul provider di cifratura (0.9): il rapporto è `docs/design/2026-09-30-encryption-provider-probe.md`
   e propone SQLite3 Multiple Ciphers; **D9 aspetta l'autore**. Del Passo 0 resta solo la parte di 0.7 rimandata a F2.
-- **Prossimo**: il Task 6 di F1. **Per riprendere il Task 6**: `git cherry-pick --no-commit wip/f1-task6`
-  (il lavoro a metà — 9 file nuovi in `Recordum.UI` — si applica pulito sullo stato attuale; il merge fast-forward
-  indicato prima non funziona più, perché il branch è andato avanti col Passo 0), poi si ri-affida il Task 6 dicendo di
-  partire da quei file. Verificato il 2026-09-30: compila, e sono rossi due test di `RowCardTintTests` (sfondo a riposo e
-  sfondo da selezionata): la tinta della riga è la parte da finire.
+- **Task 6 di F1 chiuso** (`aaa676b`, review approvata): le righe della Home (card tinta, rinomina in linea, menu
+  contestuale), UI 117 verdi. La "Rinomina" sul gruppo senza casella resta com'è in WPF: è il finding F1-5 del piano.
+  Il branch `wip/f1-task6` è superato e si può cancellare.
+- **Prossimo**: il Task 7 di F1 (`HomeView` ed `EmptyState`). Misurare la Home con qualche centinaio di righe contro
+  i budget (E9/E20): ogni riga include i propri stili e il proprio menu, e un gruppo chiuso realizza lo stesso i figli.
 
 ## Il percorso
 
 1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde (manca il key store
    Linux di 0.7, che si fa in F2).
-2. **F1 — Home su Avalonia** · ◐ Task 1-5 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
+2. **F1 — Home su Avalonia** · ◐ Task 1-6 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
    Il Task 10 segue D7 (su Linux la barra di sistema); il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
    il log (Passo 0).
 3. **F2 — "si usa ogni giorno"** · ☐ · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
