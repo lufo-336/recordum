@@ -160,6 +160,24 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
+    public async Task Every_caption_glyph_draws_something_when_the_caption_buttons_are_ours()
+    {
+        // F1-ICON1 (review F1, I2): un Path con Stretch=Uniform e geometria alta zero ha sy=0 e non disegna nulla.
+        // Si misura la geometria resa, non la presenza dell'elemento.
+        var (window, _) = await Open();
+        window.ApplyChrome(true);
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        foreach (var name in new[] { "MinButton", "MaxButton", "CloseButton" })
+        {
+            var glyph = (global::Avalonia.Controls.Shapes.Path)window.GetVisualDescendants().OfType<Button>()
+                .Single(b => b.Name == name).Content!;
+            glyph.RenderedGeometry.Bounds.Width.Should().BeGreaterThan(0, $"il glifo di {name} deve avere un'impronta");
+        }
+    }
+
+    [AvaloniaFact]
     public async Task The_maximize_glyph_and_its_name_follow_the_window_state()
     {
         var (window, _) = await Open();

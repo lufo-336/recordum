@@ -30,7 +30,7 @@
 - **F1-PERF1** — la Home con 300 righe: ≈ 3,8 s a caldo contro il budget di 500 ms (E9/E20); si chiude prima del
   dogfooding · **F1-SEC1** — `recordum.db`/`-wal`/`-shm` nascono 0644: nella lista del `/security-review` prima di
   pubblicare · **F1-RAIL1** — rail e Ctrl+4/Ctrl+5 spenti: F2, F6 e F7 riaccendono i propri · **F1-ICON1** — il glifo
-  "riduci a icona" non misurato a schermo
+  "riduci a icona" era vuoto: misurato e `fixed` (verifica a schermo su Windows)
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
 
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
@@ -1865,11 +1865,12 @@ Restano questi, ciascuno con la sua ragione.
 - **F1-10 — Icone di didascalia duplicate in WPF**: `MainWindow.xaml` ha le proprie `Caption.*` invece di riusare
   `Chrome.Caption*` di `WindowChromeStyles.xaml`. La versione Avalonia ne ha **una sola** copia (`Path.caption` in
   `MainWindow.axaml`): quando F6 porta le finestre figlie, quella copia va promossa a stile condiviso, non ricopiata. `reported`.
-- **F1-ICON1 — Il glifo di "riduci a icona" è un `Path` di altezza zero.** `MainWindow.axaml` lo disegna con
-  `Data="M5 12h14"` e `Stretch="Uniform"` (stile `Path.caption`): una geometria senza altezza sotto `Uniform` può non
-  disegnare niente. **Non misurato**: in headless i pulsanti di didascalia sono nascosti (`IsExtendedIntoWindowDecorations`
-  è falso), quindi lo si vede solo sul primo avvio a schermo su Windows (punto 1 della checklist). Se non compare: un
-  `Rectangle` al suo posto, e un test di guardia sulle geometrie degeneri di `Icons.axaml`. `reported`.
+- **F1-ICON1 — Il glifo di "riduci a icona" non disegnava niente.** `MainWindow.axaml` lo disegnava con
+  `Data="M5 12h14"` e `Stretch="Uniform"` (stile `Path.caption`): una geometria alta zero ha scala verticale 0 e sotto
+  `Uniform` min(sx, sy) = 0, quindi 0 px. **Misurato** nella review finale di F1 (render Skia headless: 0 pixel di inchiostro
+  per il minimizza, 88 per il massimizza); dipende dal layout, non dalla piattaforma, quindi su Windows il pulsante era vuoto.
+  Corretto: `Stretch="None" Data="M0 5.5H11"` (11 px di inchiostro). Guardia: `MainWindowTests.Every_caption_glyph_draws_something_when_the_caption_buttons_are_ours`
+  (provato rosso: larghezza resa 0). `fixed` (da verificare a schermo su Windows).
 - **F1-PERF1 — La Home con molte righe è lenta: budget E9/E20 (< 500 ms) ancora aperto.** Misurato in headless (Task 7,
   una sola misura per caso): 300 righe (20 gruppi da 10 figli + 80 abitudini) ≈ **3,8 s a caldo, ≈ 7 s a freddo**;
   con 4 righe la Home si carica in 318 ms (Task 12). Cause misurate: lo `StyleInclude` di `RowCardStyles` **per riga**

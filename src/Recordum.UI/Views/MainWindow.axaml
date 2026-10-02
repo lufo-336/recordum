@@ -87,7 +87,8 @@
           <Button Name="MinButton" Classes="caption"
                   chrome:WindowDecorationProperties.ElementRole="MinimizeButton"
                   AutomationProperties.Name="{x:Static res:Strings.Window_Minimize}">
-            <Path Classes="caption" Data="M5 12h14"/>
+            <!-- Stretch=None: con Uniform una linea alta zero ha scala 0 e non disegna nulla (F1-ICON1). -->
+            <Path Classes="caption" Stretch="None" Data="M0 5.5H11"/>
           </Button>
           <Button Name="MaxButton" Classes="caption"
                   chrome:WindowDecorationProperties.ElementRole="MaximizeButton"
