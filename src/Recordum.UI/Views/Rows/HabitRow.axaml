@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:enums="using:Recordum.Core.Enums"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             xmlns:beh="using:Recordum.UI.Behaviors"
+             x:Class="Recordum.UI.Views.Rows.HabitRow"
+             x:DataType="vm:HomeRowViewModel">
+  <UserControl.Styles>
+    <StyleInclude Source="/Views/Rows/RowCardStyles.axaml"/>
+  </UserControl.Styles>
+
+  <Border Classes="habitblock"
+          Classes.selected="{CompiledBinding IsSelected}"
+          Classes.droptarget="{CompiledBinding IsDropTarget}"
+          Classes.dragging="{CompiledBinding IsBeingDragged}"
+          Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
+          Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
+    <Grid Height="{StaticResource Layout.RowHeight}"
+          ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+      <Grid.ContextMenu>
+        <!-- In Avalonia un ContextMenu eredita il DataContext del proprio bersaglio: sparisce il
+             `DataContext="{Binding PlacementTarget.DataContext, RelativeSource=Self}"` di WPF. -->
+        <ContextMenu>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Rename}"
+                    Command="{CompiledBinding BeginRenameCommand}"
+                    IsVisible="{CompiledBinding ShowRenameMenu}"/>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin}"
+                    IsVisible="{CompiledBinding ShowPinMenu}">
+            <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_None}"
+                      Command="{CompiledBinding SetPinScopeCommand}"
+                      CommandParameter="{x:Static enums:PinScope.None}"/>
+            <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_Local}"
+                      Command="{CompiledBinding SetPinScopeCommand}"
+                      CommandParameter="{x:Static enums:PinScope.Local}"/>
+            <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_Global}"
+                      Command="{CompiledBinding SetPinScopeCommand}"
+                      CommandParameter="{x:Static enums:PinScope.Global}"/>
+          </MenuItem>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Archive}"
+                    Command="{CompiledBinding ArchiveCommand}"
+                    IsVisible="{CompiledBinding ShowArchive}"/>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Unarchive}"
+                    Command="{CompiledBinding UnarchiveCommand}"
+                    IsVisible="{CompiledBinding ShowUnarchive}"/>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_SoftDelete}"
+                    Command="{CompiledBinding SoftDeleteCommand}"
+                    IsVisible="{CompiledBinding ShowSoftDelete}"/>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Restore}"
+                    Command="{CompiledBinding RestoreCommand}"
+                    IsVisible="{CompiledBinding ShowRestore}"/>
+          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Purge}"
+                    Command="{CompiledBinding PurgeCommand}"
+                    IsVisible="{CompiledBinding ShowPurge}"/>
+        </ContextMenu>
+      </Grid.ContextMenu>
+
+      <Rectangle Grid.Column="0"
+                 Width="{StaticResource Layout.AccentBarWidth}"
+                 Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+
+      <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center"
+            ColumnDefinitions="Auto,Auto,*">
+        <!-- L'icona sparisce quando la chiave non risolve: si guarda il Data GIÀ convertito, non la
+             chiave, così una chiave sconosciuta non lascia un vuoto a forma di icona. -->
+        <Path x:Name="IconPath" Grid.Column="0" Width="16" Height="16" Margin="0,0,6,0"
+              Stretch="Uniform" VerticalAlignment="Center"
+              Stroke="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+              StrokeThickness="1.5" StrokeLineCap="Round" StrokeJoin="Round"
+              Data="{CompiledBinding Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
+              IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+        <Path Grid.Column="1" Width="12" Height="12" Margin="0,0,6,0"
+              Stretch="Uniform" VerticalAlignment="Center"
+              Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+              StrokeLineCap="Round" StrokeJoin="Round"
+              Data="{StaticResource Icon.Pin}"
+              ToolTip.Tip="{x:Static res:Strings.Home_ContextMenu_Pin}"
+              IsVisible="{CompiledBinding IsPinned}"/>
+        <Panel Grid.Column="2" VerticalAlignment="Center">
+          <TextBlock Text="{CompiledBinding Name}"
+                     FontSize="{StaticResource FontSize.Body}"
+                     Foreground="{DynamicResource Brush.Text}"
+                     IsVisible="{CompiledBinding !IsRenaming}"/>
+          <TextBox Text="{CompiledBinding PendingName, Mode=TwoWay}"
+                   FontSize="{StaticResource FontSize.Body}"
+                   beh:InlineRenameBehavior.Attach="True"
+                   IsVisible="{CompiledBinding IsRenaming}"/>
+        </Panel>
+      </Grid>
+
+      <TextBlock Grid.Column="2" Classes="keyfigure"
+                 Classes.zero="{CompiledBinding IsKeyFigureZero}"
+                 Margin="8,0,8,0" VerticalAlignment="Center"
+                 FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
+                 Foreground="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                 Text="{CompiledBinding KeyFigureText}"
+                 ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"
+                 IsVisible="{CompiledBinding ShowKeyFigure}"/>
+
+      <ctl:HeatmapStrip Grid.Column="3" Margin="0,0,8,0" VerticalAlignment="Center"
+                        Kind="{CompiledBinding StripVisual}"
+                        Fractions="{CompiledBinding StripFractions}"
+                        AccentColor="{CompiledBinding ColorHex}"
+                        ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
+
+      <Button Grid.Column="4" Classes="ghost" Margin="0,0,8,0"
+              Width="26" Height="26" Padding="0" VerticalAlignment="Center"
+              ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"
+              Command="{CompiledBinding QuickActionCommand}"
+              IsVisible="{CompiledBinding CanQuickAction}">
+        <TextBlock Text="+" FontSize="16" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Text}"/>
+      </Button>
+    </Grid>
+  </Border>
+</UserControl>
