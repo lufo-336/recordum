@@ -10,7 +10,7 @@
 
 > Una pagina per sapere cosa è ancora aperto e **dove si chiude**. Il dettaglio di ogni voce sta più sotto, nella sezione
 > della sua onda. I problemi trovati dalla revisione del 2026-09-25 (`RV-*`) sono nel piano del Passo 0, non qui; i
-> finding di F1 (`F1-*`) arriveranno col Task 13. **Quando una voce cambia stato, si aggiorna anche questo indice.**
+> finding di F1 (`F1-*`) sono nella sezione "Onda F1". **Quando una voce cambia stato, si aggiorna anche questo indice.**
 
 **Prima del dogfooding — logica da correggere in `Recordum.Presentation` (lotto P-6 della revisione), con test provati rossi**
 - **F0-Y1 = A5** — la heatmap-anno si riempie per righe (le righe in basso verdi tutto l'anno) · `reported`
@@ -25,6 +25,13 @@
 - **F0-M4, F0-M5, F0-Q1, F0-T3** — residui di F0: guardia di C1 a metà, timer del chart builder non disposto,
   `QuitCommand` senza consumatori, nessun test che il ticker riparta dopo `Clear()` · `reported`
 - **R9-M1…M8** — i minori della review di R9 · `reported`
+
+**Trovati in F1 (sezione "Onda F1")**
+- **F1-PERF1** — la Home con 300 righe: ≈ 3,8 s a caldo contro il budget di 500 ms (E9/E20); si chiude prima del
+  dogfooding · **F1-SEC1** — `recordum.db`/`-wal`/`-shm` nascono 0644: nella lista del `/security-review` prima di
+  pubblicare · **F1-RAIL1** — rail e Ctrl+4/Ctrl+5 spenti: F2, F6 e F7 riaccendono i propri · **F1-ICON1** — il glifo
+  "riduci a icona" non misurato a schermo
+- Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
 
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
@@ -1822,9 +1829,68 @@ Restano questi, ciascuno con la sua ragione.
 
 ## Onda F1 — Home su Avalonia (`F1-*`)
 
-- **F1-DND1 — la Home su Avalonia non ha il fantasma del trascinamento** (`reported`, rifinitura, non parità).
-  La versione Avalonia della Home non ha il fantasma del trascinamento. Avalonia 12 non espone né
-  `QueryContinueDrag` né un'API di immagine trascinata (verificato per reflection sul pacchetto 12.1.2), e gli
+> Trovati eseguendo i Task 1-12 di `docs/superpowers/plans/2026-09-20-wave-f1-home.md` e controllati contro il codice a
+> `6200ede`. Nessun Critical nelle review dei singoli task. Tutti `reported`: nessuno blocca il codice completo dell'onda,
+> ma **F1-PERF1** va chiuso prima del dogfooding e **F1-SEC1** prima di rendere pubblico qualcosa.
+
+- **F1-1 — `Icons.xaml` (WPF, congelato) disegna cinque icone storte** (`Dumbbell`, `Sun`, `ShieldCheck`,
+  `CheckCircle`, `Pill`) per un errore di concatenazione dei path SVG: un `m` relativo diventato `M` assoluto senza
+  convertire i lineto che seguono. WPF è congelato fino a F8; `Themes/Icons.axaml` le scrive correttamente, quindi da F1
+  i due cataloghi non sono più identici su queste cinque chiavi (`IconCatalogTests` sorveglia la versione Avalonia). Un
+  confronto fra i due cataloghi troverà queste differenze e non deve sorprendere. `reported`.
+- **F1-2 — Il commento di `ApplicationInitializer.cs` (WPF) sulla verifica della chiave è falso.** Dice che la prima
+  apertura "forces an error here if the key is wrong": `PRAGMA key` non verifica nulla, l'errore arriva alla prima
+  lettura vera (`MigrateAsync`). `DbUnlockService` (Avalonia) verifica invece con una lettura esplicita. Da correggere
+  se WPF viene toccato di nuovo, o quando F8 lo toglie. `reported`.
+- **F1-3 — `DbUnlockService.UnlockAsync` ha un solo esito `Failed` per cause diverse.** Per esempio rifiuta di ricreare
+  il salt se esiste già un database non vuoto (un altro avvio l'ha appena creato, o altro) e torna lo stesso
+  `UnlockOutcome.Failed` col messaggio generico. Dal Task 11 ogni guasto lascia una riga nel log, quindi la causa si
+  ricostruisce; la distinzione per l'utente vale una voce solo se il dogfooding la incontra. `reported`.
+- **F1-5 — La riga gruppo offre "Rinomina" nel menu contestuale ma non ha una casella di rinomina.** Difetto già in WPF
+  (`BeginRenameCommand` mette `IsRenaming = true` e non succede nulla di visibile), portato com'è per decisione D6 del
+  piano: un difetto di WPF non si risolve dentro un porting. `GroupRow.axaml` ha la voce di menu e nessun editor. Si
+  risolve fuori da F1: la casella in `GroupRow`, o la voce tolta. `reported`.
+- **F1-DND1 — la Home su Avalonia non ha il fantasma del trascinamento** (rifinitura, non parità). Avalonia 12 non espone
+  né `QueryContinueDrag` né un'API di immagine trascinata (verificato per reflection sul pacchetto 12.1.2), e gli
   eventi di movimento del puntatore non arrivano all'applicazione mentre il ciclo di trascinamento del sistema è
   attivo: la riga sorgente si limita a sfumare a 0,4 di opacità. `src/Recordum.WPF/Behaviors/DragGhost.cs` e
-  `Interop/NativeMethods.cs` restano solo per WPF, congelato. Da riconsiderare come rifinitura, non come parità.
+  `Interop/NativeMethods.cs` restano solo per WPF, congelato. Da riconsiderare come rifinitura. `reported`.
+- **F1-8 — `AutomationProperties.Name` scritto in inglese sui tre pulsanti di didascalia di `MainWindow` (WPF)**
+  (`"Minimize"` ecc., `MainWindow.xaml` e `WindowChromeStyles.xaml`). La versione Avalonia usa le stringhe
+  `Window_Minimize/Maximize/Restore/Close` delle risorse. WPF resta com'è: è congelato. `reported`.
+- **F1-9 — Captive dependency nel contenitore Avalonia**, la stessa forma già presente in WPF: i ViewModel transient
+  (`HomeViewModel`, `MainWindowViewModel`, …) prendono servizi scoped dal contenitore radice, perché
+  `AppComposition.BuildServices` — come `ServiceRegistrar` — non valida gli scope. Con `ValidateScopes=true` quei VM non
+  si risolvono più. Conservato di proposito (commento in `AppComposition.cs`); da annotare, non da risolvere in F1. `reported`.
+- **F1-10 — Icone di didascalia duplicate in WPF**: `MainWindow.xaml` ha le proprie `Caption.*` invece di riusare
+  `Chrome.Caption*` di `WindowChromeStyles.xaml`. La versione Avalonia ne ha **una sola** copia (`Path.caption` in
+  `MainWindow.axaml`): quando F6 porta le finestre figlie, quella copia va promossa a stile condiviso, non ricopiata. `reported`.
+- **F1-ICON1 — Il glifo di "riduci a icona" è un `Path` di altezza zero.** `MainWindow.axaml` lo disegna con
+  `Data="M5 12h14"` e `Stretch="Uniform"` (stile `Path.caption`): una geometria senza altezza sotto `Uniform` può non
+  disegnare niente. **Non misurato**: in headless i pulsanti di didascalia sono nascosti (`IsExtendedIntoWindowDecorations`
+  è falso), quindi lo si vede solo sul primo avvio a schermo su Windows (punto 1 della checklist). Se non compare: un
+  `Rectangle` al suo posto, e un test di guardia sulle geometrie degeneri di `Icons.axaml`. `reported`.
+- **F1-PERF1 — La Home con molte righe è lenta: budget E9/E20 (< 500 ms) ancora aperto.** Misurato in headless (Task 7,
+  una sola misura per caso): 300 righe (20 gruppi da 10 figli + 80 abitudini) ≈ **3,8 s a caldo, ≈ 7 s a freddo**;
+  con 4 righe la Home si carica in 318 ms (Task 12). Cause misurate: lo `StyleInclude` di `RowCardStyles` **per riga**
+  (toglierlo: 3,8 → 2,7 s), un `ContextMenu` da 10 voci costruito subito **per ogni riga** (3,8 → 3,1 s), nessuna
+  virtualizzazione (~24 nodi visuali per riga, ~12 ms a riga). Smentita l'ipotesi del Task 6: i gruppi chiusi **non**
+  realizzano i figli (`Rebuild` li omette). Fix: stili inclusi una volta a livello di `HomeView`/`App`, menu costruito
+  alla prima apertura, poi virtualizzazione. Da chiudere prima del dogfooding. `reported`.
+- **F1-SEC1 — `recordum.db`, `-wal` e `-shm` nascono 0644 dentro la cartella dati 0700** (visto avviando la shell vera su
+  Linux, Task 11; il comportamento è precedente). La cartella 0700 li protegge e il contenuto è cifrato, ma i file
+  stessi non sono privati al proprietario come lo sono la cartella e il log. **Nella lista del
+  `/security-review` prima di rendere pubblico qualcosa.** `reported`.
+- **F1-RAIL1 — Pulsanti del rail e scorciatoie spenti finché non ha senso accenderli.** Sono `IsVisible="False"`
+  (statico, con un commento nel XAML che nomina l'onda) per non mostrare comandi che non fanno niente: **Grafici** (F7;
+  con il suo `Border` ospite), **Backup** e il separatore sotto di lui (F2), **Esporta** (F6), **Diagnostica** e
+  **Impostazioni** (F6, tutti e due puntano a `NullSettingsWindowLauncher`). Omesse anche le scorciatoie **Ctrl+4**
+  (Grafici, F7) e **Ctrl+5** (Cronologia backup, F6) in `MainWindow.axaml`. Ogni onda riaccende le sue: toglie
+  l'`IsVisible="False"`, riaggiunge la scorciatoia, e riprova il test dei pulsanti visibili del rail. Resta visibile
+  solo Home. `reported`.
+- **F1-LOG1 — Il log degli errori sta ora in `<cartella-dati>/logs`** (cartella 0700, file 0600 su Unix; Task 10-11) e
+  ogni guasto di sblocco, di qualunque tipo, vi lascia una riga. Con `--data-dir` il log segue la cartella scelta e non
+  scrive più nella cartella utente vera. WPF, congelato, scrive ancora in `%LocalAppData%/Recordum/logs`: chi cerca
+  un log deve sapere quale shell ha girato. `reported`.
+- **F1-11 — decaduto (D7)**: nessun ripiego del chrome su Linux, nessuna maniglia fatta in casa (la barra di sistema resta).
+

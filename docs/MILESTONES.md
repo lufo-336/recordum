@@ -558,3 +558,32 @@ qualunque cartella `Backups/` (una fixture non era mai entrata nel repo — l'ha
 cultura quando si confrontano etichette con i nomi dell'enum (in inglese coincidono); su Windows `File.OpenRead` fallisce su
 un DB che SQLite tiene aperto (usare `FileShare.ReadWrite`); il push di un file in `.github/workflows/` chiede al token di
 `gh` lo scope `workflow`.
+
+**Progresso 2026-10-02 (onda F1 — Home: codice completo, non ancora chiusa).** Piano
+`2026-09-20-wave-f1-home.md`, 13 task su `avalonia-linux-slice` (`aaa676b`…`6200ede` per i Task 6-12): un implementatore
+per task, in sequenza, e una review dopo ciascuno (Sonnet; Opus sui Task 10 e 11, che toccano chrome e avvio). Nessun
+Critical; una tornata di correzione sui Task 4, 5, 7, 10 e 11. Finding a tracker: `docs/phase-4-issues.md`, sezione "Onda F1".
+
+*Cosa esiste ora.* `Recordum.UI` si avvia da sé su Linux e apre il database cifrato vero: lock della cartella dati,
+riconciliazione del salt, sblocco (DPAPI senza finestra su Windows; altrove passphrase Argon2id con cache), poi la Home con
+righe vive (card tinta per riga, rinomina in linea, menu contestuale, trascinamento senza fantasma), rail e tab del
+workspace, finestra principale. Su Linux la finestra tiene le decorazioni di sistema (D7), senza ripiego né maniglie nostre;
+il codice chiede l'estensione dell'area client e nasconde i nostri pulsanti se la piattaforma non la accoglie. Il log degli
+errori sta in `<cartella-dati>/logs` (0700/0600) e ogni guasto di sblocco, di qualunque tipo, vi lascia una riga.
+
+*Cosa ha insegnato l'esecuzione.* Le review hanno trovato difetti veri, spesso test che non potevano fallire: il gestore
+dei tasti agganciato al `TopLevel` non veniva mai tolto allo stacco (`GetTopLevel(this)` è già nullo in
+`OnDetachedFromVisualTree`) e il test del tasto Canc non falliva comunque; nel Task 4 togliere `ClearAllPools()` lasciava
+tutto verde; nel Task 5 quattro registrazioni DI non erano risolte da nessun test. .NET applica il modo di creazione Unix solo
+alla cartella foglia, non ai genitori mancanti: va impostato a mano. `IsExtendedIntoWindowDecorations` è osservabile e
+non si legge una volta sola in `Opened`. Gli sblocchi falliti con eccezioni fuori dal filtro di `DbUnlockService` non
+lasciavano traccia: ora un filtro `when` che non cattura le registra tutte. La misura ha smentito un'ipotesi: i gruppi
+chiusi **non** realizzano i figli; il costo viene dagli stili inclusi per riga, dal menu da 10 voci per riga e dalla
+mancata virtualizzazione. Un limite di sessione ha interrotto il Task 12 (ripreso con lo stesso agente); il Task 6 era
+stato fermato per budget e ripreso da un branch `wip`. Le parti del brief scritte prima di D7 e dei Task 9-11 erano stantie.
+
+*Non consegnato*: il ramo Windows reale dello sblocco e il chrome su Windows non sono mai girati (handoff VM in
+`docs/dev-environment-sync.md`); la Home con 300 righe è sopra il budget (F1-PERF1); rail e Ctrl+4/5 spenti (F1-RAIL1);
+nessun editor, builder, dialog di export/backup (F4-F6), nessun grafico (F7); WPF resta la shell che spedisce. Conteggi su Linux:
+**Core 150 / Data 539 (+7 `WindowsOnly` che falliscono qui) / Plugins 66 / ExportEngine 37 / Presentation 953 / UI 183**.
+**Prossimo**: la review dell'intero branch, poi la checklist a schermo dell'autore su Windows e GNOME e il merge in `main`.

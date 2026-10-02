@@ -6,28 +6,31 @@
 
 ## Dove siamo — 2026-10-02
 
-- **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1 fino al
-  Task 5, Passo 0, documenti riorganizzati, errata del piano F1; fast-forward chiesto dall'autore). CI verde su Linux
-  e su Windows, anche su `main`. I test di prestazioni non girano in CI (oscillano sui runner condivisi).
-- **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`), oggi a metà
-  dell'onda F1 (Task 1-6 di 13).
-- **Passo 0** (messa in sicurezza): 0.1-0.8 e 0.10 fatti — documenti riorganizzati: `PRODUCT.md`, questa pagina, il
-  nuovo `CLAUDE.md`, l'archivio delle spec chiuse (`docs/superpowers/archive/`), l'indice in testa al tracker. Fatta
-  anche la sonda sul provider di cifratura (0.9): il rapporto è `docs/design/2026-09-30-encryption-provider-probe.md`
-  e propone SQLite3 Multiple Ciphers; **D9 aspetta l'autore**. Del Passo 0 resta solo la parte di 0.7 rimandata a F2.
-- **Task 6 di F1 chiuso** (`aaa676b`, review approvata): le righe della Home (card tinta, rinomina in linea, menu
-  contestuale), UI 117 verdi. La "Rinomina" sul gruppo senza casella resta com'è in WPF: è il finding F1-5 del piano.
-  Il branch `wip/f1-task6` è superato e si può cancellare.
-- **Prossimo**: il Task 7 di F1 (`HomeView` ed `EmptyState`). Misurare la Home con qualche centinaio di righe contro
-  i budget (E9/E20): ogni riga include i propri stili e il proprio menu, e un gruppo chiuso realizza lo stesso i figli.
+- **Branch di lavoro**: `avalonia-linux-slice`; il codice di F1 arriva a `6200ede`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1 fino al
+  Task 5, Passo 0, documenti riorganizzati, errata del piano F1). CI verde su Linux e su Windows, anche su `main`. I test
+  di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1 è a codice
+  completo (13 task su 13), non chiusa.** La shell si avvia davvero: sblocco del database, Home con righe vive,
+  trascinamento, rail e tab del workspace, finestra principale. Suite su Linux a `6200ede`: Core 150, Data 539 (+7 test DPAPI `WindowsOnly` che qui falliscono), Plugins 66,
+  ExportEngine 37, Presentation 953, UI 183; build 0 errori.
+- **Per chiudere F1 mancano tre cose**: la review dell'intero branch (la fa il controllore, è la prossima); la
+  checklist a schermo su Windows e su GNOME (l'autore; l'handoff è in `docs/dev-environment-sync.md`); il merge in `main`
+  (l'autore).
+- **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"): la Home con 300 righe impiega ≈ 3,8 s a caldo
+  contro il budget di 500 ms (**F1-PERF1**, da chiudere prima del dogfooding); `recordum.db`/`-wal`/`-shm` nascono 0644
+  (**F1-SEC1**, nel `/security-review`); rail e Ctrl+4/Ctrl+5 sono spenti finché F2, F6 e F7 non li riaccendono
+  (**F1-RAIL1**).
+- **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
+  cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
+  l'autore**.
+- **Prossimo**: la review di branch di F1; poi F2.
 
 ## Il percorso
 
 1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde (manca il key store
    Linux di 0.7, che si fa in F2).
-2. **F1 — Home su Avalonia** · ◐ Task 1-6 · esce col Task 13 e con la checklist del chrome vista su Windows e su GNOME.
-   Il Task 10 segue D7 (su Linux la barra di sistema); il Task 11 collega all'avvio lock, riconciliazione del salt, `RecordumOptions.Resolve` e
-   il log (Passo 0).
+2. **F1 — Home su Avalonia** · ◐ codice completo (13 task) · esce con la review dell'intero branch, la checklist a
+   schermo su Windows e su GNOME (D7: su Linux la barra di sistema) e il merge in `main`.
 3. **F2 — "si usa ogni giorno"** · ☐ · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
    (`docs/DOGFOODING.md`) è coperto **su Linux**, la casa dei dati (D11); Windows segue con dati di prova. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
    manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica

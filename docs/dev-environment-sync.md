@@ -398,3 +398,41 @@ schermo. Sono tutti rimandabili e nessuno blocca il porting. **Nota per quando l
 pass visivo dell'Onda 2 — è una scelta da fare sapendola. E alla verifica a schermo, un numero di streak
 **può cambiare al primo avvio**: passando da UTC a locale lo storico si ri-interpreta. È corretto, non è
 una regressione.
+
+## Handoff per la VM — onda F1 (shell Avalonia — Home), 2026-10-02
+
+Due cose da fare **una sola volta** sulla VM Windows, quando conviene: nessuna blocca il lavoro su Linux. Si parte dal
+branch `avalonia-linux-slice`. Qualunque avvio dell'app usa una cartella dati **a perdere** (`--data-dir`) e mai la
+cartella dei dati veri.
+
+### 1. Il ramo Windows reale dello sblocco del DB
+
+Il ramo DPAPI dello sblocco su Linux è provato **fingendolo** (`DbUnlockService` con un `IDbKeyProvider` iniettato). La
+suite `Recordum.Data.Tests` ha su Linux **7 fallimenti noti** (546 test, 539 verdi), tutti `Category=WindowsOnly`
+(`DpapiKeyProviderTests`, `DpapiAutoBackupKeyStoreTests`, `KeyTransitionServiceTests`): su Windows devono sparire.
+
+```powershell
+git checkout avalonia-linux-slice
+dotnet test tests\Recordum.Data.Tests --nologo
+```
+
+Atteso: **0 fallimenti**, non 7. Se ne resta uno è reale e Linux non l'ha mai potuto vedere.
+
+### 2. La checklist a schermo del chrome (e uno sguardo alla shell intera)
+
+La checklist **vera** sta nel piano `docs/superpowers/plans/2026-09-20-wave-f1-home.md`, Task 10 Step 9, "Errata
+2026-10-02" (D7): una lista per **Linux** (GNOME, meglio su Wayland: una sola barra, quella di sistema; trascinamento, snap,
+ombra e ridimensionamento sono del sistema; i nostri pulsanti di didascalia non si vedono) e una per **Windows** 10 e 11 (la
+nostra barra con riduci/ingrandisci/chiudi visibili, glifo centrale che cambia, snap layout su Windows 11, massimizzata
+senza sfondare la barra delle applicazioni, ☰ che apre e chiude il rail). Il vecchio elenco a 7 punti sotto l'errata e
+il ripiego con maniglie fatte in casa **non esistono più**. In più, su Windows: il glifo di "riduci a icona" deve comparire
+(finding `F1-ICON1` del tracker).
+
+```powershell
+dotnet run --project src\Recordum.UI -- --data-dir $env:TEMP\recordum-f1 --seed-demo
+```
+
+`--seed-demo` rifiuta la cartella dei dati veri, quindi con una `--data-dir` di prova è sicuro. Su Windows lo sblocco
+passa da DPAPI, senza finestra. Guarda se **sembra Recordum**: albero, righe, colori, rail con il solo pulsante Home. Un
+test strutturale prova che qualcosa è realizzato, non che assomiglia a Recordum: lo dice solo un occhio umano. Annota
+l'esito in una nota di sessione o in un commit `docs:`.
