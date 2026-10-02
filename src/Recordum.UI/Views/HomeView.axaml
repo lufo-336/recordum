@@ -83,8 +83,9 @@
               Margin="0,0,16,0" Padding="12,4" VerticalAlignment="Center">
         <Button.Flyout>
           <MenuFlyout Placement="Bottom">
+            <!-- Spento fino a F5 (selettore di template e builder): oggi il comando apre un lanciatore nullo. -->
             <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Habit}"
-                      Command="{CompiledBinding OpenNewHabitCommand}"/>
+                      Command="{CompiledBinding OpenNewHabitCommand}" IsVisible="False"/>
             <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Group}"
                       Command="{CompiledBinding CreateGroupCommand}"/>
           </MenuFlyout>
