@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wsvm="using:Recordum.Presentation.ViewModels.Workspace"
+             xmlns:hsvm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             x:Class="Recordum.UI.Views.Workspace.WorkspaceView"
+             x:DataType="wsvm:WorkspaceViewModel"
+             Background="{DynamicResource Brush.Surface}">
+
+  <UserControl.DataTemplates>
+    <!-- Il contenuto di un tab aperto arriva in F2 (shell di HabitScreen). Qui il template esiste
+         ed e' VUOTO di proposito: nessun testo scritto a mano, nessun segnaposto localizzato.
+         Vive come DataTemplate tipizzato e non come ContentTemplate statico del ContentControl:
+         un ContentTemplate statico materializza il template anche con Content null (lezione C1
+         dell'Onda 2.4 e W24-Q1 della 2.5), mentre un DataTemplate scelto per tipo non puo'
+         scattare su null. -->
+    <DataTemplate DataType="hsvm:HabitScreenViewModel">
+      <Border Name="SubjectScreenPlaceholder" Background="Transparent"/>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <UserControl.Styles>
+    <!-- Tab: angoli superiori arrotondati sul riempimento hover/selezionato, sottolineatura
+         accento 2px sul tab attivo. Si tinge la parte del template Fluent (PART_ContentPresenter),
+         non si riscrive il template: gli stili del ControlTheme Fluent colorano proprio quella
+         parte, quindi un Setter sul solo ListBoxItem.Background perderebbe contro di loro. -->
+    <Style Selector="ListBox.tabstrip > ListBoxItem">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="0,0,2,0"/>
+    </Style>
+    <Style Selector="ListBox.tabstrip > ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0,0,0,2"/>
+      <Setter Property="CornerRadius" Value="6,6,0,0"/>
+      <Setter Property="Padding" Value="12,6"/>
+    </Style>
+    <Style Selector="ListBox.tabstrip > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+    </Style>
+    <Style Selector="ListBox.tabstrip > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+    <!-- Titolo del tab: un'anteprima e' in corsivo e muta. In WPF era un DataTrigger, qui una
+         classe pilotata dal binding. -->
+    <Style Selector="TextBlock.tabtitle.preview">
+      <Setter Property="FontStyle" Value="Italic"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <Style Selector="Path.pinicon.preview">
+      <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="Opacity" Value="0.45"/>
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel>
+    <!-- Striscia dei tab: una ListBox piatta la cui selezione E' il tab attivo. Clic singolo
+         attiva (selezione nativa); doppio tap fissa (code-behind). -->
+    <ListBox DockPanel.Dock="Top"
+             Name="TabStrip"
+             Classes="tabstrip"
+             ItemsSource="{Binding Tabs}"
+             SelectedItem="{Binding ActiveSubjectTab, Mode=TwoWay}"
+             IsVisible="{Binding !IsFocusZen}"
+             Background="{DynamicResource Brush.Background}"
+             BorderBrush="{DynamicResource Brush.Border}"
+             BorderThickness="0,0,0,1"
+             Padding="4,2"
+             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+      <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal"/>
+        </ItemsPanelTemplate>
+      </ListBox.ItemsPanel>
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="wsvm:SubjectTabViewModel">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Name="TabTitle"
+                       Classes="tabtitle" Classes.preview="{Binding IsPreview}"
+                       Text="{Binding Title}"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource Brush.Text}"/>
+            <Button Name="PinButton"
+                    Margin="8,0,0,0" Padding="2,0"
+                    Background="Transparent" BorderThickness="0"
+                    ToolTip.Tip="{x:Static res:Strings.Workspace_PinTab}"
+                    Command="{Binding $parent[ListBox].((wsvm:WorkspaceViewModel)DataContext).TogglePinCommand}"
+                    CommandParameter="{Binding}">
+              <Path Classes="pinicon" Classes.preview="{Binding IsPreview}"
+                    Width="12" Height="12" Stretch="Uniform"
+                    Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+                    StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="{StaticResource Icon.Pin}"/>
+            </Button>
+            <Button Name="CloseButton"
+                    Margin="6,0,0,0" Padding="3" Width="20" Height="20"
+                    Background="Transparent" BorderThickness="0"
+                    ToolTip.Tip="{x:Static res:Strings.Workspace_CloseTab}"
+                    Command="{Binding $parent[ListBox].((wsvm:WorkspaceViewModel)DataContext).CloseTabCmdCommand}"
+                    CommandParameter="{Binding}">
+              <Path Width="9" Height="9" Stretch="Uniform"
+                    Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                    StrokeLineCap="Round"
+                    Data="M0,0 L9,9 M9,0 L0,9"/>
+            </Button>
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <!-- Contenuto attivo: lo schermo del tab selezionato, oppure il pannello di benvenuto.
+         Nessun IsVisible sul ContentControl: in panoramica ActiveSubjectTab e' null, quindi il
+         Content e' DAVVERO null ed e' quello — non la visibilita' — a impedire che il template
+         del soggetto venga costruito. -->
+    <Grid>
+      <ContentControl Name="SubjectHost" Content="{Binding ActiveSubjectTab.Screen}"/>
+      <StackPanel Name="WelcomePanel"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                  MaxWidth="320" Margin="24"
+                  IsVisible="{Binding IsPanoramicaActive}">
+        <Path Width="46" Height="46" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,16"
+              Opacity="0.45" Data="{StaticResource Icon.BookOpen}"
+              Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.4"
+              StrokeLineCap="Round" StrokeJoin="Round"/>
+        <TextBlock Text="{x:Static res:Strings.Workspace_Empty}"
+                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                   Foreground="{DynamicResource Brush.TextMuted}"
+                   FontSize="{DynamicResource FontSize.Heading}"/>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</UserControl>
