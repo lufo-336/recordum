@@ -5,8 +5,8 @@
   <!-- Themes/Tokens.axaml (branch avalonia-linux-slice, sonda styling): merge a livello Application
        così ogni view risolve le chiavi Brush.*/Font.*/Layout.*
        con DynamicResource, e la variante Light/Dark segue Window.RequestedThemeVariant senza bisogno
-       di un ThemeService che scambia dizionari come in WPF. Non collega nessuna view alla finestra
-       reale: MainWindow resta quella dello scaffold. -->
+       di un ThemeService che scambia dizionari come in WPF. La finestra vera (MainWindow) la crea
+       App.StartAsync dopo lo sblocco del database. -->
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>

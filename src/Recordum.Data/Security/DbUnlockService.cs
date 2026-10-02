@@ -42,6 +42,17 @@ public sealed partial class DbUnlockService : IDbUnlockService
     [LoggerMessage(EventId = 3, Level = LogLevel.Warning, Message = "Salt without a database moved aside to {Aside}")]
     private partial void LogSaltSetAside(string aside);
 
+    [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "Unlock refused in state {State}: {Reason}")]
+    private partial void LogUnlockRefused(DbUnlockState state, string reason);
+
+    /// <summary>Un rifiuto senza eccezione: il risultato e' <c>Failed</c> e la finestra mostra il messaggio generico,
+    /// quindi la ragione resta nel log (stato e motivo, mai la passphrase ne' la chiave).</summary>
+    private UnlockResult Refused(DbUnlockState state, string reason)
+    {
+        LogUnlockRefused(state, reason);
+        return new UnlockResult(UnlockOutcome.Failed, null);
+    }
+
     /// <summary>Con la chiave di piattaforma del sistema: DPAPI su Windows, nessuna altrove.</summary>
     public DbUnlockService(IDbStoragePaths paths, ILogger<DbUnlockService>? logger = null)
         : this(paths, DefaultPlatformKey(paths), logger)
@@ -127,7 +138,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
                 DbUnlockState.UsePlatformKey => await UnlockWithPlatformKeyAsync(ct).ConfigureAwait(false),
                 DbUnlockState.NeedsCreation => await CreateAsync(passphrase, ct).ConfigureAwait(false),
                 DbUnlockState.NeedsPassphrase => await EnterAsync(passphrase, ct).ConfigureAwait(false),
-                _ => new UnlockResult(UnlockOutcome.Failed, null),
+                _ => Refused(state, "no unlock path for this state"),
             };
         }
         catch (Exception ex) when (ex is KeyUnavailableException or IOException or UnauthorizedAccessException
@@ -159,12 +170,12 @@ public sealed partial class DbUnlockService : IDbUnlockService
 
     private async Task<UnlockResult> UnlockWithPlatformKeyAsync(CancellationToken ct)
     {
-        if (_platformKey is null) return new UnlockResult(UnlockOutcome.Failed, null);
+        if (_platformKey is null) return Refused(DbUnlockState.UsePlatformKey, "this system has no platform key");
         var provider = _platformKey();
         using var key = await provider.GetKeyAsync(ct).ConfigureAwait(false);
         // Una chiave di piattaforma che non legge il DB non è "passphrase errata": non c'è nessuna
         // passphrase da correggere.
-        if (HasDatabase() && !CanRead(key)) return new UnlockResult(UnlockOutcome.Failed, null);
+        if (HasDatabase() && !CanRead(key)) return Refused(DbUnlockState.UsePlatformKey, "the platform key cannot read the existing database");
         return new UnlockResult(UnlockOutcome.Unlocked, provider);
     }
 
@@ -172,7 +183,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
     {
         if (IsTooShort(passphrase)) return new UnlockResult(UnlockOutcome.PassphraseTooShort, null);
         // Riscrivere il salt di un database vero lo renderebbe illeggibile per sempre.
-        if (HasDatabase()) return new UnlockResult(UnlockOutcome.Failed, null);
+        if (HasDatabase()) return Refused(DbUnlockState.NeedsCreation, "a database already exists, its salt is not rewritten");
 
         WriteSalt(_paths.SaltFilePath, RandomNumberGenerator.GetBytes(SaltLengthBytes));
         var provider = new CachingKeyProvider(new PassphraseKeyProvider(passphrase, _paths.SaltFilePath));
@@ -186,7 +197,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
         if (IsTooShort(passphrase)) return new UnlockResult(UnlockOutcome.PassphraseTooShort, null);
         // Open è ReadWriteCreate: con un NeedsPassphrase stantio (il file è sparito) creerebbe un database
         // vuoto e qualunque passphrase di 12+ caratteri "sbloccherebbe". Come CreateAsync, non lo si fa.
-        if (!HasDatabase()) return new UnlockResult(UnlockOutcome.Failed, null);
+        if (!HasDatabase()) return Refused(DbUnlockState.NeedsPassphrase, "a passphrase was entered but the database is missing");
 
         SqliteConnection.ClearAllPools();   // v. la nota di classe: il pool ignorerebbe la chiave sbagliata
         var provider = new CachingKeyProvider(new PassphraseKeyProvider(passphrase, _paths.SaltFilePath));

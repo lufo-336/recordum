@@ -14,7 +14,7 @@ public class CrashLoggerTests
     private const UnixFileMode OwnerDirectory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
 
-    [Fact]
+    [AvaloniaFact]
     public void The_log_and_its_folders_are_private_to_the_user_on_unix()
     {
         if (OperatingSystem.IsWindows()) return;   // ACL, non modi Unix

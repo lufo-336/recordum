@@ -173,7 +173,7 @@ public class MainWindowTests
         {
             var glyph = (global::Avalonia.Controls.Shapes.Path)window.GetVisualDescendants().OfType<Button>()
                 .Single(b => b.Name == name).Content!;
-            glyph.RenderedGeometry.Bounds.Width.Should().BeGreaterThan(0, $"il glifo di {name} deve avere un'impronta");
+            glyph.RenderedGeometry!.Bounds.Width.Should().BeGreaterThan(0, $"il glifo di {name} deve avere un'impronta");
         }
     }
 

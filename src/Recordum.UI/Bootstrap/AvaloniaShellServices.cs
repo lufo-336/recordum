@@ -27,10 +27,9 @@ public static class AvaloniaShellServices
     {
         services.AddSingleton<ITickSourceFactory, DispatcherTickSourceFactory>();
 
-        // Application.Current.ApplicationLifetime non esiste ancora quando questo metodo gira
-        // (App.axaml.cs lo chiama prima di OnFrameworkInitializationCompleted, v. Task 11): la
-        // lambda è quindi una fabbrica valutata alla RISOLUZIONE, non alla registrazione, quando il
-        // framework l'ha già assegnata. Il cast a IControlledApplicationLifetime su un lifetime diverso
+        // Questo metodo gira in App.StartAsync (via AppComposition.BuildServices), cioe' dopo
+        // OnFrameworkInitializationCompleted: il lifetime c'e' gia'. La lambda resta comunque una fabbrica
+        // valutata alla RISOLUZIONE, non alla registrazione, cosi' non dipende dall'ordine. Il cast a IControlledApplicationLifetime su un lifetime diverso
         // dal classic-desktop ritorna null (non InvalidCastException), e il successivo Shutdown() su
         // null lancia NRE — che è il timeout che avverte il developer (meglio di una silenzio a runtime).
         // Oggi è l'unico che questa shell registra (Program.cs).

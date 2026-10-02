@@ -1844,8 +1844,9 @@ Restano questi, ciascuno con la sua ragione.
   se WPF viene toccato di nuovo, o quando F8 lo toglie. `reported`.
 - **F1-3 — `DbUnlockService.UnlockAsync` ha un solo esito `Failed` per cause diverse.** Per esempio rifiuta di ricreare
   il salt se esiste già un database non vuoto (un altro avvio l'ha appena creato, o altro) e torna lo stesso
-  `UnlockOutcome.Failed` col messaggio generico. Dal Task 11 ogni guasto lascia una riga nel log, quindi la causa si
-  ricostruisce; la distinzione per l'utente vale una voce solo se il dogfooding la incontra. `reported`.
+  `UnlockOutcome.Failed` col messaggio generico. Ogni guasto lascia una riga nel log (con eccezione dal Task 11; i rifiuti senza eccezione —
+  chiave DPAPI che non legge il DB, creazione rifiutata, passphrase senza DB, nessuna chiave di piattaforma — dalla
+  review finale di F1), quindi la causa si ricostruisce; la distinzione per l'utente vale una voce solo se il dogfooding la incontra. `reported`.
 - **F1-5 — La riga gruppo offre "Rinomina" nel menu contestuale ma non ha una casella di rinomina.** Difetto già in WPF
   (`BeginRenameCommand` mette `IsRenaming = true` e non succede nulla di visibile), portato com'è per decisione D6 del
   piano: un difetto di WPF non si risolve dentro un porting. `GroupRow.axaml` ha la voce di menu e nessun editor. Si
@@ -1876,7 +1877,10 @@ Restano questi, ciascuno con la sua ragione.
   con 4 righe la Home si carica in 318 ms (Task 12). Cause misurate: lo `StyleInclude` di `RowCardStyles` **per riga**
   (toglierlo: 3,8 → 2,7 s), un `ContextMenu` da 10 voci costruito subito **per ogni riga** (3,8 → 3,1 s), nessuna
   virtualizzazione (~24 nodi visuali per riga, ~12 ms a riga). Smentita l'ipotesi del Task 6: i gruppi chiusi **non**
-  realizzano i figli (`Rebuild` li omette). Fix: stili inclusi una volta a livello di `HomeView`/`App`, menu costruito
+  realizzano i figli (`Rebuild` li omette). Causa aggiunta dalla review finale: ogni `LoadAsync` mette `State=Loading`, quindi
+  `HomeStateTemplate` smonta e ricostruisce **l'intero albero** dopo ogni registrazione o archiviazione (`OnRowsInvalidated`
+  → `ReloadPreservingSelectionAsync`), non solo al primo caricamento; direzione del fix: tenere il sottoalbero `Loaded`
+  durante i ricaricamenti. Fix: stili inclusi una volta a livello di `HomeView`/`App`, menu costruito
   alla prima apertura, poi virtualizzazione. Da chiudere prima del dogfooding. `reported`.
 - **F1-SEC1 — `recordum.db`, `-wal` e `-shm` nascono 0644 dentro la cartella dati 0700** (visto avviando la shell vera su
   Linux, Task 11; il comportamento è precedente). La cartella 0700 li protegge e il contenuto è cifrato, ma i file
@@ -1896,7 +1900,9 @@ Restano questi, ciascuno con la sua ragione.
   codice). `reported`.
 - **F1-LOG1 — Il log degli errori sta ora in `<cartella-dati>/logs`** (cartella 0700, file 0600 su Unix; Task 10-11) e
   ogni guasto di sblocco, di qualunque tipo, vi lascia una riga. Con `--data-dir` il log segue la cartella scelta e non
-  scrive più nella cartella utente vera. WPF, congelato, scrive ancora in `%LocalAppData%/Recordum/logs`: chi cerca
-  un log deve sapere quale shell ha girato. `reported`.
+  scrive più nella cartella utente vera. Con la cartella predefinita WPF (congelata) e Avalonia scrivono lo **stesso**
+  file, `%LocalAppData%/Recordum/logs/recordum.log` (su Linux `~/.local/share/Recordum/logs/recordum.log`): le righe delle due
+  shell si mescolano e non dicono quale shell le ha scritte. "Quale shell ha girato" conta solo con `--data-dir`, dove
+  Avalonia scrive nella cartella scelta e WPF no. `reported`.
 - **F1-11 — decaduto (D7)**: nessun ripiego del chrome su Linux, nessuna maniglia fatta in casa (la barra di sistema resta).
 

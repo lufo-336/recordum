@@ -76,6 +76,14 @@ public partial class App : Application
                 return;
             }
 
+            // I dati finti non finiscono mai in quelli veri: lo si dice PRIMA dello sblocco, altrimenti al primo avvio
+            // l'utente crea la passphrase e il database veri e poi riceve un errore fatale (review F1, m4).
+            if (SeedRefusedOnRealData(args, options))
+            {
+                ShowFatal(desktop, FormatStartupError(new InvalidOperationException(DemoDataSeeder.RealDataRefusal)));
+                return;
+            }
+
             var keyProvider = await ResolveKeyAsync(desktop, options).ConfigureAwait(true);
             if (keyProvider is null) return;   // sblocco annullato o non supportato: si e' gia' detto perche'
 
@@ -109,6 +117,10 @@ public partial class App : Application
             ShowFatal(desktop, FormatStartupError(ex));
         }
     }
+
+    /// <summary>Gli stessi flag e la stessa regola di <c>DemoDataSeeder.EnsureNotRealData</c>, valutati prima dello sblocco.</summary>
+    internal static bool SeedRefusedOnRealData(string[] args, RecordumOptions options) =>
+        options.IsDefaultLocation && (args.Contains("--seed-demo") || args.Contains("--seed-habit"));
 
     // Letto al momento dell'uso, non in un campo statico: la cultura dell'app e' impostata dopo l'avvio.
 #pragma warning disable CA1863 // una volta per processo, e il formato non si puo' cachare prima della cultura

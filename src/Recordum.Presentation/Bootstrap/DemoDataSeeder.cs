@@ -188,12 +188,14 @@ public sealed class DemoDataSeeder(
     /// macchina lo sviluppo e il dogfooding condividerebbero la cartella di default.</summary>
     private void EnsureNotRealData()
     {
-        if (options.IsDefaultLocation)
-            throw new InvalidOperationException(
-                "--seed-demo / --seed-habit write fake data and refuse the real data folder. "
-                + $"Point the app at a scratch folder with {RecordumOptions.DataDirectoryArgument} <folder> "
-                + $"or {RecordumOptions.DataDirectoryVariable}.");
+        if (options.IsDefaultLocation) throw new InvalidOperationException(RealDataRefusal);
     }
+
+    /// <summary>Il messaggio del rifiuto: lo usa anche la shell, che lo controlla prima dello sblocco.</summary>
+    public static string RealDataRefusal =>
+        "--seed-demo / --seed-habit write fake data and refuse the real data folder. "
+        + $"Point the app at a scratch folder with {RecordumOptions.DataDirectoryArgument} <folder> "
+        + $"or {RecordumOptions.DataDirectoryVariable}.";
 
     public async Task SeedHabitAsync(string name, CancellationToken ct = default)
     {

@@ -10,7 +10,8 @@ namespace Recordum.Presentation.ViewModels.Startup;
 /// vive: chi la mostra aspetta <see cref="Result"/>, che si completa solo quando lo sblocco riesce
 /// (o viene annullato con <see cref="Cancel"/>).
 /// <para>I testi sono proprietà del ViewModel, non letti dalla vista: la vista si lega e basta.
-/// Sono letti alla costruzione: la cultura di processo è già applicata prima della prima finestra.</para></summary>
+/// Sono letti alla costruzione. Su Avalonia la finestra di sblocco si mostra nella cultura del sistema operativo: la
+/// lingua scelta dall'utente vive nel database cifrato, che a quel punto e' ancora chiuso.</para></summary>
 public sealed partial class UnlockViewModel : ObservableObject
 {
     private readonly IDbUnlockService _service;

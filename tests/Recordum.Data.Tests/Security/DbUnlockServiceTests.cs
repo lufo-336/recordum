@@ -343,6 +343,49 @@ public sealed class DbUnlockServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_platform_key_that_cannot_read_the_database_leaves_a_warning()
+    {
+        await SeedAsync(_paths.DatabasePath, new FixedKey(Bytes(7)));
+        var log = new ListLogger();
+
+        var result = await new DbUnlockService(_paths, () => new FixedKey(Bytes(99)), log)
+            .UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase);
+
+        Assert.Equal(UnlockOutcome.Failed, result.Outcome);
+        AssertOneRefusal(log, DbUnlockState.UsePlatformKey);
+    }
+
+    [Fact]
+    public async Task The_other_refusals_without_an_exception_leave_a_warning_too()
+    {
+        // Platform key requested on a system that has none.
+        var noKey = new ListLogger();
+        await new DbUnlockService(_paths, platformKeyFactory: null, noKey).UnlockAsync(DbUnlockState.UsePlatformKey, "");
+        AssertOneRefusal(noKey, DbUnlockState.UsePlatformKey);
+
+        // Creation refused because a database is already there.
+        File.WriteAllBytes(_paths.DatabasePath, [1, 2, 3]);
+        var exists = new ListLogger();
+        await new DbUnlockService(_paths, platformKeyFactory: null, exists).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase);
+        AssertOneRefusal(exists, DbUnlockState.NeedsCreation);
+
+        // Passphrase entered with the database missing.
+        File.Delete(_paths.DatabasePath);
+        var missing = new ListLogger();
+        await new DbUnlockService(_paths, platformKeyFactory: null, missing).UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase);
+        AssertOneRefusal(missing, DbUnlockState.NeedsPassphrase);
+    }
+
+    private static void AssertOneRefusal(ListLogger log, DbUnlockState state)
+    {
+        var entry = Assert.Single(log.Entries);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.Null(entry.Exception);
+        Assert.Contains(state.ToString(), entry.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Passphrase, entry.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_unexpected_failure_is_logged_and_still_propagates()
     {
         // La libreria nativa che non si carica (il rischio D9 su Linux) non e' fra le eccezioni che il servizio
@@ -373,11 +416,11 @@ public sealed class DbUnlockServiceTests : IDisposable
 
     private sealed class ListLogger : ILogger<DbUnlockService>
     {
-        public List<(LogLevel Level, Exception? Exception)> Entries { get; } = [];
+        public List<(LogLevel Level, Exception? Exception, string Message)> Entries { get; } = [];
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
         public bool IsEnabled(LogLevel logLevel) => true;
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-            Func<TState, Exception?, string> formatter) => Entries.Add((logLevel, exception));
+            Func<TState, Exception?, string> formatter) => Entries.Add((logLevel, exception, formatter(state, exception)));
     }
 
     [Fact]

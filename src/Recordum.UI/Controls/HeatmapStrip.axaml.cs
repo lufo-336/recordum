@@ -76,14 +76,14 @@ public partial class HeatmapStrip : UserControl
 
     // Sorpresa della porting (dettaglio nel report, sezione "cosa ha sorpreso"): QUI andava
     // chiamato il metodo generato InitializeComponent(), non AvaloniaXamlLoader.Load(this) preso
-    // di peso dal boilerplate di MainWindow/ThemeProbeView. Il generatore Avalonia.Generators
+    // di peso dal boilerplate di una view qualunque. Il generatore Avalonia.Generators
     // (Roslyn incremental generator nel package Avalonia, non XamlIl) produce per ogni x:Name un
     // CAMPO ("Cells") e un metodo InitializeComponent(bool loadXaml = true) che fa DUE cose:
     // AvaloniaXamlLoader.Load(this) *e poi* Cells = FindNameScope().Find&lt;StackPanel&gt;("Cells").
     // Chiamare solo Load(this) esegue la prima metà e salta silenziosamente la seconda: il campo
     // resta null, e non lo si scopre finché non lo si usa (NullReferenceException a runtime, non
-    // un errore di compilazione — MainWindow.axaml.cs e ThemeProbeView.axaml.cs hanno lo stesso
-    // problema latente, semplicemente non hanno mai letto il loro campo nominato).
+    // un errore di compilazione — una view che chiamasse solo Load(this) avrebbe lo stesso
+    // problema latente finche' non legge il proprio campo nominato).
     public HeatmapStrip()
     {
         InitializeComponent();
