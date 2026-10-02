@@ -4,34 +4,35 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-02
+## Dove siamo — 2026-10-03
 
-- **Branch di lavoro**: `avalonia-linux-slice`; il codice di F1 arriva a `6200ede`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1 fino al
-  Task 5, Passo 0, documenti riorganizzati, errata del piano F1). CI: verde su `main`; sul branch era rossa da `b1fe1dd` (stato del workspace
-  condiviso fra test, review finale I1): corretto, **da confermare dopo il push**. I test
-  di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato, a `c744963`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1
+  fino al Task 5, Passo 0). **CI verde su Linux e su Windows** sul branch (run 37073454341) e su `main`. I test di
+  prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1 è a codice
-  completo (13 task su 13), non chiusa.** La shell si avvia davvero: sblocco del database, Home con righe vive,
-  trascinamento, rail e tab del workspace, finestra principale. Suite su Linux a `6200ede`: Core 150, Data 539 (+7 test DPAPI `WindowsOnly` che qui falliscono), Plugins 66,
-  ExportEngine 37, Presentation 953, UI 183; build 0 errori.
-- **Per chiudere F1 mancano tre cose**: la review dell'intero branch (la fa il controllore, è la prossima); la
-  checklist a schermo su Windows e su GNOME (l'autore; l'handoff è in `docs/dev-environment-sync.md`); il merge in `main`
-  (l'autore).
+  completo e ha passato la review dell'intero branch**: la shell si avvia davvero (sblocco del database, Home con righe
+  vive, trascinamento, rail e tab del workspace, finestra principale). La review finale ha trovato e fatto correggere
+  la CI rossa da `b1fe1dd` (stato condiviso fra test), il glifo di "riduci a icona" che non disegnava, Esc nella
+  rinomina che salvava il nome scartato, e due pulsanti che non facevano nulla (spenti fino a F5). Suite su Linux a
+  `c744963`: Core 150, Data 541 (+7 test DPAPI `WindowsOnly` che qui falliscono), Plugins 66, ExportEngine 37,
+  Presentation 953, UI 190; build 0 errori.
+- **Per chiudere F1 mancano due cose, entrambe dell'autore**: la checklist a schermo su Windows e su GNOME (l'handoff è
+  in `docs/dev-environment-sync.md`, la lista D7 nel piano F1, Task 10 Step 9) e il merge in `main`.
 - **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"): la Home con 300 righe impiega ≈ 3,8 s a caldo
-  contro il budget di 500 ms (**F1-PERF1**: non blocca il merge di F1, va chiuso prima del dogfooding); `recordum.db`/`-wal`/`-shm` nascono 0644
-  (**F1-SEC1**, nel `/security-review`); rail e Ctrl+4/Ctrl+5 sono spenti finché F2, F6 e F7 non li riaccendono
-  (**F1-RAIL1**).
+  contro il budget di 500 ms (**F1-PERF1**: non blocca il merge di F1, va chiuso prima del dogfooding);
+  `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+4/Ctrl+5, "Nuovo >
+  Abitudine" e il pulsante dello stato vuoto sono spenti finché F2, F5, F6 e F7 non li riaccendono (**F1-RAIL1**).
 - **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
 - Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **Prossimo**: la review di branch di F1; poi F2.
+- **Prossimo**: la verifica a schermo di F1 e il merge (autore); poi F2, che comincia da F1-PERF1.
 
 ## Il percorso
 
 1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde (manca il key store
    Linux di 0.7, che si fa in F2).
-2. **F1 — Home su Avalonia** · ◐ codice completo (13 task) · esce con la review dell'intero branch, la checklist a
+2. **F1 — Home su Avalonia** · ◐ codice completo, review di branch fatta, CI verde · esce con la checklist a
    schermo su Windows e su GNOME (D7: su Linux la barra di sistema) e il merge in `main`.
 3. **F2 — "si usa ogni giorno"** · ☐ · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
    (`docs/DOGFOODING.md`) è coperto **su Linux**, la casa dei dati (D11); Windows segue con dati di prova. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
