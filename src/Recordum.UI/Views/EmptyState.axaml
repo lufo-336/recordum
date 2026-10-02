@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             x:Class="Recordum.UI.Views.EmptyState"
+             x:DataType="vm:HomeViewModel">
+  <UserControl.Styles>
+    <Style Selector="Path.emptyicon">
+      <Setter Property="Data" Value="{StaticResource Icon.Sprout}"/>
+    </Style>
+    <Style Selector="Path.emptyicon.archived">
+      <Setter Property="Data" Value="{StaticResource Icon.Moon}"/>
+    </Style>
+    <Style Selector="Path.emptyicon.trash">
+      <Setter Property="Data" Value="{StaticResource Icon.Sparkles}"/>
+    </Style>
+    <Style Selector="TextBlock.emptytext">
+      <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Active}"/>
+    </Style>
+    <Style Selector="TextBlock.emptytext.archived">
+      <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Archived}"/>
+    </Style>
+    <Style Selector="TextBlock.emptytext.trash">
+      <Setter Property="Text" Value="{x:Static res:Strings.Home_Empty_Trash}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Un'icona e una riga al centro, non una frase grigia: "uno schermo vuoto è un invito ad
+       agire" (lista Attive vuota = un germoglio da piantare; Archiviate = dormiente; Cestino = pulito). -->
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="320" Margin="24">
+    <Path Classes="emptyicon"
+          Classes.archived="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
+          Classes.trash="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
+          Width="46" Height="46" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,16"
+          Opacity="0.45"
+          Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.4"
+          StrokeLineCap="Round" StrokeJoin="Round"/>
+
+    <TextBlock Classes="emptytext"
+               Classes.archived="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
+               Classes.trash="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
+               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+               FontSize="{StaticResource FontSize.Heading}"
+               Foreground="{DynamicResource Brush.TextMuted}"/>
+
+    <!-- Solo su Attive: creare un'abitudine non ha senso in Archiviate o nel Cestino. -->
+    <Button Classes="primary" Margin="0,20,0,0" HorizontalAlignment="Center" Padding="16,8"
+            Cursor="Hand"
+            FontSize="{StaticResource FontSize.Body}"
+            Command="{CompiledBinding OpenNewHabitCommand}"
+            Content="{x:Static res:Strings.Home_Empty_NewHabit}"
+            IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}"/>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:v="using:Recordum.UI.Views"
+             xmlns:rows="using:Recordum.UI.Views.Rows"
+             x:Class="Recordum.UI.Views.HomeView"
+             x:DataType="vm:HomeViewModel"
+             Background="{DynamicResource Brush.Background}">
+  <UserControl.Styles>
+    <!-- Gemello di `Recordum.Segment` (BaseStyles.xaml:335): una pillola senza pallino. È l'unico
+         stile di F1 che serve a una sola view, quindi resta qui e non in ControlStyles.axaml. -->
+    <Style Selector="RadioButton.segment">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="Padding" Value="11,4"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.segment:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+    </Style>
+    <Style Selector="RadioButton.segment:checked">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="RadioButton.segment:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <Grid Grid.Row="0" Height="44" Background="{DynamicResource Brush.Surface}"
+          ColumnDefinitions="Auto,*,Auto">
+      <TextBlock Grid.Column="0" Text="{x:Static res:Strings.AppTitle}"
+                 FontSize="{StaticResource FontSize.Heading}" FontWeight="SemiBold"
+                 Margin="16,0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Brush.Text}"/>
+
+      <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource Brush.Background}" CornerRadius="6" Padding="3">
+        <StackPanel Orientation="Horizontal">
+          <RadioButton Classes="segment" GroupName="HomeTab"
+                       Content="{x:Static res:Strings.Home_Tab_Active}"
+                       IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}"
+                       Command="{CompiledBinding SwitchTabCommand}"
+                       CommandParameter="{x:Static vm:HomeTab.Active}"/>
+          <RadioButton Classes="segment" GroupName="HomeTab" Margin="2,0,0,0"
+                       Content="{x:Static res:Strings.Home_Tab_Archived}"
+                       IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
+                       Command="{CompiledBinding SwitchTabCommand}"
+                       CommandParameter="{x:Static vm:HomeTab.Archived}"/>
+          <RadioButton Classes="segment" GroupName="HomeTab" Margin="2,0,0,0"
+                       Content="{x:Static res:Strings.Home_Tab_Trash}"
+                       IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
+                       Command="{CompiledBinding SwitchTabCommand}"
+                       CommandParameter="{x:Static vm:HomeTab.Trash}"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Il menu "＋ Nuovo" è un Flyout del pulsante: sparisce il code-behind che in WPF apriva
+           una ContextMenu col tasto sinistro e le passava il DataContext a mano. -->
+      <Button Grid.Column="2" x:Name="NewMenuButton"
+              Content="{x:Static res:Strings.Home_NewHabit_Button}"
+              Margin="0,0,16,0" Padding="12,4" VerticalAlignment="Center">
+        <Button.Flyout>
+          <MenuFlyout Placement="Bottom">
+            <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Habit}"
+                      Command="{CompiledBinding OpenNewHabitCommand}"/>
+            <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Group}"
+                      Command="{CompiledBinding CreateGroupCommand}"/>
+          </MenuFlyout>
+        </Button.Flyout>
+      </Button>
+    </Grid>
+
+    <Grid Grid.Row="1" Height="36" Margin="16,8,16,0"
+          IsVisible="{CompiledBinding State, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeState.Loaded}}">
+      <StackPanel Orientation="Horizontal">
+        <ComboBox ItemsSource="{CompiledBinding AvailableSorts}"
+                  SelectedItem="{CompiledBinding SortOption}"
+                  Margin="0,0,8,0"/>
+        <CheckBox Content="{x:Static res:Strings.Home_Filter_HideCompleted}"
+                  IsChecked="{CompiledBinding HideCompletedToday}"
+                  VerticalAlignment="Center" Margin="0,0,16,0"
+                  IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}"/>
+        <!-- PlaceholderText + InnerLeftContent al posto della Path sovrapposta e del TextBlock
+             acquerello con DataTrigger su Text="" che WPF doveva costruire a mano. -->
+        <TextBox x:Name="SearchBox" Width="200" VerticalAlignment="Center"
+                 Text="{CompiledBinding SearchText, Mode=TwoWay}"
+                 PlaceholderText="{x:Static res:Strings.Home_Filter_SearchPlaceholder}">
+          <TextBox.InnerLeftContent>
+            <Path Width="13" Height="13" Margin="6,0,4,0" Stretch="Uniform"
+                  VerticalAlignment="Center" IsHitTestVisible="False"
+                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.7"
+                  StrokeLineCap="Round" Data="{StaticResource Icon.Search}"/>
+          </TextBox.InnerLeftContent>
+        </TextBox>
+      </StackPanel>
+    </Grid>
+
+    <!-- Lo sfondo Transparent (non null) rende lo spazio vuoto sotto le righe colpibile dal
+         puntatore: è il clic che deseleziona. Vale in Avalonia come in WPF. -->
+    <Border x:Name="TreeRegion" Grid.Row="2" Background="Transparent" Margin="0,8,0,0">
+      <ContentControl Content="{CompiledBinding State}">
+        <ContentControl.ContentTemplate>
+          <v:HomeStateTemplate>
+            <v:HomeStateTemplate.Loading>
+              <DataTemplate>
+                <TextBlock Text="{x:Static res:Strings.Home_Loading}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Opacity="0.6" Foreground="{DynamicResource Brush.TextMuted}"/>
+              </DataTemplate>
+            </v:HomeStateTemplate.Loading>
+            <!-- Il DataContext dentro i rami è lo STATO (è quello il Content), quindi chi ha
+                 bisogno del ViewModel se lo ripesca dalla view che lo ospita. -->
+            <v:HomeStateTemplate.Empty>
+              <DataTemplate>
+                <v:EmptyState DataContext="{Binding $parent[v:HomeView].DataContext}"/>
+              </DataTemplate>
+            </v:HomeStateTemplate.Empty>
+            <v:HomeStateTemplate.Error>
+              <DataTemplate>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            DataContext="{Binding $parent[v:HomeView].DataContext}"
+                            x:DataType="vm:HomeViewModel">
+                  <TextBlock Text="{x:Static res:Strings.Home_Error_Generic}"
+                             HorizontalAlignment="Center"
+                             Foreground="{DynamicResource Brush.Text}"/>
+                  <Button Content="{x:Static res:Strings.Home_Error_Retry}"
+                          Command="{CompiledBinding RetryCommand}"
+                          Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+              </DataTemplate>
+            </v:HomeStateTemplate.Error>
+            <v:HomeStateTemplate.Loaded>
+              <DataTemplate>
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              DataContext="{Binding $parent[v:HomeView].DataContext}"
+                              x:DataType="vm:HomeViewModel">
+                  <ItemsControl x:Name="RowsHost"
+                                ItemsSource="{CompiledBinding Roots}"
+                                ItemTemplate="{x:Static rows:HomeRowTemplate.Instance}"/>
+                </ScrollViewer>
+              </DataTemplate>
+            </v:HomeStateTemplate.Loaded>
+          </v:HomeStateTemplate>
+        </ContentControl.ContentTemplate>
+      </ContentControl>
+    </Border>
+  </Grid>
+</UserControl>
