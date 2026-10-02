@@ -1044,6 +1044,18 @@
   <data name="Workspace.ToggleSidebar" xml:space="preserve">
     <value>Mostra/nascondi barra laterale</value>
   </data>
+  <data name="Window.Minimize" xml:space="preserve">
+    <value>Riduci a icona</value>
+  </data>
+  <data name="Window.Maximize" xml:space="preserve">
+    <value>Ingrandisci</value>
+  </data>
+  <data name="Window.Restore" xml:space="preserve">
+    <value>Ripristina</value>
+  </data>
+  <data name="Window.Close" xml:space="preserve">
+    <value>Chiudi</value>
+  </data>
   <data name="Workspace.ToggleRibbon" xml:space="preserve">
     <value>Mostra/nascondi barra di navigazione</value>
   </data>

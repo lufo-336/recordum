@@ -1070,6 +1070,18 @@ Details: {0}</value>
   <data name="Workspace.ToggleSidebar" xml:space="preserve">
     <value>Toggle sidebar</value>
   </data>
+  <data name="Window.Minimize" xml:space="preserve">
+    <value>Minimize</value>
+  </data>
+  <data name="Window.Maximize" xml:space="preserve">
+    <value>Maximize</value>
+  </data>
+  <data name="Window.Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Window.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="Workspace.ToggleRibbon" xml:space="preserve">
     <value>Toggle navigation bar</value>
   </data>

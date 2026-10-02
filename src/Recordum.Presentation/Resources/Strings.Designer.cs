@@ -103,6 +103,12 @@ public static class Strings
     public static string Workspace_Empty => Get("Workspace.Empty");
     public static string Workspace_ToggleSidebar => Get("Workspace.ToggleSidebar");
     public static string Workspace_ToggleRibbon => Get("Workspace.ToggleRibbon");
+    // Chrome della finestra (F1)
+    public static string Window_Minimize => Get("Window.Minimize");
+    public static string Window_Maximize => Get("Window.Maximize");
+    public static string Window_Restore => Get("Window.Restore");
+    public static string Window_Close => Get("Window.Close");
+
     public static string Notes_History_Current => Get("Notes.History.Current");
     public static string Notes_History => Get("Notes.History");
     public static string Notes_History_Back => Get("Notes.History.Back");

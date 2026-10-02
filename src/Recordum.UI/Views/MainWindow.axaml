@@ -1,6 +1,134 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
+        xmlns:vm="using:Recordum.Presentation.ViewModels"
+        xmlns:v="using:Recordum.UI.Views"
+        xmlns:vw="using:Recordum.UI.Views.Workspace"
+        xmlns:res="using:Recordum.Presentation.Resources"
         x:Class="Recordum.UI.Views.MainWindow"
-        Title="Recordum" Width="1000" Height="700">
-  <TextBlock Name="Placeholder" Text="Recordum" Margin="24" FontSize="24"/>
+        x:DataType="vm:MainWindowViewModel"
+        Title="{x:Static res:Strings.AppTitle}"
+        MinWidth="880" MinHeight="620"
+        Width="1280" Height="760"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{DynamicResource Font.Default}"
+        Background="{DynamicResource Brush.Background}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="36">
+
+  <!-- Chrome (D7): chiediamo l'estensione dell'area client e il code-behind legge se la piattaforma
+       l'ha accolta. Dove si (Windows) la barra di 36px e' nostra e i ruoli qui sotto le danno
+       trascinamento, doppio clic e (su Win11) il flyout degli snap layout. Dove no (Linux/X11,
+       misurato) restano le decorazioni di sistema e i nostri tre pulsanti di didascalia si
+       nascondono: la barra nostra resta, perche' ci vive il pulsante del rail. -->
+
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+D1" Command="{Binding Home.SwitchTabCommand}" CommandParameter="{x:Static vm:HomeTab.Active}"/>
+    <KeyBinding Gesture="Ctrl+D2" Command="{Binding Home.SwitchTabCommand}" CommandParameter="{x:Static vm:HomeTab.Archived}"/>
+    <KeyBinding Gesture="Ctrl+D3" Command="{Binding Home.SwitchTabCommand}" CommandParameter="{x:Static vm:HomeTab.Trash}"/>
+    <!-- Ctrl+4 (Grafici, F7) e Ctrl+5 (Cronologia backup, F6) arrivano con i loro workspace: una
+         scorciatoia verso un workspace senza vista sarebbe UI finta, come i pulsanti del rail. -->
+    <KeyBinding Gesture="Ctrl+W" Command="{Binding Workspace.CloseActiveTabCommand}"/>
+  </Window.KeyBindings>
+
+  <Window.Styles>
+    <Style Selector="Path.caption">
+      <Setter Property="Width" Value="11"/>
+      <Setter Property="Height" Value="11"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="Stroke" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="StrokeThickness" Value="1.4"/>
+    </Style>
+    <Style Selector="Button.caption">
+      <Setter Property="Width" Value="46"/>
+      <Setter Property="Height" Value="36"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="CornerRadius" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.caption:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+    </Style>
+    <!-- La X ha il rosso convenzionale, ora come token invece che come esadecimale sepolto. -->
+    <Style Selector="Button.caption.close:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.CaptionCloseHover}"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid Name="RootGrid" RowDefinitions="36,*,Auto">
+
+    <!-- Barra del titolo -->
+    <Border Name="TitleBar" Grid.Row="0"
+            Background="{DynamicResource Brush.Surface}"
+            BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}"
+            chrome:WindowDecorationProperties.ElementRole="TitleBar">
+      <Grid>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,12,0">
+          <Button Name="RibbonToggle" Classes="caption" Width="32" Height="28" Margin="0,0,6,0"
+                  Command="{Binding ToggleRibbonCommand}"
+                  chrome:WindowDecorationProperties.ElementRole="User"
+                  ToolTip.Tip="{x:Static res:Strings.Workspace_ToggleRibbon}"
+                  AutomationProperties.Name="{x:Static res:Strings.Workspace_ToggleRibbon}">
+            <Path Classes="caption" Data="M4 6h16 M4 12h16 M4 18h16"/>
+          </Button>
+          <!-- Marchio: una "R" serif. Resta serif anche se l'utente sceglie il font di sistema. -->
+          <TextBlock Text="R" Margin="1,0,8,0" VerticalAlignment="Center"
+                     FontFamily="{DynamicResource Font.Serif}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource Brush.Text}"/>
+          <TextBlock Text="{x:Static res:Strings.AppTitle}" VerticalAlignment="Center"
+                     FontWeight="SemiBold" FontSize="12.5"
+                     Foreground="{DynamicResource Brush.TextMuted}"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button Name="MinButton" Classes="caption"
+                  chrome:WindowDecorationProperties.ElementRole="MinimizeButton"
+                  AutomationProperties.Name="{x:Static res:Strings.Window_Minimize}">
+            <Path Classes="caption" Data="M5 12h14"/>
+          </Button>
+          <Button Name="MaxButton" Classes="caption"
+                  chrome:WindowDecorationProperties.ElementRole="MaximizeButton"
+                  AutomationProperties.Name="{x:Static res:Strings.Window_Maximize}">
+            <Path Name="MaxIcon" Classes="caption" Data="M5 5h14v14H5z"/>
+          </Button>
+          <Button Name="CloseButton" Classes="caption close"
+                  chrome:WindowDecorationProperties.ElementRole="CloseButton"
+                  AutomationProperties.Name="{x:Static res:Strings.Window_Close}">
+            <Path Classes="caption" Data="M6 6l12 12 M18 6L6 18"/>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Contenuto: rail delle icone | workspace -->
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+      <v:WorkspaceRibbon Name="Ribbon" Grid.Column="0" IsVisible="{Binding !RibbonCollapsed}"/>
+
+      <Grid Grid.Column="1">
+        <Grid Name="HomeWorkspace" IsVisible="{Binding IsHomeWorkspace}">
+          <Grid.ColumnDefinitions>
+            <!-- NESSUN binding su queste due larghezze: un drag del GridSplitter scrive un valore
+                 locale che uccide il binding (misurato su Avalonia 12.1.2, esattamente come in
+                 WPF). Le larghezze le imposta il code-behind da ResolveColumns. -->
+            <ColumnDefinition Width="280"/>   <!-- [0] SidebarColumn -->
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="0"/>     <!-- [2] WorkspaceColumn -->
+          </Grid.ColumnDefinitions>
+          <v:HomeView Name="Home" Grid.Column="0" DataContext="{Binding Home}" ClipToBounds="True"/>
+          <GridSplitter Name="SidebarSplitter" Grid.Column="1"
+                        Width="4"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                        ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                        Background="{DynamicResource Brush.Border}"
+                        IsVisible="False"/>
+          <vw:WorkspaceView Name="Workspace" Grid.Column="2" DataContext="{Binding Workspace}"/>
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- Riga 2: la barra di stato dei timer arriva in F2. Auto su una riga vuota = altezza 0. -->
+  </Grid>
 </Window>
