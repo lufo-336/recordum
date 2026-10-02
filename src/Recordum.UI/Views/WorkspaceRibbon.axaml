@@ -60,7 +60,8 @@
             </Button>
           </Grid>
         </Border>
-        <Border Classes="activehost" Classes.active="{Binding IsChartsWorkspace}">
+        <!-- Nascosto insieme al suo bottone: un Border visibile attorno a un bottone nascosto lascia 4px di vuoto nel rail. -->
+        <Border Classes="activehost" Classes.active="{Binding IsChartsWorkspace}" IsVisible="False">
           <Grid>
             <Rectangle Width="2" HorizontalAlignment="Left" RadiusX="1" RadiusY="1"
                        Fill="{DynamicResource Brush.Accent}"
@@ -74,7 +75,9 @@
           </Grid>
         </Border>
 
-        <Rectangle Height="1" Margin="12,8" Fill="{DynamicResource Brush.Border}"/>
+        <!-- Nascosto: separa il workspace dalle azioni, che sono tutte nascoste (orfano visibile sotto la Home).
+             Lo accende F2 insieme al Backup. -->
+        <Rectangle Height="1" Margin="12,8" Fill="{DynamicResource Brush.Border}" IsVisible="False"/>
 
         <!-- Azioni. Il menu Backup: in WPF serviva code-behind (un ContextMenu si apre solo col
              tasto destro e non eredita il DataContext). Qui Button.Flyout apre col clic sinistro

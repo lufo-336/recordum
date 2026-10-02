@@ -9,9 +9,9 @@
 
     Deliberatamente NON qui: ComboBox, CheckBox, Slider, Expander, TabControl — il default
     FluentTheme di questi controlli è già "modern flat neutral" nello spirito del linguaggio
-    visivo di Recordum (§9 CLAUDE.md: tono serio, no candy, motion restrained). La sonda li
+    visivo di Recordum (§9 CLAUDE.md: tono serio, no candy, motion restrained). La galleria li
     esercita con la sola colorazione a token (via override delle chiavi ThemeResource di Fluent,
-    non con un ControlTheme nostro) — vedi ThemeProbeView.axaml.
+    non con un ControlTheme nostro) — vedi la galleria in tests/Recordum.UI.Tests/Styles/ControlStylesScreenshotTests.cs.
     -->
 
     <!-- Pulsante primario: Fluent colora i pulsanti in Background/Foreground neutri di default,

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Core.Models;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels;
@@ -59,6 +60,40 @@ public sealed class ShellFixture
 #pragma warning restore CA1031
         };
         return new ShellFixture { Services = provider, Options = options };
+    }
+
+    /// <summary>Quante abitudini/gruppi la semina mette nel database.</summary>
+    public const int SeededNodeCount = 4;
+
+    private bool _seeded;
+
+    /// <summary>Semina una libreria minima con i SERVIZI veri (niente INSERT a mano): un gruppo con
+    /// due figli piu' un'abitudine di primo livello. Idempotente: la fixture e' condivisa.</summary>
+    public async Task SeedAsync()
+    {
+        if (_seeded) return;
+        _seeded = true;
+        using var scope = Services.CreateScope();
+        var nodes = scope.ServiceProvider.GetRequiredService<IHabitNodeService>();
+        var groupId = await nodes.CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Group, Name = "Salute", Color = "#16A34A",
+        });
+        await nodes.CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Habit, HabitType = HabitType.Action, ParentId = groupId,
+            Name = "Corsa", Color = "#3B82F6",
+        });
+        await nodes.CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Habit, HabitType = HabitType.Counter, ParentId = groupId,
+            Name = "Acqua", Color = "#0EA5E9",
+        });
+        await nodes.CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Habit, HabitType = HabitType.Journal,
+            Name = "Diario", Color = "#A855F7",
+        });
     }
 
     public HomeRowViewModel NewHomeRow(string name) => new(

@@ -1,47 +1,37 @@
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using AvaloniaEdit;
 using FluentAssertions;
-using Recordum.UI.Views;
+using Xunit;
 
 namespace Recordum.UI.Tests;
 
-/// <summary>
-/// Sonda editor (branch avalonia-linux-slice, NON una feature): renderizza
-/// <see cref="MarkdownEditorProbeView"/> — sorgente AvaloniaEdit + anteprima Markdown.Avalonia,
-/// vedi <c>Controls/MarkdownEditorControl.axaml</c> — in entrambe le varianti tema e salva i due
-/// PNG che il deliverable #2 del probe editor chiede. Stesso pattern di
-/// <see cref="HeatmapStripScreenshotTests"/>.
-/// </summary>
+/// <summary>Sorgente AvaloniaEdit + anteprima Markdown.Avalonia, nelle due varianti.</summary>
 public class MarkdownEditorScreenshotTests
 {
-    [AvaloniaFact]
-    public void Editor_probe_renders_in_light_variant()
-    {
-        var path = RenderAndCapture(ThemeVariant.Light, "editor-light");
-        new FileInfo(path).Length.Should().BeGreaterThan(1000,
-            "un PNG con markdown reale (titoli, lista, code block) non può essere pochi byte");
-    }
-
-    [AvaloniaFact]
-    public void Editor_probe_renders_in_dark_variant()
-    {
-        var path = RenderAndCapture(ThemeVariant.Dark, "editor-dark");
-        new FileInfo(path).Length.Should().BeGreaterThan(1000,
-            "un PNG con markdown reale (titoli, lista, code block) non può essere pochi byte");
-    }
-
-    private static string RenderAndCapture(ThemeVariant variant, string name)
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void The_editor_realizes_source_and_preview_in_both_variants(string variantName)
     {
         var window = new Window
         {
             Width = 900,
-            Height = 560,
-            RequestedThemeVariant = variant,
-            Content = new MarkdownEditorProbeView(),
+            Height = 520,
+            RequestedThemeVariant = variantName == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light,
+            Content = ControlGalleries.MarkdownEditor(),
         };
         window.Show();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
 
-        return ScreenshotProbeTests.Capture(window, name);
+        var editors = window.GetVisualDescendants().OfType<TextEditor>().ToArray();
+        editors.Should().NotBeEmpty("il controllo ospita il sorgente in un TextEditor");
+        editors[0].Text.Should().Contain("Diario", "e il documento ci e' arrivato dentro");
+        ScreenshotProbeTests.Capture(window, $"editor-{variantName.ToLowerInvariant()}");
     }
 }

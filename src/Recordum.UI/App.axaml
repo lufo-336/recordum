@@ -3,7 +3,7 @@
              x:Class="Recordum.UI.App"
              RequestedThemeVariant="Default">
   <!-- Themes/Tokens.axaml (branch avalonia-linux-slice, sonda styling): merge a livello Application
-       così ThemeProbeView (e qualunque altra view futura) risolve le chiavi Brush.*/Font.*/Layout.*
+       così ogni view risolve le chiavi Brush.*/Font.*/Layout.*
        con DynamicResource, e la variante Light/Dark segue Window.RequestedThemeVariant senza bisogno
        di un ThemeService che scambia dizionari come in WPF. Non collega nessuna view alla finestra
        reale: MainWindow resta quella dello scaffold. -->
