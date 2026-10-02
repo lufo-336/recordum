@@ -183,6 +183,11 @@ public static class CrashLogger
     [Conditional("DEBUG")]
     public static void ResetForTests()
     {
+        // Anche i gestori: senza, un secondo WireUp nello stesso processo di test li aggancia due volte
+        // (stesso metodo statico, delegate uguale) e ogni guasto finisce nel log due volte.
+        Dispatcher.UIThread.UnhandledException -= OnDispatcher;
+        AppDomain.CurrentDomain.UnhandledException -= OnDomain;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTask;
         _logPath = null;
         _wired = false;
     }

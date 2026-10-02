@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:f="using:Recordum.UI.Tests.Fixtures"
+             x:Class="Recordum.UI.Tests.Fixtures.CultureProbeView"
+             x:DataType="f:CultureProbeModel"
+             x:CompileBindings="True">
+  <StackPanel>
+    <TextBox Name="Amount" Text="{Binding Amount, Mode=TwoWay}"/>
+    <TextBlock Name="Day" Text="{Binding Day, StringFormat='{}{0:d}'}"/>
+  </StackPanel>
+</UserControl>

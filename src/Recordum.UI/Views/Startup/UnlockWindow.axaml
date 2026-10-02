@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:svm="using:Recordum.Presentation.ViewModels.Startup"
+        xmlns:res="using:Recordum.Presentation.Resources"
+        x:Class="Recordum.UI.Views.Startup.UnlockWindow"
+        x:DataType="svm:UnlockViewModel"
+        Title="{x:Static res:Strings.Unlock_Title}"
+        Width="420" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{DynamicResource Font.Default}"
+        Background="{DynamicResource Brush.Background}">
+  <StackPanel Margin="24" Spacing="12">
+    <TextBlock Name="Heading"
+               Text="{Binding Heading}"
+               FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
+               Foreground="{DynamicResource Brush.Text}"/>
+    <TextBlock Name="HintText" Text="{Binding Hint}"
+               IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBlock Text="{x:Static res:Strings.Unlock_PassphraseLabel}"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBox Name="PassphraseBox" PasswordChar="•" Text="{Binding Passphrase, Mode=TwoWay}"/>
+    <StackPanel Name="ConfirmBlock" Spacing="12" IsVisible="{Binding RequiresConfirmation}">
+      <TextBlock Text="{x:Static res:Strings.Unlock_ConfirmLabel}"
+                 Foreground="{DynamicResource Brush.TextMuted}"
+                 FontSize="{DynamicResource FontSize.Small}"/>
+      <TextBox Name="ConfirmBox" PasswordChar="•" Text="{Binding Confirmation, Mode=TwoWay}"/>
+    </StackPanel>
+    <TextBlock Name="ErrorText" Text="{Binding ErrorMessage}"
+               IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.Danger}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <Button Name="SubmitButton" Classes="primary"
+            HorizontalAlignment="Right" Padding="16,8"
+            IsEnabled="{Binding !IsBusy}"
+            IsDefault="True"
+            Command="{Binding SubmitCommand}"
+            Content="{x:Static res:Strings.Unlock_Submit}"/>
+  </StackPanel>
+</Window>
