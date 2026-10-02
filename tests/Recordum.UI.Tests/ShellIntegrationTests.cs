@@ -23,20 +23,7 @@ public class ShellIntegrationTests(ITestOutputHelper output)
     private static async Task<MainWindow> OpenSeededAsync()
     {
         await ShellFixture.Shared.SeedAsync();
-        var vm = ShellFixture.Shared.NewMainWindowViewModel();
-        var window = new MainWindow(vm);
-        window.Show();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-        // MainWindow.OnOpened lancia InitializeAsync: si lascia girare il ciclo finche' le righe non
-        // arrivano dal database (e' un await vero su un file cifrato, non un finto).
-        for (var i = 0; i < 200 && vm.Home.Rows.Count == 0; i++)
-        {
-            await Task.Delay(25);
-            Dispatcher.UIThread.RunJobs();
-        }
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
+        var (window, _) = await ShellFixture.OpenMainWindowAsync(ShellFixture.Shared.NewMainWindowViewModel());
         return window;
     }
 

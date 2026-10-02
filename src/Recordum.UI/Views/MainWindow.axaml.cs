@@ -113,6 +113,10 @@ public partial class MainWindow : Window
             ApplyColumns();
     }
 
+    /// <summary>Il caricamento iniziale lanciato da <c>Opened</c> (async void: nessuno puo' attenderlo). I test lo
+    /// attendono per non correre contro il ripristino dello stato del workspace.</summary>
+    internal Task Initialization { get; private set; } = Task.CompletedTask;
+
     private async void OnOpened(object? sender, EventArgs e)
     {
         try
@@ -121,7 +125,8 @@ public partial class MainWindow : Window
             if (_viewModel is null) return;
             _viewModel.Workspace.PropertyChanged += OnWorkspacePropertyChanged;
             ApplyColumns();
-            await _viewModel.InitializeAsync().ConfigureAwait(true);
+            Initialization = _viewModel.InitializeAsync().AsTask();
+            await Initialization.ConfigureAwait(true);
         }
         catch (Exception ex)
         {

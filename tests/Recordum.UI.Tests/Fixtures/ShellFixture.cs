@@ -1,3 +1,5 @@
+using Avalonia.Headless;
+using Avalonia.Threading;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
@@ -9,6 +11,7 @@ using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.Workspace;
 using Recordum.UI.Bootstrap;
+using Recordum.UI.Views;
 
 namespace Recordum.UI.Tests.Fixtures;
 
@@ -103,7 +106,40 @@ public sealed class ShellFixture
         Services.GetRequiredService<IHabitNodeService>(),
         Services.GetRequiredService<IPurgeService>());
 
-    public MainWindowViewModel NewMainWindowViewModel() => Services.GetRequiredService<MainWindowViewModel>();
+    /// <summary>Il DB e' condiviso da tutti i test: un test che commuta la sidebar o apre un tab lascia lo stato
+    /// del workspace persistito, e ogni <c>MainWindow</c> successiva lo ripristina (F1 review I1: sidebar a larghezza 0).
+    /// Il ViewModel nuovo parte quindi sempre da uno stato pulito.</summary>
+    public MainWindowViewModel NewMainWindowViewModel()
+    {
+        // Sul pool: il servizio e' scoped e la scrittura non deve incrociare il contesto di sincronizzazione del thread UI.
+        Task.Run(async () =>
+        {
+            using var scope = Services.CreateScope();
+            // "ui.workspace" = WorkspaceViewModel.StateSettingKey (internal in Presentation).
+            await scope.ServiceProvider.GetRequiredService<IAppSettingService>()
+                .SetAsync("ui.workspace", new WorkspaceState().ToJson());
+        }).GetAwaiter().GetResult();
+        return Services.GetRequiredService<MainWindowViewModel>();
+    }
+
+    /// <summary>Apre una <c>MainWindow</c> e fa girare il ciclo finche' <c>InitializeAsync</c> (carico della Home +
+    /// ripristino dello stato) non e' finito: senza, il ripristino scatta a meta' test.</summary>
+    public static async Task<(MainWindow Window, MainWindowViewModel Vm)> OpenMainWindowAsync(MainWindowViewModel vm)
+    {
+        var window = new MainWindow(vm);
+        window.Show();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        for (var i = 0; i < 400 && !window.Initialization.IsCompleted; i++)
+        {
+            await Task.Delay(25);
+            Dispatcher.UIThread.RunJobs();
+        }
+        await window.Initialization;   // propaga un'eventuale eccezione; e se non e' partita, e' gia' completata
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        return (window, vm);
+    }
     public WorkspaceViewModel NewWorkspaceViewModel() => Services.GetRequiredService<WorkspaceViewModel>();
 
     private sealed class FixedKeyProvider : IDbKeyProvider

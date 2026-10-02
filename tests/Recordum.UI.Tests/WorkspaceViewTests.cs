@@ -103,7 +103,7 @@ public class WorkspaceViewTests
     }
 
     [AvaloniaFact]
-    public void Clicking_a_rail_button_does_not_clear_the_selection()
+    public async Task Clicking_a_rail_button_does_not_clear_the_selection()
     {
         var vm = ShellFixture.Shared.NewMainWindowViewModel();
         var ribbon = new WorkspaceRibbon();
@@ -121,6 +121,10 @@ public class WorkspaceViewTests
 
         vm.Workspace.SidebarCollapsed.Should().BeTrue("il clic e' arrivato davvero al pulsante (Home gia' attiva: commuta la sidebar)");
         vm.Home.SelectedRow.Should().NotBeNull("il clic su un pulsante non e' un clic sul vuoto");
+
+        // Il DB e' condiviso: la sidebar chiusa viene persistita e la riaprirebbe chiusa a ogni MainWindow dopo di noi.
+        vm.Workspace.ToggleSidebar();
+        await vm.Workspace.SaveStateAsync();
     }
 
     [AvaloniaFact]

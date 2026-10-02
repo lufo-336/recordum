@@ -7,7 +7,8 @@
 ## Dove siamo — 2026-10-02
 
 - **Branch di lavoro**: `avalonia-linux-slice`; il codice di F1 arriva a `6200ede`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1 fino al
-  Task 5, Passo 0, documenti riorganizzati, errata del piano F1). CI verde su Linux e su Windows, anche su `main`. I test
+  Task 5, Passo 0, documenti riorganizzati, errata del piano F1). CI: verde su `main`; sul branch era rossa da `b1fe1dd` (stato del workspace
+  condiviso fra test, review finale I1): corretto, **da confermare dopo il push**. I test
   di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1 è a codice
   completo (13 task su 13), non chiusa.** La shell si avvia davvero: sblocco del database, Home con righe vive,

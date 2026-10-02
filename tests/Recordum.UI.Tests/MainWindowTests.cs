@@ -19,15 +19,8 @@ namespace Recordum.UI.Tests;
 
 public class MainWindowTests
 {
-    private static (MainWindow Window, MainWindowViewModel Vm) Open()
-    {
-        var vm = ShellFixture.Shared.NewMainWindowViewModel();
-        var window = new MainWindow(vm);
-        window.Show();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-        return (window, vm);
-    }
+    private static Task<(MainWindow Window, MainWindowViewModel Vm)> Open()
+        => ShellFixture.OpenMainWindowAsync(ShellFixture.Shared.NewMainWindowViewModel());
 
     [AvaloniaTheory]
     [InlineData(1280, 760, 1600, 900, 1280, 760)]   // ci sta: invariata
@@ -72,9 +65,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void The_window_hosts_the_ribbon_the_home_and_the_workspace()
+    public async Task The_window_hosts_the_ribbon_the_home_and_the_workspace()
     {
-        var (window, vm) = Open();
+        var (window, vm) = await Open();
 
         window.GetVisualDescendants().OfType<WorkspaceRibbon>().Should().ContainSingle();
         window.GetVisualDescendants().OfType<HomeView>().Should().ContainSingle();
@@ -88,9 +81,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void The_title_bar_declares_its_chrome_roles_and_its_height()
+    public async Task The_title_bar_declares_its_chrome_roles_and_its_height()
     {
-        var (window, _) = Open();
+        var (window, _) = await Open();
 
         window.ExtendClientAreaTitleBarHeightHint.Should().Be(36);
 
@@ -113,10 +106,10 @@ public class MainWindowTests
     [AvaloniaTheory]
     [InlineData(false, false)]   // piattaforma che rifiuta l'estensione (Linux/X11): barra di sistema, niente doppioni
     [InlineData(true, true)]     // piattaforma che l'accoglie (Windows): i pulsanti di didascalia sono nostri
-    public void The_caption_buttons_are_ours_only_where_the_platform_extended_the_client_area(
+    public async Task The_caption_buttons_are_ours_only_where_the_platform_extended_the_client_area(
         bool extended, bool expectedVisible)
     {
-        var (window, _) = Open();
+        var (window, _) = await Open();
         // La decisione e' funzione del risultato, non del sistema operativo: la si guida in entrambi i versi.
         window.ApplyChrome(extended);
 
@@ -130,9 +123,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void Opening_applies_the_chrome_decision_from_what_the_platform_reported()
+    public async Task Opening_applies_the_chrome_decision_from_what_the_platform_reported()
     {
-        var (window, _) = Open();
+        var (window, _) = await Open();
 
         // Opened e' gia' scattato in Open(): la finestra headless non estende l'area client, quindi
         // il risultato letto e' false e i pulsanti sono nascosti.
@@ -142,9 +135,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void The_caption_buttons_follow_the_platform_when_it_reports_the_extension_after_opening()
+    public async Task The_caption_buttons_follow_the_platform_when_it_reports_the_extension_after_opening()
     {
-        var (window, _) = Open();
+        var (window, _) = await Open();
         Button Close() => window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CloseButton");
         Close().IsVisible.Should().BeFalse("la finestra headless parte senza estensione");
 
@@ -167,9 +160,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void The_maximize_glyph_and_its_name_follow_the_window_state()
+    public async Task The_maximize_glyph_and_its_name_follow_the_window_state()
     {
-        var (window, _) = Open();
+        var (window, _) = await Open();
         var icon = window.GetVisualDescendants().OfType<global::Avalonia.Controls.Shapes.Path>()
             .Single(p => p.Name == "MaxIcon");
         var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "MaxButton");
@@ -193,9 +186,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void The_hamburger_toggles_the_ribbon()
+    public async Task The_hamburger_toggles_the_ribbon()
     {
-        var (window, vm) = Open();
+        var (window, vm) = await Open();
         var ribbon = window.GetVisualDescendants().OfType<WorkspaceRibbon>().Single();
         ribbon.IsVisible.Should().BeTrue();
 
@@ -208,9 +201,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void Ctrl_1_2_3_switch_the_home_tab_and_return_to_the_home_workspace()
+    public async Task Ctrl_1_2_3_switch_the_home_tab_and_return_to_the_home_workspace()
     {
-        var (window, vm) = Open();
+        var (window, vm) = await Open();
         vm.CurrentWorkspace = AppWorkspace.Charts;
         Dispatcher.UIThread.RunJobs();
 
@@ -226,9 +219,9 @@ public class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void Esc_clears_a_multi_selection_before_anything_else()
+    public async Task Esc_clears_a_multi_selection_before_anything_else()
     {
-        var (window, vm) = Open();
+        var (window, vm) = await Open();
         var a = ShellFixture.Shared.NewHomeRow("a");
         var b = ShellFixture.Shared.NewHomeRow("b");
         vm.Home.Rows.Add(a);
@@ -246,7 +239,7 @@ public class MainWindowTests
     [AvaloniaFact]
     public async Task The_columns_follow_the_view_model_and_keep_following_it_after_a_splitter_drag()
     {
-        var (window, vm) = Open();
+        var (window, vm) = await Open();
         var grid = window.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "HomeWorkspace");
         var sidebar = grid.ColumnDefinitions[0];
         var splitter = window.GetVisualDescendants().OfType<GridSplitter>().Single();
