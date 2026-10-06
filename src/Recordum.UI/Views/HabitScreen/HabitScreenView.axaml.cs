@@ -31,7 +31,6 @@ public partial class HabitScreenView : UserControl
     {
         if (e.PropertyName == nameof(HabitScreenViewModel.Node)) ApplyAccent();
         if (e.PropertyName == nameof(HabitScreenViewModel.QuickAddForCronologia)) RebuildQuickAdd();
-        if (e.PropertyName == nameof(HabitScreenViewModel.QuickAddForCronologia)) RebuildQuickAdd();
     }
 
     // Le chiavi Fluent che dipingono l'accento dei controlli (check, slider, selezione di lista, fuoco dei

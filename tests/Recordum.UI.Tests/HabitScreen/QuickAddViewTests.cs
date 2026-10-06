@@ -21,6 +21,7 @@ using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 using Recordum.UI.Bootstrap;
+using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views.HabitScreen;
 using Recordum.UI.Views.HabitScreen.QuickAdd;
 using Xunit;
@@ -31,31 +32,11 @@ namespace Recordum.UI.Tests.HabitScreen;
 /// ICompletionService che puo' trattenere il salvataggio (Ruling R8).</summary>
 public class QuickAddViewTests
 {
-    private static readonly FakeClock Clock = new();
     private static readonly HoldingCompletions Holder = new();
-    private static readonly Lazy<ServiceProvider> Provider = new(() => Build().GetAwaiter().GetResult());
+    private static readonly PrivateDbHost Host = new("recordum-ui-qa",
+        s => s.AddScoped<ICompletionService>(sp => Holder.Wrap(ActivatorUtilities.CreateInstance<CompletionService>(sp))));
+    private static PrivateDbHost.FakeClock Clock => Host.Clock;
     private static readonly DateTimeOffset Noon = new(2026, 3, 15, 12, 0, 0, TimeSpan.Zero);
-
-    private static async Task<ServiceProvider> Build()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), $"recordum-ui-qa-{Guid.NewGuid():N}");
-        var options = RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, dir], _ => null);
-        var services = new ServiceCollection();
-        services.AddRecordumCore(options);
-        services.AddRecordumAvaloniaShell();
-        services.AddSingleton<IDbKeyProvider>(new FixedKey());
-        services.AddSingleton<IClock>(Clock);
-        services.AddScoped<ICompletionService>(sp => Holder.Wrap(ActivatorUtilities.CreateInstance<CompletionService>(sp)));
-        var provider = services.BuildServiceProvider();
-        await provider.GetRequiredService<CoreInitializer>().InitializeAsync();
-        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
-        {
-#pragma warning disable CA1031 // best effort a fine processo
-            try { SqliteConnection.ClearAllPools(); if (Directory.Exists(dir)) Directory.Delete(dir, true); } catch (Exception) { }
-#pragma warning restore CA1031
-        };
-        return provider;
-    }
 
     private sealed record Opened(IServiceScope Scope, HabitScreenViewModel Vm, HabitScreenView View, Window Window, Guid Id)
     {
@@ -72,7 +53,7 @@ public class QuickAddViewTests
     {
         Clock.Now = Noon;
         Holder.Reset();
-        var scope = Provider.Value.CreateScope();
+        var scope = Host.Provider.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IAppSettingService>().SetAsync("daily_reset_time", "00:00");
         var id = await CreateAsync(scope, type);
         var vm = scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>();
@@ -84,12 +65,7 @@ public class QuickAddViewTests
         return new Opened(scope, vm, view, w, id);
     }
 
-    private static void Pump()
-    {
-        Dispatcher.UIThread.RunJobs();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-    }
+    private static void Pump() => PrivateDbHost.Pump();
 
     private static async Task UntilAsync(Func<bool> done)
     {
@@ -122,7 +98,7 @@ public class QuickAddViewTests
         t.Build(null).Should().BeNull();
         t.Build(new ActionQuickAddViewModel(cs, Clock)).Should().BeOfType<ActionQuickAddView>();
         t.Build(new CounterTapQuickAddViewModel(cs, Clock)).Should().BeOfType<CounterTapQuickAddView>();
-        t.Build(new AbstinenceQuickAddViewModel(cs, Provider.Value.CreateScope().ServiceProvider.GetRequiredService<IAbstinenceService>(), Clock, null)).Should().BeOfType<AbstinenceQuickAddView>();
+        t.Build(new AbstinenceQuickAddViewModel(cs, Host.Provider.CreateScope().ServiceProvider.GetRequiredService<IAbstinenceService>(), Clock, null)).Should().BeOfType<AbstinenceQuickAddView>();
         // Task 5: misurato e serie non hanno ancora un ramo.
         t.Build(RuntimeHelpers.GetUninitializedObject(typeof(MeasuredQuickAddViewModel))).Should().BeNull();
         t.Build(RuntimeHelpers.GetUninitializedObject(typeof(CounterSeriesQuickAddViewModel))).Should().BeNull();
@@ -210,6 +186,11 @@ public class QuickAddViewTests
             Holder.Recorded[0].HabitNodeId.Should().Be(o.Id, "la registrazione va all'abitudine su cui e' partita");
             o.Vm.Node!.Id.Should().Be(second, "la schermata mostra la seconda");
             (await o.Completions.ListByHabitAsync(second)).Should().BeEmpty();
+
+            // La schermata nuova non mostra i dati della vecchia: lascia scorrere l'evento CompletionRecorded.
+            await UntilAsync(() => !first.IsSaving);
+            for (var i = 0; i < 10; i++) { await Task.Delay(20); Pump(); }
+            o.Vm.CompletionList.Rows.Should().BeEmpty("la registrazione della prima non compare nella seconda");
         }
         finally { o.Window.Close(); }
     }
@@ -240,20 +221,5 @@ public class QuickAddViewTests
             public ValueTask<IReadOnlyList<DailyValue>> GetDailySumAsync(Guid habitNodeId, Guid metricDefinitionId, DateOnly fromDate, DateOnly toDate, CancellationToken ct = default) => i.GetDailySumAsync(habitNodeId, metricDefinitionId, fromDate, toDate, ct);
             public ValueTask<IReadOnlyList<DailyMagnitude>> GetDailyMagnitudeAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default) => i.GetDailyMagnitudeAsync(habitNodeId, year, month, ct);
         }
-    }
-
-    private sealed class FakeClock : IClock
-    {
-        public DateTimeOffset Now { get; set; } = new(2026, 3, 15, 12, 0, 0, TimeSpan.Zero);
-        public DateTimeOffset UtcNow => Now;
-        public long UtcNowMs => Now.ToUnixTimeMilliseconds();
-        public TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
-    }
-
-    private sealed class FixedKey : IDbKeyProvider
-    {
-        private readonly byte[] _key = Enumerable.Range(0, 32).Select(i => (byte)(i * 7 + 1)).ToArray();
-        public string ProviderId => "fixed-test-key";
-        public ValueTask<KeyMaterial> GetKeyAsync(CancellationToken ct = default) => ValueTask.FromResult(new KeyMaterial([.. _key]));
     }
 }

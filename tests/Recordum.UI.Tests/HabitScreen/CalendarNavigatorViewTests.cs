@@ -20,6 +20,7 @@ using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.Calendar;
 using Recordum.UI.Bootstrap;
+using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views.HabitScreen;
 using Recordum.UI.Views.HabitScreen.Calendar;
 using Xunit;
@@ -30,34 +31,15 @@ namespace Recordum.UI.Tests.HabitScreen;
 /// "oggi" non deve dipendere dall'ora in cui gira la suite.</summary>
 public class CalendarNavigatorViewTests
 {
-    private static readonly FakeClock Clock = new();
-    private static readonly Lazy<ServiceProvider> Provider = new(() => Build().GetAwaiter().GetResult());
-
-    private static async Task<ServiceProvider> Build()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), $"recordum-ui-cal-{Guid.NewGuid():N}");
-        var options = RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, dir], _ => null);
-        var services = new ServiceCollection();
-        services.AddRecordumCore(options);
-        services.AddRecordumAvaloniaShell();
-        services.AddSingleton<IDbKeyProvider>(new FixedKey());
-        services.AddSingleton<IClock>(Clock);   // dopo AddRecordumCore: vince l'ultima registrazione
-        var provider = services.BuildServiceProvider();
-        await provider.GetRequiredService<CoreInitializer>().InitializeAsync();
-        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
-        {
-#pragma warning disable CA1031 // best effort a fine processo
-            try { SqliteConnection.ClearAllPools(); if (Directory.Exists(dir)) Directory.Delete(dir, true); } catch (Exception) { }
-#pragma warning restore CA1031
-        };
-        return provider;
-    }
+    private static readonly PrivateDbHost Host = new("recordum-ui-cal");
+    private static PrivateDbHost.FakeClock Clock => Host.Clock;
+    private static ServiceProvider ProviderValue => Host.Provider;
 
     private static async Task<(HabitScreenViewModel Vm, HabitScreenView View, Window Window)> OpenAsync(
         DateTimeOffset now, string resetTime = "00:00")
     {
         Clock.Now = now;
-        var scope = Provider.Value.CreateScope();
+        var scope = ProviderValue.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IAppSettingService>().SetAsync("daily_reset_time", resetTime);
         var id = await scope.ServiceProvider.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
         {
@@ -72,12 +54,7 @@ public class CalendarNavigatorViewTests
         return (vm, view, w);
     }
 
-    private static void Pump()
-    {
-        Dispatcher.UIThread.RunJobs();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-    }
+    private static void Pump() => PrivateDbHost.Pump();
 
     private static async Task UntilAsync(Func<bool> done)
     {
@@ -217,20 +194,5 @@ public class CalendarNavigatorViewTests
                 .Be(new DateOnly(2026, 3, 14).ToString("D", System.Globalization.CultureInfo.CurrentCulture));
         }
         finally { w.Close(); }
-    }
-
-    private sealed class FakeClock : IClock
-    {
-        public DateTimeOffset Now { get; set; } = new(2026, 3, 15, 12, 0, 0, TimeSpan.Zero);
-        public DateTimeOffset UtcNow => Now;
-        public long UtcNowMs => Now.ToUnixTimeMilliseconds();
-        public TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
-    }
-
-    private sealed class FixedKey : IDbKeyProvider
-    {
-        private readonly byte[] _key = Enumerable.Range(0, 32).Select(i => (byte)(i * 7 + 1)).ToArray();
-        public string ProviderId => "fixed-test-key";
-        public ValueTask<KeyMaterial> GetKeyAsync(CancellationToken ct = default) => ValueTask.FromResult(new KeyMaterial([.. _key]));
     }
 }
