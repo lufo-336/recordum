@@ -199,6 +199,26 @@ public class CalendarNavigatorViewTests
         finally { w.Close(); }
     }
 
+    [AvaloniaFact]
+    public async Task Chevrons_and_day_cells_have_accessible_names()
+    {
+        var (_, view, w) = await OpenAsync(Noon);
+        try
+        {
+            var buttons = view.GetVisualDescendants().OfType<Button>().ToList();
+            foreach (var name in new[] { "PrevButton", "NextButton" })
+            {
+                var b = buttons.Single(x => x.Name == name);
+                Avalonia.Automation.AutomationProperties.GetName(b).Should().NotBeNullOrWhiteSpace(name);
+                ToolTip.GetTip(b).Should().Be(Avalonia.Automation.AutomationProperties.GetName(b));
+            }
+            var cell = DayOf(view, new DateOnly(2026, 3, 14));
+            Avalonia.Automation.AutomationProperties.GetName(cell).Should()
+                .Be(new DateOnly(2026, 3, 14).ToString("D", System.Globalization.CultureInfo.CurrentCulture));
+        }
+        finally { w.Close(); }
+    }
+
     private sealed class FakeClock : IClock
     {
         public DateTimeOffset Now { get; set; } = new(2026, 3, 15, 12, 0, 0, TimeSpan.Zero);

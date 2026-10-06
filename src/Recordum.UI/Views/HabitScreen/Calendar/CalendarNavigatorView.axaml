@@ -56,12 +56,12 @@
         </StackPanel>
         <TextBlock Grid.Column="1" x:Name="Header" Text="{CompiledBinding HeaderLabel}" VerticalAlignment="Center"
                    FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
-        <Button Grid.Column="2" x:Name="PrevButton" Width="28" Command="{CompiledBinding PrevCommand}">
+        <Button Grid.Column="2" x:Name="PrevButton" Width="28" AutomationProperties.Name="{x:Static res:Strings.Calendar_Previous}" ToolTip.Tip="{x:Static res:Strings.Calendar_Previous}" Command="{CompiledBinding PrevCommand}">
           <Path Data="{StaticResource Icon.ChevronRight}" Width="12" Height="12" Stretch="Uniform"
                 Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
                 RenderTransform="scaleX(-1)" RenderTransformOrigin="50%,50%"/>
         </Button>
-        <Button Grid.Column="3" x:Name="NextButton" Width="28" Margin="4,0,0,0" Command="{CompiledBinding NextCommand}">
+        <Button Grid.Column="3" x:Name="NextButton" Width="28" AutomationProperties.Name="{x:Static res:Strings.Calendar_Next}" ToolTip.Tip="{x:Static res:Strings.Calendar_Next}" Margin="4,0,0,0" Command="{CompiledBinding NextCommand}">
           <Path Data="{StaticResource Icon.ChevronRight}" Width="12" Height="12" Stretch="Uniform"
                 Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
         </Button>
@@ -90,7 +90,8 @@
                     Height="{CompiledBinding $parent[ItemsControl].((vmc:CalendarNavigatorViewModel)DataContext).CellSize}"
                     Command="{CompiledBinding $parent[ItemsControl].((vmc:CalendarNavigatorViewModel)DataContext).SelectDateCommand}"
                     CommandParameter="{CompiledBinding}"
-                    ToolTip.Tip="{CompiledBinding TooltipText}">
+                    ToolTip.Tip="{CompiledBinding TooltipText}"
+                    AutomationProperties.Name="{CompiledBinding TooltipText}">
               <Grid>
                 <!-- Tinta: due strati, cosi' il pericolo e' un pennello di tema (si ritinge col tema) e non un
                      esadecimale fotografato. L'opacita' e' la rampa del passo. -->
