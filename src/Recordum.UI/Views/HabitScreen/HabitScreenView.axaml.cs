@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Recordum.Presentation.ViewModels.HabitScreen;
@@ -29,39 +30,40 @@ public partial class HabitScreenView : UserControl
         if (e.PropertyName == nameof(HabitScreenViewModel.Node)) ApplyAccent();
     }
 
+    // Le chiavi Fluent che dipingono l'accento dei controlli (check, slider, selezione di lista, fuoco dei
+    // campi di testo). Misurato: la famiglia SystemAccentColor/Light1-3/Dark1-3 NON e' letta da nessuno di
+    // questi controlli (i pennelli sono costruiti a livello tema e non rileggono una risorsa locale), quindi
+    // non la si scrive; sono queste chiavi a contare. Ognuna ha il suo pixel in
+    // HabitScreenViewTests.The_screen_accent_is_the_habit_colour.
+    private static readonly string[] FluentAccentKeys =
+    [
+        "SliderTrackValueFill", "SliderTrackValueFillPointerOver", "SliderTrackValueFillPressed",
+        "SystemControlHighlightListAccentLowBrush", "SystemControlHighlightListAccentMediumBrush",
+        "SystemControlHighlightListAccentHighBrush", "TextControlBorderBrushFocused",
+        "CheckBoxCheckBackgroundFillChecked", "CheckBoxCheckBackgroundFillCheckedPointerOver",
+        "CheckBoxCheckBackgroundFillCheckedPressed",
+        "CheckBoxCheckBackgroundStrokeCheckedPointerOver",
+    ];
+
     /// <summary>Le risorse non hanno DataContext: a ogni cambio di colore si riscrivono qui. Brush.Accent
-    /// per i nostri controlli; SystemAccentColor e le sei sfumature per quelli Fluent (check, slider,
-    /// fuoco), che leggono quelle (App.axaml). Senza abitudine/colore valido si tolgono, e torna l'accento
-    /// dell'app.</summary>
+    /// per i nostri controlli, le chiavi Fluent per gli altri. Senza colore valido si tolgono e torna
+    /// l'accento dell'app. Ogni pennello eredita l'opacita' di quello del tema (la selezione di lista e'
+    /// una tinta, non un blocco pieno).</summary>
     private void ApplyAccent()
     {
-        string[] keys = ["Brush.Accent", "SystemAccentColor", "SystemAccentColorLight1", "SystemAccentColorLight2",
-            "SystemAccentColorLight3", "SystemAccentColorDark1", "SystemAccentColorDark2", "SystemAccentColorDark3",
-            "AccentFillColorDefaultBrush", "AccentFillColorSecondaryBrush", "AccentFillColorTertiaryBrush",
-            "CheckBoxCheckBackgroundFillChecked", "CheckBoxCheckBackgroundFillCheckedPointerOver",
-            "CheckBoxCheckBackgroundFillCheckedPressed", "CheckBoxCheckBackgroundStrokeChecked",
-            "CheckBoxCheckBackgroundStrokeCheckedPointerOver", "CheckBoxCheckBackgroundStrokeCheckedPressed"];
         if (_vm?.Node?.Color is not { } hex || !Color.TryParse(hex, out var c))
         {
-            foreach (var k in keys) Resources.Remove(k);
+            Resources.Remove("Brush.Accent");
+            foreach (var k in FluentAccentKeys) Resources.Remove(k);
             return;
         }
         Resources["Brush.Accent"] = new SolidColorBrush(c);
-        Resources["SystemAccentColor"] = c;
-        Resources["SystemAccentColorLight1"] = Mix(c, Colors.White, 0.2);
-        Resources["SystemAccentColorLight2"] = Mix(c, Colors.White, 0.4);
-        Resources["SystemAccentColorLight3"] = Mix(c, Colors.White, 0.6);
-        Resources["SystemAccentColorDark1"] = Mix(c, Colors.Black, 0.2);
-        Resources["SystemAccentColorDark2"] = Mix(c, Colors.Black, 0.4);
-        Resources["SystemAccentColorDark3"] = Mix(c, Colors.Black, 0.6);
-        // Le famiglie SystemAccentColor non bastano: i pennelli Fluent derivati (AccentFillColor*Brush, e
-        // quelli del check) sono costruiti a livello tema e non rileggono la risorsa locale. Misurato: il
-        // check checked restava #3B82F6. Si ridefiniscono qui i pennelli che il template legge.
-        var brush = new SolidColorBrush(c);
-        foreach (var k in keys.Skip(8)) Resources[k] = brush;
+        var theme = ActualThemeVariant;
+        foreach (var k in FluentAccentKeys)
+        {
+            var opacity = Application.Current!.TryGetResource(k, theme, out var v) && v is ISolidColorBrush b
+                ? b.Opacity * b.Color.A / 255.0 : 1.0;
+            Resources[k] = new SolidColorBrush(c, opacity);
+        }
     }
-
-    private static Color Mix(Color a, Color b, double t) => Color.FromRgb(
-        (byte)Math.Round(a.R + (b.R - a.R) * t), (byte)Math.Round(a.G + (b.G - a.G) * t),
-        (byte)Math.Round(a.B + (b.B - a.B) * t));
 }

@@ -60,6 +60,7 @@ public class HabitScreenViewTests
         var probe = new Border { Width = 40, Height = 40, HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Bottom };
         probe.Bind(Border.BackgroundProperty, probe.GetResourceObservable("Brush.Accent"));
+        Grid.SetRowSpan(probe, 5);
         ((Grid)view.Content!).Children.Add(probe);
         return probe;
     }
@@ -76,6 +77,11 @@ public class HabitScreenViewTests
             ? Color.FromRgb(buffer[2], buffer[1], buffer[0]) : Color.FromRgb(buffer[0], buffer[1], buffer[2]);
     }
 
+    // La selezione di lista e' una tinta traslucida: li' si verifica che il colore penda verso quello
+    // dell'abitudine (rosso e ambra hanno R > B, il default dell'app e' blu: B > R).
+    private static bool Matches(string key, Color c, string hex) =>
+        key.StartsWith("ListAccent", StringComparison.Ordinal) || key.Contains("Stroke", StringComparison.Ordinal) ? c.R > c.B + 10 : Near(c, hex);
+
     private static bool Near(Color a, string hex)
     {
         var b = Color.Parse(hex);
@@ -89,20 +95,59 @@ public class HabitScreenViewTests
         var amber = await CreateHabitAsync("Ambra", Amber);
         var (vm, view, w) = await OpenAsync(red);
         var probe = AddAccentProbe(view);
+        var grid = (Grid)view.Content!;
         var box = new CheckBox { IsChecked = true, Content = "x", HorizontalAlignment = HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Bottom };
-        ((Grid)view.Content!).Children.Add(box);
+        var slider = new Slider { Minimum = 0, Maximum = 100, Value = 100, Width = 200, HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center };
+        var list = new ListBox { Width = 120, Height = 40, HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top, ItemsSource = new[] { "a" }, SelectedIndex = 0 };
+        var text = new TextBox { Width = 120, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        foreach (var c in new Control[] { box, slider, list, text }) { Grid.SetRowSpan(c, 5); grid.Children.Add(c); }
         Pump();
-        // Il quadratino pieno del check (parte "NormalRectangle" del template Fluent): letto in un angolo, fuori dalla spunta.
-        Color Glyph() => Pixel(w, box.GetVisualDescendants().OfType<Border>().First(b => b.Name == "NormalRectangle"), -8, -8);
+        text.Focus();
+        Pump();
 
-        Near(Pixel(w, probe), Red).Should().BeTrue("Brush.Accent dentro la schermata e' il colore dell'abitudine, non il default dell'app");
-        Near(Glyph(), Red).Should().BeTrue("la famiglia SystemAccentColor tinge anche i controlli Fluent");
+        // Ogni chiave d'accento che la view scrive e' letta da UN controllo Fluent in UNO stato; ogni riga qui
+        // misura quel pixel. Gli stati hover/premuto si forzano con la pseudoclasse. Togliere una chiave da
+        // ApplyAccent fa tornare il pixel al blu dell'app.
+        var probes = new (string Key, Func<Color> Read)[]
+        {
+            ("Brush.Accent", () => Pixel(w, probe)),
+            ("CheckBoxCheckBackgroundFillChecked", () => Check(box, null)),
+            ("CheckBoxCheckBackgroundFillCheckedPointerOver", () => Check(box, ":pointerover")),
+            ("CheckBoxCheckBackgroundFillCheckedPressed", () => Check(box, ":pressed")),
+            ("CheckBoxCheckBackgroundStrokeCheckedPointerOver", () => CheckEdge(box, ":pointerover")),
+            ("SliderTrackValueFill", () => Fill(slider, null)),
+            ("SliderTrackValueFillPointerOver", () => Fill(slider, ":pointerover")),
+            ("SliderTrackValueFillPressed", () => Fill(slider, ":pressed")),
+            ("ListAccent", () => Sel(list, null)),
+            ("ListAccentPointerOver", () => Sel(list, ":pointerover")),
+            ("ListAccentPressed", () => Sel(list, ":pressed")),
+            ("TextControlBorderBrushFocused", () => Focus(text)),
+        };
+        Color Check(CheckBox b, string? pc) => State(b, pc, () => Pixel(w, b.GetVisualDescendants().OfType<Border>().First(x => x.Name == "NormalRectangle"), -8, -8));
+        Color CheckEdge(CheckBox b, string pc) => State(b, pc, () => Pixel(w, b.GetVisualDescendants().OfType<Border>().First(x => x.Name == "NormalRectangle"), -b.GetVisualDescendants().OfType<Border>().First(x => x.Name == "NormalRectangle").Bounds.Width / 2 + 0.5, 0));
+        Color Fill(Slider sl, string? pc) => State(sl, pc, () => Pixel(w, sl.GetVisualDescendants().OfType<RepeatButton>().First(x => x.Name == "PART_DecreaseButton").GetVisualDescendants().OfType<Border>().First()));
+        Color Sel(ListBox l, string? pc) => State(l.GetVisualDescendants().OfType<ListBoxItem>().First(), pc, () => Pixel(w, l.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First()));
+        Color Focus(TextBox t) => Pixel(w, t, 0, t.Bounds.Height / 2 - 1);
+        Color State(StyledElement el, string? pc, Func<Color> read)
+        {
+            if (pc is not null) ((Avalonia.Controls.IPseudoClasses)el.Classes).Set(pc, true);
+            Pump();
+            var c = read();
+            if (pc is not null) ((Avalonia.Controls.IPseudoClasses)el.Classes).Set(pc, false);
+            Pump();
+            return c;
+        }
+
+        foreach (var (key, read) in probes)
+            Matches(key, read(), Red).Should().BeTrue($"{key} dentro la schermata e' il colore dell'abitudine (letto: {read()})");
 
         await vm.LoadAsync(amber);   // stesso tab, altra abitudine: la view non si ricostruisce
         Pump();
-        Near(Pixel(w, probe), Amber).Should().BeTrue("cambiando Node l'accento segue");
-        Near(Glyph(), Amber).Should().BeTrue();
+        foreach (var (key, read) in probes)
+            Matches(key, read(), Amber).Should().BeTrue($"{key}: cambiando Node l'accento segue (letto: {read()})");
         w.Close();
     }
 
