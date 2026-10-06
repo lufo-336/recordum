@@ -4,6 +4,7 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:today="using:Recordum.UI.Views.HabitScreen.Today"
+             xmlns:calendar="using:Recordum.UI.Views.HabitScreen.Calendar"
              x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
              x:DataType="vm:HabitScreenViewModel"
              Background="{DynamicResource Brush.Surface}">
@@ -66,7 +67,9 @@
                    Foreground="{DynamicResource Brush.Text}"/>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel>
-            <Border x:Name="CalendarHost"/>
+            <Border x:Name="CalendarHost">
+              <calendar:CalendarNavigatorView DataContext="{CompiledBinding Calendar}"/>
+            </Border>
             <Border x:Name="QuickAddHost"/>
             <Border x:Name="TimerHost"/>
             <Border x:Name="RecordsHost"/>
