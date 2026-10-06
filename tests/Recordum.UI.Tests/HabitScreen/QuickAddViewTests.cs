@@ -99,9 +99,8 @@ public class QuickAddViewTests
         t.Build(new ActionQuickAddViewModel(cs, Clock)).Should().BeOfType<ActionQuickAddView>();
         t.Build(new CounterTapQuickAddViewModel(cs, Clock)).Should().BeOfType<CounterTapQuickAddView>();
         t.Build(new AbstinenceQuickAddViewModel(cs, Host.Provider.CreateScope().ServiceProvider.GetRequiredService<IAbstinenceService>(), Clock, null)).Should().BeOfType<AbstinenceQuickAddView>();
-        // Task 5: misurato e serie non hanno ancora un ramo.
-        t.Build(RuntimeHelpers.GetUninitializedObject(typeof(MeasuredQuickAddViewModel))).Should().BeNull();
-        t.Build(RuntimeHelpers.GetUninitializedObject(typeof(CounterSeriesQuickAddViewModel))).Should().BeNull();
+        t.Build(RuntimeHelpers.GetUninitializedObject(typeof(MeasuredQuickAddViewModel))).Should().BeOfType<MeasuredQuickAddView>();
+        t.Build(RuntimeHelpers.GetUninitializedObject(typeof(CounterSeriesQuickAddViewModel))).Should().BeOfType<SeriesQuickAddView>();
     }
 
     [AvaloniaFact]

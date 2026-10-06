@@ -2,8 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using System.Windows.Input;
 using Avalonia.Threading;
 using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
 namespace Recordum.UI.Behaviors;
 
@@ -14,6 +16,23 @@ public static class InlineRenameBehavior
 
     public static bool GetAttach(TextBox element) => element.GetValue(AttachProperty);
     public static void SetAttach(TextBox element, bool value) => element.SetValue(AttachProperty, value);
+
+    // Per chi non e' una riga Home (i chip delle serie): i comandi stanno sul genitore e prendono
+    // come parametro il DataContext del TextBox.
+    public static readonly AttachedProperty<ICommand?> CommitCommandProperty =
+        AvaloniaProperty.RegisterAttached<TextBox, ICommand?>("CommitCommand", typeof(InlineRenameBehavior));
+    public static readonly AttachedProperty<ICommand?> CancelCommandProperty =
+        AvaloniaProperty.RegisterAttached<TextBox, ICommand?>("CancelCommand", typeof(InlineRenameBehavior));
+
+    public static ICommand? GetCommitCommand(TextBox element) => element.GetValue(CommitCommandProperty);
+    public static void SetCommitCommand(TextBox element, ICommand? value) => element.SetValue(CommitCommandProperty, value);
+    public static ICommand? GetCancelCommand(TextBox element) => element.GetValue(CancelCommandProperty);
+    public static void SetCancelCommand(TextBox element, ICommand? value) => element.SetValue(CancelCommandProperty, value);
+
+    private static void Run(ICommand? command, object? parameter)
+    {
+        if (command?.CanExecute(parameter) == true) command.Execute(parameter);
+    }
 
     static InlineRenameBehavior()
     {
@@ -51,15 +70,17 @@ public static class InlineRenameBehavior
 
     private static void OnKey(object? sender, KeyEventArgs e)
     {
-        if (sender is not TextBox tb || tb.DataContext is not HomeRowViewModel vm) return;
+        if (sender is not TextBox tb) return;
+        var (commit, cancel, parameter) = Commands(tb);
+        if (commit is null) return;
         switch (e.Key)
         {
             case Key.Enter:
-                if (vm.CommitRenameCommand.CanExecute(null)) vm.CommitRenameCommand.Execute(null);
+                Run(commit, parameter);
                 e.Handled = true;
                 break;
             case Key.Escape:
-                if (vm.CancelRenameCommand.CanExecute(null)) vm.CancelRenameCommand.Execute(null);
+                Run(cancel, parameter);
                 e.Handled = true;
                 break;
         }
@@ -67,10 +88,17 @@ public static class InlineRenameBehavior
 
     private static void OnLostFocus(object? sender, RoutedEventArgs e)
     {
-        if (sender is TextBox { DataContext: HomeRowViewModel { IsRenaming: true } vm }
-            && vm.CommitRenameCommand.CanExecute(null))
-        {
-            vm.CommitRenameCommand.Execute(null);
-        }
+        if (sender is not TextBox tb) return;
+        // Esc spegne il flag e poi il TextBox perde il fuoco: solo chi sta ancora rinominando salva.
+        var renaming = tb.DataContext is HomeRowViewModel { IsRenaming: true } or SeriesChipViewModel { IsEditing: true };
+        if (!renaming) return;
+        var (commit, _, parameter) = Commands(tb);
+        Run(commit, parameter);
     }
+
+    private static (ICommand? Commit, ICommand? Cancel, object? Parameter) Commands(TextBox tb) => tb.DataContext switch
+    {
+        HomeRowViewModel vm => (vm.CommitRenameCommand, vm.CancelRenameCommand, null),
+        _ => (GetCommitCommand(tb), GetCancelCommand(tb), tb.DataContext),
+    };
 }

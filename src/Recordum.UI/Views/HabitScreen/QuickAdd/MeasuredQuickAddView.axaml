@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
+             xmlns:v="using:Recordum.UI.Views.HabitScreen.QuickAdd"
+             x:Name="Root"
+             x:Class="Recordum.UI.Views.HabitScreen.QuickAdd.MeasuredQuickAddView"
+             x:DataType="qa:MeasuredQuickAddViewModel">
+  <StackPanel Margin="12">
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+      <TextBlock Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
+                 Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+      <TextBlock x:Name="ForDate" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
+                 Text="{CompiledBinding CompletionDate, StringFormat=d}"/>
+    </StackPanel>
+    <ItemsControl x:Name="Cells" ItemsSource="{CompiledBinding Row.Cells}" Margin="0,0,0,8">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="qa:SeriesCellViewModel">
+          <v:MetricCellView Host="{CompiledBinding #Root.((qa:MeasuredQuickAddViewModel)DataContext)}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Button x:Name="SaveButton" Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+            Command="{CompiledBinding SaveCommand}" HorizontalAlignment="Left" Padding="12,6"/>
+    <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+               Text="{CompiledBinding ErrorMessage}"
+               IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+  </StackPanel>
+</UserControl>

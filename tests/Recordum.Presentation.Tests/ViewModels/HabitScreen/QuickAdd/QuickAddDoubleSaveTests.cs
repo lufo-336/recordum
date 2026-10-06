@@ -30,6 +30,33 @@ public class QuickAddDoubleSaveTests
     }
 
     [Fact]
+    public Task Measured_save_records_once() =>
+        AssertSavesOnce((cs, c) => new MeasuredQuickAddViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), c, new FakeActiveTimerService()));
+
+    [Fact]
+    public async Task Counter_series_save_records_once()
+    {
+        var metrics = new FakeMetricDefinitionService();
+        var m = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = Node.Id, Name = "Reps", Type = MetricType.Integer };
+        metrics.Store[m.Id] = m;
+        var cs = new FakeCompletionService();
+        var gate = new TaskCompletionSource();
+        cs.RecordGate = gate.Task;
+        var sut = new CounterSeriesQuickAddViewModel(cs, metrics, new FakeReferenceData(),
+            new FakeClock(new DateTimeOffset(2026, 5, 21, 14, 0, 0, TimeSpan.Zero)), new FakeActiveTimerService(), new FakeHabitConfigService())
+        { Node = Node };
+        await sut.LoadMetricsAsync();
+        sut.Series[0].Cells[0].IntegerValue = 3;
+
+        var first = sut.SaveAsync();
+        var second = sut.SaveAsync();
+        gate.SetResult();
+        await Task.WhenAll(first, second);
+
+        cs.RecordCalls.Should().Be(1);
+    }
+
+    [Fact]
     public Task Action_save_records_once() => AssertSavesOnce((cs, c) => new ActionQuickAddViewModel(cs, c));
 
     [Fact]

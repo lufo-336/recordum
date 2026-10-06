@@ -186,7 +186,8 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
 
     public override async Task SaveAsync(CancellationToken ct = default)
     {
-        if (Node is null || _orderedMetrics.Count == 0 || Series.Count == 0) return;
+        // AsyncRelayCommand.ExecuteAsync non consulta CanExecute: la guardia del doppio clic sta qui.
+        if (Node is null || _orderedMetrics.Count == 0 || Series.Count == 0 || IsSaving) return;
         IsSaving = true;
         ErrorMessage = null;
         try

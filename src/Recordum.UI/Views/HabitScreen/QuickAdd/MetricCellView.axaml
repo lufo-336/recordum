@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:conv="using:Recordum.UI.Converters"
+             x:Name="Root"
+             x:Class="Recordum.UI.Views.HabitScreen.QuickAdd.MetricCellView"
+             x:DataType="qa:SeriesCellViewModel">
+  <!-- Una cella per metrica: [nome] [ingresso] [unita]. L'ingresso e' scelto da Kind/Type; i rami non attivi sono
+       IsVisible=False (qui non c'e' un template statico da materializzare: sono controlli leggeri). -->
+  <StackPanel Orientation="Horizontal" Margin="0,3,12,3" VerticalAlignment="Center">
+    <TextBlock Text="{CompiledBinding Name}" MinWidth="110" VerticalAlignment="Center" Margin="0,0,8,0"
+               Foreground="{DynamicResource Brush.TextMuted}"/>
+    <Panel VerticalAlignment="Center">
+      <StackPanel x:Name="MeasuredPanel" Orientation="Horizontal"
+                  IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Measured}}">
+        <TextBox x:Name="IntegerBox" Width="90" Text="{CompiledBinding IntegerValue, Mode=TwoWay}"
+                 IsVisible="{CompiledBinding Type, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:MetricType.Integer}}"/>
+        <TextBox x:Name="DecimalBox" Width="90" Text="{CompiledBinding DecimalValue, Mode=TwoWay}"
+                 IsVisible="{CompiledBinding Type, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:MetricType.Decimal}}"/>
+        <StackPanel x:Name="DurationPanel" Orientation="Horizontal" IsVisible="{CompiledBinding IsDuration}">
+          <TextBox x:Name="DurationBox" Width="70" Text="{CompiledBinding DurationValue, Mode=TwoWay}"/>
+          <ComboBox x:Name="DurationUnitBox" Width="96" Margin="4,0,0,0"
+                    ItemsSource="{x:Static qa:SeriesCellViewModel.TimeUnitOptions}"
+                    SelectedValueBinding="{CompiledBinding Unit}" DisplayMemberBinding="{CompiledBinding Label}"
+                    SelectedValue="{CompiledBinding DurationUnit, Mode=TwoWay}"/>
+        </StackPanel>
+      </StackPanel>
+      <TextBox x:Name="TextBoxValue" Width="140" Text="{CompiledBinding TextValue, Mode=TwoWay}"
+               IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Text}}"/>
+      <StackPanel x:Name="ScalePanel" MinWidth="200" MaxWidth="300"
+                  IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Scale}}">
+        <TextBlock x:Name="ScaleCaption" Text="{CompiledBinding SelectedScaleLabel}" HorizontalAlignment="Center"
+                   Margin="0,0,0,2" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Accent}"/>
+        <!-- Il VM semina l'indice 0, quindi lo slider non e' mai null: l'intero salvato e' indice+1 (CLAUDE.md §5). -->
+        <Slider x:Name="ScaleSlider" Minimum="0" Maximum="{CompiledBinding SliderMax}"
+                Value="{CompiledBinding SelectedScaleIndex, Mode=TwoWay}"
+                IsSnapToTickEnabled="True" TickFrequency="1" TickPlacement="BottomRight"/>
+        <Grid Margin="8,1,8,0" IsVisible="{CompiledBinding ShowReferencePoints}">
+          <TextBlock x:Name="ScaleMin" Text="{CompiledBinding ScaleMinLabel}" HorizontalAlignment="Left"
+                     FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+          <TextBlock x:Name="ScaleMax" Text="{CompiledBinding ScaleMaxLabel}" HorizontalAlignment="Right"
+                     FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+        </Grid>
+      </StackPanel>
+    </Panel>
+    <Button x:Name="ChronoButton" Width="28" Height="28" Padding="0" Margin="6,0,0,0" VerticalAlignment="Center"
+            Background="Transparent" BorderThickness="0" IsVisible="{CompiledBinding IsDuration}"
+            Command="{CompiledBinding #Root.Host.ToggleChronoCommand}" CommandParameter="{CompiledBinding}"
+            ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStart}">
+      <Panel>
+        <Path Width="16" Height="16" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6"
+              StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Clock}"
+              IsVisible="{CompiledBinding !IsChronoRunning}"/>
+        <Path Width="16" Height="16" Stretch="Uniform" Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+              StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Square}"
+              IsVisible="{CompiledBinding IsChronoRunning}"/>
+      </Panel>
+    </Button>
+    <TextBlock x:Name="ChronoDisplay" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="Consolas,DejaVu Sans Mono,monospace"
+               Foreground="{DynamicResource Brush.Accent}" IsVisible="{CompiledBinding IsChronoRunning}"
+               Text="{CompiledBinding #Root.Host.ChronoClock.Display}"/>
+    <TextBlock Text="{CompiledBinding UnitLabel}" Margin="6,0,0,0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding ShowUnitLabel}"/>
+  </StackPanel>
+</UserControl>

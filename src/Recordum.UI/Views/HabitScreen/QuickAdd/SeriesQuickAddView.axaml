@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
+             xmlns:v="using:Recordum.UI.Views.HabitScreen.QuickAdd"
+             xmlns:beh="using:Recordum.UI.Behaviors"
+             x:Name="Root"
+             x:Class="Recordum.UI.Views.HabitScreen.QuickAdd.SeriesQuickAddView"
+             x:DataType="qa:CounterSeriesQuickAddViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.chip">
+      <Setter Property="Padding" Value="10,3"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <Style Selector="Button.chip.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    </Style>
+  </UserControl.Styles>
+  <StackPanel Margin="12">
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+      <TextBlock Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
+                 Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+      <TextBlock x:Name="ForDate" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
+                 Text="{CompiledBinding CompletionDate, StringFormat=d}"/>
+    </StackPanel>
+    <!-- Chip delle serie (solo ripetibile): nominati, rinominabili in linea, uno selezionato alla volta. -->
+    <StackPanel x:Name="ChipBar" Orientation="Horizontal" Margin="0,0,0,8" IsVisible="{CompiledBinding IsRepeatable}">
+      <ItemsControl x:Name="Chips" ItemsSource="{CompiledBinding Chips}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="qa:SeriesChipViewModel">
+            <Panel Margin="0,0,6,0">
+              <StackPanel Orientation="Horizontal" IsVisible="{CompiledBinding !IsEditing}">
+                <Button Classes="chip" Classes.selected="{CompiledBinding IsSelected}" Content="{CompiledBinding Name}"
+                        Command="{CompiledBinding $parent[ItemsControl].((qa:CounterSeriesQuickAddViewModel)DataContext).SelectSeriesCommand}"
+                        CommandParameter="{CompiledBinding}"/>
+                <Button x:Name="RenameButton" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0"
+                        ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_RenameSeries}"
+                        AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_RenameSeries}"
+                        IsVisible="{CompiledBinding IsSelected}"
+                        Command="{CompiledBinding $parent[ItemsControl].((qa:CounterSeriesQuickAddViewModel)DataContext).BeginRenameChipCommand}"
+                        CommandParameter="{CompiledBinding}">
+                  <Path Width="12" Height="12" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6"
+                        StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.PenLine}"/>
+                </Button>
+              </StackPanel>
+              <TextBox x:Name="RenameBox" Width="110" Text="{CompiledBinding PendingName, Mode=TwoWay}"
+                       IsVisible="{CompiledBinding IsEditing}"
+                       beh:InlineRenameBehavior.Attach="True"
+                       beh:InlineRenameBehavior.CommitCommand="{CompiledBinding $parent[ItemsControl].((qa:CounterSeriesQuickAddViewModel)DataContext).CommitRenameChipCommand}"
+                       beh:InlineRenameBehavior.CancelCommand="{CompiledBinding $parent[ItemsControl].((qa:CounterSeriesQuickAddViewModel)DataContext).CancelRenameChipCommand}"/>
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button x:Name="AddSeriesButton" Content="{x:Static res:Strings.HabitScreen_QuickAdd_AddSeries}" Padding="8,3"
+              Command="{CompiledBinding AddSeriesCommand}"/>
+    </StackPanel>
+    <ItemsControl x:Name="Rows" ItemsSource="{CompiledBinding Series}" Margin="0,0,0,8">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="qa:SeriesRowViewModel">
+          <Border BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" Padding="6" Margin="0,0,0,6"
+                  CornerRadius="3" IsVisible="{CompiledBinding IsVisibleRow}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <!-- Marcatore di validita': pieno se una cella ha un valore, spento altrimenti (spec D6). -->
+              <Path Grid.Column="0" Width="14" Height="14" Margin="0,6,6,0" VerticalAlignment="Top" Stretch="Uniform"
+                    Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="{StaticResource Icon.CheckCircle}" Opacity="{CompiledBinding IsValid, Converter={x:Static v:SeriesQuickAddView.ValidityOpacity}}"/>
+              <ItemsControl Grid.Column="1" ItemsSource="{CompiledBinding Cells}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="qa:SeriesCellViewModel">
+                    <v:MetricCellView Host="{CompiledBinding #Root.((qa:CounterSeriesQuickAddViewModel)DataContext)}"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <!-- Togli serie: spento (CanRemoveSeries) quando ne resta una sola. -->
+              <Button x:Name="RemoveButton" Grid.Column="2" Width="24" Height="24" Padding="0" VerticalAlignment="Top"
+                      Background="Transparent" BorderThickness="0"
+                      ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                      AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                      Command="{CompiledBinding #Root.((qa:CounterSeriesQuickAddViewModel)DataContext).RemoveSeriesCommand}"
+                      CommandParameter="{CompiledBinding}">
+                <Path Width="9" Height="9" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.5"
+                      StrokeLineCap="Round" Data="M0,0 L9,9 M9,0 L0,9"/>
+              </Button>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Button x:Name="SaveButton" Command="{CompiledBinding SaveCommand}" HorizontalAlignment="Left" Padding="12,6">
+      <Panel>
+        <TextBlock x:Name="SaveLabel" Text="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                   IsVisible="{CompiledBinding !IsRepeatable}"/>
+        <TextBlock x:Name="SaveSeriesLabel" IsVisible="{CompiledBinding IsRepeatable}"
+                   Text="{CompiledBinding ValidSeriesCount, StringFormat={x:Static res:Strings.HabitScreen_QuickAdd_SaveSeries}}"/>
+      </Panel>
+    </Button>
+    <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+               Text="{CompiledBinding ErrorMessage}"
+               IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+  </StackPanel>
+</UserControl>

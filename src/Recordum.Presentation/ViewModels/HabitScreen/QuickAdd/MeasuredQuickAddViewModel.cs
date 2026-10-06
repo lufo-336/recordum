@@ -42,7 +42,8 @@ public sealed partial class MeasuredQuickAddViewModel(
 
     public override async Task SaveAsync(CancellationToken ct = default)
     {
-        if (Node is null) return;
+        // AsyncRelayCommand.ExecuteAsync non consulta CanExecute: la guardia del doppio clic sta qui.
+        if (Node is null || IsSaving) return;
         IsSaving = true;
         ErrorMessage = null;
         try

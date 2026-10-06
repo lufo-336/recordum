@@ -146,7 +146,8 @@ public class TodayStripTests : IAsyncLifetime
         var state = await CreateAsync(HabitType.State, "Reg-Stato");
         var (_, v3, w3) = await OpenAsync(state);
         var slider = Find<Slider>(v3, "ValueSlider");
-        var save = Find<Button>(v3, "SaveButton");
+        // Dalla fascia Oggi: il pannello di registrazione della Cronologia ha un SaveButton omonimo.
+        var save = Find<Button>(Find<Border>(v3, "TodayHost"), "SaveButton");
         save.IsEnabled.Should().BeTrue();
         slider.Value = 4;
         Pump();
