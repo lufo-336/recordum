@@ -48,70 +48,74 @@
     </ContextMenu>
   </UserControl.Resources>
 
-  <Border Classes="habitblock"
-          Classes.selected="{CompiledBinding IsSelected}"
-          Classes.droptarget="{CompiledBinding IsDropTarget}"
-          Classes.dragging="{CompiledBinding IsBeingDragged}"
-          Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
-          Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
-    <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}"
-          ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-      <Rectangle Grid.Column="0"
-                 Width="{StaticResource Layout.AccentBarWidth}"
-                 Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+  <Panel>
+    <ctl:GroupFrames Slices="{CompiledBinding FrameSlices}"/>
+    <Border Classes="habitblock"
+            Margin="{CompiledBinding Converter={x:Static conv:RowCardMarginConverter.Instance}}"
+            Classes.selected="{CompiledBinding IsSelected}"
+            Classes.droptarget="{CompiledBinding IsDropTarget}"
+            Classes.dragging="{CompiledBinding IsBeingDragged}"
+            Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
+            Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
+      <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}"
+            ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+        <Rectangle Grid.Column="0"
+                   Width="{StaticResource Layout.AccentBarWidth}"
+                   Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
 
-      <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center"
-            ColumnDefinitions="Auto,Auto,*">
-        <!-- L'icona sparisce quando la chiave non risolve: si guarda il Data GIÀ convertito, non la
-             chiave, così una chiave sconosciuta non lascia un vuoto a forma di icona. -->
-        <Path x:Name="IconPath" Grid.Column="0" Width="16" Height="16" Margin="0,0,6,0"
-              Stretch="Uniform" VerticalAlignment="Center"
-              Stroke="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
-              StrokeThickness="1.5" StrokeLineCap="Round" StrokeJoin="Round"
-              Data="{CompiledBinding Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
-              IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-        <Path Grid.Column="1" Width="12" Height="12" Margin="0,0,6,0"
-              Stretch="Uniform" VerticalAlignment="Center"
-              Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
-              StrokeLineCap="Round" StrokeJoin="Round"
-              Data="{StaticResource Icon.Pin}"
-              ToolTip.Tip="{x:Static res:Strings.Home_ContextMenu_Pin}"
-              IsVisible="{CompiledBinding IsPinned}"/>
-        <Panel Grid.Column="2" VerticalAlignment="Center">
-          <TextBlock Text="{CompiledBinding Name}"
+        <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center"
+              ColumnDefinitions="Auto,Auto,*">
+          <!-- L'icona sparisce quando la chiave non risolve: si guarda il Data GIÀ convertito, non la
+               chiave, così una chiave sconosciuta non lascia un vuoto a forma di icona. -->
+          <Path x:Name="IconPath" Grid.Column="0" Width="16" Height="16" Margin="0,0,6,0"
+                Stretch="Uniform" VerticalAlignment="Center"
+                Stroke="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                StrokeThickness="1.5" StrokeLineCap="Round" StrokeJoin="Round"
+                Data="{CompiledBinding Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
+                IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+          <Path Grid.Column="1" Width="12" Height="12" Margin="0,0,6,0"
+                Stretch="Uniform" VerticalAlignment="Center"
+                Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                Data="{StaticResource Icon.Pin}"
+                ToolTip.Tip="{x:Static res:Strings.Home_ContextMenu_Pin}"
+                IsVisible="{CompiledBinding IsPinned}"/>
+          <Panel Grid.Column="2" VerticalAlignment="Center">
+            <TextBlock Text="{CompiledBinding Name}"
+                       FontSize="{StaticResource FontSize.Body}"
+                       Foreground="{DynamicResource Brush.Text}"
+                       IsVisible="{CompiledBinding !IsRenaming}"/>
+            <TextBox Text="{CompiledBinding PendingName, Mode=TwoWay}"
                      FontSize="{StaticResource FontSize.Body}"
-                     Foreground="{DynamicResource Brush.Text}"
-                     IsVisible="{CompiledBinding !IsRenaming}"/>
-          <TextBox Text="{CompiledBinding PendingName, Mode=TwoWay}"
-                   FontSize="{StaticResource FontSize.Body}"
-                   beh:InlineRenameBehavior.Attach="True"
-                   IsVisible="{CompiledBinding IsRenaming}"/>
-        </Panel>
+                     beh:InlineRenameBehavior.Attach="True"
+                     IsVisible="{CompiledBinding IsRenaming}"/>
+          </Panel>
+        </Grid>
+
+        <TextBlock Grid.Column="2" Classes="keyfigure"
+                   Classes.zero="{CompiledBinding IsKeyFigureZero}"
+                   Margin="8,0,8,0" VerticalAlignment="Center"
+                   FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
+                   Foreground="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                   Text="{CompiledBinding KeyFigureText}"
+                   ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"
+                   IsVisible="{CompiledBinding ShowKeyFigure}"/>
+
+        <ctl:HeatmapStrip Grid.Column="3" Margin="0,0,8,0" VerticalAlignment="Center"
+                          Kind="{CompiledBinding StripVisual}"
+                          Fractions="{CompiledBinding StripFractions}"
+                          AccentColor="{CompiledBinding ColorHex}"
+                          ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
+
+        <Button Grid.Column="4" Classes="ghost" Margin="0,0,8,0"
+                Width="26" Height="26" Padding="0" VerticalAlignment="Center"
+                ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"
+                Command="{CompiledBinding QuickActionCommand}"
+                IsVisible="{CompiledBinding CanQuickAction}">
+          <TextBlock Text="+" FontSize="16" FontWeight="SemiBold"
+                     Foreground="{DynamicResource Brush.Text}"/>
+        </Button>
       </Grid>
-
-      <TextBlock Grid.Column="2" Classes="keyfigure"
-                 Classes.zero="{CompiledBinding IsKeyFigureZero}"
-                 Margin="8,0,8,0" VerticalAlignment="Center"
-                 FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
-                 Foreground="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
-                 Text="{CompiledBinding KeyFigureText}"
-                 ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"
-                 IsVisible="{CompiledBinding ShowKeyFigure}"/>
-
-      <ctl:HeatmapStrip Grid.Column="3" Margin="0,0,8,0" VerticalAlignment="Center"
-                        Kind="{CompiledBinding StripVisual}"
-                        Fractions="{CompiledBinding StripFractions}"
-                        AccentColor="{CompiledBinding ColorHex}"
-                        ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
-
-      <Button Grid.Column="4" Classes="ghost" Margin="0,0,8,0"
-              Width="26" Height="26" Padding="0" VerticalAlignment="Center"
-              ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"
-              Command="{CompiledBinding QuickActionCommand}"
-              IsVisible="{CompiledBinding CanQuickAction}">
-        <TextBlock Text="+" FontSize="16" FontWeight="SemiBold"
-                   Foreground="{DynamicResource Brush.Text}"/>
-      </Button>
-    </Grid>
-  </Border>
+    </Border>
+  </Panel>
 </UserControl>

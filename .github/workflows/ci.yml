@@ -36,10 +36,11 @@ jobs:
         run: |
           rc=0
           for p in Core Presentation UI Plugins Plugins.ExportEngine; do
-            dotnet test "tests/Recordum.$p.Tests" --no-build --logger "trx;LogFileName=$p.trx" --results-directory TestResults || rc=1
+            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance" --logger "trx;LogFileName=$p.trx" --results-directory TestResults || rc=1
           done
           # DPAPI esiste solo su Windows: quelle classi portano il tratto WindowsOnly. I test di prestazioni
-          # (Category=Performance) misurano tempi: su un runner condiviso oscillano, e girano in locale.
+          # (Category=Performance, anche in Recordum.UI.Tests) misurano tempi: su un runner condiviso
+          # oscillano, e girano in locale.
           dotnet test tests/Recordum.Data.Tests --no-build --filter "Category!=WindowsOnly&Category!=Performance" \
             --logger "trx;LogFileName=Data.trx" --results-directory TestResults || rc=1
           exit $rc

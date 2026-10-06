@@ -568,6 +568,47 @@ public class HomeViewModelTests
         gRow.Should().BeSameAs(sut.Rows.Single(r => r.Name == "G"));
     }
 
+    // F1-PERF1: la Home su Avalonia è una lista piatta; la cornice di un gruppo aperto si disegna a
+    // fette, una per riga. Ogni riga sa quali cornici la attraversano, e se le apre o le chiude.
+    [Fact]
+    public async Task Each_flat_row_carries_the_slices_of_the_group_frames_that_cross_it()
+    {
+        var g = Guid.NewGuid();
+        var sub = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "G", type: null, id: g) with { ColorHex = "#E11D48" });
+        _query.HomeRows.Add(SampleRow(name: "h1", parent: g));
+        _query.HomeRows.Add(SampleRow(name: "Sub", type: null, id: sub, parent: g) with { ColorHex = "#10B981" });
+        _query.HomeRows.Add(SampleRow(name: "h2", parent: sub));
+        _query.HomeRows.Add(SampleRow(name: "root"));
+        var sut = CreateSut();
+
+        await sut.LoadCommand.ExecuteAsync(null);
+
+        IEnumerable<string> Slices(string name) => sut.Rows.Single(r => r.Name == name).FrameSlices
+            .Select(s => $"{s.Level}{s.ColorHex}{(s.IsTop ? "^" : "")}{(s.IsBottom ? "_" : "")}");
+        Slices("G").Should().Equal("0#E11D48^");
+        Slices("h1").Should().Equal("0#E11D48");
+        Slices("Sub").Should().Equal("0#E11D48", "1#10B981^");
+        Slices("h2").Should().Equal("0#E11D48_", "1#10B981_");   // le due cornici si chiudono insieme
+        Slices("root").Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_collapsed_or_empty_group_has_no_frame()
+    {
+        var closed = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "Chiuso", type: null, id: closed));
+        _query.HomeRows.Add(SampleRow(name: "h1", parent: closed));
+        _query.HomeRows.Add(SampleRow(name: "Vuoto", type: null));
+        var sut = CreateSut();
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.Rows.Single(r => r.Name == "Chiuso").FrameSlices.Should().ContainSingle(s => s.IsTop && !s.IsBottom);
+
+        sut.Rows.Single(r => r.Name == "Chiuso").IsExpanded = false;
+
+        sut.Rows.Should().OnlyContain(r => r.FrameSlices.Count == 0);
+    }
+
     [Fact]
     public async Task Collapsed_group_has_no_children_in_the_hierarchy()
     {

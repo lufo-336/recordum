@@ -37,10 +37,10 @@ public class ShellIntegrationTests(ITestOutputHelper output)
 
         var tree = window.GetVisualDescendants().OfType<ItemsControl>()
             .Single(c => c.Name == "RowsHost");
-        tree.GetRealizedContainers().Should().HaveCount(vm.Home.Roots.Count,
-            "ogni radice dell'albero deve avere il suo contenitore realizzato a schermo, non solo "
-            + "una riga nel ViewModel");
-        vm.Home.Roots.Should().NotBeEmpty();
+        // La Home è una lista piatta virtualizzata (F1-PERF1): le poche righe seminate stanno tutte
+        // nella viewport, quindi ognuna ha il suo contenitore.
+        tree.GetRealizedContainers().Should().HaveCount(vm.Home.Rows.Count,
+            "ogni riga deve avere il suo contenitore realizzato a schermo, non solo una riga nel ViewModel");
     }
 
     [AvaloniaFact]

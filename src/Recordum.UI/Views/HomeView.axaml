@@ -159,8 +159,18 @@
                               x:DataType="vm:HomeViewModel">
                   <ItemsControl x:Name="RowsHost"
                                 beh:TreeDragDropBehavior.Enabled="True"
-                                ItemsSource="{CompiledBinding Roots}"
-                                ItemTemplate="{x:Static rows:HomeRowTemplate.Instance}"/>
+                                ItemsSource="{CompiledBinding Rows}"
+                                ItemTemplate="{x:Static rows:HomeRowTemplate.Instance}">
+                    <!-- Lista piatta, non albero annidato: solo le righe nella viewport hanno una vista,
+                         e le righe hanno tutte quasi la stessa altezza, quindi la stima dell'estensione
+                         regge e la barra non salta (F1-PERF1). Il pannello legge la viewport effettiva,
+                         quindi funziona dentro lo ScrollViewer esterno. -->
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <VirtualizingStackPanel/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                  </ItemsControl>
                 </ScrollViewer>
               </DataTemplate>
             </v:HomeStateTemplate.Loaded>

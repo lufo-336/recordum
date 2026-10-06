@@ -3,7 +3,7 @@
              xmlns:vm="using:Recordum.Presentation.ViewModels"
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
-             xmlns:rows="using:Recordum.UI.Views.Rows"
+             xmlns:ctl="using:Recordum.UI.Controls"
              x:Class="Recordum.UI.Views.Rows.GroupRow"
              x:DataType="vm:HomeRowViewModel">
   <!-- Il menu della riga è una risorsa: il dizionario XAML costruisce le voci solo al primo accesso,
@@ -32,46 +32,38 @@
     </ContextMenu>
   </UserControl.Resources>
 
-  <Border Classes="groupframe"
-          Classes.expanded="{CompiledBinding IsExpanded}"
-          Classes.haskids="{CompiledBinding HasVisibleChildren}">
-    <StackPanel>
-      <Border Classes="habitblock" Margin="0"
-              Classes.selected="{CompiledBinding IsSelected}"
-              Classes.droptarget="{CompiledBinding IsDropTarget}"
-              Classes.dragging="{CompiledBinding IsBeingDragged}"
-              Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
-              Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
-        <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}" ColumnDefinitions="Auto,Auto,*,Auto">
-          <ToggleButton Grid.Column="0" Classes="chevron" Margin="4,0,0,0" VerticalAlignment="Center"
-                        IsChecked="{CompiledBinding IsExpanded, Mode=TwoWay}">
-            <!-- Data e Stroke arrivano dallo stile `.chevron` e cambiano con :checked. -->
-            <Path Width="13" Height="13" Stretch="Uniform"
-                  StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"/>
-          </ToggleButton>
+  <!-- Niente più cornice attorno ai figli: la Home è una lista piatta, e la cornice la disegna
+       GroupFrames a fette, riga per riga (F1-PERF1). -->
+  <Panel>
+    <ctl:GroupFrames Slices="{CompiledBinding FrameSlices}"/>
+    <Border Classes="habitblock"
+            Margin="{CompiledBinding Converter={x:Static conv:RowCardMarginConverter.Instance}}"
+            Classes.selected="{CompiledBinding IsSelected}"
+            Classes.droptarget="{CompiledBinding IsDropTarget}"
+            Classes.dragging="{CompiledBinding IsBeingDragged}"
+            Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
+            Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
+      <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}" ColumnDefinitions="Auto,Auto,*,Auto">
+        <ToggleButton Grid.Column="0" Classes="chevron" Margin="4,0,0,0" VerticalAlignment="Center"
+                      IsChecked="{CompiledBinding IsExpanded, Mode=TwoWay}">
+          <!-- Data e Stroke arrivano dallo stile `.chevron` e cambiano con :checked. -->
+          <Path Width="13" Height="13" Stretch="Uniform"
+                StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"/>
+        </ToggleButton>
 
-          <Rectangle Grid.Column="1" Width="{StaticResource Layout.AccentBarWidth}" Opacity="0.6"
-                     Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+        <Rectangle Grid.Column="1" Width="{StaticResource Layout.AccentBarWidth}" Opacity="0.6"
+                   Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
 
-          <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"
-                     FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold"
-                     Foreground="{DynamicResource Brush.Text}"
-                     Text="{CompiledBinding Name}"/>
+        <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"
+                   FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Text}"
+                   Text="{CompiledBinding Name}"/>
 
-          <TextBlock Grid.Column="3" Margin="0,0,12,0" VerticalAlignment="Center"
-                     FontSize="{StaticResource FontSize.Small}" Opacity="0.5"
-                     Foreground="{DynamicResource Brush.TextMuted}"
-                     Text="{CompiledBinding ChildCount, StringFormat={x:Static res:Strings.Home_GroupChildCount_Format}}"/>
-        </Grid>
-      </Border>
-
-      <!-- Ricorsione: gli stessi due template, scelti dallo stesso selettore. -->
-      <ItemsControl Classes="childlist"
-                    Classes.expanded="{CompiledBinding IsExpanded}"
-                    Classes.haskids="{CompiledBinding HasVisibleChildren}"
-                    ItemsSource="{CompiledBinding Children}"
-                    ItemTemplate="{x:Static rows:HomeRowTemplate.Instance}"
-                    Margin="20,2,2,1"/>
-    </StackPanel>
-  </Border>
+        <TextBlock Grid.Column="3" Margin="0,0,12,0" VerticalAlignment="Center"
+                   FontSize="{StaticResource FontSize.Small}" Opacity="0.5"
+                   Foreground="{DynamicResource Brush.TextMuted}"
+                   Text="{CompiledBinding ChildCount, StringFormat={x:Static res:Strings.Home_GroupChildCount_Format}}"/>
+      </Grid>
+    </Border>
+  </Panel>
 </UserControl>

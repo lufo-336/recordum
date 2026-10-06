@@ -108,6 +108,10 @@ public sealed partial class HomeRowViewModel : ObservableObject
 
     /// <summary>True when expanded children are actually rendered (drives the group frame chrome).</summary>
     public bool HasVisibleChildren => Children.Count > 0;
+
+    /// <summary>The frames of the expanded groups that cross this row, outermost first, for a view
+    /// that draws the tree as one flat list (Avalonia, F1-PERF1). Set by HomeViewModel.Rebuild.</summary>
+    public IReadOnlyList<GroupFrameSlice> FrameSlices { get; init; } = [];
     public DateTime? LastCompletionAt { get; }
     public bool IsCompletedToday { get; }
     public int IndentLevel { get; }

@@ -448,11 +448,15 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         try
         {
             var parentStack = new List<HomeRowViewModel>();
-            foreach (var (row, level) in OrderHierarchically(q.ToList()))
+            var ordered = OrderHierarchically(q.ToList()).ToList();
+            var frames = FrameSlicesOf(ordered);
+            for (var i = 0; i < ordered.Count; i++)
             {
+                var (row, level) = ordered[i];
                 _prefsByNode.TryGetValue(row.HabitNodeId, out var prefs);
                 var vm = new HomeRowViewModel(row, level, _nodes, _purge, prefs, _streaks, _clock)
                 {
+                    FrameSlices = frames[i],
                     CurrentTab = ActiveTab,
                     IsExpanded = !_collapsedGroupIds.Contains(row.HabitNodeId),
                 };
@@ -529,6 +533,27 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         foreach (var root in roots)
             foreach (var pair in WalkSubtree(root, 0, byParent))
                 yield return pair;
+    }
+
+    /// <summary>For each row of the display order, the frames of the expanded groups that cross it.
+    /// A group has a frame when the next row is one of its descendants (collapsed groups have none:
+    /// their children are not in the order); the frame ends at the last row before the next row at
+    /// its level or above.</summary>
+    private static IReadOnlyList<GroupFrameSlice>[] FrameSlicesOf(List<(HomeTreeRow Row, int Level)> ordered)
+    {
+        var result = new IReadOnlyList<GroupFrameSlice>[ordered.Count];
+        var open = new List<(int Level, string ColorHex, int Start)>();
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            var (row, level) = ordered[i];
+            while (open.Count > 0 && open[^1].Level >= level) open.RemoveAt(open.Count - 1);
+            var nextLevel = i + 1 < ordered.Count ? ordered[i + 1].Level : 0;
+            if (row.HabitType is null && nextLevel > level) open.Add((level, row.ColorHex, i));
+            result[i] = open.Count == 0
+                ? []
+                : open.Select(f => new GroupFrameSlice(f.Level, f.ColorHex, f.Start == i, f.Level >= nextLevel)).ToArray();
+        }
+        return result;
     }
 
     // ▾/▸ toggle: track the collapsed set and rebuild the visible rows. The guard skips

@@ -1,4 +1,11 @@
+using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Media.Imaging;
+using Avalonia.VisualTree;
+using Recordum.UI.Controls;
+using Recordum.UI.Views;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -98,42 +105,91 @@ public class HomeRowViewTests
         menu.Close();
     }
 
+    // F1-PERF1: la Home è una lista piatta e la cornice del gruppo si disegna a fette (GroupFrames).
+    // Un difetto di disegno si misura: si leggono i pixel resi, non le proprietà.
     [AvaloniaFact]
-    public void The_group_frame_is_tinted_only_when_expanded_with_children()
+    public void The_group_frame_is_drawn_across_its_rows_only_while_the_group_is_expanded()
     {
-        var id = Guid.NewGuid();
-        var vm = RowFixture.Vm(RowFixture.Row(id, "Gruppo", "#E11D48", type: null, childCount: 1));
-        vm.Children.Add(RowFixture.Vm(RowFixture.Row(Guid.NewGuid(), "Figlia", parent: id)));
-        var view = Show(new GroupRow { DataContext = vm });
-        var frame = view.GetLogicalDescendants().OfType<Border>().First(b => b.Classes.Contains("groupframe"));
-        var childList = view.GetLogicalDescendants().OfType<ItemsControl>().First(c => c.Classes.Contains("childlist"));
+        var g = Guid.NewGuid();
+        var (vm, _, _) = HomeFixture.Build(
+            RowFixture.Row(g, "Gruppo", "#E11D48", type: null, childCount: 1),
+            RowFixture.Row(Guid.NewGuid(), "Figlia", "#3B82F6", parent: g));
+        var view = new HomeView { DataContext = vm };
+        var w = new Window { Width = 600, Height = 300, Content = view };
+        w.Show();
+        vm.LoadCommand.Execute(null);
+        Pump();
+        var group = view.GetVisualDescendants().OfType<GroupRow>().Single();
+        var child = view.GetVisualDescendants().OfType<HabitRow>().Single();
+        Point At(Control row, double x) => row.TranslatePoint(new Point(x, row.Bounds.Height / 2), w)!.Value;
 
-        childList.IsVisible.Should().BeTrue();
-        frame.Background.Should().BeAssignableTo<ISolidColorBrush>()
-            .Which.Color.Should().Be(Color.FromArgb(10, 0xE1, 0x1D, 0x48));
+        var frame = w.CaptureRenderedFrame()!;
+        var background = Pixel(frame, new Point(w.Width - 2, w.Height - 2));
+        var fill = Over(background, 10);
+        var border = Over(fill, 80);
+        Pixel(frame, At(group, 0)).Should().Match<Color>(c => Near(c, border), "il bordo sinistro sulla riga del gruppo");
+        Pixel(frame, At(child, 0)).Should().Match<Color>(c => Near(c, border), "il bordo continua sulla figlia");
+        Pixel(frame, At(child, GroupFrames.IndentStep / 2)).Should().Match<Color>(c => Near(c, fill),
+            "fra il bordo e la card rientrata della figlia c'è il fondo della cornice");
 
-        vm.IsExpanded = false;
-        Dispatcher.UIThread.RunJobs();
+        vm.Rows.Single(r => r.IsGroup).IsExpanded = false;
+        Pump();
+        group = view.GetVisualDescendants().OfType<GroupRow>().Single();
+        frame = w.CaptureRenderedFrame()!;
+        Pixel(frame, At(group, 0)).Should().Match<Color>(c => Near(c, background), "chiuso, il gruppo non ha cornice");
+        w.Close();
 
-        childList.IsVisible.Should().BeFalse();
-        frame.Background.Should().Be(Brushes.Transparent);
+        // Il colore del gruppo (#E11D48) con l'alfa dato, steso sopra `under`.
+        static Color Over(Color under, byte alpha)
+        {
+            byte Mix(byte u, byte o) => (byte)Math.Round(u + (o - u) * alpha / 255.0);
+            return Color.FromRgb(Mix(under.R, 0xE1), Mix(under.G, 0x1D), Mix(under.B, 0x48));
+        }
+    }
+
+    private static bool Near(Color a, Color b) =>
+        Math.Abs(a.R - b.R) <= 4 && Math.Abs(a.G - b.G) <= 4 && Math.Abs(a.B - b.B) <= 4;
+
+    private static Color Pixel(Bitmap frame, Point at)
+    {
+        var buffer = new byte[4];
+        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+        try
+        {
+            frame.CopyPixels(new PixelRect((int)at.X, (int)at.Y, 1, 1), handle.AddrOfPinnedObject(), 4, 4);
+        }
+        finally { handle.Free(); }
+        // L'ordine dei byte dipende dal formato del frame (in headless con Skia è Rgba8888).
+        return frame.Format == Avalonia.Platform.PixelFormats.Bgra8888
+            ? Color.FromRgb(buffer[2], buffer[1], buffer[0])
+            : Color.FromRgb(buffer[0], buffer[1], buffer[2]);
     }
 
     [AvaloniaFact]
-    public void A_nested_group_recurses_through_the_same_template()
+    public void A_nested_row_card_is_indented_by_its_level()
     {
-        var rootId = Guid.NewGuid();
-        var innerId = Guid.NewGuid();
-        var root = RowFixture.Vm(RowFixture.Row(rootId, "Radice", type: null, childCount: 1));
-        var inner = RowFixture.Vm(RowFixture.Row(innerId, "Interno", type: null, parent: rootId, childCount: 1));
-        inner.Children.Add(RowFixture.Vm(RowFixture.Row(Guid.NewGuid(), "Foglia", parent: innerId)));
-        root.Children.Add(inner);
+        var root = Guid.NewGuid();
+        var inner = Guid.NewGuid();
+        var (vm, _, _) = HomeFixture.Build(
+            RowFixture.Row(root, "Radice", type: null, childCount: 1),
+            RowFixture.Row(inner, "Interno", type: null, parent: root, childCount: 1),
+            RowFixture.Row(Guid.NewGuid(), "Foglia", parent: inner));
+        var view = new HomeView { DataContext = vm };
+        var w = new Window { Width = 600, Height = 300, Content = view };
+        w.Show();
+        vm.LoadCommand.Execute(null);
+        Pump();
 
-        var view = Show(new GroupRow { DataContext = root });
+        var leaf = view.GetVisualDescendants().OfType<HabitRow>().Single();
+        var card = leaf.GetVisualDescendants().OfType<Border>().First(b => b.Classes.Contains("habitblock"));
+        card.TranslatePoint(new Point(0, 0), leaf)!.Value.X.Should().Be(2 * GroupFrames.IndentStep);
+        w.Close();
+    }
+
+    private static void Pump()
+    {
         Dispatcher.UIThread.RunJobs();
-
-        // La radice è `view`, non un discendente: si contano il gruppo interno e la foglia.
-        view.GetLogicalDescendants().OfType<GroupRow>().Should().HaveCount(1);
-        view.GetLogicalDescendants().OfType<HabitRow>().Should().HaveCount(1);
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
     }
 }

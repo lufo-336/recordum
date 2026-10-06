@@ -5,9 +5,8 @@ using Recordum.Presentation.ViewModels;
 namespace Recordum.UI.Views.Rows;
 
 /// <summary>Sceglie la vista di riga dal tipo di nodo. In WPF era un DataTemplateSelector che
-/// risolveva due chiavi di risorsa; qui è un IDataTemplate, e l'istanza condivisa permette al
-/// template del gruppo di riferirsi a sé stesso (in XAML una StaticResource auto-referenziale
-/// dentro GroupRowTemplate.xaml non si risolveva).</summary>
+/// risolveva due chiavi di risorsa; qui è un IDataTemplate con un'istanza condivisa. Le righe sono
+/// una lista piatta (F1-PERF1): un gruppo non contiene più i suoi figli.</summary>
 public sealed class HomeRowTemplate : IDataTemplate
 {
     public static readonly HomeRowTemplate Instance = new();
