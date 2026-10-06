@@ -8,9 +8,45 @@
              xmlns:beh="using:Recordum.UI.Behaviors"
              x:Class="Recordum.UI.Views.Rows.HabitRow"
              x:DataType="vm:HomeRowViewModel">
-  <UserControl.Styles>
-    <StyleInclude Source="/Views/Rows/RowCardStyles.axaml"/>
-  </UserControl.Styles>
+  <!-- Il menu della riga è una risorsa: il dizionario XAML costruisce le voci solo al primo accesso,
+       e il code-behind lo aggancia alla prima richiesta di menu (tasto destro, Shift+F10). Costruito
+       subito costava dieci voci per ognuna delle 300 righe della Home (F1-PERF1).
+       Il ContextMenu eredita il DataContext del proprio bersaglio: sparisce il
+       `DataContext="{Binding PlacementTarget.DataContext, RelativeSource=Self}"` di WPF. -->
+  <UserControl.Resources>
+    <ContextMenu x:Key="RowMenu" x:DataType="vm:HomeRowViewModel">
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Rename}"
+                Command="{CompiledBinding BeginRenameCommand}"
+                IsVisible="{CompiledBinding ShowRenameMenu}"/>
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin}"
+                IsVisible="{CompiledBinding ShowPinMenu}">
+        <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_None}"
+                  Command="{CompiledBinding SetPinScopeCommand}"
+                  CommandParameter="{x:Static enums:PinScope.None}"/>
+        <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_Local}"
+                  Command="{CompiledBinding SetPinScopeCommand}"
+                  CommandParameter="{x:Static enums:PinScope.Local}"/>
+        <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_Global}"
+                  Command="{CompiledBinding SetPinScopeCommand}"
+                  CommandParameter="{x:Static enums:PinScope.Global}"/>
+      </MenuItem>
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Archive}"
+                Command="{CompiledBinding ArchiveCommand}"
+                IsVisible="{CompiledBinding ShowArchive}"/>
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Unarchive}"
+                Command="{CompiledBinding UnarchiveCommand}"
+                IsVisible="{CompiledBinding ShowUnarchive}"/>
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_SoftDelete}"
+                Command="{CompiledBinding SoftDeleteCommand}"
+                IsVisible="{CompiledBinding ShowSoftDelete}"/>
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Restore}"
+                Command="{CompiledBinding RestoreCommand}"
+                IsVisible="{CompiledBinding ShowRestore}"/>
+      <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Purge}"
+                Command="{CompiledBinding PurgeCommand}"
+                IsVisible="{CompiledBinding ShowPurge}"/>
+    </ContextMenu>
+  </UserControl.Resources>
 
   <Border Classes="habitblock"
           Classes.selected="{CompiledBinding IsSelected}"
@@ -18,45 +54,8 @@
           Classes.dragging="{CompiledBinding IsBeingDragged}"
           Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
           Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
-    <Grid Height="{StaticResource Layout.RowHeight}"
+    <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}"
           ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-      <Grid.ContextMenu>
-        <!-- In Avalonia un ContextMenu eredita il DataContext del proprio bersaglio: sparisce il
-             `DataContext="{Binding PlacementTarget.DataContext, RelativeSource=Self}"` di WPF. -->
-        <ContextMenu>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Rename}"
-                    Command="{CompiledBinding BeginRenameCommand}"
-                    IsVisible="{CompiledBinding ShowRenameMenu}"/>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin}"
-                    IsVisible="{CompiledBinding ShowPinMenu}">
-            <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_None}"
-                      Command="{CompiledBinding SetPinScopeCommand}"
-                      CommandParameter="{x:Static enums:PinScope.None}"/>
-            <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_Local}"
-                      Command="{CompiledBinding SetPinScopeCommand}"
-                      CommandParameter="{x:Static enums:PinScope.Local}"/>
-            <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_Global}"
-                      Command="{CompiledBinding SetPinScopeCommand}"
-                      CommandParameter="{x:Static enums:PinScope.Global}"/>
-          </MenuItem>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Archive}"
-                    Command="{CompiledBinding ArchiveCommand}"
-                    IsVisible="{CompiledBinding ShowArchive}"/>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Unarchive}"
-                    Command="{CompiledBinding UnarchiveCommand}"
-                    IsVisible="{CompiledBinding ShowUnarchive}"/>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_SoftDelete}"
-                    Command="{CompiledBinding SoftDeleteCommand}"
-                    IsVisible="{CompiledBinding ShowSoftDelete}"/>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Restore}"
-                    Command="{CompiledBinding RestoreCommand}"
-                    IsVisible="{CompiledBinding ShowRestore}"/>
-          <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Purge}"
-                    Command="{CompiledBinding PurgeCommand}"
-                    IsVisible="{CompiledBinding ShowPurge}"/>
-        </ContextMenu>
-      </Grid.ContextMenu>
-
       <Rectangle Grid.Column="0"
                  Width="{StaticResource Layout.AccentBarWidth}"
                  Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>

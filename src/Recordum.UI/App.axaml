@@ -32,5 +32,8 @@
     </FluentTheme>
     <StyleInclude Source="/Themes/ControlStyles.axaml"/>
     <StyleInclude Source="/Themes/RecordumStyles.axaml"/>
+    <!-- Stili delle righe della Home: inclusi qui una volta, non in ogni riga. Inclusi per riga
+         costavano un terzo del tempo della Home con 300 righe (F1-PERF1). -->
+    <StyleInclude Source="/Views/Rows/RowCardStyles.axaml"/>
   </Application.Styles>
 </Application>

@@ -74,13 +74,16 @@ public class HomeRowViewTests
     {
         var vm = RowFixture.Vm(RowFixture.Row(Guid.NewGuid()));
         var view = Show(new HabitRow { DataContext = vm });
-        var grid = view.GetLogicalDescendants().OfType<Grid>().First(g => g.ContextMenu is not null);
-        var menu = grid.ContextMenu!;
-        // Aperto: un ContextMenu chiuso non eredita il DataContext e ogni voce resta al default
-        // IsVisible=true, quindi "contiene Pin" passerebbe anche con i binding rotti. Si asserisce
-        // pure ciò che deve mancare (Ripristina/Riattiva) e si prova un tab dove Pin sparisce.
-        menu.Open(grid);
+        var grid = view.GetLogicalDescendants().OfType<Grid>().Single(g => g.Name == "MenuHost");
+        grid.ContextMenu.Should().BeNull("il menu nasce alla prima richiesta, non con la riga (F1-PERF1)");
+        // La richiesta vera (tasto destro, Shift+F10) lo costruisce e lo apre. Aperto: un ContextMenu
+        // chiuso non eredita il DataContext e ogni voce resta al default IsVisible=true, quindi
+        // "contiene Pin" passerebbe anche con i binding rotti. Si asserisce pure ciò che deve mancare
+        // (Ripristina/Riattiva) e si prova un tab dove Pin sparisce.
+        grid.RaiseEvent(new ContextRequestedEventArgs());
         Dispatcher.UIThread.RunJobs();
+        var menu = grid.ContextMenu!;
+        menu.IsOpen.Should().BeTrue();
 
         IEnumerable<object?> Visible() => menu.Items.OfType<MenuItem>().Where(i => i.IsVisible).Select(i => i.Header);
         var pin = Recordum.Presentation.Resources.Strings.Home_ContextMenu_Pin;

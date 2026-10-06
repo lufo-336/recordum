@@ -4,5 +4,9 @@ namespace Recordum.UI.Views.Rows;
 
 public partial class GroupRow : UserControl
 {
-    public GroupRow() => InitializeComponent();
+    public GroupRow()
+    {
+        InitializeComponent();
+        RowMenu.AttachOnDemand(this, MenuHost);
+    }
 }
