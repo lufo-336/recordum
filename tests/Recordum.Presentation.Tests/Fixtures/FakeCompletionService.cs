@@ -20,12 +20,18 @@ public sealed class FakeCompletionService : ICompletionService
     public List<Guid> DeleteCalls { get; } = [];
     public List<(Guid Id, Action<Completion> Mutator)> UpdateCalls { get; } = [];
 
-    public ValueTask<Guid> RecordAsync(
+    /// <summary>Se impostato, RecordAsync attende questo task prima di registrare (salvataggio in volo).</summary>
+    public Task? RecordGate { get; set; }
+    public int RecordCalls { get; private set; }
+
+    public async ValueTask<Guid> RecordAsync(
         Completion draft,
         IReadOnlyList<CompletionValue>? values = null,
         IReadOnlyList<CompletionSegment>? segments = null,
         CancellationToken ct = default)
     {
+        RecordCalls++;
+        if (RecordGate is { } gate) await gate.ConfigureAwait(false);
         Throw();
         if (draft.Id == Guid.Empty) draft.Id = Guid.NewGuid();
         Store[draft.Id] = draft;
@@ -33,7 +39,7 @@ public sealed class FakeCompletionService : ICompletionService
         LastValues = values;
         LastSegments = segments;
         if (values is not null) ValuesByCompletion[draft.Id] = values.ToList();
-        return new(draft.Id);
+        return draft.Id;
     }
 
     public ValueTask UpdateAsync(Guid id, Action<Completion> mutate, CancellationToken ct = default)

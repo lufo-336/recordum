@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.UI.Views.HabitScreen.QuickAdd;
 
 namespace Recordum.UI.Views.HabitScreen;
 
@@ -22,12 +23,15 @@ public partial class HabitScreenView : UserControl
         _vm = DataContext as HabitScreenViewModel;
         if (_vm is not null) _vm.PropertyChanged += OnVmPropertyChanged;
         ApplyAccent();
+        RebuildQuickAdd();
     }
 
     // Il tab riusato per un'altra abitudine (anteprima) cambia Node senza ricostruire la view.
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(HabitScreenViewModel.Node)) ApplyAccent();
+        if (e.PropertyName == nameof(HabitScreenViewModel.QuickAddForCronologia)) RebuildQuickAdd();
+        if (e.PropertyName == nameof(HabitScreenViewModel.QuickAddForCronologia)) RebuildQuickAdd();
     }
 
     // Le chiavi Fluent che dipingono l'accento dei controlli (check, slider, selezione di lista, fuoco dei
@@ -44,6 +48,15 @@ public partial class HabitScreenView : UserControl
         "CheckBoxCheckBackgroundFillCheckedPressed",
         "CheckBoxCheckBackgroundStrokeCheckedPointerOver",
     ];
+
+    // Niente ContentControl: con un ContentTemplate statico il template si materializza anche a Content null.
+    private void RebuildQuickAdd()
+    {
+        var content = _vm?.QuickAddForCronologia;
+        var view = QuickAddTemplate.Instance.Build(content);
+        if (view is not null) view.DataContext = content;
+        QuickAddHost.Child = view;
+    }
 
     /// <summary>Le risorse non hanno DataContext: a ogni cambio di colore si riscrivono qui. Brush.Accent
     /// per i nostri controlli, le chiavi Fluent per gli altri. Senza colore valido si tolgono e torna
