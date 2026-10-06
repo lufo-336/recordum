@@ -4,7 +4,7 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-03
+## Dove siamo — 2026-10-06
 
 - **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato, a `c744963`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1
   fino al Task 5, Passo 0). **CI verde su Linux e su Windows** sul branch (run 37073454341) e su `main`. I test di
@@ -18,15 +18,17 @@
   Presentation 953, UI 190; build 0 errori.
 - **Per chiudere F1 mancano due cose, entrambe dell'autore**: la checklist a schermo su Windows e su GNOME (l'handoff è
   in `docs/dev-environment-sync.md`, la lista D7 nel piano F1, Task 10 Step 9) e il merge in `main`.
-- **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"): la Home con 300 righe impiega ≈ 3,8 s a caldo
-  contro il budget di 500 ms (**F1-PERF1**: non blocca il merge di F1, va chiuso prima del dogfooding);
+- **F1-PERF1 corretto** sul branch `f2-perf1-home` (parte da `avalonia-linux-slice`): la Home è una lista piatta
+  virtualizzata con le cornici dei gruppi disegnate a fette; 300 righe da ≈ 1,7 s a ≈ 115 ms a caldo in headless.
+  Manca la verifica a schermo; il merge va dopo quello di F1.
+- **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"):
   `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+4/Ctrl+5, "Nuovo >
   Abitudine" e il pulsante dello stato vuoto sono spenti finché F2, F5, F6 e F7 non li riaccendono (**F1-RAIL1**).
 - **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
 - Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **Prossimo**: la verifica a schermo di F1 e il merge (autore); poi F2, che comincia da F1-PERF1.
+- **Prossimo**: la verifica a schermo di F1 (con la Home di `f2-perf1-home`) e i merge (autore); poi il resto di F2.
 
 ## Il percorso
 

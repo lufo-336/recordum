@@ -6,7 +6,7 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
-## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-10-02)
+## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-10-06)
 
 > Una pagina per sapere cosa è ancora aperto e **dove si chiude**. Il dettaglio di ogni voce sta più sotto, nella sezione
 > della sua onda. I problemi trovati dalla revisione del 2026-09-25 (`RV-*`) sono nel piano del Passo 0, non qui; i
@@ -27,8 +27,8 @@
 - **R9-M1…M8** — i minori della review di R9 · `reported`
 
 **Trovati in F1 (sezione "Onda F1")**
-- **F1-PERF1** — la Home con 300 righe: ≈ 3,8 s a caldo contro il budget di 500 ms (E9/E20); si chiude prima del
-  dogfooding · **F1-SEC1** — `recordum.db`/`-wal`/`-shm` nascono 0644: nella lista del `/security-review` prima di
+- **F1-PERF1** — la Home con 300 righe: era ≈ 3,8 s a caldo contro il budget di 500 ms (E9/E20); ora ≈ 115 ms in
+  headless con la lista piatta virtualizzata (branch `f2-perf1-home`) · `fixed`, manca la verifica a schermo · **F1-SEC1** — `recordum.db`/`-wal`/`-shm` nascono 0644: nella lista del `/security-review` prima di
   pubblicare · **F1-RAIL1** — rail e Ctrl+4/Ctrl+5 spenti: F2, F6 e F7 riaccendono i propri · **F1-ICON1** — il glifo
   "riduci a icona" era vuoto: misurato e `fixed` (verifica a schermo su Windows)
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
@@ -1872,16 +1872,24 @@ Restano questi, ciascuno con la sua ragione.
   per il minimizza, 88 per il massimizza); dipende dal layout, non dalla piattaforma, quindi su Windows il pulsante era vuoto.
   Corretto: `Stretch="None" Data="M0 5.5H11"` (11 px di inchiostro). Guardia: `MainWindowTests.Every_caption_glyph_draws_something_when_the_caption_buttons_are_ours`
   (provato rosso: larghezza resa 0). `fixed` (da verificare a schermo su Windows).
-- **F1-PERF1 — La Home con molte righe è lenta: budget E9/E20 (< 500 ms) ancora aperto.** Misurato in headless (Task 7,
-  una sola misura per caso): 300 righe (20 gruppi da 10 figli + 80 abitudini) ≈ **3,8 s a caldo, ≈ 7 s a freddo**;
-  con 4 righe la Home si carica in 318 ms (Task 12). Cause misurate: lo `StyleInclude` di `RowCardStyles` **per riga**
-  (toglierlo: 3,8 → 2,7 s), un `ContextMenu` da 10 voci costruito subito **per ogni riga** (3,8 → 3,1 s), nessuna
-  virtualizzazione (~24 nodi visuali per riga, ~12 ms a riga). Smentita l'ipotesi del Task 6: i gruppi chiusi **non**
-  realizzano i figli (`Rebuild` li omette). Causa aggiunta dalla review finale: ogni `LoadAsync` mette `State=Loading`, quindi
-  `HomeStateTemplate` smonta e ricostruisce **l'intero albero** dopo ogni registrazione o archiviazione (`OnRowsInvalidated`
-  → `ReloadPreservingSelectionAsync`), non solo al primo caricamento; direzione del fix: tenere il sottoalbero `Loaded`
-  durante i ricaricamenti. Fix: stili inclusi una volta a livello di `HomeView`/`App`, menu costruito
-  alla prima apertura, poi virtualizzazione. Da chiudere prima del dogfooding. `reported`.
+- **F1-PERF1 — La Home con molte righe è lenta: budget E9/E20 (< 500 ms).** Misurato in headless (Task 7, una sola
+  misura per caso): 300 righe (20 gruppi da 10 figli + 80 abitudini) ≈ **3,8 s a caldo, ≈ 7 s a freddo**; con 4 righe
+  318 ms (Task 12). Cause misurate: lo `StyleInclude` di `RowCardStyles` **per riga**, un `ContextMenu` da 10 voci
+  costruito subito **per ogni riga**, nessuna virtualizzazione (~24 nodi visuali per riga); e ogni `LoadAsync` (dopo
+  ogni registrazione o archiviazione) ricostruiva l'intero albero.
+  **Fix** (branch `f2-perf1-home`, misure di `HomePerformanceTests`, `Category=Performance`, fuori dalla CI):
+  1. `ff5e44f` — stili inclusi una volta in `App.axaml`; il menu di riga è una risorsa XAML agganciata alla prima
+     `ContextRequested` (`RowMenu`). Caldo 1720 → 1261 ms.
+  2. `28a98ee` — la Home è una **lista piatta** (`Rows`) in un `VirtualizingStackPanel`, non più l'albero
+     `Roots`/`Children` (che resta per WPF). Virtualizzare l'albero annidato era stato provato e scartato: l'estensione
+     stimata saltava da 42 900 a 3 800 px scorrendo, perché un gruppo aperto è alto quanto 11 righe. Le cornici dei
+     gruppi aperti si disegnano a fette, riga per riga: il ViewModel dà a ogni riga le `GroupFrameSlice` che la
+     attraversano, `GroupFrames` le disegna senza figli visuali, `RowCardMarginConverter` rientra la card con le misure
+     del layout annidato (confronto delle schermate in chiaro e in scuro: nessun pixel che differisce di più di 8).
+  Dopo: 300 righe **≈ 115 ms a caldo, ≈ 120 ms la ricarica**, 16 righe con una vista; estensione stabile entro il 15%
+  scorrendo. Limiti noti: la misura è headless (senza il costo del rendering vero), e la ricarica ricrea ancora tutti i
+  ViewModel di riga (oggi costa poco: si rimette mano solo se una misura lo chiede). `fixed`; diventa `verified-fixed`
+  con la verifica a schermo su Windows e GNOME (scorrimento, cornici, menu col tasto destro e Shift+F10, trascinamento).
 - **F1-SEC1 — `recordum.db`, `-wal` e `-shm` nascono 0644 dentro la cartella dati 0700** (visto avviando la shell vera su
   Linux, Task 11; il comportamento è precedente). La cartella 0700 li protegge e il contenuto è cifrato, ma i file
   stessi non sono privati al proprietario come lo sono la cartella e il log. **Nella lista del
