@@ -29,7 +29,12 @@
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
 - Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **Prossimo**: la verifica a schermo di F1 (con la Home di `f2-perf1-home`) e i merge (autore); poi il resto di F2.
+- **F2 si divide in sotto-onde** (deciso il 2026-10-06), ognuna con piano, review di branch e CI verde: **F2a
+  Registrazione** (shell di `HabitScreen` + colonna Oggi, quick-add dei cinque tipi, `TimerStatusBar`, percorso "ieri",
+  verifica di R9) → **F2b Creare su Linux** (picker dei template e builder) → **F2c Dati al sicuro** (portachiavi D3,
+  backup automatico e manuale, restore incrociato) → **F2d Diario** (nota veloce con foto D10, editor minimo); chiude F2
+  il lancio stabile su Linux (publish + `.desktop`).
+- **Prossimo**: il piano di F2a. All'autore: la verifica a schermo di F1 (con la Home di `f2-perf1-home`) e i merge.
 
 ## Il percorso
 
