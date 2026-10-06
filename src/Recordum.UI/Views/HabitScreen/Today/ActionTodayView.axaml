@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:tvm="using:Recordum.Presentation.ViewModels.HabitScreen.Today"
+             x:Class="Recordum.UI.Views.HabitScreen.Today.ActionTodayView"
+             x:DataType="tvm:ActionTodayContent">
+  <Border Padding="14,10">
+    <WrapPanel Orientation="Horizontal">
+      <!-- IsChecked OneWay rispecchia lo stato; il comando registra o annulla il completamento di oggi. -->
+      <CheckBox x:Name="DoneToday" Content="{x:Static res:Strings.Today_Action_MarkDone}"
+                IsChecked="{CompiledBinding IsDoneToday, Mode=OneWay}"
+                Command="{CompiledBinding ToggleDoneCommand}"
+                VerticalAlignment="Center" Margin="0,0,22,0"/>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,18,0">
+        <TextBlock Text="{x:Static res:Strings.Detail_Streak_Current}"
+                   Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,6,0"/>
+        <TextBlock x:Name="Streak" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"
+                   Text="{CompiledBinding CurrentStreak, StringFormat={x:Static res:Strings.Home_KeyFigure_Streak}}"/>
+      </StackPanel>
+      <TextBlock VerticalAlignment="Center" Margin="0,0,18,0" Foreground="{DynamicResource Brush.TextMuted}"
+                 Text="{CompiledBinding Pct30, StringFormat={x:Static res:Strings.Today_Action_Pct30}}"/>
+      <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"
+                 IsVisible="{CompiledBinding HasUsualHour}"
+                 Text="{CompiledBinding UsualHour, StringFormat={x:Static res:Strings.Today_Action_UsualHour}}"/>
+    </WrapPanel>
+  </Border>
+</UserControl>

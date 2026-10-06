@@ -3,6 +3,7 @@
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:today="using:Recordum.UI.Views.HabitScreen.Today"
              x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
              x:DataType="vm:HabitScreenViewModel"
              Background="{DynamicResource Brush.Surface}">
@@ -34,7 +35,9 @@
     </Border>
 
     <!-- Fascia "Oggi" (Task 2). Un gruppo non ne ha; il diario neppure in F2a (decisione 3). -->
-    <Border Grid.Row="2" x:Name="TodayHost" IsVisible="{CompiledBinding ShowTodayStrip}"/>
+    <Border Grid.Row="2" x:Name="TodayHost" IsVisible="{CompiledBinding ShowTodayStrip}">
+      <today:TodayStripView DataContext="{CompiledBinding TodayStrip}"/>
+    </Border>
 
     <!-- Chip delle colonne. Panoramica (F3), Diario (F2d), Dettaglio (F3), Note (F3) e Configura (F3)
          non sono ancora portate: statici e nascosti (decisione 2). Un gruppo in F2a mostra

@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:tvm="using:Recordum.Presentation.ViewModels.HabitScreen.Today"
+             x:Class="Recordum.UI.Views.HabitScreen.Today.CounterTodayView"
+             x:DataType="tvm:CounterTodayContent">
+  <Border Padding="14,10">
+    <WrapPanel Orientation="Horizontal">
+      <!-- "+ Registra" apre/mette a fuoco il modulo di registrazione della Cronologia, non scrive nulla. -->
+      <Button x:Name="RecordButton" Content="{x:Static res:Strings.Today_Counter_Record}"
+              Command="{CompiledBinding RecordCommand}" Padding="14,7" Margin="0,0,20,0"
+              VerticalAlignment="Center"/>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+        <!-- Preformattato dal ViewModel: una durata senza unita' legge "12:00". -->
+        <TextBlock x:Name="Total" Text="{CompiledBinding TodayTotalDisplay}" FontSize="22" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Bottom"/>
+        <TextBlock Text="{CompiledBinding UnitCode}" Margin="5,0,0,3" VerticalAlignment="Bottom"
+                   Foreground="{DynamicResource Brush.TextMuted}"
+                   IsVisible="{CompiledBinding UnitCode, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{CompiledBinding HasGoal}">
+        <ProgressBar Minimum="0" Maximum="1" Value="{CompiledBinding GoalFraction, Mode=OneWay}"
+                     Width="150" Height="8" VerticalAlignment="Center"
+                     Foreground="{DynamicResource Brush.Accent}"
+                     Background="{DynamicResource Brush.Border}"/>
+        <TextBlock Text="{CompiledBinding GoalFraction, StringFormat={}{0:P0}}" Margin="8,0,0,0"
+                   VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"/>
+      </StackPanel>
+    </WrapPanel>
+  </Border>
+</UserControl>

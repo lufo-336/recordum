@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:tvm="using:Recordum.Presentation.ViewModels.HabitScreen.Today"
+             x:Class="Recordum.UI.Views.HabitScreen.Today.ResistanceTodayView"
+             x:DataType="tvm:ResistanceTodayContent">
+  <!-- Il contenuto di punta: l'orologio vivo dell'astinenza, Inizio/Ricaduta, i tentativi a 90 giorni. -->
+  <Border Padding="14,10">
+    <WrapPanel Orientation="Horizontal">
+      <TextBlock x:Name="ClockText" Text="{CompiledBinding Clock.Display}" FontFamily="monospace"
+                 FontSize="30" Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Center"
+                 Margin="0,0,18,0" IsVisible="{CompiledBinding CanLapse}"/>
+      <Button x:Name="StartButton" Content="{x:Static res:Strings.Abstinence_Start}"
+              Command="{CompiledBinding StartCommand}" Padding="14,7" Margin="0,0,8,0"
+              VerticalAlignment="Center" IsVisible="{CompiledBinding CanStart}"/>
+      <Button x:Name="LapseButton" Content="{x:Static res:Strings.Abstinence_Lapse}"
+              Command="{CompiledBinding LapseCommand}" Padding="14,7" Margin="0,0,18,0"
+              VerticalAlignment="Center" Foreground="{DynamicResource Brush.Danger}"
+              IsVisible="{CompiledBinding CanLapse}"/>
+      <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"
+                 Text="{CompiledBinding AttemptsLast90Days, StringFormat={x:Static res:Strings.Today_Resistance_Attempts}}"/>
+    </WrapPanel>
+  </Border>
+</UserControl>
