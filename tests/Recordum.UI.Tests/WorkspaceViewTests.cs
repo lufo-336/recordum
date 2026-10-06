@@ -10,6 +10,7 @@ using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.Workspace;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views;
+using Recordum.UI.Views.HabitScreen;
 using Recordum.UI.Views.Workspace;
 using Xunit;
 
@@ -139,8 +140,8 @@ public class WorkspaceViewTests
 
         var host = view.GetVisualDescendants().OfType<ContentControl>().Single(c => c.Name == "SubjectHost");
         host.Content.Should().BeNull();
-        view.GetVisualDescendants().OfType<Border>()
-            .Any(b => b.Name == "SubjectScreenPlaceholder")
+        view.GetVisualDescendants().OfType<HabitScreenView>()
+            .Any()
             .Should().BeFalse("con Content null nessun template del soggetto deve materializzarsi");
     }
 
@@ -160,8 +161,8 @@ public class WorkspaceViewTests
         strip.SelectedItem.Should().BeSameAs(vm.ActiveSubjectTab, "selezione e tab attivo sono la stessa cosa");
 
         view.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "TabTitle").Text.Should().Be("Corsa");
-        view.GetVisualDescendants().OfType<Border>().Any(b => b.Name == "SubjectScreenPlaceholder")
-            .Should().BeTrue("con un tab aperto il template del soggetto esiste (vuoto, F2 lo riempie)");
+        view.GetVisualDescendants().OfType<HabitScreenView>().Should().ContainSingle(
+            "con un tab aperto il template del soggetto costruisce la schermata");
         view.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "WelcomePanel")
             .IsVisible.Should().BeFalse();
     }

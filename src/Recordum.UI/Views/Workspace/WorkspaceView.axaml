@@ -2,20 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:wsvm="using:Recordum.Presentation.ViewModels.Workspace"
              xmlns:hsvm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:hsv="using:Recordum.UI.Views.HabitScreen"
              xmlns:res="using:Recordum.Presentation.Resources"
              x:Class="Recordum.UI.Views.Workspace.WorkspaceView"
              x:DataType="wsvm:WorkspaceViewModel"
              Background="{DynamicResource Brush.Surface}">
 
   <UserControl.DataTemplates>
-    <!-- Il contenuto di un tab aperto arriva in F2 (shell di HabitScreen). Qui il template esiste
-         ed e' VUOTO di proposito: nessun testo scritto a mano, nessun segnaposto localizzato.
-         Vive come DataTemplate tipizzato e non come ContentTemplate statico del ContentControl:
+    <!-- Il contenuto di un tab aperto e' la schermata dell'abitudine (F2a). Vive come DataTemplate tipizzato e non come ContentTemplate statico del ContentControl:
          un ContentTemplate statico materializza il template anche con Content null (lezione C1
          dell'Onda 2.4 e W24-Q1 della 2.5), mentre un DataTemplate scelto per tipo non puo'
          scattare su null. -->
     <DataTemplate DataType="hsvm:HabitScreenViewModel">
-      <Border Name="SubjectScreenPlaceholder" Background="Transparent"/>
+      <hsv:HabitScreenView/>
     </DataTemplate>
   </UserControl.DataTemplates>
 

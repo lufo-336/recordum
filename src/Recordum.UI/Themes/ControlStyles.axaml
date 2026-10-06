@@ -48,4 +48,72 @@
         <Setter Property="CornerRadius" Value="5"/>
     </Style>
 
+    <!-- Gemello di `Recordum.Segment` (BaseStyles.xaml:335): una pillola senza pallino. Globale (F2a): lo usano la
+         Home (RadioButton) e i chip della schermata (CheckBox). -->
+    <Style Selector="RadioButton.segment">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="Padding" Value="11,4"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.segment:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+    </Style>
+    <Style Selector="RadioButton.segment:checked">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="RadioButton.segment:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+
+    <Style Selector="CheckBox.segment">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="Padding" Value="11,4"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="CheckBox.segment:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+    </Style>
+    <Style Selector="CheckBox.segment:checked">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="CheckBox.segment:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+
 </Styles>

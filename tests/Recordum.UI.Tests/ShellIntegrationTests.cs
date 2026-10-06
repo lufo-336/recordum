@@ -10,6 +10,7 @@ using FluentAssertions;
 using Recordum.Presentation.ViewModels;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views;
+using Recordum.UI.Views.HabitScreen;
 using Recordum.UI.Views.Workspace;
 using Xunit;
 
@@ -64,6 +65,8 @@ public class ShellIntegrationTests(ITestOutputHelper output)
         vm.Workspace.Tabs.Should().ContainSingle();
         vm.Workspace.ActiveSubjectTab!.Screen.Should().NotBeNull();
         vm.Workspace.ActiveSubjectTab.Title.Should().Be(row.Name);
+        window.GetVisualDescendants().OfType<HabitScreenView>().Should().ContainSingle()
+            .Which.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "HabitName").Text.Should().Be(row.Name);
 
         var strip = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "TabStrip");
         strip.GetRealizedContainers().Should().ContainSingle();

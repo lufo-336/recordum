@@ -9,43 +9,6 @@
              x:Class="Recordum.UI.Views.HomeView"
              x:DataType="vm:HomeViewModel"
              Background="{DynamicResource Brush.Background}">
-  <UserControl.Styles>
-    <!-- Gemello di `Recordum.Segment` (BaseStyles.xaml:335): una pillola senza pallino. È l'unico
-         stile di F1 che serve a una sola view, quindi resta qui e non in ControlStyles.axaml. -->
-    <Style Selector="RadioButton.segment">
-      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
-      <Setter Property="Padding" Value="11,4"/>
-      <Setter Property="CornerRadius" Value="4"/>
-      <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="BorderBrush" Value="Transparent"/>
-      <Setter Property="Template">
-        <ControlTemplate>
-          <Border Background="{TemplateBinding Background}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="{TemplateBinding CornerRadius}"
-                  Padding="{TemplateBinding Padding}">
-            <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
-          </Border>
-        </ControlTemplate>
-      </Setter>
-    </Style>
-    <Style Selector="RadioButton.segment:pointerover">
-      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
-    </Style>
-    <Style Selector="RadioButton.segment:checked">
-      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
-      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
-      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
-      <Setter Property="FontWeight" Value="SemiBold"/>
-    </Style>
-    <Style Selector="RadioButton.segment:focus-visible">
-      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
-    </Style>
-  </UserControl.Styles>
-
   <Grid RowDefinitions="Auto,Auto,*">
 
     <Grid Grid.Row="0" Height="44" Background="{DynamicResource Brush.Surface}"

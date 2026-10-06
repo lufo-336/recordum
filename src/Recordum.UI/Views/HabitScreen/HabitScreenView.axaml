@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
+             x:DataType="vm:HabitScreenViewModel"
+             Background="{DynamicResource Brush.Surface}">
+
+  <!-- L'accento della schermata e' il colore dell'abitudine: Brush.Accent e la famiglia
+       SystemAccentColor li imposta il code-behind nelle risorse di questa view (le risorse non
+       hanno DataContext). -->
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+    <Border Grid.Row="0" Height="3"
+            Background="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+
+    <Border Grid.Row="1" Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Path x:Name="IconPath" Width="22" Height="22" Margin="0,0,8,0" Stretch="Uniform"
+                VerticalAlignment="Center" StrokeThickness="1.6"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                Stroke="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                Data="{CompiledBinding Node.Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
+                IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+          <TextBlock x:Name="HabitName" Text="{CompiledBinding Name}"
+                     FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
+                     VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
+        </StackPanel>
+        <!-- Export arriva con F6 (come in F1-RAIL1: statico, l'onda e' nel commento). -->
+        <Button Grid.Column="1" x:Name="ExportButton" IsVisible="False" Padding="10,4"
+                Content="{x:Static res:Strings.Export_Button}"/>
+      </Grid>
+    </Border>
+
+    <!-- Fascia "Oggi" (Task 2). Un gruppo non ne ha; il diario neppure in F2a (decisione 3). -->
+    <Border Grid.Row="2" x:Name="TodayHost" IsVisible="{CompiledBinding ShowTodayStrip}"/>
+
+    <!-- Chip delle colonne. Panoramica (F3), Diario (F2d), Dettaglio (F3), Note (F3) e Configura (F3)
+         non sono ancora portate: statici e nascosti (decisione 2). Un gruppo in F2a mostra
+         intestazione e chip senza colonne: la Panoramica e' di F3. -->
+    <StackPanel Grid.Row="3" x:Name="ChipBar" Orientation="Horizontal" Margin="12,8,12,4"
+                IsVisible="{CompiledBinding ShowChipBar}">
+      <CheckBox Classes="segment" x:Name="ChipCronologia"
+                Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
+                IsChecked="{CompiledBinding IsCronologiaOpen, Mode=TwoWay}"
+                IsVisible="{CompiledBinding !IsGroupNode}"/>
+      <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
+                Content="{x:Static res:Strings.HabitScreen_Tab_Detail}"/>
+      <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
+                Content="{x:Static res:Strings.HabitScreen_Tab_Notes}"/>
+      <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
+                Content="{x:Static res:Strings.HabitScreen_Configure}"/>
+    </StackPanel>
+
+    <Border Grid.Row="4" x:Name="CronologiaColumn" Margin="12,4,12,12"
+            Background="{DynamicResource Brush.Background}"
+            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
+            IsVisible="{CompiledBinding ShowCronologia}">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Margin="12,8" FontWeight="SemiBold"
+                   Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
+                   Foreground="{DynamicResource Brush.Text}"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel>
+            <Border x:Name="CalendarHost"/>
+            <Border x:Name="QuickAddHost"/>
+            <Border x:Name="TimerHost"/>
+            <Border x:Name="RecordsHost"/>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>
