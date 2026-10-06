@@ -20,7 +20,8 @@
   in `docs/dev-environment-sync.md`, la lista D7 nel piano F1, Task 10 Step 9) e il merge in `main`.
 - **F1-PERF1 corretto** sul branch `f2-perf1-home` (parte da `avalonia-linux-slice`): la Home è una lista piatta
   virtualizzata con le cornici dei gruppi disegnate a fette; 300 righe da ≈ 1,7 s a ≈ 115 ms a caldo in headless.
-  Manca la verifica a schermo; il merge va dopo quello di F1.
+  Manca la verifica a schermo su GNOME (su Windows, uno sguardo durante la checklist D7 di F1); il merge va dopo
+  quello di F1.
 - **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"):
   `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+4/Ctrl+5, "Nuovo >
   Abitudine" e il pulsante dello stato vuoto sono spenti finché F2, F5, F6 e F7 non li riaccendono (**F1-RAIL1**).

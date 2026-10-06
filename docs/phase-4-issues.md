@@ -1889,7 +1889,9 @@ Restano questi, ciascuno con la sua ragione.
   Dopo: 300 righe **≈ 115 ms a caldo, ≈ 120 ms la ricarica**, 16 righe con una vista; estensione stabile entro il 15%
   scorrendo. Limiti noti: la misura è headless (senza il costo del rendering vero), e la ricarica ricrea ancora tutti i
   ViewModel di riga (oggi costa poco: si rimette mano solo se una misura lo chiede). `fixed`; diventa `verified-fixed`
-  con la verifica a schermo su Windows e GNOME (scorrimento, cornici, menu col tasto destro e Shift+F10, trascinamento).
+  con la verifica a schermo su GNOME (scorrimento, cornici anche annidate, menu col tasto destro e Shift+F10,
+  trascinamento); su Windows basta uno sguardo alla Home durante la checklist D7 di F1, per le linee da 1 px a scala
+  125-150%.
 - **F1-SEC1 — `recordum.db`, `-wal` e `-shm` nascono 0644 dentro la cartella dati 0700** (visto avviando la shell vera su
   Linux, Task 11; il comportamento è precedente). La cartella 0700 li protegge e il contenuto è cifrato, ma i file
   stessi non sono privati al proprietario come lo sono la cartella e il log. **Nella lista del
