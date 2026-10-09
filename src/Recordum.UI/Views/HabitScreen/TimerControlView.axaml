@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:m="using:Recordum.Core.Models"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             x:Class="Recordum.UI.Views.HabitScreen.TimerControlView"
+             x:DataType="vm:TimerControlViewModel">
+
+  <!-- Cronometro di sessione della Cronologia. Si vede solo se l'abitudine ha un timer integrato. -->
+  <Border x:Name="Root" Padding="12,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}"
+          IsVisible="{CompiledBinding IsApplicable}">
+    <StackPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+        <TextBlock x:Name="Elapsed" Text="{CompiledBinding ElapsedDisplay}"
+                   FontFamily="Consolas,DejaVu Sans Mono,monospace" FontSize="{DynamicResource FontSize.Heading}"
+                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+        <Button x:Name="StartButton" Width="30" Height="30" Padding="0" Margin="0,0,6,0"
+                Command="{CompiledBinding StartCommand}" IsVisible="{CompiledBinding !IsActive}"
+                ToolTip.Tip="{x:Static res:Strings.HabitScreen_Timer_Start}"
+                AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Timer_Start}">
+          <Path Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+                StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Play}"/>
+        </Button>
+        <StackPanel Orientation="Horizontal" IsVisible="{CompiledBinding IsActive}">
+          <Button x:Name="PauseButton" Width="30" Height="30" Padding="0" Margin="0,0,6,0"
+                  Command="{CompiledBinding PauseCommand}" IsVisible="{CompiledBinding !IsPaused}"
+                  ToolTip.Tip="{x:Static res:Strings.HabitScreen_Timer_Pause}"
+                  AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Timer_Pause}">
+            <Path Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.6"
+                  StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Pause}"/>
+          </Button>
+          <Button x:Name="ResumeButton" Width="30" Height="30" Padding="0" Margin="0,0,6,0"
+                  Command="{CompiledBinding ResumeCommand}" IsVisible="{CompiledBinding IsPaused}"
+                  ToolTip.Tip="{x:Static res:Strings.HabitScreen_Timer_Resume}"
+                  AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Timer_Resume}">
+            <Path Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
+                  StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Play}"/>
+          </Button>
+          <Button x:Name="StopButton" Width="30" Height="30" Padding="0" Margin="0,0,6,0"
+                  Command="{CompiledBinding StopCommand}"
+                  ToolTip.Tip="{x:Static res:Strings.HabitScreen_Timer_Stop}"
+                  AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Timer_Stop}">
+            <Path Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.6"
+                  StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Square}"/>
+          </Button>
+          <Button x:Name="NextSegmentButton" Padding="10,4" VerticalAlignment="Center"
+                  Command="{CompiledBinding NextSegmentCommand}"
+                  Content="{x:Static res:Strings.HabitScreen_Timer_NextSegment}"/>
+        </StackPanel>
+      </StackPanel>
+      <ItemsControl ItemsSource="{CompiledBinding Segments}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="m:SegmentDefinition">
+            <Border Padding="6,2" Margin="0,0,6,0" BorderThickness="1" CornerRadius="3"
+                    BorderBrush="{DynamicResource Brush.Border}">
+              <TextBlock Text="{CompiledBinding Name}" Foreground="{DynamicResource Brush.TextMuted}"/>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </Border>
+</UserControl>

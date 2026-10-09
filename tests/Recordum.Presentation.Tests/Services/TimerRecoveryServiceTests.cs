@@ -1,3 +1,4 @@
+using Recordum.Core.Abstractions;
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -21,7 +22,7 @@ public class TimerRecoveryServiceTests
             StartedAtMs = 1_000,
             TimerMode = TimerMode.Stopwatch,
         });
-        var statusBar = new TimerStatusBarViewModel(ats, new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(2_000)), new FakeHabitNodeService());
+        var statusBar = new TimerStatusBarViewModel(ats, new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(2_000)), new FakeHabitNodeService(), new FakeEventBus(), NullTickSourceFactory.Instance);
         var sut = new TimerRecoveryService(statusBar);
 
         await sut.RecoverAsync();

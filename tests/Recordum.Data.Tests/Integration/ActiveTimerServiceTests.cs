@@ -29,7 +29,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         var t = await sut.StartAsync(habitId, TimerMode.Stopwatch);
 
@@ -46,7 +46,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         var t = await sut.StartAsync(habitId, TimerMode.Session);
 
@@ -58,7 +58,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
 
@@ -71,7 +71,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
 
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(10));
@@ -90,7 +90,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         await sut.PauseAsync(habitId);
 
@@ -102,7 +102,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(10));
         await sut.PauseAsync(habitId);
@@ -119,7 +119,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
 
         await sut.ResumeAsync(habitId);
@@ -134,7 +134,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         (await sut.GetActiveAsync(habitId)).Should().BeNull();
     }
@@ -145,7 +145,7 @@ public class ActiveTimerServiceTests
         await using var fx = new DbFixture();
         var h1 = await SeedHabit(fx);
         var h2 = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(h1, TimerMode.Stopwatch);
         await sut.StartAsync(h2, TimerMode.Stopwatch);
 
@@ -157,7 +157,7 @@ public class ActiveTimerServiceTests
     public async Task ListActiveAsync_returns_empty_when_no_timers()
     {
         await using var fx = new DbFixture();
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         (await sut.ListActiveAsync()).Should().BeEmpty();
     }
@@ -168,7 +168,7 @@ public class ActiveTimerServiceTests
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx, HabitType.Action);
         var completions = NewCompletions(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, completions);
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, completions, new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(60));
 
@@ -188,7 +188,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx, HabitType.Action);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         var act = async () => await sut.StopAsync(habitId);
         await act.Should().ThrowAsync<ActiveTimerNotFoundException>();
@@ -199,7 +199,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx, HabitType.Action);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(30));
         await sut.PauseAsync(habitId);
@@ -215,7 +215,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx, HabitType.Counter);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromSeconds(95));
 
@@ -233,7 +233,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx, HabitType.Counter);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         var act = async () => await sut.StopWithoutRecordingAsync(habitId);
         await act.Should().ThrowAsync<ActiveTimerNotFoundException>();
@@ -244,7 +244,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Session);
 
         await sut.NextSegmentAsync(habitId);
@@ -260,7 +260,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
         await sut.StartAsync(habitId, TimerMode.Stopwatch);
 
         var act = async () => await sut.NextSegmentAsync(habitId);
@@ -272,7 +272,7 @@ public class ActiveTimerServiceTests
     {
         await using var fx = new DbFixture();
         var habitId = await SeedHabit(fx);
-        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx));
+        var sut = new ActiveTimerService(fx.Factory, fx.Clock, NewCompletions(fx), new RecordingEventBus());
 
         var act = async () => await sut.NextSegmentAsync(habitId);
         await act.Should().ThrowAsync<ActiveTimerNotFoundException>();

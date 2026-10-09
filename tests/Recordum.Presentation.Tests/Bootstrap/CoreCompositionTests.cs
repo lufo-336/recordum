@@ -59,6 +59,8 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         Assert.True(resolved.Count > 100, $"attesi >100 servizi core, trovati {resolved.Count}");
         Assert.Contains(typeof(MainWindowViewModel), resolved);
         Assert.Contains(typeof(HomeViewModel), resolved);
+        // Bus e sorgente di battito: un costruttore nuovo che non si risolve muore all'avvio.
+        Assert.Contains(typeof(Recordum.Presentation.ViewModels.Timer.TimerStatusBarViewModel), resolved);
         // Il costruttore a 26 dipendenze che si apre al click su una riga Home.
         Assert.Contains(typeof(HabitScreenViewModel), resolved);
         Assert.Contains(typeof(HabitEditorViewModel), resolved);

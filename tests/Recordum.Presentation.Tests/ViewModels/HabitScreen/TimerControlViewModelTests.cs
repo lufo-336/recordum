@@ -131,4 +131,25 @@ public class TimerControlViewModelTests
 
         sut.NextSegmentCommand.CanExecute(null).Should().BeFalse();
     }
+
+    [Fact]
+    public async Task A_timer_stopped_from_the_status_bar_deactivates_the_control_and_its_tick()
+    {
+        var ats = new FakeActiveTimerService();
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 10, 0, 0, TimeSpan.Zero));
+        var bus = new FakeEventBus();
+        var ticks = new Recordum.Core.Tests.Abstractions.FakeTickSourceFactory();
+        var sut = new TimerControlViewModel(ats, new FakeHabitConfigService(), clock, ticks, bus);
+        var node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter };
+        await sut.SetContextAsync(node, new HabitConfig { HabitNodeId = node.Id, HasIntegratedTimer = true, TimerMode = TimerMode.Stopwatch });
+        await sut.StartCommand.ExecuteAsync(null);
+        ticks.RunningCount.Should().Be(1);
+
+        ats.Active.Clear();   // the bar stopped it
+        bus.Publish(new Recordum.Plugins.Contracts.Events.TimerChangedPayload(node.Id, Recordum.Plugins.Contracts.Events.WellKnownEvents.TimerStopped));
+        for (var i = 0; i < 1000 && sut.IsActive; i++) await Task.Delay(1);
+
+        sut.IsActive.Should().BeFalse();
+        ticks.RunningCount.Should().Be(0);
+    }
 }

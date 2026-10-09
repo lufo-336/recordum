@@ -5,6 +5,9 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
@@ -17,6 +20,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
     private HabitNode? _node;
     private HabitConfig? _config;
     private ActiveTimer? _activeSnapshot;
+    private readonly ITickSource? _tick;
 
     public ObservableCollection<SegmentDefinition> Segments { get; } = [];
 
@@ -38,11 +42,44 @@ public sealed partial class TimerControlViewModel : ObservableObject
         }
     }
 
-    public TimerControlViewModel(IActiveTimerService timers, IHabitConfigService configs, IClock clock)
+    /// <summary><paramref name="ticks"/> null = the display does not advance by itself (headless tests).
+    /// <paramref name="events"/> null = a timer changed elsewhere (the status bar) is not noticed.</summary>
+    public TimerControlViewModel(IActiveTimerService timers, IHabitConfigService configs, IClock clock,
+        ITickSourceFactory? ticks = null, IEventBus? events = null)
     {
         _timers = timers;
         _configs = configs;
         _clock = clock;
+        _tick = ticks?.Create(TimeSpan.FromSeconds(1));
+        if (_tick is not null) _tick.Tick += (_, _) => Tick();
+        if (events is null) return;
+        foreach (var name in (EventName[])[WellKnownEvents.TimerStarted, WellKnownEvents.TimerPaused,
+                     WellKnownEvents.TimerResumed, WellKnownEvents.TimerStopped])
+            events.SubscribeOnUi(name, e => OnTimerEvent(e));
+    }
+
+    // Only while a timer runs: an idle screen keeps no tick alive.
+    partial void OnIsActiveChanged(bool value)
+    {
+        if (value) _tick?.Start(); else _tick?.Stop();
+    }
+
+    private void OnTimerEvent(EventEnvelope e)
+    {
+        if (_node is null || e.Payload is not TimerChangedPayload p || p.HabitNodeId != _node.Id) return;
+        _ = ResyncAsync();
+    }
+
+    /// <summary>Re-reads the timer of the current habit: it may have been stopped or paused from the status bar.</summary>
+    private async Task ResyncAsync()
+    {
+        if (_node is null) return;
+        _activeSnapshot = await _timers.GetActiveAsync(_node.Id).ConfigureAwait(true);
+        IsActive = _activeSnapshot is not null;
+        IsPaused = _activeSnapshot?.PausedAtMs is not null;
+        SegmentIndex = _activeSnapshot?.SegmentIndex;
+        UpdateElapsed(_activeSnapshot);
+        UpdateCommandsCanExecute();
     }
 
     public async Task SetContextAsync(HabitNode? node, HabitConfig? config, CancellationToken ct = default)
@@ -82,8 +119,10 @@ public sealed partial class TimerControlViewModel : ObservableObject
         var ms = endMs - active.StartedAtMs - active.AccumulatedPausedMs;
         if (ms < 0) ms = 0;
         ElapsedSeconds = (int)(ms / 1000);
-        OnPropertyChanged(nameof(ElapsedDisplay));
     }
+
+    // Also covers the reset to 0 on stop, which used to leave the old time on screen.
+    partial void OnElapsedSecondsChanged(int value) => OnPropertyChanged(nameof(ElapsedDisplay));
 
     private bool CanStart() => _node is not null && IsApplicable && !IsActive;
     private bool CanStop() => _node is not null && IsActive;

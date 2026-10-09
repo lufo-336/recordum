@@ -3,6 +3,7 @@
         xmlns:chrome="using:Avalonia.Controls.Chrome"
         xmlns:vm="using:Recordum.Presentation.ViewModels"
         xmlns:v="using:Recordum.UI.Views"
+        xmlns:tmr="using:Recordum.UI.Views.Timer"
         xmlns:vw="using:Recordum.UI.Views.Workspace"
         xmlns:res="using:Recordum.Presentation.Resources"
         x:Class="Recordum.UI.Views.MainWindow"
@@ -130,6 +131,7 @@
       </Grid>
     </Grid>
 
-    <!-- Riga 2: la barra di stato dei timer arriva in F2. Auto su una riga vuota = altezza 0. -->
+    <!-- Riga 2: la barra dei timer; nascosta (altezza 0) finche' non c'e' un timer attivo. -->
+    <tmr:TimerStatusBarView Name="TimerBar" Grid.Row="2" DataContext="{Binding TimerStatusBar}"/>
   </Grid>
 </Window>

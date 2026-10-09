@@ -1,3 +1,4 @@
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Services;
 using Recordum.Plugins.ExtensionPoints;
@@ -24,7 +25,7 @@ public static class MainWindowViewModelFactory
         var home = new HomeViewModel(query, nodes, purge);
         var clock = new FakeClock();
         var ats = new FakeActiveTimerService();
-        var timerStatusBar = new TimerStatusBarViewModel(ats, clock, nodes);
+        var timerStatusBar = new TimerStatusBarViewModel(ats, clock, nodes, new FakeEventBus(), NullTickSourceFactory.Instance);
         var workspace = new WorkspaceViewModel(new FakeSubjectScreenFactory(), settings);
         var charts = new ChartsWorkspaceViewModel(
             new FakeChartService(), new FakeChartQueryService(),

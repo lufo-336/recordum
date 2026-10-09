@@ -18,6 +18,11 @@ public static class WellKnownEvents
     public static readonly EventName AbstinenceLapsed = new("abstinence.lapsed");
     public static readonly EventName AbstinencePeriodDeleted = new("abstinence.period.deleted");
 
+    public static readonly EventName TimerStarted = new("timer.started");
+    public static readonly EventName TimerPaused = new("timer.paused");
+    public static readonly EventName TimerResumed = new("timer.resumed");
+    public static readonly EventName TimerStopped = new("timer.stopped");
+
     public static readonly EventName StreakMilestone = new("streak.milestone");
     public static readonly EventName GoalCompleted = new("goal.completed");
 

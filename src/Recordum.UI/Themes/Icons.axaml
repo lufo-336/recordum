@@ -128,6 +128,10 @@
     <!-- clock.svg: circle + path -->
     <StreamGeometry x:Key="Icon.Clock">M 2 12 a 10 10 0 1 1 20 0 a 10 10 0 1 1 -20 0 z M12 6v6l4 2</StreamGeometry>
     <StreamGeometry x:Key="Icon.Square">M 7 6 h 10 a 1 1 0 0 1 1 1 v 10 a 1 1 0 0 1 -1 1 h -10 a 1 1 0 0 1 -1 -1 v -10 a 1 1 0 0 1 1 -1 z</StreamGeometry>
+    <!-- play.svg: polygon -->
+    <StreamGeometry x:Key="Icon.Play">M 6 3 L 20 12 L 6 21 Z</StreamGeometry>
+    <!-- pause.svg: 2 rects (rx 1) -->
+    <StreamGeometry x:Key="Icon.Pause">M 15 3 h 3 a 1 1 0 0 1 1 1 v 16 a 1 1 0 0 1 -1 1 h -3 a 1 1 0 0 1 -1 -1 v -16 a 1 1 0 0 1 1 -1 z M 6 3 h 3 a 1 1 0 0 1 1 1 v 16 a 1 1 0 0 1 -1 1 h -3 a 1 1 0 0 1 -1 -1 v -16 a 1 1 0 0 1 1 -1 z</StreamGeometry>
     <!-- music.svg: path + 2 circles -->
     <StreamGeometry x:Key="Icon.Music">M9 18V5l12-2v13 M 3 18 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 z M 15 16 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 z</StreamGeometry>
 

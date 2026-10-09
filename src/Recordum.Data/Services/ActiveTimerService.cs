@@ -4,13 +4,16 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
 public sealed class ActiveTimerService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
-    ICompletionService completions) : IActiveTimerService
+    ICompletionService completions,
+    IEventBus eventBus) : IActiveTimerService
 {
     public async ValueTask<ActiveTimer> StartAsync(Guid habitNodeId, TimerMode mode, CancellationToken ct = default)
     {
@@ -29,6 +32,7 @@ public sealed class ActiveTimerService(
         };
         db.ActiveTimers.Add(t);
         await db.SaveChangesAsync(ct);
+        Publish(habitNodeId, WellKnownEvents.TimerStarted);
         return t;
     }
 
@@ -39,6 +43,7 @@ public sealed class ActiveTimerService(
         if (t is null || t.PausedAtMs is not null) return;
         t.PausedAtMs = clock.UtcNowMs;
         await db.SaveChangesAsync(ct);
+        Publish(habitNodeId, WellKnownEvents.TimerPaused);
     }
 
     public async ValueTask ResumeAsync(Guid habitNodeId, CancellationToken ct = default)
@@ -50,6 +55,7 @@ public sealed class ActiveTimerService(
         t.AccumulatedPausedMs += nowMs - t.PausedAtMs.Value;
         t.PausedAtMs = null;
         await db.SaveChangesAsync(ct);
+        Publish(habitNodeId, WellKnownEvents.TimerResumed);
     }
 
     public async ValueTask<Completion> StopAsync(Guid habitNodeId, CancellationToken ct = default)
@@ -74,6 +80,7 @@ public sealed class ActiveTimerService(
 
         db.ActiveTimers.Remove(t);
         await db.SaveChangesAsync(ct);
+        Publish(habitNodeId, WellKnownEvents.TimerStopped);
         await completions.RecordAsync(draft, values: null, segments: null, ct);
         return draft;
     }
@@ -88,8 +95,11 @@ public sealed class ActiveTimerService(
         var elapsed = ElapsedSeconds(t, endMs);
         db.ActiveTimers.Remove(t);
         await db.SaveChangesAsync(ct);
+        Publish(habitNodeId, WellKnownEvents.TimerStopped);
         return elapsed;
     }
+
+    private void Publish(Guid habitNodeId, EventName name) => eventBus.Publish(new TimerChangedPayload(habitNodeId, name));
 
     /// <summary>Elapsed active seconds at <paramref name="endMs"/>, net of accumulated pauses (never negative).</summary>
     private static int ElapsedSeconds(ActiveTimer t, long endMs)
