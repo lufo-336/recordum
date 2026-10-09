@@ -11,7 +11,7 @@ using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
-public sealed partial class TimerControlViewModel : ObservableObject
+public sealed partial class TimerControlViewModel : ObservableObject, IDisposable
 {
     private readonly IActiveTimerService _timers;
     private readonly IHabitConfigService _configs;
@@ -21,6 +21,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
     private HabitConfig? _config;
     private ActiveTimer? _activeSnapshot;
     private readonly ITickSource? _tick;
+    private readonly List<IDisposable> _subs = [];
 
     public ObservableCollection<SegmentDefinition> Segments { get; } = [];
 
@@ -55,7 +56,7 @@ public sealed partial class TimerControlViewModel : ObservableObject
         if (events is null) return;
         foreach (var name in (EventName[])[WellKnownEvents.TimerStarted, WellKnownEvents.TimerPaused,
                      WellKnownEvents.TimerResumed, WellKnownEvents.TimerStopped])
-            events.SubscribeOnUi(name, e => OnTimerEvent(e));
+            _subs.Add(events.SubscribeOnUi(name, e => OnTimerEvent(e)));
     }
 
     // Only while a timer runs: an idle screen keeps no tick alive.
@@ -70,16 +71,28 @@ public sealed partial class TimerControlViewModel : ObservableObject
         _ = ResyncAsync();
     }
 
+    /// <summary>Releases the bus subscriptions and the tick source: this VM lives per screen, the bus and the dispatcher outlive it.</summary>
+    public void Dispose()
+    {
+        foreach (var s in _subs) s.Dispose();
+        _subs.Clear();
+        _tick?.Dispose();
+    }
+
     /// <summary>Re-reads the timer of the current habit: it may have been stopped or paused from the status bar.</summary>
     private async Task ResyncAsync()
     {
-        if (_node is null) return;
-        _activeSnapshot = await _timers.GetActiveAsync(_node.Id).ConfigureAwait(true);
-        IsActive = _activeSnapshot is not null;
-        IsPaused = _activeSnapshot?.PausedAtMs is not null;
-        SegmentIndex = _activeSnapshot?.SegmentIndex;
-        UpdateElapsed(_activeSnapshot);
-        UpdateCommandsCanExecute();
+        try
+        {
+            if (_node is null) return;
+            _activeSnapshot = await _timers.GetActiveAsync(_node.Id).ConfigureAwait(true);
+            IsActive = _activeSnapshot is not null;
+            IsPaused = _activeSnapshot?.PausedAtMs is not null;
+            SegmentIndex = _activeSnapshot?.SegmentIndex;
+            UpdateElapsed(_activeSnapshot);
+            UpdateCommandsCanExecute();
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"TimerControl resync failed: {ex}"); }
     }
 
     public async Task SetContextAsync(HabitNode? node, HabitConfig? config, CancellationToken ct = default)

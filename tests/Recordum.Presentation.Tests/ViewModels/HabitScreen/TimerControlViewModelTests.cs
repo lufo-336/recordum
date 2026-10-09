@@ -152,4 +152,69 @@ public class TimerControlViewModelTests
         sut.IsActive.Should().BeFalse();
         ticks.RunningCount.Should().Be(0);
     }
+
+    [Fact]
+    public async Task A_disposed_control_ignores_timer_events_and_holds_no_tick()
+    {
+        var ats = new FakeActiveTimerService();
+        var bus = new FakeEventBus();
+        var ticks = new Recordum.Core.Tests.Abstractions.FakeTickSourceFactory();
+        var sut = new TimerControlViewModel(ats, new FakeHabitConfigService(), new FakeClock(), ticks, bus);
+        var node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter };
+        await sut.SetContextAsync(node, new HabitConfig { HabitNodeId = node.Id, HasIntegratedTimer = true, TimerMode = TimerMode.Stopwatch });
+        await sut.StartCommand.ExecuteAsync(null);
+        ticks.RunningCount.Should().Be(1);
+        var before = ats.GetActiveCalls;
+
+        sut.Dispose();
+        bus.Publish(new Recordum.Plugins.Contracts.Events.TimerChangedPayload(node.Id, Recordum.Plugins.Contracts.Events.WellKnownEvents.TimerStopped));
+        await Task.Delay(20);
+
+        ats.GetActiveCalls.Should().Be(before);
+        ticks.RunningCount.Should().Be(0);
+        bus.HasSubscribers.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_failing_resync_does_not_escape_as_an_unobserved_exception()
+    {
+        var ats = new ThrowingTimers();
+        var bus = new FakeEventBus();
+        var sut = new TimerControlViewModel(ats, new FakeHabitConfigService(), new FakeClock(), null, bus);
+        var node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter };
+        await sut.SetContextAsync(node, new HabitConfig { HabitNodeId = node.Id, HasIntegratedTimer = true, TimerMode = TimerMode.Stopwatch });
+        ats.Throw = true;
+        var unobserved = new List<Exception>();
+        void Handler(object? o, UnobservedTaskExceptionEventArgs e) => unobserved.Add(e.Exception);
+        TaskScheduler.UnobservedTaskException += Handler;
+        try
+        {
+            bus.Publish(new Recordum.Plugins.Contracts.Events.TimerChangedPayload(node.Id, Recordum.Plugins.Contracts.Events.WellKnownEvents.TimerStarted));
+            await Task.Delay(20);
+            GC.Collect(); GC.WaitForPendingFinalizers();
+        }
+        finally { TaskScheduler.UnobservedTaskException -= Handler; }
+
+        unobserved.Should().BeEmpty();
+        ats.ThrewCount.Should().Be(1, "the resync did run and fail, inside the helper's try/catch");
+    }
+
+    private sealed class ThrowingTimers : Recordum.Core.Abstractions.Services.IActiveTimerService
+    {
+        public bool Throw { get; set; }
+        public int ThrewCount { get; private set; }
+        public ValueTask<ActiveTimer?> GetActiveAsync(Guid habitNodeId, CancellationToken ct = default)
+        {
+            if (!Throw) return new((ActiveTimer?)null);
+            ThrewCount++;
+            throw new InvalidOperationException("db down");
+        }
+        public ValueTask<ActiveTimer> StartAsync(Guid h, TimerMode m, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask PauseAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask ResumeAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask<Completion> StopAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask<int> StopWithoutRecordingAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask NextSegmentAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask<IReadOnlyList<ActiveTimer>> ListActiveAsync(CancellationToken ct = default) => throw new NotSupportedException();
+    }
 }

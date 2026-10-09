@@ -1,3 +1,4 @@
+using Recordum.Plugins.Contracts.Hosting;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
@@ -16,7 +17,8 @@ public sealed partial class MeasuredQuickAddViewModel(
     IReferenceDataQueryService refData,
     IClock clock,
     IActiveTimerService timers,
-    ITickSourceFactory? ticks = null) : SeriesQuickAddViewModelBase(completions, clock, timers, ticks)
+    ITickSourceFactory? ticks = null,
+    IEventBus? events = null) : SeriesQuickAddViewModelBase(completions, clock, timers, ticks, events)
 {
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;

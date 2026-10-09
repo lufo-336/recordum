@@ -3,7 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
-using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Core.Errors;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
@@ -14,6 +17,7 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
 {
     private readonly IActiveTimerService _timers;
     private SeriesCellViewModel? _chronoCell;
+    private readonly List<IDisposable> _subs = [];
 
     [ObservableProperty] private bool _chronoRunning;
 
@@ -21,12 +25,42 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
     /// per habit, so one shared clock. MUST be disposed with the VM (the tick source leaks otherwise).</summary>
     public LiveElapsedClock ChronoClock { get; }
 
-    protected SeriesQuickAddViewModelBase(ICompletionService completions, IClock clock, IActiveTimerService timers, ITickSourceFactory? ticks = null)
+    protected SeriesQuickAddViewModelBase(ICompletionService completions, IClock clock, IActiveTimerService timers, ITickSourceFactory? ticks = null, IEventBus? events = null)
         : base(completions, clock)
     {
         ArgumentNullException.ThrowIfNull(timers);
         _timers = timers;
         ChronoClock = new LiveElapsedClock(Clock, ticks);
+        // The per-cell stopwatch is an active_timer row, so it can be stopped elsewhere (the status bar):
+        // without this the cell stays "running" and the next press throws ActiveTimerNotFoundException.
+        if (events is null) return;
+        foreach (var name in (EventName[])[WellKnownEvents.TimerStarted, WellKnownEvents.TimerPaused,
+                     WellKnownEvents.TimerResumed, WellKnownEvents.TimerStopped])
+            _subs.Add(events.SubscribeOnUi(name, e => OnTimerEvent(e)));
+    }
+
+    private void OnTimerEvent(EventEnvelope e)
+    {
+        if (Node is null || e.Payload is not TimerChangedPayload p || p.HabitNodeId != Node.Id) return;
+        _ = ResyncChronoAsync();
+    }
+
+    private async Task ResyncChronoAsync()
+    {
+        try
+        {
+            if (Node is null || !ChronoRunning) return;
+            if (await _timers.GetActiveAsync(Node.Id).ConfigureAwait(true) is null) ResetChrono();
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ResyncChronoAsync failed: {ex}"); }
+    }
+
+    private void ResetChrono()
+    {
+        if (_chronoCell is not null) _chronoCell.IsChronoRunning = false;
+        _chronoCell = null;
+        ChronoClock.Stop();
+        ChronoRunning = false;
     }
 
     /// <summary>Per-cell stopwatch: start runs an active_timer (Stopwatch); stop pours the elapsed
@@ -48,13 +82,17 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
         }
         else
         {
-            var secs = await _timers.StopWithoutRecordingAsync(Node.Id, ct).ConfigureAwait(true);
+            int secs;
+            try { secs = await _timers.StopWithoutRecordingAsync(Node.Id, ct).ConfigureAwait(true); }
+            catch (ActiveTimerNotFoundException)
+            {
+                // Stopped elsewhere (the status bar records it): nothing to pour in, just clear the cell.
+                ResetChrono();
+                return;
+            }
             var target = _chronoCell ?? cell;
             target.SetDurationSeconds(secs);
-            target.IsChronoRunning = false;
-            ChronoClock.Stop();
-            _chronoCell = null;
-            ChronoRunning = false;
+            ResetChrono();
         }
     }
 
@@ -62,6 +100,8 @@ public abstract partial class SeriesQuickAddViewModelBase : QuickAddViewModelBas
     /// collected when the screen swaps or tears down the quick-add.</summary>
     public void Dispose()
     {
+        foreach (var s in _subs) s.Dispose();
+        _subs.Clear();
         if (_chronoCell is not null) _chronoCell.IsChronoRunning = false;
         _chronoCell = null;
         ChronoRunning = false;

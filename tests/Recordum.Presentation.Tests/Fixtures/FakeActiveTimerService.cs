@@ -75,8 +75,13 @@ public sealed class FakeActiveTimerService(IClock? clock = null) : IActiveTimerS
         return ValueTask.CompletedTask;
     }
 
+    public int GetActiveCalls { get; private set; }
+
     public ValueTask<ActiveTimer?> GetActiveAsync(Guid habitNodeId, CancellationToken ct = default)
-        => new(Active.Find(x => x.HabitNodeId == habitNodeId));
+    {
+        GetActiveCalls++;
+        return new(Active.Find(x => x.HabitNodeId == habitNodeId));
+    }
 
     public ValueTask<IReadOnlyList<ActiveTimer>> ListActiveAsync(CancellationToken ct = default)
         => new((IReadOnlyList<ActiveTimer>)Active.ToList());

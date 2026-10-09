@@ -52,6 +52,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IOpenFileDialog _openFileDialog;
     private readonly IConfirmationDialog _confirmationDialog;
     private readonly ITickSourceFactory? _ticks;
+    private readonly IEventBus _events;
     private readonly AbstinencePeriodListViewModel _periodList;
     private readonly List<IDisposable> _subscriptions = [];
 
@@ -587,6 +588,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _openFileDialog = openFileDialog;
         _confirmationDialog = confirmationDialog;
         _ticks = ticks;
+        _events = events;
         Editor = editor;
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
@@ -627,6 +629,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Detail.Dispose();
         Records.Dispose();
         TodayStrip.Dispose();
+        TimerControl.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
         _subscriptions.Clear();
     }
@@ -748,7 +751,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             HabitType.Counter => await BuildCounterQuickAddAsync(ct).ConfigureAwait(true),
             HabitType.Resistance => new AbstinenceQuickAddViewModel(_completions, _abstinence, _clock, _ticks),
             HabitType.Journal => new JournalQuickAddViewModel(_completions, _clock, _diary),
-            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _ticks),
+            HabitType.State => new MeasuredQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _ticks, _events),
             _ => null,
         };
         if (vm is null) { QuickAdd = null; return; }
@@ -775,7 +778,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (defs.Count == 0)
                 return new CounterTapQuickAddViewModel(_completions, _clock);
             var cfg = await _configs.GetAsync(node.Id, c).ConfigureAwait(true);
-            var vm = new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _configs, _ticks);
+            var vm = new CounterSeriesQuickAddViewModel(_completions, _metrics, _refData, _clock, _timers, _configs, _ticks, _events);
             vm.SetRegistrationConfig(cfg?.Repeatable ?? false, cfg?.SeriesLabelsJson);
             return vm;
         }

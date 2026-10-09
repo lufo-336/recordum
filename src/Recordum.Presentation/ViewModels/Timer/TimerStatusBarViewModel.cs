@@ -38,10 +38,14 @@ public sealed partial class TimerStatusBarViewModel : ObservableObject
         // the bar; before this it loaded once at startup and never learned of a timer started later.
         foreach (var name in (EventName[])[WellKnownEvents.TimerStarted, WellKnownEvents.TimerPaused,
                      WellKnownEvents.TimerResumed, WellKnownEvents.TimerStopped])
-            events.SubscribeOnUi(name, _ => RefreshInBackground());
+            events.SubscribeOnUi(name, e => _ = RefreshInBackground());
     }
 
-    private void RefreshInBackground() => _ = RefreshAsync().AsTask();
+    private async Task RefreshInBackground()
+    {
+        try { await RefreshAsync().ConfigureAwait(true); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"TimerStatusBar refresh failed: {ex}"); }
+    }
 
     public ValueTask LoadAsync(CancellationToken ct = default) => RefreshAsync(ct);
 

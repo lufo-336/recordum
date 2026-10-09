@@ -1,3 +1,4 @@
+using Recordum.Plugins.Contracts.Hosting;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -30,7 +31,8 @@ public sealed partial class CounterSeriesQuickAddViewModel : SeriesQuickAddViewM
         IClock clock,
         IActiveTimerService timers,
         IHabitConfigService configs,
-        ITickSourceFactory? ticks = null) : base(completions, clock, timers, ticks)
+        ITickSourceFactory? ticks = null,
+        IEventBus? events = null) : base(completions, clock, timers, ticks, events)
     {
         _metrics = metrics;
         _refData = refData;
