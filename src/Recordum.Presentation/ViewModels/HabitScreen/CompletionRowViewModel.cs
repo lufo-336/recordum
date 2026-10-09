@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
+using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
@@ -12,6 +14,7 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     private readonly Action<CompletionRowViewModel>? _onDeleted;
     private readonly string? _overrideNotes;
     private readonly Func<Guid, CancellationToken, Task>? _deleteOverride;
+    private readonly IConfirmationDialog? _confirm;
 
     /// <summary>Il confine dell'abitudine, dalla lista che possiede la riga. Serve alla modifica a
     /// mano della data: l'utente scrive un orario di parete, non un istante UTC.</summary>
@@ -31,7 +34,7 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     public DateTime CompletedAt => Completion.CompletedAt;
     public bool IsRetroactive => Completion.IsRetroactive;
     public string? Notes => _overrideNotes ?? Completion.Notes;
-    public string Display => CompletedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+    public string Display => ToWallTime(CompletedAt).ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
     [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private string? _editedNotes;
@@ -46,7 +49,8 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         string? overrideNotes = null,
         Func<Guid, CancellationToken, Task>? deleteOverride = null,
         bool canInlineEdit = true,
-        DayBoundary? dayBoundary = null)
+        DayBoundary? dayBoundary = null,
+        IConfirmationDialog? confirm = null)
     {
         ArgumentNullException.ThrowIfNull(completion);
         ArgumentNullException.ThrowIfNull(completions);
@@ -59,6 +63,7 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         _deleteOverride = deleteOverride;
         CanInlineEdit = canInlineEdit;
         _day = dayBoundary ?? DayBoundary.Utc;
+        _confirm = confirm;
         EditedNotes = completion.Notes;
         EditedDate = ToWallTime(completion.CompletedAt);
     }
@@ -72,10 +77,7 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     }
 
     /// <summary>L'istante salvato, letto come orologio di parete nel fuso dell'abitudine — la forma in
-    /// cui un umano lo scriverebbe. <see cref="Display"/> mostra ancora l'ora UTC: è un debito di
-    /// presentazione più vecchio di R9 e vale per tutte le righe della Cronologia, non solo per questa,
-    /// quindi non lo si cambia qui di soppiatto. Oggi la differenza non si vede: l'editor inline non ha
-    /// superficie in XAML.</summary>
+    /// cui un umano lo scriverebbe, e quella che <see cref="Display"/> mostra.</summary>
     private DateTime ToWallTime(DateTime utcTimestamp)
         => TimeZoneInfo.ConvertTimeFromUtc(
             DateTime.SpecifyKind(utcTimestamp, DateTimeKind.Utc), _day.TimeZone);
@@ -111,6 +113,9 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteAsync(CancellationToken ct)
     {
+        if (_confirm is not null
+            && !await _confirm.ConfirmAsync(Strings.Abstinence_DeleteConfirm_Title, Strings.Records_DeleteConfirm_Message).ConfigureAwait(true))
+            return;
         if (_deleteOverride is not null)
             await _deleteOverride(Id, ct).ConfigureAwait(true);
         else

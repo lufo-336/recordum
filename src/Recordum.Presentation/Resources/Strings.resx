@@ -1653,4 +1653,7 @@ Details: {0}</value>
   <data name="Dialog.No" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="Records.DeleteConfirm.Message" xml:space="preserve">
+    <value>Delete this record? This cannot be undone.</value>
+  </data>
 </root>

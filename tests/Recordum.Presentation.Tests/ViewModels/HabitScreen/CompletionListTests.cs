@@ -407,6 +407,21 @@ public class CompletionListViewModelTests
 public class CompletionRowViewModelTests
 {
     [Fact]
+    public void Display_is_the_wall_clock_of_the_habit()
+    {
+        // Estate: Europe/Rome = UTC+2. Col fuso di default (UTC) darebbe 21:30: e' il parametro muto.
+        var rome = TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome");
+        var at = new DateTime(2026, 7, 10, 21, 30, 0, DateTimeKind.Utc);
+        var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), CompletedAt = at,
+            CompletedAtMs = new DateTimeOffset(at).ToUnixTimeMilliseconds() };
+
+        var sut = new CompletionRowViewModel(c, new FakeCompletionService(),
+            dayBoundary: new Recordum.Core.Time.DayBoundary(rome, TimeOnly.MinValue));
+
+        sut.Display.Should().Be("2026-07-10 23:30");
+    }
+
+    [Fact]
     public async Task SaveEditCommand_persists_notes_and_date_via_UpdateAsync()
     {
         var cs = new FakeCompletionService();

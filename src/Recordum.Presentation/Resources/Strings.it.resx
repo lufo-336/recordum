@@ -1627,4 +1627,7 @@
   <data name="Startup.AlreadyRunning" xml:space="preserve">
     <value>Recordum è già aperto. Passa alla finestra già in esecuzione.</value>
   </data>
+  <data name="Records.DeleteConfirm.Message" xml:space="preserve">
+    <value>Eliminare questa registrazione? L'operazione non è reversibile.</value>
+  </data>
 </root>

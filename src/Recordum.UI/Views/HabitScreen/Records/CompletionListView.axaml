@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:res="using:Recordum.Presentation.Resources" xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             x:Class="Recordum.UI.Views.HabitScreen.Records.CompletionListView"
+             x:DataType="vm:CompletionListViewModel">
+  <!-- Nessun pulsante di modifica (decisione 9 di F2a): in WPF il ✎ accendeva IsEditing e non si vedeva nulla. -->
+  <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:CompletionRowViewModel">
+        <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}" Padding="0,6">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0">
+              <TextBlock Text="{CompiledBinding Display}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+              <ItemsControl ItemsSource="{CompiledBinding FieldDisplays}" IsVisible="{CompiledBinding HasFieldDisplays}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Text}"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{CompiledBinding Notes}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"
+                         IsVisible="{CompiledBinding Notes, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            </StackPanel>
+            <Button Grid.Column="1" x:Name="DeleteButton" Width="28" Height="28" Padding="0" VerticalAlignment="Top"
+                    Background="Transparent" BorderThickness="0"
+                    Command="{CompiledBinding DeleteCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}"
+                    ToolTip.Tip="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}">
+              <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform"
+                    Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Button>
+          </Grid>
+        </Border>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

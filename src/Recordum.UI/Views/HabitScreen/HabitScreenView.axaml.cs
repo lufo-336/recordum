@@ -4,12 +4,14 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.UI.Views.HabitScreen.QuickAdd;
+using Recordum.UI.Views.HabitScreen.Records;
 
 namespace Recordum.UI.Views.HabitScreen;
 
 public partial class HabitScreenView : UserControl
 {
     private HabitScreenViewModel? _vm;
+    private HabitRecordsViewModel? _records;
 
     public HabitScreenView()
     {
@@ -22,8 +24,28 @@ public partial class HabitScreenView : UserControl
         if (_vm is not null) _vm.PropertyChanged -= OnVmPropertyChanged;
         _vm = DataContext as HabitScreenViewModel;
         if (_vm is not null) _vm.PropertyChanged += OnVmPropertyChanged;
+        if (_records is not null) _records.PropertyChanged -= OnRecordsPropertyChanged;
+        _records = _vm?.Records;
+        if (_records is not null) _records.PropertyChanged += OnRecordsPropertyChanged;
         ApplyAccent();
         RebuildQuickAdd();
+        RebuildRecords();
+    }
+
+    private void OnRecordsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HabitRecordsViewModel.CurrentList)) RebuildRecords();
+    }
+
+    // Come QuickAddHost: la lista cambia tipo con l'abitudine (registrazioni / periodi), quindi si ricostruisce
+    // dal tipo; ricostruire a ogni SetContext anche a tipo invariato e' innocuo (la lista e' la stessa istanza).
+    private void RebuildRecords()
+    {
+        var content = _records?.CurrentList;
+        if (RecordsHost.Child?.DataContext == content && content is not null) return;
+        var view = RecordsTemplate.Instance.Build(content);
+        if (view is not null) view.DataContext = content;
+        RecordsHost.Child = view;
     }
 
     // Il tab riusato per un'altra abitudine (anteprima) cambia Node senza ricostruire la view.

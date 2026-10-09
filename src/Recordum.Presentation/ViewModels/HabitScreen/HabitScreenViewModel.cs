@@ -594,7 +594,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
         _periodList = new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock, ticks);
         _periodList.Changed += OnAbstinenceChanged;
-        Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary), _periodList, clock);
+        Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary, confirmationDialog), _periodList, clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock, ticks, events);
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);

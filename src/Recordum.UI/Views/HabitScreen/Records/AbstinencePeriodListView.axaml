@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:res="using:Recordum.Presentation.Resources" xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             x:Class="Recordum.UI.Views.HabitScreen.Records.AbstinencePeriodListView"
+             x:DataType="vm:AbstinencePeriodListViewModel">
+  <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:AbstinencePeriodRowViewModel">
+        <Border Margin="0,0,0,8" Padding="12" CornerRadius="8" BorderThickness="1"
+                BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.Surface}">
+          <Grid ColumnDefinitions="4,*,Auto">
+            <!-- barra: pericolo = chiuso (ricaduta); quella accento sopra la copre per il periodo aperto -->
+            <Border Grid.Column="0" CornerRadius="2" Margin="0,0,10,0" Background="{DynamicResource Brush.Danger}"/>
+            <Border Grid.Column="0" CornerRadius="2" Margin="0,0,10,0" Background="{DynamicResource Brush.Accent}"
+                    IsVisible="{CompiledBinding IsCurrent}"/>
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="{x:Static res:Strings.Abstinence_InProgress}" FontSize="12" Foreground="{DynamicResource Brush.Accent}"
+                         IsVisible="{CompiledBinding IsCurrent}"/>
+              <TextBlock Text="{CompiledBinding Clock.Display}" FontSize="20" Foreground="{DynamicResource Brush.Text}"
+                         IsVisible="{CompiledBinding IsCurrent}"/>
+              <TextBlock Text="{CompiledBinding DurationDisplay}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"
+                         IsVisible="{CompiledBinding !IsCurrent}"/>
+              <TextBlock Text="{CompiledBinding SinceDisplay}" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"/>
+              <TextBlock Text="{CompiledBinding RelapsedOnDisplay}" FontSize="12" Foreground="{DynamicResource Brush.Danger}"
+                         IsVisible="{CompiledBinding !IsCurrent}"/>
+            </StackPanel>
+            <Button Grid.Column="2" x:Name="DeleteButton" Width="28" Height="28" Padding="0" VerticalAlignment="Top"
+                    Background="Transparent" BorderThickness="0"
+                    Command="{CompiledBinding DeleteCommand}"
+                    AutomationProperties.Name="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}"
+                    ToolTip.Tip="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}">
+              <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform"
+                    Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Button>
+          </Grid>
+        </Border>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

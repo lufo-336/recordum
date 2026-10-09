@@ -26,7 +26,7 @@ public class IconCatalogTests
         "Icon.Droplet", "Icon.GlassWater", "Icon.House", "Icon.Bath", "Icon.Brush", "Icon.Shirt",
         "Icon.Sprout", "Icon.Cigarette", "Icon.Wine", "Icon.Ban", "Icon.ShieldCheck", "Icon.Flame",
         "Icon.Star", "Icon.CheckCircle", "Icon.Calendar", "Icon.Clock", "Icon.Square", "Icon.Music",
-        "Icon.Play", "Icon.Pause",
+        "Icon.Play", "Icon.Pause", "Icon.Trash2",
     ];
 
     /// <summary>Le stringhe dei path così come stanno nel file (incorporato nell'assembly di test, v. il
@@ -47,11 +47,11 @@ public class IconCatalogTests
         [.. PathGeometry.Parse(RawPaths()[key]).Figures!];
 
     [Fact]
-    public void The_catalog_holds_exactly_the_60_expected_keys()
+    public void The_catalog_holds_exactly_the_61_expected_keys()
     {
         var keys = RawPaths().Keys;
 
-        ExpectedKeys.Should().HaveCount(60);
+        ExpectedKeys.Should().HaveCount(61);
         keys.Should().BeEquivalentTo(ExpectedKeys, "una chiave in meno è un'icona d'abitudine che sparisce; "
             + "una in più è un'icona che nessun test guarda");
     }

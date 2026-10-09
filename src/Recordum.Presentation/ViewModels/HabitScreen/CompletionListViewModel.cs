@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.Core.Time;
 using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
@@ -16,6 +17,7 @@ public sealed partial class CompletionListViewModel : ObservableObject
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
     private readonly IDiaryService _diary;
+    private readonly IConfirmationDialog? _confirm;
 
     public Guid? NodeId { get; private set; }
     public ObservableCollection<CompletionRowViewModel> Rows { get; } = [];
@@ -36,8 +38,9 @@ public sealed partial class CompletionListViewModel : ObservableObject
     internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
 
     public CompletionListViewModel(ICompletionService completions, IMetricDefinitionService metrics,
-        IReferenceDataQueryService refData, IDiaryService diary)
+        IReferenceDataQueryService refData, IDiaryService diary, IConfirmationDialog? confirm = null)
     {
+        _confirm = confirm;
         _completions = completions;
         _metrics = metrics;
         _refData = refData;
@@ -88,7 +91,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
                 overrideNotes: overrideNotes,
                 deleteOverride: del,
                 canInlineEdit: !IsJournal,
-                dayBoundary: DayBoundary));
+                dayBoundary: DayBoundary,
+                confirm: _confirm));
         }
     }
 

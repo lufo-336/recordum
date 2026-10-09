@@ -33,6 +33,9 @@
   "riduci a icona" era vuoto: misurato e `fixed` (verifica a schermo su Windows)
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
 
+**Trovati in F2a (sezione "Onda F2a")**
+- **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
+
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
   nell'albero stretto), F0-12 (banda bianca in tema scuro), W2V-7 (conferma: su Avalonia è già una finestra nostra)
@@ -1916,3 +1919,10 @@ Restano questi, ciascuno con la sua ragione.
   Avalonia scrive nella cartella scelta e WPF no. `reported`.
 - **F1-11 — decaduto (D7)**: nessun ripiego del chrome su Linux, nessuna maniglia fatta in casa (la barra di sistema resta).
 
+## Onda F2a — Registrazione su Avalonia (`F2a-*`)
+
+- **F2a-WPF1 — ✎ muto nelle registrazioni della Cronologia (WPF)** · `reported` (task 7) · In `HabitScreen.xaml` il
+  pulsante ✎ chiama `BeginEditCommand`, che accende `IsEditing`, ma nessun template ha mai avuto un editor: non succede
+  niente di visibile (stesso schema di F1-5). Su Avalonia il pulsante non c'è (decisione 9); l'editor arriva con F3.
+  WPF è congelata: nessun fix lì. Nota collegata: la cancellazione di una registrazione ora chiede conferma anche in WPF
+  (`CompletionListViewModel` riceve `IConfirmationDialog`) e l'ora in elenco è quella di parete dell'abitudine, non UTC.

@@ -134,5 +134,7 @@
     <StreamGeometry x:Key="Icon.Pause">M 15 3 h 3 a 1 1 0 0 1 1 1 v 16 a 1 1 0 0 1 -1 1 h -3 a 1 1 0 0 1 -1 -1 v -16 a 1 1 0 0 1 1 -1 z M 6 3 h 3 a 1 1 0 0 1 1 1 v 16 a 1 1 0 0 1 -1 1 h -3 a 1 1 0 0 1 -1 -1 v -16 a 1 1 0 0 1 1 -1 z</StreamGeometry>
     <!-- music.svg: path + 2 circles -->
     <StreamGeometry x:Key="Icon.Music">M9 18V5l12-2v13 M 3 18 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 z M 15 16 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 z</StreamGeometry>
+    <!-- trash-2.svg: 4 path + 2 lines (concatenati; ogni tratto inizia con M assoluto) -->
+    <StreamGeometry x:Key="Icon.Trash2">M3 6h18 M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6 M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2 M10 11v6 M14 11v6</StreamGeometry>
 
 </ResourceDictionary>
