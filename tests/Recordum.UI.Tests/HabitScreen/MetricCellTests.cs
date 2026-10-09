@@ -111,14 +111,15 @@ public class MetricCellTests
                 if (rejected)
                 {
                     DataValidationErrors.GetHasErrors(box).Should().BeTrue($"\"{text}\" in {culture} va rifiutato in modo visibile");
-                    vm.DecimalValue.Should().Be(7m, "il rifiuto lascia il valore del ViewModel invariato");
+                    vm.DecimalValue.Should().BeNull("R10: un rifiuto svuota la cella, Salva non registra il valore vecchio");
+                    box.Text.Should().Be(text, "la casella continua a mostrare il testo rifiutato");
                 }
                 else
                 {
                     DataValidationErrors.GetHasErrors(box).Should().BeFalse();
                     vm.DecimalValue.Should().Be((decimal)expected!.Value);
                 }
-                vm.DecimalValue.Should().NotBe(1500m).And.NotBe(25m).And.NotBe(15m);
+                vm.DecimalValue.Should().NotBe(7m).And.NotBe(1500m).And.NotBe(25m).And.NotBe(15m);
             }
             finally { w.Close(); }
             return Task.CompletedTask;
@@ -141,11 +142,65 @@ public class MetricCellTests
                 box.Text = text;
                 Pump();
                 DataValidationErrors.GetHasErrors(box).Should().BeTrue();
-                vm.IntegerValue.Should().Be(7);
+                vm.IntegerValue.Should().BeNull();
+                box.Text.Should().Be(text);
             }
             finally { w.Close(); }
             return Task.CompletedTask;
         });
+
+    [AvaloniaFact]
+    public Task A_corrected_then_rejected_number_records_nothing() => WithCulture("it-IT", async () =>
+    {
+        var o = await OpenAsync(HabitType.State, async (scope, id) =>
+            await scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition
+            {
+                HabitNodeId = id, Name = "Weight", Type = MetricType.Decimal,
+            }));
+        try
+        {
+            var box = Named<TextBox>(o.View, "DecimalBox");
+            box.Text = "2";
+            Pump();
+            box.Text = "2.5";   // rifiutato in it-IT
+            Pump();
+            DataValidationErrors.GetHasErrors(box).Should().BeTrue();
+            box.Text.Should().Be("2.5");
+            Click(o.Window, Named<Button>(o.View, "SaveButton"));
+            await Task.Delay(100);
+            Pump();
+            (await o.SavedValuesAsync()).Should().BeEmpty("la casella mostra un errore: non si registra il 2 di prima");
+            ((MeasuredQuickAddViewModel)o.Vm.QuickAdd!).ErrorMessage.Should().NotBeNullOrEmpty();
+        }
+        finally { o.Window.Close(); }
+    });
+
+    [AvaloniaFact]
+    public Task A_series_with_a_rejected_number_records_nothing() => WithCulture("it-IT", async () =>
+    {
+        var o = await OpenSeriesAsync();
+        try
+        {
+            var box = Named<TextBox>(o.View, "IntegerBox");
+            box.Text = "3";
+            Pump();
+            box.Text = "3.5";   // non e' un intero
+            Pump();
+            DataValidationErrors.GetHasErrors(box).Should().BeTrue();
+            Click(o.Window, Named<Button>(o.View, "SaveButton"));
+            await Task.Delay(100);
+            Pump();
+            (await o.SavedValuesAsync()).Should().BeEmpty();
+            ((CounterSeriesQuickAddViewModel)o.Vm.QuickAdd!).ErrorMessage.Should().NotBeNullOrEmpty();
+
+            box.Text = "3";   // corretto: ora si registra
+            Pump();
+            Click(o.Window, Named<Button>(o.View, "SaveButton"));
+            await UntilAsync(() => o.SavedValuesAsync().GetAwaiter().GetResult().Count == 1);
+            (await o.SavedValuesAsync()).Single().ValueInteger.Should().Be(3);
+        }
+        finally { o.Window.Close(); }
+    });
 
     // ---- 5.2 / 5.3 ----------------------------------------------------------------------------------------
 
