@@ -39,7 +39,7 @@
   salto mese/anno del calendario rimandati a F3 · **F2a-3** — il cronometro di cella di una serie compare nella barra dei timer
   e il suo Stop registra una durata (CM-4) · **F2a-4** — il purge toglie `active_timer` senza evento: la barra tiene una riga
   morta il cui Stop lancia · **F2a-5** — Presentation traccia con `Debug.WriteLine`: in Release i guasti in background sono
-  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · **F2a-7** — rinomina dalla Home non arrivava all'intestazione · `fixed` · **F2a-8** — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato · `reported` · stati: F2a-1…F2a-5 `reported`, F2a-6 `fixed` solo per F0-Y2 (W2V-4/U4 `reported`)
+  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · **F2a-7** — rinomina dalla Home non arrivava all'intestazione · `fixed` · **F2a-8** — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato · `reported` · **F2a-9** — il flip di Ripetibile non pubblica `HabitUpdated` · **F2a-10** — `ActiveTimerService.StopAsync` non atomico · **F2a-11** — eccezioni dei comandi async → `CrashLogger` `Handled=false` · **F2a-12** — `TimerStatusBarViewModel` transient con `IHabitNodeService` scoped (F2a-9…F2a-12 `reported`) · stati: F2a-1…F2a-5 `reported`, F2a-6 `fixed` solo per F0-Y2 (W2V-4/U4 `reported`)
 
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
@@ -1963,3 +1963,13 @@ Restano questi, ciascuno con la sua ragione.
   `habit-resistance-light.png` (screenshot di F2a, `HabitScreenScreenshotTests`): subito dopo `StartAsync` la fascia "Oggi"
   mostra "0:00:00 · Ricaduta · 1 tentativi (90g)": plurale sbagliato e il "(90g)" non ha senso con un periodo di zero secondi.
   Non corretto in F2a.
+- **F2a-9 — il flip di Ripetibile non pubblica `HabitUpdated`** · `reported` (preesistente; F5 Configura) · Il flip passa da
+  `IHabitConfigService.UpsertAsync`, che non pubblica nulla: il ramo "ricostruisci il quick-add al cambio di Ripetibile" di
+  `HabitScreenViewModel` non è raggiungibile dall'editor.
+- **F2a-10 — `ActiveTimerService.StopAsync` non è atomico** · `reported` (preesistente; da chiudere prima del dogfooding) ·
+  Cancella la riga del timer e poi registra il completamento: se `RecordAsync` fallisce il tempo della sessione è perso.
+- **F2a-11 — le eccezioni dei comandi async arrivano al `CrashLogger` con `Handled=false` e chiudono l'app** · `reported`
+  (schema preesistente; da chiudere prima del dogfooding) · Es. `ActiveTimerNotFoundException` dallo Stop/Pausa della barra o
+  del TimerControl dopo un purge.
+- **F2a-12 — `TimerStatusBarViewModel` è transient, risolto dalla radice, e tiene un `IHabitNodeService` scoped** ·
+  `reported` (preesistente; stessa nota della decisione 8 di F1) · Dipendenza catturata (captive dependency).
