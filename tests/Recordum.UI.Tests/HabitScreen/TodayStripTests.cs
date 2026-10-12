@@ -21,21 +21,20 @@ using Xunit;
 
 namespace Recordum.UI.Tests.HabitScreen;
 
-public class TodayStripTests : IAsyncLifetime
+public sealed class TodayStripTests : IDisposable
 {
-    // Il DB e' condiviso: le abitudini di questi test non devono restare nella Home degli altri
-    // (la lista e' virtualizzata, troppe righe escono dalla viewport).
-    private static readonly List<Guid> Created = [];
+    // Le finestre si chiudono sempre (anche a test fallito) a fine test: xunit chiama Dispose in ogni caso.
+    private readonly List<Window> _windows = [];
+    private readonly List<IDisposable> _disposables = [];
 
-    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
-
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
-        using var scope = ShellFixture.Shared.Services.CreateScope();
-        var nodes = Svc<IHabitNodeService>(scope);
-        foreach (var id in Created.ToArray()) await nodes.SoftDeleteAsync(id);
-        Created.Clear();
+        foreach (var w in _windows) w.Close();
+        foreach (var d in _disposables) d.Dispose();
     }
+
+    // DB privato (Ruling R8): scrive abitudini, completamenti e un periodo di astinenza aperto.
+    private static readonly PrivateDbHost Host = new("recordum-ui-today");
 
     private static readonly Guid Mood5 = Guid.Parse("00000002-0000-0000-0000-000000000007");
 
@@ -43,12 +42,11 @@ public class TodayStripTests : IAsyncLifetime
 
     private static async Task<Guid> CreateAsync(HabitType? type, string name)
     {
-        using var scope = ShellFixture.Shared.Services.CreateScope();
+        using var scope = Host.Provider.CreateScope();
         var id = await Svc<IHabitNodeService>(scope).CreateAsync(new HabitNode
         {
             NodeType = NodeType.Habit, HabitType = type, Name = name, Color = "#E11D48",
         });
-        Created.Add(id);
         if (type == HabitType.State)
             await Svc<IMetricDefinitionService>(scope).CreateAsync(new MetricDefinition
             {
@@ -57,23 +55,19 @@ public class TodayStripTests : IAsyncLifetime
         return id;
     }
 
-    private static async Task<(HabitScreenViewModel Vm, HabitScreenView View, Window Window)> OpenAsync(Guid id)
+    private async Task<(HabitScreenViewModel Vm, HabitScreenView View, Window Window)> OpenAsync(Guid id)
     {
-        var vm = ShellFixture.Shared.Services.CreateScope().ServiceProvider.GetRequiredService<HabitScreenViewModel>();
+        var vm = Host.Provider.CreateScope().ServiceProvider.GetRequiredService<HabitScreenViewModel>();
         await vm.LoadAsync(id);
         var view = new HabitScreenView { DataContext = vm };
         var w = new Window { Width = 800, Height = 600, Content = view };
+        _windows.Add(w);
         w.Show();
         Pump();
         return (vm, view, w);
     }
 
-    private static void Pump()
-    {
-        Dispatcher.UIThread.RunJobs();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-    }
+    private static void Pump() => PrivateDbHost.Pump();
 
     private static T Find<T>(Visual root, string name) where T : Control
         => root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
@@ -84,7 +78,7 @@ public class TodayStripTests : IAsyncLifetime
 
     private static async Task<IReadOnlyList<Completion>> CompletionsAsync(Guid habit)
     {
-        using var scope = ShellFixture.Shared.Services.CreateScope();
+        using var scope = Host.Provider.CreateScope();
         return await Svc<ICompletionService>(scope).ListByHabitAsync(habit);
     }
 
@@ -95,27 +89,25 @@ public class TodayStripTests : IAsyncLifetime
     [InlineData(HabitType.State, typeof(StateTodayView))]
     public async Task Each_type_builds_its_own_today_view(HabitType type, Type expected)
     {
-        var (_, view, w) = await OpenAsync(await CreateAsync(type, $"Oggi-{type}"));
+        var (_, view, _) = await OpenAsync(await CreateAsync(type, $"Oggi-{type}"));
         ContentViews(view).Select(c => c.GetType()).Should().Equal(expected);
         view.GetVisualDescendants().OfType<TodayStripView>().Single().IsVisible.Should().BeTrue();
-        w.Close();
     }
 
     [AvaloniaFact]
     public async Task A_journal_builds_no_strip_and_no_border()
     {
-        var (_, view, w) = await OpenAsync(await CreateAsync(HabitType.Journal, "Oggi-Diario"));
+        var (_, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Oggi-Diario"));
         ContentViews(view).Should().BeEmpty();
         var strip = view.GetVisualDescendants().OfType<TodayStripView>().Single();
         strip.IsVisible.Should().BeFalse();
         strip.GetVisualDescendants().OfType<Border>().Should().BeEmpty("neppure il bordo della fascia");
-        w.Close();
     }
 
     [AvaloniaFact]
     public void The_template_returns_null_for_journal_and_unknown_content()
     {
-        using var scope = ShellFixture.Shared.Services.CreateScope();
+        using var scope = Host.Provider.CreateScope();
         TodayContentTemplate.Instance.Build(new JournalTodayContent(Svc<IHabitUiPrefsService>(scope))).Should().BeNull();
         TodayContentTemplate.Instance.Build(new object()).Should().BeNull();
         TodayContentTemplate.Instance.Build(null).Should().BeNull();
@@ -126,25 +118,23 @@ public class TodayStripTests : IAsyncLifetime
     {
         // Azione: la spunta registra il completamento di oggi.
         var action = await CreateAsync(HabitType.Action, "Reg-Azione");
-        var (_, v1, w1) = await OpenAsync(action);
+        var (_, v1, _) = await OpenAsync(action);
         Find<CheckBox>(v1, "DoneToday").Command!.Execute(null);   // cio' che fa il clic
         for (var i = 0; i < 100 && (await CompletionsAsync(action)).Count == 0; i++) { await Task.Delay(20); Pump(); }
         (await CompletionsAsync(action)).Should().HaveCount(1);
-        w1.Close();
 
         // Contatore: "+ Registra" non scrive, chiede alla schermata di aprire il modulo di registrazione.
         var counter = await CreateAsync(HabitType.Counter, "Reg-Contatore");
-        var (vm2, v2, w2) = await OpenAsync(counter);
+        var (vm2, v2, _) = await OpenAsync(counter);
         var requested = new List<TodayContentAction>();
         vm2.TodayStrip.ActionRequested += (_, a) => requested.Add(a);
         Find<Button>(v2, "RecordButton").Command!.Execute(null);
         requested.Should().Equal(TodayContentAction.OpenRecordModule);
         (await CompletionsAsync(counter)).Should().BeEmpty();
-        w2.Close();
 
         // Stato: slider a 4 e Salva -> l'intero 5 (1-based), non l'etichetta.
         var state = await CreateAsync(HabitType.State, "Reg-Stato");
-        var (_, v3, w3) = await OpenAsync(state);
+        var (_, v3, _) = await OpenAsync(state);
         var slider = Find<Slider>(v3, "ValueSlider");
         // Dalla fascia Oggi: il pannello di registrazione della Cronologia ha un SaveButton omonimo.
         var save = Find<Button>(Find<Border>(v3, "TodayHost"), "SaveButton");
@@ -156,14 +146,13 @@ public class TodayStripTests : IAsyncLifetime
         var saved = (await CompletionsAsync(state)).Should().ContainSingle().Subject;
         saved.Values.Should().ContainSingle().Which.ValueInteger.Should().Be(5);
         saved.Values[0].ValueText.Should().BeNull();
-        w3.Close();
     }
 
     [AvaloniaFact]
     public async Task Opening_a_state_habit_does_not_write_a_value()
     {
         var id = await CreateAsync(HabitType.State, "Apri-Stato");
-        using (var scope = ShellFixture.Shared.Services.CreateScope())
+        using (var scope = Host.Provider.CreateScope())
         {
             var metric = (await Svc<IMetricDefinitionService>(scope).ListByHabitAsync(id)).Single();
             var clock = Svc<IClock>(scope);
@@ -171,7 +160,7 @@ public class TodayStripTests : IAsyncLifetime
                 new Completion { HabitNodeId = id, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = clock.UtcNowMs },
                 [new CompletionValue { MetricDefinitionId = metric.Id, SeriesIndex = 0, ValueInteger = 4 }]);
         }
-        var (vm, view, w) = await OpenAsync(id);
+        var (vm, view, _) = await OpenAsync(id);
         var content = (StateTodayContent)vm.TodayStrip.Content!;
         content.SliderValue.Should().Be(3, "valore registrato 4 = indice 3");
         Find<Slider>(view, "ValueSlider").Value.Should().Be(3);
@@ -181,11 +170,9 @@ public class TodayStripTests : IAsyncLifetime
 
         // Anche senza valore registrato: resta al minimo e non scrive.
         var empty = await CreateAsync(HabitType.State, "Apri-Stato-Vuoto");
-        var (vm2, _, w2) = await OpenAsync(empty);
+        var (vm2, _, _) = await OpenAsync(empty);
         ((StateTodayContent)vm2.TodayStrip.Content!).SliderValue.Should().Be(0);
         (await CompletionsAsync(empty)).Should().BeEmpty();
-        w.Close();
-        w2.Close();
     }
 
     [AvaloniaFact]
@@ -195,20 +182,22 @@ public class TodayStripTests : IAsyncLifetime
         var clock = new FakeClock(DateTimeOffset.UtcNow);
         var ticks = new FakeTicks();
         long startMs;
-        using (var scope = ShellFixture.Shared.Services.CreateScope())
+        using (var scope = Host.Provider.CreateScope())
         {
             await Svc<IAbstinenceService>(scope).StartAsync(id);
             startMs = (await Svc<IAbstinenceService>(scope).GetStateAsync(id)).CurrentStartedAtMs!.Value;
         }
         clock.Now = DateTimeOffset.FromUnixTimeMilliseconds(startMs).AddSeconds(5);
         ResistanceTodayContent content;
-        using (var scope = ShellFixture.Shared.Services.CreateScope())
+        using (var scope = Host.Provider.CreateScope())
         {
             content = new ResistanceTodayContent(Svc<IAbstinenceService>(scope), clock, ticks);
             await content.LoadAsync(new HabitNode { Id = id, HabitType = HabitType.Resistance }, DayBoundary.Utc);
         }
         var view = new ResistanceTodayView { DataContext = content };
         var w = new Window { Content = view };
+        _windows.Add(w);
+        _disposables.Add(content);
         w.Show();
         Pump();
         var text = Find<TextBlock>(view, "ClockText");
@@ -224,8 +213,6 @@ public class TodayStripTests : IAsyncLifetime
         ticks.Tick();
         Pump();
         text.Text.Should().Be(Expected(7));
-        w.Close();
-        content.Dispose();
     }
 
     private sealed class FakeClock(DateTimeOffset now) : IClock

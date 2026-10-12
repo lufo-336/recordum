@@ -89,20 +89,10 @@ public class RetroactivePathIntegrationTests
 
     private static HomeRowViewModel Row(Opened o) => o.Vm.Home.Rows.Single(r => r.HabitNodeId == o.Id);
 
-    private static IDisposable PinCulture()
-    {
-        var (c, u) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
-        var it = CultureInfo.GetCultureInfo("it-IT");
-        CultureInfo.CurrentCulture = it; CultureInfo.CurrentUICulture = it;
-        return new Restore(() => { CultureInfo.CurrentCulture = c; CultureInfo.CurrentUICulture = u; });
-    }
-
-    private sealed class Restore(Action undo) : IDisposable { public void Dispose() => undo(); }
-
     [AvaloniaFact]
     public async Task Yesterday_after_midnight_lands_on_yesterday()
     {
-        using var culture = PinCulture();
+        using var culture = TestCulture.Pin();
         var o = await OpenAsync();
         try
         {
@@ -131,7 +121,7 @@ public class RetroactivePathIntegrationTests
     [AvaloniaFact]
     public async Task Deleting_from_the_history_reaches_the_db_and_the_home_row()
     {
-        using var culture = PinCulture();
+        using var culture = TestCulture.Pin();
         var o = await OpenAsync(async (s, id) =>
             await s.GetRequiredService<ICompletionService>().RecordAsync(new Completion
             {
@@ -157,7 +147,7 @@ public class RetroactivePathIntegrationTests
     [AvaloniaFact]
     public async Task Renaming_from_the_home_updates_the_open_habit_screen_header()
     {
-        using var culture = PinCulture();
+        using var culture = TestCulture.Pin();
         var o = await OpenAsync();
         try
         {

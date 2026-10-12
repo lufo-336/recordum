@@ -58,7 +58,7 @@ public class RecordsViewTests
         return new Opened(scope, vm, view, w, id);
     }
 
-    private static Task RecordAtAsync(IServiceScope scope, Guid id, DateTimeOffset at) =>
+    private static Task<Guid> RecordAtAsync(IServiceScope scope, Guid id, DateTimeOffset at) =>
         scope.ServiceProvider.GetRequiredService<ICompletionService>().RecordAsync(new Completion
         {
             HabitNodeId = id, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),

@@ -34,8 +34,7 @@ public class HabitScreenScreenshotTests(ITestOutputHelper output)
     [InlineData(HabitType.State, "Dark")]
     public async Task The_habit_screen_renders_in_both_themes(HabitType type, string variant)
     {
-        var it = CultureInfo.GetCultureInfo("it-IT");
-        (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (it, it);
+        using var culture = TestCulture.Pin();
         var now = Host.Clock.Now;
         using var scope = Host.Provider.CreateScope();
         var s = scope.ServiceProvider;
