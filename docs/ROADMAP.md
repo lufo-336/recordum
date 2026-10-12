@@ -6,9 +6,9 @@
 
 ## Dove siamo — 2026-10-12
 
-- **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato, a `c744963`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1
-  fino al Task 5, Passo 0). **CI verde su Linux e su Windows** sul branch (run 37073454341) e su `main`. I test di
-  prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: `f2a-registration`, impilato su `f2-perf1-home`, a sua volta su `avalonia-linux-slice`;
+  **nessuno dei tre è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati. CI verde su Linux e Windows fino a F1; quella
+  di F2a la fa il controllore. I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1 è a codice
   completo e ha passato la review dell'intero branch**: la shell si avvia davvero (sblocco del database, Home con righe
   vive, trascinamento, rail e tab del workspace, finestra principale). La review finale ha trovato e fatto correggere
@@ -29,26 +29,15 @@
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
 - Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **F2a (Registrazione su Avalonia) è a codice completo** sul branch `f2a-registration` (parte da `f2-perf1-home`, che
-  parte da `avalonia-linux-slice`; **nessuno dei tre è in `main`**; da pushare e da far girare in CI: review dell'intero
-  branch e CI le fa il controllore). Porta: la schermata dell'abitudine (intestazione, colonna "Oggi" per i quattro tipi con
-  fascia, calendario Mese/Settimana, Cronologia con cancellazione confermata), il quick-add dei cinque tipi con celle
-  numeriche che rifiutano il separatore sbagliato, la barra dei timer con cronometri vivi, e il percorso "ieri" provato
-  sul DB cifrato vero a cavallo del reset (R9). Difetti latenti corretti: la barra dei timer non si aggiornava mai, il
-  cronometro di sessione non scorreva, l'ora delle registrazioni era mostrata in UTC, la cancellazione non chiedeva
-  conferma (vale anche in WPF), la rinomina dalla Home non arrivava all'intestazione (`HabitUpdated` ora lo pubblica
-  `HabitNodeService`). Misura: tab con un anno di registrazioni (730) ≈ 0,7 s a caldo, 4 s a freddo in headless
-  (`Category=Performance`). Finding in `docs/phase-4-issues.md`, sezione "Onda F2a".
-- **Checklist a schermo dell'autore (GNOME)**: registrare i quattro tipi (azione, contatore, astinenza, stato) dalla
-  colonna "Oggi" e dal quick-add; "ieri" vicino al reset (R9: reset alle 04:00, dopo mezzanotte, giorno scelto sul
-  calendario = giorno in cui compare la registrazione); la barra dei timer dopo aver chiuso e riaperto l'app con un
-  cronometro acceso; le celle numeriche con l'altro separatore ("2.5" in italiano deve essere rifiutato, mai 25); chiaro e
-  scuro; rinomina dalla Home con la schermata aperta; cancellare una registrazione dalla Cronologia (chiede conferma); i W2V
-  della sezione §3 del pass visivo (tap counter, somma, cronometro, export).
+- **F2a (Registrazione su Avalonia) è a codice completo** su `f2a-registration`; cronaca, difetti corretti e misure in
+  `docs/MILESTONES.md`, finding in `docs/phase-4-issues.md` ("Onda F2a").
+- **Checklist a schermo dell'autore (GNOME)**: i quattro tipi dalla colonna "Oggi" e dal quick-add; "ieri" vicino al
+  reset (R9); barra dei timer dopo riavvio con un cronometro acceso; celle numeriche con l'altro separatore; chiaro e
+  scuro; rinomina dalla Home con la schermata aperta; cancellazione dalla Cronologia; W2V §3 del pass visivo.
 - **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
   e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
   (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
-- **Prossimo**: **F2b** (piano da scrivere). All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
+- **Prossimo**: review dell'intero branch di F2a e CI verde, poi F2b (piano da scrivere). All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
   (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
 
 ## Il percorso

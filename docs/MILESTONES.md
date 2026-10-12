@@ -605,6 +605,7 @@ volte di più.
 *Cosa ha insegnato*: le fixture condivise e le date vere fanno rossa la CI (cultura fissata nei test del calendario, `b0e0cec`;
 DB privato per i test che scrivono, Ruling R8). Gli screenshot hanno mostrato che W2V-4/U4 (cerchietto sul numero del giorno)
 non sono chiusi dal nuovo calendario. Misura: tab con 730 registrazioni ≈ 0,7 s a caldo, 4 s a freddo (headless).
+*Suite su Linux a fine Task 8*: Data 543 (senza `WindowsOnly`), Presentation 968, UI 252 (`Category!=Performance`).
 *Non consegnato*: gruppo senza chip né colonne (F3), vista Anno e salto mese/anno (F3), marcatore d'origine di `active_timer`
 (CM-4), purge che lascia una riga morta nella barra, tracce `Debug.WriteLine` invisibili in Release: tutto in
 `docs/phase-4-issues.md`, sezione "Onda F2a". **Prossimo**: review dell'intero branch e CI (controllore), checklist a schermo

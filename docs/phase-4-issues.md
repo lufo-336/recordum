@@ -39,14 +39,14 @@
   salto mese/anno del calendario rimandati a F3 · **F2a-3** — il cronometro di cella di una serie compare nella barra dei timer
   e il suo Stop registra una durata (CM-4) · **F2a-4** — il purge toglie `active_timer` senza evento: la barra tiene una riga
   morta il cui Stop lancia · **F2a-5** — Presentation traccia con `Debug.WriteLine`: in Release i guasti in background sono
-  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · tutti `reported`
+  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · **F2a-7** — rinomina dalla Home non arrivava all'intestazione · `fixed` · **F2a-8** — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato · `reported` · stati: F2a-1…F2a-5 `reported`, F2a-6 `fixed` solo per F0-Y2 (W2V-4/U4 `reported`)
 
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
   nell'albero stretto), F0-12 (banda bianca in tema scuro), W2V-7 (conferma: su Avalonia è già una finestra nostra)
 - **F2 Registrazione** — la sezione §3 della checklist del pass visivo (tap counter, somma, cronometro, export)
 - **F3 Dettaglio** — W2V-4 (il cerchietto copre il numero del giorno), U4 (numero scentrato nel cerchio della heatmap),
-  F0-Y2 (il calendario non si ritinge al cambio di tema), R8 (la card Goal non porta a Configura)
+  R8 (la card Goal non porta a Configura)
 - **F4 Diario** — W2V-8 (il composer non dice dove scrivere), B14 (editor di completamento o colonna Note)
 - **F5 Configura e builder** — W2V-9, W2V-11 (unità e scale non si modificano né si cancellano), W2V-16, W2V-18,
   W2V-19, A8 (le sezioni sbordano dalla colonna), A12 (l'autosalvataggio non si percepisce), W23-VF4 (il cronometro non
@@ -1807,7 +1807,7 @@ Restano questi, ciascuno con la sua ragione.
   successivi, non come colonne-settimana stile GitHub. Il test `Year_heatmap_grid_is_7_rows_by_53_columns_and_fills_ROW_MAJOR`
   lo documenta, così correggerlo (emissione column-major nel VM, o pannello diverso) farà scattare un test
   *consapevolmente*. Da fare nel VM, non in un porting.
-- **F0-Y2 — il re-tint live del calendario al cambio tema non c'è** (`reported`, Onda 3). Il
+- **F0-Y2 — il re-tint live del calendario al cambio tema non c'è** (`fixed` nel calendario Avalonia di F2a, test `The_calendar_retints_on_a_theme_switch`; `verified-fixed` dopo lo sguardo a schermo dell'autore; era `reported`, Onda 3). Il
   `HabitColorTintConverter` legge `Brush.Danger` imperativamente dentro un `MultiBinding` le cui tre sorgenti
   (`TintColorHex`, `TintStep`, `Tint`) non cambiano a un cambio di tema, e `App.ApplyTheme` invalida solo i
   `DynamicResource`. Non è una regressione (prima era uguale); serve una sottoscrizione a
@@ -1934,7 +1934,7 @@ Restano questi, ciascuno con la sua ragione.
 
 - **F2a-1 — un gruppo non ha chip né colonne** · `reported` (Ruling R5) · In F2a la schermata di un gruppo mostra solo
   l'intestazione; la Panoramica del gruppo (chip, colonne per abitudine) arriva con F3. Non è una regressione.
-- **F2a-2 — calendario: niente vista Anno né salto mese/anno** · `reported` (Ruling R9) · Il brief chiede Mese/Settimana e
+- **F2a-2 — calendario: niente vista Anno né salto mese/anno** · `reported` (decisione del controller, ledger F2a, ruling R9: non è la R9 del reset) · Il brief chiede Mese/Settimana e
   precedente/successivo: per tornare indietro di molti mesi si clicca più volte. Vista Anno (mesi + heatmap) e menu di salto
   restano a F3.
 - **F2a-3 — il cronometro di cella di una serie finisce nella barra dei timer** · `reported` (Ruling R12) ·
@@ -1959,3 +1959,7 @@ Restano questi, ciascuno con la sua ragione.
   dopo il commit, un solo punto per tutti i chiamanti; l'editor non lo pubblica più. Test:
   `RetroactivePathIntegrationTests.Renaming_from_the_home_updates_the_open_habit_screen_header` e
   `HabitNodeUpdateEventTests`.
+- **F2a-8 — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato** · `reported` · Visto in
+  `habit-resistance-light.png` (screenshot di F2a, `HabitScreenScreenshotTests`): subito dopo `StartAsync` la fascia "Oggi"
+  mostra "0:00:00 · Ricaduta · 1 tentativi (90g)": plurale sbagliato e il "(90g)" non ha senso con un periodo di zero secondi.
+  Non corretto in F2a.
