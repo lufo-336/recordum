@@ -54,6 +54,19 @@ public class CalendarNavigatorViewTests
         return (vm, view, w);
     }
 
+    /// <summary>La griglia segue il primo giorno della settimana della cultura (en-US: domenica): le date attese
+    /// qui sono quelle di una settimana che parte di lunedi', quindi la cultura si fissa (CLAUDE.md 7).</summary>
+    private static IDisposable PinCulture()
+    {
+        var (c, u) = (System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CultureInfo.CurrentUICulture);
+        var it = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+        System.Globalization.CultureInfo.CurrentCulture = it;
+        System.Globalization.CultureInfo.CurrentUICulture = it;
+        return new Restore(() => { System.Globalization.CultureInfo.CurrentCulture = c; System.Globalization.CultureInfo.CurrentUICulture = u; });
+    }
+
+    private sealed class Restore(Action undo) : IDisposable { public void Dispose() => undo(); }
+
     private static void Pump() => PrivateDbHost.Pump();
 
     private static async Task UntilAsync(Func<bool> done)
@@ -94,6 +107,7 @@ public class CalendarNavigatorViewTests
     [AvaloniaFact]
     public async Task Clicking_a_day_selects_it_and_moves_the_quick_add_date()
     {
+        using var culture = PinCulture();
         var (vm, view, w) = await OpenAsync(Noon);
         try
         {
@@ -116,6 +130,7 @@ public class CalendarNavigatorViewTests
     [AvaloniaFact]
     public async Task Today_is_the_day_of_the_boundary()
     {
+        using var culture = PinCulture();
         // Reset alle 04:00, adesso le 02:30 locali del 15: per il confine e' ancora il 14.
         var (vm, view, w) = await OpenAsync(new DateTimeOffset(2026, 3, 15, 2, 30, 0, TimeSpan.Zero), "04:00");
         try
@@ -133,6 +148,7 @@ public class CalendarNavigatorViewTests
     [AvaloniaFact]
     public async Task The_calendar_retints_on_a_theme_switch()
     {
+        using var culture = PinCulture();
         var (_, view, w) = await OpenAsync(Noon);
         try
         {
@@ -151,6 +167,7 @@ public class CalendarNavigatorViewTests
     [AvaloniaFact]
     public async Task Navigation_goes_back_a_month_and_returns_and_week_mode_shows_seven_cells()
     {
+        using var culture = PinCulture();
         var (vm, view, w) = await OpenAsync(Noon);
         try
         {
@@ -179,6 +196,7 @@ public class CalendarNavigatorViewTests
     [AvaloniaFact]
     public async Task Chevrons_and_day_cells_have_accessible_names()
     {
+        using var culture = PinCulture();
         var (_, view, w) = await OpenAsync(Noon);
         try
         {
