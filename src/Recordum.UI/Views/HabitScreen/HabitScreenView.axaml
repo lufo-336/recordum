@@ -10,9 +10,9 @@
              x:DataType="vm:HabitScreenViewModel"
              Background="{DynamicResource Brush.Surface}">
 
-  <!-- L'accento della schermata e' il colore dell'abitudine: Brush.Accent e la famiglia
-       SystemAccentColor li imposta il code-behind nelle risorse di questa view (le risorse non
-       hanno DataContext). -->
+  <!-- L'accento della schermata e' il colore dell'abitudine: Brush.Accent e le chiavi Fluent
+       che il tema legge (FluentAccentKeys) le imposta il code-behind nelle risorse di questa view
+       (le risorse non hanno DataContext). -->
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
     <Border Grid.Row="0" Height="3"
             Background="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>

@@ -47,7 +47,18 @@
     <Button x:Name="ChronoButton" Width="28" Height="28" Padding="0" Margin="6,0,0,0" VerticalAlignment="Center"
             Background="Transparent" BorderThickness="0" IsVisible="{CompiledBinding IsDuration}"
             Command="{CompiledBinding #Root.Host.ToggleChronoCommand}" CommandParameter="{CompiledBinding}"
-            ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStart}">
+            Classes.running="{CompiledBinding IsChronoRunning}">
+      <!-- Etichetta e nome accessibile da stile (un valore locale vincerebbe sullo stato "running"). -->
+      <Button.Styles>
+        <Style Selector="Button">
+          <Setter Property="ToolTip.Tip" Value="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStart}"/>
+          <Setter Property="AutomationProperties.Name" Value="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStart}"/>
+        </Style>
+        <Style Selector="Button.running">
+          <Setter Property="ToolTip.Tip" Value="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStop}"/>
+          <Setter Property="AutomationProperties.Name" Value="{x:Static res:Strings.HabitScreen_QuickAdd_ChronoStop}"/>
+        </Style>
+      </Button.Styles>
       <Panel>
         <Path Width="16" Height="16" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6"
               StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Clock}"

@@ -34,6 +34,26 @@ public class CompletionListViewModelTests
     }
 
     [Fact]
+    public async Task The_list_hands_its_day_boundary_to_the_rows()
+    {
+        var cs = new FakeCompletionService();
+        var habitId = Guid.NewGuid();
+        // 21:30 UTC in estate = 23:30 a Roma (+2): in UTC la riga leggerebbe 21:30.
+        var at = new DateTimeOffset(2026, 7, 10, 21, 30, 0, TimeSpan.Zero);
+        var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds() };
+        cs.Store[c.Id] = c;
+        var rome = TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome");
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService())
+        {
+            DayBoundary = new Recordum.Core.Time.DayBoundary(rome, TimeOnly.MinValue),
+        };
+
+        await sut.LoadAsync(habitId);
+
+        sut.Rows.Single().Display.Should().Be("2026-07-10 23:30");
+    }
+
+    [Fact]
     public async Task DeleteCommand_removes_row_and_calls_DeleteAsync()
     {
         var cs = new FakeCompletionService();

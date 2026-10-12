@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia.Automation;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -250,6 +251,28 @@ public class MetricCellTests
                 await UntilAsync(() => o.SavedValuesAsync().GetAwaiter().GetResult().Count == 1);
                 (await o.SavedValuesAsync()).Single().ValueSeconds.Should().Be(5400);
             });
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task The_chrono_button_is_named_and_its_label_follows_the_state()
+    {
+        var o = await OpenAsync(HabitType.State, async (scope, id) =>
+            await scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition
+            {
+                HabitNodeId = id, Name = "Sleep", Type = MetricType.Seconds,
+            }));
+        try
+        {
+            var button = Named<Button>(o.View, "ChronoButton");
+            AutomationProperties.GetName(button).Should().Be(Recordum.Presentation.Resources.Strings.HabitScreen_QuickAdd_ChronoStart);
+            ToolTip.GetTip(button).Should().Be(Recordum.Presentation.Resources.Strings.HabitScreen_QuickAdd_ChronoStart);
+
+            ((MeasuredQuickAddViewModel)o.Vm.QuickAdd!).Row.Cells.First(c => c.IsDuration).IsChronoRunning = true;
+            Pump();
+            AutomationProperties.GetName(button).Should().Be(Recordum.Presentation.Resources.Strings.HabitScreen_QuickAdd_ChronoStop);
+            ToolTip.GetTip(button).Should().Be(Recordum.Presentation.Resources.Strings.HabitScreen_QuickAdd_ChronoStop);
         }
         finally { o.Window.Close(); }
     }

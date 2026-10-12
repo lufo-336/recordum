@@ -84,8 +84,11 @@ public sealed partial class TimerControlViewModel : ObservableObject, IDisposabl
     {
         try
         {
-            if (_node is null) return;
-            _activeSnapshot = await _timers.GetActiveAsync(_node.Id).ConfigureAwait(true);
+            var node = _node;
+            if (node is null) return;
+            var active = await _timers.GetActiveAsync(node.Id).ConfigureAwait(true);
+            if (!ReferenceEquals(node, _node)) return;   // il contesto e' cambiato durante l'attesa: non scrivere lo stato di A su B
+            _activeSnapshot = active;
             IsActive = _activeSnapshot is not null;
             IsPaused = _activeSnapshot?.PausedAtMs is not null;
             SegmentIndex = _activeSnapshot?.SegmentIndex;

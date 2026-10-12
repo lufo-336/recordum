@@ -869,9 +869,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             Calendar.CompletedColorHex = refreshed.Color;
             await Calendar.JumpAsync().ConfigureAwait(true);
 
-            // A Configura "repeatable" flip must re-shape the open registration module (the editor
-            // publishes HabitUpdated after every section apply). Rebuild only when the mode actually
-            // changed, so a rename/recolor never wipes half-typed values.
+            // A "repeatable" flip must re-shape the open registration module. Rebuild only when the mode
+            // actually changed, so a rename/recolor never wipes half-typed values. NOTE: today the flip goes
+            // through IHabitConfigService.UpsertAsync, which publishes no HabitUpdated, so this branch is not
+            // reached from the editor (tracker F2a T1; F5 Configura).
             if (QuickAdd is CounterSeriesQuickAddViewModel cs)
             {
                 var cfg = await _configs.GetAsync(refreshed.Id).ConfigureAwait(true);

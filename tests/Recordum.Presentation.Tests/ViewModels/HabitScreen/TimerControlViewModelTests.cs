@@ -199,6 +199,41 @@ public class TimerControlViewModelTests
         ats.ThrewCount.Should().Be(1, "the resync did run and fail, inside the helper's try/catch");
     }
 
+    [Fact]
+    public async Task A_resync_for_the_previous_habit_finishing_late_does_not_write_onto_the_new_one()
+    {
+        var timers = new GatedTimers();
+        var bus = new FakeEventBus();
+        var sut = new TimerControlViewModel(timers, new FakeHabitConfigService(), new FakeClock(), null, bus);
+        var cfg = (Guid id) => new HabitConfig { HabitNodeId = id, HasIntegratedTimer = true, TimerMode = TimerMode.Stopwatch };
+        var a = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter };
+        var b = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter };
+        await sut.SetContextAsync(a, cfg(a.Id));
+        timers.GateFor = a.Id;
+
+        bus.Publish(new Recordum.Plugins.Contracts.Events.TimerChangedPayload(a.Id, Recordum.Plugins.Contracts.Events.WellKnownEvents.TimerStarted));
+        await sut.SetContextAsync(b, cfg(b.Id));   // la schermata passa a B mentre la rilettura di A e' in volo
+        timers.Release.SetResult(new ActiveTimer { Id = Guid.NewGuid(), HabitNodeId = a.Id, TimerMode = TimerMode.Stopwatch });
+        await Task.Delay(50);
+
+        sut.IsActive.Should().BeFalse("B non ha un timer: lo stato di A non deve finirci sopra");
+    }
+
+    private sealed class GatedTimers : Recordum.Core.Abstractions.Services.IActiveTimerService
+    {
+        public Guid? GateFor { get; set; }
+        public TaskCompletionSource<ActiveTimer?> Release { get; } = new();
+        public async ValueTask<ActiveTimer?> GetActiveAsync(Guid habitNodeId, CancellationToken ct = default)
+            => habitNodeId == GateFor ? await Release.Task : null;
+        public ValueTask<ActiveTimer> StartAsync(Guid h, TimerMode m, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask PauseAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask ResumeAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask<Completion> StopAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask<int> StopWithoutRecordingAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask NextSegmentAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
+        public ValueTask<IReadOnlyList<ActiveTimer>> ListActiveAsync(CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
     private sealed class ThrowingTimers : Recordum.Core.Abstractions.Services.IActiveTimerService
     {
         public bool Throw { get; set; }
