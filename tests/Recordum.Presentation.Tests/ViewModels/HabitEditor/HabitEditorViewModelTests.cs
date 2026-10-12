@@ -54,22 +54,6 @@ public class HabitEditorViewModelTests
     }
 
     [Fact]
-    public async Task Changing_color_publishes_HabitUpdated_so_views_refresh_live()
-    {
-        var id = Guid.NewGuid();
-        _nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run", Color = "#111111" };
-        var sut = CreateSut();
-        await sut.LoadAsync(id);
-
-        sut.Color = "#22aa44";
-        await Task.Delay(20); // let the fire-and-forget header autosave flush
-
-        _nodes.Store[id].Color.Should().Be("#22aa44");
-        _events.Published.OfType<Recordum.Plugins.Contracts.Events.HabitUpdatedPayload>()
-            .Should().Contain(p => p.HabitNodeId == id);
-    }
-
-    [Fact]
     public async Task LoadAsync_with_known_id_loads_L1_fields_and_section_node_ids()
     {
         var id = Guid.NewGuid();

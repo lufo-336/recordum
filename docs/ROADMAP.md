@@ -4,7 +4,7 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-06
+## Dove siamo — 2026-10-12
 
 - **Branch di lavoro**: `avalonia-linux-slice`, tutto pushato, a `c744963`. `main` = `5bf4fdd` (2026-09-30: R9, F0, F1
   fino al Task 5, Passo 0). **CI verde su Linux e su Windows** sul branch (run 37073454341) e su `main`. I test di
@@ -29,12 +29,27 @@
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
 - Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **F2 si divide in sotto-onde** (deciso il 2026-10-06), ognuna con piano, review di branch e CI verde: **F2a
-  Registrazione** (shell di `HabitScreen` + colonna Oggi, quick-add dei cinque tipi, `TimerStatusBar`, percorso "ieri",
-  verifica di R9) → **F2b Creare su Linux** (picker dei template e builder) → **F2c Dati al sicuro** (portachiavi D3,
-  backup automatico e manuale, restore incrociato) → **F2d Diario** (nota veloce con foto D10, editor minimo); chiude F2
-  il lancio stabile su Linux (publish + `.desktop`).
-- **Prossimo**: il piano di F2a. All'autore: la verifica a schermo di F1 (con la Home di `f2-perf1-home`) e i merge.
+- **F2a (Registrazione su Avalonia) è a codice completo** sul branch `f2a-registration` (parte da `f2-perf1-home`, che
+  parte da `avalonia-linux-slice`; **nessuno dei tre è in `main`**; da pushare e da far girare in CI: review dell'intero
+  branch e CI le fa il controllore). Porta: la schermata dell'abitudine (intestazione, colonna "Oggi" per i quattro tipi con
+  fascia, calendario Mese/Settimana, Cronologia con cancellazione confermata), il quick-add dei cinque tipi con celle
+  numeriche che rifiutano il separatore sbagliato, la barra dei timer con cronometri vivi, e il percorso "ieri" provato
+  sul DB cifrato vero a cavallo del reset (R9). Difetti latenti corretti: la barra dei timer non si aggiornava mai, il
+  cronometro di sessione non scorreva, l'ora delle registrazioni era mostrata in UTC, la cancellazione non chiedeva
+  conferma (vale anche in WPF), la rinomina dalla Home non arrivava all'intestazione (`HabitUpdated` ora lo pubblica
+  `HabitNodeService`). Misura: tab con un anno di registrazioni (730) ≈ 0,7 s a caldo, 4 s a freddo in headless
+  (`Category=Performance`). Finding in `docs/phase-4-issues.md`, sezione "Onda F2a".
+- **Checklist a schermo dell'autore (GNOME)**: registrare i quattro tipi (azione, contatore, astinenza, stato) dalla
+  colonna "Oggi" e dal quick-add; "ieri" vicino al reset (R9: reset alle 04:00, dopo mezzanotte, giorno scelto sul
+  calendario = giorno in cui compare la registrazione); la barra dei timer dopo aver chiuso e riaperto l'app con un
+  cronometro acceso; le celle numeriche con l'altro separatore ("2.5" in italiano deve essere rifiutato, mai 25); chiaro e
+  scuro; rinomina dalla Home con la schermata aperta; cancellare una registrazione dalla Cronologia (chiede conferma); i W2V
+  della sezione §3 del pass visivo (tap counter, somma, cronometro, export).
+- **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
+  e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
+  (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
+- **Prossimo**: **F2b** (piano da scrivere). All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
+  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
 
 ## Il percorso
 
@@ -42,7 +57,7 @@
    Linux di 0.7, che si fa in F2).
 2. **F1 — Home su Avalonia** · ◐ codice completo, review di branch fatta, CI verde · esce con la checklist a
    schermo su Windows e su GNOME (D7: su Linux la barra di sistema) e il merge in `main`.
-3. **F2 — "si usa ogni giorno"** · ☐ · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
+3. **F2 — "si usa ogni giorno"** · ◐ F2a a codice completo (`f2a-registration`) · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
    (`docs/DOGFOODING.md`) è coperto **su Linux**, la casa dei dati (D11); Windows segue con dati di prova. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
    manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica
    di R9 a schermo.

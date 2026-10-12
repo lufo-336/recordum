@@ -587,3 +587,26 @@ stato fermato per budget e ripreso da un branch `wip`. Le parti del brief scritt
 nessun editor, builder, dialog di export/backup (F4-F6), nessun grafico (F7); WPF resta la shell che spedisce. Conteggi su Linux:
 **Core 150 / Data 539 (+7 `WindowsOnly` che falliscono qui) / Plugins 66 / ExportEngine 37 / Presentation 953 / UI 183**.
 **Prossimo**: la review dell'intero branch, poi la checklist a schermo dell'autore su Windows e GNOME e il merge in `main`.
+
+**Progresso 2026-10-12 (onda F2a — Registrazione su Avalonia: codice completo, non mergiata).** Piano
+`2026-10-06-wave-f2a-registration`, 8 task su `f2a-registration` (parte da `f2-perf1-home`, a sua volta da
+`avalonia-linux-slice`; nessuno dei tre in `main`). *Cosa esiste ora*: la schermata dell'abitudine su Avalonia (intestazione,
+colonna "Oggi" per azione, contatore, astinenza e stato, calendario Mese/Settimana, Cronologia), il quick-add dei cinque tipi,
+la barra dei timer con cronometri vivi, e il percorso "ieri" provato sul DB SQLCipher vero (reset 04:00, orologio finto alle
+02:30: la registrazione va a `NoonOf(D-1)`, la cella D-1 la mostra, la riga Home la riflette, la cancellazione dalla
+Cronologia arriva a DB e riga).
+*Difetti latenti trovati e corretti*: la barra dei timer non si aggiornava mai; il cronometro di sessione non scorreva (né
+quello della Cronologia, anche in WPF); l'ora delle registrazioni era mostrata in UTC; la cancellazione non chiedeva conferma
+(ora sì, anche in WPF, che condivide il ViewModel); la rinomina dalla Home non arrivava all'intestazione della schermata
+perché `HomeRowViewModel.CommitRename` non pubblicava `HabitUpdated` (preesistente): la radice è che chi scrive il nome non
+annunciava niente, quindi ora lo fa `HabitNodeService.UpdateAsync`, in un punto solo, e l'editor ha smesso di pubblicarlo
+(niente doppio ricarico). Un numero scritto col separatore dell'altra lingua svuota la cella invece di valere dieci o mille
+volte di più.
+*Cosa ha insegnato*: le fixture condivise e le date vere fanno rossa la CI (cultura fissata nei test del calendario, `b0e0cec`;
+DB privato per i test che scrivono, Ruling R8). Gli screenshot hanno mostrato che W2V-4/U4 (cerchietto sul numero del giorno)
+non sono chiusi dal nuovo calendario. Misura: tab con 730 registrazioni ≈ 0,7 s a caldo, 4 s a freddo (headless).
+*Non consegnato*: gruppo senza chip né colonne (F3), vista Anno e salto mese/anno (F3), marcatore d'origine di `active_timer`
+(CM-4), purge che lascia una riga morta nella barra, tracce `Debug.WriteLine` invisibili in Release: tutto in
+`docs/phase-4-issues.md`, sezione "Onda F2a". **Prossimo**: review dell'intero branch e CI (controllore), checklist a schermo
+dell'autore (v. ROADMAP), poi F2b.
+

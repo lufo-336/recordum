@@ -6,6 +6,8 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
@@ -13,7 +15,8 @@ public sealed partial class HabitNodeService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
     IPluginContext pluginContext,
-    ILogger<HabitNodeService> logger) : IHabitNodeService
+    ILogger<HabitNodeService> logger,
+    IEventBus? eventBus = null) : IHabitNodeService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = "HabitNode {Id} created (plugin={PluginId})")]
     private partial void LogCreated(Guid id, string? pluginId);
@@ -60,6 +63,8 @@ public sealed partial class HabitNodeService(
         mutate(node);
         await db.SaveChangesAsync(ct);
         LogUpdated(id);
+        // Single publisher of HabitUpdated: every name/colour/icon writer (editor, Home rename) goes through here.
+        eventBus?.Publish(new HabitUpdatedPayload(id));
     }
 
     // Loads the node, rejects a soft-deleted target, validates the (optional) new parent isn't the

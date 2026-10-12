@@ -30,7 +30,6 @@ public sealed partial class HabitEditorViewModel : ObservableObject
     private readonly DebouncedColorRecorder _recordColor;
     private readonly IFavoriteColorStore _favoriteColors;
     private readonly IScreenColorPicker _screenPicker;
-    private readonly IEventBus? _events;
     private bool _loading;
     // Bumped each LoadAsync; a load that finds it superseded bails before mutating shared state, so
     // rapidly switching the configured habit can't interleave two loads into a mixed editor (CR14).
@@ -109,7 +108,6 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         _recordColor = new DebouncedColorRecorder(recentColors);
         _favoriteColors = favoriteColors;
         _screenPicker = screenPicker;
-        _events = events;
 
         Scheduling = new SchedulingSectionViewModel(configs);
         Streak = new StreakSectionViewModel(configs);
@@ -378,9 +376,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         {
             await persist();
             HeaderStatus = EditorStatus.Saved;
-            // Notify views holding a cached copy (Home rows, the open workspace) so name/color/icon
-            // changes reflect live instead of only after a reload.
-            if (Node is { } n) _events?.Publish(new HabitUpdatedPayload(n.Id));
+            // HabitUpdated is published by IHabitNodeService.UpdateAsync, not here.
         }
         catch (Exception ex)
         {

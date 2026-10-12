@@ -35,6 +35,11 @@
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
+- **F2a-1** — un gruppo in F2a ha l'intestazione ma né chip né colonne (la Panoramica è F3) · **F2a-2** — vista Anno e menu di
+  salto mese/anno del calendario rimandati a F3 · **F2a-3** — il cronometro di cella di una serie compare nella barra dei timer
+  e il suo Stop registra una durata (CM-4) · **F2a-4** — il purge toglie `active_timer` senza evento: la barra tiene una riga
+  morta il cui Stop lancia · **F2a-5** — Presentation traccia con `Debug.WriteLine`: in Release i guasti in background sono
+  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · tutti `reported`
 
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
@@ -1926,3 +1931,31 @@ Restano questi, ciascuno con la sua ragione.
   niente di visibile (stesso schema di F1-5). Su Avalonia il pulsante non c'è (decisione 9); l'editor arriva con F3.
   WPF è congelata: nessun fix lì. Nota collegata: la cancellazione di una registrazione ora chiede conferma anche in WPF
   (`CompletionListViewModel` riceve `IConfirmationDialog`) e l'ora in elenco è quella di parete dell'abitudine, non UTC.
+
+- **F2a-1 — un gruppo non ha chip né colonne** · `reported` (Ruling R5) · In F2a la schermata di un gruppo mostra solo
+  l'intestazione; la Panoramica del gruppo (chip, colonne per abitudine) arriva con F3. Non è una regressione.
+- **F2a-2 — calendario: niente vista Anno né salto mese/anno** · `reported` (Ruling R9) · Il brief chiede Mese/Settimana e
+  precedente/successivo: per tornare indietro di molti mesi si clicca più volte. Vista Anno (mesi + heatmap) e menu di salto
+  restano a F3.
+- **F2a-3 — il cronometro di cella di una serie finisce nella barra dei timer** · `reported` (Ruling R12) ·
+  `active_timer` non ha un marcatore d'origine (cella della serie o cronometro di sessione), quindi la barra mostra anche il
+  cronometro di cella e il suo "ferma" registra una sessione di sola durata, cancellabile dalla Cronologia. È la questione
+  di modello **CM-4**, rimandata al dogfooding. In F2a la cella si risincronizza sugli eventi dei timer e il suo stop
+  tollera `ActiveTimerNotFound`.
+- **F2a-4 — il purge cancella `active_timer` senza evento** · `reported` (preesistente) · La barra dei timer tiene una riga
+  morta: il suo Stop lancia perché la riga non c'è più. Da risolvere pubblicando `TimerStopped` dal purge (Data).
+- **F2a-5 — i catch di Presentation tracciano con `Debug.WriteLine`** · `reported` · Il codice è compilato via in Release,
+  quindi un guasto in background (gestori di eventi `async void`, ricarichi) non lascia traccia nelle build spedite.
+  Presentation non ha un logger; serve un'astrazione (come il sink di log di F1 in UI) prima della v1.0 pubblica.
+- **F2a-6 — F0-Y2 `fixed` nel calendario Avalonia; W2V-4 e U4 ancora aperti** · F0-Y2 (il calendario non si ritingeva al
+  cambio di tema) è `fixed` per costruzione: le celle leggono i pennelli come risorse dinamiche e il test
+  `The_calendar_retints_on_a_theme_switch` legge il pixel in chiaro e in scuro (resta lo sguardo a schermo). **W2V-4**
+  (il cerchietto del conteggio copre il numero del giorno) e **U4** (numero scentrato) **non** sono risolti: negli
+  screenshot di F2a (`habit-counter-dark.png`, `habit-state-dark.png`) il cerchietto si sovrappone ancora al numero del
+  giorno. Restano per F3.
+- **F2a-7 — la rinomina dalla Home non aggiornava l'intestazione della schermata** · `fixed` (Ruling R4) ·
+  `HomeRowViewModel.CommitRename` scriveva il nome senza pubblicare `HabitUpdated`, e `HabitScreenViewModel` ricarica il
+  nodo solo su quell'evento (difetto preesistente, anche WPF). Ora `HabitNodeService.UpdateAsync` pubblica `HabitUpdated`
+  dopo il commit, un solo punto per tutti i chiamanti; l'editor non lo pubblica più. Test:
+  `RetroactivePathIntegrationTests.Renaming_from_the_home_updates_the_open_habit_screen_header` e
+  `HabitNodeUpdateEventTests`.
