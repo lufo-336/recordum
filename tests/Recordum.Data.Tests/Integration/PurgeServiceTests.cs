@@ -24,7 +24,7 @@ public class PurgeServiceTests
             db.Notes.Add(note);
             await db.SaveChangesAsync();
         }
-        var hn = new HabitNodeService(fx.Factory, clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+        var hn = new HabitNodeService(fx.Factory, clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
         await hn.SoftDeleteAsync(habit.Id);
         clock.Advance(TimeSpan.FromDays(31));
         var purge = new PurgeService(fx.Factory, clock, NullLogger<PurgeService>.Instance);
@@ -46,7 +46,7 @@ public class PurgeServiceTests
             db.HabitNodes.Add(habit);
             await db.SaveChangesAsync();
         }
-        var hn = new HabitNodeService(fx.Factory, clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+        var hn = new HabitNodeService(fx.Factory, clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
         await hn.SoftDeleteAsync(habit.Id);
         clock.Advance(TimeSpan.FromDays(5));
         var purge = new PurgeService(fx.Factory, clock, NullLogger<PurgeService>.Instance);

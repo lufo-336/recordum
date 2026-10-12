@@ -14,7 +14,7 @@ public class HabitNodeSoftDeleteTests
     private static async Task<(DbFixture fx, HabitNodeService svc, Guid root, Guid mid, Guid leaf)> BuildTreeAsync()
     {
         var fx = new DbFixture();
-        var svc = new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+        var svc = new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
         var root = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "root" });
         var mid  = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "mid", ParentId = root });
         var leaf = await svc.CreateAsync(new HabitNode { NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "leaf", ParentId = mid });

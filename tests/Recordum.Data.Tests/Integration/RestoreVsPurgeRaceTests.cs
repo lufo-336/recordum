@@ -21,7 +21,7 @@ public class RestoreVsPurgeRaceTests
             db.HabitNodes.Add(habit);
             await db.SaveChangesAsync();
         }
-        var hn = new HabitNodeService(fx.Factory, clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+        var hn = new HabitNodeService(fx.Factory, clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
         await hn.SoftDeleteAsync(habit.Id);
         clock.Advance(TimeSpan.FromDays(40));
         var purge = new PurgeService(fx.Factory, clock, NullLogger<PurgeService>.Instance);

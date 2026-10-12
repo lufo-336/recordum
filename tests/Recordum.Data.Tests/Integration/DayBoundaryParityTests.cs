@@ -115,7 +115,7 @@ public class DayBoundaryParityTests
         var dailyEval = new DailyStreakModeEvaluator();
         var weeklyEval = new WeeklyStreakModeEvaluator();
         return new SchedulingAwareStreakAggregator(
-            new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),
+            new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus()),
             new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
             Completions(fx),
             new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance),

@@ -13,7 +13,7 @@ namespace Recordum.Data.Tests.Integration;
 public class HabitNodeServiceTests
 {
     private static HabitNodeService Svc(DbFixture fx) =>
-        new(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+        new(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
 
     [Fact]
     public async Task Create_returns_id_and_persists_with_user_provenance()

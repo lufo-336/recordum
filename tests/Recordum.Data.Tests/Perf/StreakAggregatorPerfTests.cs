@@ -81,7 +81,7 @@ public sealed class StreakAggregatorPerfTests
     private static SchedulingAwareStreakAggregator BuildAggregator(DbFixture fx, IHabitConfigService configs)
     {
         var nodes = new HabitNodeService(
-            fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance);
+            fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
         var completions = new CompletionService(
             fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var pauses = new StreakPauseService(

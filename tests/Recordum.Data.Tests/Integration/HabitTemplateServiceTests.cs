@@ -566,7 +566,7 @@ public class HabitTemplateServiceTests
 
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
-        new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance),
+        new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus()),
         new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
         new HabitUiPrefsService(fx.Factory),
         NullLogger<HabitTemplateService>.Instance);
