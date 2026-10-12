@@ -78,10 +78,14 @@ public sealed class ActiveTimerService(
             DurationSeconds = ElapsedSeconds(t, endMs),
         };
 
+        // Prima la registrazione, poi il timer (F2a-10): se RecordAsync rifiuta la sessione (uno stato
+        // senza valori) o fallisce, il timer resta e la sessione non si perde.
+        // ponytail: due contesti, due transazioni — se il Remove fallisse dopo una registrazione riuscita,
+        // la sessione sarebbe registrata e il timer ancora vivo; serve un'unica unità di lavoro se succede.
+        await completions.RecordAsync(draft, values: null, segments: null, ct);
         db.ActiveTimers.Remove(t);
         await db.SaveChangesAsync(ct);
         Publish(habitNodeId, WellKnownEvents.TimerStopped);
-        await completions.RecordAsync(draft, values: null, segments: null, ct);
         return draft;
     }
 
