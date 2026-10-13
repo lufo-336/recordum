@@ -169,10 +169,10 @@ public class HabitBuilderViewTests
     }
 
     [AvaloniaFact]
-    public async Task The_preview_host_exists_and_is_empty()
+    public async Task The_preview_host_holds_the_live_preview_pane()
     {
         var o = await OpenAsync();
-        try { Named<Border>(o.View, "PreviewHost").Child.Should().BeNull("lo riempie il Task 3"); }
+        try { Named<Border>(o.View, "PreviewHost").Child.Should().BeOfType<BuilderPreviewPane>(); }
         finally { o.Window.Close(); o.Scope.Dispose(); }
     }
 

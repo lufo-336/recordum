@@ -360,9 +360,11 @@
         </StackPanel>
       </ScrollViewer>
 
-      <!-- Anteprima viva: colonna fissa a destra, larga quanto una riga Home reale. La riempie il Task 3. -->
+      <!-- Anteprima viva: colonna fissa a destra, larga quanto una riga Home reale. -->
       <Border x:Name="PreviewHost" Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Brush.Border}"
-              Background="{DynamicResource Brush.Surface}"/>
+              Background="{DynamicResource Brush.Surface}">
+        <hb:BuilderPreviewPane DataContext="{CompiledBinding Preview}"/>
+      </Border>
     </Grid>
   </DockPanel>
 </UserControl>
