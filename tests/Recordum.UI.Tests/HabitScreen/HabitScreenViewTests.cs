@@ -180,13 +180,13 @@ public class HabitScreenViewTests
     }
 
     [AvaloniaFact]
-    public async Task Only_the_cronologia_chip_is_visible_in_f2a()
+    public async Task Only_the_cronologia_and_configura_chips_are_visible_in_f2b()
     {
         var id = await CreateHabitAsync("Chip", Red);
         var (_, view, w) = await OpenAsync(id);
         var chips = view.GetVisualDescendants().OfType<CheckBox>().Where(c => c.Classes.Contains("segment")).ToList();
         chips.Should().HaveCount(4);
-        chips.Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipCronologia");
+        chips.Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipCronologia", "ChipConfigura");
         view.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "ExportButton").IsVisible.Should().BeFalse();
         w.Close();
     }
@@ -214,11 +214,11 @@ public class HabitScreenViewTests
     }
 
     [AvaloniaFact]
-    public async Task A_group_shows_the_header_and_no_chips()
+    public async Task A_group_shows_the_header_and_only_the_configura_chip()
     {
         var id = await CreateHabitAsync("Gruppo", Amber, NodeType.Group);
         var (_, view, w) = await OpenAsync(id);
-        view.GetVisualDescendants().OfType<CheckBox>().Where(c => c.IsVisible).Should().BeEmpty();
+        view.GetVisualDescendants().OfType<CheckBox>().Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipConfigura");
         view.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "HabitName").Text.Should().Be("Gruppo");
         w.Close();
     }

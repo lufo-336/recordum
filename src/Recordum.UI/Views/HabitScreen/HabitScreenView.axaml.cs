@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Media;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.UI.Views.HabitScreen.QuickAdd;
@@ -17,6 +19,52 @@ public partial class HabitScreenView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => Rebind();
+        foreach (var thumb in new[] { CronologiaResizeThumb, ConfiguraResizeThumb })
+        {
+            thumb.DragDelta += OnColumnResizeDelta;
+            thumb.DragCompleted += (_, _) => { if (_vm is { } vm) _ = vm.PersistColumnWidthsAsync(); };
+            thumb.DoubleTapped += OnColumnResizeReset;
+        }
+    }
+
+    // ---- colonne: larghezza (peso star), MinWidth e maniglie dal ViewModel ----
+
+    private static HabitColumn ColumnOf(object? sender) => (HabitColumn)((Thumb)sender!).Tag!;
+
+    // ponytail: il peso star e' la larghezza salvata, quindi un trascinamento di N px sposta la colonna di
+    // circa N px solo se le altre non cambiano; una vera larghezza in pixel arriva se la proporzione stona.
+    private void OnColumnResizeDelta(object? sender, VectorEventArgs e)
+    {
+        if (_vm is not { } vm) return;
+        var column = ColumnOf(sender);
+        vm.SetColumnWidth(column, vm.GetColumnWidth(column) + e.Vector.X);
+    }
+
+    private void OnColumnResizeReset(object? sender, TappedEventArgs e)
+    {
+        if (_vm is not { } vm) return;
+        vm.ResetColumnWidth(ColumnOf(sender));
+        _ = vm.PersistColumnWidthsAsync();
+        e.Handled = true;
+    }
+
+    // Una colonna chiusa pesa 0 e non ha minimo; una aperta pesa quanto la sua larghezza e non scende sotto
+    // OpenColumnsMinWidth/aperte (320). Il MinWidth della griglia e' la somma: oltre, scorre lo ScrollViewer.
+    private void UpdateColumns()
+    {
+        if (_vm is not { } vm) return;
+        SetColumn(0, vm.ShowCronologia, vm.CronologiaWidth);
+        SetColumn(1, vm.ShowConfigura, vm.ConfiguraWidth);
+        ColumnsGrid.MinWidth = vm.OpenColumnsMinWidth;
+        var several = vm.ShowCronologia && vm.ShowConfigura;
+        CronologiaResizeThumb.IsVisible = ConfiguraResizeThumb.IsVisible = several;
+    }
+
+    private void SetColumn(int index, bool open, double width)
+    {
+        var def = ColumnsGrid.ColumnDefinitions[index];
+        def.Width = open ? new GridLength(width, GridUnitType.Star) : new GridLength(0);
+        def.MinWidth = open ? 320 : 0;
     }
 
     private void Rebind()
@@ -30,6 +78,7 @@ public partial class HabitScreenView : UserControl
         ApplyAccent();
         RebuildQuickAdd();
         RebuildRecords();
+        UpdateColumns();
     }
 
     private void OnRecordsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -53,6 +102,9 @@ public partial class HabitScreenView : UserControl
     {
         if (e.PropertyName == nameof(HabitScreenViewModel.Node)) ApplyAccent();
         if (e.PropertyName == nameof(HabitScreenViewModel.QuickAddForCronologia)) RebuildQuickAdd();
+        if (e.PropertyName is nameof(HabitScreenViewModel.ShowCronologia) or nameof(HabitScreenViewModel.ShowConfigura)
+            or nameof(HabitScreenViewModel.CronologiaWidth) or nameof(HabitScreenViewModel.ConfiguraWidth)
+            or nameof(HabitScreenViewModel.OpenColumnsMinWidth)) UpdateColumns();
     }
 
     // Le chiavi Fluent che dipingono l'accento dei controlli (check, slider, selezione di lista, fuoco dei

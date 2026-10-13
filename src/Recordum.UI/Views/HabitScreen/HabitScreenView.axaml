@@ -13,6 +13,46 @@
   <!-- L'accento della schermata e' il colore dell'abitudine: Brush.Accent e le chiavi Fluent
        che il tema legge (FluentAccentKeys) le imposta il code-behind nelle risorse di questa view
        (le risorse non hanno DataContext). -->
+  <UserControl.Styles>
+    <!-- Pulsanti d'intestazione di colonna: solo icona (Lucide), tinta spenta. -->
+    <Style Selector="Button.column-icon">
+      <Setter Property="Width" Value="24"/>
+      <Setter Property="Height" Value="22"/>
+      <Setter Property="Margin" Value="0,0,4,0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Path.column-icon">
+      <Setter Property="Width" Value="13"/>
+      <Setter Property="Height" Value="13"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="StrokeThickness" Value="1.5"/>
+      <Setter Property="StrokeLineCap" Value="Round"/>
+      <Setter Property="StrokeJoin" Value="Round"/>
+      <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <!-- Maniglia sul bordo destro: invisibile a riposo, tinta d'accento al passaggio e al trascinamento. -->
+    <Style Selector="Thumb.column-resize">
+      <Setter Property="Width" Value="6"/>
+      <Setter Property="Cursor" Value="SizeWestEast"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="bd" Background="Transparent"/>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Thumb.column-resize:pointerover /template/ Border#bd">
+      <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
+      <Setter Property="Opacity" Value="0.4"/>
+    </Style>
+    <Style Selector="Thumb.column-resize:pressed /template/ Border#bd">
+      <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
+  </UserControl.Styles>
+
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
     <Border Grid.Row="0" Height="3"
             Background="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
@@ -41,8 +81,8 @@
       <today:TodayStripView DataContext="{CompiledBinding TodayStrip}"/>
     </Border>
 
-    <!-- Chip delle colonne. Panoramica (F3), Diario (F2d), Dettaglio (F3), Note (F3) e Configura (F3)
-         non sono ancora portate: statici e nascosti (decisione 2). Un gruppo in F2a mostra
+    <!-- Chip delle colonne. Panoramica (F3), Diario (F2d), Dettaglio (F3) e Note (F3) non sono ancora
+         portate: statici e nascosti (decisione 2); Configura e' di F2b (decisione 3). Un gruppo in F2a mostra
          intestazione e chip senza colonne: la Panoramica e' di F3. -->
     <StackPanel Grid.Row="3" x:Name="ChipBar" Orientation="Horizontal" Margin="12,8,12,4"
                 IsVisible="{CompiledBinding ShowChipBar}">
@@ -54,37 +94,101 @@
                 Content="{x:Static res:Strings.HabitScreen_Tab_Detail}"/>
       <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
                 Content="{x:Static res:Strings.HabitScreen_Tab_Notes}"/>
-      <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
-                Content="{x:Static res:Strings.HabitScreen_Configure}"/>
+      <CheckBox Classes="segment" x:Name="ChipConfigura" Margin="4,0,0,0"
+                Content="{x:Static res:Strings.HabitScreen_Configure}"
+                IsChecked="{CompiledBinding IsConfiguraOpen, Mode=TwoWay}"/>
     </StackPanel>
 
-    <Border Grid.Row="4" x:Name="CronologiaColumn" Margin="12,4,12,12"
-            Background="{DynamicResource Brush.Background}"
-            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
-            IsVisible="{CompiledBinding ShowCronologia}">
-      <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Margin="12,8" FontWeight="SemiBold"
-                   Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
-                   Foreground="{DynamicResource Brush.Text}"/>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel>
-            <Border x:Name="CalendarHost">
-              <calendar:CalendarNavigatorView DataContext="{CompiledBinding Calendar}"/>
-            </Border>
-            <Border x:Name="QuickAddHost"/>
-            <Border x:Name="TimerHost">
-              <local:TimerControlView DataContext="{CompiledBinding TimerControl}"/>
-            </Border>
-            <StackPanel Margin="12,4,12,12">
-              <TextBlock Text="{x:Static res:Strings.HabitScreen_Records}" FontWeight="SemiBold"
-                         Foreground="{DynamicResource Brush.Text}" Margin="0,0,0,6"/>
-              <TextBlock x:Name="RecordsEmpty" Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}" FontSize="12"
-                         Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding Records.IsEmpty}"/>
-              <Border x:Name="RecordsHost"/>
-            </StackPanel>
-          </StackPanel>
-        </ScrollViewer>
-      </DockPanel>
-    </Border>
+    <!-- In modalita' focus la barra dei chip lascia il posto al ritorno (spec 3.6). -->
+    <Button Grid.Row="3" x:Name="ExitFocusButton" HorizontalAlignment="Left" Margin="12,8,12,4" Padding="8,3"
+            Content="{x:Static res:Strings.HabitScreen_ExitFocus}"
+            Command="{CompiledBinding ExitFocusCommand}"
+            IsVisible="{CompiledBinding IsFocusActive}"/>
+
+    <!-- Fill-then-scroll (decisione 3): la griglia prende la larghezza della viewport e le colonne aperte se la
+         dividono in proporzione alla loro larghezza salvata; sotto OpenColumnsMinWidth (320 px a colonna) e' lo
+         ScrollViewer a scorrere in orizzontale. Larghezze, MinWidth e visibilita' delle maniglie le scrive il
+         code-behind (UpdateColumns) dal ViewModel. -->
+    <ScrollViewer Grid.Row="4" x:Name="ColumnsScroll" Margin="12,4,12,12"
+                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+      <Grid x:Name="ColumnsGrid" ColumnDefinitions="0,0"
+            Width="{Binding #ColumnsScroll.Viewport.Width}">
+        <Border x:Name="CronologiaColumn" Grid.Column="0"
+                Background="{DynamicResource Brush.Background}"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
+                IsVisible="{CompiledBinding ShowCronologia}">
+          <Grid>
+            <DockPanel>
+              <Grid DockPanel.Dock="Top" Height="30" ColumnDefinitions="*,Auto,Auto" Background="{DynamicResource Brush.Surface}">
+                <TextBlock Margin="12,0" VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
+                           Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                <Button Grid.Column="1" x:Name="CronologiaFocusButton" Classes="column-icon"
+                        Command="{CompiledBinding ToggleFocusCommand}" CommandParameter="{x:Static vm:HabitColumn.Cronologia}"
+                        ToolTip.Tip="{x:Static res:Strings.HabitScreen_Focus}"
+                        AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Focus}">
+                  <Path Data="{StaticResource Icon.Maximize2}" Classes="column-icon"/>
+                </Button>
+                <Button Grid.Column="2" x:Name="CronologiaCloseButton" Classes="column-icon"
+                        Command="{CompiledBinding ToggleColumnCommand}" CommandParameter="{x:Static vm:HabitColumn.Cronologia}"
+                        ToolTip.Tip="{x:Static res:Strings.HabitScreen_Close}"
+                        AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Close}">
+                  <Path Data="{StaticResource Icon.X}" Classes="column-icon"/>
+                </Button>
+              </Grid>
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                  <Border x:Name="CalendarHost">
+                    <calendar:CalendarNavigatorView DataContext="{CompiledBinding Calendar}"/>
+                  </Border>
+                  <Border x:Name="QuickAddHost"/>
+                  <Border x:Name="TimerHost">
+                    <local:TimerControlView DataContext="{CompiledBinding TimerControl}"/>
+                  </Border>
+                  <StackPanel Margin="12,4,12,12">
+                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Records}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Text}" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="RecordsEmpty" Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}" FontSize="12"
+                               Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding Records.IsEmpty}"/>
+                    <Border x:Name="RecordsHost"/>
+                  </StackPanel>
+                </StackPanel>
+              </ScrollViewer>
+            </DockPanel>
+            <Thumb x:Name="CronologiaResizeThumb" Tag="{x:Static vm:HabitColumn.Cronologia}" Classes="column-resize"
+                   HorizontalAlignment="Right"/>
+          </Grid>
+        </Border>
+
+        <Border x:Name="ConfiguraColumn" Grid.Column="1"
+                Background="{DynamicResource Brush.Background}"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,1,1" CornerRadius="6"
+                IsVisible="{CompiledBinding ShowConfigura}">
+          <Grid>
+            <DockPanel>
+              <Grid DockPanel.Dock="Top" Height="30" ColumnDefinitions="*,Auto,Auto" Background="{DynamicResource Brush.Surface}">
+                <TextBlock Margin="12,0" VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
+                           Text="{x:Static res:Strings.HabitScreen_Configure}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                <Button Grid.Column="1" x:Name="ConfiguraFocusButton" Classes="column-icon"
+                        Command="{CompiledBinding ToggleFocusCommand}" CommandParameter="{x:Static vm:HabitColumn.Configura}"
+                        ToolTip.Tip="{x:Static res:Strings.HabitScreen_Focus}"
+                        AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Focus}">
+                  <Path Data="{StaticResource Icon.Maximize2}" Classes="column-icon"/>
+                </Button>
+                <Button Grid.Column="2" x:Name="ConfiguraCloseButton" Classes="column-icon"
+                        Command="{CompiledBinding ToggleColumnCommand}" CommandParameter="{x:Static vm:HabitColumn.Configura}"
+                        ToolTip.Tip="{x:Static res:Strings.HabitScreen_Close}"
+                        AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Close}">
+                  <Path Data="{StaticResource Icon.X}" Classes="column-icon"/>
+                </Button>
+              </Grid>
+              <!-- Lo riempie il Task 6 (solo a colonna aperta: Child null = niente costruito). -->
+              <Border x:Name="ConfiguraHost"/>
+            </DockPanel>
+            <Thumb x:Name="ConfiguraResizeThumb" Tag="{x:Static vm:HabitColumn.Configura}" Classes="column-resize"
+                   HorizontalAlignment="Right"/>
+          </Grid>
+        </Border>
+      </Grid>
+    </ScrollViewer>
   </Grid>
 </UserControl>
