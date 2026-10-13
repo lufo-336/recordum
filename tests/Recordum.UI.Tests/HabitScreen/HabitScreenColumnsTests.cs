@@ -26,6 +26,7 @@ public class HabitScreenColumnsTests
     private static async Task<(HabitScreenViewModel Vm, HabitScreenView View, Window Window, IServiceScope Scope)> OpenAsync(double width)
     {
         var scope = Host.Provider.CreateScope();
+        await ResetColumnStateAsync(scope);
         var id = await scope.ServiceProvider.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
         {
             NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Colonne", Color = "#E11D48",
@@ -40,8 +41,31 @@ public class HabitScreenColumnsTests
         return (vm, view, w, scope);
     }
 
+    /// <summary>Lo stato delle colonne e' condiviso dal DB della classe: "ultima colonna chiusa" e l'elenco globale
+    /// scelgono le colonne di un'abitudine nuova. Ogni test parte da uno stato noto (R4), non dall'ordine di esecuzione.</summary>
+    internal static async Task ResetColumnStateAsync(IServiceScope scope)
+    {
+        var settings = scope.ServiceProvider.GetRequiredService<IAppSettingService>();
+        await settings.SetAsync("ui.last_closed_column", "");
+        await settings.SetAsync("ui.open_columns", "");
+    }
+
     private static T Named<T>(HabitScreenView v, string name) where T : Control =>
         v.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
+
+    [AvaloniaFact]
+    public async Task A_previous_tests_persisted_column_state_does_not_leak_into_a_new_screen()
+    {
+        using (var scope = Host.Provider.CreateScope())
+        {
+            var settings = scope.ServiceProvider.GetRequiredService<IAppSettingService>();
+            await settings.SetAsync("ui.last_closed_column", "Configura");   // quel che lascia un test che chiude Configura
+            await settings.SetAsync("ui.open_columns", "Configura");
+        }
+        var (vm, _, w, scope2) = await OpenAsync(1200);
+        try { vm.IsConfiguraOpen.Should().BeFalse("ogni test parte da colonne note"); }
+        finally { w.Close(); scope2.Dispose(); }
+    }
 
     [AvaloniaFact]
     public async Task The_configura_chip_opens_and_closes_the_column_and_a_closed_column_builds_nothing()

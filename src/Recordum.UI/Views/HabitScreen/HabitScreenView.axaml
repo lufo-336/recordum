@@ -162,7 +162,7 @@
                   <Path Data="{StaticResource Icon.X}" Classes="column-icon"/>
                 </Button>
               </Grid>
-              <!-- Lo riempie il Task 6 (solo a colonna aperta: Child null = niente costruito). -->
+              <!-- EditorPane, costruito da UpdateColumns solo a colonna aperta (Child null = niente costruito). -->
               <Border x:Name="ConfiguraHost"/>
             </DockPanel>
           </Grid>

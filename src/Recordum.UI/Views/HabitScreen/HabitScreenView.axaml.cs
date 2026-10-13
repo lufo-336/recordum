@@ -57,6 +57,10 @@ public partial class HabitScreenView : UserControl
         if (vm.ShowCronologia && CronologiaHost.Child is null)
             CronologiaHost.Child = new CronologiaColumnView { DataContext = vm };
         else if (!vm.ShowCronologia) CronologiaHost.Child = null;
+        // Configura: stessa regola (decisione 3). Il suo DataContext e' l'editor, che vive piu' della colonna.
+        if (vm.ShowConfigura && ConfiguraHost.Child is null)
+            ConfiguraHost.Child = new HabitEditor.EditorPane { DataContext = vm.Editor };
+        else if (!vm.ShowConfigura) ConfiguraHost.Child = null;
     }
 
     private void Rebind()
@@ -65,6 +69,7 @@ public partial class HabitScreenView : UserControl
         _vm = DataContext as HabitScreenViewModel;
         if (_vm is not null) _vm.PropertyChanged += OnVmPropertyChanged;
         ApplyAccent();
+        ConfiguraHost.Child = null;
         CronologiaHost.Child = null;   // un altro ViewModel: il corpo si ricostruisce col nuovo contesto
         UpdateColumns();
     }

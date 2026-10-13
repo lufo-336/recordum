@@ -185,6 +185,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
             var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == id);
             if (row is null) return;
             await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+            // Un gruppo nuovo si apre su Configura (decisione 7 di F2b): e' li' che si rinomina e si ricolora.
+            if (Workspace.Tabs.FirstOrDefault(t => t.SubjectId == id) is { } tab) tab.Screen.IsConfiguraOpen = true;
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHomeGroupCreated failed: {ex}"); }
     }
