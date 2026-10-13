@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using FluentAssertions;
@@ -88,6 +90,32 @@ public class BuilderPreviewPaneTests
             key.IsVisible.Should().BeTrue();
             key.Text.Should().Be(o.Vm.Preview.HomeRow.KeyFigure);
             Named<HeatmapStrip>(o.Pane, "HomeStrip").Kind.Should().Be(StripStyle.Bars);
+        }
+        finally { o.Window.Close(); o.Scope.Dispose(); }
+    }
+
+    [AvaloniaFact]
+    public async Task The_preview_is_inert_to_the_keyboard()
+    {
+        var o = await OpenAsync();
+        try
+        {
+            var inert = Named<StackPanel>(o.Pane, "Inert");
+            var boxes = inert.GetVisualDescendants().OfType<CheckBox>().ToList();
+            boxes.Should().NotBeEmpty("la casella Oggi e quella di registrazione ci sono");
+            foreach (var c in inert.GetVisualDescendants().OfType<InputElement>().Where(c => c.Focusable))
+                c.Should().BeNull($"{c.GetType().Name} prende il fuoco da tastiera");
+
+            var before = o.Vm.Preview;
+            foreach (var box in boxes)
+            {
+                box.Focus().Should().BeFalse();
+                o.Window.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
+            }
+            PrivateDbHost.Pump();
+            o.Vm.Preview.Should().BeSameAs(before);
+            var today = (Recordum.Presentation.ViewModels.HabitScreen.Today.ActionTodayContent)o.Vm.Preview!.Today!;
+            today.IsDoneToday.Should().Be(((Recordum.Presentation.ViewModels.HabitScreen.Today.ActionTodayContent)before!.Today!).IsDoneToday);
         }
         finally { o.Window.Close(); o.Scope.Dispose(); }
     }
