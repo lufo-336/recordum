@@ -38,7 +38,7 @@
 - **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
   e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
   (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
-- **Prossimo**: il piano di F2b. All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
+- **Prossimo**: F2b (piano `docs/superpowers/plans/2026-10-13-wave-f2b-creation.md`, branch `f2b-creation`): creazione dai template e dal builder **e** Configura completa, anticipata da F5 (deciso il 2026-10-13). All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
   (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
 
 ## Il percorso
