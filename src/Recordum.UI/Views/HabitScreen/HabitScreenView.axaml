@@ -135,27 +135,8 @@
                   <Path Data="{StaticResource Icon.X}" Classes="column-icon"/>
                 </Button>
               </Grid>
-              <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                  <Border x:Name="CalendarHost">
-                    <calendar:CalendarNavigatorView DataContext="{CompiledBinding Calendar}"/>
-                  </Border>
-                  <Border x:Name="QuickAddHost"/>
-                  <Border x:Name="TimerHost">
-                    <local:TimerControlView DataContext="{CompiledBinding TimerControl}"/>
-                  </Border>
-                  <StackPanel Margin="12,4,12,12">
-                    <TextBlock Text="{x:Static res:Strings.HabitScreen_Records}" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Brush.Text}" Margin="0,0,0,6"/>
-                    <TextBlock x:Name="RecordsEmpty" Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}" FontSize="12"
-                               Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding Records.IsEmpty}"/>
-                    <Border x:Name="RecordsHost"/>
-                  </StackPanel>
-                </StackPanel>
-              </ScrollViewer>
+              <Border x:Name="CronologiaHost"/>
             </DockPanel>
-            <Thumb x:Name="CronologiaResizeThumb" Tag="{x:Static vm:HabitColumn.Cronologia}" Classes="column-resize"
-                   HorizontalAlignment="Right"/>
           </Grid>
         </Border>
 
@@ -184,10 +165,12 @@
               <!-- Lo riempie il Task 6 (solo a colonna aperta: Child null = niente costruito). -->
               <Border x:Name="ConfiguraHost"/>
             </DockPanel>
-            <Thumb x:Name="ConfiguraResizeThumb" Tag="{x:Static vm:HabitColumn.Configura}" Classes="column-resize"
-                   HorizontalAlignment="Right"/>
           </Grid>
         </Border>
+
+        <!-- Un'unica maniglia sul confine Cronologia|Configura (solo con due colonne aperte). -->
+        <Thumb x:Name="ColumnResizeThumb" Grid.Column="0" Classes="column-resize" HorizontalAlignment="Right"
+               IsVisible="False" ZIndex="1"/>
       </Grid>
     </ScrollViewer>
   </Grid>

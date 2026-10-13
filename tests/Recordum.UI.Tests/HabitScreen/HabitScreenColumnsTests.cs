@@ -71,6 +71,40 @@ public class HabitScreenColumnsTests
     }
 
     [AvaloniaFact]
+    public async Task A_closed_cronologia_builds_nothing_and_reopening_records_exactly_once()
+    {
+        var (vm, view, w, scope) = await OpenAsync(1200);
+        try
+        {
+            string[] hosts = ["CalendarHost", "QuickAddHost", "TimerHost", "RecordsHost"];
+            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "CalendarHost").Should().Be(1);
+
+            vm.IsCronologiaOpen = false;
+            PrivateDbHost.Pump();
+            view.GetVisualDescendants().OfType<Control>().Where(c => c.Name is not null && hosts.Contains(c.Name))
+                .Should().BeEmpty("chiusa non costruisce niente, in nessun punto della view");
+            view.GetVisualDescendants().OfType<Recordum.UI.Views.HabitScreen.Calendar.CalendarNavigatorView>().Should().BeEmpty();
+
+            vm.IsCronologiaOpen = true;
+            PrivateDbHost.Pump();
+            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "CalendarHost").Should().Be(1);
+            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "RecordsHost").Should().Be(1);
+
+            var save = Named<Button>(view, "SaveButton");
+            var p = save.TranslatePoint(new Point(save.Bounds.Width / 2, save.Bounds.Height / 2), w)!.Value;
+            w.MouseDown(p, MouseButton.Left); w.MouseUp(p, MouseButton.Left);
+            var cs = scope.ServiceProvider.GetRequiredService<ICompletionService>();
+            for (var i = 0; i < 200 && (await cs.ListByHabitAsync(vm.Node!.Id)).Count == 0; i++)
+            { await Task.Delay(10); PrivateDbHost.Pump(); }
+            (await cs.ListByHabitAsync(vm.Node!.Id)).Should().HaveCount(1);
+            for (var i = 0; i < 200 && Named<Border>(view, "RecordsHost").GetVisualDescendants().OfType<Button>().Count() != 1; i++)
+            { await Task.Delay(10); PrivateDbHost.Pump(); }
+            Named<Border>(view, "RecordsHost").GetVisualDescendants().OfType<Button>().Should().HaveCount(1, "una registrazione, una riga");
+        }
+        finally { w.Close(); scope.Dispose(); }
+    }
+
+    [AvaloniaFact]
     public async Task In_a_narrow_window_no_column_is_below_320_and_the_columns_scroll_horizontally()
     {
         var (vm, view, w, scope) = await OpenAsync(600);
@@ -126,14 +160,14 @@ public class HabitScreenColumnsTests
             vm.IsConfiguraOpen = true;
             PrivateDbHost.Pump();
             var settings = scope.ServiceProvider.GetRequiredService<IAppSettingService>();
-            var thumb = Named<Thumb>(view, "CronologiaResizeThumb");
-            var before = Named<Border>(view, "CronologiaColumn").Bounds.Width;
+            var thumb = Named<Thumb>(view, "ColumnResizeThumb");
+            var before = Named<Border>(view, "CronologiaColumn").Bounds.Right;
             var start = vm.CronologiaWidth;
 
             thumb.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragDeltaEvent, Vector = new Vector(40, 0) });
             PrivateDbHost.Pump();
             vm.CronologiaWidth.Should().Be(start + 40);
-            Named<Border>(view, "CronologiaColumn").Bounds.Width.Should().BeGreaterThan(before);
+            Named<Border>(view, "CronologiaColumn").Bounds.Right.Should().BeApproximately(before + 40, 2, "il confine segue il trascinamento");
             (await settings.GetAsync("ui.column_widths")).Should().BeNull("durante il trascinamento non si persiste");
 
             thumb.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragCompletedEvent, Vector = new Vector(40, 0) });
