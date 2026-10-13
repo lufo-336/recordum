@@ -209,8 +209,10 @@ public class TimerControlViewModelTests
         try
         {
             bus.Publish(new Recordum.Plugins.Contracts.Events.TimerChangedPayload(node.Id, Recordum.Plugins.Contracts.Events.WellKnownEvents.TimerStarted));
-            await Task.Delay(20);
-            GC.Collect(); GC.WaitForPendingFinalizers();
+            // Wait for the signal (the fake was hit), not for a fixed time; then force finalization.
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (ats.ThrewCount == 0 && DateTime.UtcNow < deadline) await Task.Delay(5);
+            GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); GC.WaitForPendingFinalizers();
         }
         finally { TaskScheduler.UnobservedTaskException -= Handler; }
 

@@ -18,8 +18,9 @@ public class DebouncedColorRecorderTests
         sut.Record("#111111");
         sut.Record("#222222");
         sut.Record("#3b82f6"); // the colour the user settles on
-        await Task.Delay(150);
+        await WaitForAsync(store, "#3b82f6");
 
+        // The earlier colours were cancelled before the settled one landed, so they can never appear.
         (await store.GetAsync()).Should().Equal("#3b82f6");
     }
 
@@ -30,8 +31,18 @@ public class DebouncedColorRecorderTests
         var sut = new DebouncedColorRecorder(store, delayMs: 20);
 
         sut.Record("#10b981");
-        await Task.Delay(120);
+        await WaitForAsync(store, "#10b981");
 
         (await store.GetAsync()).Should().Contain("#10b981");
+    }
+
+    private static async Task WaitForAsync(IRecentColorStore store, string hex)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!(await store.GetAsync()).Contains(hex))
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException($"{hex} was never recorded within 5 s");
+            await Task.Delay(5);
+        }
     }
 }

@@ -18,14 +18,16 @@ public class SystemClockTests
     }
 
     [Fact]
-    public void UtcNowMs_matches_UtcNow_within_two_ms()
+    public void UtcNowMs_is_the_same_clock_as_UtcNow()
     {
         var sut = new SystemClock();
 
-        var snapshotUtc = sut.UtcNow.ToUnixTimeMilliseconds();
-        var snapshotMs = sut.UtcNowMs;
+        // Bracket: UtcNowMs must fall between two UtcNow reads, whatever the scheduler does in between.
+        var before = sut.UtcNow.ToUnixTimeMilliseconds();
+        var ms = sut.UtcNowMs;
+        var after = sut.UtcNow.ToUnixTimeMilliseconds();
 
-        Assert.InRange(snapshotMs - snapshotUtc, -2, 2);
+        Assert.InRange(ms, before, after);
     }
 
     [Fact]
