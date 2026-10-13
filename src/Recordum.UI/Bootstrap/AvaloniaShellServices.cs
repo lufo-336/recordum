@@ -44,7 +44,7 @@ public static class AvaloniaShellServices
         // MainWindow esiste già (Home, che usa questa dialog per Elimina/Purge, non esiste prima).
         services.AddSingleton<IConfirmationDialog>(_ => new AvaloniaConfirmationDialog(MainWindow));
 
-        services.AddSingleton<IHabitTemplatePickerLauncher, NullHabitTemplatePickerLauncher>();
+        services.AddSingleton<IHabitTemplatePickerLauncher>(sp => new AvaloniaHabitTemplatePickerLauncher(sp, MainWindow));
         services.AddSingleton<IHabitBuilderLauncher>(sp => new AvaloniaHabitBuilderLauncher(sp, MainWindow));
         services.AddSingleton<ISettingsWindowLauncher, NullSettingsWindowLauncher>();
         services.AddSingleton<IExportDialogLauncher, NullExportDialogLauncher>();

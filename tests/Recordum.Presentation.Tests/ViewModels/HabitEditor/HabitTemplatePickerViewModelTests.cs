@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.Tests.Fixtures;
@@ -120,5 +121,56 @@ public class HabitTemplatePickerViewModelTests
 
         _nodes.Store[sut.CreatedHabitNodeId!.Value].NodeType.Should().Be(NodeType.Group);
         _nodes.Store[sut.CreatedHabitNodeId.Value].HabitType.Should().BeNull();
+    }
+
+    private sealed class GatedTemplates(FakeHabitTemplateService inner) : IHabitTemplateService
+    {
+        public TaskCompletionSource Gate { get; } = new();
+        public int Instantiations;
+        public async ValueTask<Guid> InstantiateAsync(Guid templateId, Guid? parentId, CancellationToken ct = default)
+        {
+            Interlocked.Increment(ref Instantiations);
+            await Gate.Task;
+            return await inner.InstantiateAsync(templateId, parentId, ct);
+        }
+        public ValueTask<Guid> CreateAsync(HabitTemplate draft, CancellationToken ct = default) => inner.CreateAsync(draft, ct);
+        public ValueTask UpdateAsync(Guid id, Action<HabitTemplate> mutate, CancellationToken ct = default) => inner.UpdateAsync(id, mutate, ct);
+        public ValueTask DeleteAsync(Guid id, CancellationToken ct = default) => inner.DeleteAsync(id, ct);
+        public ValueTask<HabitTemplate?> GetAsync(Guid id, CancellationToken ct = default) => inner.GetAsync(id, ct);
+        public ValueTask<IReadOnlyList<HabitTemplate>> ListAsync(CancellationToken ct = default) => inner.ListAsync(ct);
+    }
+
+    [Fact]
+    public async Task A_second_pick_while_the_first_is_in_flight_creates_nothing_more()
+    {
+        var gated = new GatedTemplates(_templates);
+        await _templates.CreateAsync(new HabitTemplate { Name = "t", IsOfficial = true });
+        var sut = new HabitTemplatePickerViewModel(gated, _nodes);
+        await sut.LoadAsync();
+        var option = sut.OfficialTemplates.Single();
+
+        var first = sut.PickCommand.ExecuteAsync(option);
+        var second = sut.PickCommand.ExecuteAsync(option);
+        gated.Gate.SetResult();
+        await Task.WhenAll(first, second);
+
+        gated.Instantiations.Should().Be(1);
+        _templates.InstantiateCalls.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task A_failed_pick_releases_the_guard_so_the_user_can_retry()
+    {
+        await _templates.CreateAsync(new HabitTemplate { Name = "t", IsOfficial = true });
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var option = sut.OfficialTemplates.Single();
+
+        _templates.NextException = new InvalidOperationException("boom");
+        try { await sut.PickCommand.ExecuteAsync(option); } catch (InvalidOperationException) { }
+        await sut.PickCommand.ExecuteAsync(option);
+
+        sut.CreatedHabitNodeId.Should().NotBeNull();
+        _templates.InstantiateCalls.Should().HaveCount(1);
     }
 }

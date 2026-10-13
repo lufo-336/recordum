@@ -44,14 +44,12 @@
                FontSize="{StaticResource FontSize.Heading}"
                Foreground="{DynamicResource Brush.TextMuted}"/>
 
-    <!-- Spento fino a F5 (selettore di template e builder): oggi il comando apre un lanciatore nullo. Quando si
-         riaccende, resta solo su Attive: creare un'abitudine non ha senso in Archiviate o nel Cestino
-         (IsVisible = ActiveTab == Active). -->
+    <!-- Creare un'abitudine non ha senso in Archiviate o nel Cestino: il pulsante e' solo su Attive. -->
     <Button Classes="primary" Margin="0,20,0,0" HorizontalAlignment="Center" Padding="16,8"
             Cursor="Hand"
             FontSize="{StaticResource FontSize.Body}"
             Command="{CompiledBinding OpenNewHabitCommand}"
             Content="{x:Static res:Strings.Home_Empty_NewHabit}"
-            IsVisible="False"/>
+            IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}"/>
   </StackPanel>
 </UserControl>

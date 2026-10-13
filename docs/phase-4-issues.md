@@ -1910,12 +1910,11 @@ Restano questi, ciascuno con la sua ragione.
   **Impostazioni** (F6, tutti e due puntano a `NullSettingsWindowLauncher`). Omesse anche le scorciatoie **Ctrl+4**
   (Grafici, F7) e **Ctrl+5** (Cronologia backup, F6) in `MainWindow.axaml`. Ogni onda riaccende le sue: toglie
   l'`IsVisible="False"`, riaggiunge la scorciatoia, e riprova il test dei pulsanti visibili del rail. Resta visibile
-  solo Home. Spenti nella review finale di F1 anche (**F5**, selettore di template e builder: oggi `OpenNewHabitCommand`
-  apre un `NullHabitTemplatePickerLauncher` e non fa niente): la voce **"＋ Nuovo → Abitudine"** di `HomeView.axaml` (il
-  menu resta, con "Gruppo", che funziona) e il pulsante **"Crea la tua prima abitudine"** di `EmptyState.axaml`; F5 toglie
-  l'`IsVisible="False"` e nell'`EmptyState` rimette il binding "solo su Attive". Guardie: `HomeViewTests.The_new_menu_hides_the_habit_item_…`
-  e `EmptyStateTests.The_active_tab_shows_the_seedling_and_hides_the_call_to_action_until_f5` (da riaccendere con lo stesso
-  codice). `reported`.
+  solo Home. Spenti nella review finale di F1 anche la voce **"＋ Nuovo → Abitudine"** di `HomeView.axaml` e il pulsante
+  **"Crea la tua prima abitudine"** di `EmptyState.axaml` (il selettore di template non c'era): **riaccesi in F2b (Task 4)**
+  con il selettore vero (`AvaloniaHabitTemplatePickerLauncher`), e nell'`EmptyState` il binding "solo su Attive". Guardie
+  rovesciate: `HomeViewTests.The_new_menu_shows_both_the_habit_item_and_the_group_item` e
+  `EmptyStateTests.The_active_tab_shows_the_seedling_and_the_call_to_action`. Restano spenti i pulsanti del rail sopra. `reported`.
 - **F1-LOG1 — Il log degli errori sta ora in `<cartella-dati>/logs`** (cartella 0700, file 0600 su Unix; Task 10-11) e
   ogni guasto di sblocco, di qualunque tipo, vi lascia una riga. Con `--data-dir` il log segue la cartella scelta e non
   scrive più nella cartella utente vera. Con la cartella predefinita WPF (congelata) e Avalonia scrivono lo **stesso**

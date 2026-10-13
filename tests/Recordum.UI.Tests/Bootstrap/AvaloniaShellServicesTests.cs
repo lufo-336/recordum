@@ -52,11 +52,10 @@ public class AvaloniaShellServicesTests
     }
 
     [Fact]
-    public async Task Habit_template_picker_resolves_and_returns_no_pick()
+    public void Habit_template_picker_launcher_resolves_to_the_real_one_not_the_null()
     {
         var sp = BuildProvider();
-        var result = await sp.GetRequiredService<IHabitTemplatePickerLauncher>().PickAsync();
-        result.Should().BeNull();
+        sp.GetRequiredService<IHabitTemplatePickerLauncher>().Should().BeOfType<AvaloniaHabitTemplatePickerLauncher>();
     }
 
     [Fact]

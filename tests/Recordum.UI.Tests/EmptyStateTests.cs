@@ -25,14 +25,13 @@ public class EmptyStateTests
     }
 
     [AvaloniaFact]
-    public void The_active_tab_shows_the_seedling_and_hides_the_call_to_action_until_f5()
+    public void The_active_tab_shows_the_seedling_and_the_call_to_action()
     {
         var (view, _) = Show();
         var text = view.GetLogicalDescendants().OfType<TextBlock>().First(t => t.Classes.Contains("emptytext"));
         var cta = view.GetLogicalDescendants().OfType<Button>().Single();
         text.Text.Should().Be(Strings.Home_Empty_Active);
-        // F1 review I4: il pulsante apriva il NullHabitTemplatePickerLauncher e non faceva niente: spento fino a F5.
-        cta.IsVisible.Should().BeFalse("il selettore di template arriva in F5");
+        cta.IsVisible.Should().BeTrue("sulla scheda Attive il pulsante apre il selettore di template");
         view.GetLogicalDescendants().OfType<ShapePath>().Single().Data.Should().NotBeNull();
     }
 

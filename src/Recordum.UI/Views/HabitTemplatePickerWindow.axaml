@@ -1,0 +1,84 @@
+<v:RecordumWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:Recordum.UI.Views"
+        xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor"
+        xmlns:res="using:Recordum.Presentation.Resources"
+        x:Class="Recordum.UI.Views.HabitTemplatePickerWindow"
+        x:DataType="vm:HabitTemplatePickerViewModel"
+        Title="{x:Static res:Strings.HabitTemplatePicker_Title}"
+        Width="520" Height="640" MinWidth="360" MinHeight="320"
+        WindowStartupLocation="CenterOwner">
+  <!-- Finestra modale con le decorazioni di sistema (decisione 1 di F2b). La descrizione di ogni template e' sempre
+       visibile (E6): i template si spiegano da soli. I pulsanti passano dal code-behind perche' RenameCustom vuole
+       una coppia (opzione, nuovo nome). -->
+  <Window.Resources>
+    <DataTemplate x:Key="OptionTemplate" x:DataType="vm:PickerOption">
+      <Button Name="OptionButton" Margin="0,4" Padding="12,8" HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch" Cursor="Hand"
+              Background="{DynamicResource Brush.SurfaceElevated}"
+              BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+              Click="OnPick">
+        <StackPanel>
+          <TextBlock Text="{CompiledBinding Name}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+          <TextBlock Name="OptionDescription" Text="{CompiledBinding Description}"
+                     FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"
+                     TextWrapping="Wrap"/>
+        </StackPanel>
+      </Button>
+    </DataTemplate>
+  </Window.Resources>
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="16">
+      <ItemsControl Name="ActionsList" ItemsSource="{CompiledBinding Actions}" ItemTemplate="{StaticResource OptionTemplate}"/>
+
+      <Expander Name="PredefinedSection" IsExpanded="True" Margin="0,10,0,0" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch">
+        <Expander.Header>
+          <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}">
+            <Run Text="{x:Static res:Strings.HabitTemplatePicker_PredefinedTemplates}"/><Run
+                 Text="{CompiledBinding OfficialTemplates.Count, StringFormat=' ({0})'}"
+                 Foreground="{DynamicResource Brush.TextMuted}" FontWeight="Normal"/>
+          </TextBlock>
+        </Expander.Header>
+        <ItemsControl Name="OfficialList" ItemsSource="{CompiledBinding OfficialTemplates}"
+                      ItemTemplate="{StaticResource OptionTemplate}" Margin="0,4,0,0"/>
+      </Expander>
+
+      <Expander Name="YoursSection" IsExpanded="True" Margin="0,10,0,0" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch" IsVisible="False">
+        <Expander.Header>
+          <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}">
+            <Run Text="{x:Static res:Strings.HabitTemplatePicker_YourTemplates}"/><Run
+                 Text="{CompiledBinding CustomOptions.Count, StringFormat=' ({0})'}"
+                 Foreground="{DynamicResource Brush.TextMuted}" FontWeight="Normal"/>
+          </TextBlock>
+        </Expander.Header>
+        <ItemsControl Name="CustomList" ItemsSource="{CompiledBinding CustomOptions}" Margin="0,4,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:PickerOption">
+              <Border Margin="0,4" Padding="12,8" CornerRadius="4"
+                      Background="{DynamicResource Brush.SurfaceElevated}"
+                      BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button Grid.Column="0" Name="OptionButton" HorizontalContentAlignment="Stretch" Background="Transparent"
+                          BorderThickness="0" Padding="0" Cursor="Hand" Click="OnPick">
+                    <StackPanel>
+                      <TextBlock Text="{CompiledBinding Name}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+                      <TextBlock Text="{CompiledBinding Description}" FontSize="{StaticResource FontSize.Small}"
+                                 Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                  </Button>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0" Spacing="6">
+                    <TextBox Name="RenameBox" Width="120" Text="{CompiledBinding Name, Mode=OneWay}"/>
+                    <Button Content="{x:Static res:Strings.HabitTemplatePicker_Rename}" Click="OnRename"/>
+                    <Button Content="{x:Static res:Strings.HabitTemplatePicker_Delete}" Click="OnDelete"/>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Expander>
+    </StackPanel>
+  </ScrollViewer>
+</v:RecordumWindow>

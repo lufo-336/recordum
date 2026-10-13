@@ -55,16 +55,16 @@ public class HomeViewTests
     }
 
     [AvaloniaFact]
-    public void The_new_menu_hides_the_habit_item_until_the_template_picker_exists_and_keeps_the_group_item()
+    public void The_new_menu_shows_both_the_habit_item_and_the_group_item()
     {
-        // F1 review I4: "Abitudine" apriva il NullHabitTemplatePickerLauncher e non faceva niente. Si riaccende in F5.
+        // F1 review I4 lo spense (il selettore non c'era); F2b lo ha riacceso con il selettore vero.
         var (w, view, _, _) = Show(Guid.NewGuid());
         var button = view.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "NewMenuButton");
         var items = ((MenuFlyout)button.Flyout!).Items.OfType<MenuItem>().ToList();
 
-        items.Single(i => (string?)i.Header == Strings.Home_NewMenu_Habit).IsVisible.Should().BeFalse();
+        items.Single(i => (string?)i.Header == Strings.Home_NewMenu_Habit).IsVisible.Should().BeTrue();
         items.Single(i => (string?)i.Header == Strings.Home_NewMenu_Group).IsVisible.Should().BeTrue();
-        button.IsVisible.Should().BeTrue("il gruppo si crea davvero: il pulsante resta");
+        button.IsVisible.Should().BeTrue("il pulsante del menu resta");
         w.Close();
     }
 

@@ -84,7 +84,17 @@ public sealed partial class HabitTemplatePickerViewModel(
     [RelayCommand]
     private async Task PickAsync(PickerOption option)
     {
-        if (option is null) return;
+        // ExecuteAsync non consulta CanExecute e un doppio clic crea due volte: la guardia sta qui.
+        if (option is null || _picking || CreatedHabitNodeId is not null) return;
+        _picking = true;
+        try { await PickCoreAsync(option); }
+        finally { _picking = false; }
+    }
+
+    private bool _picking;
+
+    private async Task PickCoreAsync(PickerOption option)
+    {
         if (option.TemplateId is { } tid)
         {
             CreatedHabitNodeId = await _templates.InstantiateAsync(tid, option.ParentId);
