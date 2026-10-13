@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor;
 
@@ -17,7 +18,8 @@ namespace Recordum.Presentation.ViewModels.HabitEditor;
 /// </summary>
 public sealed partial class HabitTemplatePickerViewModel(
     IHabitTemplateService templates,
-    IHabitNodeService nodes) : ObservableObject
+    IHabitNodeService nodes,
+    IConfirmationDialog confirm) : ObservableObject
 {
     private readonly IHabitTemplateService _templates = templates;
     private readonly IHabitNodeService _nodes = nodes;
@@ -77,6 +79,10 @@ public sealed partial class HabitTemplatePickerViewModel(
     private async Task DeleteCustomAsync(PickerOption option)
     {
         if (option?.TemplateId is not { } id || !option.IsCustom) return;
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-click UI string
+        var message = string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.HabitTemplatePicker_DeleteConfirm_Message, option.Name);
+#pragma warning restore CA1863
+        if (!await confirm.ConfirmAsync(Strings.HabitTemplatePicker_DeleteConfirm_Title, message)) return;
         await _templates.DeleteAsync(id);
         await LoadAsync(ParentForBuilder);
     }

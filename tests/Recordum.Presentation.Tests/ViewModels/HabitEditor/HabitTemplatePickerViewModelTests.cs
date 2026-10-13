@@ -14,7 +14,9 @@ public class HabitTemplatePickerViewModelTests
     private readonly FakeHabitTemplateService _templates = new();
     private readonly FakeHabitNodeService _nodes = new();
 
-    private HabitTemplatePickerViewModel CreateSut() => new(_templates, _nodes);
+    private readonly FakeConfirmationDialog _confirm = new();
+
+    private HabitTemplatePickerViewModel CreateSut() => new(_templates, _nodes, _confirm);
 
     [Fact]
     public async Task LoadAsync_separates_pinned_actions_from_official_templates()
@@ -73,6 +75,7 @@ public class HabitTemplatePickerViewModelTests
 
         await sut.DeleteCustomCommand.ExecuteAsync(option);
 
+        _confirm.Calls.Should().Be(1);
         _templates.Store.Should().NotContainKey(id);
         sut.CustomOptions.Should().BeEmpty();
     }
@@ -123,6 +126,21 @@ public class HabitTemplatePickerViewModelTests
         _nodes.Store[sut.CreatedHabitNodeId.Value].HabitType.Should().BeNull();
     }
 
+    [Fact]
+    public async Task DeleteCustom_asks_first_and_cancelling_keeps_the_template()
+    {
+        var id = await _templates.CreateAsync(new HabitTemplate { Name = "mine", IsOfficial = false });
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        _confirm.Result = false;
+
+        await sut.DeleteCustomCommand.ExecuteAsync(sut.CustomOptions.Single());
+
+        _confirm.Calls.Should().Be(1);
+        _templates.Store.Should().ContainKey(id);
+        sut.CustomOptions.Should().ContainSingle();
+    }
+
     private sealed class GatedTemplates(FakeHabitTemplateService inner) : IHabitTemplateService
     {
         public TaskCompletionSource Gate { get; } = new();
@@ -145,7 +163,7 @@ public class HabitTemplatePickerViewModelTests
     {
         var gated = new GatedTemplates(_templates);
         await _templates.CreateAsync(new HabitTemplate { Name = "t", IsOfficial = true });
-        var sut = new HabitTemplatePickerViewModel(gated, _nodes);
+        var sut = new HabitTemplatePickerViewModel(gated, _nodes, _confirm);
         await sut.LoadAsync();
         var option = sut.OfficialTemplates.Single();
 

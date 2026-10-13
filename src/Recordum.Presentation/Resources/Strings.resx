@@ -1674,4 +1674,10 @@ Details: {0}</value>
   <data name="IconPicker.None" xml:space="preserve">
     <value>No icon</value>
   </data>
+  <data name="HabitTemplatePicker.DeleteConfirm.Title" xml:space="preserve">
+    <value>Delete this template?</value>
+  </data>
+  <data name="HabitTemplatePicker.DeleteConfirm.Message" xml:space="preserve">
+    <value>&#x201C;{0}&#x201D; will be removed from your templates. Habits already created from it are not affected.</value>
+  </data>
 </root>

@@ -172,6 +172,8 @@ public static class Strings
     // Confirmation dialogs
     public static string Home_Confirm_PurgeTitle => Get("Home.Confirm.PurgeTitle");
     public static string Home_Confirm_PurgeMessage => Get("Home.Confirm.PurgeMessage");
+    public static string HabitTemplatePicker_DeleteConfirm_Title => Get("HabitTemplatePicker.DeleteConfirm.Title");
+    public static string HabitTemplatePicker_DeleteConfirm_Message => Get("HabitTemplatePicker.DeleteConfirm.Message");
 
     // Loading / empty / error states
     public static string Home_Loading => Get("Home.Loading");

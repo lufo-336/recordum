@@ -1648,4 +1648,10 @@
   <data name="IconPicker.None" xml:space="preserve">
     <value>Nessuna icona</value>
   </data>
+  <data name="HabitTemplatePicker.DeleteConfirm.Title" xml:space="preserve">
+    <value>Eliminare questo template?</value>
+  </data>
+  <data name="HabitTemplatePicker.DeleteConfirm.Message" xml:space="preserve">
+    <value>&#x201C;{0}&#x201D; verr&#xE0; rimosso dai tuoi template. Le abitudini gi&#xE0; create non cambiano.</value>
+  </data>
 </root>

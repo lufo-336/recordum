@@ -17,18 +17,24 @@ public sealed class AvaloniaHabitTemplatePickerLauncher(IServiceProvider service
 
     public async Task<Guid?> PickAsync(Guid? parentId = null, CancellationToken ct = default)
     {
-        var vm = services.GetRequiredService<HabitTemplatePickerViewModel>();
-        await vm.LoadAsync(parentId, ct).ConfigureAwait(true);
-        var window = new HabitTemplatePickerWindow(vm);
-        WindowCreatedForTests?.Invoke(window);
-        if (ownerResolver() is { } owner)
-            await window.ShowDialog(owner);
-        else
+        HabitTemplatePickerViewModel vm;
+        // Uno scope per apertura (come il builder): IHabitTemplateService e' scoped, e senza scope ogni apertura
+        // riuserebbe un DbContext di radice mai smaltito. Lo scope finisce con la finestra, prima del builder.
+        await using (var scope = services.CreateAsyncScope())
         {
-            var closed = new TaskCompletionSource();
-            window.Closed += (_, _) => closed.TrySetResult();
-            window.Show();
-            await closed.Task;
+            vm = scope.ServiceProvider.GetRequiredService<HabitTemplatePickerViewModel>();
+            await vm.LoadAsync(parentId, ct).ConfigureAwait(true);
+            var window = new HabitTemplatePickerWindow(vm);
+            WindowCreatedForTests?.Invoke(window);
+            if (ownerResolver() is { } owner)
+                await window.ShowDialog(owner);
+            else
+            {
+                var closed = new TaskCompletionSource();
+                window.Closed += (_, _) => closed.TrySetResult();
+                window.Show();
+                await closed.Task;
+            }
         }
 
         if (vm.OpenBuilderRequested)

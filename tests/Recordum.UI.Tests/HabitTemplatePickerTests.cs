@@ -8,6 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Data.Services;
+using Recordum.Presentation.Services;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.HabitBuilder;
@@ -35,8 +37,38 @@ public class HabitTemplatePickerTests
         }
     }
 
+    private sealed class Answer : IConfirmationDialog
+    {
+        public bool Yes { get; set; } = true;
+        public int Calls { get; private set; }
+        public Task<bool> ConfirmAsync(string title, string message) { Calls++; return Task.FromResult(Yes); }
+    }
+
+    /// <summary>Il servizio dei template di ogni scope, registrato: prova che ogni apertura ha il suo e che lo
+    /// smaltisce alla chiusura.</summary>
+    private sealed class SpyTemplates(IHabitTemplateService inner) : IHabitTemplateService, IDisposable
+    {
+        public static List<SpyTemplates> All { get; } = [];
+        public bool Disposed { get; private set; }
+        public static SpyTemplates Create(IHabitTemplateService inner) { var s = new SpyTemplates(inner); All.Add(s); return s; }
+        public void Dispose() => Disposed = true;
+        public ValueTask<Guid> CreateAsync(HabitTemplate draft, CancellationToken ct = default) => inner.CreateAsync(draft, ct);
+        public ValueTask UpdateAsync(Guid id, Action<HabitTemplate> mutate, CancellationToken ct = default) => inner.UpdateAsync(id, mutate, ct);
+        public ValueTask DeleteAsync(Guid id, CancellationToken ct = default) => inner.DeleteAsync(id, ct);
+        public ValueTask<HabitTemplate?> GetAsync(Guid id, CancellationToken ct = default) => inner.GetAsync(id, ct);
+        public ValueTask<IReadOnlyList<HabitTemplate>> ListAsync(CancellationToken ct = default) => inner.ListAsync(ct);
+        public ValueTask<Guid> InstantiateAsync(Guid templateId, Guid? parentId, CancellationToken ct = default) => inner.InstantiateAsync(templateId, parentId, ct);
+    }
+
     private static readonly RecordingBuilder Builder = new();
-    private static readonly PrivateDbHost Host = new("recordum-ui-picker", s => s.AddSingleton<IHabitBuilderLauncher>(Builder));
+    private static readonly Answer Confirm = new();
+    private static readonly PrivateDbHost Host = new("recordum-ui-picker", s =>
+    {
+        s.AddSingleton<IHabitBuilderLauncher>(Builder);
+        s.AddSingleton<IConfirmationDialog>(Confirm);
+        s.AddScoped<IHabitTemplateService>(sp =>
+            SpyTemplates.Create(ActivatorUtilities.CreateInstance<HabitTemplateService>(sp)));
+    });
 
     private static async Task UntilAsync(Func<bool> done)
     {
@@ -222,5 +254,69 @@ public class HabitTemplatePickerTests
             vm.Home.SelectedRow!.ParentId.Should().Be(group);
         }
         finally { window.Close(); }
+    }
+
+    // ---- fix round 1 --------------------------------------------------------------------------------------
+
+    private static async Task<Guid> CreateCustomTemplateAsync(string name)
+    {
+        using var scope = Host.Provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<IHabitTemplateService>()
+            .CreateAsync(new HabitTemplate { Name = name, IsOfficial = false });
+    }
+
+    private static async Task<bool> ExistsAsync(Guid id)
+    {
+        using var scope = Host.Provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<IHabitTemplateService>().GetAsync(id) is not null;
+    }
+
+    [AvaloniaFact]
+    public async Task Deleting_a_custom_template_asks_first_cancel_keeps_it_confirm_removes_it()
+    {
+        var id = await CreateCustomTemplateAsync($"doomed-{Guid.NewGuid():N}");
+        var launcher = (AvaloniaHabitTemplatePickerLauncher)Host.Provider.GetRequiredService<IHabitTemplatePickerLauncher>();
+        var picker = await PickerOpenedByAsync(launcher, () => launcher.PickAsync());
+        try
+        {
+            Button Delete() => picker.GetVisualDescendants().OfType<Button>()
+                .First(b => b.Content as string == Strings.HabitTemplatePicker_Delete
+                    && b.DataContext is PickerOption { TemplateId: var t } && t == id);
+
+            Confirm.Yes = false;
+            var calls = Confirm.Calls;
+            Click(Delete());
+            await UntilAsync(() => Confirm.Calls == calls + 1);
+            PrivateDbHost.Pump();
+            (await ExistsAsync(id)).Should().BeTrue("annullare lascia il template");
+
+            Confirm.Yes = true;
+            Click(Delete());
+            for (var i = 0; i < 150 && await ExistsAsync(id); i++) { await Task.Delay(20); PrivateDbHost.Pump(); }
+            (await ExistsAsync(id)).Should().BeFalse("confermare lo elimina");
+        }
+        finally { picker.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Each_picker_open_has_its_own_scope_that_ends_with_the_window()
+    {
+        var launcher = (AvaloniaHabitTemplatePickerLauncher)Host.Provider.GetRequiredService<IHabitTemplatePickerLauncher>();
+        var known = SpyTemplates.All.Count;
+
+        var first = await PickerOpenedByAsync(launcher, () => launcher.PickAsync());
+        first.Close();
+        var added = $"added-{Guid.NewGuid():N}";
+        await CreateCustomTemplateAsync(added);
+        var second = await PickerOpenedByAsync(launcher, () => launcher.PickAsync());
+        try
+        {
+            ((HabitTemplatePickerViewModel)second.DataContext!).CustomOptions.Select(o => o.Name).Should().Contain(added);
+            var spies = SpyTemplates.All.Skip(known).ToList();
+            spies.Should().HaveCount(3, "primo picker, scope del test, secondo picker: mai un servizio di radice condiviso");
+            spies[0].Disposed.Should().BeTrue("lo scope finisce con la finestra");
+            spies[2].Disposed.Should().BeFalse("la finestra e' ancora aperta");
+        }
+        finally { second.Close(); }
     }
 }
