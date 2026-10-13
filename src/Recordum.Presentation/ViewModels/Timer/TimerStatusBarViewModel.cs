@@ -59,7 +59,7 @@ public sealed partial class TimerStatusBarViewModel : ObservableObject
         foreach (var t in active)
         {
             var node = await _habits.GetAsync(t.HabitNodeId, ct).ConfigureAwait(true);
-            rows.Add(new ActiveTimerRowViewModel(t, node?.Name ?? "?", _timers, _clock));
+            rows.Add(new ActiveTimerRowViewModel(t, node?.Name ?? "?", _timers, _clock, RefreshInBackground));
         }
         if (generation != _refreshGeneration) return;
         Rows.Clear();

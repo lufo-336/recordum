@@ -12,6 +12,7 @@ using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels.Startup;
 using Recordum.UI.Bootstrap;
 using Recordum.UI.Diagnostics;
+using Recordum.UI.Services;
 using Recordum.UI.Views;
 using Recordum.UI.Views.Startup;
 
@@ -109,6 +110,8 @@ public partial class App : Application
             var window = _services.GetRequiredService<MainWindow>();
             desktop.MainWindow = window;
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            // F2a-11: un errore di dominio gestito da CrashLogger si vede, l'app continua.
+            RecoverableErrorNotice.Attach(() => desktop.MainWindow);
             window.Show();
         }
         catch (Exception ex)

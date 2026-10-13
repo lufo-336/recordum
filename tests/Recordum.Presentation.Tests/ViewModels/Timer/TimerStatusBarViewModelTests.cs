@@ -28,6 +28,25 @@ public class TimerStatusBarViewModelTests
         sut.IsVisible.Should().BeTrue();
     }
 
+    // F2a-11: un timer sparito senza evento (per esempio cancellato con l'abitudine) lasciava una riga
+    // morta, e il suo "ferma" lanciava ActiveTimerNotFoundException fino a chiudere l'app.
+    [Fact]
+    public async Task Stopping_a_row_whose_timer_is_gone_refreshes_the_bar_instead_of_throwing()
+    {
+        var habitId = Guid.NewGuid();
+        var ats = new FakeActiveTimerService();
+        ats.Active.Add(new ActiveTimer { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = 1, TimerMode = TimerMode.Stopwatch });
+        var sut = new TimerStatusBarViewModel(ats, new FakeClock(), new FakeHabitNodeService(), new FakeEventBus(), NullTickSourceFactory.Instance);
+        await sut.LoadAsync();
+        ats.Active.Clear();   // sparito alle spalle della barra, nessun evento
+        ats.StopFactory = id => throw new Recordum.Core.Errors.ActiveTimerNotFoundException(id);
+
+        var stop = async () => await sut.Rows.Single().StopCommand.ExecuteAsync(null);
+
+        await stop.Should().NotThrowAsync();
+        sut.Rows.Should().BeEmpty("la barra si è ricaricata e la riga morta è sparita");
+    }
+
     [Fact]
     public void IsVisible_is_false_when_no_rows()
     {

@@ -576,6 +576,9 @@ public static class Strings
     // Generic Yes/No confirmation dialog (Avalonia shell, F1 Task 5)
     public static string Dialog_Yes => Get("Dialog.Yes");
     public static string Dialog_No => Get("Dialog.No");
+    public static string Dialog_Ok => Get("Dialog.Ok");
+    public static string Error_Recoverable_Title => Get("Error.Recoverable.Title");
+    public static string Error_Recoverable_Message => Get("Error.Recoverable.Message");
 
     // Unlock
     public static string Unlock_Title => Get("Unlock.Title");

@@ -14,7 +14,8 @@ public sealed class ConfirmationWindow : Window
     public Button YesButton { get; }
     public Button NoButton { get; }
 
-    public ConfirmationWindow(string title, string message)
+    /// <param name="okOnly">Un avviso, non una domanda: un solo pulsante "OK" e niente "No".</param>
+    public ConfirmationWindow(string title, string message, bool okOnly = false)
     {
         Title = title;
         Width = 380;
@@ -22,8 +23,8 @@ public sealed class ConfirmationWindow : Window
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-        YesButton = new Button { Content = Strings.Dialog_Yes, Classes = { "primary" }, MinWidth = 72 };
-        NoButton = new Button { Content = Strings.Dialog_No, MinWidth = 72 };
+        YesButton = new Button { Content = okOnly ? Strings.Dialog_Ok : Strings.Dialog_Yes, Classes = { "primary" }, MinWidth = 72 };
+        NoButton = new Button { Content = Strings.Dialog_No, MinWidth = 72, IsVisible = !okOnly };
 
         Content = new StackPanel
         {

@@ -1624,6 +1624,15 @@
   <data name="Dialog.No" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="Dialog.Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Error.Recoverable.Title" xml:space="preserve">
+    <value>Operazione non completata</value>
+  </data>
+  <data name="Error.Recoverable.Message" xml:space="preserve">
+    <value>L'operazione non è stata completata, probabilmente perché i dati sono cambiati nel frattempo. L'app continua; i dettagli sono nel log.</value>
+  </data>
   <data name="Startup.AlreadyRunning" xml:space="preserve">
     <value>Recordum è già aperto. Passa alla finestra già in esecuzione.</value>
   </data>

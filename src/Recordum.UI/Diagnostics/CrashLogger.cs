@@ -29,6 +29,10 @@ public static class CrashLogger
 
     public static string? LogPath => _logPath;
 
+    /// <summary>Un errore di dominio sul thread dell'interfaccia è stato gestito: l'app continua, e chi
+    /// ascolta avvisa l'utente (F2a-11).</summary>
+    public static event Action<Exception>? RecoverableError;
+
     private const UnixFileMode OwnerDirectory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
 
@@ -82,9 +86,26 @@ public static class CrashLogger
 
     private static void OnDispatcher(object? sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        if (IsRecoverable(e.Exception))
+        {
+            // F2a-11: un errore di dominio (timer non trovato, abitudine sparita, registrazione non valida
+            // per il tipo) è un'operazione rifiutata, non un'app rotta: si scrive, si avvisa, si continua.
+            Log("Dispatcher.UnhandledException (errore di dominio, gestito: l'app continua)", e.Exception);
+            e.Handled = true;
+            RecoverableError?.Invoke(e.Exception);
+            return;
+        }
         Log("Dispatcher.UnhandledException (thread dell'interfaccia)", e.Exception);
-        // Leave e.Handled = false → existing shutdown behaviour preserved.
+        // Un errore inatteso: e.Handled resta false e l'app si chiude, come prima.
     }
+
+    /// <summary>Vero per le sole eccezioni di dominio (anche avvolte in un'AggregateException).</summary>
+    internal static bool IsRecoverable(Exception ex) => ex switch
+    {
+        Recordum.Core.Errors.RecordumDomainException => true,
+        AggregateException agg => agg.Flatten().InnerExceptions.All(IsRecoverable),
+        _ => false,
+    };
 
     private static void OnDomain(object? sender, UnhandledExceptionEventArgs e)
     {
@@ -190,5 +211,6 @@ public static class CrashLogger
         TaskScheduler.UnobservedTaskException -= OnUnobservedTask;
         _logPath = null;
         _wired = false;
+        RecoverableError = null;
     }
 }

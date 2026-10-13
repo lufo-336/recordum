@@ -1653,6 +1653,15 @@ Details: {0}</value>
   <data name="Dialog.No" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="Dialog.Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Error.Recoverable.Title" xml:space="preserve">
+    <value>Operation not completed</value>
+  </data>
+  <data name="Error.Recoverable.Message" xml:space="preserve">
+    <value>The operation could not be completed, probably because the data changed in the meantime. The app goes on; the details are in the log.</value>
+  </data>
   <data name="Records.DeleteConfirm.Message" xml:space="preserve">
     <value>Delete this record? This cannot be undone.</value>
   </data>

@@ -69,6 +69,25 @@ public class TimerControlViewModelTests
         sut.ElapsedSeconds.Should().Be(0);
     }
 
+    // F2a-11: il timer sparito senza evento (cancellato con l'abitudine) non deve lasciare il controllo
+    // "in corso" né far uscire ActiveTimerNotFoundException dal comando.
+    [Fact]
+    public async Task Stopping_a_timer_that_is_already_gone_resets_the_control_instead_of_throwing()
+    {
+        var sut = CreateSut(out var ats, out _, out _);
+        var node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter };
+        await sut.SetContextAsync(node, new HabitConfig { HabitNodeId = node.Id, HasIntegratedTimer = true, TimerMode = TimerMode.Stopwatch });
+        await sut.StartCommand.ExecuteAsync(null);
+        ats.Active.Clear();
+        ats.StopFactory = id => throw new Recordum.Core.Errors.ActiveTimerNotFoundException(id);
+
+        var stop = async () => await sut.StopCommand.ExecuteAsync(null);
+
+        await stop.Should().NotThrowAsync();
+        sut.IsActive.Should().BeFalse();
+        sut.ElapsedSeconds.Should().Be(0);
+    }
+
     [Fact]
     public async Task PauseCommand_then_ResumeCommand_toggles_state()
     {

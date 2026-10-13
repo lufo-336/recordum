@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Errors;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
@@ -161,7 +162,14 @@ public sealed partial class TimerControlViewModel : ObservableObject, IDisposabl
     private async Task StopAsync(CancellationToken ct)
     {
         if (_node is null) return;
-        await _timers.StopAsync(_node.Id, ct).ConfigureAwait(true);
+        try
+        {
+            await _timers.StopAsync(_node.Id, ct).ConfigureAwait(true);
+        }
+        catch (ActiveTimerNotFoundException)
+        {
+            // F2a-11: il timer non c'è più (cancellato altrove senza evento): niente da fermare, si azzera.
+        }
         _activeSnapshot = null;
         IsActive = false;
         IsPaused = false;

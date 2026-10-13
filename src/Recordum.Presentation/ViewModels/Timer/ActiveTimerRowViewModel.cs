@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
 
 namespace Recordum.Presentation.ViewModels.Timer;
@@ -11,6 +12,7 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
 {
     private readonly IActiveTimerService _timers;
     private readonly IClock _clock;
+    private readonly Func<Task> _onTimerGone;
 
     public ActiveTimer Timer { get; }
     public Guid HabitNodeId => Timer.HabitNodeId;
@@ -30,12 +32,16 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
         }
     }
 
-    public ActiveTimerRowViewModel(ActiveTimer timer, string habitName, IActiveTimerService timers, IClock clock)
+    /// <param name="onTimerGone">Chiamato quando il timer della riga non esiste più (per esempio cancellato
+    /// con l'abitudine, senza evento): chi ospita la riga si ricarica invece di lasciare una riga morta.</param>
+    public ActiveTimerRowViewModel(ActiveTimer timer, string habitName, IActiveTimerService timers, IClock clock,
+        Func<Task> onTimerGone)
     {
         Timer = timer;
         HabitName = habitName;
         _timers = timers;
         _clock = clock;
+        _onTimerGone = onTimerGone;
         IsPaused = timer.PausedAtMs is not null;
         Tick();
     }
@@ -71,6 +77,14 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
     [RelayCommand]
     private async Task StopAsync()
     {
-        await _timers.StopAsync(HabitNodeId).ConfigureAwait(true);
+        try
+        {
+            await _timers.StopAsync(HabitNodeId).ConfigureAwait(true);
+        }
+        catch (ActiveTimerNotFoundException)
+        {
+            // F2a-11: la riga era morta. Non c'è niente da fermare: la barra si ricarica.
+            await _onTimerGone().ConfigureAwait(true);
+        }
     }
 }

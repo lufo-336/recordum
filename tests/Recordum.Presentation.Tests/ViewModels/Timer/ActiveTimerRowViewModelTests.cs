@@ -20,7 +20,7 @@ public class ActiveTimerRowViewModelTests
             AccumulatedPausedMs = 5_000,
             TimerMode = TimerMode.Stopwatch,
         };
-        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock);
+        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock, () => Task.CompletedTask);
 
         sut.Tick();
 
@@ -33,7 +33,7 @@ public class ActiveTimerRowViewModelTests
     {
         var clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(3_600_000));
         var t = new ActiveTimer { HabitNodeId = Guid.NewGuid(), StartedAtMs = 0, TimerMode = TimerMode.Stopwatch };
-        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock);
+        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock, () => Task.CompletedTask);
 
         sut.Tick();
 
@@ -53,7 +53,7 @@ public class ActiveTimerRowViewModelTests
             AccumulatedPausedMs = 0,
             TimerMode = TimerMode.Stopwatch,
         };
-        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock);
+        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock, () => Task.CompletedTask);
 
         sut.Tick();
 
@@ -66,7 +66,7 @@ public class ActiveTimerRowViewModelTests
     {
         var clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(0));
         var t = new ActiveTimer { HabitNodeId = Guid.NewGuid(), StartedAtMs = 10_000, TimerMode = TimerMode.Stopwatch };
-        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock);
+        var sut = new ActiveTimerRowViewModel(t, "habit", new FakeActiveTimerService(), clock, () => Task.CompletedTask);
 
         sut.Tick();
 
@@ -80,7 +80,7 @@ public class ActiveTimerRowViewModelTests
         var ats = new FakeActiveTimerService();
         var t = new ActiveTimer { HabitNodeId = Guid.NewGuid(), StartedAtMs = 10_000, TimerMode = TimerMode.Stopwatch };
         ats.Active.Add(t);
-        var sut = new ActiveTimerRowViewModel(t, "habit", ats, clock);
+        var sut = new ActiveTimerRowViewModel(t, "habit", ats, clock, () => Task.CompletedTask);
 
         await sut.PauseCommand.ExecuteAsync(null);
 
@@ -103,7 +103,7 @@ public class ActiveTimerRowViewModelTests
             TimerMode = TimerMode.Stopwatch,
         };
         ats.Active.Add(t);
-        var sut = new ActiveTimerRowViewModel(t, "habit", ats, clock) { IsPaused = true };
+        var sut = new ActiveTimerRowViewModel(t, "habit", ats, clock, () => Task.CompletedTask) { IsPaused = true };
 
         await sut.ResumeCommand.ExecuteAsync(null);
 
@@ -120,7 +120,7 @@ public class ActiveTimerRowViewModelTests
         var ats = new FakeActiveTimerService();
         var t = new ActiveTimer { HabitNodeId = Guid.NewGuid(), StartedAtMs = 0, TimerMode = TimerMode.Stopwatch };
         ats.Active.Add(t);
-        var sut = new ActiveTimerRowViewModel(t, "habit", ats, clock);
+        var sut = new ActiveTimerRowViewModel(t, "habit", ats, clock, () => Task.CompletedTask);
 
         await sut.StopCommand.ExecuteAsync(null);
 

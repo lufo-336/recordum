@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Core.Errors;
 using Recordum.Presentation.Bootstrap;
 using Recordum.UI.Bootstrap;
 using Recordum.UI.Diagnostics;
@@ -76,6 +77,62 @@ public class CrashLoggerTests
         }
         finally
         {
+            CrashLogger.ResetForTests();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    // F2a-11: un errore di dominio sul thread dell'interfaccia (un timer non trovato, un'abitudine
+    // sparita) non chiude più l'app: va nel log, l'app avvisa e continua. Un errore inatteso sì.
+    [AvaloniaFact]
+    public void A_domain_error_on_the_ui_thread_is_logged_and_reported_and_the_app_goes_on()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"recordum-crashlog-{Guid.NewGuid():N}");
+        var reported = new List<Exception>();
+        void OnRecoverable(Exception ex) => reported.Add(ex);
+        try
+        {
+            CrashLogger.ResetForTests();
+            CrashLogger.WireUp(root);
+            CrashLogger.RecoverableError += OnRecoverable;
+            var id = Guid.NewGuid();
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => throw new ActiveTimerNotFoundException(id));
+            var run = () => Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            run.Should().NotThrow("l'errore di dominio è gestito, il ciclo dell'interfaccia continua");
+            reported.Should().ContainSingle().Which.Should().BeOfType<ActiveTimerNotFoundException>();
+            File.ReadAllText(CrashLogger.LogPath!).Should().Contain(id.ToString());
+        }
+        finally
+        {
+            CrashLogger.RecoverableError -= OnRecoverable;
+            CrashLogger.ResetForTests();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [AvaloniaFact]
+    public void An_unexpected_error_on_the_ui_thread_is_not_swallowed()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"recordum-crashlog-{Guid.NewGuid():N}");
+        var reported = new List<Exception>();
+        void OnRecoverable(Exception ex) => reported.Add(ex);
+        try
+        {
+            CrashLogger.ResetForTests();
+            CrashLogger.WireUp(root);
+            CrashLogger.RecoverableError += OnRecoverable;
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => throw new InvalidOperationException("un bug vero"));
+            var run = () => Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            run.Should().Throw<InvalidOperationException>("un errore inatteso continua a chiudere l'app");
+            reported.Should().BeEmpty();
+        }
+        finally
+        {
+            CrashLogger.RecoverableError -= OnRecoverable;
             CrashLogger.ResetForTests();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
