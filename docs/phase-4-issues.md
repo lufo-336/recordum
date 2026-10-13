@@ -39,7 +39,7 @@
   salto mese/anno del calendario rimandati a F3 · **F2a-3** — il cronometro di cella di una serie compare nella barra dei timer
   e il suo Stop registra una durata (CM-4) · **F2a-4** — il purge toglie `active_timer` senza evento: la barra tiene una riga
   morta il cui Stop lancia · **F2a-5** — Presentation traccia con `Debug.WriteLine`: in Release i guasti in background sono
-  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · **F2a-7** — rinomina dalla Home non arrivava all'intestazione · `fixed` · **F2a-8** — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato · `reported` · **F2a-9** — il flip di Ripetibile non pubblica `HabitUpdated` · **F2a-10** — `ActiveTimerService.StopAsync` non atomico · **F2a-11** — eccezioni dei comandi async → `CrashLogger` `Handled=false` · **F2a-12** — `TimerStatusBarViewModel` transient con `IHabitNodeService` scoped (F2a-9…F2a-12 `reported`) · stati: F2a-1…F2a-5 `reported`, F2a-6 `fixed` solo per F0-Y2 (W2V-4/U4 `reported`)
+  invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · **F2a-7** — rinomina dalla Home non arrivava all'intestazione · `fixed` · **F2a-8** — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato · `reported` · **F2a-9** — il flip di Ripetibile non pubblica `HabitUpdated` · **F2a-10** — `ActiveTimerService.StopAsync` non atomico · `fixed` · **F2a-11** — eccezioni dei comandi async → `CrashLogger` `Handled=false` · `fixed` · **F2a-12** — `TimerStatusBarViewModel` transient con `IHabitNodeService` scoped (F2a-9 e F2a-12 `reported`) · stati: F2a-1…F2a-5 `reported`, F2a-6 `fixed` solo per F0-Y2 (W2V-4/U4 `reported`)
 
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
@@ -1966,10 +1966,18 @@ Restano questi, ciascuno con la sua ragione.
 - **F2a-9 — il flip di Ripetibile non pubblica `HabitUpdated`** · `reported` (preesistente; F5 Configura) · Il flip passa da
   `IHabitConfigService.UpsertAsync`, che non pubblica nulla: il ramo "ricostruisci il quick-add al cambio di Ripetibile" di
   `HabitScreenViewModel` non è raggiungibile dall'editor.
-- **F2a-10 — `ActiveTimerService.StopAsync` non è atomico** · `reported` (preesistente; da chiudere prima del dogfooding) ·
-  Cancella la riga del timer e poi registra il completamento: se `RecordAsync` fallisce il tempo della sessione è perso.
-- **F2a-11 — le eccezioni dei comandi async arrivano al `CrashLogger` con `Handled=false` e chiudono l'app** · `reported`
-  (schema preesistente; da chiudere prima del dogfooding) · Es. `ActiveTimerNotFoundException` dallo Stop/Pausa della barra o
-  del TimerControl dopo un purge.
+- **F2a-10 — `ActiveTimerService.StopAsync` non è atomico** · `fixed` (`1ac8e1d`) · Cancellava la riga del timer e poi
+  registrava il completamento: se `RecordAsync` falliva (per esempio uno stato senza valori, cioè il cronometro di cella
+  fermato dalla barra) il tempo della sessione era perso. Ora registra prima e cancella dopo: se la registrazione fallisce,
+  il timer resta. Limite rimasto (commento `ponytail:` nel codice): due transazioni, quindi se la cancellazione fallisse
+  dopo una registrazione riuscita la sessione sarebbe registrata e il timer ancora vivo. Test
+  `ActiveTimerServiceStopTests`.
+- **F2a-11 — le eccezioni dei comandi async arrivano al `CrashLogger` con `Handled=false` e chiudono l'app** · `fixed`
+  (`65b69ac`, scelta dell'autore 2026-10-13) · Su Avalonia `CrashLogger` gestisce le sole `RecordumDomainException`
+  (timer non trovato, abitudine sparita, registrazione non valida per il tipo): log, un avviso con solo "OK"
+  (`RecoverableErrorNotice`, uno alla volta), l'app continua. Un errore inatteso la chiude ancora, col log. La riga della
+  barra e il cronometro della Cronologia, se il timer non c'è più, si ricaricano senza eccezione (caso del purge, F2a-4).
+  WPF resta com'era (congelato). Test `CrashLoggerTests`, `RecoverableErrorNoticeTests`,
+  `TimerStatusBarViewModelTests`, `TimerControlViewModelTests`.
 - **F2a-12 — `TimerStatusBarViewModel` è transient, risolto dalla radice, e tiene un `IHabitNodeService` scoped** ·
   `reported` (preesistente; stessa nota della decisione 8 di F1) · Dipendenza catturata (captive dependency).

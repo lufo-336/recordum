@@ -4,11 +4,11 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-12
+## Dove siamo — 2026-10-13
 
 - **Branch di lavoro**: `f2a-registration`, impilato su `f2-perf1-home`, a sua volta su `avalonia-linux-slice`;
-  **nessuno dei tre è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati. CI verde su Linux e Windows fino a F1; quella
-  di F2a la fa il controllore. I test di prestazioni non girano in CI (oscillano sui runner condivisi).
+  **nessuno dei tre è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati. CI verde su Linux e Windows su tutti e tre i
+  branch. I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1 è a codice
   completo e ha passato la review dell'intero branch**: la shell si avvia davvero (sblocco del database, Home con righe
   vive, trascinamento, rail e tab del workspace, finestra principale). La review finale ha trovato e fatto correggere
@@ -29,15 +29,16 @@
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
 - Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **F2a (Registrazione su Avalonia) è a codice completo** su `f2a-registration`; cronaca, difetti corretti e misure in
-  `docs/MILESTONES.md`, finding in `docs/phase-4-issues.md` ("Onda F2a").
+- **F2a (Registrazione su Avalonia) è completa** su `f2a-registration`: review dell'intero branch passata, CI verde, e
+  chiusi anche F2a-10 (fermare un timer non perde più la sessione) e F2a-11 (un errore di dominio avvisa invece di chiudere
+  l'app); cronaca e misure in `docs/MILESTONES.md`, finding in `docs/phase-4-issues.md` ("Onda F2a").
 - **Checklist a schermo dell'autore (GNOME)**: i quattro tipi dalla colonna "Oggi" e dal quick-add; "ieri" vicino al
   reset (R9); barra dei timer dopo riavvio con un cronometro acceso; celle numeriche con l'altro separatore; chiaro e
   scuro; rinomina dalla Home con la schermata aperta; cancellazione dalla Cronologia; W2V §3 del pass visivo.
 - **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
   e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
   (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
-- **Prossimo**: review dell'intero branch di F2a e CI verde, poi F2b (piano da scrivere). All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
+- **Prossimo**: il piano di F2b. All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
   (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
 
 ## Il percorso
