@@ -1665,4 +1665,13 @@ Details: {0}</value>
   <data name="Records.DeleteConfirm.Message" xml:space="preserve">
     <value>Delete this record? This cannot be undone.</value>
   </data>
+  <data name="ColorPicker.RemoveFavorite" xml:space="preserve">
+    <value>Remove from favorites</value>
+  </data>
+  <data name="ColorPicker.Hex" xml:space="preserve">
+    <value>Hex color</value>
+  </data>
+  <data name="IconPicker.None" xml:space="preserve">
+    <value>No icon</value>
+  </data>
 </root>

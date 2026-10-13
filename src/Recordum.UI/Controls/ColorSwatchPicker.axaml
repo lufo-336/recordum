@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Recordum.UI.Controls.ColorSwatchPicker">
+    <!-- Il trigger mostra il colore corrente; il Flyout (costruito in code-behind: tessere da elenchi che
+         cambiano, nessun template con binding, come HeatmapStrip) porta HSV, tonalità, palette, recenti,
+         preferiti ed esadecimale. Il contagocce di WPF non c'è: IScreenColorPicker è Windows-only. -->
+    <Button x:Name="Trigger" Width="28" Height="28" Padding="0" CornerRadius="4"
+            Background="Transparent" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+        <Border x:Name="TriggerSwatch" CornerRadius="3"/>
+    </Button>
+</UserControl>

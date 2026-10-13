@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Recordum.UI.Controls.HsvColorPicker"
+             Width="200">
+    <!-- Porting di Views/HsvColorPicker.xaml WPF: quadrato saturazione/valore + striscia della tonalità,
+         entrambi trascinabili. Le tre sovrapposizioni del quadrato sono le stesse (tinta, bianco→trasparente,
+         trasparente→nero). -->
+    <StackPanel>
+        <Border x:Name="SvArea" Background="Transparent" Height="140" CornerRadius="6" ClipToBounds="True" Cursor="Cross"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+            <Grid>
+                <Border x:Name="SvHueLayer"/>
+                <Border IsHitTestVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                            <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                            <GradientStop Color="#00FFFFFF" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Border IsHitTestVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                            <GradientStop Color="#00000000" Offset="0"/>
+                            <GradientStop Color="#FF000000" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Canvas IsHitTestVisible="False">
+                    <Ellipse x:Name="SvThumb" Width="12" Height="12" Stroke="White" StrokeThickness="2"/>
+                </Canvas>
+            </Grid>
+        </Border>
+
+        <Border x:Name="HueArea" Background="Transparent" Height="16" Margin="0,8,0,0" CornerRadius="6" ClipToBounds="True" Cursor="Cross"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+            <Grid>
+                <Border IsHitTestVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                            <GradientStop Color="#FFFF0000" Offset="0.0"/>
+                            <GradientStop Color="#FFFFFF00" Offset="0.1667"/>
+                            <GradientStop Color="#FF00FF00" Offset="0.3333"/>
+                            <GradientStop Color="#FF00FFFF" Offset="0.5"/>
+                            <GradientStop Color="#FF0000FF" Offset="0.6667"/>
+                            <GradientStop Color="#FFFF00FF" Offset="0.8333"/>
+                            <GradientStop Color="#FFFF0000" Offset="1.0"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Canvas IsHitTestVisible="False">
+                    <Border x:Name="HueThumb" Width="6" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="2"/>
+                </Canvas>
+            </Grid>
+        </Border>
+    </StackPanel>
+</UserControl>

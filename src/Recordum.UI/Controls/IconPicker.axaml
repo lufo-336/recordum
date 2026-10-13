@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Recordum.UI.Controls.IconPicker">
+    <!-- Il trigger mostra l'icona scelta; il Flyout (pannello costruito in code-behind, come HeatmapStrip:
+         celle da un elenco fisso, nessun template con binding) porta ricerca, "nessuna icona" e la griglia. -->
+    <Button x:Name="Trigger" Width="28" Height="28" Padding="4" CornerRadius="3"
+            Background="Transparent" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+        <Path x:Name="TriggerGlyph" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.5"
+              StrokeLineCap="Round" StrokeJoin="Round"/>
+    </Button>
+</UserControl>

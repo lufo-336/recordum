@@ -1639,4 +1639,13 @@
   <data name="Records.DeleteConfirm.Message" xml:space="preserve">
     <value>Eliminare questa registrazione? L'operazione non è reversibile.</value>
   </data>
+  <data name="ColorPicker.RemoveFavorite" xml:space="preserve">
+    <value>Rimuovi dai preferiti</value>
+  </data>
+  <data name="ColorPicker.Hex" xml:space="preserve">
+    <value>Colore esadecimale</value>
+  </data>
+  <data name="IconPicker.None" xml:space="preserve">
+    <value>Nessuna icona</value>
+  </data>
 </root>
