@@ -1,5 +1,5 @@
-using Avalonia;
 using Avalonia.Controls;
+using Recordum.UI.Behaviors;
 using Avalonia.Data.Converters;
 using Recordum.Core.Enums;
 using Recordum.Presentation.Formatting;
@@ -41,31 +41,8 @@ public partial class HabitBuilderView : UserControl
         InitializeComponent();
         // Ciò che si salva è ciò che si vede: un testo rifiutato dal binding (altro separatore, raggruppamento)
         // svuota il valore, cosi' Lancia non salva quello vecchio mentre la casella mostra altro (come MetricCellView).
-        Watch(WeeklyTargetBox, vm => vm.Schedule.WeeklyTarget = null);
-        Watch(EveryXDaysBox, vm => vm.Schedule.EveryXDays = null);
-        Watch(GoalTargetBox, vm => vm.GoalBrick.Target = null);
-    }
-
-    private bool _restoring;
-
-    private void Watch(TextBox box, Action<HabitBuilderViewModel> clear) =>
-        box.GetObservable(DataValidationErrors.HasErrorsProperty).Subscribe(new Observer(hasErrors =>
-        {
-            if (!hasErrors || _restoring || DataContext is not HabitBuilderViewModel vm) return;
-            var rejected = box.Text;
-            _restoring = true;
-            try
-            {
-                clear(vm);
-                if (box.Text != rejected) box.Text = rejected;   // svuotare il VM riscrive la casella: si rimette il testo digitato
-            }
-            finally { _restoring = false; }
-        }));
-
-    private sealed class Observer(Action<bool> onNext) : IObserver<bool>
-    {
-        public void OnNext(bool value) => onNext(value);
-        public void OnError(Exception error) { }
-        public void OnCompleted() { }
+        RejectedTextGuard.Watch<HabitBuilderViewModel>(WeeklyTargetBox, this, vm => vm.Schedule.WeeklyTarget = null);
+        RejectedTextGuard.Watch<HabitBuilderViewModel>(EveryXDaysBox, this, vm => vm.Schedule.EveryXDays = null);
+        RejectedTextGuard.Watch<HabitBuilderViewModel>(GoalTargetBox, this, vm => vm.GoalBrick.Target = null);
     }
 }

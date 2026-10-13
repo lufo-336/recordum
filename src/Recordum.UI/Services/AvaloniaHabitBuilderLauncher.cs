@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels.HabitBuilder;
+using Recordum.UI.Views;
 using Recordum.UI.Views.HabitBuilder;
 
 namespace Recordum.UI.Services;
@@ -25,7 +26,7 @@ public sealed class AvaloniaHabitBuilderLauncher(IServiceProvider services, Func
         await vm.InitializeAsync(ct).ConfigureAwait(true);   // i selettori di unita' e scala prima di aprire
 
         var view = new HabitBuilderView { DataContext = vm };
-        var window = new Window
+        var window = new RecordumWindow
         {
             Title = Strings.HabitBuilder_Title,
             Width = 1080,     // 720 per la composizione + 360 per l'anteprima viva

@@ -125,7 +125,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16" IsVisible="{CompiledBinding ShowJournalGesture}">
             <TextBlock Text="{x:Static res:Strings.Editor_Registration_JournalGesture}" VerticalAlignment="Center"/>
             <ComboBox x:Name="JournalGestureBox" MinWidth="200" ItemsSource="{CompiledBinding JournalGestureOptions}"
-                      DisplayMemberBinding="{ReflectionBinding Label}" SelectedValueBinding="{ReflectionBinding Gesture}"
+                      DisplayMemberBinding="{CompiledBinding Label}" SelectedValueBinding="{CompiledBinding Gesture}"
                       SelectedValue="{CompiledBinding JournalGesture, Mode=TwoWay}"/>
           </StackPanel>
 
@@ -175,17 +175,17 @@
                       <ComboBox x:Name="UnitPicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}"
                                 IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Quantity}}"
                                 ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableUnits}"
-                                DisplayMemberBinding="{ReflectionBinding Name}" SelectedValueBinding="{ReflectionBinding Id}"
+                                DisplayMemberBinding="{CompiledBinding Name}" SelectedValueBinding="{CompiledBinding Id}"
                                 SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}"/>
                       <ComboBox x:Name="ScalePicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_ScalePickerPrompt}"
                                 IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Scale}}"
                                 ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableScales}"
-                                DisplayMemberBinding="{ReflectionBinding Name}" SelectedValueBinding="{ReflectionBinding Id}"
+                                DisplayMemberBinding="{CompiledBinding Name}" SelectedValueBinding="{CompiledBinding Id}"
                                 SelectedValue="{CompiledBinding ScaleTemplateId, Mode=TwoWay}"/>
                       <ComboBox x:Name="TimeUnitPicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}"
                                 IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Time}}"
                                 ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableTimeUnits}"
-                                DisplayMemberBinding="{ReflectionBinding Name}" SelectedValueBinding="{ReflectionBinding Id}"
+                                DisplayMemberBinding="{CompiledBinding Name}" SelectedValueBinding="{CompiledBinding Id}"
                                 SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}"/>
                     </Panel>
 
@@ -195,16 +195,22 @@
                       <CheckBox x:Name="DecimalsCheck" Content="{x:Static res:Strings.HabitBuilder_Field_Decimals}"
                                 IsChecked="{CompiledBinding AllowsDecimals, Mode=TwoWay}"
                                 IsVisible="{CompiledBinding UnitOfMeasureId, Converter={x:Static ObjectConverters.IsNull}}"/>
-                      <Button x:Name="NewUnitButton" Content="+" Margin="4,0,0,0" Padding="8,2"
+                      <Button x:Name="NewUnitButton" Margin="4,0,0,0" Padding="8,2"
                               AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_NewUnit}" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_NewUnit}"
                               Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).BeginAddCustomUnitCommand}"
-                              CommandParameter="{CompiledBinding}"/>
+                              CommandParameter="{CompiledBinding}">
+                        <Path Data="{StaticResource Icon.Plus}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}"
+                              StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+                      </Button>
                     </StackPanel>
-                    <Button x:Name="NewScaleButton" Grid.Column="3" Content="+" Margin="8,0,0,0" Padding="8,2" VerticalAlignment="Center"
+                    <Button x:Name="NewScaleButton" Grid.Column="3" Margin="8,0,0,0" Padding="8,2" VerticalAlignment="Center"
                             AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_NewScale}" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_NewScale}"
                             IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Scale}}"
                             Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).BeginAddCustomScaleCommand}"
-                            CommandParameter="{CompiledBinding}"/>
+                            CommandParameter="{CompiledBinding}">
+                      <Path Data="{StaticResource Icon.Plus}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}"
+                            StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+                    </Button>
 
                     <Button Grid.Column="4" Classes="icononly" Margin="8,0,0,0"
                             AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"

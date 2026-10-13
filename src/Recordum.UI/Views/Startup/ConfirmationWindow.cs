@@ -3,13 +3,14 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Recordum.Presentation.Resources;
+using Recordum.UI.Views;
 
 namespace Recordum.UI.Views.Startup;
 
 /// <summary>La piccola finestra sì/no dietro <see cref="Services.AvaloniaConfirmationDialog"/>. Codice,
 /// non XAML: due bottoni e due TextBlock non giustificano un file .axaml separato, e tenerla qui
 /// evita un ennesimo <c>InitializeComponent()</c> per una vista che non cambia mai forma.</summary>
-public sealed class ConfirmationWindow : Window
+public sealed class ConfirmationWindow : RecordumWindow
 {
     public Button YesButton { get; }
     public Button NoButton { get; }

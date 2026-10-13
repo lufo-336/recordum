@@ -66,6 +66,10 @@ public class HabitBuilderViewTests
         done().Should().BeTrue("la condizione doveva avverarsi entro il tempo");
     }
 
+    /// <summary>Il testo che la casella chiusa mostra davvero (il TextBlock della selezione), non l'oggetto scelto.</summary>
+    private static string? Shown(ComboBox box) =>
+        box.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).FirstOrDefault(t => !string.IsNullOrEmpty(t));
+
     private static string Unique(string stem) => $"{stem}-{Guid.NewGuid():N}";
 
     private static async Task<(HabitNode? Node, IReadOnlyList<MetricDefinition> Metrics)> LoadAsync(IServiceProvider sp, Guid id)
@@ -323,6 +327,79 @@ public class HabitBuilderViewTests
         return frame.Format == Avalonia.Platform.PixelFormats.Bgra8888
             ? Color.FromRgb(buffer[2], buffer[1], buffer[0])
             : Color.FromRgb(buffer[0], buffer[1], buffer[2]);
+    }
+
+    // ---- picker bindings (compiled): displayed text and SelectedValue path ---------------------------------
+
+    [AvaloniaFact]
+    public async Task Pickers_show_the_item_name_and_write_the_selected_id_to_the_field()
+    {
+        var o = await OpenAsync();
+        try
+        {
+            Click(o.Window, Named<Button>(o.View, "AddQuantityButton"));
+            var unit = VisibleNamed<ComboBox>(o.View, "UnitPicker");
+            unit.SelectedIndex = 1;
+            Pump();
+            Shown(unit).Should().Be(o.Vm.AvailableUnits[1].Name);
+            o.Vm.Fields[0].UnitOfMeasureId.Should().Be(o.Vm.AvailableUnits[1].Id);
+
+            Click(o.Window, Named<Button>(o.View, "AddTimeButton"));
+            var time = VisibleNamed<ComboBox>(o.View, "TimeUnitPicker");
+            time.SelectedIndex = 1;
+            Pump();
+            Shown(time).Should().Be(o.Vm.AvailableTimeUnits[1].Name);
+            o.Vm.Fields[1].UnitOfMeasureId.Should().Be(o.Vm.AvailableTimeUnits[1].Id);
+        }
+        finally { o.Window.Close(); o.Scope.Dispose(); }
+    }
+
+    [AvaloniaFact]
+    public async Task The_journal_gesture_picker_shows_the_label_and_writes_the_gesture()
+    {
+        var o = await OpenAsync();
+        try
+        {
+            Click(o.Window, Named<Button>(o.View, "AddTextButton"));
+            o.Vm.ShowJournalGesture.Should().BeTrue();
+            var box = VisibleNamed<ComboBox>(o.View, "JournalGestureBox");
+            var other = o.Vm.JournalGestureOptions.First(g => g.Gesture != o.Vm.JournalGesture);
+            box.SelectedIndex = o.Vm.JournalGestureOptions.ToList().IndexOf(other);
+            Pump();
+            Shown(box).Should().Be(other.Label);
+            o.Vm.JournalGesture.Should().Be(other.Gesture);
+        }
+        finally { o.Window.Close(); o.Scope.Dispose(); }
+    }
+
+    // ---- window tokens (font and background), light and dark ------------------------------------------------
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task Code_built_windows_take_the_font_and_background_tokens(string variant)
+    {
+        var theme = variant == "Dark" ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+        var launcher = new AvaloniaHabitBuilderLauncher(Host.Provider, () => null);
+        var windows = new List<Window> { new Recordum.UI.Views.Startup.ConfirmationWindow("t", "m") };
+        launcher.WindowCreatedForTests += windows.Add;
+        var task = launcher.LaunchAsync();
+        await UntilAsync(() => windows.Count == 2);
+        foreach (var w in windows)
+        {
+            w.RequestedThemeVariant = theme;
+            w.Show();
+            Pump();
+            try
+            {
+                w.TryFindResource("Brush.Background", theme, out var bg).Should().BeTrue();
+                w.TryFindResource("Font.Default", theme, out var font).Should().BeTrue();
+                ((ISolidColorBrush)w.Background!).Color.Should().Be(((ISolidColorBrush)bg!).Color, $"{w.GetType().Name} {variant}");
+                w.FontFamily.Should().Be((FontFamily)font!, w.GetType().Name);
+            }
+            finally { w.Close(); }
+        }
+        (await task.WaitAsync(TimeSpan.FromSeconds(5))).Should().BeNull();
     }
 
     // ---- numeric inputs: what is saved is what is shown --------------------------------------------------
