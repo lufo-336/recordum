@@ -1,0 +1,362 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitBuilder"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             xmlns:hb="using:Recordum.UI.Views.HabitBuilder"
+             x:Class="Recordum.UI.Views.HabitBuilder.HabitBuilderView"
+             x:DataType="vm:HabitBuilderViewModel">
+  <!-- Il builder a blocchi: testata (nome, colore, icona), composizione (campi, contatore, astinenza),
+       composizione avanzata (Programma, Obiettivo, Sessione). A destra l'anteprima viva (Task 3), qui solo il posto.
+       Un solo file: le zone sono sezioni di una colonna sola, spezzarle in UserControl moltiplicherebbe i DataContext. -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="Margin" Value="0,0,0,2"/>
+    </Style>
+    <Style Selector="TextBlock.zone">
+      <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+    </Style>
+    <Style Selector="Button.icononly">
+      <Setter Property="Width" Value="28"/>
+      <Setter Property="Height" Value="28"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel LastChildFill="True">
+    <!-- Barra delle azioni in fondo -->
+    <Border DockPanel.Dock="Bottom" Padding="16,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.Border}">
+      <DockPanel LastChildFill="False">
+        <Button x:Name="CancelButton" DockPanel.Dock="Left" Content="{x:Static res:Strings.HabitBuilder_Cancel}" Padding="14,6"/>
+        <Button x:Name="LaunchButton" DockPanel.Dock="Right" Classes="primary" Content="{x:Static res:Strings.HabitBuilder_Launch}"
+                Padding="18,6" Margin="8,0,0,0" Command="{CompiledBinding LaunchCommand}"/>
+        <TextBlock DockPanel.Dock="Right" Text="{x:Static res:Strings.HabitBuilder_TemplateSaved}" VerticalAlignment="Center"
+                   Margin="8,0,0,0" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Success}"
+                   IsVisible="{CompiledBinding TemplateSaved}"/>
+        <Button x:Name="SaveAsTemplateButton" DockPanel.Dock="Right" Content="{x:Static res:Strings.HabitBuilder_SaveAsTemplate}"
+                Padding="14,6" Command="{CompiledBinding SaveAsTemplateCommand}"/>
+        <TextBlock DockPanel.Dock="Right" Text="{x:Static res:Strings.HabitBuilder_LaunchHint}" TextWrapping="Wrap" MaxWidth="280"
+                   VerticalAlignment="Center" Margin="12,0" FontSize="{StaticResource FontSize.Small}"
+                   Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding LaunchBlocked}"/>
+      </DockPanel>
+    </Border>
+
+    <Grid ColumnDefinitions="*,360">
+      <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20" Spacing="0">
+
+          <!-- ===== Testata ===== -->
+          <TextBlock Text="{x:Static res:Strings.HabitBuilder_Title}" FontSize="{StaticResource FontSize.Heading}"
+                     FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+          <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Name}"/>
+              <TextBox x:Name="NameBox" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+            <Border Grid.Column="1" VerticalAlignment="Bottom" Padding="10,4" CornerRadius="10" BorderThickness="1"
+                    BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.SurfaceElevated}">
+              <TextBlock x:Name="DerivedTypeBadge" FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
+                         Text="{CompiledBinding DerivedType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}, StringFormat={x:Static res:Strings.HabitBuilder_DerivedType}}"/>
+            </Border>
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Color}"/>
+              <ctl:ColorSwatchPicker x:Name="ColorPicker" HorizontalAlignment="Left" Color="{CompiledBinding Color, Mode=TwoWay}"
+                                     RecentColors="{CompiledBinding RecentColors}" FavoriteColors="{CompiledBinding FavoriteColors}"
+                                     AddFavoriteCommand="{CompiledBinding AddFavoriteCommand}"
+                                     RemoveFavoriteCommand="{CompiledBinding RemoveFavoriteCommand}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Icon}"/>
+              <ctl:IconPicker x:Name="IconPicker" HorizontalAlignment="Left" Icon="{CompiledBinding Icon, Mode=TwoWay}"/>
+            </StackPanel>
+          </Grid>
+
+          <!-- Ripetibile (solo Counter) e serie nominate -->
+          <StackPanel x:Name="RepeatablePanel" Margin="0,0,0,16"
+                      IsVisible="{CompiledBinding DerivedType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:HabitType.Counter}}">
+            <CheckBox x:Name="RepeatableCheck" Content="{x:Static res:Strings.Editor_Registration_Repeatable}" IsChecked="{CompiledBinding Repeatable, Mode=TwoWay}"/>
+            <StackPanel Margin="20,8,0,0" IsVisible="{CompiledBinding Repeatable}">
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_SeriesLabels_Hint}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+              <ItemsControl ItemsSource="{CompiledBinding SeriesLabels}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SeriesLabelRowViewModel">
+                    <Border Classes="card" Margin="0,0,6,6" Padding="8,4">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBox MinWidth="90" VerticalAlignment="Center" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Classes="icononly" Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).RemoveSeriesLabelCommand}"
+                                CommandParameter="{CompiledBinding}"
+                                AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                                ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}">
+                          <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                                StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+                        </Button>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button x:Name="AddSeriesLabelButton" Content="{x:Static res:Strings.HabitBuilder_SeriesLabels_Add}" Padding="10,4"
+                      HorizontalAlignment="Left" Command="{CompiledBinding AddSeriesLabelCommand}"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Gesto primario del diario (solo Journal) -->
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,16" IsVisible="{CompiledBinding ShowJournalGesture}">
+            <TextBlock Text="{x:Static res:Strings.Editor_Registration_JournalGesture}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="JournalGestureBox" MinWidth="200" ItemsSource="{CompiledBinding JournalGestureOptions}"
+                      DisplayMemberBinding="{ReflectionBinding Label}" SelectedValueBinding="{ReflectionBinding Gesture}"
+                      SelectedValue="{CompiledBinding JournalGesture, Mode=TwoWay}"/>
+          </StackPanel>
+
+          <!-- ===== Composizione ===== -->
+          <TextBlock Classes="zone" Text="{x:Static res:Strings.HabitBuilder_Blocks}"/>
+          <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_FieldsHint}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+          <!-- Tavolozza: spenta mentre il contatore a tocco e' acceso (un tap counter non ha campi). -->
+          <WrapPanel Margin="0,0,0,10" IsEnabled="{CompiledBinding FieldsAllowed}">
+            <Button x:Name="AddQuantityButton" Content="{x:Static res:Strings.HabitBuilder_AddQuantity}" Padding="10,5" Margin="0,0,6,6"
+                    Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Quantity}"/>
+            <Button x:Name="AddTimeButton" Content="{x:Static res:Strings.HabitBuilder_AddTime}" Padding="10,5" Margin="0,0,6,6"
+                    Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Time}"/>
+            <Button x:Name="AddScaleButton" Content="{x:Static res:Strings.HabitBuilder_AddScale}" Padding="10,5" Margin="0,0,6,6"
+                    Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Scale}"/>
+            <Button x:Name="AddTextButton" Content="{x:Static res:Strings.HabitBuilder_AddText}" Padding="10,5" Margin="0,0,6,6"
+                    Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Text}"/>
+          </WrapPanel>
+
+          <WrapPanel Margin="0,0,0,10">
+            <CheckBox x:Name="CounterCheck" Content="{x:Static res:Strings.HabitBuilder_CounterBlock}" Margin="0,0,14,0"
+                      ToolTip.Tip="{x:Static res:Strings.HabitBuilder_CounterBlock_Tip}"
+                      IsChecked="{CompiledBinding CountsOccurrences, Mode=TwoWay}" IsEnabled="{CompiledBinding CanEnableCounter}"/>
+            <CheckBox x:Name="AbstinenceCheck" Content="{x:Static res:Strings.HabitBuilder_AbstinenceBlock}"
+                      ToolTip.Tip="{x:Static res:Strings.HabitBuilder_AbstinenceBlock_Tip}"
+                      IsChecked="{CompiledBinding Abstinence, Mode=TwoWay}" IsEnabled="{CompiledBinding CanEnableAbstinence}"/>
+          </WrapPanel>
+          <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_TapCounterNote}" TextWrapping="Wrap" Margin="0,0,0,10"
+                     IsVisible="{CompiledBinding CountsOccurrences}"/>
+
+          <!-- Elenco dei campi -->
+          <ItemsControl x:Name="FieldList" ItemsSource="{CompiledBinding Fields}" Margin="0,0,0,16">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FieldBlockViewModel">
+                <Border Classes="card" Margin="0,3">
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                    <Border Grid.Column="0" Padding="6,2" Margin="0,0,10,0" CornerRadius="8" VerticalAlignment="Center"
+                            Background="{DynamicResource Brush.Surface}">
+                      <TextBlock Text="{CompiledBinding Nature, Converter={x:Static hb:HabitBuilderView.NatureLabel}}"
+                                 FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                    </Border>
+                    <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <!-- Un solo selettore per campo, scelto dalla natura: unita' (Quantity), scala (Scale), unita' di tempo (Time).
+                         Il selettore della natura sbagliata e' invisibile, non rimosso: la scelta resta sul campo. -->
+                    <Panel Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center">
+                      <ComboBox x:Name="UnitPicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}"
+                                IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Quantity}}"
+                                ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableUnits}"
+                                DisplayMemberBinding="{ReflectionBinding Name}" SelectedValueBinding="{ReflectionBinding Id}"
+                                SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}"/>
+                      <ComboBox x:Name="ScalePicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_ScalePickerPrompt}"
+                                IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Scale}}"
+                                ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableScales}"
+                                DisplayMemberBinding="{ReflectionBinding Name}" SelectedValueBinding="{ReflectionBinding Id}"
+                                SelectedValue="{CompiledBinding ScaleTemplateId, Mode=TwoWay}"/>
+                      <ComboBox x:Name="TimeUnitPicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}"
+                                IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Time}}"
+                                ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableTimeUnits}"
+                                DisplayMemberBinding="{ReflectionBinding Name}" SelectedValueBinding="{ReflectionBinding Id}"
+                                SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}"/>
+                    </Panel>
+
+                    <!-- Quantity senza unita' che vuole comunque le frazioni (il peso corporeo). -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0"
+                                IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Quantity}}">
+                      <CheckBox x:Name="DecimalsCheck" Content="{x:Static res:Strings.HabitBuilder_Field_Decimals}"
+                                IsChecked="{CompiledBinding AllowsDecimals, Mode=TwoWay}"
+                                IsVisible="{CompiledBinding UnitOfMeasureId, Converter={x:Static ObjectConverters.IsNull}}"/>
+                      <Button x:Name="NewUnitButton" Content="+" Margin="4,0,0,0" Padding="8,2"
+                              AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_NewUnit}" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_NewUnit}"
+                              Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).BeginAddCustomUnitCommand}"
+                              CommandParameter="{CompiledBinding}"/>
+                    </StackPanel>
+                    <Button x:Name="NewScaleButton" Grid.Column="3" Content="+" Margin="8,0,0,0" Padding="8,2" VerticalAlignment="Center"
+                            AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_NewScale}" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_NewScale}"
+                            IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Scale}}"
+                            Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).BeginAddCustomScaleCommand}"
+                            CommandParameter="{CompiledBinding}"/>
+
+                    <Button Grid.Column="4" Classes="icononly" Margin="8,0,0,0"
+                            AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                            ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                            Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).RemoveFieldCommand}"
+                            CommandParameter="{CompiledBinding}">
+                      <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                            StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Micro-form unita' personalizzata: la definizione resta nel draft finche' Lancia non la materializza. -->
+          <Border Classes="card" Margin="0,0,0,12" Padding="12" CornerRadius="8" IsVisible="{CompiledBinding UnitForm, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel>
+              <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewUnit}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"/>
+              <TextBox x:Name="UnitFormName" Margin="0,0,0,8" Text="{CompiledBinding UnitForm.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewUnit_Symbol}"/>
+              <TextBox x:Name="UnitFormSymbol" Margin="0,0,0,10" Text="{CompiledBinding UnitForm.Symbol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button x:Name="UnitFormCancel" Content="{x:Static res:Strings.HabitBuilder_New_Cancel}" Padding="12,5" Command="{CompiledBinding CancelCustomFormCommand}"/>
+                <Button x:Name="UnitFormConfirm" Classes="primary" Content="{x:Static res:Strings.HabitBuilder_New_Confirm}" Padding="12,5"
+                        IsEnabled="{CompiledBinding UnitForm.CanConfirm}" Command="{CompiledBinding ConfirmCustomUnitCommand}"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Micro-form scala personalizzata -->
+          <Border Classes="card" Margin="0,0,0,12" Padding="12" CornerRadius="8" IsVisible="{CompiledBinding ScaleForm, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel>
+              <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewScale}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"/>
+              <TextBox x:Name="ScaleFormName" Margin="0,0,0,8" Text="{CompiledBinding ScaleForm.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewScale_Labels}"/>
+              <TextBox x:Name="ScaleFormLabels" Margin="0,0,0,10" Text="{CompiledBinding ScaleForm.LabelsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button x:Name="ScaleFormCancel" Content="{x:Static res:Strings.HabitBuilder_New_Cancel}" Padding="12,5" Command="{CompiledBinding CancelCustomFormCommand}"/>
+                <Button x:Name="ScaleFormConfirm" Classes="primary" Content="{x:Static res:Strings.HabitBuilder_New_Confirm}" Padding="12,5"
+                        IsEnabled="{CompiledBinding ScaleForm.CanConfirm}" Command="{CompiledBinding ConfirmCustomScaleCommand}"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- ===== Composizione avanzata ===== -->
+          <TextBlock Classes="zone" Text="{x:Static res:Strings.HabitBuilder_Advanced}" Margin="0,4,0,6"/>
+          <Expander x:Name="ScheduleExpander" Margin="0,0,0,8" IsExpanded="{CompiledBinding Schedule.IsExpanded, Mode=TwoWay}" HorizontalAlignment="Stretch">
+            <Expander.Header>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{x:Static res:Strings.HabitBuilder_Schedule_Header}" FontWeight="SemiBold"/>
+                <TextBlock Text="{CompiledBinding Schedule.Summary}" Foreground="{DynamicResource Brush.TextMuted}"/>
+              </StackPanel>
+            </Expander.Header>
+            <StackPanel Margin="12,6,0,4" Spacing="8">
+              <!-- Quattro tipi nello scope del mattone; Monthly/Custom restano in Configura. -->
+              <ComboBox x:Name="ScheduleTypeBox" ItemsSource="{x:Static hb:HabitBuilderView.ScheduleTypes}"
+                        SelectedItem="{CompiledBinding Schedule.ScheduleType, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="core:ScheduleType">
+                    <TextBlock Text="{CompiledBinding, Converter={x:Static hb:HabitBuilderView.ScheduleLabel}}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+
+              <ItemsControl ItemsSource="{CompiledBinding Schedule.Days}"
+                            IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.SpecificDays}}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ScheduleDayToggle">
+                    <ToggleButton x:Name="DayToggle" Classes="pill" Content="{CompiledBinding Label}" Margin="0,0,4,4" MinWidth="40"
+                                  IsChecked="{CompiledBinding IsSelected, Mode=TwoWay}"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <TextBox x:Name="WeeklyTargetBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding Schedule.WeeklyTarget, Mode=TwoWay}"
+                       IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.WeeklyX}}"/>
+              <TextBox x:Name="EveryXDaysBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding Schedule.EveryXDays, Mode=TwoWay}"
+                       IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.EveryXDays}}"/>
+
+              <StackPanel>
+                <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Schedule_StreakMode}"/>
+                <ComboBox x:Name="StreakModeBox" ItemsSource="{x:Static hb:HabitBuilderView.StreakModes}" SelectedItem="{CompiledBinding Schedule.StreakMode, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:StreakMode">
+                      <TextBlock Text="{CompiledBinding, Converter={x:Static hb:HabitBuilderView.StreakModeLabel}}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Schedule_Recovery}"/>
+                <ComboBox x:Name="StreakRecoveryBox" ItemsSource="{x:Static hb:HabitBuilderView.StreakRecoveries}" SelectedItem="{CompiledBinding Schedule.StreakRecovery, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:StreakRecovery">
+                      <TextBlock Text="{CompiledBinding, Converter={x:Static hb:HabitBuilderView.StreakRecoveryLabel}}"/>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </StackPanel>
+          </Expander>
+
+          <!-- Obiettivo: solo se la composizione deriva Counter. Il periodo si sceglie in Configura (ck_goal_period_consistency). -->
+          <StackPanel Margin="0,0,0,16" IsVisible="{CompiledBinding GoalBrick.IsAvailable}">
+            <ToggleButton x:Name="GoalToggle" Classes="pill" Content="{x:Static res:Strings.HabitBuilder_Goal_Add}" HorizontalAlignment="Left"
+                          IsChecked="{CompiledBinding GoalBrick.HasGoal, Mode=TwoWay}"/>
+            <StackPanel Margin="0,8,0,0" IsVisible="{CompiledBinding GoalBrick.HasGoal}">
+              <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Goal_Target}"/>
+              <TextBox x:Name="GoalTargetBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding GoalBrick.Target, Mode=TwoWay}"/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Sessione: solo se Counter con campi da registrare. -->
+          <StackPanel Margin="0,0,0,16" IsVisible="{CompiledBinding SessionBrick.IsAvailable}">
+            <ToggleButton x:Name="SessionToggle" Classes="pill" Content="{x:Static res:Strings.HabitBuilder_Session_Add}" HorizontalAlignment="Left"
+                          IsChecked="{CompiledBinding SessionBrick.HasSession, Mode=TwoWay}"/>
+            <StackPanel Margin="0,8,0,0" IsVisible="{CompiledBinding SessionBrick.HasSession}">
+              <ItemsControl ItemsSource="{CompiledBinding SessionBrick.Segments}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SegmentRowViewModel">
+                    <Border Classes="card" Margin="0,3">
+                      <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBox Grid.Column="0" VerticalAlignment="Center" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <CheckBox Grid.Column="1" Content="{x:Static res:Strings.HabitBuilder_Session_IsRest}" Margin="10,0,0,0" IsChecked="{CompiledBinding IsRest, Mode=TwoWay}"/>
+                        <Button Grid.Column="2" Classes="icononly" Margin="8,0,0,0"
+                                AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                                ToolTip.Tip="{x:Static res:Strings.HabitScreen_QuickAdd_RemoveSeries}"
+                                Command="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).SessionBrick.RemoveSegmentCommand}"
+                                CommandParameter="{CompiledBinding}">
+                          <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                                StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button x:Name="AddSegmentButton" Content="{x:Static res:Strings.HabitBuilder_Session_AddSegment}" Padding="10,5" Margin="0,6,0,0"
+                      HorizontalAlignment="Left" Command="{CompiledBinding SessionBrick.AddSegmentCommand}"/>
+            </StackPanel>
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Anteprima viva: colonna fissa a destra, larga quanto una riga Home reale. La riempie il Task 3. -->
+      <Border x:Name="PreviewHost" Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Brush.Border}"
+              Background="{DynamicResource Brush.Surface}"/>
+    </Grid>
+  </DockPanel>
+</UserControl>

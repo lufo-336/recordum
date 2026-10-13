@@ -11,6 +11,7 @@ using Recordum.Presentation.ViewModels.Export;
 using Recordum.Presentation.ViewModels.HabitBuilder;
 using Recordum.Presentation.ViewModels.HabitEditor;
 using Recordum.UI.Bootstrap;
+using Recordum.UI.Services;
 using Recordum.UI.Tests.Services;
 using Xunit;
 
@@ -59,11 +60,10 @@ public class AvaloniaShellServicesTests
     }
 
     [Fact]
-    public async Task Habit_builder_launcher_resolves_and_returns_no_habit()
+    public void Habit_builder_launcher_resolves_to_the_real_one_not_the_null()
     {
         var sp = BuildProvider();
-        var result = await sp.GetRequiredService<IHabitBuilderLauncher>().LaunchAsync();
-        result.Should().BeNull();
+        sp.GetRequiredService<IHabitBuilderLauncher>().Should().BeOfType<AvaloniaHabitBuilderLauncher>();
     }
 
     [Fact]

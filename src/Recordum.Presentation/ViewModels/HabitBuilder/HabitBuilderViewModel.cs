@@ -401,12 +401,20 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // so an incomplete goal (HasGoal with no positive target) has to be refused here too, not
         // only on the greyed-out button.
         if (!CanLaunch) return;
-        // The gesture travels inside the request (W24-R1): it used to be written after
-        // CreatedHabitNodeId had already closed the dialog, so a transient failure would surface out
-        // of a command that had visibly succeeded. ComposedHabitService serializes it onto the node
-        // before the insert, in the same transaction as everything else.
-        var habitId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
-        CreatedHabitNodeId = habitId;
+        // One habit per builder (Review Focus 3): a second Launch while the first is in flight, or after it
+        // succeeded, must not create a second one. ExecuteAsync does not consult CanExecute either.
+        if (_launching || CreatedHabitNodeId is not null) return;
+        _launching = true;
+        try
+        {
+            // The gesture travels inside the request (W24-R1): it used to be written after
+            // CreatedHabitNodeId had already closed the dialog, so a transient failure would surface out
+            // of a command that had visibly succeeded. ComposedHabitService serializes it onto the node
+            // before the insert, in the same transaction as everything else.
+            var habitId = await _composed.CreateComposedHabitAsync(BuildRequest(), ct).ConfigureAwait(true);
+            CreatedHabitNodeId = habitId;
+        }
+        finally { _launching = false; }
 
         // Recording the picked color is a best-effort MRU side effect — never let it undo a created
         // habit or crash the app if the write hiccups (e.g. a transient DB lock). See B-dbLock.
@@ -419,6 +427,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             // ignore: the habit is already persisted; the recent-color list is cosmetic.
         }
     }
+
+    private bool _launching;
 
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task SaveAsTemplateAsync(CancellationToken ct)

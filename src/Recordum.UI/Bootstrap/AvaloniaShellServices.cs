@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Security;
@@ -41,11 +42,10 @@ public static class AvaloniaShellServices
 
         // Stesso ragionamento della lambda sopra per l'owner: valutato alla risoluzione, quando
         // MainWindow esiste già (Home, che usa questa dialog per Elimina/Purge, non esiste prima).
-        services.AddSingleton<IConfirmationDialog>(_ => new AvaloniaConfirmationDialog(
-            () => (Application.Current!.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow));
+        services.AddSingleton<IConfirmationDialog>(_ => new AvaloniaConfirmationDialog(MainWindow));
 
         services.AddSingleton<IHabitTemplatePickerLauncher, NullHabitTemplatePickerLauncher>();
-        services.AddSingleton<IHabitBuilderLauncher, NullHabitBuilderLauncher>();
+        services.AddSingleton<IHabitBuilderLauncher>(sp => new AvaloniaHabitBuilderLauncher(sp, MainWindow));
         services.AddSingleton<ISettingsWindowLauncher, NullSettingsWindowLauncher>();
         services.AddSingleton<IExportDialogLauncher, NullExportDialogLauncher>();
         services.AddSingleton<IBackupDialogLauncher, NullBackupDialogLauncher>();
@@ -59,4 +59,9 @@ public static class AvaloniaShellServices
 
         return services;
     }
+
+    /// <summary>La finestra principale dell'app, owner delle finestre modali. Letta alla chiamata, non alla
+    /// registrazione: in headless e prima dell'avvio il lifetime non c'e' e le finestre si aprono senza owner.</summary>
+    private static Window? MainWindow() =>
+        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 }

@@ -59,6 +59,34 @@ public class HabitBuilderViewModelTests
     }
 
     [Fact]
+    public async Task Launch_called_twice_creates_a_single_habit()
+    {
+        // Review Focus 3 (F2b): ExecuteAsync does not consult CanExecute, so a double click that reaches the
+        // command twice (in flight, or after the first succeeded) must not create a second habit.
+        var composed = new CountingComposedHabitService();
+        var sut = NewSut(composed: composed);
+        sut.Name = "Corsa";
+
+        await Task.WhenAll(sut.LaunchCommand.ExecuteAsync(null), sut.LaunchCommand.ExecuteAsync(null));
+        await sut.LaunchCommand.ExecuteAsync(null);
+
+        composed.Calls.Should().Be(1);
+        sut.CreatedHabitNodeId.Should().NotBeNull();
+    }
+
+    private sealed class CountingComposedHabitService : IComposedHabitService
+    {
+        public int Calls { get; private set; }
+
+        public async ValueTask<Guid> CreateComposedHabitAsync(ComposedHabitRequest request, CancellationToken ct = default)
+        {
+            Calls++;
+            await Task.Yield();   // l'altra chiamata entra mentre questa e' ancora in volo
+            return request.Node.Id;
+        }
+    }
+
+    [Fact]
     public async Task Launch_does_not_crash_when_recording_recent_color_fails()
     {
         // Recording the picked color is a best-effort MRU side effect; a transient DB hiccup there

@@ -116,4 +116,40 @@
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
     </Style>
 
+    <!-- ToggleButton.pill (W2V-9): il ToggleButton del builder (giorni, Obiettivo, Sessione) acceso nel NOSTRO accento.
+         Senza template il Fluent lo tinge con le risorse ToggleButtonBackgroundChecked*, che sullo stato pointerover/
+         pressed tornano al blu di sistema: qui lo stato e' deterministico e non dipende da quelle chiavi. -->
+    <Style Selector="ToggleButton.pill">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="Padding" Value="11,5"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="ToggleButton.pill:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+    <Style Selector="ToggleButton.pill:checked">
+      <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnAccent}"/>
+    </Style>
+    <Style Selector="ToggleButton.pill:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+
 </Styles>
