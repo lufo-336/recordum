@@ -65,13 +65,24 @@ public sealed class FakeCompletionService : ICompletionService
         return new(Store.TryGetValue(id, out var c) ? c : null);
     }
 
-    public ValueTask<IReadOnlyList<Completion>> ListByHabitAsync(
+    /// <summary>Se impostato, ListByHabitAsync attende questo task e poi tocca il token (WaitHandle), come un driver che lo usa.</summary>
+    public Task? ListGate { get; set; }
+    /// <summary>L'eccezione (es. ObjectDisposedException) lanciata toccando il token dopo il gate.</summary>
+    public Exception? ListTokenFault { get; private set; }
+
+    public async ValueTask<IReadOnlyList<Completion>> ListByHabitAsync(
         Guid habitNodeId,
         DateTimeOffset? fromUtc = null,
         DateTimeOffset? toUtc = null,
         int? take = null,
         CancellationToken ct = default)
     {
+        if (ListGate is { } gate)
+        {
+            await gate.ConfigureAwait(false);
+            try { _ = ct.WaitHandle; } // throws ObjectDisposedException on a disposed source
+            catch (Exception ex) { ListTokenFault = ex; throw; }
+        }
         Throw();
         var q = Store.Values.Where(c => c.HabitNodeId == habitNodeId);
         if (fromUtc is { } f) q = q.Where(c => c.CompletedAtMs >= f.ToUnixTimeMilliseconds());
@@ -80,7 +91,7 @@ public sealed class FakeCompletionService : ICompletionService
         IReadOnlyList<Completion> list = take is { } n
             ? ordered.Take(n).ToList()
             : ordered.ToList();
-        return new(list);
+        return list;
     }
 
     public ValueTask<IReadOnlyList<HeatmapCell>> GetHeatmapAsync(

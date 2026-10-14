@@ -131,7 +131,9 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
 
     public void Dispose()
     {
-        _reloadCts?.Dispose();
+        // Cancel, never Dispose: the fire-and-forget reload may still touch its token, and a CTS without a
+        // timer owns no unmanaged resource (a disposed one throws ObjectDisposedException, unobserved) (R5).
+        _reloadCts?.Cancel();
         Periods.Dispose(); // stops any live period-row clock (its tick source)
     }
 }

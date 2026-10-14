@@ -24,7 +24,8 @@ public sealed class BackupSchedulerHost(
         if (_loop is not null) return; // idempotent — already started
         CleanupOrphanTempDirs();
         _cts = new CancellationTokenSource();
-        _loop = Task.Run(() => LoopAsync(_cts.Token));
+        var ct = _cts.Token; // read now: a Dispose racing the pool thread would make a later _cts.Token throw
+        _loop = Task.Run(() => LoopAsync(ct));
     }
 
     private async Task LoopAsync(CancellationToken ct)

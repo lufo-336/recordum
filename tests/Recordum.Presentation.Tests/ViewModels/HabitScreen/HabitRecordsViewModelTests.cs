@@ -114,4 +114,19 @@ public class HabitRecordsViewModelTests
         sut.CurrentList.Should().BeSameAs(periods);
         periods.Rows.Should().ContainSingle();
     }
+
+    [Fact]
+    public async Task Disposing_while_a_reload_is_in_flight_does_not_pull_the_token_source_from_under_it()
+    {
+        var (sut, cs, _) = Build(new DateTimeOffset(2026, 6, 17, 0, 0, 0, TimeSpan.Zero));
+        var gate = new TaskCompletionSource();
+        cs.ListGate = gate.Task;
+
+        sut.Mode = EntriesRecordsMode.Periodo; // starts the fire-and-forget reload, parked on the gate
+        sut.Dispose();
+        gate.SetResult();
+        await Task.Delay(50); // the reload touches its token now
+
+        cs.ListTokenFault.Should().BeNull("the in-flight reload is cancelled, its CancellationTokenSource is not disposed under it");
+    }
 }

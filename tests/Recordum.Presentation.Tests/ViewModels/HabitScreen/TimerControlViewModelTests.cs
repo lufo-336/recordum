@@ -204,7 +204,7 @@ public class TimerControlViewModelTests
         await sut.SetContextAsync(node, new HabitConfig { HabitNodeId = node.Id, HasIntegratedTimer = true, TimerMode = TimerMode.Stopwatch });
         ats.Throw = true;
         var unobserved = new List<Exception>();
-        void Handler(object? o, UnobservedTaskExceptionEventArgs e) => unobserved.Add(e.Exception);
+        void Handler(object? o, UnobservedTaskExceptionEventArgs e) { if (e.Exception.InnerExceptions.Any(x => x.Message == ThrowingTimers.Message)) unobserved.Add(e.Exception); }
         TaskScheduler.UnobservedTaskException += Handler;
         try
         {
@@ -257,13 +257,14 @@ public class TimerControlViewModelTests
 
     private sealed class ThrowingTimers : Recordum.Core.Abstractions.Services.IActiveTimerService
     {
+        public const string Message = "db down";
         public bool Throw { get; set; }
         public int ThrewCount { get; private set; }
         public ValueTask<ActiveTimer?> GetActiveAsync(Guid habitNodeId, CancellationToken ct = default)
         {
             if (!Throw) return new((ActiveTimer?)null);
             ThrewCount++;
-            throw new InvalidOperationException("db down");
+            throw new InvalidOperationException(Message);
         }
         public ValueTask<ActiveTimer> StartAsync(Guid h, TimerMode m, CancellationToken ct = default) => throw new NotSupportedException();
         public ValueTask PauseAsync(Guid h, CancellationToken ct = default) => throw new NotSupportedException();
