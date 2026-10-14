@@ -218,6 +218,19 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Opens Configura for this subject only (a new group, opened by the host for renaming): the open set is
+    /// recorded in the subject's own prefs, NOT in the legacy global <c>ui.open_columns</c> that seeds every
+    /// brand-new habit — an automatic open is not a user preference.</summary>
+    public async Task OpenConfiguraForSubjectAsync()
+    {
+        if (Node is null || IsConfiguraOpen) return;
+        _restoringColumns = true;
+        try { IsConfiguraOpen = true; }
+        finally { _restoringColumns = false; }
+        await PersistSubjectColumnsAsync().ConfigureAwait(true);
+        await LoadEditorAsync().ConfigureAwait(true);
+    }
+
     private Task PersistOpenColumnsAsync()
         => _appSettings.SetAsync(OpenColumnsSettingKey,
             string.Join(",", CanonicalOpen().Select(c => c.ToString()))).AsTask();

@@ -83,6 +83,21 @@ public class HabitScreenColumnsTests
     }
 
     [Fact]
+    public async Task Opening_configura_for_a_subject_records_it_in_the_subjects_prefs_and_not_in_the_global_key()
+    {
+        var (sut, nodes) = HabitScreenViewModelFactory.CreateWithStores(out var settings, out var uiPrefs);
+        var g = AddGroup(nodes);
+        await sut.LoadAsync(g);
+        var before = await settings.GetAsync(HabitScreenViewModel.OpenColumnsSettingKey);
+
+        await sut.OpenConfiguraForSubjectAsync();
+
+        sut.IsConfiguraOpen.Should().BeTrue();
+        uiPrefs.Store[g].OpenColumns.Should().Contain("Configura");
+        (await settings.GetAsync(HabitScreenViewModel.OpenColumnsSettingKey)).Should().Be(before, "un'apertura automatica non e' una preferenza dell'utente");
+    }
+
+    [Fact]
     public async Task Null_prefs_fall_back_to_the_legacy_global_open_columns()
     {
         var (_, _) = HabitScreenViewModelFactory.CreateWithStores(out var settings, out var uiPrefs);

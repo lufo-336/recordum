@@ -186,7 +186,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             if (row is null) return;
             await Workspace.OpenSubjectAsync(id, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
             // Un gruppo nuovo si apre su Configura (decisione 7 di F2b): e' li' che si rinomina e si ricolora.
-            if (Workspace.Tabs.FirstOrDefault(t => t.SubjectId == id) is { } tab) tab.Screen.IsConfiguraOpen = true;
+            if (Workspace.Tabs.FirstOrDefault(t => t.SubjectId == id) is { } tab) await tab.Screen.OpenConfiguraForSubjectAsync().ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHomeGroupCreated failed: {ex}"); }
     }

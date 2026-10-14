@@ -163,6 +163,27 @@ public class EditorPaneTests
     }
 
     [AvaloniaFact]
+    public async Task Auto_opening_configura_for_a_new_group_does_not_seed_the_columns_of_new_habits()
+    {
+        var o = await OpenAsync();
+        try
+        {
+            await o.Vm.Home.CreateGroupCommand.ExecuteAsync(null);
+            await UntilAsync(() => o.Vm.Workspace.ActiveSubjectTab is { Screen.IsConfiguraOpen: true }
+                && o.Window.GetVisualDescendants().OfType<EditorPane>().Any());
+
+            var fresh = await CreateAsync($"Nuova-{Guid.NewGuid():N}");
+            await o.Vm.Home.LoadCommand.ExecuteAsync(null);
+            o.Vm.Home.SelectedRow = o.Vm.Home.Rows.Single(r => r.HabitNodeId == fresh);
+            await UntilAsync(() => o.Vm.Workspace.ActiveSubjectTab is { } t && t.SubjectId == fresh && t.Screen.Node?.Id == fresh);
+            var screen = o.Vm.Workspace.ActiveSubjectTab!.Screen;
+            await UntilAsync(() => screen.IsCronologiaOpen || screen.IsConfiguraOpen);
+            screen.IsConfiguraOpen.Should().BeFalse("un'abitudine nuova parte dal default del suo tipo");
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task A_name_typed_and_the_tab_closed_at_once_is_still_saved()
     {
         var o = await OpenAsync();
