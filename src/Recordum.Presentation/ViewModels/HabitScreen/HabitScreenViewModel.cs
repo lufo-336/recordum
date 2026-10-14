@@ -877,6 +877,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (Node is null || envelope.Payload is not HabitUpdatedPayload p || p.HabitNodeId != Node.Id) return;
             var refreshed = await _nodes.GetAsync(Node.Id).ConfigureAwait(true);
             if (refreshed is null || Node is null || refreshed.Id != Node.Id) return;
+            // reset_time non e' versionato (CLAUDE.md §5): cambiarlo sposta il confine del giorno di tutta la
+            // schermata (calendario "oggi", Cronologia, fascia Oggi). Il confine si risolve in LoadAsync, una volta:
+            // qui si rifa' il caricamento invece di ritoccare un pannello alla volta.
+            if (refreshed.ResetTime != Node.ResetTime)
+            {
+                await LoadAsync(refreshed.Id).ConfigureAwait(true);
+                return;
+            }
             Node = refreshed;
             OnPropertyChanged(nameof(Name));
             Calendar.CompletedColorHex = refreshed.Color;

@@ -505,6 +505,13 @@ public static class Strings
     public static string Editor_Field_ResetTime => Get("Editor.Field.ResetTime");
     public static string Editor_Action_AddNotification => Get("Editor.Action.AddNotification");
     public static string Editor_Field_Days => Get("Editor.Field.Days");
+    public static string Editor_Error_FixedDatesRequired => Get("Editor.Error.FixedDatesRequired");
+    public static string Editor_ResetTime_Warning => Get("Editor.ResetTime.Warning");
+    public static string Editor_Schedule_Monthly => Get("Editor.Schedule.Monthly");
+    public static string Editor_Schedule_Custom => Get("Editor.Schedule.Custom");
+    public static string Editor_GoalPeriod_Fixed => Get("Editor.GoalPeriod.Fixed");
+    public static string Editor_GoalPeriod_Rolling => Get("Editor.GoalPeriod.Rolling");
+    public static string Editor_GoalPeriod_Open => Get("Editor.GoalPeriod.Open");
 
     // Editor sections
     public static string Editor_Section_Scheduling => Get("Editor.Section.Scheduling");

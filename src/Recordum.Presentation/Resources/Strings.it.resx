@@ -1654,4 +1654,25 @@
   <data name="HabitTemplatePicker.DeleteConfirm.Message" xml:space="preserve">
     <value>&#x201C;{0}&#x201D; verr&#xE0; rimosso dai tuoi template. Le abitudini gi&#xE0; create non cambiano.</value>
   </data>
+  <data name="Editor.ResetTime.Warning" xml:space="preserve">
+    <value>Cambiare l'orario di reset rilegge tutto lo storico: i giorni passati vengono riassegnati al nuovo confine del giorno.</value>
+  </data>
+  <data name="Editor.Schedule.Monthly" xml:space="preserve">
+    <value>Mensile</value>
+  </data>
+  <data name="Editor.Schedule.Custom" xml:space="preserve">
+    <value>Personalizzata</value>
+  </data>
+  <data name="Editor.GoalPeriod.Fixed" xml:space="preserve">
+    <value>Date fisse</value>
+  </data>
+  <data name="Editor.GoalPeriod.Rolling" xml:space="preserve">
+    <value>Giorni mobili</value>
+  </data>
+  <data name="Editor.GoalPeriod.Open" xml:space="preserve">
+    <value>Aperto</value>
+  </data>
+  <data name="Editor.Error.FixedDatesRequired" xml:space="preserve">
+    <value>Un obiettivo a date fisse richiede una data di inizio e una di fine.</value>
+  </data>
 </root>

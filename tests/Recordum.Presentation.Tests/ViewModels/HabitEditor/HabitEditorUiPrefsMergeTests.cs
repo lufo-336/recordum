@@ -28,7 +28,7 @@ public class HabitEditorUiPrefsMergeTests
         var prefs = new FakeHabitUiPrefsService();
         var node = JournalNode(Guid.NewGuid());
         var registration = new RegistrationSectionViewModel(new FakeHabitConfigService(), prefs);
-        var homeRow = new HomeRowSectionViewModel(prefs);
+        var homeRow = new HomeRowSectionViewModel(prefs, null);
 
         // Both sections load from the same prefs snapshot, mirroring HabitEditorViewModel.LoadAsync
         // loading Registration (:239) then HomeRow (:244) sequentially for the same node.
@@ -59,7 +59,7 @@ public class HabitEditorUiPrefsMergeTests
         var prefs = new FakeHabitUiPrefsService();
         var node = JournalNode(Guid.NewGuid());
         var registration = new RegistrationSectionViewModel(new FakeHabitConfigService(), prefs);
-        var homeRow = new HomeRowSectionViewModel(prefs);
+        var homeRow = new HomeRowSectionViewModel(prefs, null);
 
         await registration.LoadAsync(node);
         await homeRow.LoadAsync(node);

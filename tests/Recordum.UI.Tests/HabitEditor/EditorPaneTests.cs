@@ -25,32 +25,32 @@ namespace Recordum.UI.Tests.HabitEditor;
 /// <summary>F2b Task 6: la testata di Configura, l'host delle sezioni, lo stato di salvataggio. DB privato.</summary>
 public class EditorPaneTests
 {
-    private static readonly PrivateDbHost Host = new("recordum-ui-editorpane");
+    internal static readonly PrivateDbHost Host = new("recordum-ui-editorpane");
 
-    private sealed record Opened(MainWindow Window, MainWindowViewModel Vm, Guid Id);
+    internal sealed record Opened(MainWindow Window, MainWindowViewModel Vm, Guid Id);
 
-    private static async Task UntilAsync(Func<bool> done)
+    internal static async Task UntilAsync(Func<bool> done)
     {
         for (var i = 0; i < 150 && !done(); i++) { await Task.Delay(20); PrivateDbHost.Pump(); }
         done().Should().BeTrue("la condizione doveva avverarsi entro il tempo");
     }
 
-    private static async Task<Guid> CreateAsync(string name, NodeType node = NodeType.Habit)
+    internal static async Task<Guid> CreateAsync(string name, NodeType node = NodeType.Habit, HabitType type = HabitType.Action)
     {
         using var scope = Host.Provider.CreateScope();
         return await scope.ServiceProvider.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
         {
-            NodeType = node, HabitType = node == NodeType.Group ? null : HabitType.Action, Name = name, Color = "#E11D48",
+            NodeType = node, HabitType = node == NodeType.Group ? null : type, Name = name, Color = "#E11D48",
         });
     }
 
-    private static async Task<HabitNode> ReadAsync(Guid id)
+    internal static async Task<HabitNode> ReadAsync(Guid id)
     {
         using var scope = Host.Provider.CreateScope();
         return (await scope.ServiceProvider.GetRequiredService<IHabitNodeService>().GetAsync(id))!;
     }
 
-    private static async Task<Opened> OpenAsync(Guid? selectId = null, string name = "Cfg")
+    internal static async Task<Opened> OpenAsync(Guid? selectId = null, string name = "Cfg")
     {
         using (var scope = Host.Provider.CreateScope()) await HabitScreenColumnsTests.ResetColumnStateAsync(scope);
         var id = selectId ?? await CreateAsync($"{name}-{Guid.NewGuid():N}");
@@ -63,7 +63,7 @@ public class EditorPaneTests
         return new Opened(window, vm, id);
     }
 
-    private static async Task<EditorPane> OpenConfiguraAsync(Opened o)
+    internal static async Task<EditorPane> OpenConfiguraAsync(Opened o)
     {
         o.Vm.Workspace.ActiveSubjectTab!.Screen.IsConfiguraOpen = true;
         await UntilAsync(() => o.Window.GetVisualDescendants().OfType<EditorPane>().Any()
@@ -72,10 +72,10 @@ public class EditorPaneTests
         return o.Window.GetVisualDescendants().OfType<EditorPane>().Single();
     }
 
-    private static T Named<T>(Control root, string name) where T : Control =>
+    internal static T Named<T>(Control root, string name) where T : Control =>
         root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
 
-    private static void TypeName(Opened o, EditorPane pane, string text)
+    internal static void TypeName(Opened o, EditorPane pane, string text)
     {
         var box = Named<TextBox>(pane, "NameBox");
         box.Focus();
@@ -85,7 +85,7 @@ public class EditorPaneTests
         PrivateDbHost.Pump();
     }
 
-    private static void Blur(Opened o, EditorPane pane)
+    internal static void Blur(Opened o, EditorPane pane)
     {
         Named<TextBox>(pane, "DescriptionBox").Focus();
         PrivateDbHost.Pump();

@@ -56,9 +56,31 @@ public class GoalSectionViewModelTests
     public async Task Setting_PeriodType_persists()
     {
         var sut = CreateSut();
+        sut.RollingDays = 5;
+        sut.PeriodType = GoalPeriodType.Rolling;
+        await Task.Delay(20);
+        (await _goals.GetActiveAsync(_node.Id))!.PeriodType.Should().Be(GoalPeriodType.Rolling);
+    }
+
+    [Fact]
+    public async Task A_period_that_needs_a_parameter_is_an_error_until_it_arrives_then_both_are_saved()
+    {
+        var sut = CreateSut();
+        sut.PeriodType = GoalPeriodType.Rolling;
+        await Task.Delay(20);
+        sut.Status.Should().Be(EditorStatus.Error);
+        (await _goals.GetActiveAsync(_node.Id)).Should().BeNull("la combinazione rifiutata non e' salvata");
+
         sut.PeriodType = GoalPeriodType.Fixed;
         await Task.Delay(20);
-        (await _goals.GetActiveAsync(_node.Id))!.PeriodType.Should().Be(GoalPeriodType.Fixed);
+        sut.Status.Should().Be(EditorStatus.Error, "Fixed senza date");
+
+        sut.PeriodType = GoalPeriodType.Rolling;
+        sut.RollingDays = 10;
+        await Task.Delay(20);
+        var saved = (await _goals.GetActiveAsync(_node.Id))!;
+        (saved.PeriodType, saved.RollingDays).Should().Be((GoalPeriodType.Rolling, 10));
+        sut.Status.Should().Be(EditorStatus.Saved);
     }
 
     [Fact]

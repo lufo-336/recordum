@@ -4,6 +4,8 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
@@ -14,7 +16,7 @@ namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 /// (merged into the node's existing <see cref="HabitUiPrefs"/>). Only shown for habits, not groups.
 /// The key-figure options are filtered to what the habit's type allows (<see cref="HomeRowPresentation"/>).
 /// </summary>
-public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs) : SectionViewModelBase
+public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs, IEventBus? events) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_HomeRow;
 
@@ -58,14 +60,26 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
     partial void OnSelectedKeyFigureChanged(KeyFigureOption? value)
     {
         if (_loading || NodeId == Guid.Empty || value is null) return;
-        _ = ApplyAsync(() => _uiPrefs.UpdateAsync(NodeId, p => p with { KeyFigure = HomeRowPresentation.IdFor(value.Kind) }).AsTask());
+        _ = ApplyAsync(async () =>
+        {
+            await _uiPrefs.UpdateAsync(NodeId, p => p with { KeyFigure = HomeRowPresentation.IdFor(value.Kind) });
+            Announce();
+        });
     }
 
     partial void OnSelectedStripChanged(StripOption? value)
     {
         if (_loading || NodeId == Guid.Empty || value is null) return;
-        _ = ApplyAsync(() => _uiPrefs.UpdateAsync(NodeId, p => p with { Strip = value.Strip }).AsTask());
+        _ = ApplyAsync(async () =>
+        {
+            await _uiPrefs.UpdateAsync(NodeId, p => p with { Strip = value.Strip });
+            Announce();
+        });
     }
+
+    // Le preferenze non pubblicano eventi (le usa anche la persistenza delle colonne, a ogni apertura): e' questa
+    // sezione a dire alla Home che la riga di QUESTA abitudine va riletta (stesso evento del nome/colore).
+    private void Announce() => events?.Publish(new HabitUpdatedPayload(NodeId));
 
     private static string KeyFigureLabel(KeyFigureKind kind) => kind switch
     {

@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.HomeRowSectionView"
+             x:DataType="vm:HomeRowSectionViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="{x:Static res:Strings.Editor_HomeRow_KeyFigureLabel}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ComboBox x:Name="KeyFigureBox" ItemsSource="{CompiledBinding KeyFigureOptions}" SelectedItem="{CompiledBinding SelectedKeyFigure, Mode=TwoWay}"
+              HorizontalAlignment="Stretch">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:KeyFigureOption"><TextBlock Text="{CompiledBinding Label}"/></DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <TextBlock Text="{x:Static res:Strings.Editor_HomeRow_StripLabel}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ComboBox x:Name="StripBox" ItemsSource="{CompiledBinding StripOptions}" SelectedItem="{CompiledBinding SelectedStrip, Mode=TwoWay}"
+              HorizontalAlignment="Stretch">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:StripOption"><TextBlock Text="{CompiledBinding Label}"/></DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+  </StackPanel>
+</UserControl>

@@ -38,51 +38,42 @@ public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionVi
         finally { _loading = false; }
     }
 
-    partial void OnGoalNameChanged(string value)
+    // Ogni modifica scrive l'obiettivo intero dal suo stato in memoria: un Goal nuovo nasce con il periodo di default
+    // dell'enum (Fixed, senza date: viola ck_goal_period_consistency) e un periodo rifiutato non deve lasciare DB e
+    // schermata divergenti. Una combinazione non valida e' un errore del ViewModel, non un'eccezione del DB.
+    private void Save()
     {
         if (_loading || NodeId == Guid.Empty) return;
-        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g => g.Name = value).AsTask());
-    }
-
-    partial void OnTargetValueChanged(decimal value)
-    {
-        if (_loading || NodeId == Guid.Empty) return;
-        if (value < 0)
+        if (TargetValue < 0)
         {
             ErrorMessage = Strings.Editor_Error_TargetNonNegative;
             Status = EditorStatus.Error;
             return;
         }
-        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g => g.TargetValue = value).AsTask());
-    }
-
-    partial void OnPeriodTypeChanged(GoalPeriodType value)
-    {
-        if (_loading || NodeId == Guid.Empty) return;
-        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g => g.PeriodType = value).AsTask());
-    }
-
-    partial void OnPeriodStartChanged(DateOnly? value)
-    {
-        if (_loading || NodeId == Guid.Empty) return;
-        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g => g.PeriodStart = value).AsTask());
-    }
-
-    partial void OnPeriodEndChanged(DateOnly? value)
-    {
-        if (_loading || NodeId == Guid.Empty) return;
-        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g => g.PeriodEnd = value).AsTask());
-    }
-
-    partial void OnRollingDaysChanged(int? value)
-    {
-        if (_loading || NodeId == Guid.Empty) return;
-        if (PeriodType == GoalPeriodType.Rolling && (value is null or <= 0))
+        if (PeriodType == GoalPeriodType.Rolling && RollingDays is null or <= 0)
         {
             ErrorMessage = Strings.Editor_Error_RollingDaysPositive;
             Status = EditorStatus.Error;
             return;
         }
-        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g => g.RollingDays = value).AsTask());
+        if (PeriodType == GoalPeriodType.Fixed && (PeriodStart is null || PeriodEnd is null))
+        {
+            ErrorMessage = Strings.Editor_Error_FixedDatesRequired;
+            Status = EditorStatus.Error;
+            return;
+        }
+        var (name, target, type, start, end, days) = (GoalName, TargetValue, PeriodType, PeriodStart, PeriodEnd, RollingDays);
+        _ = ApplyAsync(() => _goals.UpsertActiveAsync(NodeId, g =>
+        {
+            g.Name = name; g.TargetValue = target; g.PeriodType = type;
+            g.PeriodStart = start; g.PeriodEnd = end; g.RollingDays = days;
+        }).AsTask());
     }
+
+    partial void OnGoalNameChanged(string value) => Save();
+    partial void OnTargetValueChanged(decimal value) => Save();
+    partial void OnPeriodTypeChanged(GoalPeriodType value) => Save();
+    partial void OnPeriodStartChanged(DateOnly? value) => Save();
+    partial void OnPeriodEndChanged(DateOnly? value) => Save();
+    partial void OnRollingDaysChanged(int? value) => Save();
 }

@@ -68,6 +68,20 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
     partial void OnScheduleTypeChanged(ScheduleType value)
     {
         if (_loading || NodeId == Guid.Empty) return;
+        // Il tipo si salva solo con il suo parametro (ValidateCrossFields): senza, errore del ViewModel e non salvato;
+        // quando il parametro arriva, lo salva insieme al tipo (sotto), cosi' DB e schermata non divergono.
+        if (value == ScheduleType.WeeklyX && ScheduleWeeklyTarget is null or <= 0)
+        {
+            ErrorMessage = Strings.Editor_Error_WeeklyTargetPositive;
+            Status = EditorStatus.Error;
+            return;
+        }
+        if (value == ScheduleType.EveryXDays && ScheduleEveryXDays is null or <= 0)
+        {
+            ErrorMessage = Strings.Editor_Error_EveryXDaysPositive;
+            Status = EditorStatus.Error;
+            return;
+        }
         _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => c.ScheduleType = value).AsTask());
     }
 
@@ -86,7 +100,7 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
             Status = EditorStatus.Error;
             return;
         }
-        _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => c.ScheduleWeeklyTarget = value).AsTask());
+        _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => { c.ScheduleType = ScheduleType; c.ScheduleWeeklyTarget = value; }).AsTask());
     }
 
     partial void OnScheduleEveryXDaysChanged(int? value)
@@ -98,7 +112,7 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
             Status = EditorStatus.Error;
             return;
         }
-        _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => c.ScheduleEveryXDays = value).AsTask());
+        _ = ApplyAsync(() => _configs.UpsertAsync(NodeId, c => { c.ScheduleType = ScheduleType; c.ScheduleEveryXDays = value; }).AsTask());
     }
 
     partial void OnScheduleMonthlyDaysJsonChanged(string? value)

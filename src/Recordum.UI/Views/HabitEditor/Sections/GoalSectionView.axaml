@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.GoalSectionView"
+             x:DataType="vm:GoalSectionViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_GoalName}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <TextBox x:Name="GoalNameBox" Text="{CompiledBinding GoalName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Target}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <TextBox x:Name="TargetBox" HorizontalAlignment="Left" MinWidth="120"
+             Text="{CompiledBinding TargetValue, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Period}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ComboBox x:Name="PeriodBox" ItemsSource="{x:Static s:GoalSectionView.PeriodTypes}"
+              SelectedItem="{CompiledBinding PeriodType, Mode=TwoWay}" HorizontalAlignment="Stretch">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="core:GoalPeriodType">
+          <TextBlock Text="{CompiledBinding, Converter={x:Static s:GoalSectionView.PeriodLabel}}"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <ToggleButton Classes="pill" Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{CompiledBinding ShowAdvanced, Mode=TwoWay}"
+                  HorizontalAlignment="Left" Margin="0,4,0,0"/>
+    <StackPanel Spacing="4" IsVisible="{CompiledBinding ShowAdvanced}">
+      <TextBlock Text="{x:Static res:Strings.Editor_Field_RollingDays}" Foreground="{DynamicResource Brush.TextMuted}"/>
+      <TextBox x:Name="RollingDaysBox" HorizontalAlignment="Left" MinWidth="120"
+               Text="{CompiledBinding RollingDays, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

@@ -24,10 +24,27 @@ public class SchedulingSectionViewModelTests
     public async Task Changing_ScheduleType_persists_via_config_service()
     {
         var sut = CreateSut();
-        sut.ScheduleType = ScheduleType.WeeklyX;
+        sut.ScheduleType = ScheduleType.SpecificDays;
         await Task.Delay(20);
 
+        _configs.Store[_node.Id].ScheduleType.Should().Be(ScheduleType.SpecificDays);
+        sut.Status.Should().Be(EditorStatus.Saved);
+    }
+
+    [Fact]
+    public async Task A_type_that_needs_a_parameter_is_an_error_until_the_parameter_arrives_then_both_are_saved()
+    {
+        var sut = CreateSut();
+        sut.ScheduleType = ScheduleType.WeeklyX;   // senza obiettivo settimanale: rifiutato, nessuna eccezione
+        await Task.Delay(20);
+        sut.Status.Should().Be(EditorStatus.Error);
+        sut.ErrorMessage.Should().NotBeNullOrEmpty();
+        _configs.Store.ContainsKey(_node.Id).Should().BeFalse("la combinazione rifiutata non e' salvata");
+
+        sut.ScheduleWeeklyTarget = 3;   // ora la schermata mostra WeeklyX: anche il DB deve averlo
+        await Task.Delay(20);
         _configs.Store[_node.Id].ScheduleType.Should().Be(ScheduleType.WeeklyX);
+        _configs.Store[_node.Id].ScheduleWeeklyTarget.Should().Be(3);
         sut.Status.Should().Be(EditorStatus.Saved);
     }
 
@@ -42,7 +59,7 @@ public class SchedulingSectionViewModelTests
         await Task.Delay(20);
 
         sut.Status.Should().Be(EditorStatus.Error);
-        _configs.Store[_node.Id].ScheduleEveryXDays.Should().BeNull();
+        (_configs.Store.TryGetValue(_node.Id, out var saved) ? saved.ScheduleEveryXDays : null).Should().BeNull();
     }
 
     [Fact]
@@ -54,6 +71,7 @@ public class SchedulingSectionViewModelTests
         await Task.Delay(20);
 
         _configs.Store[_node.Id].ScheduleEveryXDays.Should().Be(3);
+        _configs.Store[_node.Id].ScheduleType.Should().Be(ScheduleType.EveryXDays);
         sut.Status.Should().Be(EditorStatus.Saved);
     }
 

@@ -17,7 +17,7 @@ public class HomeRowSectionViewModelTests
     public async Task LoadAsync_lists_type_allowed_key_figures_with_default_selected()
     {
         var prefs = new FakeHabitUiPrefsService();
-        var sut = new HomeRowSectionViewModel(prefs);
+        var sut = new HomeRowSectionViewModel(prefs, null);
 
         await sut.LoadAsync(Habit(Guid.NewGuid(), HabitType.Counter));
 
@@ -33,7 +33,7 @@ public class HomeRowSectionViewModelTests
     {
         var prefs = new FakeHabitUiPrefsService();
         var id = Guid.NewGuid();
-        var sut = new HomeRowSectionViewModel(prefs);
+        var sut = new HomeRowSectionViewModel(prefs, null);
         await sut.LoadAsync(Habit(id, HabitType.Action));
 
         sut.SelectedKeyFigure = sut.KeyFigureOptions.First(o => o.Kind == KeyFigureKind.DoneToday);
@@ -42,7 +42,7 @@ public class HomeRowSectionViewModelTests
         await Task.Delay(20);
         prefs.Store[id].KeyFigure.Should().Be("doneToday");
 
-        var reloaded = new HomeRowSectionViewModel(prefs);
+        var reloaded = new HomeRowSectionViewModel(prefs, null);
         await reloaded.LoadAsync(Habit(id, HabitType.Action));
         reloaded.SelectedKeyFigure!.Kind.Should().Be(KeyFigureKind.DoneToday);
     }
@@ -52,7 +52,7 @@ public class HomeRowSectionViewModelTests
     {
         var prefs = new FakeHabitUiPrefsService();
         var id = Guid.NewGuid();
-        var sut = new HomeRowSectionViewModel(prefs);
+        var sut = new HomeRowSectionViewModel(prefs, null);
         await sut.LoadAsync(Habit(id, HabitType.Action));
 
         sut.SelectedKeyFigure = sut.KeyFigureOptions.First(o => o.Kind == KeyFigureKind.DoneToday);
@@ -67,7 +67,7 @@ public class HomeRowSectionViewModelTests
     [Fact]
     public void IsApplicable_only_for_habits()
     {
-        var sut = new HomeRowSectionViewModel(new FakeHabitUiPrefsService());
+        var sut = new HomeRowSectionViewModel(new FakeHabitUiPrefsService(), null);
         sut.IsApplicable(NodeType.Habit, HabitType.Action).Should().BeTrue();
         sut.IsApplicable(NodeType.Group, null).Should().BeFalse();
     }

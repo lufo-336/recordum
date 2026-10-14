@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.RegistrationSectionView"
+             x:DataType="vm:RegistrationSectionViewModel">
+  <StackPanel Spacing="4">
+    <CheckBox x:Name="RepeatableBox" Content="{x:Static res:Strings.Editor_Registration_Repeatable}"
+              IsChecked="{CompiledBinding Repeatable, Mode=TwoWay}" IsVisible="{CompiledBinding ShowRepeatable}"/>
+    <StackPanel Spacing="4" IsVisible="{CompiledBinding ShowJournalGesture}">
+      <TextBlock Text="{x:Static res:Strings.Editor_Registration_JournalGesture}" Foreground="{DynamicResource Brush.TextMuted}"/>
+      <ComboBox x:Name="GestureBox" ItemsSource="{CompiledBinding GestureOptions}" SelectedItem="{CompiledBinding SelectedGesture, Mode=TwoWay}"
+                HorizontalAlignment="Stretch">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:JournalGestureOption">
+            <TextBlock Text="{CompiledBinding Label}"/>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

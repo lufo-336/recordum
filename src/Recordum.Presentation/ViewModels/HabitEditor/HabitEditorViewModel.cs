@@ -122,7 +122,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
         ResetTime = new ResetTimeSectionViewModel(nodes);
-        HomeRow = new HomeRowSectionViewModel(uiPrefs);
+        HomeRow = new HomeRowSectionViewModel(uiPrefs, events);
 
         Sections = new SectionViewModelBase[]
         {

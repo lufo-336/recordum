@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Recordum.Presentation.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitEditor.Sections;
+using Recordum.UI.Views.HabitEditor.Sections;
 
 namespace Recordum.UI.Views.HabitEditor;
 
@@ -23,9 +25,15 @@ public sealed class SectionTemplate : IDataTemplate
         return expander;
     }
 
-    // I rami arrivano coi Task 7 e 8.
+    // Task 7: le sezioni del ritmo; il Task 8 aggiunge le altre.
     private static Control? Content(SectionViewModelBase section) => section switch
     {
+        SchedulingSectionViewModel => new SchedulingSectionView(),
+        StreakSectionViewModel => new StreakSectionView(),
+        GoalSectionViewModel => new GoalSectionView(),
+        ResetTimeSectionViewModel => new ResetTimeSectionView(),
+        RegistrationSectionViewModel => new RegistrationSectionView(),
+        HomeRowSectionViewModel => new HomeRowSectionView(),
         _ => null,
     };
 }

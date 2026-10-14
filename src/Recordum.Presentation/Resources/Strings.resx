@@ -1680,4 +1680,25 @@ Details: {0}</value>
   <data name="HabitTemplatePicker.DeleteConfirm.Message" xml:space="preserve">
     <value>&#x201C;{0}&#x201D; will be removed from your templates. Habits already created from it are not affected.</value>
   </data>
+  <data name="Editor.ResetTime.Warning" xml:space="preserve">
+    <value>Changing the reset time re-reads your whole history: past days are re-assigned to the new day boundary.</value>
+  </data>
+  <data name="Editor.Schedule.Monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="Editor.Schedule.Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Editor.GoalPeriod.Fixed" xml:space="preserve">
+    <value>Fixed dates</value>
+  </data>
+  <data name="Editor.GoalPeriod.Rolling" xml:space="preserve">
+    <value>Rolling days</value>
+  </data>
+  <data name="Editor.GoalPeriod.Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Editor.Error.FixedDatesRequired" xml:space="preserve">
+    <value>A fixed-dates goal needs a start and an end date.</value>
+  </data>
 </root>

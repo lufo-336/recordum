@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:hb="using:Recordum.UI.Views.HabitBuilder"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.StreakSectionView"
+             x:DataType="vm:StreakSectionViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_StreakMode}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ComboBox x:Name="StreakModeBox" ItemsSource="{x:Static hb:HabitBuilderView.StreakModes}"
+              SelectedItem="{CompiledBinding StreakMode, Mode=TwoWay}" HorizontalAlignment="Stretch">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="core:StreakMode">
+          <TextBlock Text="{CompiledBinding, Converter={x:Static hb:HabitBuilderView.StreakModeLabel}}"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Recovery}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ComboBox x:Name="StreakRecoveryBox" ItemsSource="{x:Static hb:HabitBuilderView.StreakRecoveries}"
+              SelectedItem="{CompiledBinding StreakRecovery, Mode=TwoWay}" HorizontalAlignment="Stretch">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="core:StreakRecovery">
+          <TextBlock Text="{CompiledBinding, Converter={x:Static hb:HabitBuilderView.StreakRecoveryLabel}}"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <ToggleButton Classes="pill" Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{CompiledBinding ShowAdvanced, Mode=TwoWay}"
+                  HorizontalAlignment="Left" Margin="0,4,0,0"/>
+    <StackPanel Spacing="4" IsVisible="{CompiledBinding ShowAdvanced}">
+      <TextBlock Text="{x:Static res:Strings.Editor_Field_ToleranceMinutes}" Foreground="{DynamicResource Brush.TextMuted}"/>
+      <TextBox x:Name="ToleranceBox" HorizontalAlignment="Left" MinWidth="120"
+               Text="{CompiledBinding StreakToleranceMinutes, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>
