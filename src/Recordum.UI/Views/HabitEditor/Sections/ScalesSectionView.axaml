@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:m="using:Recordum.Core.Models"
+             xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.ScalesSectionView"
+             x:DataType="vm:ScalesSectionViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Scale}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <!-- A8: il ComboBox "Scala" di WPF era largo 600 px; qui sta nella colonna e i nomi lunghi si accorciano. -->
+    <ComboBox x:Name="ScaleBox" HorizontalAlignment="Stretch" ItemsSource="{CompiledBinding AvailableScales}"
+              SelectedValueBinding="{CompiledBinding Id}" SelectedValue="{CompiledBinding SelectedScaleTemplateId, Mode=TwoWay}">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="m:ScaleTemplate">
+          <TextBlock Text="{CompiledBinding Name}" TextTrimming="CharacterEllipsis"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <Border x:Name="PreviewBorder" Background="{DynamicResource Brush.SurfaceElevated}" CornerRadius="4" Padding="8,5"
+            IsVisible="{CompiledBinding ScalePreview, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <TextBlock Text="{CompiledBinding ScalePreview}" TextWrapping="Wrap" FontSize="{DynamicResource FontSize.Small}"/>
+    </Border>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_CustomLabels}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
+    <TextBox x:Name="LabelsBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="48"
+             Text="{CompiledBinding LabelsJson, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+  </StackPanel>
+</UserControl>

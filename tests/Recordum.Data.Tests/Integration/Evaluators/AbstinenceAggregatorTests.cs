@@ -20,7 +20,7 @@ public sealed class AbstinenceAggregatorTests
     private static SchedulingAwareStreakAggregator BuildAggregator(DbFixture fx)
     {
         var nodes      = new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
-        var configs    = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs    = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
         var pauses     = new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);

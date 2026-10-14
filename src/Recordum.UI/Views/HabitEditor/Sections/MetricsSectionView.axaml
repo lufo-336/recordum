@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:m="using:Recordum.Core.Models"
+             xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.MetricsSectionView"
+             x:DataType="vm:MetricsSectionViewModel">
+  <StackPanel Spacing="4">
+    <ItemsControl x:Name="MetricsList" ItemsSource="{CompiledBinding Metrics}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:MetricRowViewModel">
+          <!-- A8: due righe, tutto a larghezza della colonna; niente larghezze fisse da 110 px affiancate. -->
+          <Grid Margin="0,2,0,6" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+            <TextBox Grid.Row="0" Grid.Column="0" x:Name="MetricNameBox" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+            <Button Grid.Row="0" Grid.Column="1" Classes="icononly" Margin="4,0,0,0"
+                    Command="{CompiledBinding $parent[ItemsControl].((vm:MetricsSectionViewModel)DataContext).RemoveMetricCommand}"
+                    CommandParameter="{CompiledBinding}"
+                    AutomationProperties.Name="{x:Static res:Strings.Notes_Delete}" ToolTip.Tip="{x:Static res:Strings.Notes_Delete}">
+              <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                    StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Button>
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,0" ColumnDefinitions="*,4,*">
+              <ComboBox Grid.Column="0" x:Name="MetricTypeBox" HorizontalAlignment="Stretch" ItemsSource="{x:Static s:MetricsSectionView.Types}"
+                        SelectedItem="{CompiledBinding Type, Mode=TwoWay}"/>
+              <ComboBox Grid.Column="2" x:Name="MetricUnitBox" HorizontalAlignment="Stretch" ItemsSource="{CompiledBinding Units}"
+                        SelectedValueBinding="{CompiledBinding Id}" SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="m:UnitOfMeasure">
+                    <TextBlock Text="{CompiledBinding Name}" TextTrimming="CharacterEllipsis"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Button x:Name="AddMetricButton" Content="{x:Static res:Strings.Editor_Action_AddMetric}" Command="{CompiledBinding AddMetricCommand}"
+            HorizontalAlignment="Left" Margin="0,2,0,0"/>
+  </StackPanel>
+</UserControl>

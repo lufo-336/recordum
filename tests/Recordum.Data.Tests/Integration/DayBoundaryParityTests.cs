@@ -116,7 +116,7 @@ public class DayBoundaryParityTests
         var weeklyEval = new WeeklyStreakModeEvaluator();
         return new SchedulingAwareStreakAggregator(
             new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus()),
-            new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
+            new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
             Completions(fx),
             new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance),
             new ScheduleEvaluator(), dailyEval, weeklyEval,
@@ -134,7 +134,7 @@ public class DayBoundaryParityTests
             new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes),
             new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance),
             new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance),
-            new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
+            new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
             new IntensityRampResolver(), Aggregator(fx),
             new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes),
             new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext,
@@ -163,7 +163,7 @@ public class DayBoundaryParityTests
             });
             await db.SaveChangesAsync();
         }
-        await new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance)
+        await new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus())
             .UpsertAsync(habitId, c =>
             {
                 c.ScheduleType = ScheduleType.Daily;

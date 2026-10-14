@@ -37,7 +37,7 @@ public sealed class StreakAggregatorPerfTests
             await db.SaveChangesAsync();
         }
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         await configs.UpsertAsync(habitId, c =>
         {
             c.ScheduleType = ScheduleType.Daily;

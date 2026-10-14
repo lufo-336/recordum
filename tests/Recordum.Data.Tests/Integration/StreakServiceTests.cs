@@ -39,7 +39,7 @@ public class StreakServiceTests
     public async Task MarkBroken_sets_streak_broken_at()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var svc = new StreakService(configs, fx.Clock);
 
         await svc.MarkBrokenAsync(habitId);
@@ -54,7 +54,7 @@ public class StreakServiceTests
     public async Task ClearBroken_nulls_field()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var svc = new StreakService(configs, fx.Clock);
 
         await svc.MarkBrokenAsync(habitId);
@@ -70,7 +70,7 @@ public class StreakServiceTests
     {
         var (fx, habitId) = await SeedHabitAsync();
         var clock = (FakeClock)fx.Clock;
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var svc = new StreakService(configs, fx.Clock);
 
         // Initial UpsertAsync to anchor a baseline (no history yet for first write).

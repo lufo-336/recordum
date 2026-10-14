@@ -41,7 +41,7 @@ public class AttachmentEndToEndTests
         var notes = new NoteService(fixture.DbFactory, fixture.Clock, NullLogger<NoteService>.Instance, bus, resetTimes);
         var metrics = new MetricDefinitionService(fixture.DbFactory, fixture.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fixture.DbFactory, fixture.Clock, NullLogger<GoalService>.Instance);
-        var configs = new HabitConfigService(fixture.DbFactory, fixture.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fixture.DbFactory, fixture.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fixture.DbFactory, fixture.Clock, new RecordingEventBus(), resetTimes);
         var refData = new ReferenceDataQueryService(fixture.DbFactory);

@@ -25,7 +25,6 @@ public sealed class SectionTemplate : IDataTemplate
         return expander;
     }
 
-    // Task 7: le sezioni del ritmo; il Task 8 aggiunge le altre.
     private static Control? Content(SectionViewModelBase section) => section switch
     {
         SchedulingSectionViewModel => new SchedulingSectionView(),
@@ -34,6 +33,12 @@ public sealed class SectionTemplate : IDataTemplate
         ResetTimeSectionViewModel => new ResetTimeSectionView(),
         RegistrationSectionViewModel => new RegistrationSectionView(),
         HomeRowSectionViewModel => new HomeRowSectionView(),
+        MetricsSectionViewModel => new MetricsSectionView(),
+        ScalesSectionViewModel => new ScalesSectionView(),
+        TimerSectionViewModel => new TimerSectionView(),
+        TagsSectionViewModel => new TagsSectionView(),
+        NotesSectionViewModel => new NotesSectionView(),
+        AiSharingSectionViewModel => new AiSharingSectionView(),
         _ => null,
     };
 }

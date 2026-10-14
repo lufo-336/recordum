@@ -5,13 +5,16 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
 public sealed partial class HabitConfigService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
-    ILogger<HabitConfigService> logger) : IHabitConfigService
+    ILogger<HabitConfigService> logger,
+    IEventBus eventBus) : IHabitConfigService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = "HabitConfig for {HabitNodeId} upserted")]
     private partial void LogUpserted(Guid habitNodeId);
@@ -45,6 +48,9 @@ public sealed partial class HabitConfigService(
         ValidateCrossFields(cfg);
         await db.SaveChangesAsync(ct);
         LogUpserted(habitNodeId);
+        // Il cronometro e il quick-add di una schermata aperta dipendono dalla config (modalita', ripetibile):
+        // chi la scrive lo dice, come HabitNodeService per nome/colore. Non lo fa la view.
+        eventBus.Publish(new HabitUpdatedPayload(habitNodeId));
         _ = clock;
     }
 

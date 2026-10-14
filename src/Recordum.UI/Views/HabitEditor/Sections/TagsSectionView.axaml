@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:m="using:Recordum.Core.Models"
+             xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.TagsSectionView"
+             x:DataType="vm:TagsSectionViewModel">
+  <ItemsControl x:Name="TagsList" ItemsSource="{CompiledBinding AvailableTags}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:TagChipViewModel">
+        <!-- A8: un nome lungo non allarga il chip oltre la colonna (il WrapPanel non lo ritaglia da solo). -->
+        <ToggleButton Classes="pill" Margin="0,0,6,6" MaxWidth="280" IsChecked="{CompiledBinding IsSelected, Mode=OneWay}"
+                      Command="{CompiledBinding $parent[ItemsControl].((vm:TagsSectionViewModel)DataContext).ToggleTagCommand}"
+                      CommandParameter="{CompiledBinding}">
+          <TextBlock Text="{CompiledBinding Name}" TextTrimming="CharacterEllipsis"/>
+        </ToggleButton>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

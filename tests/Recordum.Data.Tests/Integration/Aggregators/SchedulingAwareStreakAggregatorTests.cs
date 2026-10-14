@@ -38,7 +38,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
             await db.SaveChangesAsync();
         }
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         await configs.UpsertAsync(habitId, c =>
         {
             c.ScheduleType = st;
@@ -96,7 +96,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
             await db.SaveChangesAsync();
         }
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         await configs.UpsertAsync(habitId, c =>
         {
             c.ScheduleType = ScheduleType.Daily;
@@ -150,7 +150,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         var habitId = await SeedDailyHabitAsync(fx, createdUtc: new DateTimeOffset(2026, 8, 17, 6, 0, 0, TimeSpan.Zero));
         await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 22, 30, 0, TimeSpan.Zero));
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
             habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
 
@@ -173,7 +173,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         }
         await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 23, 30, 0, TimeSpan.Zero));
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
             habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
 
@@ -193,7 +193,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero));
         await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero));
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
             habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 19));
 
@@ -214,7 +214,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 17, 10, 0, 0, TimeSpan.Zero));
         await RecordAtAsync(fx, habitId, new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero));
 
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var runs = await BuildAggregator(fx, configs).GetHistoryAsync(
             habitId, new DateOnly(2026, 8, 17), new DateOnly(2026, 8, 18));
 
@@ -234,7 +234,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
         // La config va scritta all'istante di creazione: un upsert successivo lascerebbe uno snapshot
         // storico che copre i giorni misurati, e Project() non porta StreakBrokenAt (escluso dallo
         // storico) — la rottura manuale sparirebbe proprio dai giorni che il test guarda.
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         clock.Set(new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
         await configs.UpsertAsync(habitId, c =>
         {
@@ -465,7 +465,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
 
             // Advance clock to Apr 6 BEFORE MarkBrokenAsync so StreakBrokenAt is persisted as Apr 6.
             ((FakeClock)fx.Clock).Set(new DateTimeOffset(new DateOnly(2026, 4, 6).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
-            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
             var streaks = new StreakService(configs, fx.Clock);
             await streaks.MarkBrokenAsync(habitId);
 
@@ -548,7 +548,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
             // Advance clock and switch ScheduleType mid-run.
             ((FakeClock)fx.Clock).Set(new DateTimeOffset(
                 new DateOnly(2026, 4, 6).ToDateTime(new TimeOnly(0, 0)), TimeSpan.Zero));
-            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
             await configs.UpsertAsync(habitId, c =>
             {
                 c.ScheduleType = ScheduleType.WeeklyX;
@@ -637,7 +637,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
                 await db.SaveChangesAsync();
             }
 
-            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
             var aggr = BuildAggregator(fx, configs);
             var runs = await aggr.GetHistoryAsync(groupId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30));
             Assert.Empty(runs);
@@ -674,7 +674,7 @@ public sealed class SchedulingAwareStreakAggregatorTests
             // Set clock to Apr 3 (today = last completion day).
             ((FakeClock)fx.Clock).Set(new DateTimeOffset(new DateOnly(2026, 4, 3).ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero));
 
-            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+            var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
             var aggr = BuildAggregator(fx, configs);
 
             // toDate matches "today" (Apr 3) — otherwise Apr 4 reads as a missed scheduled day

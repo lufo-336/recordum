@@ -890,16 +890,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             Calendar.CompletedColorHex = refreshed.Color;
             await Calendar.JumpAsync().ConfigureAwait(true);
 
-            // A "repeatable" flip must re-shape the open registration module. Rebuild only when the mode
-            // actually changed, so a rename/recolor never wipes half-typed values. NOTE: today the flip goes
-            // through IHabitConfigService.UpsertAsync, which publishes no HabitUpdated, so this branch is not
-            // reached from the editor (tracker F2a T1; F5 Configura).
-            if (QuickAdd is CounterSeriesQuickAddViewModel cs)
-            {
-                var cfg = await _configs.GetAsync(refreshed.Id).ConfigureAwait(true);
-                if (cfg is not null && cfg.Repeatable != cs.IsRepeatable)
-                    await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
-            }
+            // A config write (HabitConfigService publishes HabitUpdated) can re-shape the open screen: a "repeatable"
+            // flip rebuilds the registration module, a timer change re-reads the Cronologia stopwatch. Both only when
+            // the value actually changed, so a rename/recolor never wipes half-typed values.
+            var cfg = await _configs.GetAsync(refreshed.Id).ConfigureAwait(true);
+            if (Node is null || Node.Id != refreshed.Id) return;
+            if (QuickAdd is CounterSeriesQuickAddViewModel cs && cfg is not null && cfg.Repeatable != cs.IsRepeatable)
+                await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
+            if (cfg?.TimerMode != TimerControl.Mode || (cfg?.HasIntegratedTimer == true && cfg.TimerMode is not null) != TimerControl.IsApplicable)
+                await TimerControl.SetContextAsync(refreshed, cfg).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitUpdatedEvent failed: {ex}"); }
     }

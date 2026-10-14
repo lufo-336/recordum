@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:m="using:Recordum.Core.Models"
+             xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.NotesSectionView"
+             x:DataType="vm:NotesSectionViewModel">
+  <StackPanel Spacing="4">
+    <TextBlock Text="{x:Static res:Strings.Editor_Config_NoteColor}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ctl:ColorSwatchPicker x:Name="NoteColorPicker" HorizontalAlignment="Left" Color="{CompiledBinding NoteMarkerColor, Mode=TwoWay}"
+                           RecentColors="{CompiledBinding RecentColors}" FavoriteColors="{CompiledBinding FavoriteColors}"
+                           AddFavoriteCommand="{CompiledBinding AddFavoriteCommand}" RemoveFavoriteCommand="{CompiledBinding RemoveFavoriteCommand}"/>
+  </StackPanel>
+</UserControl>

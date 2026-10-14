@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:m="using:Recordum.Core.Models"
+             xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.TimerSectionView"
+             x:DataType="vm:TimerSectionViewModel">
+  <StackPanel Spacing="4">
+    <CheckBox x:Name="IntegratedBox" Content="{x:Static res:Strings.Editor_Field_IntegratedTimer}" IsChecked="{CompiledBinding HasIntegratedTimer, Mode=TwoWay}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_TimerMode}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ComboBox x:Name="ModeBox" HorizontalAlignment="Stretch" ItemsSource="{x:Static s:TimerSectionView.Modes}"
+              SelectedItem="{CompiledBinding TimerMode, Mode=TwoWay}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_TargetSeconds}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <TextBox x:Name="TargetBox" HorizontalAlignment="Left" MinWidth="120"
+             Text="{CompiledBinding TimerTargetSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Segments}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
+    <ItemsControl x:Name="SegmentsList" ItemsSource="{CompiledBinding Segments}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:SegmentRowViewModel">
+          <Grid Margin="0,2" ColumnDefinitions="*,Auto,Auto">
+            <TextBox Grid.Column="0" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+            <CheckBox Grid.Column="1" Content="{x:Static res:Strings.Editor_Field_Rest}" IsChecked="{CompiledBinding IsRest, Mode=TwoWay}" Margin="6,0" VerticalAlignment="Center"/>
+            <Button Grid.Column="2" Classes="icononly"
+                    Command="{CompiledBinding $parent[ItemsControl].((vm:TimerSectionViewModel)DataContext).RemoveSegmentCommand}"
+                    CommandParameter="{CompiledBinding}"
+                    AutomationProperties.Name="{x:Static res:Strings.Notes_Delete}" ToolTip.Tip="{x:Static res:Strings.Notes_Delete}">
+              <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                    StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Button>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Button Content="{x:Static res:Strings.Editor_Action_AddSegment}" Command="{CompiledBinding AddSegmentCommand}" HorizontalAlignment="Left"/>
+    <ToggleButton Classes="pill" Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{CompiledBinding ShowAdvanced, Mode=TwoWay}"
+                  HorizontalAlignment="Left" Margin="0,4,0,0"/>
+    <StackPanel Spacing="4" IsVisible="{CompiledBinding ShowAdvanced}">
+      <CheckBox Content="{x:Static res:Strings.Editor_Field_AutoPrompt}" IsChecked="{CompiledBinding TimerAutoPrompt, Mode=TwoWay}"/>
+      <TextBlock Text="{x:Static res:Strings.Editor_Field_RestTimerSeconds}" Foreground="{DynamicResource Brush.TextMuted}"/>
+      <TextBox x:Name="RestBox" HorizontalAlignment="Left" MinWidth="120"
+               Text="{CompiledBinding RestTimerSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

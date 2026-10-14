@@ -6,6 +6,7 @@ using Recordum.Core.Errors;
 using Recordum.Core.Models;
 using Recordum.Data.Services;
 using Recordum.Data.Tests.Fixtures;
+using Recordum.Plugins.Contracts.Events;
 using Xunit;
 
 namespace Recordum.Data.Tests.Integration;
@@ -38,11 +39,21 @@ public class HabitConfigServiceTests
     }
 
     [Fact]
+    public async Task UpsertAsync_publishes_HabitUpdated_for_the_node_so_an_open_screen_re_reads_the_config()
+    {
+        var (fx, habitId) = await SeedHabitAsync();
+        var bus = new RecordingEventBus();
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, bus);
+        await svc.UpsertAsync(habitId, c => c.Repeatable = true);
+        bus.Published.OfType<HabitUpdatedPayload>().Should().ContainSingle().Which.HabitNodeId.Should().Be(habitId);
+    }
+
+    [Fact]
     public async Task UpsertAsync_writes_through_interceptor_creating_history_row()
     {
         var (fx, habitId) = await SeedHabitAsync();
         ((FakeClock)fx.Clock).Advance(TimeSpan.FromMinutes(10));
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         await svc.UpsertAsync(habitId, c =>
         {
             c.ScheduleType = ScheduleType.WeeklyX;
@@ -57,7 +68,7 @@ public class HabitConfigServiceTests
     public async Task UpsertAsync_rejects_inconsistent_schedule()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             svc.UpsertAsync(habitId, c =>
             {
@@ -72,7 +83,7 @@ public class HabitConfigServiceTests
     public async Task AddSegment_then_Remove_round_trip()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var seg = new SegmentDefinition { Id = Guid.NewGuid(), HabitNodeId = habitId, Name = "work", SortOrder = 0 };
         await svc.AddSegmentAsync(habitId, seg);
         await using (var db = await fx.Factory.CreateDbContextAsync())
@@ -87,7 +98,7 @@ public class HabitConfigServiceTests
     public async Task ListSegmentsAsync_returns_segments_in_sort_order()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         await svc.AddSegmentAsync(habitId, new SegmentDefinition { Name = "Rest", SortOrder = 1, IsRest = true });
         await svc.AddSegmentAsync(habitId, new SegmentDefinition { Name = "Work", SortOrder = 0, IsRest = false });
 
@@ -101,7 +112,7 @@ public class HabitConfigServiceTests
     public async Task UpdateSegmentAsync_mutates_existing_row()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var seg = new SegmentDefinition { Id = Guid.NewGuid(), Name = "Work", SortOrder = 0 };
         await svc.AddSegmentAsync(habitId, seg);
 
@@ -119,7 +130,7 @@ public class HabitConfigServiceTests
     {
         var (fx, habitId) = await SeedHabitAsync();
         var clock = (FakeClock)fx.Clock;
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
 
         clock.Advance(TimeSpan.FromMinutes(10));
         await svc.UpsertAsync(habitId, c => c.StreakMode = StreakMode.Daily);
@@ -139,7 +150,7 @@ public class HabitConfigServiceTests
     public async Task UpdateSegmentAsync_throws_when_segment_missing()
     {
         await using var fx = new DbFixture();
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var act = async () => await svc.UpdateSegmentAsync(Guid.NewGuid(), _ => { });
         await act.Should().ThrowAsync<SegmentDefinitionNotFoundException>();
     }

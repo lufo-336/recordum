@@ -227,7 +227,7 @@ public class HabitTemplateServiceTests
         var templateId = await InsertTemplateAsync(fx, payload);
 
         var svc = CreateSut(fx);
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
 
         var cfg = await configs.GetAsync(nodeId);
@@ -249,7 +249,7 @@ public class HabitTemplateServiceTests
         var templateId = await InsertTemplateAsync(fx, payload);
 
         var svc = CreateSut(fx);
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
 
         var cfg = await configs.GetAsync(nodeId);
@@ -267,7 +267,7 @@ public class HabitTemplateServiceTests
         var templateId = await InsertTemplateAsync(fx, payload);
 
         var svc = CreateSut(fx);
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
 
         var cfg = await configs.GetAsync(nodeId);
@@ -567,7 +567,7 @@ public class HabitTemplateServiceTests
     private static HabitTemplateService CreateSut(DbFixture fx) => new(
         fx.Factory, fx.Clock, fx.PluginContext,
         new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus()),
-        new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance),
+        new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
         new HabitUiPrefsService(fx.Factory),
         NullLogger<HabitTemplateService>.Instance);
 }

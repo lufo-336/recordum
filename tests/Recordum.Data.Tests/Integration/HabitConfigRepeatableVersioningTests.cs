@@ -45,7 +45,7 @@ public class HabitConfigRepeatableVersioningTests
     public async Task Changing_repeatable_writes_a_history_snapshot_of_the_previous_value()
     {
         var (fx, habitId) = await SeedHabitAsync();
-        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var svc = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
 
         // Set repeatable to a NON-default value (true) so the captured old value is unambiguous:
         // bool defaults to false, so seeding/asserting false could be satisfied by an unrelated

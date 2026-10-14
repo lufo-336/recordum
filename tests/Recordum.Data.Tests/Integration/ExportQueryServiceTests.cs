@@ -31,7 +31,7 @@ public sealed class ExportQueryServiceTests
         var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         var refData = new ReferenceDataQueryService(fx.Factory);
@@ -51,7 +51,7 @@ public sealed class ExportQueryServiceTests
     {
         var bus = new RecordingEventBus();
         var nodes = new HabitNodeService(fx.Factory, fx.Clock, fx.PluginContext, NullLogger<HabitNodeService>.Instance, new RecordingEventBus());
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var pauses = new StreakPauseService(fx.Factory, fx.Clock, NullLogger<StreakPauseService>.Instance);
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes);
@@ -80,7 +80,7 @@ public sealed class ExportQueryServiceTests
             db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Run" });
             await db.SaveChangesAsync();
         }
-        await new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance)
+        await new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus())
             .UpsertAsync(habitId, c =>
             {
                 c.ScheduleType = ScheduleType.Daily;
@@ -306,7 +306,7 @@ public sealed class ExportQueryServiceTests
         var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
         var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
-        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance);
+        var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
         var refData = new ReferenceDataQueryService(fx.Factory);
