@@ -738,8 +738,18 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         await TimerControl.SetContextAsync(node, config, ct).ConfigureAwait(true);
     }
 
+    // Cio' che il quick-add mostra della config e delle metriche: se cambia, la forma e' vecchia e si ricostruisce;
+    // se non cambia (rinomina, ricolora, scritture non correlate) i valori digitati restano.
+    private string _quickAddShape = "";
+
+    private static string QuickAddShape(HabitConfig? cfg, IReadOnlyList<MetricDefinition> defs) =>
+        $"{cfg?.Repeatable == true}|" + string.Join(";", defs.OrderBy(m => m.SortOrder).Select(m =>
+            $"{m.Id}/{m.Type}/{m.UnitOfMeasureId}/{m.ScaleTemplateId}/{m.LabelsJson}"));
+
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)
     {
+        _quickAddShape = QuickAddShape(await _configs.GetAsync(node.Id, ct).ConfigureAwait(true),
+            await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true));
         _isQuickNoteJournal = false;
         JournalQuickEntry = null;
         if (node.HabitType == HabitType.Journal)
@@ -894,10 +904,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // flip rebuilds the registration module, a timer change re-reads the Cronologia stopwatch. Both only when
             // the value actually changed, so a rename/recolor never wipes half-typed values.
             var cfg = await _configs.GetAsync(refreshed.Id).ConfigureAwait(true);
+            var defs = await _metrics.ListByHabitAsync(refreshed.Id).ConfigureAwait(true);
+            var segs = cfg?.TimerMode == TimerMode.Session ? await _configs.ListSegmentsAsync(refreshed.Id).ConfigureAwait(true) : [];
             if (Node is null || Node.Id != refreshed.Id) return;
-            if (QuickAdd is CounterSeriesQuickAddViewModel cs && cfg is not null && cfg.Repeatable != cs.IsRepeatable)
+            if (QuickAdd is not null && QuickAddShape(cfg, defs) != _quickAddShape)
                 await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
-            if (cfg?.TimerMode != TimerControl.Mode || (cfg?.HasIntegratedTimer == true && cfg.TimerMode is not null) != TimerControl.IsApplicable)
+            var segmentsChanged = !segs.Select(x => (x.Id, x.Name, x.IsRest)).SequenceEqual(TimerControl.Segments.Select(x => (x.Id, x.Name, x.IsRest)));
+            if (segmentsChanged || cfg?.TimerMode != TimerControl.Mode || (cfg?.HasIntegratedTimer == true && cfg.TimerMode is not null) != TimerControl.IsApplicable)
                 await TimerControl.SetContextAsync(refreshed, cfg).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitUpdatedEvent failed: {ex}"); }

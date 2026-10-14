@@ -12,7 +12,13 @@
     <CheckBox x:Name="IntegratedBox" Content="{x:Static res:Strings.Editor_Field_IntegratedTimer}" IsChecked="{CompiledBinding HasIntegratedTimer, Mode=TwoWay}"/>
     <TextBlock Text="{x:Static res:Strings.Editor_Field_TimerMode}" Foreground="{DynamicResource Brush.TextMuted}"/>
     <ComboBox x:Name="ModeBox" HorizontalAlignment="Stretch" ItemsSource="{x:Static s:TimerSectionView.Modes}"
-              SelectedItem="{CompiledBinding TimerMode, Mode=TwoWay}"/>
+              SelectedItem="{CompiledBinding TimerMode, Mode=TwoWay}">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="core:TimerMode">
+          <TextBlock Text="{CompiledBinding, Converter={x:Static s:TimerSectionView.ModeLabel}}" TextWrapping="Wrap"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
     <TextBlock Text="{x:Static res:Strings.Editor_Field_TargetSeconds}" Foreground="{DynamicResource Brush.TextMuted}"/>
     <TextBox x:Name="TargetBox" HorizontalAlignment="Left" MinWidth="120"
              Text="{CompiledBinding TimerTargetSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>

@@ -39,7 +39,7 @@ public class AttachmentEndToEndTests
             NullLogger<ResetTimeResolver>.Instance);
         var completions = new CompletionService(fixture.DbFactory, fixture.Clock, NullLogger<CompletionService>.Instance, bus, resetTimes);
         var notes = new NoteService(fixture.DbFactory, fixture.Clock, NullLogger<NoteService>.Instance, bus, resetTimes);
-        var metrics = new MetricDefinitionService(fixture.DbFactory, fixture.Clock, NullLogger<MetricDefinitionService>.Instance);
+        var metrics = new MetricDefinitionService(fixture.DbFactory, fixture.Clock, NullLogger<MetricDefinitionService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var goals = new GoalService(fixture.DbFactory, fixture.Clock, NullLogger<GoalService>.Instance);
         var configs = new HabitConfigService(fixture.DbFactory, fixture.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ramp = new Recordum.Core.Services.IntensityRampResolver();

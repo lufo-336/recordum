@@ -11,6 +11,12 @@
   <StackPanel Spacing="4">
     <TextBlock Text="{x:Static res:Strings.Editor_Field_AiDataSharing}" Foreground="{DynamicResource Brush.TextMuted}"/>
     <ComboBox x:Name="AiBox" HorizontalAlignment="Stretch" ItemsSource="{x:Static s:AiSharingSectionView.Levels}"
-              SelectedItem="{CompiledBinding AiDataSharing, Mode=TwoWay}"/>
+              SelectedItem="{CompiledBinding AiDataSharing, Mode=TwoWay}">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="core:AiDataSharing">
+          <TextBlock Text="{CompiledBinding, Converter={x:Static s:AiSharingSectionView.LevelLabel}}" TextWrapping="Wrap"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
   </StackPanel>
 </UserControl>

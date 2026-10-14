@@ -1675,4 +1675,37 @@
   <data name="Editor.Error.FixedDatesRequired" xml:space="preserve">
     <value>Un obiettivo a date fisse richiede una data di inizio e una di fine.</value>
   </data>
+  <data name="Editor.MetricType.Integer" xml:space="preserve">
+    <value>Numero intero</value>
+  </data>
+  <data name="Editor.MetricType.Decimal" xml:space="preserve">
+    <value>Numero decimale</value>
+  </data>
+  <data name="Editor.MetricType.Seconds" xml:space="preserve">
+    <value>Durata</value>
+  </data>
+  <data name="Editor.MetricType.Text" xml:space="preserve">
+    <value>Testo</value>
+  </data>
+  <data name="Editor.TimerMode.Stopwatch" xml:space="preserve">
+    <value>Cronometro</value>
+  </data>
+  <data name="Editor.TimerMode.Countdown" xml:space="preserve">
+    <value>Conto alla rovescia</value>
+  </data>
+  <data name="Editor.TimerMode.Primary" xml:space="preserve">
+    <value>Cronometro principale</value>
+  </data>
+  <data name="Editor.TimerMode.Session" xml:space="preserve">
+    <value>Sessione (segmenti)</value>
+  </data>
+  <data name="Editor.AiSharing.None" xml:space="preserve">
+    <value>Disattivata: non si condivide nulla</value>
+  </data>
+  <data name="Editor.AiSharing.LocalOnly" xml:space="preserve">
+    <value>Solo su questo dispositivo</value>
+  </data>
+  <data name="Editor.AiSharing.ApiAllowed" xml:space="preserve">
+    <value>Puo' essere inviato al servizio AI</value>
+  </data>
 </root>

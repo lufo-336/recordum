@@ -18,7 +18,7 @@ public sealed class ChartQueryServiceTests
     private static ChartQueryService Build(DbFixture fx) =>
         new(fx.Factory,
             fx.Clock,
-            new TrendQueryService(fx.Factory, new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance), fx.ResetTimes),
+            new TrendQueryService(fx.Factory, new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()), fx.ResetTimes),
             new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes),
             fx.ResetTimes);
 

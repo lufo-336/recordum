@@ -62,6 +62,7 @@ public sealed partial class HabitConfigService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         db.SegmentDefinitions.Add(segment);
         await db.SaveChangesAsync(ct);
+        eventBus.Publish(new HabitUpdatedPayload(habitNodeId));   // i segmenti sono del cronometro della schermata aperta
     }
 
     public async ValueTask RemoveSegmentAsync(Guid segmentId, CancellationToken ct = default)
@@ -71,6 +72,7 @@ public sealed partial class HabitConfigService(
         if (seg is null) return;
         db.SegmentDefinitions.Remove(seg);
         await db.SaveChangesAsync(ct);
+        eventBus.Publish(new HabitUpdatedPayload(seg.HabitNodeId));
     }
 
     public async ValueTask<IReadOnlyList<SegmentDefinition>> ListSegmentsAsync(Guid habitNodeId, CancellationToken ct = default)
@@ -90,6 +92,7 @@ public sealed partial class HabitConfigService(
             ?? throw new SegmentDefinitionNotFoundException(segmentId);
         mutate(seg);
         await db.SaveChangesAsync(ct);
+        eventBus.Publish(new HabitUpdatedPayload(seg.HabitNodeId));
     }
 
     private static void ValidateCrossFields(HabitConfig c)

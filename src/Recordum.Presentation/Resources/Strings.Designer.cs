@@ -606,6 +606,18 @@ public static class Strings
     public static string Unlock_Unsupported => Get("Unlock.Unsupported");
     public static string Unlock_Failed => Get("Unlock.Failed");
 
+    public static string Editor_MetricType_Integer => Get("Editor.MetricType.Integer");
+    public static string Editor_MetricType_Decimal => Get("Editor.MetricType.Decimal");
+    public static string Editor_MetricType_Seconds => Get("Editor.MetricType.Seconds");
+    public static string Editor_MetricType_Text => Get("Editor.MetricType.Text");
+    public static string Editor_TimerMode_Stopwatch => Get("Editor.TimerMode.Stopwatch");
+    public static string Editor_TimerMode_Countdown => Get("Editor.TimerMode.Countdown");
+    public static string Editor_TimerMode_Primary => Get("Editor.TimerMode.Primary");
+    public static string Editor_TimerMode_Session => Get("Editor.TimerMode.Session");
+    public static string Editor_AiSharing_None => Get("Editor.AiSharing.None");
+    public static string Editor_AiSharing_LocalOnly => Get("Editor.AiSharing.LocalOnly");
+    public static string Editor_AiSharing_ApiAllowed => Get("Editor.AiSharing.ApiAllowed");
+
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

@@ -47,7 +47,7 @@ public sealed class TrendQueryServiceTests
         new(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, new RecordingEventBus(), fx.ResetTimes);
 
     private static MetricDefinitionService NewMetricService(DbFixture fx) =>
-        new(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance);
+        new(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance, new RecordingEventBus());
 
     private static TrendQueryService NewSut(DbFixture fx) =>
         new(fx.Factory, NewMetricService(fx), fx.ResetTimes);

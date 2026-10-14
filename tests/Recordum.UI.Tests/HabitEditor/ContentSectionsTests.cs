@@ -187,6 +187,70 @@ public class ContentSectionsTests
     }
 
     [AvaloniaFact]
+    public async Task Enum_pickers_show_localized_labels_and_the_AI_options_say_what_happens_to_the_data()
+    {
+        using var _ = TestCulture.Pin();
+        var (o, _, _, v) = await OpenSectionAsync<AiSharingSectionViewModel, AiSharingSectionView>(e => e.AiSharing, "AiLbl", HabitType.Action);
+        try
+        {
+            var box = Named<ComboBox>(v, "AiBox");
+            box.SelectedItem = AiDataSharing.ApiAllowed;
+            PrivateDbHost.Pump();
+            var shown = box.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+            shown.Should().Contain("Puo' essere inviato al servizio AI").And.NotContain("ApiAllowed");
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Adding_the_first_metric_turns_the_tap_quick_add_into_the_series_one_on_the_open_screen()
+    {
+        var (o, _, s, v) = await OpenSectionAsync<MetricsSectionViewModel, MetricsSectionView>(e => e.Metrics, "MetQa", HabitType.Counter);
+        try
+        {
+            var screen = o.Vm.Workspace.ActiveSubjectTab!.Screen;
+            screen.QuickAdd.Should().BeOfType<CounterTapQuickAddViewModel>();
+            Named<Button>(v, "AddMetricButton").Command!.Execute(null);
+            await UntilAsync(() => screen.QuickAdd is CounterSeriesQuickAddViewModel);
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task A_scale_choice_on_a_state_habit_rebuilds_the_open_quick_add()
+    {
+        var (o, _, s, v) = await OpenSectionAsync<ScalesSectionViewModel, ScalesSectionView>(e => e.Scales, "SclQa", HabitType.State,
+            async id => await AddMetricAsync(id));
+        try
+        {
+            var screen = o.Vm.Workspace.ActiveSubjectTab!.Screen;
+            var before = screen.QuickAdd;
+            Named<ComboBox>(v, "ScaleBox").SelectedItem = s.AvailableScales.First();
+            await UntilAsync(() => !ReferenceEquals(screen.QuickAdd, before));
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Adding_a_segment_in_session_mode_updates_the_Cronologia_timer()
+    {
+        var (o, _, s, v) = await OpenSectionAsync<TimerSectionViewModel, TimerSectionView>(e => e.Timer, "SegQa", HabitType.Counter);
+        try
+        {
+            var timer = o.Vm.Workspace.ActiveSubjectTab!.Screen.TimerControl;
+            await s.AddSegmentCommand.ExecuteAsync(null);   // prima: nessun segmento, la modalita' Sessione sarebbe rifiutata
+            Named<CheckBox>(v, "IntegratedBox").IsChecked = true;
+            Named<ComboBox>(v, "ModeBox").SelectedItem = TimerMode.Session;
+            await UntilAsync(() => timer.Mode == TimerMode.Session && timer.Segments.Count == 1);
+            await s.AddSegmentCommand.ExecuteAsync(null);
+            await UntilAsync(() => timer.Segments.Count == 2);
+            await s.RemoveSegmentCommand.ExecuteAsync(s.Segments[0]);
+            await UntilAsync(() => timer.Segments.Count == 1);
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task With_every_section_open_at_320_px_nothing_extends_past_the_column_and_the_status_stays_visible()
     {
         foreach (var type in new[] { HabitType.Counter, HabitType.State })

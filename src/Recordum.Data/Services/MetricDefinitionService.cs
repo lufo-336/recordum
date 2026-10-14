@@ -4,13 +4,16 @@ using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
 public sealed class MetricDefinitionService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
-    ILogger<MetricDefinitionService> logger) : IMetricDefinitionService
+    ILogger<MetricDefinitionService> logger,
+    IEventBus eventBus) : IMetricDefinitionService
 {
     public async ValueTask<Guid> CreateAsync(MetricDefinition draft, CancellationToken ct = default)
     {
@@ -21,6 +24,7 @@ public sealed class MetricDefinitionService(
         db.MetricDefinitions.Add(draft);
         await db.SaveChangesAsync(ct);
         _ = clock; _ = logger;
+        Announce(draft.HabitNodeId);
         return draft.Id;
     }
 
@@ -33,12 +37,15 @@ public sealed class MetricDefinitionService(
         mutate(m);
         ValidateLabels(m);
         await db.SaveChangesAsync(ct);
+        Announce(m.HabitNodeId);
     }
 
     public async ValueTask DeleteAsync(Guid id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var habitId = await db.MetricDefinitions.Where(x => x.Id == id).Select(x => (Guid?)x.HabitNodeId).FirstOrDefaultAsync(ct);
         await db.MetricDefinitions.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
+        if (habitId is { } h) Announce(h);
     }
 
     public async ValueTask<IReadOnlyList<MetricDefinition>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default)
@@ -49,6 +56,9 @@ public sealed class MetricDefinitionService(
             .OrderBy(m => m.SortOrder)
             .ToListAsync(ct);
     }
+
+    // La forma del quick-add di una schermata aperta (tocco/serie, unita', scala) dipende dalle metriche: chi le scrive lo dice.
+    private void Announce(Guid habitNodeId) => eventBus.Publish(new HabitUpdatedPayload(habitNodeId));
 
     private static void ValidateLabels(MetricDefinition m)
     {

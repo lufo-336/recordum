@@ -24,7 +24,13 @@
             </Button>
             <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,0" ColumnDefinitions="*,4,*">
               <ComboBox Grid.Column="0" x:Name="MetricTypeBox" HorizontalAlignment="Stretch" ItemsSource="{x:Static s:MetricsSectionView.Types}"
-                        SelectedItem="{CompiledBinding Type, Mode=TwoWay}"/>
+                        SelectedItem="{CompiledBinding Type, Mode=TwoWay}">
+      <ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="core:MetricType">
+          <TextBlock Text="{CompiledBinding, Converter={x:Static s:MetricsSectionView.TypeLabel}}" TextWrapping="Wrap"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
               <ComboBox Grid.Column="2" x:Name="MetricUnitBox" HorizontalAlignment="Stretch" ItemsSource="{CompiledBinding Units}"
                         SelectedValueBinding="{CompiledBinding Id}" SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
