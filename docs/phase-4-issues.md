@@ -43,7 +43,7 @@
 
 **Trovati e chiusi in F2b (sezione "Onda F2b")**
 - **F2b-1** — l'orario di reset cambiato su un gruppo non arriva ai tab aperti dei figli · **F2b-2** — "Date fisse" dell'obiettivo
-  non può mai essere valido su Avalonia (niente selettori di data) · **F2b-3** — il colore di una nota si scrive e pubblica
+  non è salvabile su Avalonia (niente selettori di data) · **F2b-3** — il colore di una nota si scrive e pubblica
   a ogni `PointerMoved` · `reported` · **F2b-4** — le sezioni di Configura non occupavano la colonna · `fixed` ·
   **F2b-5** — l'intestazione della Home stretta sovrappone "Nuova" e "Archiviate" · `reported`
 - Esiti dei finding di F5 chiusi su Avalonia: **A8, A12, W2V-9, W2V-19, F1-5** `fixed`; **F1-RAIL1** in parte (Nuovo →
@@ -2004,8 +2004,8 @@ Esiti dei finding di Configura e builder noti da WPF, verificati contro codice e
 - **W2V-19 — anteprima "In Home" piatta** · `fixed` su Avalonia · `BuilderPreviewPaneTests` (la striscia segue il tipo, come
   nella Home).
 - **F1-5 — la riga gruppo offriva "Rinomina" senza casella** · `fixed` nel senso della decisione 7: la rinomina e il
-  colore di un gruppo hanno ora una superficie (Configura, aperta da un gruppo nuovo: `EditorPaneTests`). La voce del
-  menu di riga resta come in WPF.
+  colore di un gruppo hanno ora una superficie (Configura, aperta da un gruppo nuovo: `EditorPaneTests`). La voce "Rinomina" del
+  menu di riga resta inerte, come in WPF.
 - **F1-RAIL1** · in parte: "Nuovo → Abitudine" e "Crea la tua prima abitudine" riaccesi (Task 4); restano spenti Grafici
   (F7), Backup (F2c), Esporta, Diagnostica, Impostazioni (F6) e Ctrl+4/Ctrl+5. `reported`.
 - **W2V-11 — unità e scale non si modificano né si cancellano** · resta `verified` (funzione mancante, fuori da F2b).
@@ -2018,8 +2018,9 @@ Nuovi, rimandati dalle review dell'onda:
   lo storico dei figli (CLAUDE.md §5), ma la loro Cronologia e la fascia Oggi, se aperte, restano com'erano fino a un
   ricaricamento.
 - **F2b-2 — l'opzione "Date fisse" dell'obiettivo non può mai essere valida su Avalonia** · `reported` · Mancano i
-  selettori di data (il `DatePicker` è WPF): scegliendola le date restano vuote e la sezione non è salvabile. Serve un
-  selettore di date portabile, oppure togliere l'opzione.
+  selettori di data (il `DatePicker` è WPF): scegliere "Date fisse" lascia le date vuote e non è salvabile; un obiettivo
+  Fixed già esistente con le date si carica e si salva normalmente. Serve un selettore di date portabile, oppure togliere
+  l'opzione.
 - **F2b-3 — il colore di una nota si scrive e pubblica `HabitUpdated` a ogni `PointerMoved`** · `reported` · Il
   trascinamento HSV nella sezione Note salva a ogni movimento. Corretto per i dati, costoso; da dibattere con un debounce
   (come `DebouncedColorRecorder`).

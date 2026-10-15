@@ -6,42 +6,30 @@
 
 ## Dove siamo — 2026-10-15
 
-- **Branch di lavoro**: `f2a-registration`, impilato su `f2-perf1-home`, a sua volta su `avalonia-linux-slice`;
-  **nessuno dei tre è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati. CI verde su Linux e Windows su tutti e tre i
-  branch. I test di prestazioni non girano in CI (oscillano sui runner condivisi).
-- **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1 è a codice
-  completo e ha passato la review dell'intero branch**: la shell si avvia davvero (sblocco del database, Home con righe
-  vive, trascinamento, rail e tab del workspace, finestra principale). La review finale ha trovato e fatto correggere
-  la CI rossa da `b1fe1dd` (stato condiviso fra test), il glifo di "riduci a icona" che non disegnava, Esc nella
-  rinomina che salvava il nome scartato, e due pulsanti che non facevano nulla (spenti fino a F5). Suite su Linux a
-  `c744963`: Core 150, Data 541 (+7 test DPAPI `WindowsOnly` che qui falliscono), Plugins 66, ExportEngine 37,
-  Presentation 953, UI 190; build 0 errori.
-- **Per chiudere F1 mancano due cose, entrambe dell'autore**: la checklist a schermo su Windows e su GNOME (l'handoff è
-  in `docs/dev-environment-sync.md`, la lista D7 nel piano F1, Task 10 Step 9) e il merge in `main`.
-- **F1-PERF1 corretto** sul branch `f2-perf1-home` (parte da `avalonia-linux-slice`): la Home è una lista piatta
-  virtualizzata con le cornici dei gruppi disegnate a fette; 300 righe da ≈ 1,7 s a ≈ 115 ms a caldo in headless.
-  Manca la verifica a schermo su GNOME (su Windows, uno sguardo durante la checklist D7 di F1); il merge va dopo
-  quello di F1.
-- **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"):
-  `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+4/Ctrl+5, "Nuovo >
-  Abitudine" e il pulsante dello stato vuoto sono spenti finché F2, F5, F6 e F7 non li riaccendono (**F1-RAIL1**, in parte riacceso da F2b).
+- **Branch di lavoro**: `f2b-creation`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
+  `f2b-creation`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati, CI verde su Linux e Windows. I test
+  di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
+  workspace, sblocco del database) e **F1-PERF1** (Home a lista piatta virtualizzata, 300 righe ≈ 115 ms) sono a codice
+  completo; **F2a** (registrazione dei cinque tipi, cronometri) e **F2b** (picker dei template, builder con anteprima
+  viva, Configura con le dodici sezioni nella seconda colonna) sono complete e hanno passato la review dell'intero
+  branch. Cronaca, misure e conteggi dei test in `docs/MILESTONES.md`; finding in `docs/phase-4-issues.md`.
+- **Aperti**: `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+5, e i pulsanti
+  di F5–F7 sono spenti finché le loro onde non li riaccendono (**F1-RAIL1**); intestazione della Home stretta che
+  sovrappone "Nuova" e "Archiviate" (**F2b-5**, preesistente, da F1).
 - **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
-- Il branch `wip/f1-task6` è superato (il Task 6 è in `aaa676b`) e si può cancellare.
-- **F2a (Registrazione su Avalonia) è completa** su `f2a-registration`: review dell'intero branch passata, CI verde, e
-  chiusi anche F2a-10 (fermare un timer non perde più la sessione) e F2a-11 (un errore di dominio avvisa invece di chiudere
-  l'app); cronaca e misure in `docs/MILESTONES.md`, finding in `docs/phase-4-issues.md` ("Onda F2a").
-- **Checklist a schermo dell'autore (GNOME)**: i quattro tipi dalla colonna "Oggi" e dal quick-add; "ieri" vicino al
-  reset (R9); barra dei timer dopo riavvio con un cronometro acceso; celle numeriche con l'altro separatore; chiaro e
-  scuro; rinomina dalla Home con la schermata aperta; cancellazione dalla Cronologia; W2V §3 del pass visivo.
-- **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
-  e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
-  (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
-- **F2b (creare e configurare) è a codice completo** su `f2b-creation` (piano `docs/superpowers/plans/2026-10-13-wave-f2b-creation.md`, impilato su `f2a-registration`): picker dei template, builder con anteprima viva, e Configura con le dodici sezioni nella seconda colonna; provato sul DB vero (picker → template → registra → obiettivo; builder → unità personalizzata → quick-add). Suite UI 343 verdi in en_US e it_IT. Finding e esiti (A8, A12, W2V-9, W2V-19, F1-5 chiusi su Avalonia) in `docs/phase-4-issues.md`, sezione "Onda F2b"; cronaca in `docs/MILESTONES.md`.
-- **Checklist a schermo dell'autore su GNOME per F2b**: creare dai template (tutti e otto) e dal builder (contatore con unità personalizzata, astinenza, diario, stato); configurare ogni sezione di Configura e vederla arrivare alla Cronologia e alla fascia Oggi; la finestra stretta (due colonne, nessun controllo fuori dal bordo, Configura che scorre); chiaro e scuro; e ricontrollare **W2V-16** e **W2V-18** (etichette e ordine dei mattoni).
-- **Prossimo**: la review dell'intero branch di F2b e la CI (controllore), poi F2c. All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
-  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
+- **F2 si divide in sotto-onde**: **F2a** (fatta) → **F2b** (fatta) → **F2c Dati al sicuro** (portachiavi D3, backup
+  automatico e manuale, restore incrociato) → **F2d Diario** (nota veloce con foto D10, editor minimo); chiude F2 il
+  lancio stabile su Linux (publish + `.desktop`).
+- **Checklist a schermo dell'autore** (Windows per F1, GNOME per tutte; la lista D7 è nel piano F1, l'handoff in
+  `docs/dev-environment-sync.md`): F1 (finestra, tab, trascinamento, barra di sistema); F2a (i quattro tipi dalla colonna
+  "Oggi" e dal quick-add, "ieri" vicino al reset, timer dopo riavvio, separatore decimale, chiaro e scuro, rinomina e
+  cancellazione); F2b (creare da tutti e otto i template e dal builder, configurare ogni sezione e vederla arrivare alla
+  Cronologia e alla fascia Oggi, finestra stretta, **W2V-16** e **W2V-18**).
+- **Prossimo**: F2c. All'autore: le checklist su GNOME e i merge in ordine (`avalonia-linux-slice`, `f2-perf1-home`,
+  `f2a-registration`, `f2b-creation`). Il branch `wip/f1-task6` è superato e si può cancellare.
 
 ## Il percorso
 
@@ -49,7 +37,7 @@
    Linux di 0.7, che si fa in F2).
 2. **F1 — Home su Avalonia** · ◐ codice completo, review di branch fatta, CI verde · esce con la checklist a
    schermo su Windows e su GNOME (D7: su Linux la barra di sistema) e il merge in `main`.
-3. **F2 — "si usa ogni giorno"** · ◐ F2a a codice completo (`f2a-registration`) · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
+3. **F2 — "si usa ogni giorno"** · ◐ F2a e F2b complete (`f2b-creation`) · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
    (`docs/DOGFOODING.md`) è coperto **su Linux**, la casa dei dati (D11); Windows segue con dati di prova. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
    manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica
    di R9 a schermo.
