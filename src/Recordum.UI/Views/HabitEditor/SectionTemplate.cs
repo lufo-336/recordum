@@ -18,7 +18,7 @@ public sealed class SectionTemplate : IDataTemplate
     public Control? Build(object? param)
     {
         if (param is not SectionViewModelBase section || Content(section) is not { } content) return null;
-        var expander = new Expander { Margin = new Avalonia.Thickness(0, 0, 0, 6), Content = content };
+        var expander = new Expander { Margin = new Avalonia.Thickness(0, 0, 0, 6), Content = content, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
         expander.Bind(Expander.HeaderProperty, new Binding(nameof(SectionViewModelBase.Title)));
         expander.Bind(Expander.IsExpandedProperty, new Binding(nameof(SectionViewModelBase.IsExpanded)) { Mode = BindingMode.TwoWay });
         expander.Bind(Visual.IsVisibleProperty, new Binding(nameof(SectionViewModelBase.IsVisible)));
