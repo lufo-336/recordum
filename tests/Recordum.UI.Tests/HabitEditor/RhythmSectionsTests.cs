@@ -127,7 +127,7 @@ public class RhythmSectionsTests
     }
 
     [AvaloniaFact]
-    public async Task Goal_target_text_the_binding_rejects_empties_the_value()
+    public async Task Goal_target_text_the_binding_rejects_leaves_the_stored_value()
     {
         using var _ = TestCulture.Pin();
         var (o, _, s, v) = await OpenSectionAsync<GoalSectionViewModel, GoalSectionView>(e => e.Goal, "GoalRej");
@@ -136,8 +136,10 @@ public class RhythmSectionsTests
             TypeInto(o, Named<TextBox>(v, "TargetBox"), "7");
             await UntilAsync(() => GoalAsync(o.Id).GetAwaiter().GetResult() is { TargetValue: 7m });
             TypeInto(o, Named<TextBox>(v, "TargetBox"), "abc");
-            await UntilAsync(() => GoalAsync(o.Id).GetAwaiter().GetResult() is { TargetValue: 0m });
-            s.TargetValue.Should().Be(0m, "cio' che si salva e' cio' che si vede");
+            PrivateDbHost.Pump();
+            await Task.Delay(300);   // un'eventuale scrittura sbagliata e' fire-and-forget: le si da' il tempo di arrivare
+            (await GoalAsync(o.Id))!.TargetValue.Should().Be(7m, "un refuso non sovrascrive il valore salvato (R6)");
+            s.TargetValue.Should().Be(7m);
         }
         finally { o.Window.Close(); }
     }

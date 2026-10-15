@@ -2,8 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Recordum.Core.Enums;
 using Recordum.Presentation.Resources;
-using Recordum.Presentation.ViewModels.HabitEditor.Sections;
-using Recordum.UI.Behaviors;
 
 namespace Recordum.UI.Views.HabitEditor.Sections;
 
@@ -25,8 +23,5 @@ public partial class SchedulingSectionView : UserControl
     public SchedulingSectionView()
     {
         InitializeComponent();
-        // Ciò che si salva è ciò che si vede: un testo rifiutato (altro separatore) svuota il valore.
-        RejectedTextGuard.Watch<SchedulingSectionViewModel>(WeeklyTargetBox, this, vm => vm.ScheduleWeeklyTarget = null);
-        RejectedTextGuard.Watch<SchedulingSectionViewModel>(EveryXDaysBox, this, vm => vm.ScheduleEveryXDays = null);
     }
 }

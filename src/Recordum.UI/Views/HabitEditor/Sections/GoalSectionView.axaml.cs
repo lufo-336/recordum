@@ -2,8 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Recordum.Core.Enums;
 using Recordum.Presentation.Resources;
-using Recordum.Presentation.ViewModels.HabitEditor.Sections;
-using Recordum.UI.Behaviors;
 
 namespace Recordum.UI.Views.HabitEditor.Sections;
 
@@ -22,8 +20,5 @@ public partial class GoalSectionView : UserControl
     public GoalSectionView()
     {
         InitializeComponent();
-        // TargetValue e' un decimal non nullo: un testo rifiutato lo azzera (cio' che si salva e' cio' che si vede).
-        RejectedTextGuard.Watch<GoalSectionViewModel>(TargetBox, this, vm => vm.TargetValue = 0m);
-        RejectedTextGuard.Watch<GoalSectionViewModel>(RollingDaysBox, this, vm => vm.RollingDays = null);
     }
 }
