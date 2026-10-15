@@ -4,7 +4,7 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-13
+## Dove siamo — 2026-10-15
 
 - **Branch di lavoro**: `f2a-registration`, impilato su `f2-perf1-home`, a sua volta su `avalonia-linux-slice`;
   **nessuno dei tre è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati. CI verde su Linux e Windows su tutti e tre i
@@ -38,7 +38,8 @@
 - **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
   e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
   (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
-- **Prossimo**: F2b (piano `docs/superpowers/plans/2026-10-13-wave-f2b-creation.md`, branch `f2b-creation`): creazione dai template e dal builder **e** Configura completa, anticipata da F5 (deciso il 2026-10-13). All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
+- **F2b in corso** (piano `docs/superpowers/plans/2026-10-13-wave-f2b-creation.md`, branch `f2b-creation`, impilato su `f2a-registration`): creazione dai template e dal builder **e** Configura completa, anticipata da F5 (deciso il 2026-10-13). Task 1-8 fatti, revisionati e pushati (CI verde a `1e05d6a`); il Task 9 (integrazione sul DB vero, schermate, documenti) è a metà sul branch `wip/f2b-task9`.
+- **Prossimo**: finire il Task 9, poi la review dell'intero branch di F2b e l'onda di fix finale. All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
   (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
 
 ## Il percorso
