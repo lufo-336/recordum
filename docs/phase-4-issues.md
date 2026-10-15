@@ -41,6 +41,14 @@
   morta il cui Stop lancia · **F2a-5** — Presentation traccia con `Debug.WriteLine`: in Release i guasti in background sono
   invisibili · **F2a-6** — F0-Y2 `fixed` nel calendario Avalonia; W2V-4/U4 **non** risolti (vedi sotto) · **F2a-7** — rinomina dalla Home non arrivava all'intestazione · `fixed` · **F2a-8** — fascia astinenza: "1 tentativi (90g)" su un periodo appena iniziato · `reported` · **F2a-9** — il flip di Ripetibile non pubblica `HabitUpdated` · **F2a-10** — `ActiveTimerService.StopAsync` non atomico · `fixed` · **F2a-11** — eccezioni dei comandi async → `CrashLogger` `Handled=false` · `fixed` · **F2a-12** — `TimerStatusBarViewModel` transient con `IHabitNodeService` scoped (F2a-9 e F2a-12 `reported`) · stati: F2a-1…F2a-5 `reported`, F2a-6 `fixed` solo per F0-Y2 (W2V-4/U4 `reported`)
 
+**Trovati e chiusi in F2b (sezione "Onda F2b")**
+- **F2b-1** — l'orario di reset cambiato su un gruppo non arriva ai tab aperti dei figli · **F2b-2** — "Date fisse" dell'obiettivo
+  non può mai essere valido su Avalonia (niente selettori di data) · **F2b-3** — il colore di una nota si scrive e pubblica
+  a ogni `PointerMoved` · `reported` · **F2b-4** — le sezioni di Configura non occupavano la colonna · `fixed` ·
+  **F2b-5** — l'intestazione della Home stretta sovrappone "Nuova" e "Archiviate" · `reported`
+- Esiti dei finding di F5 chiusi su Avalonia: **A8, A12, W2V-9, W2V-19, F1-5** `fixed`; **F1-RAIL1** in parte (Nuovo →
+  Abitudine e stato vuoto riaccesi); **W2V-11** resta aperto; **W2V-16, W2V-18** da ricontrollare a schermo.
+
 **Da ricontrollare sulle schermate Avalonia, onda per onda**
 - **F1 Home** — W2V-2 (zero-state muto), W2V-3 (nomi tagliati senza ellissi), A7 (zona destra della riga tagliata
   nell'albero stretto), F0-12 (banda bianca in tema scuro), W2V-7 (conferma: su Avalonia è già una finestra nostra)
@@ -48,8 +56,7 @@
 - **F3 Dettaglio** — W2V-4 (il cerchietto copre il numero del giorno), U4 (numero scentrato nel cerchio della heatmap),
   R8 (la card Goal non porta a Configura)
 - **F4 Diario** — W2V-8 (il composer non dice dove scrivere), B14 (editor di completamento o colonna Note)
-- **F5 Configura e builder** — W2V-9, W2V-11 (unità e scale non si modificano né si cancellano), W2V-16, W2V-18,
-  W2V-19, A8 (le sezioni sbordano dalla colonna), A12 (l'autosalvataggio non si percepisce), W23-VF4 (il cronometro non
+- **F5 Configura e builder** — (anticipati in F2b: A8, A12, W2V-9, W2V-19 `fixed` su Avalonia) W2V-11 (unità e scale non si modificano né si cancellano, aperto), W2V-16 e W2V-18 (da ricontrollare a schermo), W23-VF4 (il cronometro non
   si scopre dal builder), W23-VF5 (le abitudini "cronometro" di prima restano escluse)
 - **F6 Impostazioni, backup, export** — F0-8 (il dialog "Crea backup" è opaco), F0-10 (l'errore di restore esce come
   codice grezzo), F0-T2 (i test di Settings sono ancora in `Recordum.WPF.Tests`)
@@ -1980,3 +1987,45 @@ Restano questi, ciascuno con la sua ragione.
   `TimerStatusBarViewModelTests`, `TimerControlViewModelTests`.
 - **F2a-12 — `TimerStatusBarViewModel` è transient, risolto dalla radice, e tiene un `IHabitNodeService` scoped** ·
   `reported` (preesistente; stessa nota della decisione 8 di F1) · Dipendenza catturata (captive dependency).
+
+---
+
+## Onda F2b — Creare e configurare su Avalonia (`F2b-*`)
+
+Esiti dei finding di Configura e builder noti da WPF, verificati contro codice e test dell'onda (branch `f2b-creation`):
+
+- **A8 — le sezioni sbordano dalla colonna** · `fixed` su Avalonia · `ContentSectionsTests` (a 320 px, con tutte le sezioni
+  aperte, nessun controllo esce dal bordo destro, per ogni tipo) e `EditorScreenshotTests` (ogni sezione ha la larghezza della
+  colonna).
+- **A12 — l'autosalvataggio non si percepisce** · `fixed` su Avalonia · lo stato "Salvataggio… / Salvato" sta fuori dallo
+  scorrimento, in fondo alla colonna: `EditorPaneTests` e `ContentSectionsTests`.
+- **W2V-9 — ToggleButton del builder non tematizzati** · `fixed` su Avalonia · `HabitBuilderViewTests` (accesi nel colore
+  d'accento).
+- **W2V-19 — anteprima "In Home" piatta** · `fixed` su Avalonia · `BuilderPreviewPaneTests` (la striscia segue il tipo, come
+  nella Home).
+- **F1-5 — la riga gruppo offriva "Rinomina" senza casella** · `fixed` nel senso della decisione 7: la rinomina e il
+  colore di un gruppo hanno ora una superficie (Configura, aperta da un gruppo nuovo: `EditorPaneTests`). La voce del
+  menu di riga resta come in WPF.
+- **F1-RAIL1** · in parte: "Nuovo → Abitudine" e "Crea la tua prima abitudine" riaccesi (Task 4); restano spenti Grafici
+  (F7), Backup (F2c), Esporta, Diagnostica, Impostazioni (F6) e Ctrl+4/Ctrl+5. `reported`.
+- **W2V-11 — unità e scale non si modificano né si cancellano** · resta `verified` (funzione mancante, fuori da F2b).
+- **W2V-16, W2V-18 — etichette e ordine dei mattoni** · da ricontrollare a schermo (checklist dell'autore).
+
+Nuovi, rimandati dalle review dell'onda:
+
+- **F2b-1 — il reset time cambiato su un gruppo non arriva ai tab aperti dei suoi figli** · `reported` (preesistente) · Il
+  gestore di `HabitUpdated` in `HabitScreenViewModel` filtra sul proprio id: un gruppo che cambia `reset_time` reinterpreta
+  lo storico dei figli (CLAUDE.md §5), ma la loro Cronologia e la fascia Oggi, se aperte, restano com'erano fino a un
+  ricaricamento.
+- **F2b-2 — l'opzione "Date fisse" dell'obiettivo non può mai essere valida su Avalonia** · `reported` · Mancano i
+  selettori di data (il `DatePicker` è WPF): scegliendola le date restano vuote e la sezione non è salvabile. Serve un
+  selettore di date portabile, oppure togliere l'opzione.
+- **F2b-3 — il colore di una nota si scrive e pubblica `HabitUpdated` a ogni `PointerMoved`** · `reported` · Il
+  trascinamento HSV nella sezione Note salva a ogni movimento. Corretto per i dati, costoso; da dibattere con un debounce
+  (come `DebouncedColorRecorder`).
+- **F2b-4 — le sezioni di Configura erano larghe quanto il loro contenuto** · `fixed` (Task 9) · Visto in
+  `configura-light.png`: ogni `Expander` costruito da `SectionTemplate` era allineato a sinistra e largo ~150 px in una
+  colonna di ~580. Ora `HorizontalAlignment=Stretch`; `EditorScreenshotTests` misura che ogni sezione occupi la larghezza
+  dell'host, rosso prima del fix.
+- **F2b-5 — nella Home stretta "Nuova" si sovrappone ad "Archiviate"** · `reported` · Visto negli stessi screenshot (colonna
+  Home da ~280 px): il pulsante "Nuova ▾" copre il chip "Archiviate" e la riga dei chip è tagliata. Non indagato.

@@ -611,3 +611,17 @@ non sono chiusi dal nuovo calendario. Misura: tab con 730 registrazioni ≈ 0,7 
 `docs/phase-4-issues.md`, sezione "Onda F2a". **Prossimo**: review dell'intero branch e CI (controllore), checklist a schermo
 dell'autore (v. ROADMAP), poi F2b.
 
+**Progresso 2026-10-15 (onda F2b: creare e configurare su Avalonia: codice completo, non mergiata).** Piano
+`2026-10-13-wave-f2b-creation`, 9 task su `f2b-creation` (da `f2a-registration`; nessun branch della pila in `main`).
+*Cosa esiste ora*: i picker di colore e d'icona, il builder con anteprima viva (stessa striscia per tipo della Home),
+il picker dei template in una finestra modale, le porte d'ingresso della Home riaccese (F1-RAIL1), la schermata a due
+colonne con ridimensionamento e modalità focus, e Configura con le dodici sezioni (Notifiche aspetta E14). Provato sul DB
+SQLCipher vero: template → registrazione → obiettivo cambiato, e builder → unità personalizzata → quick-add; le quattro
+schermate (picker, builder, Configura) in chiaro e in scuro con asserzioni strutturali.
+*Cosa ha insegnato*: tre test a tempo reale erano instabili e sono stati resi deterministici (R3); un CTS liberato con
+lavoro in volo faceva lanciare un ricaricamento (R5); lo screenshot finale ha trovato un difetto che nessun test aveva
+misurato, le sezioni di Configura larghe quanto il contenuto (F2b-4: l'`Expander` era allineato a sinistra).
+*Non consegnato*: contagocce del colore (decisione 5), "Date fisse" dell'obiettivo (F2b-2), W2V-11, reset time di un
+gruppo verso i figli aperti (F2b-1). Suite UI su Linux: 343 in en_US e it_IT. **Prossimo**: review dell'intero branch e
+CI, la checklist a schermo dell'autore su GNOME, poi F2c.
+

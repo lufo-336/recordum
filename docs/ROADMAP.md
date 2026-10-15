@@ -24,7 +24,7 @@
   quello di F1.
 - **Aperti, trovati in F1** (`docs/phase-4-issues.md`, sezione "Onda F1"):
   `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+4/Ctrl+5, "Nuovo >
-  Abitudine" e il pulsante dello stato vuoto sono spenti finché F2, F5, F6 e F7 non li riaccendono (**F1-RAIL1**).
+  Abitudine" e il pulsante dello stato vuoto sono spenti finché F2, F5, F6 e F7 non li riaccendono (**F1-RAIL1**, in parte riacceso da F2b).
 - **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
   cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
   l'autore**.
@@ -38,8 +38,9 @@
 - **F2 si divide in sotto-onde** (2026-10-06): **F2a** (fatta, vedi sopra) → **F2b Creare su Linux** (picker dei template
   e builder) → **F2c Dati al sicuro** (portachiavi D3, backup automatico e manuale, restore incrociato) → **F2d Diario**
   (nota veloce con foto D10, editor minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
-- **F2b in corso** (piano `docs/superpowers/plans/2026-10-13-wave-f2b-creation.md`, branch `f2b-creation`, impilato su `f2a-registration`): creazione dai template e dal builder **e** Configura completa, anticipata da F5 (deciso il 2026-10-13). Task 1-8 fatti, revisionati e pushati (CI verde a `1e05d6a`); il Task 9 (integrazione sul DB vero, schermate, documenti) è a metà sul branch `wip/f2b-task9`.
-- **Prossimo**: finire il Task 9, poi la review dell'intero branch di F2b e l'onda di fix finale. All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
+- **F2b (creare e configurare) è a codice completo** su `f2b-creation` (piano `docs/superpowers/plans/2026-10-13-wave-f2b-creation.md`, impilato su `f2a-registration`): picker dei template, builder con anteprima viva, e Configura con le dodici sezioni nella seconda colonna; provato sul DB vero (picker → template → registra → obiettivo; builder → unità personalizzata → quick-add). Suite UI 343 verdi in en_US e it_IT. Finding e esiti (A8, A12, W2V-9, W2V-19, F1-5 chiusi su Avalonia) in `docs/phase-4-issues.md`, sezione "Onda F2b"; cronaca in `docs/MILESTONES.md`.
+- **Checklist a schermo dell'autore su GNOME per F2b**: creare dai template (tutti e otto) e dal builder (contatore con unità personalizzata, astinenza, diario, stato); configurare ogni sezione di Configura e vederla arrivare alla Cronologia e alla fascia Oggi; la finestra stretta (due colonne, nessun controllo fuori dal bordo, Configura che scorre); chiaro e scuro; e ricontrollare **W2V-16** e **W2V-18** (etichette e ordine dei mattoni).
+- **Prossimo**: la review dell'intero branch di F2b e la CI (controllore), poi F2c. All'autore: checklist di F1 e di F2a su GNOME, poi i merge in ordine
   (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`).
 
 ## Il percorso
