@@ -305,6 +305,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         if (_launcher is null) return;
         var newId = await _launcher.PickAsync(ResolveCreationParentId());
         if (newId is null) return;
+        ++_reloadGeneration;   // un ricaricamento partito con il selettore aperto porta la vecchia selezione: qui vince la nuova
         await LoadAsync();
         SelectedRow = Rows.FirstOrDefault(r => r.HabitNodeId == newId);
     }

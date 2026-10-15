@@ -299,6 +299,44 @@ public class HomeViewModelTests
     }
 
     [Fact]
+    public async Task OpenNewHabit_selection_wins_over_a_reload_started_while_the_picker_was_open()
+    {
+        // Creare pubblica HabitUpdated con il selettore ancora aperto: la Home avvia un ricaricamento che porta con se'
+        // la vecchia selezione. Se finisce dopo OpenNewHabit, non deve rimettere la vecchia riga al posto della nuova.
+        var oldId = Guid.NewGuid();
+        var newId = Guid.NewGuid();
+        _query.HomeRows.Add(SampleRow(name: "old", id: oldId));
+        _query.HomeRows.Add(SampleRow(name: "fresh", id: newId));
+        var bus = new FakeEventBus();
+        var gate = new TaskCompletionSource<bool>();
+        var launcher = new MidCreationLauncher(newId, () =>
+        {
+            _query.HomeGate = gate;
+            bus.Publish(new HabitUpdatedPayload(newId));   // il ricaricamento parte e resta in attesa sul gate
+            _query.HomeGate = null;
+        });
+        var sut = new HomeViewModel(_query, _nodes, _purge, launcher, events: bus);
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.SelectedRow = sut.Rows.Single(r => r.HabitNodeId == oldId);
+
+        await sut.OpenNewHabitCommand.ExecuteAsync(null);
+        sut.SelectedRow!.HabitNodeId.Should().Be(newId);
+        gate.SetResult(true);
+        for (var i = 0; i < 5; i++) await Task.Yield();
+
+        sut.SelectedRow!.HabitNodeId.Should().Be(newId, "il ricaricamento in ritardo non ripristina la vecchia selezione");
+    }
+
+    private sealed class MidCreationLauncher(Guid result, Action whileOpen) : Recordum.Presentation.ViewModels.HabitEditor.IHabitTemplatePickerLauncher
+    {
+        public Task<Guid?> PickAsync(Guid? parentId = null, CancellationToken ct = default)
+        {
+            whileOpen();
+            return Task.FromResult<Guid?>(result);
+        }
+    }
+
+    [Fact]
     public async Task OpenNewHabit_with_no_launcher_is_a_noop()
     {
         var sut = CreateSut();

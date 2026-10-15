@@ -1706,6 +1706,6 @@
     <value>Solo su questo dispositivo</value>
   </data>
   <data name="Editor.AiSharing.ApiAllowed" xml:space="preserve">
-    <value>Puo' essere inviato al servizio AI</value>
+    <value>Può essere inviato al servizio AI</value>
   </data>
 </root>
