@@ -197,7 +197,7 @@ public class ContentSectionsTests
             box.SelectedItem = AiDataSharing.ApiAllowed;
             PrivateDbHost.Pump();
             var shown = box.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-            shown.Should().Contain("Puo' essere inviato al servizio AI").And.NotContain("ApiAllowed");
+            shown.Should().Contain("Può essere inviato al servizio AI").And.NotContain("ApiAllowed");
         }
         finally { o.Window.Close(); }
     }
