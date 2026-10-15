@@ -184,6 +184,19 @@ public class EditorPaneTests
     }
 
     [AvaloniaFact]
+    public async Task The_name_box_has_an_accessible_name()
+    {
+        var o = await OpenAsync();
+        try
+        {
+            var pane = await OpenConfiguraAsync(o);
+            Avalonia.Automation.AutomationProperties.GetName(Named<TextBox>(pane, "NameBox"))
+                .Should().Be(Recordum.Presentation.Resources.Strings.HabitBuilder_Name);
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task A_name_typed_and_the_tab_closed_at_once_is_still_saved()
     {
         var o = await OpenAsync();
@@ -192,9 +205,27 @@ public class EditorPaneTests
             var pane = await OpenConfiguraAsync(o);
             TypeName(o, pane, "Chiusa subito");   // il fuoco resta nella casella: niente LostFocus
             var tab = o.Vm.Workspace.ActiveSubjectTab!;
+            (await ReadAsync(o.Id)).Name.Should().NotBe("Chiusa subito", "e' la chiusura a salvare, non una scrittura precedente");
             o.Vm.Workspace.CloseTab(tab);
             PrivateDbHost.Pump();
             await UntilAsync(() => ReadAsync(o.Id).GetAwaiter().GetResult().Name == "Chiusa subito");
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task A_name_typed_and_configura_closed_with_the_last_column_shortcut_is_still_saved()
+    {
+        var o = await OpenAsync();
+        try
+        {
+            var pane = await OpenConfiguraAsync(o);
+            TypeName(o, pane, "Chiusa con Esc");
+            (await ReadAsync(o.Id)).Name.Should().NotBe("Chiusa con Esc", "e' la chiusura a salvare, non una scrittura precedente");
+            o.Vm.Workspace.ActiveSubjectTab!.Screen.CloseLastColumn();   // cio' che fa Esc fuori da una casella
+            PrivateDbHost.Pump();
+            o.Vm.Workspace.ActiveSubjectTab!.Screen.IsConfiguraOpen.Should().BeFalse();
+            await UntilAsync(() => ReadAsync(o.Id).GetAwaiter().GetResult().Name == "Chiusa con Esc");
         }
         finally { o.Window.Close(); }
     }

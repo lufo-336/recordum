@@ -129,6 +129,21 @@ public class ColorPickerTests
     }
 
     [AvaloniaFact]
+    public void The_remove_favourite_button_shows_the_Lucide_X_path_not_a_text_glyph()
+    {
+        var picker = new ColorSwatchPicker { FavoriteColors = new[] { "#112233" } };
+        var w = Host(picker);
+        try
+        {
+            var remove = PanelOf(picker).GetLogicalDescendants().OfType<Button>().Single(b => b.Tag is "remove");
+            remove.Content.Should().BeOfType<Avalonia.Controls.Shapes.Path>().Which.Data.Should().NotBeNull();
+            AutomationProperties.GetName(remove).Should().Contain(Recordum.Presentation.Resources.Strings.ColorPicker_RemoveFavorite);
+            ToolTip.GetTip(remove).Should().Be(Recordum.Presentation.Resources.Strings.ColorPicker_RemoveFavorite);
+        }
+        finally { w.Close(); }
+    }
+
+    [AvaloniaFact]
     public void Every_swatch_and_every_button_has_an_accessible_name()
     {
         var picker = new ColorSwatchPicker { FavoriteColors = new[] { "#112233" }, RecentColors = new[] { "#445566" } };

@@ -200,15 +200,20 @@ public partial class ColorSwatchPicker : UserControl
         _favorites.Children.Clear();
         foreach (var c in FavoriteColors ?? [])
         {
+            var glyph = new Avalonia.Controls.Shapes.Path
+            {
+                Width = 8, Height = 8, Stretch = Stretch.Uniform, StrokeThickness = 1.5, StrokeLineCap = PenLineCap.Round,
+                Data = Application.Current?.TryFindResource("Icon.X", out var x) == true ? x as Geometry : null,
+            };
+            glyph.SetResourceReference(Avalonia.Controls.Shapes.Shape.StrokeProperty, "Brush.TextMuted");
             var remove = new Button
             {
                 Tag = "remove",
-                Content = "×",
+                Content = glyph,
                 Width = 13,
                 Height = 13,
                 MinHeight = 0,
                 Padding = new Thickness(0),
-                FontSize = 9,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, -5, -5, 0),

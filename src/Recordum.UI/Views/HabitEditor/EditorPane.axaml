@@ -15,6 +15,7 @@
     <Border Grid.Row="0" Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
       <StackPanel Spacing="8">
         <TextBox x:Name="NameBox" Text="{CompiledBinding Name, UpdateSourceTrigger=LostFocus}"
+                 AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_Name}"
                  FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
                  BorderThickness="0" Background="Transparent"/>
         <TextBox x:Name="DescriptionBox" Text="{CompiledBinding Description, UpdateSourceTrigger=LostFocus}"

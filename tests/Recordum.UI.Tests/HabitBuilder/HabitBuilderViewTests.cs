@@ -469,4 +469,29 @@ public class HabitBuilderViewTests
             System.Globalization.CultureInfo.CurrentUICulture = old.CurrentUICulture;
         }
     }
+
+    [AvaloniaFact]
+    public async Task The_schedule_number_boxes_have_a_visible_caption_and_an_accessible_name()
+    {
+        using var _ = TestCulture.Pin();
+        var o = await OpenAsync();
+        try
+        {
+            o.Vm.Schedule.IsExpanded = true;
+            o.Vm.Schedule.ScheduleType = ScheduleType.WeeklyX;
+            Pump();
+            var weekly = Named<TextBox>(o.View, "WeeklyTargetBox");
+            Avalonia.Automation.AutomationProperties.GetName(weekly).Should().Be(Recordum.Presentation.Resources.Strings.Editor_Field_TimesPerWeek);
+            ((Avalonia.Controls.Panel)weekly.Parent!).Children.OfType<TextBlock>().Should()
+                .Contain(t => t.Text == Recordum.Presentation.Resources.Strings.Editor_Field_TimesPerWeek && t.IsEffectivelyVisible);
+
+            o.Vm.Schedule.ScheduleType = ScheduleType.EveryXDays;
+            Pump();
+            var every = Named<TextBox>(o.View, "EveryXDaysBox");
+            Avalonia.Automation.AutomationProperties.GetName(every).Should().Be(Recordum.Presentation.Resources.Strings.Editor_Field_EveryXDays);
+            ((Avalonia.Controls.Panel)every.Parent!).Children.OfType<TextBlock>().Should()
+                .Contain(t => t.Text == Recordum.Presentation.Resources.Strings.Editor_Field_EveryXDays && t.IsEffectivelyVisible);
+        }
+        finally { o.Window.Close(); o.Scope.Dispose(); }
+    }
 }

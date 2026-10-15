@@ -289,10 +289,18 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
 
-              <TextBox x:Name="WeeklyTargetBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding Schedule.WeeklyTarget, Mode=TwoWay}"
-                       IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.WeeklyX}}"/>
-              <TextBox x:Name="EveryXDaysBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding Schedule.EveryXDays, Mode=TwoWay}"
-                       IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.EveryXDays}}"/>
+              <StackPanel Spacing="4"
+                          IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.WeeklyX}}">
+                <TextBlock Classes="caption" Text="{x:Static res:Strings.Editor_Field_TimesPerWeek}"/>
+                <TextBox x:Name="WeeklyTargetBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding Schedule.WeeklyTarget, Mode=TwoWay}"
+                         AutomationProperties.Name="{x:Static res:Strings.Editor_Field_TimesPerWeek}"/>
+              </StackPanel>
+              <StackPanel Spacing="4"
+                          IsVisible="{CompiledBinding Schedule.ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.EveryXDays}}">
+                <TextBlock Classes="caption" Text="{x:Static res:Strings.Editor_Field_EveryXDays}"/>
+                <TextBox x:Name="EveryXDaysBox" HorizontalAlignment="Left" MinWidth="120" Text="{CompiledBinding Schedule.EveryXDays, Mode=TwoWay}"
+                         AutomationProperties.Name="{x:Static res:Strings.Editor_Field_EveryXDays}"/>
+              </StackPanel>
 
               <StackPanel>
                 <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Schedule_StreakMode}"/>
