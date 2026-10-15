@@ -57,7 +57,7 @@ public class CreateAndConfigureIntegrationTests
         root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
 
     [AvaloniaFact]
-    public async Task Picking_a_template_records_and_configures_the_goal_with_history_and_today_following()
+    public async Task Picking_a_counter_template_then_changing_its_goal_in_Configura_reaches_the_Oggi_strip_and_the_history()
     {
         using var culture = TestCulture.Pin();
         var (window, vm) = await OpenMainAsync();
@@ -71,41 +71,45 @@ public class CreateAndConfigureIntegrationTests
             await UntilAsync(() => picker is { IsVisible: true });
             PrivateDbHost.Pump();
             var option = picker!.GetVisualDescendants().OfType<Button>()
-                .First(b => b.Name == "OptionButton" && b.DataContext is PickerOption { Name: "Morning routine" });
+                .First(b => b.Name == "OptionButton" && b.DataContext is PickerOption { Name: "Water intake" });
             option.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await UntilAsync(() => vm.Home.SelectedRow is not null && !before.Contains(vm.Home.SelectedRow.HabitNodeId));
             var id = vm.Home.SelectedRow!.HabitNodeId;
-            await UntilAsync(() => window.GetVisualDescendants().OfType<HabitScreenView>().Any()
-                && window.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Name == "DoneToday"));
+            await UntilAsync(() => window.GetVisualDescendants().OfType<HabitScreenView>().Any());
             var screen = vm.Workspace.ActiveSubjectTab!.Screen;
+            await UntilAsync(() => screen.TodayStrip.Content is CounterTodayContent { HasGoal: true });
 
-            // F2a: la spunta di oggi registra.
-            Find<CheckBox>(window, "DoneToday").Command!.Execute(null);
-            await UntilAsync(() => screen.Records.Records.Rows.Count == 1
-                && screen.TodayStrip.Content is ActionTodayContent { IsDoneToday: true });
+            // Un litro su un obiettivo di due: meta' strada.
+            using (var s = Host.Provider.CreateScope())
+            {
+                var metric = (await s.ServiceProvider.GetRequiredService<IMetricDefinitionService>().ListByHabitAsync(id)).Single();
+                await s.ServiceProvider.GetRequiredService<ICompletionService>().RecordAsync(
+                    new Completion { HabitNodeId = id, CompletedAt = Host.Clock.UtcNow.UtcDateTime, CompletedAtMs = Host.Clock.UtcNowMs },
+                    [new CompletionValue { MetricDefinitionId = metric.Id, ValueDecimal = 1m }]);
+            }
+            await UntilAsync(() => screen.TodayStrip.Content is CounterTodayContent { GoalFraction: 0.5 });
+            var selected = screen.Calendar.SelectedDate;
 
-            // Configura: l'obiettivo cambia e arriva al DB, senza perdere cio' che la schermata mostra.
+            // Configura: l'obiettivo passa a quattro litri; la fascia Oggi lo riflette, la schermata resta dov'era.
             var pane = await OpenConfiguraAsync(new Opened(window, vm, id));
-            var goal = screen.Editor.Goal;
-            goal.IsExpanded = true;
+            screen.Editor.Goal.IsExpanded = true;
             PrivateDbHost.Pump();
             var box = pane.GetVisualDescendants().OfType<GoalSectionView>().Single().GetVisualDescendants()
                 .OfType<TextBox>().Single(t => t.Name == "TargetBox");
             box.Focus();
             PrivateDbHost.Pump();
             box.SelectAll();
-            window.KeyTextInput("3");
+            window.KeyTextInput("4");
             Find<TextBox>(pane, "NameBox").Focus();
             PrivateDbHost.Pump();
 
             using var scope = Host.Provider.CreateScope();
             await UntilAsync(() => scope.ServiceProvider.GetRequiredService<IGoalService>()
-                .GetActiveAsync(id).AsTask().GetAwaiter().GetResult() is { TargetValue: 3m });
+                .GetActiveAsync(id).AsTask().GetAwaiter().GetResult() is { TargetValue: 4m });
+            await UntilAsync(() => screen.TodayStrip.Content is CounterTodayContent { GoalFraction: 0.25 });
             screen.Records.Records.Rows.Should().HaveCount(1, "la Cronologia riflette ancora la registrazione");
-            screen.TodayStrip.Content.Should().BeOfType<ActionTodayContent>().Which.IsDoneToday.Should().BeTrue();
-            var done = Find<CheckBox>(window, "DoneToday");
-            done.IsChecked.Should().BeTrue("la fascia Oggi mostra la registrazione");
+            screen.Calendar.SelectedDate.Should().Be(selected, "una modifica di Configura non sposta il giorno");
         }
         finally { window.Close(); }
     }

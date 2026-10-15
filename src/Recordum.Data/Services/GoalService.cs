@@ -3,13 +3,16 @@ using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
 public sealed class GoalService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
-    ILogger<GoalService> logger) : IGoalService
+    ILogger<GoalService> logger,
+    IEventBus eventBus) : IGoalService
 {
     public async ValueTask<Guid> CreateAsync(Goal draft, CancellationToken ct = default)
     {
@@ -81,5 +84,6 @@ public sealed class GoalService(
         }
         mutate(goal);
         await db.SaveChangesAsync(ct);
+        eventBus.Publish(new HabitUpdatedPayload(habitNodeId));   // l'obiettivo e' letto dalla fascia Oggi e dalla Cronologia aperte
     }
 }

@@ -912,6 +912,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             var segmentsChanged = !segs.Select(x => (x.Id, x.Name, x.IsRest)).SequenceEqual(TimerControl.Segments.Select(x => (x.Id, x.Name, x.IsRest)));
             if (segmentsChanged || cfg?.TimerMode != TimerControl.Mode || (cfg?.HasIntegratedTimer == true && cfg.TimerMode is not null) != TimerControl.IsApplicable)
                 await TimerControl.SetContextAsync(refreshed, cfg).ConfigureAwait(true);
+
+            // Obiettivo, unita', etichette di scala, ritmo e streak vivono nella fascia Oggi e nelle liste della
+            // Cronologia: si rileggono, senza toccare il giorno scelto ne' i valori digitati nel quick-add.
+            CompletionList.SeriesLabelsJson = cfg?.SeriesLabelsJson;
+            await Task.WhenAll(TodayStrip.LoadAsync(refreshed, _dayBoundary), CompletionList.LoadAsync(refreshed.Id),
+                Records.ReloadAsync()).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitUpdatedEvent failed: {ex}"); }
     }

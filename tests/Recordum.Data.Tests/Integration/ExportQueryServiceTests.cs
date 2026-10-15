@@ -30,7 +30,7 @@ public sealed class ExportQueryServiceTests
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
-        var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
@@ -305,7 +305,7 @@ public sealed class ExportQueryServiceTests
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
         var notes = new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes);
         var metrics = new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
-        var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance);
+        var goals = new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var configs = new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus());
         var ramp = new Recordum.Core.Services.IntensityRampResolver();
         var abstinence = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);

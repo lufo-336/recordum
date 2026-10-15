@@ -133,7 +133,7 @@ public class DayBoundaryParityTests
             fx.Factory, fx.Clock, Completions(fx),
             new NoteService(fx.Factory, fx.Clock, NullLogger<NoteService>.Instance, bus, fx.ResetTimes),
             new MetricDefinitionService(fx.Factory, fx.Clock, NullLogger<MetricDefinitionService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
-            new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance),
+            new GoalService(fx.Factory, fx.Clock, NullLogger<GoalService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
             new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
             new IntensityRampResolver(), Aggregator(fx),
             new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes),
