@@ -7,6 +7,7 @@ using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Data.Security;
 using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.Workspace;
@@ -34,7 +35,7 @@ public sealed class ShellFixture
 
         // La STESSA composizione che usa l'applicazione vera (D14): se questo contenitore risolve,
         // risolve anche quello di produzione. Cambiare qui e' la scorciatoia che tradirebbe il test.
-        var provider = AppComposition.BuildServices(options, new FixedKeyProvider());
+        var provider = AppComposition.BuildServices(options, new FixedKeyProvider(), new NullSecretStore());
         await provider.GetRequiredService<CoreInitializer>().InitializeAsync();
 
         // Il processo di test non ha un "fine fixture" per un singleton statico: a ProcessExit si chiude il

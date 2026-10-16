@@ -18,16 +18,24 @@ namespace Recordum.UI.Bootstrap;
 /// loro opzioni e la loro chiave (D14).</para></summary>
 public static class AppComposition
 {
-    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider)
+    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets) =>
+        BuildServices(options, keyProvider, secrets, OperatingSystem.IsWindows());
+
+    /// <summary><paramref name="secrets"/> e' la STESSA istanza che ha servito lo sblocco (App la costruisce una volta);
+    /// <paramref name="windows"/> sceglie il deposito della passphrase dell'auto-backup, ed e' un parametro per poter
+    /// provare l'altro ramo su qualunque sistema.</summary>
+    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets, bool windows)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(keyProvider);
+        ArgumentNullException.ThrowIfNull(secrets);
 
         var services = new ServiceCollection();
         services.AddRecordumCore(options);
         services.AddRecordumAvaloniaShell();
         // Dopo le due estensioni, cosi' la chiave decisa dallo sblocco vince su qualunque default.
         services.AddSingleton(keyProvider);
+        AddBackupKeyStores(services, options, secrets, windows);
         services.AddTransient<MainWindow>();
 
         // BuildServiceProvider() SENZA validazione degli scope, come la shell WPF: i ViewModel
@@ -37,6 +45,22 @@ public static class AppComposition
         // non risolta da F1.
         return services.BuildServiceProvider();
     }
+
+    /// <summary>Dove vive la passphrase dell'auto-backup: DPAPI su Windows (come WPF), il portachiavi altrove.</summary>
+    public static void AddBackupKeyStores(IServiceCollection services, RecordumOptions options, ISecretStore secrets, bool windows)
+    {
+        services.AddSingleton(secrets);
+#pragma warning disable CA1416 // il ramo Windows si sceglie con un parametro (provabile ovunque); DPAPI si usa solo se windows e' vero
+        if (windows) services.AddSingleton<IAutoBackupKeyStore>(_ => new DpapiAutoBackupKeyStore(options.AutoBackupKeyPath));
+#pragma warning restore CA1416
+        else services.AddSingleton<IAutoBackupKeyStore>(sp => new SecretStoreAutoBackupKeyStore(sp.GetRequiredService<ISecretStore>()));
+    }
+
+    /// <summary>Avvia lo scheduler dell'auto-backup: dopo <c>CoreInitializer</c> (il DB e' migrato), con l'attesa del
+    /// primo tick, nessun backup immediato. Il ciclo gira su un thread del pool (<c>Task.Run</c>), quindi la lettura
+    /// della passphrase dal portachiavi non tocca mai il thread dell'interfaccia. Si ferma con il Dispose del contenitore.</summary>
+    public static void StartBackupScheduler(IServiceProvider services) =>
+        services.GetRequiredService<BackupSchedulerHost>().Initialize();
 
     /// <summary>Il servizio di sblocco che gira prima del contenitore. Il logger scrive nel log di
     /// <see cref="CrashLogger"/>: la causa di uno sblocco fallito (disco, permessi, salt rovinato) non

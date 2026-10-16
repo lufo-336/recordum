@@ -54,7 +54,6 @@ public static class AvaloniaShellServices
         services.AddSingleton<IOpenFileDialog, NullOpenFileDialog>();
         services.AddSingleton<IClipboard, NullClipboard>();
         services.AddSingleton<IScreenColorPicker, NullScreenColorPicker>();
-        services.AddSingleton<IAutoBackupKeyStore, NullAutoBackupKeyStore>();
         services.AddSingleton<IEditorAvailability, NullEditorAvailability>();
 
         return services;

@@ -131,19 +131,6 @@ public class AvaloniaShellServicesTests
     }
 
     [Fact]
-    public void Auto_backup_key_store_resolves_reports_no_key_and_refuses_to_pretend_it_saved_one()
-    {
-        var sp = BuildProvider();
-        var store = sp.GetRequiredService<IAutoBackupKeyStore>();
-        store.HasKey().Should().BeFalse();
-        store.ReadKey().Should().BeNull();
-        var write = () => store.WriteKey("whatever-12345");
-        write.Should().Throw<NotSupportedException>();
-        var delete = () => store.DeleteKey();
-        delete.Should().NotThrow();
-    }
-
-    [Fact]
     public void Editor_availability_resolves_and_reports_unavailable()
     {
         var sp = BuildProvider();

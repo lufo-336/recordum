@@ -85,11 +85,13 @@ public partial class App : Application
                 return;
             }
 
-            var keyProvider = await ResolveKeyAsync(desktop, options).ConfigureAwait(true);
+            var secrets = AppComposition.CreateSecretStore(options);   // una volta: serve sia lo sblocco sia il contenitore
+            var keyProvider = await ResolveKeyAsync(desktop, options, secrets).ConfigureAwait(true);
             if (keyProvider is null) return;   // sblocco annullato o non supportato: si e' gia' detto perche'
 
-            _services = AppComposition.BuildServices(options, keyProvider);
+            _services = AppComposition.BuildServices(options, keyProvider, secrets);
             await _services.GetRequiredService<CoreInitializer>().InitializeAsync().ConfigureAwait(true);
+            AppComposition.StartBackupScheduler(_services);
 
             // Strumento di sviluppo, come in WPF: popola una libreria credibile (idempotente).
             if (args.Contains("--seed-demo"))
@@ -135,9 +137,9 @@ public partial class App : Application
     /// finestra di sblocco dove serve una passphrase. Torna null quando non si puo' proseguire — e in
     /// quel caso ha gia' mostrato il perche'.</summary>
     private static async Task<IDbKeyProvider?> ResolveKeyAsync(
-        IClassicDesktopStyleApplicationLifetime desktop, RecordumOptions options)
+        IClassicDesktopStyleApplicationLifetime desktop, RecordumOptions options, ISecretStore secrets)
     {
-        var unlock = AppComposition.CreateUnlockService(options, AppComposition.CreateSecretStore(options));
+        var unlock = AppComposition.CreateUnlockService(options, secrets);
         unlock.ReconcileOrphans();   // errata 2026-09-30: un salt senza database si recupera o si sposta, mai si tronca
         var state = unlock.DetectState();
 

@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Data.Security;
 using Recordum.Presentation.Bootstrap;
 using Recordum.UI.Bootstrap;
 
@@ -28,6 +29,7 @@ public sealed class PrivateDbHost
         services.AddRecordumCore(options);
         services.AddRecordumAvaloniaShell();
         services.AddSingleton<IDbKeyProvider>(new FixedKey());
+        AppComposition.AddBackupKeyStores(services, options, new NullSecretStore(), windows: false);
         services.AddSingleton<IClock>(Clock);   // dopo AddRecordumCore: vince l'ultima registrazione
         configure?.Invoke(services);
         var provider = services.BuildServiceProvider();
