@@ -23,8 +23,9 @@
              Watermark="{x:Static res:Strings.Backup_Create_Passphrase}"/>
     <Button Name="PreviewButton" Content="{x:Static res:Strings.Restore_Preview}"
             Command="{CompiledBinding PreviewCommand}" HorizontalAlignment="Left" MinWidth="120"/>
-    <TextBlock Name="SchemaText" IsVisible="{CompiledBinding IsPreviewLoaded}"
-               Text="{CompiledBinding Manifest.SchemaVersion, StringFormat='Schema: {0}'}"/>
+    <TextBlock Name="SchemaText" IsVisible="{CompiledBinding IsPreviewLoaded}">
+      <Run Text="{x:Static res:Strings.Backup_History_Column_Schema}"/><Run Text=": "/><Run Text="{CompiledBinding Manifest.SchemaVersion}"/>
+    </TextBlock>
     <ItemsControl ItemsSource="{CompiledBinding Warnings}"/>
     <TextBlock Name="ErrorText" TextWrapping="Wrap" Text="{CompiledBinding ErrorMessage}"
                Foreground="{DynamicResource Brush.Danger}"/>

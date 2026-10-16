@@ -26,7 +26,15 @@ public sealed partial class BackupDialogViewModel(IBackupService backup, IBackup
         _ => PassphraseStrength.Strong,
     };
 
-    partial void OnPassphraseChanged(string value) { OnPropertyChanged(nameof(Strength)); RunCommand.NotifyCanExecuteChanged(); }
+    public string StrengthLabel => Strength switch
+    {
+        PassphraseStrength.Weak => Strings.Backup_Strength_Weak,
+        PassphraseStrength.Ok => Strings.Backup_Strength_Ok,
+        PassphraseStrength.Strong => Strings.Backup_Strength_Strong,
+        _ => string.Empty,
+    };
+
+    partial void OnPassphraseChanged(string value) { OnPropertyChanged(nameof(Strength)); OnPropertyChanged(nameof(StrengthLabel)); RunCommand.NotifyCanExecuteChanged(); }
     partial void OnConfirmPassphraseChanged(string value) => RunCommand.NotifyCanExecuteChanged();
     partial void OnDestinationChanged(string value) => RunCommand.NotifyCanExecuteChanged();
 

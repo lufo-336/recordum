@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions;
+using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels.Backup;
 using Recordum.UI.Views.Backup;
 
@@ -26,7 +27,10 @@ public sealed class AvaloniaBackupDialogLauncher(IServiceProvider services, Func
         await using var scope = services.CreateAsyncScope();
         var vm = scope.ServiceProvider.GetRequiredService<RestoreDialogViewModel>();
         await ShowAsync(new RestoreDialog { DataContext = vm });
-        if (vm.IsCompleted) services.GetRequiredService<IApplicationLifetime>().Shutdown();
+        if (!vm.IsCompleted) return;
+        // Il database e' stato sostituito: da qui all'uscita nessun backup automatico deve toccarlo.
+        services.GetService<BackupSchedulerHost>()?.Dispose();
+        services.GetRequiredService<IApplicationLifetime>().Shutdown();
     }
 
     private async Task ShowAsync(Window window)

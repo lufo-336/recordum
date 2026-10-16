@@ -100,8 +100,9 @@ public sealed class BackupSchedulerHost(
 
     public void Dispose()
     {
-        _cts?.Cancel();
+        var cts = Interlocked.Exchange(ref _cts, null);   // idempotente: il restore la ferma, poi la chiusura la ferma di nuovo
+        cts?.Cancel();
         _timer?.Dispose();
-        _cts?.Dispose();
+        cts?.Dispose();
     }
 }

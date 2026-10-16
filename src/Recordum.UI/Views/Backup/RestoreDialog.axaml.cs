@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Recordum.Presentation.ViewModels.Backup;
 
@@ -16,9 +17,18 @@ public partial class RestoreDialog : RecordumWindow
         };
     }
 
+    // Chiudere mentre l'operazione gira lascerebbe il lanciatore senza risultato e l'app su un database sostituito.
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (DataContext is RestoreDialogViewModel { IsRunning: true }) e.Cancel = true;
+        base.OnClosing(e);
+    }
+
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(RestoreDialogViewModel.IsCompleted) && ((RestoreDialogViewModel)sender!).IsCompleted)
+        // IsCompleted sale dentro il try, IsRunning scende nel finally: si chiude quando entrambe sono a posto.
+        if (e.PropertyName is nameof(RestoreDialogViewModel.IsCompleted) or nameof(RestoreDialogViewModel.IsRunning)
+            && sender is RestoreDialogViewModel { IsCompleted: true, IsRunning: false })
             Close();
     }
 

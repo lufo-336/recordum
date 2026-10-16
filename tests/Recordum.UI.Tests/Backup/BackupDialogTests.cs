@@ -131,4 +131,59 @@ public class BackupDialogTests
             finally { window.Close(); }
         }
     }
+
+    private sealed class BlockingRestore : Recordum.Core.Backup.IRestoreService
+    {
+        public TaskCompletionSource Gate { get; } = new();
+        public Task<Recordum.Core.Backup.RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default) => throw new NotSupportedException();
+        public async Task<Recordum.Core.Backup.RestoreResult> RestoreAsync(string sourcePath, string passphrase, Recordum.Core.Backup.RestoreOptions options, CancellationToken ct = default)
+        {
+            await Gate.Task;
+            return new Recordum.Core.Backup.RestoreResult([]);
+        }
+    }
+
+    private sealed class CountingLifetime : Recordum.Core.Abstractions.IApplicationLifetime
+    {
+        public int Shutdowns { get; private set; }
+        public void Shutdown() => Shutdowns++;
+    }
+
+    [AvaloniaFact]
+    public async Task Restore_window_cannot_be_closed_while_running_and_the_launcher_shuts_down_after()
+    {
+        var restore = new BlockingRestore();
+        var lifetime = new CountingLifetime();
+        var sc = new ServiceCollection();
+        sc.AddSingleton<Recordum.Core.Backup.IRestoreService>(restore);
+        sc.AddSingleton<IOpenFileDialog>(new FixedOpen("x.recbak"));
+        sc.AddSingleton<Recordum.Core.Abstractions.IApplicationLifetime>(lifetime);
+        sc.AddTransient<RestoreDialogViewModel>();
+        using var sp = sc.BuildServiceProvider();
+        var launcher = new Recordum.UI.Services.AvaloniaBackupDialogLauncher(sp, () => null);
+        Window? window = null;
+        launcher.WindowCreatedForTests += w =>
+        {
+            window = w;
+            var vm = (RestoreDialogViewModel)w.DataContext!;
+            vm.SourcePath = "x.recbak"; vm.Passphrase = Pass; vm.IsPreviewLoaded = true;
+        };
+
+        var shown = launcher.ShowRestoreAsync();
+        PrivateDbHost.Pump();
+        var vm = (RestoreDialogViewModel)window!.DataContext!;
+        var run = vm.RunCommand.ExecuteAsync(null);
+        vm.IsRunning.Should().BeTrue();
+
+        window.Close();   // X / Esc durante l'operazione
+        PrivateDbHost.Pump();
+        window.IsVisible.Should().BeTrue("la finestra non si chiude mentre il restore gira");
+        shown.IsCompleted.Should().BeFalse();
+        lifetime.Shutdowns.Should().Be(0);
+
+        restore.Gate.SetResult();
+        await run;
+        await shown;
+        lifetime.Shutdowns.Should().Be(1);
+    }
 }
