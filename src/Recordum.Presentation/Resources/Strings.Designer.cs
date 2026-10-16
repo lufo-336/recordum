@@ -609,6 +609,11 @@ public static class Strings
     public static string Unlock_RememberOnDevice => Get("Unlock.RememberOnDevice");
     public static string Unlock_RememberUnavailable => Get("Unlock.RememberUnavailable");
     public static string Unlock_StoredKeyRejected => Get("Unlock.StoredKeyRejected");
+    public static string Settings_DataAndBackup => Get("Settings.DataAndBackup");
+    public static string Settings_DeviceKey_Remembered => Get("Settings.DeviceKey.Remembered");
+    public static string Settings_DeviceKey_NotRemembered => Get("Settings.DeviceKey.NotRemembered");
+    public static string Settings_DeviceKey_Forget => Get("Settings.DeviceKey.Forget");
+    public static string Settings_DeviceKey_ForgetConfirm => Get("Settings.DeviceKey.ForgetConfirm");
 
     public static string Editor_MetricType_Integer => Get("Editor.MetricType.Integer");
     public static string Editor_MetricType_Decimal => Get("Editor.MetricType.Decimal");

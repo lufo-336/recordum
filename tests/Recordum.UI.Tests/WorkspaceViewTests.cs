@@ -57,8 +57,9 @@ public class WorkspaceViewTests
         var visible = ribbon.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("rail"))
             .ToDictionary(b => b.Name!, b => b.IsVisible);
         visible["HomeButton"].Should().BeTrue();
-        visible.Where(kv => kv.Key != "HomeButton").Should().OnlyContain(kv => !kv.Value,
-            "Grafici, Backup, Esporta, Diagnostica e Impostazioni stanno dietro launcher/viste non ancora portati");
+        visible["SettingsButton"].Should().BeTrue("la finestra Impostazioni ridotta e' di F2c");
+        visible.Where(kv => kv.Key is not ("HomeButton" or "SettingsButton")).Should().OnlyContain(kv => !kv.Value,
+            "Grafici, Backup, Esporta e Diagnostica stanno dietro launcher/viste non ancora portati");
     }
 
     [AvaloniaFact]

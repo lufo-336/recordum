@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.Backup"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             x:Class="Recordum.UI.Views.Settings.DataAndBackupPage"
+             x:DataType="vm:DataAndBackupPageViewModel">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="24" Spacing="6">
+      <TextBlock Classes="h1" FontFamily="{DynamicResource Font.Serif}" FontSize="22" Margin="0,0,0,8"
+                 Text="{x:Static res:Strings.Settings_DataAndBackup}"/>
+
+      <!-- Backup automatico -->
+      <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Backup_Settings_Title}"/>
+      <CheckBox Name="EnabledBox" Content="{x:Static res:Strings.Backup_Settings_Enabled}"
+                IsChecked="{CompiledBinding Settings.IsEnabled, Mode=TwoWay}"/>
+      <TextBlock Text="{x:Static res:Strings.Backup_Settings_Frequency}"/>
+      <TextBox Name="FrequencyBox" Text="{CompiledBinding Settings.FrequencyDays, Mode=TwoWay}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Frequency}"/>
+      <TextBlock Text="{x:Static res:Strings.Backup_Settings_Retention}"/>
+      <TextBox Name="RetentionBox" Text="{CompiledBinding Settings.RetentionCount, Mode=TwoWay}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Retention}"/>
+      <TextBlock Text="{x:Static res:Strings.Backup_Settings_Folder}"/>
+      <TextBox Name="FolderBox" Text="{CompiledBinding Settings.Folder, Mode=TwoWay}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Folder}"/>
+      <TextBlock Text="{x:Static res:Strings.Backup_Create_Passphrase}"/>
+      <TextBox Name="PassphraseBox" PasswordChar="●" Text="{CompiledBinding Settings.NewPassphrase, Mode=TwoWay}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Passphrase}"/>
+      <TextBlock Text="{x:Static res:Strings.Backup_Create_Confirm}"/>
+      <TextBox Name="ConfirmBox" PasswordChar="●" Text="{CompiledBinding Settings.ConfirmPassphrase, Mode=TwoWay}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Confirm}"/>
+      <TextBlock Name="OffWarning" TextWrapping="Wrap" IsVisible="{CompiledBinding AutoBackupOffWarning}"
+                 Foreground="{DynamicResource Brush.Danger}" Text="{x:Static res:Strings.Backup_Settings_InertWarning}"/>
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+        <Button Name="TestButton" Content="{x:Static res:Strings.Backup_Settings_Test}"
+                Command="{CompiledBinding Settings.TestCommand}"/>
+        <Button Name="SaveButton" Classes="primary" Content="{x:Static res:Strings.Backup_Settings_Save}"
+                Command="{CompiledBinding Settings.SaveCommand}"/>
+      </StackPanel>
+      <TextBlock Name="TestResult" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}"
+                 Text="{CompiledBinding Settings.TestResultMessage}"/>
+
+      <!-- Backup ora / Ripristina -->
+      <WrapPanel Orientation="Horizontal" Margin="0,16,0,0">
+        <Button Name="BackupNowButton" Margin="0,0,8,8" Content="{x:Static res:Strings.Backup_Menu_Create}"
+                Command="{CompiledBinding BackupNowCommand}"/>
+        <Button Name="RestoreButton" Margin="0,0,8,8" Content="{x:Static res:Strings.Backup_Menu_Restore}"
+                Command="{CompiledBinding RestoreCommand}"/>
+      </WrapPanel>
+
+      <!-- Storico -->
+      <TextBlock FontWeight="SemiBold" Margin="0,8,0,0" Text="{x:Static res:Strings.Backup_History_Title}"/>
+      <TextBlock Name="HistoryEmpty" Foreground="{DynamicResource Brush.TextMuted}"
+                 IsVisible="{CompiledBinding !History.Rows.Count}" Text="{x:Static res:Strings.Backup_History_Empty}"/>
+      <ItemsControl Name="HistoryList" ItemsSource="{CompiledBinding History.Rows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:BackupHistoryRowViewModel">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+              <StackPanel Grid.Column="0">
+                <TextBlock TextWrapping="Wrap">
+                  <Run Text="{CompiledBinding CreatedAtDisplay}"/><Run Text="  ·  "/><Run Text="{CompiledBinding Kind}"/><Run Text="  ·  "/><Run Text="{CompiledBinding SizeDisplay}"/>
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"
+                           Text="{CompiledBinding Path}"/>
+              </StackPanel>
+              <Button Grid.Column="1" VerticalAlignment="Center" Content="{x:Static res:Strings.Backup_History_Delete}"
+                      Command="{CompiledBinding $parent[ItemsControl].((vm:BackupHistoryViewModel)DataContext).DeleteCommand}"
+                      CommandParameter="{CompiledBinding}"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Chiave del dispositivo: solo dove c'e' un portachiavi (la decide la composizione) -->
+      <StackPanel Name="DeviceKeyPanel" Spacing="6" Margin="0,16,0,0" IsVisible="{CompiledBinding ShowDeviceKey}">
+        <TextBlock Name="DeviceKeyText" TextWrapping="Wrap" Text="{CompiledBinding DeviceKeyText}"/>
+        <Button Name="ForgetButton" HorizontalAlignment="Left" Content="{x:Static res:Strings.Settings_DeviceKey_Forget}"
+                IsEnabled="{CompiledBinding IsDeviceKeyRemembered}" Command="{CompiledBinding ForgetDeviceKeyCommand}"/>
+        <TextBlock Name="DeviceKeyError" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Danger}"
+                   Text="{CompiledBinding DeviceKeyError}"/>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

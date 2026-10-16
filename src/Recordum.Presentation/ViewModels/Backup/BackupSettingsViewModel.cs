@@ -33,7 +33,8 @@ public sealed partial class BackupSettingsViewModel(
         if (int.TryParse(await settings.GetAsync("backup.auto.frequency_days", ct).ConfigureAwait(true), out var f)) FrequencyDays = f;
         if (int.TryParse(await settings.GetAsync("backup.auto.retention_count", ct).ConfigureAwait(true), out var r)) RetentionCount = r;
         Folder = await settings.GetAsync("backup.auto.path", ct).ConfigureAwait(true) ?? string.Empty;
-        HasPassphrase = keyStore.HasKey();
+        // Il portachiavi di Linux e' una chiamata sincrona che puo' attendere un prompt di sblocco: mai sul thread dell'interfaccia (R6).
+        HasPassphrase = await Task.Run(keyStore.HasKey, ct).ConfigureAwait(true);
         OnPropertyChanged(nameof(InertWarning));
     }
 
@@ -47,7 +48,14 @@ public sealed partial class BackupSettingsViewModel(
         {
             if (NewPassphrase != ConfirmPassphrase) return;
             if (NewPassphrase.Length < 12) return;
-            keyStore.WriteKey(NewPassphrase);
+            var passphrase = NewPassphrase;
+            try { await Task.Run(() => keyStore.WriteKey(passphrase)).ConfigureAwait(true); }
+            catch (SecretStoreUnavailableException ex)
+            {
+                // Senza passphrase salvata non si accende nulla: l'utente deve vedere che non e' andata.
+                TestResultMessage = ex.Message;
+                return;
+            }
             HasPassphrase = true;
         }
         await settings.SetAsync("backup.auto.enabled", IsEnabled ? "true" : "false");

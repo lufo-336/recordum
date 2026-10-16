@@ -65,4 +65,47 @@ public class BackupSettingsViewModelTests
 
         vm.InertWarning.Should().BeTrue();
     }
+
+    private sealed class BlockingKeyStore : Recordum.Core.Abstractions.Security.IAutoBackupKeyStore
+    {
+        public readonly ManualResetEventSlim Gate = new(false);
+        public int HasKeyThread, WriteThread;
+        public bool HasKey() { HasKeyThread = Environment.CurrentManagedThreadId; Gate.Wait(TimeSpan.FromSeconds(5)); return true; }
+        public void WriteKey(string passphrase) { WriteThread = Environment.CurrentManagedThreadId; Gate.Wait(TimeSpan.FromSeconds(5)); }
+        public void DeleteKey() { }
+        public string? ReadKey() => null;
+    }
+
+    [Fact]
+    public async Task LoadAsync_never_waits_for_the_keyring_on_the_calling_thread()
+    {
+        var store = new BlockingKeyStore();
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner());
+        var me = Environment.CurrentManagedThreadId;
+
+        var load = vm.LoadAsync();   // col codice rotto resta qui 5 s sul thread del chiamante
+
+        Environment.CurrentManagedThreadId.Should().Be(me);
+        load.IsCompleted.Should().BeFalse();
+        store.Gate.Set();
+        await load;
+        store.HasKeyThread.Should().NotBe(me);
+        vm.HasPassphrase.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveAsync_never_writes_to_the_keyring_on_the_calling_thread()
+    {
+        var store = new BlockingKeyStore();
+        store.Gate.Set();
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner())
+        {
+            NewPassphrase = "passphrase-1234567890",
+            ConfirmPassphrase = "passphrase-1234567890",
+        };
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        store.WriteThread.Should().NotBe(0).And.NotBe(Environment.CurrentManagedThreadId);
+    }
 }

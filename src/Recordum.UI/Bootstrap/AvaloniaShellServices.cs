@@ -46,7 +46,15 @@ public static class AvaloniaShellServices
 
         services.AddSingleton<IHabitTemplatePickerLauncher>(sp => new AvaloniaHabitTemplatePickerLauncher(sp, MainWindow));
         services.AddSingleton<IHabitBuilderLauncher>(sp => new AvaloniaHabitBuilderLauncher(sp, MainWindow));
-        services.AddSingleton<ISettingsWindowLauncher, NullSettingsWindowLauncher>();
+        services.AddSingleton<ISettingsWindowLauncher>(sp => new AvaloniaSettingsWindowLauncher(sp, MainWindow));
+        // La riga della chiave del dispositivo la decide la composizione: su Windows lo sblocco e' DPAPI, non c'e' portachiavi.
+        services.AddTransient(sp => new DataAndBackupPageViewModel(
+            sp.GetRequiredService<BackupSettingsViewModel>(),
+            sp.GetRequiredService<BackupHistoryViewModel>(),
+            sp.GetRequiredService<IBackupDialogLauncher>(),
+            sp.GetRequiredService<ISecretStore>(),
+            sp.GetRequiredService<IConfirmationDialog>(),
+            showDeviceKey: !OperatingSystem.IsWindows()));
         services.AddSingleton<IExportDialogLauncher, NullExportDialogLauncher>();
         services.AddSingleton<IBackupDialogLauncher>(sp => new AvaloniaBackupDialogLauncher(sp, MainWindow));
         services.AddSingleton<ISaveFileDialog, NullSaveFileDialog>();

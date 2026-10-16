@@ -1746,4 +1746,19 @@ Details: {0}</value>
   <data name="Dialog.NotLocalFile" xml:space="preserve">
     <value>Only files stored on this computer can be used here.</value>
   </data>
+  <data name="Settings.DataAndBackup" xml:space="preserve">
+    <value>Data &amp; backup</value>
+  </data>
+  <data name="Settings.DeviceKey.Remembered" xml:space="preserve">
+    <value>The database key is remembered on this device.</value>
+  </data>
+  <data name="Settings.DeviceKey.NotRemembered" xml:space="preserve">
+    <value>The database key isn't remembered: Recordum asks for the passphrase at every start.</value>
+  </data>
+  <data name="Settings.DeviceKey.Forget" xml:space="preserve">
+    <value>Forget on this device</value>
+  </data>
+  <data name="Settings.DeviceKey.ForgetConfirm" xml:space="preserve">
+    <value>Forget the database key on this device? Recordum will ask for the passphrase at every start.</value>
+  </data>
 </root>

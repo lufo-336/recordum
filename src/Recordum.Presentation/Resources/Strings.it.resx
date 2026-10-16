@@ -1720,4 +1720,19 @@
   <data name="Dialog.NotLocalFile" xml:space="preserve">
     <value>Qui si possono usare solo file memorizzati su questo computer.</value>
   </data>
+  <data name="Settings.DataAndBackup" xml:space="preserve">
+    <value>Dati e backup</value>
+  </data>
+  <data name="Settings.DeviceKey.Remembered" xml:space="preserve">
+    <value>La chiave del database è ricordata su questo dispositivo.</value>
+  </data>
+  <data name="Settings.DeviceKey.NotRemembered" xml:space="preserve">
+    <value>La chiave del database non è ricordata: Recordum chiede la passphrase a ogni avvio.</value>
+  </data>
+  <data name="Settings.DeviceKey.Forget" xml:space="preserve">
+    <value>Dimentica su questo dispositivo</value>
+  </data>
+  <data name="Settings.DeviceKey.ForgetConfirm" xml:space="preserve">
+    <value>Dimenticare la chiave del database su questo dispositivo? Recordum chiederà la passphrase a ogni avvio.</value>
+  </data>
 </root>

@@ -109,14 +109,13 @@
 
       <!-- Sistema (in basso) -->
       <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,8">
-        <!-- Nascosto: SettingsWindow e' Null (NullSettingsWindowLauncher). Lo accende F6. -->
+        <!-- Nascosto: lo accende F6. -->
         <Button Name="DiagnosticButton" Classes="rail" Command="{Binding ShowDiagnosticInfoCommand}" IsVisible="False"
                 ToolTip.Tip="{x:Static res:Strings.Diagnostic_Menu_Open}"
                 AutomationProperties.Name="{x:Static res:Strings.Diagnostic_Menu_Open}">
           <Path Classes="railicon" Data="{StaticResource Icon.CircleHelp}"/>
         </Button>
-        <!-- Nascosto: come DiagnosticButton, lo accende F6. -->
-        <Button Name="SettingsButton" Classes="rail" Command="{Binding ShowSettingsCommand}" IsVisible="False"
+        <Button Name="SettingsButton" Classes="rail" Command="{Binding ShowSettingsCommand}"
                 ToolTip.Tip="{x:Static res:Strings.Settings_Title}"
                 AutomationProperties.Name="{x:Static res:Strings.Settings_Title}">
           <Path Classes="railicon" Data="{StaticResource Icon.Settings}"/>

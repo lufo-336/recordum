@@ -66,10 +66,10 @@ public class AvaloniaShellServicesTests
     }
 
     [Fact]
-    public async Task Settings_window_launcher_resolves_and_completes()
+    public void Settings_window_launcher_resolves_to_the_real_one_not_the_null()
     {
         var sp = BuildProvider();
-        await sp.GetRequiredService<ISettingsWindowLauncher>().ShowAsync();
+        sp.GetRequiredService<ISettingsWindowLauncher>().Should().BeOfType<AvaloniaSettingsWindowLauncher>();
     }
 
     [Fact]
