@@ -56,6 +56,14 @@ public static class AppComposition
         else services.AddSingleton<IAutoBackupKeyStore>(sp => new SecretStoreAutoBackupKeyStore(sp.GetRequiredService<ISecretStore>()));
     }
 
+    /// <summary>L'avvio della shell: <c>CoreInitializer</c>, poi lo scheduler dell'auto-backup. Un solo punto, cosi' un
+    /// test passa dallo stesso percorso di <c>App</c>.</summary>
+    public static async Task InitializeAsync(IServiceProvider services)
+    {
+        await services.GetRequiredService<CoreInitializer>().InitializeAsync().ConfigureAwait(true);
+        StartBackupScheduler(services);
+    }
+
     /// <summary>Avvia lo scheduler dell'auto-backup: dopo <c>CoreInitializer</c> (il DB e' migrato), con l'attesa del
     /// primo tick, nessun backup immediato. Il ciclo gira su un thread del pool (<c>Task.Run</c>), quindi la lettura
     /// della passphrase dal portachiavi non tocca mai il thread dell'interfaccia. Si ferma con il Dispose del contenitore.</summary>

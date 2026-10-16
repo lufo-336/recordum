@@ -130,6 +130,25 @@ public sealed class BackupCompositionTests : IDisposable
         threads.Should().NotContain(callerThread);
     }
 
+    [Fact]
+    public async Task InitializeAsync_starts_the_backup_host_after_the_core_initializer()
+    {
+        var threads = new List<int>();
+        var services = new ServiceCollection();
+        services.AddRecordumCore(Options());
+        services.AddRecordumAvaloniaShell();
+        services.AddSingleton<IDbKeyProvider>(new FixedKey());
+        AppComposition.AddBackupKeyStores(services, Options(), new FakeSecrets("pw"), windows: false);
+        services.AddScoped<IBackupScheduler>(_ => new ThreadRecorder(threads));
+        services.AddSingleton(new BackupSchedulerOptions { InitialDelay = TimeSpan.FromMilliseconds(20), Interval = TimeSpan.FromMilliseconds(20) });
+        using var sp = services.BuildServiceProvider();
+
+        await AppComposition.InitializeAsync(sp);
+        await Task.Delay(500);
+
+        lock (threads) threads.Should().NotBeEmpty();
+    }
+
     private sealed class ThreadRecorder(List<int> threads) : IBackupScheduler
     {
         public Task RunDueAsync(CancellationToken ct = default) { lock (threads) threads.Add(Environment.CurrentManagedThreadId); return Task.CompletedTask; }

@@ -90,8 +90,7 @@ public partial class App : Application
             if (keyProvider is null) return;   // sblocco annullato o non supportato: si e' gia' detto perche'
 
             _services = AppComposition.BuildServices(options, keyProvider, secrets);
-            await _services.GetRequiredService<CoreInitializer>().InitializeAsync().ConfigureAwait(true);
-            AppComposition.StartBackupScheduler(_services);
+            await AppComposition.InitializeAsync(_services).ConfigureAwait(true);
 
             // Strumento di sviluppo, come in WPF: popola una libreria credibile (idempotente).
             if (args.Contains("--seed-demo"))
