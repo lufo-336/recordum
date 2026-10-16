@@ -149,7 +149,7 @@ public partial class App : Application
 
         if (state == DbUnlockState.UsePlatformKey)
         {
-            var result = await unlock.UnlockAsync(state, passphrase: string.Empty, rememberOnDevice: false).ConfigureAwait(true);
+            var result = await unlock.UnlockAsync(state, passphrase: string.Empty, remember: RememberChoice.LeaveAsIs).ConfigureAwait(true);
             if (result.Outcome == UnlockOutcome.Unlocked && result.Provider is not null) return result.Provider;
             ShowFatal(desktop, Strings.Unlock_Failed);
             return null;

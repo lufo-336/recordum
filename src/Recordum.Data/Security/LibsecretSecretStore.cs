@@ -50,8 +50,10 @@ public sealed partial class LibsecretSecretStore : ISecretStore
             : $"Recordum — passphrase del backup automatico ({_dataDir})";
         Call<object?>(schema =>
         {
-            secret_password_store_sync(schema, "default", label, value, IntPtr.Zero, out var err, "kind", Name(kind), "data_dir", _dataDir, IntPtr.Zero);
+            var stored = secret_password_store_sync(schema, "default", label, value, IntPtr.Zero, out var err, "kind", Name(kind), "data_dir", _dataDir, IntPtr.Zero);
             ThrowIf(err);
+            // FALSE senza GError (es. prompt di sblocco annullato): il segreto non e' stato scritto, e dirlo e' meglio che crederlo.
+            if (!stored) throw new SecretStoreUnavailableException("The system keyring did not store the secret.");
             return null;
         });
     }

@@ -55,7 +55,7 @@ public sealed class DatabaseFilePermissionsTests : IDisposable
         try
         {
             // La creazione vera: il primo avvio, che scrive il salt e pre-crea il database 0600.
-            var created = Service().UnlockAsync(DbUnlockState.NeedsCreation, "correct horse battery staple", rememberOnDevice: false).GetAwaiter().GetResult();
+            var created = Service().UnlockAsync(DbUnlockState.NeedsCreation, "correct horse battery staple", remember: RememberChoice.LeaveAsIs).GetAwaiter().GetResult();
             Assert.Equal(UnlockOutcome.Unlocked, created.Outcome);
             using var provider = created.Provider as IDisposable;
             using var key = created.Provider!.GetKeyAsync().AsTask().GetAwaiter().GetResult();

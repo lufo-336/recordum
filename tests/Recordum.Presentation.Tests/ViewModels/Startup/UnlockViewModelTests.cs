@@ -208,7 +208,7 @@ public class UnlockViewModelTests
         finally { Strings.Culture = previous; }
     }
 
-    private static async Task<bool> SubmitRememberedAsync(bool canRemember, bool box)
+    private static async Task<RememberChoice> SubmitRememberedAsync(bool canRemember, bool box)
     {
         var service = new FakeDbUnlockService { State = DbUnlockState.NeedsPassphrase };
         service.Enqueue(UnlockOutcome.Unlocked, Provider);
@@ -236,10 +236,11 @@ public class UnlockViewModelTests
     }
 
     [Theory]
-    [InlineData(true, true, true)]
-    [InlineData(true, false, false)]   // il parametro muto: la casella spenta non deve ricordare
-    [InlineData(false, true, false)]   // senza portachiavi non si ricorda, anche se la proprieta' fosse true
-    public async Task The_checkbox_decides_what_the_service_is_asked(bool canRemember, bool box, bool expected) =>
+    [InlineData(true, true, RememberChoice.Remember)]
+    [InlineData(true, false, RememberChoice.Forget)]     // il parametro muto: la casella attiva e tolta cancella
+    [InlineData(false, true, RememberChoice.LeaveAsIs)]  // casella non attiva: il portachiavi non si tocca
+    [InlineData(false, false, RememberChoice.LeaveAsIs)]
+    public async Task The_checkbox_decides_what_the_service_is_asked(bool canRemember, bool box, RememberChoice expected) =>
         Assert.Equal(expected, await SubmitRememberedAsync(canRemember, box));
 
     [Fact]

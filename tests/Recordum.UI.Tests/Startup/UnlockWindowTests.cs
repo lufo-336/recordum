@@ -18,7 +18,7 @@ public class UnlockWindowTests
     {
         public OrphanReconciliation ReconcileOrphans() => OrphanReconciliation.None;
         public DbUnlockState DetectState() => DbUnlockState.NeedsPassphrase;
-        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default) =>
+        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, RememberChoice remember, CancellationToken ct = default) =>
             Task.FromResult(new UnlockResult(UnlockOutcome.Failed, null));
         public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) =>
             Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));

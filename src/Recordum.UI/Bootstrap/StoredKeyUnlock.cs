@@ -16,10 +16,11 @@ public static class StoredKeyUnlock
 
     public static async Task<Result> RunAsync(IDbUnlockService service, DbUnlockState state, TimeSpan cap)
     {
+        var abandoned = new CancellationTokenSource();
         var work = Task.Run(async () =>
         {
             var attempt = state == DbUnlockState.NeedsPassphrase
-                ? await service.TryUnlockWithStoredKeyAsync().ConfigureAwait(false)
+                ? await service.TryUnlockWithStoredKeyAsync(abandoned.Token).ConfigureAwait(false)
                 : new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null);
             // Dopo il tentativo: la sonda e' gia' stata fatta e messa in cache. Prima di lui, sarebbe una seconda attesa.
             return new Result(attempt.Provider, service.CanRememberOnDevice, attempt.Outcome == StoredKeyOutcome.StoredKeyRejected);
@@ -32,11 +33,15 @@ public static class StoredKeyUnlock
             return await work.ConfigureAwait(false);
         }
 
+        // Scaduto: il tentativo abbandonato non deve piu' toccare database ne' portachiavi (v. TryUnlockWithStoredKeyAsync).
+        abandoned.Cancel();
         // Scaduto: se il tentativo finisce dopo, la sua chiave non deve restare in memoria.
         _ = work.ContinueWith(t =>
         {
             if (t.IsCompletedSuccessfully && t.Result.Provider is IDisposable d) d.Dispose();
         }, TaskScheduler.Default);
+        // CanRemember false e' strutturale: senza scritture in questa sessione, un Delete tardivo del tentativo abbandonato
+        // non puo' correre contro una Write fresca e cancellare la chiave appena ricordata. Non "correggerlo" a true.
         return new Result(null, CanRemember: false, Rejected: false);
     }
 }

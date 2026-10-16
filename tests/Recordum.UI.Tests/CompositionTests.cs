@@ -234,7 +234,7 @@ public class CompositionTests
         public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) =>
             Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));
 
-        public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default)
+        public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, RememberChoice remember, CancellationToken ct = default)
         {
             await _gate.Task;
             return new UnlockResult(UnlockOutcome.WrongPassphrase, null);
@@ -251,7 +251,7 @@ public class CompositionTests
         public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) =>
             Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));
 
-        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default)
+        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, RememberChoice remember, CancellationToken ct = default)
             => Task.FromResult(new UnlockResult(UnlockOutcome.WrongPassphrase, null));
     }
 }

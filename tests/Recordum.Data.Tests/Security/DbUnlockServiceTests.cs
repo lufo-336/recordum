@@ -114,7 +114,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     [Fact]
     public async Task Creation_writes_a_16_byte_salt_and_yields_a_working_provider()
     {
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Unlocked, result.Outcome);
         Assert.NotNull(result.Provider);
@@ -129,17 +129,17 @@ public sealed class DbUnlockServiceTests : IDisposable
     [Fact]
     public async Task The_next_start_unlocks_with_the_same_passphrase_and_rejects_a_wrong_one()
     {
-        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
         await SeedAsync(_paths.DatabasePath, created.Provider!);
 
         var next = Linux();
         Assert.Equal(DbUnlockState.NeedsPassphrase, next.DetectState());
 
-        var wrong = await next.UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong, rememberOnDevice: false);
+        var wrong = await next.UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong, remember: RememberChoice.LeaveAsIs);
         Assert.Equal(UnlockOutcome.WrongPassphrase, wrong.Outcome);
         Assert.Null(wrong.Provider);
 
-        var right = await next.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
+        var right = await next.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
         Assert.Equal(UnlockOutcome.Unlocked, right.Outcome);
         Assert.Equal(42, await ReadAsync(_paths.DatabasePath, right.Provider!));
     }
@@ -150,12 +150,12 @@ public sealed class DbUnlockServiceTests : IDisposable
         // Il pool di Microsoft.Data.Sqlite restituisce una connessione GIÀ chiavata: senza
         // ClearAllPools() fra i tentativi, la chiave sbagliata viene ignorata e la lettura "riesce".
         // (Misurato: la prima stesura di questo controllo diceva "read succeeded ?!".)
-        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
         await SeedAsync(_paths.DatabasePath, created.Provider!);
         var sut = Linux();
 
-        var right = await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
-        var wrong = await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong, rememberOnDevice: false);
+        var right = await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
+        var wrong = await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Unlocked, right.Outcome);
         Assert.Equal(UnlockOutcome.WrongPassphrase, wrong.Outcome);
@@ -168,7 +168,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         // processo) resta nel pool: Open() applica la chiave con PRAGMA key DOPO l'apertura, quindi il
         // pool la restituirebbe ancora sbloccata. Solo il ClearAllPools() in testa a EnterAsync lo evita
         // (quello nel finally di CanRead ripulisce soltanto ciò che CanRead ha aperto lui).
-        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
         await SeedAsync(_paths.DatabasePath, created.Provider!);
         using (var key = await created.Provider!.GetKeyAsync())
         using (var conn = SqlCipherConnectionFactory.Open(_paths.DatabasePath, key))
@@ -180,7 +180,7 @@ public sealed class DbUnlockServiceTests : IDisposable
             cmd.ExecuteScalar();
         }
 
-        var wrong = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong, rememberOnDevice: false);
+        var wrong = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Wrong, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.WrongPassphrase, wrong.Outcome);
     }
@@ -192,7 +192,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         // guardia creerebbe un DB vuoto e QUALUNQUE passphrase di 12+ caratteri "sbloccherebbe".
         await File.WriteAllBytesAsync(_paths.SaltFilePath, RandomNumberGenerator16());
 
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
         Assert.Null(result.Provider);
@@ -208,7 +208,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     [InlineData("            ")]         // 12 spazi: lunga abbastanza ma non è una passphrase
     public async Task A_too_short_passphrase_is_refused_without_side_effects(string passphrase)
     {
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, passphrase, rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.PassphraseTooShort, result.Outcome);
         Assert.Null(result.Provider);
@@ -218,7 +218,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     [Fact]
     public async Task Twelve_characters_is_enough()
     {
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, "twelve-chars", rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, "twelve-chars", remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Unlocked, result.Outcome);
     }
@@ -228,11 +228,11 @@ public sealed class DbUnlockServiceTests : IDisposable
     {
         // Se uno stato NeedsCreation stantio arrivasse qui con un DB vero già presente, riscrivere il
         // salt renderebbe quel DB illeggibile per sempre.
-        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
         await SeedAsync(_paths.DatabasePath, created.Provider!);
         var saltBefore = await File.ReadAllBytesAsync(_paths.SaltFilePath);
 
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, "another passphrase!", rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, "another passphrase!", remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
         Assert.Equal(saltBefore, await File.ReadAllBytesAsync(_paths.SaltFilePath));
@@ -252,14 +252,14 @@ public sealed class DbUnlockServiceTests : IDisposable
         var aside = Assert.Single(Directory.GetFiles(_dir, "db.salt.orphan-*"));
         Assert.Equal(zeros, await File.ReadAllBytesAsync(aside));
         Assert.Equal(DbUnlockState.NeedsCreation, sut.DetectState());
-        Assert.Equal(UnlockOutcome.Unlocked, (await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false)).Outcome);
+        Assert.Equal(UnlockOutcome.Unlocked, (await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs)).Outcome);
         Assert.NotEqual(zeros, await File.ReadAllBytesAsync(_paths.SaltFilePath));
     }
 
     [Fact]
     public async Task A_restore_interrupted_between_its_two_moves_gets_the_database_back()
     {
-        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
         await SeedAsync(_paths.DatabasePath, created.Provider!);
         SqliteConnection.ClearAllPools();
         File.Move(_paths.DatabasePath, _paths.DatabasePath + ".old");   // RestoreService muore fra le due File.Move
@@ -268,7 +268,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         Assert.Equal(OrphanReconciliation.RecoveredInterruptedRestore, sut.ReconcileOrphans());
 
         Assert.Equal(DbUnlockState.NeedsPassphrase, sut.DetectState());
-        Assert.Equal(UnlockOutcome.Unlocked, (await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false)).Outcome);
+        Assert.Equal(UnlockOutcome.Unlocked, (await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs)).Outcome);
     }
 
     [Theory]
@@ -278,7 +278,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     {
         if (withDatabase)
         {
-            var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+            var created = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
             await SeedAsync(_paths.DatabasePath, created.Provider!);
         }
         var before = Directory.GetFiles(_dir).Order().ToArray();
@@ -295,7 +295,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var theirs = RandomNumberGenerator.GetBytes(16);
         await File.WriteAllBytesAsync(_paths.SaltFilePath, theirs);
 
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
         Assert.Equal(theirs, await File.ReadAllBytesAsync(_paths.SaltFilePath));
@@ -310,7 +310,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var sut = Linux();
 
         sut.ReconcileOrphans();
-        await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(_paths.SaltFilePath));
     }
@@ -320,7 +320,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     {
         if (OperatingSystem.IsWindows()) return;
 
-        await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        await Linux().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(_paths.SaltFilePath));
     }
@@ -334,7 +334,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var log = new ListLogger();
 
         var result = await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), log)
-            .UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
+            .UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
         var entry = Assert.Single(log.Entries);
@@ -349,7 +349,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var log = new ListLogger();
 
         var result = await new DbUnlockService(_paths, () => new FixedKey(Bytes(99)), new NullSecretStore(), log)
-            .UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase, rememberOnDevice: false);
+            .UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
         AssertOneRefusal(log, DbUnlockState.UsePlatformKey);
@@ -360,19 +360,19 @@ public sealed class DbUnlockServiceTests : IDisposable
     {
         // Platform key requested on a system that has none.
         var noKey = new ListLogger();
-        await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), noKey).UnlockAsync(DbUnlockState.UsePlatformKey, "", rememberOnDevice: false);
+        await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), noKey).UnlockAsync(DbUnlockState.UsePlatformKey, "", remember: RememberChoice.LeaveAsIs);
         AssertOneRefusal(noKey, DbUnlockState.UsePlatformKey);
 
         // Creation refused because a database is already there.
         File.WriteAllBytes(_paths.DatabasePath, [1, 2, 3]);
         var exists = new ListLogger();
-        await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), exists).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: false);
+        await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), exists).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.LeaveAsIs);
         AssertOneRefusal(exists, DbUnlockState.NeedsCreation);
 
         // Passphrase entered with the database missing.
         File.Delete(_paths.DatabasePath);
         var missing = new ListLogger();
-        await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), missing).UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
+        await new DbUnlockService(_paths, platformKeyFactory: null, new NullSecretStore(), missing).UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
         AssertOneRefusal(missing, DbUnlockState.NeedsPassphrase);
     }
 
@@ -395,7 +395,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var sut = new DbUnlockService(_paths, () => throw new DllNotFoundException("libe_sqlcipher.so"), new NullSecretStore(), log);
 
         var thrown = await Assert.ThrowsAsync<DllNotFoundException>(
-            () => sut.UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase, rememberOnDevice: false));
+            () => sut.UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase, remember: RememberChoice.LeaveAsIs));
 
         var entry = Assert.Single(log.Entries);
         Assert.Equal(LogLevel.Error, entry.Level);
@@ -409,7 +409,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var sut = new DbUnlockService(_paths, () => throw new OperationCanceledException(), new NullSecretStore(), log);
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => sut.UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase, rememberOnDevice: false));
+            () => sut.UnlockAsync(DbUnlockState.UsePlatformKey, Passphrase, remember: RememberChoice.LeaveAsIs));
 
         Assert.Empty(log.Entries);
     }
@@ -431,7 +431,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         File.WriteAllBytes(_paths.DatabasePath, [1, 2, 3]);
         await File.WriteAllBytesAsync(_paths.SaltFilePath, new byte[5]);
 
-        var result = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
     }
@@ -442,7 +442,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         File.WriteAllBytes(_paths.DatabasePath, [1, 2, 3]);
         File.WriteAllBytes(_paths.KeyFilePath, [9]);
 
-        var result = await Linux().UnlockAsync(DbUnlockState.Unsupported, Passphrase, rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.Unsupported, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
         Assert.False(File.Exists(_paths.SaltFilePath));
@@ -454,7 +454,7 @@ public sealed class DbUnlockServiceTests : IDisposable
         var key = new FixedKey(Bytes(7));
         var sut = Windows(key);
 
-        var result = await sut.UnlockAsync(DbUnlockState.UsePlatformKey, "", rememberOnDevice: false);
+        var result = await sut.UnlockAsync(DbUnlockState.UsePlatformKey, "", remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Unlocked, result.Outcome);
         Assert.Same(key, result.Provider);
@@ -465,7 +465,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     {
         await SeedAsync(_paths.DatabasePath, new FixedKey(Bytes(7)));
 
-        var result = await Windows(new FixedKey(Bytes(99))).UnlockAsync(DbUnlockState.UsePlatformKey, "", rememberOnDevice: false);
+        var result = await Windows(new FixedKey(Bytes(99))).UnlockAsync(DbUnlockState.UsePlatformKey, "", remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
     }
@@ -473,7 +473,7 @@ public sealed class DbUnlockServiceTests : IDisposable
     [Fact]
     public async Task UsePlatformKey_without_a_platform_key_is_a_failure()
     {
-        var result = await Linux().UnlockAsync(DbUnlockState.UsePlatformKey, "", rememberOnDevice: false);
+        var result = await Linux().UnlockAsync(DbUnlockState.UsePlatformKey, "", remember: RememberChoice.LeaveAsIs);
 
         Assert.Equal(UnlockOutcome.Failed, result.Outcome);
     }

@@ -115,7 +115,7 @@ public sealed partial class UnlockViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var outcome = await _service.UnlockAsync(_state, Passphrase, RememberOnDevice && CanRemember);
+            var outcome = await _service.UnlockAsync(_state, Passphrase, !CanRemember ? RememberChoice.LeaveAsIs : RememberOnDevice ? RememberChoice.Remember : RememberChoice.Forget);
             switch (outcome.Outcome)
             {
                 case UnlockOutcome.Unlocked when outcome.Provider is not null:

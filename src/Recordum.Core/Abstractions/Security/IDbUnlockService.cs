@@ -44,6 +44,17 @@ public enum UnlockOutcome
 /// <summary><paramref name="Provider"/> è valorizzato solo con <see cref="UnlockOutcome.Unlocked"/>.</summary>
 public sealed record UnlockResult(UnlockOutcome Outcome, IDbKeyProvider? Provider);
 
+/// <summary>Che cosa fare della chiave nel portachiavi dopo uno sblocco riuscito.</summary>
+public enum RememberChoice
+{
+    /// <summary>Scrivila.</summary>
+    Remember,
+    /// <summary>Cancellala: la casella era attiva e l'utente l'ha tolta.</summary>
+    Forget,
+    /// <summary>Non toccare il portachiavi (casella non attiva: non c'e' o non ha risposto). Alla creazione ogni chiave vecchia si cancella comunque.</summary>
+    LeaveAsIs,
+}
+
 /// <summary>Esito del tentativo con la chiave ricordata nel portachiavi.</summary>
 public enum StoredKeyOutcome
 {
@@ -75,9 +86,9 @@ public interface IDbUnlockService
 
     /// <summary>Tenta lo sblocco. <paramref name="passphrase"/> è ignorata per
     /// <see cref="DbUnlockState.UsePlatformKey"/> e <see cref="DbUnlockState.Unsupported"/>.
-    /// Con <paramref name="rememberOnDevice"/> e sblocco riuscito la chiave derivata va nel portachiavi (un guasto
-    /// del portachiavi si registra e non cambia l'esito).</summary>
-    Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default);
+    /// <paramref name="remember"/> dice che fare della chiave nel portachiavi dopo uno sblocco riuscito; un guasto o un
+    /// tetto superato del portachiavi si registra e non cambia l'esito.</summary>
+    Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, RememberChoice remember, CancellationToken ct = default);
 
     /// <summary>Solo in <see cref="DbUnlockState.NeedsPassphrase"/>: prova la chiave ricordata. Chiama il portachiavi
     /// (sincrono): mai dal thread dell'interfaccia.</summary>

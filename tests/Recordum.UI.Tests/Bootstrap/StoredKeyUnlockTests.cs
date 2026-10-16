@@ -10,11 +10,12 @@ public class StoredKeyUnlockTests
 {
     private sealed class Service(Func<Task<StoredKeyResult>> attempt, Func<bool> canRemember) : IDbUnlockService
     {
+        public CancellationToken Token { get; private set; }
         public OrphanReconciliation ReconcileOrphans() => OrphanReconciliation.None;
         public DbUnlockState DetectState() => DbUnlockState.NeedsPassphrase;
-        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default) =>
+        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, RememberChoice remember, CancellationToken ct = default) =>
             throw new NotSupportedException();
-        public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) => attempt();
+        public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) { Token = ct; return attempt(); }
         public bool CanRememberOnDevice => canRemember();
     }
 
@@ -92,5 +93,19 @@ public class StoredKeyUnlockTests
         calls.Should().Be(1);
         creation.Rejected.Should().BeFalse();
         creation.CanRemember.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task The_cap_cancels_the_abandoned_attempt_and_a_quick_answer_does_not()
+    {
+        var late = new TaskCompletionSource<StoredKeyResult>();
+        var slow = new Service(() => late.Task, () => true);
+        await StoredKeyUnlock.RunAsync(slow, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(100));
+        slow.Token.IsCancellationRequested.Should().BeTrue();
+        late.SetResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));
+
+        var quick = new Service(() => Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null)), () => true);
+        await StoredKeyUnlock.RunAsync(quick, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30));
+        quick.Token.IsCancellationRequested.Should().BeFalse();
     }
 }

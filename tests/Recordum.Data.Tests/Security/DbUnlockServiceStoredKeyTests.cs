@@ -77,7 +77,7 @@ public sealed class DbUnlockServiceStoredKeyTests : IDisposable
     /// <summary>Crea un database vero con dentro una riga, ricordando (o no) la chiave.</summary>
     private async Task CreateAsync(bool remember, ISecretStore? store = null)
     {
-        var created = await Service(store).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember);
+        var created = await Service(store).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember ? RememberChoice.Remember : RememberChoice.LeaveAsIs);
         created.Outcome.Should().Be(UnlockOutcome.Unlocked);
         using (var key = await created.Provider!.GetKeyAsync()) Seed(_paths.DatabasePath, key);
     }
@@ -149,7 +149,7 @@ public sealed class DbUnlockServiceStoredKeyTests : IDisposable
         await CreateAsync(remember: false);
         _store.Items.Should().BeEmpty();
 
-        var entered = await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: true);
+        var entered = await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.Remember);
 
         entered.Outcome.Should().Be(UnlockOutcome.Unlocked);
         _store.Items.Should().ContainKey(SecretKind.DbKey);
@@ -160,7 +160,7 @@ public sealed class DbUnlockServiceStoredKeyTests : IDisposable
     public async Task Without_remember_nothing_is_written_on_entry_or_on_creation()
     {
         await CreateAsync(remember: false);
-        await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, rememberOnDevice: false);
+        await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, remember: RememberChoice.LeaveAsIs);
 
         _store.Items.Should().BeEmpty();
     }
@@ -170,7 +170,7 @@ public sealed class DbUnlockServiceStoredKeyTests : IDisposable
     {
         await CreateAsync(remember: false);
 
-        var r = await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, "incorrect horse battery staple", rememberOnDevice: true);
+        var r = await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, "incorrect horse battery staple", remember: RememberChoice.Remember);
 
         r.Outcome.Should().Be(UnlockOutcome.WrongPassphrase);
         _store.Items.Should().BeEmpty();
@@ -188,7 +188,7 @@ public sealed class DbUnlockServiceStoredKeyTests : IDisposable
     [Fact]
     public async Task A_keyring_that_fails_on_write_does_not_change_the_outcome()
     {
-        var created = await Service(new ThrowingStore()).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, rememberOnDevice: true);
+        var created = await Service(new ThrowingStore()).UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, remember: RememberChoice.Remember);
 
         created.Outcome.Should().Be(UnlockOutcome.Unlocked);
     }
@@ -212,5 +212,126 @@ public sealed class DbUnlockServiceStoredKeyTests : IDisposable
             result.Provider.Should().NotBeNull();
         }
         finally { await fixture.DisposeAsync(); }
+    }
+
+    private static readonly TimeSpan ShortCap = TimeSpan.FromMilliseconds(300);
+
+    /// <summary>Uno store le cui scritture/cancellazioni/letture non tornano finche' non lo si sblocca.</summary>
+    private sealed class BlockingStore : ISecretStore, IDisposable
+    {
+        private readonly ManualResetEventSlim _gate = new();
+        public Dictionary<SecretKind, string> Items { get; } = [];
+        public Action? OnRead { get; set; }
+        public bool BlockWrite { get; set; }
+        public bool BlockDelete { get; set; }
+        public int Deletes { get; private set; }
+        public bool IsAvailable => true;
+        public string? TryRead(SecretKind kind) { OnRead?.Invoke(); return Items.GetValueOrDefault(kind); }
+        public void Write(SecretKind kind, string value) { if (BlockWrite) _gate.Wait(); Items[kind] = value; }
+        public void Delete(SecretKind kind) { Deletes++; if (BlockDelete) _gate.Wait(); Items.Remove(kind); }
+        public void Dispose() { _gate.Set(); _gate.Dispose(); }
+    }
+
+    [Fact]
+    public async Task A_remember_write_that_never_returns_does_not_hang_the_unlock_on_entry_or_creation()
+    {
+        using var store = new BlockingStore { BlockWrite = true };
+        var sut = new DbUnlockService(_paths, platformKeyFactory: null, store, keyringCap: ShortCap);
+
+        var created = await sut.UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, RememberChoice.Remember).WaitAsync(TimeSpan.FromSeconds(30));
+        created.Outcome.Should().Be(UnlockOutcome.Unlocked);
+        using (var key = await created.Provider!.GetKeyAsync()) Seed(_paths.DatabasePath, key);
+
+        var entered = await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, RememberChoice.Remember).WaitAsync(TimeSpan.FromSeconds(30));
+        entered.Outcome.Should().Be(UnlockOutcome.Unlocked);
+    }
+
+    [Fact]
+    public async Task A_forget_delete_that_never_returns_does_not_hang_the_unlock()
+    {
+        await CreateAsync(remember: true);
+        using var store = new BlockingStore { BlockDelete = true };
+        var sut = new DbUnlockService(_paths, platformKeyFactory: null, store, keyringCap: ShortCap);
+
+        var entered = await sut.UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, RememberChoice.Forget).WaitAsync(TimeSpan.FromSeconds(30));
+
+        entered.Outcome.Should().Be(UnlockOutcome.Unlocked);
+    }
+
+    [Fact]
+    [Trait("Category", "UnixOnly")]
+    public async Task A_disk_error_while_trying_the_stored_key_keeps_the_secret()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await CreateAsync(remember: true);
+        var before = _store.Items[SecretKind.DbKey];
+        File.SetUnixFileMode(_paths.DatabasePath, UnixFileMode.None);
+        try
+        {
+            var result = await Service().TryUnlockWithStoredKeyAsync();
+
+            result.Outcome.Should().Be(StoredKeyOutcome.NoStoredKey, "non e' la chiave: e' il disco");
+            _store.Items[SecretKind.DbKey].Should().Be(before);
+        }
+        finally { File.SetUnixFileMode(_paths.DatabasePath, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+    }
+
+    [Fact]
+    public async Task An_abandoned_attempt_that_finishes_after_cancellation_neither_deletes_nor_touches_the_database()
+    {
+        await CreateAsync(remember: false);
+        using var cts = new CancellationTokenSource();
+        using var store = new BlockingStore { OnRead = cts.Cancel };
+        store.Items[SecretKind.DbKey] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(KeyMaterial.LengthBytes));   // se arrivasse a CanRead: Rejected + Delete
+
+        var result = await new DbUnlockService(_paths, platformKeyFactory: null, store).TryUnlockWithStoredKeyAsync(cts.Token);
+
+        result.Outcome.Should().Be(StoredKeyOutcome.NoStoredKey);
+        store.Deletes.Should().Be(0);
+        store.Items.Should().ContainKey(SecretKind.DbKey);
+    }
+
+    [Fact]
+    public async Task Creation_always_clears_an_old_key_unless_it_writes_the_new_one()
+    {
+        _store.Items[SecretKind.DbKey] = "chiave-di-un-database-morto";
+        var leave = await Service().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, RememberChoice.LeaveAsIs);
+        leave.Outcome.Should().Be(UnlockOutcome.Unlocked);
+        _store.Items.Should().BeEmpty();
+        leave.Provider!.As<IDisposable>().Dispose();
+        SqliteConnection.ClearAllPools();
+        File.Delete(_paths.DatabasePath); File.Delete(_paths.SaltFilePath);
+
+        _store.Items[SecretKind.DbKey] = "chiave-di-un-database-morto";
+        (await Service().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, RememberChoice.Forget)).Outcome.Should().Be(UnlockOutcome.Unlocked);
+        _store.Items.Should().BeEmpty();
+        File.Delete(_paths.DatabasePath); File.Delete(_paths.SaltFilePath);
+
+        _store.Items[SecretKind.DbKey] = "chiave-di-un-database-morto";
+        (await Service().UnlockAsync(DbUnlockState.NeedsCreation, Passphrase, RememberChoice.Remember)).Outcome.Should().Be(UnlockOutcome.Unlocked);
+        Convert.FromBase64String(_store.Items[SecretKind.DbKey]).Should().HaveCount(KeyMaterial.LengthBytes);
+    }
+
+    [Fact]
+    public async Task On_entry_an_enabled_unchecked_box_deletes_the_key_and_a_disabled_box_leaves_it()
+    {
+        await CreateAsync(remember: true);
+        var key = _store.Items[SecretKind.DbKey];
+
+        (await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, RememberChoice.LeaveAsIs)).Outcome.Should().Be(UnlockOutcome.Unlocked);
+        _store.Items[SecretKind.DbKey].Should().Be(key, "casella non attiva: nessuna richiesta dell'utente");
+
+        (await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, Passphrase, RememberChoice.Forget)).Outcome.Should().Be(UnlockOutcome.Unlocked);
+        _store.Items.Should().BeEmpty("casella attiva e tolta: l'utente ha chiesto di dimenticare");
+    }
+
+    [Fact]
+    public async Task A_wrong_passphrase_never_forgets_the_key()
+    {
+        await CreateAsync(remember: true);
+
+        (await Service().UnlockAsync(DbUnlockState.NeedsPassphrase, "incorrect horse battery staple", RememberChoice.Forget)).Outcome.Should().Be(UnlockOutcome.WrongPassphrase);
+
+        _store.Items.Should().ContainKey(SecretKind.DbKey);
     }
 }

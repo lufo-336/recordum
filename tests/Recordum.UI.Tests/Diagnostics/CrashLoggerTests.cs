@@ -162,7 +162,7 @@ public class CrashLoggerTests
             File.WriteAllBytes(options.SaltFilePath, new byte[16]);
 
             var service = AppComposition.CreateUnlockService(options, new Recordum.Data.Security.NullSecretStore());
-            var result = await service.UnlockAsync(DbUnlockState.NeedsCreation, passphrase, rememberOnDevice: false);
+            var result = await service.UnlockAsync(DbUnlockState.NeedsCreation, passphrase, remember: RememberChoice.LeaveAsIs);
 
             result.Outcome.Should().Be(UnlockOutcome.Failed);
             var log = File.ReadAllText(CrashLogger.LogPath!);
