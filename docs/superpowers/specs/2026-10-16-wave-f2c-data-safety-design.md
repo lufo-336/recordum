@@ -41,7 +41,7 @@ Linux e viceversa, e un test lo prova su entrambi i job della CI; il database na
 
 | Unità | Dove | Cosa fa |
 |---|---|---|
-| `ISecretStore` | Core, `Abstractions/Security` | `byte[]? TryRead(SecretKind)`, `void Write(SecretKind, ReadOnlySpan<byte>)`, `void Delete(SecretKind)`, `bool IsAvailable`. Errori del portachiavi → `SecretStoreUnavailableException` (mai un'eccezione nativa che risale). |
+| `ISecretStore` | Core, `Abstractions/Security` | `string? TryRead(SecretKind)`, `void Write(SecretKind, string)` (la chiave del DB in base64), `void Delete(SecretKind)`, `bool IsAvailable`. Errori del portachiavi → `SecretStoreUnavailableException` (mai un'eccezione nativa che risale). |
 | `LibsecretSecretStore` | Data, `Security` (accanto a `Dpapi*`), `[SupportedOSPlatform("linux")]` | P/Invoke; costruito con la cartella dati (attributo `data_dir`). `DllNotFoundException` / errore GLib → non disponibile. |
 | `NullSecretStore` | Data | `IsAvailable = false`, legge null, `Write` lancia (come `NullAutoBackupKeyStore`: mai fingere di aver salvato). |
 | `SecretStoreAutoBackupKeyStore` | Data | `IAutoBackupKeyStore` sopra `ISecretStore` (`SecretKind.AutoBackup`, UTF-8). Prende il posto di `NullAutoBackupKeyStore` su Linux. |
