@@ -294,6 +294,15 @@ Il clone nuovo non aveva `user.name`/`user.email` (i commit falliscono con *"Aut
 git config user.name "Luca Foglia" && git config user.email "luca.foglia@edu-its.it"
 ```
 
+### Il portachiavi e le cartelle di prova (`--data-dir`)
+
+Su Linux la chiave del database (e la passphrase dell'auto-backup) stanno nel portachiavi di sistema (Secret Service:
+GNOME Keyring), **una voce per cartella dati**: ogni `--data-dir` di prova ha le sue, distinte da quelle dei dati veri, e si
+vedono in Seahorse come "Recordum — chiave del database (<cartella>)" / "Recordum — passphrase del backup automatico
+(<cartella>)". Cancellare una cartella di prova non cancella le sue voci: si tolgono da Seahorse (o con
+`secret-tool clear kind db-key data_dir <cartella>`). I test `Category=Keyring` usano cartelle temporanee e ripuliscono le
+proprie voci; se un'esecuzione viene uccisa a metà possono restarne, e `secret-tool search --all kind db-key` le elenca.
+
 ### Cosa vuol dire per il prodotto
 
 Il confine non è arbitrario: cinque progetti su sette sono `net10.0` e **portabili per costruzione** — è la promessa di §4 di CLAUDE.md ("Core/Data/Plugins riutilizzati senza modifiche in Fase 5 e 7"), e questa è la prima volta che qualcuno la verifica su una macchina non-Windows. Windows-only è la **shell**: WPF (`Microsoft.WindowsDesktop.App` non esiste su Linux e non esisterà) e il *renderer* dei chart, mentre il lato query dei chart sta già in `Recordum.Data`.

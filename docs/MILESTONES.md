@@ -625,3 +625,21 @@ misurato, le sezioni di Configura larghe quanto il contenuto (F2b-4: l'`Expander
 gruppo verso i figli aperti (F2b-1). Suite UI su Linux: 343 in en_US e it_IT. **Prossimo**: review dell'intero branch e
 CI, la checklist a schermo dell'autore su GNOME, poi F2c.
 
+**Progresso 2026-10-16 (onda F2c: dati al sicuro su Avalonia: codice completo, non mergiata).** Piano
+`2026-10-16-wave-f2c-data-safety`, 8 task su `f2c-data-safety` (da `f2b-creation`; nessun branch della pila in `main`).
+*Cosa esiste ora*: `ISecretStore`/`LibsecretSecretStore` (schema `org.recordum.Secret`, una voce per cartella dati, chiamate
+fuori dal thread dell'interfaccia); sblocco dalla chiave ricordata con il tetto di 10 s (`StoredKeyUnlock`) e scelta
+"Ricorda" a tre stati; backup automatico avviato dalla shell, con la passphrase nel portachiavi (DPAPI su Windows) e
+auto-spegnimento segnalato (`backup.auto.disabled_reason`); fixture `.recbak` di Windows e test di restore incrociato;
+dialog di file asincroni; finestre Backup e Ripristina (chiusura bloccata durante l'operazione, spegnimento dopo un restore
+riuscito); finestra Impostazioni con "Dati e backup" e "Dimentica su questo dispositivo"; file del database 0600 (F1-SEC1).
+Provato sul portachiavi e sul DB veri, in una cartella privata: creazione con "ricorda" → riavvio senza finestra → "Dimentica"
+→ finestra; "Backup ora" → "Ripristina…" → riavvio ancora senza passphrase (`KeyringStartupIntegrationTests`).
+*Cosa ha insegnato*: una chiamata libsecret sincrona può aspettare un prompt senza limite (tetto e `Task.Run` ovunque); la
+`Write` tardiva di un tentativo abbandonato può disfare un "Dimentica" (F2c-4); in un test d'integrazione la
+`IConfirmationDialog` vera apre una finestra e il test non finisce mai.
+*Non consegnato*: "Apri cartella" nello storico, cancello fra restore e auto-backup, modo del file dopo un restore, avviso
+di timeout preciso: `docs/phase-4-issues.md`, sezione "Onda F2c" (F2c-1…5). Suite su Linux: Data 581, Presentation 998,
+UI 376 (en_US e it_IT; `Category!=Performance`). **Prossimo**: review dell'intero branch e CI, la checklist a schermo
+dell'autore su GNOME (v. ROADMAP), poi F2d.
+

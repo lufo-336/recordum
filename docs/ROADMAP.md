@@ -4,40 +4,43 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-15
+## Dove siamo — 2026-10-16
 
-- **Branch di lavoro**: `f2b-creation`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
-  `f2b-creation`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). Pushati, CI verde su Linux e Windows. I test
-  di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: `f2c-data-safety`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
+  `f2b-creation` → `f2c-data-safety`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
+  girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
-  workspace, sblocco del database) e **F1-PERF1** (Home a lista piatta virtualizzata, 300 righe ≈ 115 ms) sono a codice
-  completo; **F2a** (registrazione dei cinque tipi, cronometri) e **F2b** (picker dei template, builder con anteprima
-  viva, Configura con le dodici sezioni nella seconda colonna) sono complete e hanno passato la review dell'intero
-  branch. Cronaca, misure e conteggi dei test in `docs/MILESTONES.md`; finding in `docs/phase-4-issues.md`.
-- **Aperti**: `recordum.db`/`-wal`/`-shm` nascono 0644 (**F1-SEC1**, nel `/security-review`); rail, Ctrl+5, e i pulsanti
-  di F5–F7 sono spenti finché le loro onde non li riaccendono (**F1-RAIL1**); intestazione della Home stretta che
-  sovrappone "Nuova" e "Archiviate" (**F2b-5**, preesistente, da F1).
-- **Passo 0** (messa in sicurezza): fatto tranne il key store Linux di 0.7, che si fa in F2. La sonda sul provider di
-  cifratura (0.9) propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta
-  l'autore**.
-- **F2 si divide in sotto-onde**: **F2a** (fatta) → **F2b** (fatta) → **F2c Dati al sicuro** (portachiavi D3, backup
-  automatico e manuale, restore incrociato) → **F2d Diario** (nota veloce con foto D10, editor minimo); chiude F2 il
-  lancio stabile su Linux (publish + `.desktop`).
-- **Checklist a schermo dell'autore** (Windows per F1, GNOME per tutte; la lista D7 è nel piano F1, l'handoff in
-  `docs/dev-environment-sync.md`): F1 (finestra, tab, trascinamento, barra di sistema); F2a (i quattro tipi dalla colonna
-  "Oggi" e dal quick-add, "ieri" vicino al reset, timer dopo riavvio, separatore decimale, chiaro e scuro, rinomina e
-  cancellazione); F2b (creare da tutti e otto i template e dal builder, configurare ogni sezione e vederla arrivare alla
-  Cronologia e alla fascia Oggi, finestra stretta, **W2V-16** e **W2V-18**).
-- **Prossimo**: F2c. All'autore: le checklist su GNOME e i merge in ordine (`avalonia-linux-slice`, `f2-perf1-home`,
-  `f2a-registration`, `f2b-creation`). Il branch `wip/f1-task6` è superato e si può cancellare.
+  workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
+  sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
+  automatico su Avalonia, finestre Backup e Ripristina, finestra Impostazioni con "Dati e backup", `.recbak` incrociati
+  Windows↔Linux, file del database 0600. Attende la review dell'intero branch (controllore) e la CI. Cronaca e conteggi in
+  `docs/MILESTONES.md`; finding in `docs/phase-4-issues.md`.
+- **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); intestazione della Home
+  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i cinque residui di F2c (**F2c-1…5**: "Apri cartella", tick
+  del backup durante un restore, modo del file dopo un restore, "ricorda" scaduta, avviso di timeout).
+- **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
+  propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
+- **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario** (nota veloce con foto D10, editor
+  minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
+- **Checklist a schermo dell'autore** (GNOME per tutte; Windows per F1; la lista D7 è nel piano F1): F1 (finestra, tab,
+  trascinamento, barra di sistema); F2a (i quattro tipi dalla colonna "Oggi" e dal quick-add, "ieri" vicino al reset, timer
+  dopo riavvio, separatore decimale, chiaro e scuro, rinomina e cancellazione); F2b (creare da tutti e otto i template e dal
+  builder, configurare ogni sezione, finestra stretta, **W2V-16** e **W2V-18**); **F2c su GNOME**: (1) primo avvio con
+  "Ricorda su questo dispositivo"; (2) riavvio senza passphrase; (3) Seahorse mostra le due voci "Recordum …" con
+  l'etichetta giusta; (4) "Dimentica su questo dispositivo" e riavvio con la passphrase; (5) backup automatico acceso con la sua
+  passphrase, e spento (con l'avviso nella pagina) se la si cancella in Seahorse; (6) "Backup ora" e "Ripristina…" dalle
+  Impostazioni; (7) un `.recbak` della VM Windows ripristinato su Linux; (8) `ls -l` della cartella dati: i tre file
+  del database sono 0600.
+- **Prossimo**: review dell'intero branch e CI per F2c (controllore), poi le checklist dell'autore e i merge in ordine
+  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`), poi F2d. Il branch
+  `wip/f1-task6` è superato e si può cancellare.
 
 ## Il percorso
 
-1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde (manca il key store
-   Linux di 0.7, che si fa in F2).
+1. **Passo 0 — messa in sicurezza** · ◐ · esce quando la tabella di stato del piano è tutta verde (il key store Linux di 0.7 è in F2c).
 2. **F1 — Home su Avalonia** · ◐ codice completo, review di branch fatta, CI verde · esce con la checklist a
    schermo su Windows e su GNOME (D7: su Linux la barra di sistema) e il merge in `main`.
-3. **F2 — "si usa ogni giorno"** · ◐ F2a e F2b complete (`f2b-creation`) · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
+3. **F2 — "si usa ogni giorno"** · ◐ F2a, F2b e F2c complete (`f2c-data-safety`) · il dogfooding parte quando il **manifesto delle abitudini vere dell'autore**
    (`docs/DOGFOODING.md`) è coperto **su Linux**, la casa dei dati (D11); Windows segue con dati di prova. Contiene: fascia Oggi e registrazione dei cinque tipi, `TimerStatusBar`, nota veloce, backup automatico e
    manuale con restore da un altro computer, su Linux anche template, builder e sblocco dal portachiavi (D3), la verifica
    di R9 a schermo.

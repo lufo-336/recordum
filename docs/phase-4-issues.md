@@ -28,10 +28,14 @@
 
 **Trovati in F1 (sezione "Onda F1")**
 - **F1-PERF1** — la Home con 300 righe: era ≈ 3,8 s a caldo contro il budget di 500 ms (E9/E20); ora ≈ 115 ms in
-  headless con la lista piatta virtualizzata (branch `f2-perf1-home`) · `fixed`, manca la verifica a schermo · **F1-SEC1** — `recordum.db`/`-wal`/`-shm` nascono 0644: nella lista del `/security-review` prima di
-  pubblicare · **F1-RAIL1** — rail e Ctrl+4/Ctrl+5 spenti: F2, F6 e F7 riaccendono i propri · **F1-ICON1** — il glifo
+  headless con la lista piatta virtualizzata (branch `f2-perf1-home`) · `fixed`, manca la verifica a schermo · **F1-SEC1** — `recordum.db`/`-wal`/`-shm` nascevano 0644: `fixed` in F2c (0600, verifica a schermo) · **F1-RAIL1** — rail e Ctrl+4/Ctrl+5 spenti: Impostazioni riacceso in F2c; F6 e F7 riaccendono i propri · **F1-ICON1** — il glifo
   "riduci a icona" era vuoto: misurato e `fixed` (verifica a schermo su Windows)
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
+
+**Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
+di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante · **F2c-2** tick dell'auto-backup durante un
+restore · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
+**F2c-5** avviso di timeout impreciso.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2030,3 +2034,33 @@ Nuovi, rimandati dalle review dell'onda:
   dell'host, rosso prima del fix.
 - **F2b-5 — nella Home stretta "Nuova" si sovrappone ad "Archiviate"** · `reported` · Visto negli stessi screenshot (colonna
   Home da ~280 px): il pulsante "Nuova ▾" copre il chip "Archiviate" e la riga dei chip è tagliata. Non indagato.
+
+## Onda F2c — Dati al sicuro (`F2c-*`)
+
+Esiti verificati contro codice e test dell'onda (branch `f2c-data-safety`, in pila dopo `f2b-creation`; nessuno in `main`):
+
+- **F1-SEC1 — i file del database nascono 0644** · `fixed` · il file si crea vuoto 0600 prima della prima apertura
+  (`DatabaseFilePermissions.CreatePrivate`, nella creazione di `DbUnlockService`) e all'avvio (`ReconcileOrphans` → `Realign`) i tre file
+  (`.db`, `-wal`, `-shm`) più aperti di 0600 si riportano a 0600; misurato su `-wal` e `-shm`, non dedotto. Diventa
+  `verified-fixed` con un `ls -l` sulla cartella dati dopo un primo avvio su GNOME.
+- **RV-5 — il backup automatico su Linux si spegneva da solo, in silenzio** · `fixed` · `AppComposition.InitializeAsync`
+  avvia `BackupSchedulerHost`; la passphrase vive nel portachiavi (`SecretStoreAutoBackupKeyStore`, DPAPI su Windows);
+  se non è più leggibile lo scheduler si spegne e la pagina "Dati e backup" lo dice (`backup.auto.disabled_reason`).
+  Provato in `BackupCompositionTests`; verifica a schermo con la checklist della ROADMAP.
+- **F1-RAIL1** · in parte: il pulsante **Impostazioni** del rail è di nuovo acceso e apre la finestra ridotta su "Dati e
+  backup" (da lì si fa "Backup ora" e "Ripristina…"). Restano spenti Grafici (F7), il menu **Backup** del rail, Esporta e
+  Diagnostica (F6) e Ctrl+4/Ctrl+5. `reported`.
+
+Nuovi, rimandati dalle review dell'onda:
+
+- **F2c-1 — "Apri cartella" nello storico dei backup manca su Avalonia** · `reported` · WPF usava `explorer.exe`; serve un
+  lanciatore per piattaforma (`xdg-open` su Linux).
+- **F2c-2 — un tick del backup automatico può correre durante un restore** · `reported` · Fra `RestoreService` e
+  `BackupSchedulerHost` non c'è nessun cancello; l'onda di correzioni finale può chiuderlo.
+- **F2c-3 — un database ripristinato tiene il modo del file sorgente fino al riavvio successivo** · `reported` · Il
+  riallineamento a 0600 avviene all'avvio; l'onda di correzioni finale può chiuderlo.
+- **F2c-4 — una scrittura "ricorda" scaduta allo sblocco può completarsi dopo** · `reported` · Se l'utente risponde in
+  ritardo al prompt del portachiavi, la `Write` annulla un "Dimentica" fatto nel frattempo.
+- **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `reported` · Dice che il portachiavi "non è
+  disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.
+
