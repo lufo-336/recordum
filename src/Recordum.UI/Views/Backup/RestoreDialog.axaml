@@ -1,0 +1,37 @@
+<v:RecordumWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:Recordum.UI.Views"
+        xmlns:vm="using:Recordum.Presentation.ViewModels.Backup"
+        xmlns:res="using:Recordum.Presentation.Resources"
+        x:Class="Recordum.UI.Views.Backup.RestoreDialog"
+        x:DataType="vm:RestoreDialogViewModel"
+        Title="{x:Static res:Strings.Restore_Title}"
+        Width="560" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <!-- Gemella di RestoreDialog.xaml (WPF). A restore riuscito si chiude e il lanciatore chiude l'app, come in WPF. -->
+  <StackPanel Margin="16" Spacing="8">
+    <DockPanel>
+      <Button Name="BrowseButton" DockPanel.Dock="Right" Content="…" Width="32" Margin="6,0,0,0"
+              Command="{CompiledBinding BrowseCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.Restore_Title}"
+              ToolTip.Tip="{x:Static res:Strings.Restore_Title}"/>
+      <TextBox Name="SourceBox" Text="{CompiledBinding SourcePath, Mode=TwoWay}"
+               AutomationProperties.Name="{x:Static res:Strings.Restore_Title}"/>
+    </DockPanel>
+    <TextBox Name="PassphraseBox" PasswordChar="●" Text="{CompiledBinding Passphrase, Mode=TwoWay}"
+             AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Passphrase}"
+             Watermark="{x:Static res:Strings.Backup_Create_Passphrase}"/>
+    <Button Name="PreviewButton" Content="{x:Static res:Strings.Restore_Preview}"
+            Command="{CompiledBinding PreviewCommand}" HorizontalAlignment="Left" MinWidth="120"/>
+    <TextBlock Name="SchemaText" IsVisible="{CompiledBinding IsPreviewLoaded}"
+               Text="{CompiledBinding Manifest.SchemaVersion, StringFormat='Schema: {0}'}"/>
+    <ItemsControl ItemsSource="{CompiledBinding Warnings}"/>
+    <TextBlock Name="ErrorText" TextWrapping="Wrap" Text="{CompiledBinding ErrorMessage}"
+               Foreground="{DynamicResource Brush.Danger}"/>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+      <Button Name="CancelButton" Content="{x:Static res:Strings.Restore_Cancel}" MinWidth="96" Click="OnCancel"/>
+      <Button Name="RunButton" Classes="primary" Content="{x:Static res:Strings.Restore_Run}" MinWidth="96"
+              Command="{CompiledBinding RunCommand}"/>
+    </StackPanel>
+  </StackPanel>
+</v:RecordumWindow>

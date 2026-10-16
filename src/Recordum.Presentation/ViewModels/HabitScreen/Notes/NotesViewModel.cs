@@ -215,7 +215,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     {
         if (SelectedNote is not { } row) return;
         var noteId = row.Id;
-        var paths = _dialog.PromptMultiple(ImageFileFilter);
+        var paths = await _dialog.PromptMultipleAsync(ImageFileFilter);
         foreach (var path in paths)
         {
             try

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Backup;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.Backup;
@@ -30,25 +31,27 @@ public sealed partial class BackupDialogViewModel(IBackupService backup, IBackup
     partial void OnDestinationChanged(string value) => RunCommand.NotifyCanExecuteChanged();
 
     [RelayCommand]
-    private void Browse()
+    private async Task BrowseAsync()
     {
-        var path = saveDialog.Prompt($"recordum-{clock.UtcNow.UtcDateTime:yyyyMMdd-HHmm}.recbak", "Recordum backup (*.recbak)|*.recbak");
+        var path = await saveDialog.PromptAsync($"recordum-{clock.UtcNow.UtcDateTime:yyyyMMdd-HHmm}.recbak", "Recordum backup (*.recbak)|*.recbak");
         if (!string.IsNullOrWhiteSpace(path)) Destination = path;
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
+        if (IsRunning) return;   // ExecuteAsync non consulta CanExecute: un secondo clic non lancia un secondo backup
         IsRunning = true;
+        RunCommand.NotifyCanExecuteChanged();
         ErrorMessage = null;
         try
         {
             var result = await backup.CreateAsync(Destination, Passphrase, new BackupOptions(BackupKind.Manual));
             SuccessPath = result.Path;
         }
-        catch (BackupException ex) { ErrorMessage = ex.Code; }
+        catch (BackupException ex) { ErrorMessage = ex.Code == "db_busy_retry_later" ? Strings.Backup_Errors_DbBusy : ex.Code; }
         catch (Exception ex) { ErrorMessage = ex.Message; }
-        finally { IsRunning = false; }
+        finally { IsRunning = false; RunCommand.NotifyCanExecuteChanged(); }
     }
 
     private bool CanRun() =>

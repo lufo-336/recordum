@@ -151,9 +151,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddPhoto()
+    private async Task AddPhotoAsync()
     {
-        foreach (var path in _dialog.PromptMultiple(ImageFileFilter))
+        foreach (var path in await _dialog.PromptMultipleAsync(ImageFileFilter))
             PendingPhotos.Add(path);
     }
 

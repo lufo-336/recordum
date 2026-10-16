@@ -589,6 +589,7 @@ public static class Strings
     public static string Dialog_Yes => Get("Dialog.Yes");
     public static string Dialog_No => Get("Dialog.No");
     public static string Dialog_Ok => Get("Dialog.Ok");
+    public static string Dialog_NotLocalFile => Get("Dialog.NotLocalFile");
     public static string Error_Recoverable_Title => Get("Error.Recoverable.Title");
     public static string Error_Recoverable_Message => Get("Error.Recoverable.Message");
 

@@ -48,10 +48,10 @@ public static class AvaloniaShellServices
         services.AddSingleton<IHabitBuilderLauncher>(sp => new AvaloniaHabitBuilderLauncher(sp, MainWindow));
         services.AddSingleton<ISettingsWindowLauncher, NullSettingsWindowLauncher>();
         services.AddSingleton<IExportDialogLauncher, NullExportDialogLauncher>();
-        services.AddSingleton<IBackupDialogLauncher, NullBackupDialogLauncher>();
+        services.AddSingleton<IBackupDialogLauncher>(sp => new AvaloniaBackupDialogLauncher(sp, MainWindow));
         services.AddSingleton<ISaveFileDialog, NullSaveFileDialog>();
-        services.AddSingleton<IBackupSaveFileDialog, NullBackupSaveFileDialog>();
-        services.AddSingleton<IOpenFileDialog, NullOpenFileDialog>();
+        services.AddSingleton<IBackupSaveFileDialog>(_ => new AvaloniaBackupSaveFileDialog(MainWindow));
+        services.AddSingleton<IOpenFileDialog>(_ => new AvaloniaOpenFileDialog(MainWindow));
         services.AddSingleton<IClipboard, NullClipboard>();
         services.AddSingleton<IScreenColorPicker, NullScreenColorPicker>();
         services.AddSingleton<IEditorAvailability, NullEditorAvailability>();

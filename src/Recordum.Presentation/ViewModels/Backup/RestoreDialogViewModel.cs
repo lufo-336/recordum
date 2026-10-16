@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Backup;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.Backup;
@@ -33,9 +34,9 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
     }
 
     [RelayCommand]
-    private void Browse()
+    private async Task BrowseAsync()
     {
-        var p = openDialog.Prompt("Recordum backup (*.recbak)|*.recbak");
+        var p = await openDialog.PromptAsync("Recordum backup (*.recbak)|*.recbak");
         if (!string.IsNullOrWhiteSpace(p)) SourcePath = p;
     }
 
@@ -52,13 +53,16 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
             IsPreviewLoaded = true;
             RunCommand.NotifyCanExecuteChanged();
         }
-        catch (RestoreException ex) { ErrorMessage = ex.Code; }
+        catch (RestoreException ex) { ErrorMessage = Readable(ex.Code); }
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
+        if (IsRunning) return;   // ExecuteAsync non consulta CanExecute
         IsRunning = true;
+        RunCommand.NotifyCanExecuteChanged();
+        ErrorMessage = null;
         try
         {
             var r = await restore.RestoreAsync(SourcePath, Passphrase, new RestoreOptions(SkipSafetySnapshot: false));
@@ -66,9 +70,18 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
             foreach (var p in r.UnavailablePlugins) UnavailablePlugins.Add(p);
             IsCompleted = true;
         }
-        catch (RestoreException ex) { ErrorMessage = ex.Code; }
-        finally { IsRunning = false; }
+        catch (RestoreException ex) { ErrorMessage = Readable(ex.Code); }
+        finally { IsRunning = false; RunCommand.NotifyCanExecuteChanged(); }
     }
+
+    private static string Readable(string code) => code switch
+    {
+        "invalid_format" => Strings.Restore_Errors_InvalidFormat,
+        "invalid_passphrase" => Strings.Restore_Errors_InvalidPassphrase,
+        "incompatible_schema" => Strings.Restore_Errors_IncompatibleSchema,
+        "safety_snapshot_failed" => Strings.Restore_Errors_SafetySnapshotFailed,
+        _ => code,
+    };
 
     private bool CanPreview() =>
         !string.IsNullOrWhiteSpace(SourcePath) && Passphrase.Length >= 12 && !IsRunning;

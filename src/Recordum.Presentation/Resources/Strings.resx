@@ -1743,4 +1743,7 @@ Details: {0}</value>
   <data name="Editor.AiSharing.ApiAllowed" xml:space="preserve">
     <value>May be sent to the AI service</value>
   </data>
+  <data name="Dialog.NotLocalFile" xml:space="preserve">
+    <value>Only files stored on this computer can be used here.</value>
+  </data>
 </root>

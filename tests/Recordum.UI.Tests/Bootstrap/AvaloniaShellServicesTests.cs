@@ -81,13 +81,13 @@ public class AvaloniaShellServicesTests
         await launcher.ShowForLibraryAsync();
     }
 
-    [Fact]
-    public async Task Backup_dialog_launcher_resolves_and_completes_both_members()
+    [AvaloniaFact]
+    public void Backup_launcher_and_file_dialogs_resolve_to_the_real_ones_not_the_null()
     {
         var sp = BuildProvider();
-        var launcher = sp.GetRequiredService<IBackupDialogLauncher>();
-        await launcher.ShowBackupAsync();
-        await launcher.ShowRestoreAsync();
+        sp.GetRequiredService<IBackupDialogLauncher>().Should().BeOfType<AvaloniaBackupDialogLauncher>();
+        sp.GetRequiredService<IBackupSaveFileDialog>().Should().BeOfType<AvaloniaBackupSaveFileDialog>();
+        sp.GetRequiredService<IOpenFileDialog>().Should().BeOfType<AvaloniaOpenFileDialog>();
     }
 
     [Fact]
@@ -98,20 +98,14 @@ public class AvaloniaShellServicesTests
         dialog.Prompt("export.pdf", Recordum.Core.Enums.ExportFormat.Pdf).Should().BeNull();
     }
 
-    [Fact]
-    public void Backup_save_file_dialog_resolves_and_returns_no_path()
+    [AvaloniaFact]
+    public async Task File_dialogs_without_a_main_window_answer_as_cancelled()
     {
         var sp = BuildProvider();
-        sp.GetRequiredService<IBackupSaveFileDialog>().Prompt("backup.recbak", "*.recbak").Should().BeNull();
-    }
-
-    [Fact]
-    public void Open_file_dialog_resolves_and_never_returns_null_for_multiple()
-    {
-        var sp = BuildProvider();
-        var dialog = sp.GetRequiredService<IOpenFileDialog>();
-        dialog.Prompt("*.png").Should().BeNull();
-        dialog.PromptMultiple("*.png").Should().NotBeNull().And.BeEmpty();
+        (await sp.GetRequiredService<IBackupSaveFileDialog>().PromptAsync("backup.recbak", "Backup|*.recbak")).Should().BeNull();
+        var open = sp.GetRequiredService<IOpenFileDialog>();
+        (await open.PromptAsync("Images|*.png")).Should().BeNull();
+        (await open.PromptMultipleAsync("Images|*.png")).Should().NotBeNull().And.BeEmpty();
     }
 
     [Fact]

@@ -4,5 +4,5 @@ namespace Recordum.Presentation.Services;
 public interface IBackupSaveFileDialog
 {
     /// <summary>Returns the chosen path, or null if the user cancelled.</summary>
-    string? Prompt(string defaultFileName, string filter);
+    Task<string?> PromptAsync(string defaultFileName, string filter);
 }
