@@ -614,6 +614,7 @@ public static class Strings
     public static string Settings_DeviceKey_NotRemembered => Get("Settings.DeviceKey.NotRemembered");
     public static string Settings_DeviceKey_Forget => Get("Settings.DeviceKey.Forget");
     public static string Settings_DeviceKey_ForgetConfirm => Get("Settings.DeviceKey.ForgetConfirm");
+    public static string Backup_Settings_SelfDisabledWarning => Get("Backup.Settings.SelfDisabledWarning");
 
     public static string Editor_MetricType_Integer => Get("Editor.MetricType.Integer");
     public static string Editor_MetricType_Decimal => Get("Editor.MetricType.Decimal");

@@ -84,8 +84,24 @@ public class BackupSchedulerTests
             var enabled = await db.AppSettings.AsNoTracking().FirstAsync(x => x.Key == "backup.auto.enabled");
             enabled.Value.Should().Be("false");
             sched.IsEnabled.Should().BeFalse();
+            (await db.AppSettings.AsNoTracking().SingleAsync(x => x.Key == BackupScheduler.DisabledReasonKey))
+                .Value.Should().Be("no_passphrase", "la pagina Impostazioni deve poter dire che e' stato lo scheduler");
             log.Levels.Should().ContainSingle().Which.Should().Be(LogLevel.Warning, "prima si spegneva in silenzio (RV-5)");
             Directory.EnumerateFiles(fixture.Options.BackupsDirectory, "auto-*.recbak").Should().BeEmpty();
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task A_run_with_a_passphrase_leaves_no_disabled_reason()
+    {
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            await fixture.NewScheduler(new MemoryKeyStore(Pass)).RunDueAsync();
+
+            await using var db = await fixture.DbFactory.CreateDbContextAsync();
+            (await db.AppSettings.AsNoTracking().AnyAsync(x => x.Key == BackupScheduler.DisabledReasonKey)).Should().BeFalse();
         }
         finally { await fixture.DisposeAsync(); }
     }

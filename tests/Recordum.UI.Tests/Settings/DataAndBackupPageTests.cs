@@ -196,4 +196,40 @@ public class DataAndBackupPageTests
         created!.Close();
         await shown;
     }
+
+    [AvaloniaFact]
+    public async Task Backup_now_from_the_modal_settings_window_opens_its_dialog_owned_by_the_settings_window()
+    {
+        var host = NewHost("set-owner", new FakeSecrets(true));
+        var main = new Window { Width = 800, Height = 600 };
+        main.Show();
+        PrivateDbHost.Pump();
+        var settings = new AvaloniaSettingsWindowLauncher(host.Provider, () => main);
+        Window? settingsWindow = null;
+        settings.WindowCreatedForTests += w => settingsWindow = w;
+        var backup = new AvaloniaBackupDialogLauncher(host.Provider, () => Recordum.UI.Bootstrap.AvaloniaShellServices.Topmost(main));
+        Window? dialog = null;
+        backup.WindowCreatedForTests += w => dialog = w;
+        Task? settingsShown = null, backupShown = null;
+        try
+        {
+            settingsShown = settings.ShowAsync();
+            for (var i = 0; i < 200 && settingsWindow is null; i++) { await Task.Delay(25); PrivateDbHost.Pump(); }
+            settingsWindow.Should().NotBeNull();
+            settingsWindow!.Owner.Should().BeSameAs(main);
+
+            backupShown = backup.ShowBackupAsync();
+            for (var i = 0; i < 200 && dialog is null; i++) { await Task.Delay(25); PrivateDbHost.Pump(); }
+            dialog.Should().NotBeNull();
+            dialog!.Owner.Should().BeSameAs(settingsWindow, "la dialog sta davanti alla finestra in cui l'utente si trova");
+        }
+        finally
+        {
+            dialog?.Close();
+            if (backupShown is not null) await backupShown;
+            settingsWindow?.Close();
+            if (settingsShown is not null) await settingsShown;
+            main.Close();
+        }
+    }
 }

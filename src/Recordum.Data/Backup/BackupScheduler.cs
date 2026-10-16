@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Backup;
+using Recordum.Core.Models;
 
 namespace Recordum.Data.Backup;
 
@@ -22,6 +23,9 @@ public sealed partial class BackupScheduler(
 
     public bool IsEnabled { get; private set; } = true;
     public DateTime? NextRunUtc { get; private set; }
+
+    public const string DisabledReasonKey = "backup.auto.disabled_reason";
+    public const string NoPassphrase = "no_passphrase";
 
     public async Task RunDueAsync(CancellationToken ct = default)
     {
@@ -44,6 +48,14 @@ public sealed partial class BackupScheduler(
             {
                 s.Value = "false";
                 s.UpdatedAt = clock.UtcNow.UtcDateTime;
+                // Il segnale per la pagina Impostazioni (R10): senza, uno spegnimento da solo e' uguale a una scelta dell'utente.
+                if (settings.TryGetValue(DisabledReasonKey, out var reason))
+                {
+                    reason.Value = NoPassphrase;
+                    reason.UpdatedAt = s.UpdatedAt;
+                }
+                else
+                    db.AppSettings.Add(new AppSetting { Key = DisabledReasonKey, Value = NoPassphrase, UpdatedAt = s.UpdatedAt });
                 await db.SaveChangesAsync(ct).ConfigureAwait(false);
             }
             IsEnabled = false;

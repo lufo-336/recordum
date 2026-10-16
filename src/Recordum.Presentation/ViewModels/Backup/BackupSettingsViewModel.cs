@@ -24,6 +24,11 @@ public sealed partial class BackupSettingsViewModel(
     [ObservableProperty] private string _confirmPassphrase = string.Empty;
     [ObservableProperty] private bool _hasPassphrase;
     [ObservableProperty] private string? _testResultMessage;
+    /// <summary>Lo scheduler ha spento il backup automatico da solo (passphrase illeggibile): vale finche' l'utente non
+    /// lo riaccende con una passphrase salvata. Vuoto = nessun segnale.</summary>
+    [ObservableProperty] private bool _selfDisabled;
+
+    private const string DisabledReasonKey = Recordum.Data.Backup.BackupScheduler.DisabledReasonKey;
 
     public bool InertWarning => IsEnabled && !HasPassphrase && string.IsNullOrEmpty(NewPassphrase);
 
@@ -35,6 +40,7 @@ public sealed partial class BackupSettingsViewModel(
         Folder = await settings.GetAsync("backup.auto.path", ct).ConfigureAwait(true) ?? string.Empty;
         // Il portachiavi di Linux e' una chiamata sincrona che puo' attendere un prompt di sblocco: mai sul thread dell'interfaccia (R6).
         HasPassphrase = await Task.Run(keyStore.HasKey, ct).ConfigureAwait(true);
+        SelfDisabled = !string.IsNullOrEmpty(await settings.GetAsync(DisabledReasonKey, ct).ConfigureAwait(true));
         OnPropertyChanged(nameof(InertWarning));
     }
 
@@ -62,6 +68,11 @@ public sealed partial class BackupSettingsViewModel(
         await settings.SetAsync("backup.auto.frequency_days", FrequencyDays.ToString(System.Globalization.CultureInfo.InvariantCulture));
         await settings.SetAsync("backup.auto.retention_count", RetentionCount.ToString(System.Globalization.CultureInfo.InvariantCulture));
         await settings.SetAsync("backup.auto.path", Folder);
+        if (IsEnabled && HasPassphrase)
+        {
+            await settings.SetAsync(DisabledReasonKey, string.Empty);
+            SelfDisabled = false;
+        }
         NewPassphrase = string.Empty;
         ConfirmPassphrase = string.Empty;
     }

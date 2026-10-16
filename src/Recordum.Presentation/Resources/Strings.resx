@@ -1761,4 +1761,7 @@ Details: {0}</value>
   <data name="Settings.DeviceKey.ForgetConfirm" xml:space="preserve">
     <value>Forget the database key on this device? Recordum will ask for the passphrase at every start.</value>
   </data>
+  <data name="Backup.Settings.SelfDisabledWarning" xml:space="preserve">
+    <value>Auto-backup was switched off because its passphrase couldn't be read. Set it again to turn auto-backup back on.</value>
+  </data>
 </root>

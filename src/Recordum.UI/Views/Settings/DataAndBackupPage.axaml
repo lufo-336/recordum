@@ -29,7 +29,7 @@
       <TextBox Name="ConfirmBox" PasswordChar="●" Text="{CompiledBinding Settings.ConfirmPassphrase, Mode=TwoWay}"
                AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Confirm}"/>
       <TextBlock Name="OffWarning" TextWrapping="Wrap" IsVisible="{CompiledBinding AutoBackupOffWarning}"
-                 Foreground="{DynamicResource Brush.Danger}" Text="{x:Static res:Strings.Backup_Settings_InertWarning}"/>
+                 Foreground="{DynamicResource Brush.Danger}" Text="{CompiledBinding AutoBackupOffText}"/>
       <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
         <Button Name="TestButton" Content="{x:Static res:Strings.Backup_Settings_Test}"
                 Command="{CompiledBinding Settings.TestCommand}"/>

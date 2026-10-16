@@ -31,7 +31,11 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
         ShowDeviceKey = showDeviceKey;
         settings.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(BackupSettingsViewModel.InertWarning)) OnPropertyChanged(nameof(AutoBackupOffWarning));
+            if (e.PropertyName is nameof(BackupSettingsViewModel.InertWarning) or nameof(BackupSettingsViewModel.SelfDisabled))
+            {
+                OnPropertyChanged(nameof(AutoBackupOffWarning));
+                OnPropertyChanged(nameof(AutoBackupOffText));
+            }
         };
     }
 
@@ -49,9 +53,13 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
         ? Strings.Settings_DeviceKey_Remembered
         : Strings.Settings_DeviceKey_NotRemembered;
 
-    /// <summary>Acceso nelle impostazioni ma senza passphrase leggibile: non gira finche' non se ne da' una. Lo scheduler,
-    /// che in quel caso si spegne da solo, riscrive "spento" e la pagina lo mostra spento.</summary>
-    public bool AutoBackupOffWarning => Settings.InertWarning;
+    /// <summary>Acceso senza passphrase leggibile, o spento dallo scheduler per lo stesso motivo (segnale
+    /// <c>backup.auto.disabled_reason</c>): in entrambi i casi l'utente non deve credere che i backup girino.</summary>
+    public bool AutoBackupOffWarning => Settings.InertWarning || Settings.SelfDisabled;
+
+    public string AutoBackupOffText => Settings.SelfDisabled
+        ? Strings.Backup_Settings_SelfDisabledWarning
+        : Strings.Backup_Settings_InertWarning;
 
     public async Task LoadAsync(CancellationToken ct = default)
     {
@@ -59,6 +67,7 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
         await History.LoadAsync(ct).ConfigureAwait(true);
         if (ShowDeviceKey) IsDeviceKeyRemembered = await Task.Run(ReadDeviceKeyState, ct).ConfigureAwait(true);
         OnPropertyChanged(nameof(AutoBackupOffWarning));
+        OnPropertyChanged(nameof(AutoBackupOffText));
     }
 
     // Fuori dal thread dell'interfaccia: IsAvailable e TryRead di libsecret possono attendere un prompt di sblocco.

@@ -1735,4 +1735,7 @@
   <data name="Settings.DeviceKey.ForgetConfirm" xml:space="preserve">
     <value>Dimenticare la chiave del database su questo dispositivo? Recordum chiederà la passphrase a ogni avvio.</value>
   </data>
+  <data name="Backup.Settings.SelfDisabledWarning" xml:space="preserve">
+    <value>Il backup automatico si è spento perché la sua passphrase non era leggibile. Impostala di nuovo per riaccenderlo.</value>
+  </data>
 </root>

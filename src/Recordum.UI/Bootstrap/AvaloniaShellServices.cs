@@ -42,7 +42,7 @@ public static class AvaloniaShellServices
 
         // Stesso ragionamento della lambda sopra per l'owner: valutato alla risoluzione, quando
         // MainWindow esiste già (Home, che usa questa dialog per Elimina/Purge, non esiste prima).
-        services.AddSingleton<IConfirmationDialog>(_ => new AvaloniaConfirmationDialog(MainWindow));
+        services.AddSingleton<IConfirmationDialog>(_ => new AvaloniaConfirmationDialog(TopmostWindow));
 
         services.AddSingleton<IHabitTemplatePickerLauncher>(sp => new AvaloniaHabitTemplatePickerLauncher(sp, MainWindow));
         services.AddSingleton<IHabitBuilderLauncher>(sp => new AvaloniaHabitBuilderLauncher(sp, MainWindow));
@@ -56,10 +56,10 @@ public static class AvaloniaShellServices
             sp.GetRequiredService<IConfirmationDialog>(),
             showDeviceKey: !OperatingSystem.IsWindows()));
         services.AddSingleton<IExportDialogLauncher, NullExportDialogLauncher>();
-        services.AddSingleton<IBackupDialogLauncher>(sp => new AvaloniaBackupDialogLauncher(sp, MainWindow));
+        services.AddSingleton<IBackupDialogLauncher>(sp => new AvaloniaBackupDialogLauncher(sp, TopmostWindow));
         services.AddSingleton<ISaveFileDialog, NullSaveFileDialog>();
-        services.AddSingleton<IBackupSaveFileDialog>(_ => new AvaloniaBackupSaveFileDialog(MainWindow));
-        services.AddSingleton<IOpenFileDialog>(_ => new AvaloniaOpenFileDialog(MainWindow));
+        services.AddSingleton<IBackupSaveFileDialog>(_ => new AvaloniaBackupSaveFileDialog(TopmostWindow));
+        services.AddSingleton<IOpenFileDialog>(_ => new AvaloniaOpenFileDialog(TopmostWindow));
         services.AddSingleton<IClipboard, NullClipboard>();
         services.AddSingleton<IScreenColorPicker, NullScreenColorPicker>();
         services.AddSingleton<IEditorAvailability, NullEditorAvailability>();
@@ -71,4 +71,14 @@ public static class AvaloniaShellServices
     /// registrazione: in headless e prima dell'avvio il lifetime non c'e' e le finestre si aprono senza owner.</summary>
     private static Window? MainWindow() =>
         (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+
+    /// <summary>Il proprietario di una finestra modale e' la finestra in cui l'utente si trova: se la principale ha gia'
+    /// una figlia modale (Impostazioni), una nuova dialog sulla principale si aprirebbe dietro o inutilizzabile.</summary>
+    internal static Window? TopmostWindow() => Topmost(MainWindow());
+
+    internal static Window? Topmost(Window? main)
+    {
+        while (main is { OwnedWindows.Count: > 0 }) main = main.OwnedWindows[^1];
+        return main;
+    }
 }

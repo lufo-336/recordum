@@ -95,4 +95,29 @@ public class DataAndBackupPageViewModelTests
         await with.Page.LoadAsync();
         with.Page.AutoBackupOffWarning.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task Self_disabled_by_the_scheduler_shows_its_own_warning_and_re_enabling_with_a_passphrase_clears_it()
+    {
+        var b = Build(enabled: false, autoBackupKey: false);
+        b.Settings.Store["backup.auto.disabled_reason"] = "no_passphrase";
+        await b.Page.LoadAsync();
+        b.Page.AutoBackupOffWarning.Should().BeTrue("acceso in passato, ora spento: l'utente non e' stato lui");
+        b.Page.AutoBackupOffText.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_SelfDisabledWarning);
+
+        b.Page.Settings.IsEnabled = true;
+        b.Page.Settings.NewPassphrase = b.Page.Settings.ConfirmPassphrase = "passphrase-1234567890";
+        await b.Page.Settings.SaveCommand.ExecuteAsync(null);
+
+        b.Settings.Store["backup.auto.disabled_reason"].Should().BeEmpty();
+        b.Page.AutoBackupOffWarning.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Without_the_signal_a_user_choice_to_switch_off_shows_no_warning()
+    {
+        var b = Build(enabled: false, autoBackupKey: false);
+        await b.Page.LoadAsync();
+        b.Page.AutoBackupOffWarning.Should().BeFalse();
+    }
 }
