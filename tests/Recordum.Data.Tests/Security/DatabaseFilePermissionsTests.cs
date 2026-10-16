@@ -34,7 +34,7 @@ public sealed class DatabaseFilePermissionsTests : IDisposable
 
     private sealed record Paths(string DatabasePath, string KeyFilePath, string SaltFilePath) : IDbStoragePaths;
 
-    private DbUnlockService Service() => new(new Paths(_db, Path.Combine(_dir, "db.key"), Path.Combine(_dir, "db.salt")), platformKeyFactory: null);
+    private DbUnlockService Service() => new(new Paths(_db, Path.Combine(_dir, "db.key"), Path.Combine(_dir, "db.salt")), platformKeyFactory: null, new NullSecretStore());
 
     private static KeyMaterial Key() => new(Enumerable.Range(0, KeyMaterial.LengthBytes).Select(i => (byte)i).ToArray());
 
@@ -55,7 +55,7 @@ public sealed class DatabaseFilePermissionsTests : IDisposable
         try
         {
             // La creazione vera: il primo avvio, che scrive il salt e pre-crea il database 0600.
-            var created = Service().UnlockAsync(DbUnlockState.NeedsCreation, "correct horse battery staple").GetAwaiter().GetResult();
+            var created = Service().UnlockAsync(DbUnlockState.NeedsCreation, "correct horse battery staple", rememberOnDevice: false).GetAwaiter().GetResult();
             Assert.Equal(UnlockOutcome.Unlocked, created.Outcome);
             using var provider = created.Provider as IDisposable;
             using var key = created.Provider!.GetKeyAsync().AsTask().GetAwaiter().GetResult();

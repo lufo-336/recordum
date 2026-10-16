@@ -1618,6 +1618,15 @@
   <data name="Unlock.Failed" xml:space="preserve">
     <value>Impossibile sbloccare i dati. Controlla i permessi della cartella e riprova.</value>
   </data>
+  <data name="Unlock.RememberOnDevice" xml:space="preserve">
+    <value>Ricorda su questo dispositivo</value>
+  </data>
+  <data name="Unlock.RememberUnavailable" xml:space="preserve">
+    <value>Il portachiavi di sistema non è disponibile: Recordum chiederà la passphrase a ogni avvio.</value>
+  </data>
+  <data name="Unlock.StoredKeyRejected" xml:space="preserve">
+    <value>La chiave salvata non apre più i dati. Inserisci la passphrase.</value>
+  </data>
   <data name="Dialog.Yes" xml:space="preserve">
     <value>Sì</value>
   </data>

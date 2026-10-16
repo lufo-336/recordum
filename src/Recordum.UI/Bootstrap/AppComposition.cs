@@ -41,9 +41,17 @@ public static class AppComposition
     /// <summary>Il servizio di sblocco che gira prima del contenitore. Il logger scrive nel log di
     /// <see cref="CrashLogger"/>: la causa di uno sblocco fallito (disco, permessi, salt rovinato) non
     /// si vede dalla finestra, e senza questo andrebbe persa.</summary>
-    public static IDbUnlockService CreateUnlockService(RecordumOptions options)
+    public static IDbUnlockService CreateUnlockService(RecordumOptions options, ISecretStore secrets)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new DbUnlockService(options, new CrashLoggerAdapter<DbUnlockService>());
+        ArgumentNullException.ThrowIfNull(secrets);
+        return new DbUnlockService(options, secrets, new CrashLoggerAdapter<DbUnlockService>());
+    }
+
+    /// <summary>Il portachiavi per sistema: libsecret su Linux, nessuno altrove (su Windows resta DPAPI).</summary>
+    public static ISecretStore CreateSecretStore(RecordumOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return OperatingSystem.IsLinux() ? new LibsecretSecretStore(options.DataDirectory) : new NullSecretStore();
     }
 }

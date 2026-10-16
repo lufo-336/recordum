@@ -1644,6 +1644,15 @@ Details: {0}</value>
   <data name="Unlock.Failed" xml:space="preserve">
     <value>Could not unlock your data. Check the folder permissions and try again.</value>
   </data>
+  <data name="Unlock.RememberOnDevice" xml:space="preserve">
+    <value>Remember on this device</value>
+  </data>
+  <data name="Unlock.RememberUnavailable" xml:space="preserve">
+    <value>The system keyring isn't available, so Recordum will ask for the passphrase at every start.</value>
+  </data>
+  <data name="Unlock.StoredKeyRejected" xml:space="preserve">
+    <value>The saved key no longer opens your data. Enter your passphrase.</value>
+  </data>
   <!-- Generic Yes/No confirmation dialog (Avalonia shell, F1 Task 5): AvaloniaConfirmationDialog
        needs its own button captions, unlike WPF's native MessageBox.Show(YesNo) which the OS
        localizes for free. -->

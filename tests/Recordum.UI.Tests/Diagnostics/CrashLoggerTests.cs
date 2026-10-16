@@ -161,8 +161,8 @@ public class CrashLoggerTests
             // l'IOException diventa "non riuscito". E' il percorso di guasto che l'utente non vede.
             File.WriteAllBytes(options.SaltFilePath, new byte[16]);
 
-            var service = AppComposition.CreateUnlockService(options);
-            var result = await service.UnlockAsync(DbUnlockState.NeedsCreation, passphrase);
+            var service = AppComposition.CreateUnlockService(options, new Recordum.Data.Security.NullSecretStore());
+            var result = await service.UnlockAsync(DbUnlockState.NeedsCreation, passphrase, rememberOnDevice: false);
 
             result.Outcome.Should().Be(UnlockOutcome.Failed);
             var log = File.ReadAllText(CrashLogger.LogPath!);

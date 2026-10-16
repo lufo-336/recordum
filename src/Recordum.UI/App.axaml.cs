@@ -137,7 +137,7 @@ public partial class App : Application
     private static async Task<IDbKeyProvider?> ResolveKeyAsync(
         IClassicDesktopStyleApplicationLifetime desktop, RecordumOptions options)
     {
-        var unlock = AppComposition.CreateUnlockService(options);
+        var unlock = AppComposition.CreateUnlockService(options, AppComposition.CreateSecretStore(options));
         unlock.ReconcileOrphans();   // errata 2026-09-30: un salt senza database si recupera o si sposta, mai si tronca
         var state = unlock.DetectState();
 
@@ -149,13 +149,17 @@ public partial class App : Application
 
         if (state == DbUnlockState.UsePlatformKey)
         {
-            var result = await unlock.UnlockAsync(state, passphrase: string.Empty).ConfigureAwait(true);
+            var result = await unlock.UnlockAsync(state, passphrase: string.Empty, rememberOnDevice: false).ConfigureAwait(true);
             if (result.Outcome == UnlockOutcome.Unlocked && result.Provider is not null) return result.Provider;
             ShowFatal(desktop, Strings.Unlock_Failed);
             return null;
         }
 
-        var viewModel = new UnlockViewModel(unlock, state);
+        // La chiave ricordata (e la sonda del portachiavi) prima della finestra, fuori dal thread UI e con un tetto.
+        var stored = await StoredKeyUnlock.RunAsync(unlock, state, StoredKeyUnlock.DefaultCap).ConfigureAwait(true);
+        if (stored.Provider is not null) return stored.Provider;
+
+        var viewModel = new UnlockViewModel(unlock, state, stored.CanRemember, stored.Rejected);
         var window = new UnlockWindow(viewModel);
         var closed = new TaskCompletionSource();
         window.Closed += (_, _) => closed.TrySetResult();

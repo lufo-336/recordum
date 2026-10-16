@@ -20,6 +20,11 @@
                TextWrapping="Wrap"
                Foreground="{DynamicResource Brush.TextMuted}"
                FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBlock Name="StoredKeyRejectedText" Text="{Binding StoredKeyRejectedMessage}"
+               IsVisible="{Binding StoredKeyRejected}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.Danger}"
+               FontSize="{DynamicResource FontSize.Small}"/>
     <TextBlock Text="{x:Static res:Strings.Unlock_PassphraseLabel}"
                Foreground="{DynamicResource Brush.TextMuted}"
                FontSize="{DynamicResource FontSize.Small}"/>
@@ -30,6 +35,16 @@
                  FontSize="{DynamicResource FontSize.Small}"/>
       <TextBox Name="ConfirmBox" PasswordChar="•" Text="{Binding Confirmation, Mode=TwoWay}"/>
     </StackPanel>
+    <CheckBox Name="RememberBox" Content="{Binding RememberLabel}"
+              AutomationProperties.Name="{x:Static res:Strings.Unlock_RememberOnDevice}"
+              IsVisible="{Binding ShowRemember}"
+              IsEnabled="{Binding CanRemember}"
+              IsChecked="{Binding RememberOnDevice, Mode=TwoWay}"/>
+    <TextBlock Name="RememberUnavailableText" Text="{Binding RememberUnavailableHint}"
+               IsVisible="{Binding ShowRememberUnavailable}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
     <TextBlock Name="ErrorText" Text="{Binding ErrorMessage}"
                IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
                TextWrapping="Wrap"

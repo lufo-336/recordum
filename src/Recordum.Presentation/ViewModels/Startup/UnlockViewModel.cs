@@ -18,11 +18,17 @@ public sealed partial class UnlockViewModel : ObservableObject
     private readonly DbUnlockState _state;
     private readonly TaskCompletionSource<IDbKeyProvider> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public UnlockViewModel(IDbUnlockService service, DbUnlockState state)
+    /// <param name="canRememberOnDevice">Il portachiavi c'e'. Lo decide chi costruisce la finestra, fuori dal thread UI
+    /// (la sonda puo' bloccare): il ViewModel non lo chiede al servizio.</param>
+    /// <param name="storedKeyRejected">La chiave ricordata e' stata provata e non apriva piu' i dati.</param>
+    public UnlockViewModel(IDbUnlockService service, DbUnlockState state, bool canRememberOnDevice, bool storedKeyRejected)
     {
         ArgumentNullException.ThrowIfNull(service);
         _service = service;
         _state = state;
+        CanRemember = canRememberOnDevice;
+        _rememberOnDevice = canRememberOnDevice;
+        StoredKeyRejected = storedKeyRejected;
         if (state == DbUnlockState.Unsupported) _errorMessage = Strings.Unlock_Unsupported;
     }
 
@@ -38,6 +44,22 @@ public sealed partial class UnlockViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _errorMessage;
+
+    /// <summary>La casella "Ricorda su questo dispositivo": spuntata se il portachiavi c'e', altrimenti spenta.</summary>
+    [ObservableProperty]
+    private bool _rememberOnDevice;
+
+    /// <summary>Il portachiavi c'e': la casella e' modificabile.</summary>
+    public bool CanRemember { get; }
+
+    /// <summary>La casella si mostra (non nel modulo inerte "non supportato").</summary>
+    public bool ShowRemember => !IsUnsupported;
+
+    /// <summary>La spiegazione al posto della casella attiva: senza portachiavi la passphrase si chiede a ogni avvio.</summary>
+    public bool ShowRememberUnavailable => ShowRemember && !CanRemember;
+
+    /// <summary>Mostra la riga sopra il campo: la chiave ricordata non apre piu' i dati.</summary>
+    public bool StoredKeyRejected { get; }
 
     /// <summary>Solo la creazione chiede di ripetere la passphrase: chi la sta scegliendo, e non ne
     /// esiste un recupero, non deve poterla sbagliare a digitare.</summary>
@@ -60,6 +82,12 @@ public sealed partial class UnlockViewModel : ObservableObject
     public string ConfirmLabel => Strings.Unlock_ConfirmLabel;
 
     public string SubmitLabel => Strings.Unlock_Submit;
+
+    public string RememberLabel => Strings.Unlock_RememberOnDevice;
+
+    public string RememberUnavailableHint => Strings.Unlock_RememberUnavailable;
+
+    public string StoredKeyRejectedMessage => Strings.Unlock_StoredKeyRejected;
 #pragma warning restore CA1822
 
     /// <summary>Si completa col provider quando lo sblocco riesce; è annullato da <see cref="Cancel"/>.</summary>
@@ -87,7 +115,7 @@ public sealed partial class UnlockViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var outcome = await _service.UnlockAsync(_state, Passphrase);
+            var outcome = await _service.UnlockAsync(_state, Passphrase, RememberOnDevice && CanRemember);
             switch (outcome.Outcome)
             {
                 case UnlockOutcome.Unlocked when outcome.Provider is not null:

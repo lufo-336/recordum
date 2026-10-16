@@ -140,14 +140,14 @@ public class CompositionTests
     {
         var service = new FakeUnlockService();
 
-        var creating = new UnlockWindow(new UnlockViewModel(service, DbUnlockState.NeedsCreation));
+        var creating = new UnlockWindow(new UnlockViewModel(service, DbUnlockState.NeedsCreation, canRememberOnDevice: true, storedKeyRejected: false));
         creating.Show();
         Dispatcher.UIThread.RunJobs();
         creating.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "ConfirmBlock")
             .IsVisible.Should().BeTrue();
         creating.Close();
 
-        var entering = new UnlockWindow(new UnlockViewModel(service, DbUnlockState.NeedsPassphrase));
+        var entering = new UnlockWindow(new UnlockViewModel(service, DbUnlockState.NeedsPassphrase, canRememberOnDevice: true, storedKeyRejected: false));
         entering.Show();
         Dispatcher.UIThread.RunJobs();
         entering.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "ConfirmBlock")
@@ -159,7 +159,7 @@ public class CompositionTests
     public async Task The_unlock_window_cannot_be_closed_while_an_unlock_is_in_flight()
     {
         var service = new GatedUnlockService();
-        var viewModel = new UnlockViewModel(service, DbUnlockState.NeedsPassphrase) { Passphrase = "una-passphrase-lunga" };
+        var viewModel = new UnlockViewModel(service, DbUnlockState.NeedsPassphrase, canRememberOnDevice: true, storedKeyRejected: false) { Passphrase = "una-passphrase-lunga" };
         var window = new UnlockWindow(viewModel);
         var closed = false;
         window.Closed += (_, _) => closed = true;
@@ -230,7 +230,11 @@ public class CompositionTests
 
         public DbUnlockState DetectState() => DbUnlockState.NeedsPassphrase;
 
-        public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default)
+        public bool CanRememberOnDevice => false;
+        public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) =>
+            Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));
+
+        public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default)
         {
             await _gate.Task;
             return new UnlockResult(UnlockOutcome.WrongPassphrase, null);
@@ -243,7 +247,11 @@ public class CompositionTests
 
         public DbUnlockState DetectState() => DbUnlockState.NeedsPassphrase;
 
-        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default)
+        public bool CanRememberOnDevice => false;
+        public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) =>
+            Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));
+
+        public Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default)
             => Task.FromResult(new UnlockResult(UnlockOutcome.WrongPassphrase, null));
     }
 }

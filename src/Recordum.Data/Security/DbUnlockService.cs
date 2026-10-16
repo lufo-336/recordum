@@ -31,6 +31,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
 
     private readonly IDbStoragePaths _paths;
     private readonly Func<IDbKeyProvider>? _platformKey;
+    private readonly ISecretStore _secrets;
     private readonly ILogger<DbUnlockService> _logger;
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Error, Message = "Unlock failed in state {State}")]
@@ -41,6 +42,12 @@ public sealed partial class DbUnlockService : IDbUnlockService
 
     [LoggerMessage(EventId = 3, Level = LogLevel.Warning, Message = "Salt without a database moved aside to {Aside}")]
     private partial void LogSaltSetAside(string aside);
+
+    [LoggerMessage(EventId = 5, Level = LogLevel.Warning, Message = "The system keyring failed ({Operation}); the key is not remembered")]
+    private partial void LogSecretStoreFailed(Exception exception, string operation);
+
+    [LoggerMessage(EventId = 6, Level = LogLevel.Warning, Message = "The remembered key was rejected and removed from the keyring")]
+    private partial void LogStoredKeyRejected();
 
     [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "Unlock refused in state {State}: {Reason}")]
     private partial void LogUnlockRefused(DbUnlockState state, string reason);
@@ -54,16 +61,18 @@ public sealed partial class DbUnlockService : IDbUnlockService
     }
 
     /// <summary>Con la chiave di piattaforma del sistema: DPAPI su Windows, nessuna altrove.</summary>
-    public DbUnlockService(IDbStoragePaths paths, ILogger<DbUnlockService>? logger = null)
-        : this(paths, DefaultPlatformKey(paths), logger)
+    public DbUnlockService(IDbStoragePaths paths, ISecretStore secrets, ILogger<DbUnlockService>? logger = null)
+        : this(paths, DefaultPlatformKey(paths), secrets, logger)
     {
     }
 
     /// <param name="platformKeyFactory">La chiave che custodisce il sistema, o <c>null</c> se questo
     /// sistema non ne ha. Esplicita perché così i test la fingono su Linux (e provano il ramo Windows).</param>
-    public DbUnlockService(IDbStoragePaths paths, Func<IDbKeyProvider>? platformKeyFactory, ILogger<DbUnlockService>? logger = null)
+    public DbUnlockService(IDbStoragePaths paths, Func<IDbKeyProvider>? platformKeyFactory, ISecretStore secrets, ILogger<DbUnlockService>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(secrets);
+        _secrets = secrets;
         _paths = paths;
         _platformKey = platformKeyFactory;
         _logger = logger ?? NullLogger<DbUnlockService>.Instance;
@@ -129,7 +138,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
         return hasPlatform ? DbUnlockState.UsePlatformKey : DbUnlockState.NeedsCreation;
     }
 
-    public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default)
+    public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(passphrase);
         try
@@ -137,8 +146,8 @@ public sealed partial class DbUnlockService : IDbUnlockService
             return state switch
             {
                 DbUnlockState.UsePlatformKey => await UnlockWithPlatformKeyAsync(ct).ConfigureAwait(false),
-                DbUnlockState.NeedsCreation => await CreateAsync(passphrase, ct).ConfigureAwait(false),
-                DbUnlockState.NeedsPassphrase => await EnterAsync(passphrase, ct).ConfigureAwait(false),
+                DbUnlockState.NeedsCreation => await CreateAsync(passphrase, rememberOnDevice, ct).ConfigureAwait(false),
+                DbUnlockState.NeedsPassphrase => await EnterAsync(passphrase, rememberOnDevice, ct).ConfigureAwait(false),
                 _ => Refused(state, "no unlock path for this state"),
             };
         }
@@ -180,7 +189,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
         return new UnlockResult(UnlockOutcome.Unlocked, provider);
     }
 
-    private async Task<UnlockResult> CreateAsync(string passphrase, CancellationToken ct)
+    private async Task<UnlockResult> CreateAsync(string passphrase, bool rememberOnDevice, CancellationToken ct)
     {
         if (IsTooShort(passphrase)) return new UnlockResult(UnlockOutcome.PassphraseTooShort, null);
         // Riscrivere il salt di un database vero lo renderebbe illeggibile per sempre.
@@ -191,10 +200,11 @@ public sealed partial class DbUnlockService : IDbUnlockService
         var provider = new CachingKeyProvider(new PassphraseKeyProvider(passphrase, _paths.SaltFilePath));
         // Deriva ora: il costo di Argon2id si paga qui, una volta, e la cache arriva già calda.
         using (await provider.GetKeyAsync(ct).ConfigureAwait(false)) { }
+        if (rememberOnDevice) await RememberAsync(provider, ct).ConfigureAwait(false);   // ponytail: la chiave e' deterministica da passphrase+salt, il file e' ancora vuoto: nessuna lettura da attendere
         return new UnlockResult(UnlockOutcome.Unlocked, provider);
     }
 
-    private async Task<UnlockResult> EnterAsync(string passphrase, CancellationToken ct)
+    private async Task<UnlockResult> EnterAsync(string passphrase, bool rememberOnDevice, CancellationToken ct)
     {
         if (IsTooShort(passphrase)) return new UnlockResult(UnlockOutcome.PassphraseTooShort, null);
         // Open è ReadWriteCreate: con un NeedsPassphrase stantio (il file è sparito) creerebbe un database
@@ -206,7 +216,11 @@ public sealed partial class DbUnlockService : IDbUnlockService
         try
         {
             using var key = await provider.GetKeyAsync(ct).ConfigureAwait(false);
-            if (CanRead(key)) return new UnlockResult(UnlockOutcome.Unlocked, provider);
+            if (CanRead(key))
+            {
+                if (rememberOnDevice) await RememberAsync(provider, ct).ConfigureAwait(false);   // solo dopo che CanRead ha confermato
+                return new UnlockResult(UnlockOutcome.Unlocked, provider);
+            }
         }
         catch
         {
@@ -215,6 +229,83 @@ public sealed partial class DbUnlockService : IDbUnlockService
         }
         provider.Dispose();                 // azzera la chiave sbagliata che la cache si era tenuta
         return new UnlockResult(UnlockOutcome.WrongPassphrase, null);
+    }
+
+    public bool CanRememberOnDevice => _secrets.IsAvailable;
+
+    /// <summary>Scrive la chiave nel portachiavi (fuori dal thread chiamante: libsecret e' sincrono e puo' attendere
+    /// un prompt). Un guasto si registra, mai si propaga: lo sblocco e' gia' riuscito.</summary>
+    private async Task RememberAsync(CachingKeyProvider provider, CancellationToken ct)
+    {
+        try
+        {
+            using var key = await provider.GetKeyAsync(ct).ConfigureAwait(false);
+            var encoded = Convert.ToBase64String(key.RawKey);
+            await Task.Run(() => _secrets.Write(SecretKind.DbKey, encoded), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (SecretStoreUnavailableException ex)
+        {
+            LogSecretStoreFailed(ex, "write");
+        }
+    }
+
+    public async Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default)
+    {
+        if (DetectState() != DbUnlockState.NeedsPassphrase) return new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null);
+
+        string? encoded;
+        try
+        {
+            encoded = _secrets.TryRead(SecretKind.DbKey);
+        }
+        catch (SecretStoreUnavailableException ex)
+        {
+            LogSecretStoreFailed(ex, "read");
+            return new StoredKeyResult(StoredKeyOutcome.StoreUnavailable, null);
+        }
+        if (encoded is null) return new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null);
+
+        var raw = new byte[KeyMaterial.LengthBytes + 1];   // un byte in piu': una chiave troppo lunga non entra e non "quasi" combacia
+        try
+        {
+            if (!Convert.TryFromBase64String(encoded, raw, out var written) || written != KeyMaterial.LengthBytes)
+                return Rejected();
+
+            SqliteConnection.ClearAllPools();
+            using var stored = new StoredKeyProvider(raw.AsSpan(0, KeyMaterial.LengthBytes));
+            var provider = new CachingKeyProvider(stored);
+            try
+            {
+                using var key = await provider.GetKeyAsync(ct).ConfigureAwait(false);   // riempie la cache: `stored` si azzera subito dopo
+                if (CanRead(key)) return new StoredKeyResult(StoredKeyOutcome.Unlocked, provider);
+            }
+            catch
+            {
+                provider.Dispose();
+                throw;
+            }
+            provider.Dispose();
+            return Rejected();
+        }
+        catch (Exception ex) when (ex is IOException or SqliteException)
+        {
+            // Non e' la chiave: il disco. Non si cancella il segreto, si chiede la passphrase.
+            LogUnlockFailed(ex, DbUnlockState.NeedsPassphrase);
+            SqliteConnection.ClearAllPools();
+            return new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null);
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(raw);
+        }
+    }
+
+    private StoredKeyResult Rejected()
+    {
+        LogStoredKeyRejected();
+        try { _secrets.Delete(SecretKind.DbKey); }
+        catch (SecretStoreUnavailableException ex) { LogSecretStoreFailed(ex, "delete"); }
+        return new StoredKeyResult(StoredKeyOutcome.StoredKeyRejected, null);
     }
 
     private static bool IsTooShort(string passphrase) =>

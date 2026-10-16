@@ -10,6 +10,11 @@ public sealed class FakeDbUnlockService : IDbUnlockService
 
     public DbUnlockState State { get; set; } = DbUnlockState.NeedsPassphrase;
     public List<(DbUnlockState State, string Passphrase)> Calls { get; } = [];
+    public List<bool> RememberCalls { get; } = [];
+    public bool CanRememberOnDevice { get; set; } = true;
+    public StoredKeyResult StoredKey { get; set; } = new(StoredKeyOutcome.NoStoredKey, null);
+
+    public Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default) => Task.FromResult(StoredKey);
     public TaskCompletionSource? Gate { get; set; }
     public Exception? Throw { get; set; }
 
@@ -20,9 +25,10 @@ public sealed class FakeDbUnlockService : IDbUnlockService
 
     public DbUnlockState DetectState() => State;
 
-    public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default)
+    public async Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default)
     {
         Calls.Add((state, passphrase));
+        RememberCalls.Add(rememberOnDevice);
         if (Gate is not null) await Gate.Task;
         if (Throw is not null) throw Throw;
         return _results.Dequeue();

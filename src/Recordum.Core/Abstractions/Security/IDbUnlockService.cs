@@ -44,6 +44,21 @@ public enum UnlockOutcome
 /// <summary><paramref name="Provider"/> è valorizzato solo con <see cref="UnlockOutcome.Unlocked"/>.</summary>
 public sealed record UnlockResult(UnlockOutcome Outcome, IDbKeyProvider? Provider);
 
+/// <summary>Esito del tentativo con la chiave ricordata nel portachiavi.</summary>
+public enum StoredKeyOutcome
+{
+    Unlocked,
+    /// <summary>Niente da provare: stato diverso da <see cref="DbUnlockState.NeedsPassphrase"/>, o segreto assente.</summary>
+    NoStoredKey,
+    /// <summary>La chiave c'era ma non apre il database (o era malformata): il segreto è stato cancellato.</summary>
+    StoredKeyRejected,
+    /// <summary>Il portachiavi non risponde o non c'è: si chiede la passphrase.</summary>
+    StoreUnavailable,
+}
+
+/// <summary><paramref name="Provider"/> è valorizzato solo con <see cref="StoredKeyOutcome.Unlocked"/>.</summary>
+public sealed record StoredKeyResult(StoredKeyOutcome Outcome, IDbKeyProvider? Provider);
+
 /// <summary>Lo sblocco del database prima che l'app si avvii. Vive in Core (non in Presentation)
 /// perché l'implementazione sta in Data, che non può referenziare Presentation, e il risultato porta
 /// un <see cref="IDbKeyProvider"/>, che è già Core.</summary>
@@ -59,6 +74,15 @@ public interface IDbUnlockService
     DbUnlockState DetectState();
 
     /// <summary>Tenta lo sblocco. <paramref name="passphrase"/> è ignorata per
-    /// <see cref="DbUnlockState.UsePlatformKey"/> e <see cref="DbUnlockState.Unsupported"/>.</summary>
-    Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, CancellationToken ct = default);
+    /// <see cref="DbUnlockState.UsePlatformKey"/> e <see cref="DbUnlockState.Unsupported"/>.
+    /// Con <paramref name="rememberOnDevice"/> e sblocco riuscito la chiave derivata va nel portachiavi (un guasto
+    /// del portachiavi si registra e non cambia l'esito).</summary>
+    Task<UnlockResult> UnlockAsync(DbUnlockState state, string passphrase, bool rememberOnDevice, CancellationToken ct = default);
+
+    /// <summary>Solo in <see cref="DbUnlockState.NeedsPassphrase"/>: prova la chiave ricordata. Chiama il portachiavi
+    /// (sincrono): mai dal thread dell'interfaccia.</summary>
+    Task<StoredKeyResult> TryUnlockWithStoredKeyAsync(CancellationToken ct = default);
+
+    /// <summary>Il portachiavi c'è. Può bloccare (sonda D-Bus): mai dal thread dell'interfaccia.</summary>
+    bool CanRememberOnDevice { get; }
 }

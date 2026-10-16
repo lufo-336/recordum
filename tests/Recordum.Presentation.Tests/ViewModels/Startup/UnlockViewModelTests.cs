@@ -14,7 +14,7 @@ public class UnlockViewModelTests
     private static (UnlockViewModel Vm, FakeDbUnlockService Service) Build(DbUnlockState state)
     {
         var service = new FakeDbUnlockService { State = state };
-        return (new UnlockViewModel(service, state), service);
+        return (new UnlockViewModel(service, state, canRememberOnDevice: true, storedKeyRejected: false), service);
     }
 
     [Theory]
@@ -206,5 +206,48 @@ public class UnlockViewModelTests
                 if (english[i] != "Passphrase") Assert.NotEqual(english[i], italian[i]);
         }
         finally { Strings.Culture = previous; }
+    }
+
+    private static async Task<bool> SubmitRememberedAsync(bool canRemember, bool box)
+    {
+        var service = new FakeDbUnlockService { State = DbUnlockState.NeedsPassphrase };
+        service.Enqueue(UnlockOutcome.Unlocked, Provider);
+        var vm = new UnlockViewModel(service, DbUnlockState.NeedsPassphrase, canRemember, storedKeyRejected: false)
+        {
+            Passphrase = "correct horse battery",
+            RememberOnDevice = box,
+        };
+        await vm.SubmitCommand.ExecuteAsync(null);
+        return Assert.Single(service.RememberCalls);
+    }
+
+    [Fact]
+    public void Remember_is_on_by_default_when_the_keyring_is_there_and_off_and_explained_when_it_is_not()
+    {
+        var with = new UnlockViewModel(new FakeDbUnlockService(), DbUnlockState.NeedsPassphrase, canRememberOnDevice: true, storedKeyRejected: false);
+        var without = new UnlockViewModel(new FakeDbUnlockService(), DbUnlockState.NeedsPassphrase, canRememberOnDevice: false, storedKeyRejected: false);
+
+        Assert.True(with.RememberOnDevice);
+        Assert.True(with.CanRemember);
+        Assert.False(with.ShowRememberUnavailable);
+        Assert.False(without.RememberOnDevice);
+        Assert.False(without.CanRemember);
+        Assert.True(without.ShowRememberUnavailable);
+    }
+
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]   // il parametro muto: la casella spenta non deve ricordare
+    [InlineData(false, true, false)]   // senza portachiavi non si ricorda, anche se la proprieta' fosse true
+    public async Task The_checkbox_decides_what_the_service_is_asked(bool canRemember, bool box, bool expected) =>
+        Assert.Equal(expected, await SubmitRememberedAsync(canRemember, box));
+
+    [Fact]
+    public void A_rejected_stored_key_is_flagged_for_the_view()
+    {
+        var vm = new UnlockViewModel(new FakeDbUnlockService(), DbUnlockState.NeedsPassphrase, canRememberOnDevice: true, storedKeyRejected: true);
+
+        Assert.True(vm.StoredKeyRejected);
+        Assert.Equal(Strings.Unlock_StoredKeyRejected, vm.StoredKeyRejectedMessage);
     }
 }

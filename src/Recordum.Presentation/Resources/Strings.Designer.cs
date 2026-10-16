@@ -605,6 +605,9 @@ public static class Strings
     public static string Unlock_Mismatch => Get("Unlock.Mismatch");
     public static string Unlock_Unsupported => Get("Unlock.Unsupported");
     public static string Unlock_Failed => Get("Unlock.Failed");
+    public static string Unlock_RememberOnDevice => Get("Unlock.RememberOnDevice");
+    public static string Unlock_RememberUnavailable => Get("Unlock.RememberUnavailable");
+    public static string Unlock_StoredKeyRejected => Get("Unlock.StoredKeyRejected");
 
     public static string Editor_MetricType_Integer => Get("Editor.MetricType.Integer");
     public static string Editor_MetricType_Decimal => Get("Editor.MetricType.Decimal");
