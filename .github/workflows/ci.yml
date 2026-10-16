@@ -46,7 +46,7 @@ jobs:
           # DPAPI esiste solo su Windows: quelle classi portano il tratto WindowsOnly. I test di prestazioni
           # (Category=Performance, anche in Recordum.UI.Tests) misurano tempi: su un runner condiviso
           # oscillano, e girano in locale.
-          dotnet test tests/Recordum.Data.Tests --no-build --filter "Category!=WindowsOnly&Category!=Performance" \
+          dotnet test tests/Recordum.Data.Tests --no-build --filter "Category!=WindowsOnly&Category!=Performance&Category!=FixtureGenerator" \
             --logger "trx;LogFileName=Data.trx" --results-directory TestResults || rc=1
           exit $rc
           EOF
@@ -81,10 +81,25 @@ jobs:
           foreach ($p in 'Core', 'Data', 'Presentation', 'UI', 'Plugins', 'Plugins.ExportEngine', 'Plugins.ChartEngine') {
             # I test di prestazioni misurano tempi: su un runner condiviso oscillano (run 36711711309: 7,44x contro un
             # tetto di 5x, sullo stesso codice che aveva passato quattro volte). Girano in locale.
-            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance&Category!=UnixOnly&Category!=Keyring" --logger "trx;LogFileName=$p.trx" --results-directory TestResults
+            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance&Category!=UnixOnly&Category!=Keyring&Category!=FixtureGenerator" --logger "trx;LogFileName=$p.trx" --results-directory TestResults
             if ($LASTEXITCODE -ne 0) { $rc = 1 }
           }
           exit $rc
+      # Il .recbak di riferimento di Windows (DPAPI): il controllore scarica l'artefatto e lo committa in
+      # tests/Recordum.Data.Tests/Fixtures/recbak/. Il generatore e' escluso dal passo Test.
+      - name: Genera il fixture recbak di Windows
+        if: always()
+        shell: pwsh
+        env:
+          RECORDUM_GENERATE_RECBAK: ${{ runner.temp }}\recbak
+        run: dotnet test tests/Recordum.Data.Tests --no-build --filter "Category=FixtureGenerator"
+      - name: Fixture recbak Windows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recbak-fixture-windows
+          path: ${{ runner.temp }}\recbak\windows.recbak
+          if-no-files-found: error
       # Serializzata: in parallelo la suite WPF può appendersi a zero fallimenti (W24-E1).
       - name: Test WPF
         if: always()

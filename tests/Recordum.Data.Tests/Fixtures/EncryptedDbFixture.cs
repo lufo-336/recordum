@@ -50,7 +50,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         PluginManager = pluginManager;
     }
 
-    public static async Task<EncryptedDbFixture> SeedAsync()
+    /// <param name="keyProvider">Null = a fixed random key. The fixture generator passes DPAPI on Windows.</param>
+    public static async Task<EncryptedDbFixture> SeedAsync(IDbKeyProvider? keyProvider = null)
     {
         var rootDir = Path.Combine(Path.GetTempPath(), $"recordum-fixture-{Guid.NewGuid():N}");
         Directory.CreateDirectory(rootDir);
@@ -67,7 +68,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         Directory.CreateDirectory(tempDir);
 
         var options = new TestBackupPaths(dbPath, keyPath, saltPath, attachmentsDir, backupsDir, autoBackupKeyPath, tempDir);
-        var keyProvider = new FixedKeyProvider(RandomNumberGenerator.GetBytes(KeyMaterial.LengthBytes));
+        keyProvider ??= new FixedKeyProvider(RandomNumberGenerator.GetBytes(KeyMaterial.LengthBytes));
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Initialize encrypted DB: open with key, run migrations
