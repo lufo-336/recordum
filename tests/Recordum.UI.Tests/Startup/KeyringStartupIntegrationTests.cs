@@ -59,13 +59,7 @@ public class KeyringStartupIntegrationTests
             key = result.Provider!;
         }
 
-        var services = new ServiceCollection();
-        services.AddRecordumCore(options);
-        services.AddRecordumAvaloniaShell();
-        services.AddSingleton(key);
-        AppComposition.AddBackupKeyStores(services, options, secrets, windows: false);
-        configure?.Invoke(services);
-        var sp = services.BuildServiceProvider();
+        var sp = AppComposition.BuildServices(options, key, secrets, configure);
         await AppComposition.InitializeAsync(sp);
         return new Start(sp, window);
     }
@@ -87,8 +81,14 @@ public class KeyringStartupIntegrationTests
 
     private static string NewDir() => Path.Combine(Path.GetTempPath(), $"rec-keyring-{Guid.NewGuid():N}");
 
-    private static bool KeyringMissing(string dir) =>
-        !OperatingSystem.IsLinux() || !AppComposition.CreateSecretStore(Options(dir)).IsAvailable;
+    /// <summary>Su Linux il Secret Service c'e' (CI compresa): se manca e' un guasto, non un motivo per non provare.
+    /// Altrove la categoria Keyring e' esclusa dalla CI, quindi si esce senza provare.</summary>
+    private static bool NotLinux(string dir)
+    {
+        if (!OperatingSystem.IsLinux()) return true;
+        Assert.True(AppComposition.CreateSecretStore(Options(dir)).IsAvailable, "Secret Service non disponibile: il portachiavi di prova non risponde");
+        return false;
+    }
 
     [AvaloniaFact]
     public async Task Remember_then_restart_without_window_then_forget_then_window_again()
@@ -96,7 +96,7 @@ public class KeyringStartupIntegrationTests
         var dir = NewDir();
         try
         {
-            if (KeyringMissing(dir)) return;   // nessun Secret Service su questa macchina: niente da provare
+            if (NotLinux(dir)) return;
 
             var first = await StartAsync(dir, RememberChoice.Remember);
             first.UnlockWindowShown.Should().BeTrue("la prima volta si crea con la passphrase");
@@ -125,7 +125,7 @@ public class KeyringStartupIntegrationTests
         var file = Path.Combine(dir, "export", "it.recbak");
         try
         {
-            if (KeyringMissing(dir)) return;
+            if (NotLinux(dir)) return;
 
             var lifetime = new CountingLifetime();
             void Configure(IServiceCollection s)

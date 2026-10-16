@@ -18,13 +18,15 @@ namespace Recordum.UI.Bootstrap;
 /// loro opzioni e la loro chiave (D14).</para></summary>
 public static class AppComposition
 {
-    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets) =>
-        BuildServices(options, keyProvider, secrets, OperatingSystem.IsWindows());
+    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets,
+        Action<IServiceCollection>? configure = null) =>
+        BuildServices(options, keyProvider, secrets, OperatingSystem.IsWindows(), configure);
 
     /// <summary><paramref name="secrets"/> e' la STESSA istanza che ha servito lo sblocco (App la costruisce una volta);
     /// <paramref name="windows"/> sceglie il deposito della passphrase dell'auto-backup, ed e' un parametro per poter
     /// provare l'altro ramo su qualunque sistema.</summary>
-    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets, bool windows)
+    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets, bool windows,
+        Action<IServiceCollection>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(keyProvider);
@@ -37,6 +39,7 @@ public static class AppComposition
         services.AddSingleton(keyProvider);
         AddBackupKeyStores(services, options, secrets, windows);
         services.AddTransient<MainWindow>();
+        configure?.Invoke(services);   // solo i test: l'ultima registrazione vince; App non passa niente
 
         // BuildServiceProvider() SENZA validazione degli scope, come la shell WPF: i ViewModel
         // transient prendono servizi scoped dal contenitore radice. E' una captive dependency che
@@ -47,7 +50,8 @@ public static class AppComposition
     }
 
     /// <summary>Dove vive la passphrase dell'auto-backup: DPAPI su Windows (come WPF), il portachiavi altrove.</summary>
-    public static void AddBackupKeyStores(IServiceCollection services, RecordumOptions options, ISecretStore secrets, bool windows)
+    public static void AddBackupKeyStores(IServiceCollection services, RecordumOptions options, ISecretStore secrets, bool windows,
+        Action<IServiceCollection>? configure = null)
     {
         services.AddSingleton(secrets);
 #pragma warning disable CA1416 // il ramo Windows si sceglie con un parametro (provabile ovunque); DPAPI si usa solo se windows e' vero
