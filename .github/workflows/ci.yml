@@ -75,7 +75,7 @@ jobs:
           foreach ($p in 'Core', 'Data', 'Presentation', 'UI', 'Plugins', 'Plugins.ExportEngine', 'Plugins.ChartEngine') {
             # I test di prestazioni misurano tempi: su un runner condiviso oscillano (run 36711711309: 7,44x contro un
             # tetto di 5x, sullo stesso codice che aveva passato quattro volte). Girano in locale.
-            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance" --logger "trx;LogFileName=$p.trx" --results-directory TestResults
+            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance&Category!=UnixOnly" --logger "trx;LogFileName=$p.trx" --results-directory TestResults
             if ($LASTEXITCODE -ne 0) { $rc = 1 }
           }
           exit $rc

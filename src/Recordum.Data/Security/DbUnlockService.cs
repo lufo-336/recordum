@@ -88,6 +88,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
 
     public OrphanReconciliation ReconcileOrphans()
     {
+        DatabaseFilePermissions.Realign(_paths.DatabasePath);   // F1-SEC1: prima di ogni apertura
         if (!File.Exists(_paths.SaltFilePath) || HasDatabase()) return OrphanReconciliation.None;
 
         // Il nome che RestoreService dà al database vecchio fra i due spostamenti: se il processo è morto lì,
@@ -186,6 +187,7 @@ public sealed partial class DbUnlockService : IDbUnlockService
         if (HasDatabase()) return Refused(DbUnlockState.NeedsCreation, "a database already exists, its salt is not rewritten");
 
         WriteSalt(_paths.SaltFilePath, RandomNumberGenerator.GetBytes(SaltLengthBytes));
+        DatabaseFilePermissions.CreatePrivate(_paths.DatabasePath);   // F1-SEC1: il database nasce 0600
         var provider = new CachingKeyProvider(new PassphraseKeyProvider(passphrase, _paths.SaltFilePath));
         // Deriva ora: il costo di Argon2id si paga qui, una volta, e la cache arriva già calda.
         using (await provider.GetKeyAsync(ct).ConfigureAwait(false)) { }
