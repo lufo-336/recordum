@@ -33,9 +33,9 @@
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
 
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
-di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante · **F2c-2** tick dell'auto-backup durante un
-restore · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
-**F2c-5** avviso di timeout impreciso.
+di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante · **F2c-2** quiesce di tutti gli utenti del DB durante un
+restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
+**F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2055,12 +2055,19 @@ Nuovi, rimandati dalle review dell'onda:
 
 - **F2c-1 — "Apri cartella" nello storico dei backup manca su Avalonia** · `reported` · WPF usava `explorer.exe`; serve un
   lanciatore per piattaforma (`xdg-open` su Linux).
-- **F2c-2 — un tick del backup automatico può correre durante un restore** · `reported` · Fra `RestoreService` e
-  `BackupSchedulerHost` non c'è nessun cancello; l'onda di correzioni finale può chiuderlo.
+- **F2c-2 — quiesce di tutti gli utenti del DB durante un restore** · `reported` · Fra `RestoreService` e gli altri
+  utenti del DB non c'è nessun cancello: il tick di `BackupSchedulerHost` è uno di essi, come ogni query della UI (CR1,
+  preesistente). Su Windows un tick dovuto dentro il restore può far fallire lo scambio dei file (rollback, dati
+  intatti); su Linux lascia una riga `backup_log` nel DB ripristinato.
 - **F2c-3 — un database ripristinato tiene il modo del file sorgente fino al riavvio successivo** · `reported` · Il
   riallineamento a 0600 avviene all'avvio; l'onda di correzioni finale può chiuderlo.
 - **F2c-4 — una scrittura "ricorda" scaduta allo sblocco può completarsi dopo** · `reported` · Se l'utente risponde in
   ritardo al prompt del portachiavi, la `Write` annulla un "Dimentica" fatto nel frattempo.
+- **F2c-6 — stringhe inglesi preesistenti ora visibili su Avalonia** · `reported` · Avvisi dei plugin del restore,
+  il fallback grezzo di `Readable(code)`, `ex.Code`/`ex.Message` in `BackupDialogViewModel`, l'etichetta del filtro
+  "Recordum backup (*.recbak)" e il `Kind` grezzo nelle righe dello storico.
+- **F2c-7 — "Salva" in Dati e backup torna in silenzio con passphrase diverse o corta (< 12)** · `reported` ·
+  Anche `backup.auto.enabled` non viene salvato: l'utente può credere che l'auto-backup sia acceso. Mostrare il motivo.
 - **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `reported` · Dice che il portachiavi "non è
   disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.
 
