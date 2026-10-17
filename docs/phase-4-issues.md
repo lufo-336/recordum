@@ -35,7 +35,8 @@
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante · **F2c-2** quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
-**F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso.
+**F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso ·
+**F2c-8** stato della pagina col portachiavi irraggiungibile.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2045,7 +2046,7 @@ Esiti verificati contro codice e test dell'onda (branch `f2c-data-safety`, in pi
   `verified-fixed` con un `ls -l` sulla cartella dati dopo un primo avvio su GNOME.
 - **RV-5 — il backup automatico su Linux si spegneva da solo, in silenzio** · `fixed` · `AppComposition.InitializeAsync`
   avvia `BackupSchedulerHost`; la passphrase vive nel portachiavi (`SecretStoreAutoBackupKeyStore`, DPAPI su Windows);
-  se non è più leggibile lo scheduler si spegne e la pagina "Dati e backup" lo dice (`backup.auto.disabled_reason`).
+  se manca lo scheduler si spegne (un portachiavi momentaneamente irraggiungibile fa solo saltare il giro, R11) e la pagina "Dati e backup" lo dice (`backup.auto.disabled_reason`).
   Provato in `BackupCompositionTests`; verifica a schermo con la checklist della ROADMAP.
 - **F1-RAIL1** · in parte: il pulsante **Impostazioni** del rail è di nuovo acceso e apre la finestra ridotta su "Dati e
   backup" (da lì si fa "Backup ora" e "Ripristina…"). Restano spenti Grafici (F7), il menu **Backup** del rail, Esporta e
@@ -2058,16 +2059,20 @@ Nuovi, rimandati dalle review dell'onda:
 - **F2c-2 — quiesce di tutti gli utenti del DB durante un restore** · `reported` · Fra `RestoreService` e gli altri
   utenti del DB non c'è nessun cancello: il tick di `BackupSchedulerHost` è uno di essi, come ogni query della UI (CR1,
   preesistente). Su Windows un tick dovuto dentro il restore può far fallire lo scambio dei file (rollback, dati
-  intatti); su Linux lascia una riga `backup_log` nel DB ripristinato.
+  intatti); su Linux lascia una riga `backup_log` nel DB ripristinato. Su Windows un'`IOException` non catturata in `RunAsync` può anche chiudere l'app.
 - **F2c-3 — un database ripristinato tiene il modo del file sorgente fino al riavvio successivo** · `reported` · Il
-  riallineamento a 0600 avviene all'avvio; l'onda di correzioni finale può chiuderlo.
+  riallineamento a 0600 avviene all'avvio; dopo un restore l'app si chiude e la cartella dati è 0700, quindi l'esposizione è minima.
 - **F2c-4 — una scrittura "ricorda" scaduta allo sblocco può completarsi dopo** · `reported` · Se l'utente risponde in
   ritardo al prompt del portachiavi, la `Write` annulla un "Dimentica" fatto nel frattempo.
+- **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `reported` · Dice che il portachiavi "non è
+  disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.
 - **F2c-6 — stringhe inglesi preesistenti ora visibili su Avalonia** · `reported` · Avvisi dei plugin del restore,
   il fallback grezzo di `Readable(code)`, `ex.Code`/`ex.Message` in `BackupDialogViewModel`, l'etichetta del filtro
   "Recordum backup (*.recbak)" e il `Kind` grezzo nelle righe dello storico.
 - **F2c-7 — "Salva" in Dati e backup torna in silenzio con passphrase diverse o corta (< 12)** · `reported` ·
   Anche `backup.auto.enabled` non viene salvato: l'utente può credere che l'auto-backup sia acceso. Mostrare il motivo.
-- **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `reported` · Dice che il portachiavi "non è
-  disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.
+- **F2c-8 — con il portachiavi irraggiungibile la pagina "Dati e backup" dice la cosa sbagliata** · `reported` · Al
+  caricamento mostra "nessuna passphrase" invece del motivo vero; "Prova" risponde "controllo finito" anche se non ha
+  letto niente (lo scheduler inghiotte l'eccezione, R11); un prompt di sblocco annullato conta come passphrase mancante e
+  spegne l'auto-backup. Nessun dato perso: va mostrato lo stato vero.
 
