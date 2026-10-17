@@ -34,22 +34,25 @@ jobs:
         run: dotnet build Recordum.slnx -p:EnableWindowsTargeting=true
       # Secret Service vero per i test Keyring: gnome-keyring sbloccato dentro una sessione dbus.
       - name: Secret Service
-        run: sudo apt-get install -y gnome-keyring libsecret-1-0 dbus-x11
+        run: sudo apt-get update && sudo apt-get install -y gnome-keyring libsecret-1-0 dbus-x11
+      # Lo script e' un file, non stdin di bash: un processo figlio che legge stdin non puo' inghiottirlo
+      # (con l'heredoc, `exit $rc` poteva non girare e il job risultare verde con test rossi).
       - name: Test
         run: |
-          dbus-run-session -- bash <<'EOF'
+          cat > "$RUNNER_TEMP/linux-tests.sh" <<'EOF'
           echo -n ci | gnome-keyring-daemon --unlock --components=secrets > /dev/null
           rc=0
           for p in Core Presentation UI Plugins Plugins.ExportEngine; do
-            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance" --logger "trx;LogFileName=$p.trx" --results-directory TestResults || rc=1
+            dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance" --logger "trx;LogFileName=$p.trx" --results-directory TestResults < /dev/null || rc=1
           done
           # DPAPI esiste solo su Windows: quelle classi portano il tratto WindowsOnly. I test di prestazioni
           # (Category=Performance, anche in Recordum.UI.Tests) misurano tempi: su un runner condiviso
           # oscillano, e girano in locale.
           dotnet test tests/Recordum.Data.Tests --no-build --filter "Category!=WindowsOnly&Category!=Performance&Category!=FixtureGenerator" \
-            --logger "trx;LogFileName=Data.trx" --results-directory TestResults || rc=1
+            --logger "trx;LogFileName=Data.trx" --results-directory TestResults < /dev/null || rc=1
           exit $rc
           EOF
+          dbus-run-session -- bash "$RUNNER_TEMP/linux-tests.sh"
       - name: Screenshots
         if: always()
         uses: actions/upload-artifact@v4
