@@ -45,9 +45,10 @@ public sealed partial class LibsecretSecretStore : ISecretStore
     public void Write(SecretKind kind, string value)
     {
         Require();
+        // Etichette visibili in Seahorse: inglese e non localizzate (R7, principio English-first).
         var label = kind == SecretKind.DbKey
-            ? $"Recordum — chiave del database ({_dataDir})"
-            : $"Recordum — passphrase del backup automatico ({_dataDir})";
+            ? $"Recordum database key ({_dataDir})"
+            : $"Recordum auto-backup passphrase ({_dataDir})";
         Call<object?>(schema =>
         {
             var stored = secret_password_store_sync(schema, "default", label, value, IntPtr.Zero, out var err, "kind", Name(kind), "data_dir", _dataDir, IntPtr.Zero);

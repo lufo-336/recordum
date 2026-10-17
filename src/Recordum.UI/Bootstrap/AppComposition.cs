@@ -50,8 +50,7 @@ public static class AppComposition
     }
 
     /// <summary>Dove vive la passphrase dell'auto-backup: DPAPI su Windows (come WPF), il portachiavi altrove.</summary>
-    public static void AddBackupKeyStores(IServiceCollection services, RecordumOptions options, ISecretStore secrets, bool windows,
-        Action<IServiceCollection>? configure = null)
+    public static void AddBackupKeyStores(IServiceCollection services, RecordumOptions options, ISecretStore secrets, bool windows)
     {
         services.AddSingleton(secrets);
 #pragma warning disable CA1416 // il ramo Windows si sceglie con un parametro (provabile ovunque); DPAPI si usa solo se windows e' vero
