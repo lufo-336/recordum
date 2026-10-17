@@ -39,10 +39,10 @@ public sealed class SecretStoreAutoBackupKeyStoreTests
     }
 
     [Fact]
-    public void ReadKey_is_null_when_the_store_throws()
+    public void An_unavailable_store_is_reported_not_turned_into_a_missing_key()
     {
         var s = new SecretStoreAutoBackupKeyStore(new ThrowingStore());
-        s.ReadKey().Should().BeNull();
-        s.HasKey().Should().BeFalse();
+        s.Invoking(x => x.ReadKey()).Should().Throw<SecretStoreUnavailableException>();
+        s.Invoking(x => x.HasKey()).Should().Throw<SecretStoreUnavailableException>();
     }
 }

@@ -6,12 +6,16 @@ namespace Recordum.Core.Abstractions.Security;
 /// Data, la chiede qui invece di leggere il file con DPAPI da sé (Passo 0, task 0.7).</summary>
 public interface IAutoBackupKeyStore
 {
+    /// <exception cref="SecretStoreUnavailableException">Il portachiavi non risponde (come <see cref="ReadKey"/>).</exception>
     bool HasKey();
 
     void WriteKey(string passphrase);
 
     void DeleteKey();
 
-    /// <summary>La passphrase, o <c>null</c> se manca o non si riesce a leggere.</summary>
+    /// <summary>La passphrase, o <c>null</c> se manca davvero.</summary>
+    /// <exception cref="SecretStoreUnavailableException">Il portachiavi non e' raggiungibile: non e' "manca", e chi
+    /// chiama non deve trattarlo come tale (lo scheduler salta il giro senza spegnere nulla). Un errore DPAPI non
+    /// e' transitorio e non passa da qui.</exception>
     string? ReadKey();
 }

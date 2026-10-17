@@ -21,6 +21,10 @@ public sealed partial class BackupScheduler(
         Message = "Auto-backup switched off: no readable passphrase in the key store")]
     private partial void LogSelfDisabled();
 
+    [LoggerMessage(EventId = 2, Level = LogLevel.Warning,
+        Message = "Auto-backup skipped this time: the system keyring is unavailable")]
+    private partial void LogKeyringUnavailable();
+
     public bool IsEnabled { get; private set; } = true;
     public DateTime? NextRunUtc { get; private set; }
 
@@ -39,9 +43,31 @@ public sealed partial class BackupScheduler(
         IsEnabled = enabled;
         if (!enabled) return;
 
+        var frequencyDays = settings.TryGetValue("backup.auto.frequency_days", out var freqSetting)
+            && int.TryParse(freqSetting.Value, out var d) ? d : 7;
+
+        var lastRunStr = settings.TryGetValue("backup.auto.last_run_utc", out var lastRunSetting)
+            ? lastRunSetting.Value : string.Empty;
+        var lastRun = string.IsNullOrWhiteSpace(lastRunStr) ? DateTime.MinValue
+            : DateTime.Parse(lastRunStr, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+        var nextRun = lastRun.AddDays(frequencyDays);
+        NextRunUtc = nextRun;
+
+        if (clock.UtcNow.UtcDateTime < nextRun) return;
+
         // Senza una passphrase leggibile l'auto-backup non può girare: si spegne, e ora lo scrive nel log. Prima si
         // spegneva in silenzio, e l'utente continuava a credere che i suoi dati fossero salvati (RV-5).
-        var passphrase = keys.ReadKey();
+        // Si chiede solo ora che un backup e' dovuto (R11): un portachiavi bloccato non deve rispondere a ogni giro.
+        string? passphrase;
+        try { passphrase = keys.ReadKey(); }
+        catch (SecretStoreUnavailableException)
+        {
+            // Portachiavi irraggiungibile (non "passphrase mancante"): si salta il giro, si riprova al prossimo.
+            LogKeyringUnavailable();
+            return;
+        }
         if (passphrase is null)
         {
             if (settings.TryGetValue("backup.auto.enabled", out var s))
@@ -62,20 +88,6 @@ public sealed partial class BackupScheduler(
             LogSelfDisabled();
             return;
         }
-
-        var frequencyDays = settings.TryGetValue("backup.auto.frequency_days", out var freqSetting)
-            && int.TryParse(freqSetting.Value, out var d) ? d : 7;
-
-        var lastRunStr = settings.TryGetValue("backup.auto.last_run_utc", out var lastRunSetting)
-            ? lastRunSetting.Value : string.Empty;
-        var lastRun = string.IsNullOrWhiteSpace(lastRunStr) ? DateTime.MinValue
-            : DateTime.Parse(lastRunStr, CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-
-        var nextRun = lastRun.AddDays(frequencyDays);
-        NextRunUtc = nextRun;
-
-        if (clock.UtcNow.UtcDateTime < nextRun) return;
 
         var folder = settings.TryGetValue("backup.auto.path", out var pathSetting)
             && !string.IsNullOrWhiteSpace(pathSetting.Value)

@@ -105,4 +105,55 @@ public class BackupSchedulerTests
         }
         finally { await fixture.DisposeAsync(); }
     }
+
+    private sealed class CountingKeyStore(Func<string?> read) : IAutoBackupKeyStore
+    {
+        public int Reads;
+        public bool HasKey() => true;
+        public void WriteKey(string passphrase) { }
+        public void DeleteKey() { }
+        public string? ReadKey() { Reads++; return read(); }
+    }
+
+    [Fact]
+    public async Task An_unavailable_keyring_skips_the_tick_and_leaves_auto_backup_on()
+    {
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            var log = new ListLogger();
+            var store = new CountingKeyStore(() => throw new SecretStoreUnavailableException("keyring down"));
+            var sched = fixture.NewScheduler(store, log);
+            await sched.RunDueAsync();
+
+            store.Reads.Should().Be(1);
+            await using var db = await fixture.DbFactory.CreateDbContextAsync();
+            (await db.AppSettings.AsNoTracking().FirstAsync(x => x.Key == "backup.auto.enabled")).Value.Should().Be("true");
+            (await db.AppSettings.AsNoTracking().AnyAsync(x => x.Key == BackupScheduler.DisabledReasonKey)).Should().BeFalse();
+            sched.IsEnabled.Should().BeTrue();
+            log.Levels.Should().ContainSingle();
+            Directory.EnumerateFiles(fixture.Options.BackupsDirectory, "auto-*.recbak").Should().BeEmpty();
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task The_passphrase_is_not_read_when_no_backup_is_due()
+    {
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            await using (var db = await fixture.DbFactory.CreateDbContextAsync())
+            {
+                var s = await db.AppSettings.FirstAsync(x => x.Key == "backup.auto.last_run_utc");
+                s.Value = fixture.Clock.UtcNow.ToString("O");
+                await db.SaveChangesAsync();
+            }
+            var store = new CountingKeyStore(() => Pass);
+            await fixture.NewScheduler(store).RunDueAsync();
+
+            store.Reads.Should().Be(0);
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
 }
