@@ -1764,4 +1764,10 @@ Details: {0}</value>
   <data name="Backup.Settings.SelfDisabledWarning" xml:space="preserve">
     <value>Auto-backup was switched off because its passphrase couldn't be read. Set it again to turn auto-backup back on.</value>
   </data>
+  <data name="Backup.Settings.TestOk" xml:space="preserve">
+    <value>Auto-backup check finished.</value>
+  </data>
+  <data name="Backup.Settings.KeyringUnavailable" xml:space="preserve">
+    <value>The system keyring couldn't be reached. Try again, or check that it is unlocked.</value>
+  </data>
 </root>

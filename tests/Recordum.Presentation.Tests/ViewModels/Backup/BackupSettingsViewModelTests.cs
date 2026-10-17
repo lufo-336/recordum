@@ -108,4 +108,78 @@ public class BackupSettingsViewModelTests
 
         store.WriteThread.Should().NotBe(0).And.NotBe(Environment.CurrentManagedThreadId);
     }
+
+    private sealed class ThrowingKeyStore(Exception ex) : Recordum.Core.Abstractions.Security.IAutoBackupKeyStore
+    {
+        public bool HasKey() => throw ex;
+        public void WriteKey(string passphrase) => throw ex;
+        public void DeleteKey() { }
+        public string? ReadKey() => throw ex;
+    }
+
+    private sealed class BlockingRunner : IBackupSchedulerRunner
+    {
+        public readonly ManualResetEventSlim Gate = new(false);
+        public int Thread;
+        public Exception? Throw;
+        public Task RunNowAsync(CancellationToken ct = default)
+        {
+            Thread = Environment.CurrentManagedThreadId;
+            Gate.Wait(TimeSpan.FromSeconds(5));   // come ReadKey() sul portachiavi: sincrono
+            if (Throw is not null) throw Throw;
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task TestAsync_never_runs_the_scheduler_on_the_calling_thread()
+    {
+        var runner = new BlockingRunner();
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), runner);
+        var me = Environment.CurrentManagedThreadId;
+
+        var test = vm.TestCommand.ExecuteAsync(null);   // col codice rotto resta qui 5 s sul thread del chiamante
+
+        Environment.CurrentManagedThreadId.Should().Be(me);
+        test.IsCompleted.Should().BeFalse();
+        runner.Gate.Set();
+        await test;
+        runner.Thread.Should().NotBe(me);
+        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_TestOk);
+    }
+
+    [Fact]
+    public async Task TestAsync_shows_a_localized_message_for_an_unavailable_keyring_never_the_raw_one()
+    {
+        var runner = new BlockingRunner { Throw = new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("GLib: raw english detail") };
+        runner.Gate.Set();
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), runner);
+
+        await vm.TestCommand.ExecuteAsync(null);
+
+        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_KeyringUnavailable);
+    }
+
+    [Fact]
+    public async Task SaveAsync_shows_a_localized_message_when_the_keyring_refuses_the_write()
+    {
+        var store = new ThrowingKeyStore(new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("GLib: raw"));
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner())
+        { NewPassphrase = "passphrase-1234567890", ConfirmPassphrase = "passphrase-1234567890" };
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_KeyringUnavailable);
+    }
+
+    [Fact]
+    public async Task LoadAsync_survives_an_unavailable_keyring()
+    {
+        var store = new ThrowingKeyStore(new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("x"));
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner());
+
+        await vm.LoadAsync();
+
+        vm.HasPassphrase.Should().BeFalse();
+    }
 }

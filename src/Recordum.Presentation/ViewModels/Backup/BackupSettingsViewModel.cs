@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.Backup;
@@ -39,7 +40,9 @@ public sealed partial class BackupSettingsViewModel(
         if (int.TryParse(await settings.GetAsync("backup.auto.retention_count", ct).ConfigureAwait(true), out var r)) RetentionCount = r;
         Folder = await settings.GetAsync("backup.auto.path", ct).ConfigureAwait(true) ?? string.Empty;
         // Il portachiavi di Linux e' una chiamata sincrona che puo' attendere un prompt di sblocco: mai sul thread dell'interfaccia (R6).
-        HasPassphrase = await Task.Run(keyStore.HasKey, ct).ConfigureAwait(true);
+        // Portachiavi irraggiungibile: la pagina si apre lo stesso (la passphrase risulta "non salvata").
+        try { HasPassphrase = await Task.Run(keyStore.HasKey, ct).ConfigureAwait(true); }
+        catch (SecretStoreUnavailableException) { HasPassphrase = false; }
         SelfDisabled = !string.IsNullOrEmpty(await settings.GetAsync(DisabledReasonKey, ct).ConfigureAwait(true));
         OnPropertyChanged(nameof(InertWarning));
     }
@@ -56,10 +59,10 @@ public sealed partial class BackupSettingsViewModel(
             if (NewPassphrase.Length < 12) return;
             var passphrase = NewPassphrase;
             try { await Task.Run(() => keyStore.WriteKey(passphrase)).ConfigureAwait(true); }
-            catch (SecretStoreUnavailableException ex)
+            catch (SecretStoreUnavailableException)
             {
-                // Senza passphrase salvata non si accende nulla: l'utente deve vedere che non e' andata.
-                TestResultMessage = ex.Message;
+                // Senza passphrase salvata non si accende nulla: l'utente deve vedere che non e' andata (la causa resta fuori dall'interfaccia).
+                TestResultMessage = Strings.Backup_Settings_KeyringUnavailable;
                 return;
             }
             HasPassphrase = true;
@@ -81,7 +84,9 @@ public sealed partial class BackupSettingsViewModel(
     private async Task TestAsync()
     {
         TestResultMessage = null;
-        try { await runner.RunNowAsync(); TestResultMessage = "ok"; }
+        // Lo scheduler legge la passphrase dal portachiavi, una chiamata sincrona: fuori dal thread dell'interfaccia.
+        try { await Task.Run(() => runner.RunNowAsync()).ConfigureAwait(true); TestResultMessage = Strings.Backup_Settings_TestOk; }
+        catch (SecretStoreUnavailableException) { TestResultMessage = Strings.Backup_Settings_KeyringUnavailable; }
         catch (Exception ex) { TestResultMessage = ex.Message; }
     }
 }
