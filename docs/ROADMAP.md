@@ -15,6 +15,10 @@
   automatico su Avalonia, finestre Backup e Ripristina, finestra Impostazioni con "Dati e backup", `.recbak` incrociati
   Windows↔Linux, file del database 0600. Attende la review dell'intero branch (controllore) e la CI. Cronaca e conteggi in
   `docs/MILESTONES.md`; finding in `docs/phase-4-issues.md`.
+- **WPF non si usa più** (decisione dell'autore, 2026-10-17): non si avvia per l'uso quotidiano né come riserva; il
+  dogfooding parte e resta su Avalonia. WPF rimane nel repository, congelata, solo come **riferimento di comportamento**
+  per i porting di F3–F7 e perché la CI Windows continui a compilare e testare il codice condiviso; si tocca solo dove un
+  contratto condiviso lo obbliga. Si cancella a F8, con i criteri della spec Avalonia §7.
 - **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); intestazione della Home
   stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i cinque residui di F2c (**F2c-1…5**: "Apri cartella", tick
   del backup durante un restore, modo del file dopo un restore, "ricorda" scaduta, avviso di timeout).
