@@ -63,4 +63,78 @@ public class RestoreServiceRestoreTests
         }
         finally { await fixture.DisposeAsync(); }
     }
+
+    [Fact]
+    public async Task An_open_connection_makes_the_restore_busy_and_leaves_the_data_intact()
+    {
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            var bk = await fixture.CreateBackupAsync(Pass);
+            int remaining;
+            await using (var db = await fixture.DbFactory.CreateDbContextAsync())
+            {
+                await db.HabitNodes.IgnoreQueryFilters().Take(2).ExecuteDeleteAsync();
+                remaining = await db.HabitNodes.IgnoreQueryFilters().CountAsync();
+            }
+
+            await using (var holder = await fixture.DbFactory.CreateDbContextAsync())
+            {
+                await holder.Database.OpenConnectionAsync();
+                var act = () => fixture.NewRestoreService(TimeSpan.FromMilliseconds(300))
+                    .RestoreAsync(bk.Path, Pass, new RestoreOptions(SkipSafetySnapshot: true));
+                (await act.Should().ThrowAsync<RestoreException>()).Which.Code.Should().Be("busy");
+            }
+
+            await using (var db = await fixture.DbFactory.CreateDbContextAsync())
+                (await db.HabitNodes.IgnoreQueryFilters().CountAsync()).Should().Be(remaining, "il database vivo non è stato toccato");
+            Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(fixture.Options.DatabasePath)!, ".restore-new-*")
+                .Should().BeEmpty("la copia preparata si cancella");
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task After_a_successful_restore_no_other_user_writes_into_the_restored_database()
+    {
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            var bk = await fixture.CreateBackupAsync(Pass);
+            await fixture.NewRestoreService(keepGateClosed: true)
+                .RestoreAsync(bk.Path, Pass, new RestoreOptions(SkipSafetySnapshot: true));
+
+            // Come il tick dell'auto-backup che registra il proprio backup_log: resta in attesa fino all'uscita.
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+            var write = async () =>
+            {
+                await using var db = await fixture.DbFactory.CreateDbContextAsync(cts.Token);
+                await db.AppSettings.Where(x => x.Key == "backup.auto.last_run_utc")
+                    .ExecuteUpdateAsync(u => u.SetProperty(x => x.Value, "2099-01-01T00:00:00Z"), cts.Token);
+            };
+            await write.Should().ThrowAsync<OperationCanceledException>();
+
+            fixture.Gate.Reopen();
+            await using (var db = await fixture.DbFactory.CreateDbContextAsync())
+                (await db.AppSettings.Where(x => x.Key == "backup.auto.last_run_utc").Select(x => x.Value).SingleOrDefaultAsync())
+                    .Should().NotBe("2099-01-01T00:00:00Z");
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    [Trait("Category", "UnixOnly")]
+    public async Task The_restored_database_is_private_at_once_not_at_the_next_start()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            var bk = await fixture.CreateBackupAsync(Pass);
+            await fixture.NewRestoreService().RestoreAsync(bk.Path, Pass, new RestoreOptions(SkipSafetySnapshot: true));
+
+            File.GetUnixFileMode(fixture.Options.DatabasePath).Should().Be(UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
 }

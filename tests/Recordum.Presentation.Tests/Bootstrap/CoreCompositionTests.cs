@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
@@ -99,6 +100,27 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         using var provider = services.BuildServiceProvider();
 
         Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<MainWindowViewModel>());
+    }
+
+    [Fact]
+    public async Task The_database_gate_singleton_is_among_the_interceptors_of_the_context_factory()
+    {
+        // F2c-2: se la factory avesse un'altra istanza (o nessuna), il restore chiuderebbe un cancello che nessuna
+        // connessione attraversa, e lo scambio dei file correrebbe con il database aperto.
+        var options = Options();
+        var key = new byte[KeyMaterial.LengthBytes];
+        for (var i = 0; i < key.Length; i++) key[i] = (byte)(i + 1);
+        var services = new ServiceCollection();
+        services.AddRecordumCore(options);
+        services.AddShellDoubles(new FixedKeyProvider(key));
+        await using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<CoreInitializer>().InitializeAsync();
+
+        var gate = provider.GetRequiredService<Recordum.Data.Interceptors.DatabaseGate>();
+        await using var db = await provider.GetRequiredService<IDbContextFactory<Recordum.Data.RecordumDbContext>>().CreateDbContextAsync();
+        await db.Database.OpenConnectionAsync();
+
+        await Assert.ThrowsAsync<TimeoutException>(() => gate.QuiesceAsync(TimeSpan.FromMilliseconds(200)));
     }
 
     [Fact]

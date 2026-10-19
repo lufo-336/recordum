@@ -74,16 +74,18 @@ public static class ServiceRegistrar
         services.AddSingleton<HabitConfigHistoryInterceptor>();
         services.AddSingleton<TimestampInterceptor>();
         services.AddSingleton<SqlCipherKeyConnectionInterceptor>();
+        services.AddSingleton<DatabaseGate>();   // F2c-2: il restore lo chiude per lo scambio dei file
 
         services.AddDbContextFactory<RecordumDbContext>((sp, builder) =>
         {
             var history = sp.GetRequiredService<HabitConfigHistoryInterceptor>();
             var timestamp = sp.GetRequiredService<TimestampInterceptor>();
             var cipher = sp.GetRequiredService<SqlCipherKeyConnectionInterceptor>();
+            var gate = sp.GetRequiredService<DatabaseGate>();
             builder
                 .UseSqlite(options.ConnectionString)
                 .UseSnakeCaseNamingConvention()
-                .AddInterceptors(history, timestamp, cipher);
+                .AddInterceptors(history, timestamp, gate, cipher);
         });
 
         // 14 aggregate/query services + 1 key transition (Task 32). Scoped — per-operation IPluginContext capture.
@@ -216,7 +218,8 @@ public static class ServiceRegistrar
             sp.GetRequiredService<BackupArchiveReader>(),
             sp.GetRequiredService<IBackupService>(),
             sp.GetRequiredService<IPluginManager>(),
-            sp.GetRequiredService<IClock>()));
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<DatabaseGate>()));
         services.AddScoped<IBackupScheduler>(sp => new BackupScheduler(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IBackupService>(),

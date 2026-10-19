@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Backup;
 using Recordum.Data;
+using Recordum.Data.Interceptors;
 using Recordum.Presentation.Bootstrap;
 using Xunit;
 
@@ -74,6 +75,8 @@ public class BackupRoundTripE2ETests
                 var result = await restore.RestoreAsync(dest, "passphrase-1234567890", new RestoreOptions(SkipSafetySnapshot: false));
                 result.UnavailablePlugins.Should().BeEmpty();
             }
+            // Il restore riuscito lascia il database chiuso fino all'uscita (F2c-2): qui lo si rilegge nello stesso processo.
+            services.GetRequiredService<DatabaseGate>().Reopen();
 
             // Verify counts restored
             using (var scope5 = services.CreateScope())

@@ -444,6 +444,8 @@ public static class Strings
     public static string Restore_Errors_InvalidPassphrase => Get("Restore.Errors.InvalidPassphrase");
     public static string Restore_Errors_IncompatibleSchema => Get("Restore.Errors.IncompatibleSchema");
     public static string Restore_Errors_SafetySnapshotFailed => Get("Restore.Errors.SafetySnapshotFailed");
+    public static string Restore_Errors_Busy => Get("Restore.Errors.Busy");
+    public static string Restore_Errors_SwapFailed => Get("Restore.Errors.SwapFailed");
     public static string Backup_History_Title => Get("Backup.History.Title");
     public static string Backup_History_Empty => Get("Backup.History.Empty");
     public static string Backup_History_Restore => Get("Backup.History.Restore");

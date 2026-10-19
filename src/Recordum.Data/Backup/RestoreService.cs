@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Backup;
+using Recordum.Data.Interceptors;
+using Recordum.Data.Security;
 using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Backup;
@@ -15,8 +17,13 @@ public sealed class RestoreService(
     BackupArchiveReader reader,
     IBackupService backupService,
     IPluginManager plugins,
-    IClock clock) : IRestoreService
+    IClock clock,
+    DatabaseGate gate,
+    TimeSpan? quiesceTimeout = null) : IRestoreService
 {
+    /// <summary>Quanto il restore aspetta che gli altri utenti del database chiudano le connessioni (F2c-2).</summary>
+    public static readonly TimeSpan DefaultQuiesceTimeout = TimeSpan.FromSeconds(10);
+
     // CR2: fallback only if the live DB somehow has no schema_version row; the real current
     // version is read from the DB at runtime (see GetCurrentSchemaVersionAsync). Keep aligned
     // with AppSettingSeed's schema_version so it never drifts stale (same class of issue as CR8).
@@ -78,11 +85,9 @@ public sealed class RestoreService(
             }
         }
 
-        // 2. Drain connection pool so we can replace the DB file
-        SqliteConnection.ClearAllPools();
-
-        // 3. Decrypt + extract into a STAGING area, re-encrypt there, then swap atomically (CR1).
-        //    The live DB and attachments are not touched until both new copies are fully built.
+        // 2. Decrypt + extract into a STAGING area, re-encrypt there, then swap atomically (CR1).
+        //    The live DB and attachments are not touched until both new copies are fully built, so staging runs with
+        //    the gate open: the gate is closed only for the swap (F2c-2).
         Directory.CreateDirectory(paths.TempDirectory);
         var tempZip = Path.Combine(paths.TempDirectory, $"recordum-rs-{Guid.NewGuid():N}.zip");
         var tempPlainDb = Path.Combine(paths.TempDirectory, $"recordum-rs-{Guid.NewGuid():N}.db");
@@ -106,8 +111,26 @@ public sealed class RestoreService(
             using (var key = await keyProvider.GetKeyAsync(ct).ConfigureAwait(false))
                 await ReEncryptDbAsync(tempPlainDb, stagedDb, key.RawKey).ConfigureAwait(false);
 
-            // 4. Commit: swap staged → live, keeping the old copies aside for rollback (CR1).
-            CommitSwap(dbPath, stagedDb, attachDir, stagedAttach);
+            // 3. Close the gate: no other user of the DB (auto-backup tick, UI queries) holds the file or writes into
+            //    the wrong copy. Then drain the pool, whose idle connections still hold the file open.
+            DatabaseGate.Quiescence quiet;
+            try { quiet = await gate.QuiesceAsync(quiesceTimeout ?? DefaultQuiesceTimeout, ct).ConfigureAwait(false); }
+            catch (TimeoutException) { throw new RestoreException("busy", "Another part of Recordum kept the database open."); }
+            using (quiet)
+            {
+                SqliteConnection.ClearAllPools();
+
+                // 4. Commit: swap staged → live, keeping the old copies aside for rollback (CR1).
+                try { CommitSwap(dbPath, stagedDb, attachDir, stagedAttach); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    throw new RestoreException("swap_failed", ex.Message);
+                }
+                // F2c-3: the restored file keeps the source's mode; bring it back to 0600 now, not at the next start.
+                DatabaseFilePermissions.Realign(dbPath);
+                // Success: the DB was replaced and the app exits; until then nobody opens it.
+                quiet.KeepClosed();
+            }
         }
         catch
         {

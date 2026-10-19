@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.Core.Backup;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.Backup;
 using Xunit;
@@ -49,5 +50,22 @@ public class RestoreDialogViewModelTests
 
         vm.UnavailablePlugins.Should().ContainSingle().Which.Should().Be("io.example.missing");
         vm.IsCompleted.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("busy")]
+    [InlineData("swap_failed")]
+    public async Task RunCommand_turns_a_busy_or_failed_swap_into_a_readable_message(string code)
+    {
+        var restore = new FakeRestoreService { RestoreThrows = new RestoreException(code, "raw detail") };
+        var vm = new RestoreDialogViewModel(restore, new FakeOpenFileDialog { Result = "x.recbak" });
+        vm.BrowseCommand.Execute(null);
+        vm.Passphrase = "a-passphrase-long";
+        await vm.PreviewCommand.ExecuteAsync(null);
+
+        await vm.RunCommand.ExecuteAsync(null);
+
+        vm.ErrorMessage.Should().Be(code == "busy" ? Strings.Restore_Errors_Busy : Strings.Restore_Errors_SwapFailed);
+        vm.IsCompleted.Should().BeFalse();
     }
 }

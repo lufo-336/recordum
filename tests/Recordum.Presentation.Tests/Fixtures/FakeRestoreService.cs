@@ -5,6 +5,7 @@ namespace Recordum.Presentation.Tests.Fixtures;
 public sealed class FakeRestoreService : IRestoreService
 {
     public IReadOnlyList<string> Unavailable { get; set; } = [];
+    public Exception? RestoreThrows { get; set; }
 
     public Task<RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default)
         => Task.FromResult(new RestorePreview(
@@ -15,5 +16,5 @@ public sealed class FakeRestoreService : IRestoreService
             Array.Empty<string>()));
 
     public Task<RestoreResult> RestoreAsync(string sourcePath, string passphrase, RestoreOptions options, CancellationToken ct = default)
-        => Task.FromResult(new RestoreResult(Unavailable));
+        => RestoreThrows is { } ex ? Task.FromException<RestoreResult>(ex) : Task.FromResult(new RestoreResult(Unavailable));
 }

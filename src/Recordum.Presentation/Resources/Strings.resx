@@ -1292,6 +1292,12 @@ Details: {0}</value>
   <data name="Restore.Errors.SafetySnapshotFailed" xml:space="preserve">
     <value>Could not create the pre-restore safety snapshot — restore aborted.</value>
   </data>
+  <data name="Restore.Errors.Busy" xml:space="preserve">
+    <value>The database is busy and couldn't be replaced. Your data is unchanged — try again in a moment.</value>
+  </data>
+  <data name="Restore.Errors.SwapFailed" xml:space="preserve">
+    <value>The restored files couldn't be put in place. Your data is unchanged; the pre-restore snapshot is in the backup folder.</value>
+  </data>
   <data name="Backup.History.Title" xml:space="preserve">
     <value>Backup history</value>
   </data>

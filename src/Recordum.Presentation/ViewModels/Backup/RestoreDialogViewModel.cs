@@ -80,6 +80,8 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
         "invalid_passphrase" => Strings.Restore_Errors_InvalidPassphrase,
         "incompatible_schema" => Strings.Restore_Errors_IncompatibleSchema,
         "safety_snapshot_failed" => Strings.Restore_Errors_SafetySnapshotFailed,
+        "busy" => Strings.Restore_Errors_Busy,
+        "swap_failed" => Strings.Restore_Errors_SwapFailed,
         _ => code,
     };
 

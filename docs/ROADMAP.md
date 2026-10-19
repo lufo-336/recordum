@@ -17,16 +17,17 @@
   momentaneamente irraggiungibile non spegne più l'auto-backup). Dopo la review: "Sfoglia…" per scegliere la cartella
   dei backup automatici (`IFolderPicker`, la cartella di default come suggerimento) e "Salva" che dice l'esito
   (chiude F2c-7); "Apri cartella" nello storico (chiude F2c-1, e rende funzionante "Elimina", che su Avalonia non
-  faceva niente). Cronaca e conteggi in
+  faceva niente); il restore ferma ogni utente del database durante lo scambio dei file e lascia il DB a 0600 (chiude
+  F2c-2 e F2c-3). Cronaca e conteggi in
   `docs/MILESTONES.md`; finding in `docs/phase-4-issues.md`.
 - **WPF non si usa più** (decisione dell'autore, 2026-10-17): non si avvia per l'uso quotidiano né come riserva; il
   dogfooding parte e resta su Avalonia. WPF rimane nel repository, congelata, solo come **riferimento di comportamento**
   per i porting di F3–F7 e perché la CI Windows continui a compilare e testare il codice condiviso; si tocca solo dove un
   contratto condiviso lo obbliga. Si cancella a F8, con i criteri della spec Avalonia §7.
 - **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); intestazione della Home
-  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i residui di F2c (**F2c-2…6, 8**: quiesce
-  del DB durante un restore, modo del file dopo un restore, "ricorda" scaduta, avviso di timeout, stringhe inglesi,
-  stato della pagina col portachiavi irraggiungibile).
+  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i residui di F2c (**F2c-4…6, 8, 9**: "ricorda"
+  scaduta, avviso di timeout, stringhe inglesi, stato della pagina col portachiavi irraggiungibile, rekey e sblocco
+  senza cancello).
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
 - **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario** (nota veloce con foto D10, editor

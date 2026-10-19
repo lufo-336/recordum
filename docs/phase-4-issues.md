@@ -33,10 +33,10 @@
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
 
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
-di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** quiesce di tutti gli utenti del DB durante un
-restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
+di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** (`fixed`) quiesce di tutti gli utenti del DB durante un
+restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
 **F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
-**F2c-8** stato della pagina col portachiavi irraggiungibile.
+**F2c-8** stato della pagina col portachiavi irraggiungibile · **F2c-9** rekey e sblocco senza cancello.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2058,11 +2058,16 @@ Nuovi, rimandati dalle review dell'onda:
   lanciatore per piattaforma (`xdg-open` su Linux). Ora `IFolderOpener` (WPF `explorer.exe`, Avalonia
   `Launcher.LaunchDirectoryInfoAsync`). Trovato strada facendo: su Avalonia anche "Elimina" nello storico aveva un comando
   null (il binding cercava `BackupHistoryViewModel` nel DataContext dell'`ItemsControl`, che è la pagina); corretto e provato.
-- **F2c-2 — quiesce di tutti gli utenti del DB durante un restore** · `reported` · Fra `RestoreService` e gli altri
+- **F2c-2 — quiesce di tutti gli utenti del DB durante un restore** · `fixed` · `DatabaseGate`, interceptor EF in
+  entrambe le composizioni: il restore prepara la copia a cancello aperto, poi lo chiude (le aperture async aspettano,
+  le sync lanciano), aspetta zero connessioni (10 s, poi "busy" con dati intatti), scambia e lo tiene chiuso fino
+  all'uscita. Un errore di file system nello scambio diventa `swap_failed`, non più un crash. Piano
+  `docs/superpowers/plans/2026-10-19-f2c-2-restore-quiesce.md`. Era: Fra `RestoreService` e gli altri
   utenti del DB non c'è nessun cancello: il tick di `BackupSchedulerHost` è uno di essi, come ogni query della UI (CR1,
   preesistente). Su Windows un tick dovuto dentro il restore può far fallire lo scambio dei file (rollback, dati
   intatti); su Linux lascia una riga `backup_log` nel DB ripristinato. Su Windows un'`IOException` non catturata in `RunAsync` può anche chiudere l'app.
-- **F2c-3 — un database ripristinato tiene il modo del file sorgente fino al riavvio successivo** · `reported` · Il
+- **F2c-3 — un database ripristinato tiene il modo del file sorgente fino al riavvio successivo** · `fixed` · Il
+  restore riallinea a 0600 subito dopo lo scambio. Era: Il
   riallineamento a 0600 avviene all'avvio; dopo un restore l'app si chiude e la cartella dati è 0700, quindi l'esposizione è minima.
 - **F2c-4 — una scrittura "ricorda" scaduta allo sblocco può completarsi dopo** · `reported` · Se l'utente risponde in
   ritardo al prompt del portachiavi, la `Write` annulla un "Dimentica" fatto nel frattempo.
@@ -2078,4 +2083,7 @@ Nuovi, rimandati dalle review dell'onda:
   caricamento mostra "nessuna passphrase" invece del motivo vero; "Prova" risponde "controllo finito" anche se non ha
   letto niente (lo scheduler inghiotte l'eccezione, R11); un prompt di sblocco annullato conta come passphrase mancante e
   spegne l'auto-backup. Nessun dato perso: va mostrato lo stato vero.
+- **F2c-9 — rekey e sblocco svuotano il pool senza il cancello del database** · `reported` · `KeyTransitionService` e
+  `DbUnlockService` usano `ClearAllPools()` come faceva il restore prima di F2c-2: un'altra connessione aperta durante
+  un rekey non è fermata. Da valutare se passarli da `DatabaseGate.QuiesceAsync`.
 

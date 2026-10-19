@@ -1266,6 +1266,12 @@
   <data name="Restore.Errors.SafetySnapshotFailed" xml:space="preserve">
     <value>Impossibile creare la copia di sicurezza pre-ripristino — operazione annullata.</value>
   </data>
+  <data name="Restore.Errors.Busy" xml:space="preserve">
+    <value>Il database è occupato e non è stato possibile sostituirlo. I dati sono invariati: riprova fra un momento.</value>
+  </data>
+  <data name="Restore.Errors.SwapFailed" xml:space="preserve">
+    <value>Non è stato possibile mettere al loro posto i file ripristinati. I dati sono invariati; la copia di sicurezza pre-ripristino è nella cartella dei backup.</value>
+  </data>
   <data name="Backup.History.Title" xml:space="preserve">
     <value>Cronologia backup</value>
   </data>

@@ -27,6 +27,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
     public string RootDir { get; }
     public TestBackupPaths Options { get; }
     public IDbContextFactory<RecordumDbContext> DbFactory { get; }
+    /// <summary>Lo stesso cancello che la factory ha fra gli interceptor e che il restore chiude (F2c-2).</summary>
+    public DatabaseGate Gate { get; private init; } = null!;
     public IDbKeyProvider KeyProvider { get; }
     public IBackupLogService LogService { get; }
     public FakeClock Clock { get; }
@@ -84,14 +86,15 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         }
         SqliteConnection.ClearAllPools();
 
+        var gate = new DatabaseGate();
         var dbFactory = new EncryptedDbContextFactory(dbPath, keyProvider,
             new TimestampInterceptor(clock, new FakePluginContext()),
-            new HabitConfigHistoryInterceptor(clock, NullLogger<HabitConfigHistoryInterceptor>.Instance));
+            new HabitConfigHistoryInterceptor(clock, NullLogger<HabitConfigHistoryInterceptor>.Instance), gate);
 
         var logService = new EncryptedBackupLogService(dbFactory);
         var pluginManager = new StubPluginManager();
 
-        return new EncryptedDbFixture(rootDir, options, dbFactory, keyProvider, logService, clock, pluginManager);
+        return new EncryptedDbFixture(rootDir, options, dbFactory, keyProvider, logService, clock, pluginManager) { Gate = gate };
     }
 
     // ── Backup/Restore helpers ──────────────────────────────────────────────
@@ -139,10 +142,29 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         new AesGcmBackupCipher(), new BackupArchiveWriter(),
         LogService, PluginManager, Clock, appVersion: "3.10.0");
 
-    public RestoreService NewRestoreService() => new(
-        DbFactory, KeyProvider, Options,
-        new AesGcmBackupCipher(), new BackupArchiveReader(),
-        NewBackupService(), PluginManager, Clock);
+    /// <summary>Il restore riuscito lascia il cancello chiuso fino all'uscita (F2c-2); i test che poi leggono il database
+    /// lo riaprono qui. <paramref name="keepGateClosed"/> per chi deve vedere il cancello chiuso.</summary>
+    public IRestoreService NewRestoreService(TimeSpan? quiesceTimeout = null, bool keepGateClosed = false)
+    {
+        var inner = new RestoreService(
+            DbFactory, KeyProvider, Options,
+            new AesGcmBackupCipher(), new BackupArchiveReader(),
+            NewBackupService(), PluginManager, Clock, Gate, quiesceTimeout);
+        return keepGateClosed ? inner : new ReopeningRestoreService(inner, Gate);
+    }
+
+    private sealed class ReopeningRestoreService(IRestoreService inner, DatabaseGate gate) : IRestoreService
+    {
+        public Task<RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default) =>
+            inner.PreviewAsync(sourcePath, passphrase, ct);
+
+        public async Task<RestoreResult> RestoreAsync(string sourcePath, string passphrase, RestoreOptions options, CancellationToken ct = default)
+        {
+            var result = await inner.RestoreAsync(sourcePath, passphrase, options, ct);
+            gate.Reopen();
+            return result;
+        }
+    }
 
     public BackupScheduler NewScheduler(IAutoBackupKeyStore keys, ILogger<BackupScheduler>? logger = null) =>
         new(DbFactory, NewBackupService(), Options, keys, logger ?? NullLogger<BackupScheduler>.Instance, Clock);
@@ -207,7 +229,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         string dbPath,
         IDbKeyProvider keyProvider,
         TimestampInterceptor timestamp,
-        HabitConfigHistoryInterceptor history) : IDbContextFactory<RecordumDbContext>
+        HabitConfigHistoryInterceptor history,
+        DatabaseGate gate) : IDbContextFactory<RecordumDbContext>
     {
         // Use connection-string based access so EF Core owns the connection pool.
         // The key is applied via SqlCipherKeyConnectionInterceptor whenever the connection opens.
@@ -216,7 +239,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
             var opts = new DbContextOptionsBuilder<RecordumDbContext>()
                 .UseSqlite($"Data Source={dbPath}")
                 .UseSnakeCaseNamingConvention()
-                .AddInterceptors(history, timestamp, new SqlCipherKeyConnectionInterceptor(keyProvider))
+                .AddInterceptors(history, timestamp, gate, new SqlCipherKeyConnectionInterceptor(keyProvider))
                 .Options;
             return new RecordumDbContext(opts);
         }
