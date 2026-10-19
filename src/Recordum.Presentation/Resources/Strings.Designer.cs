@@ -446,6 +446,13 @@ public static class Strings
     public static string Restore_Errors_SafetySnapshotFailed => Get("Restore.Errors.SafetySnapshotFailed");
     public static string Restore_Errors_Busy => Get("Restore.Errors.Busy");
     public static string Restore_Errors_SwapFailed => Get("Restore.Errors.SwapFailed");
+    public static string Restore_PluginInactive => Get("Restore.PluginInactive");
+    public static string Restore_Errors_Failed => Get("Restore.Errors.Failed");
+    public static string Backup_Errors_Failed => Get("Backup.Errors.Failed");
+    public static string Backup_FileFilter => Get("Backup.FileFilter");
+    public static string Backup_Kind_Manual => Get("Backup.Kind.Manual");
+    public static string Backup_Kind_Auto => Get("Backup.Kind.Auto");
+    public static string Backup_Kind_PreRestore => Get("Backup.Kind.PreRestore");
     public static string Backup_History_Title => Get("Backup.History.Title");
     public static string Backup_History_Empty => Get("Backup.History.Empty");
     public static string Backup_History_Restore => Get("Backup.History.Restore");

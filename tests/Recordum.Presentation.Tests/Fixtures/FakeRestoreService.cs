@@ -6,6 +6,7 @@ public sealed class FakeRestoreService : IRestoreService
 {
     public IReadOnlyList<string> Unavailable { get; set; } = [];
     public Exception? RestoreThrows { get; set; }
+    public IReadOnlyList<string> InactivePlugins { get; set; } = [];
 
     public Task<RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default)
         => Task.FromResult(new RestorePreview(
@@ -13,7 +14,7 @@ public sealed class FakeRestoreService : IRestoreService
                 new BackupCounts(1, 2, 0, 0),
                 Array.Empty<PluginManifestSnapshot>(),
                 new PermissionState(new Dictionary<string, IReadOnlyList<string>>())),
-            Array.Empty<string>()));
+            InactivePlugins));
 
     public Task<RestoreResult> RestoreAsync(string sourcePath, string passphrase, RestoreOptions options, CancellationToken ct = default)
         => RestoreThrows is { } ex ? Task.FromException<RestoreResult>(ex) : Task.FromResult(new RestoreResult(Unavailable));

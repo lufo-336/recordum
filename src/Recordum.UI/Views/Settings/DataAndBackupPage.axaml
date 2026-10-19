@@ -72,7 +72,7 @@
             <Grid ColumnDefinitions="*,Auto" Margin="0,4">
               <StackPanel Grid.Column="0">
                 <TextBlock TextWrapping="Wrap">
-                  <Run Text="{CompiledBinding CreatedAtDisplay}"/><Run Text="  ·  "/><Run Text="{CompiledBinding Kind}"/><Run Text="  ·  "/><Run Text="{CompiledBinding SizeDisplay}"/>
+                  <Run Text="{CompiledBinding CreatedAtDisplay}"/><Run Text="  ·  "/><Run Text="{CompiledBinding KindDisplay}"/><Run Text="  ·  "/><Run Text="{CompiledBinding SizeDisplay}"/>
                 </TextBlock>
                 <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"
                            Text="{CompiledBinding Path}"/>

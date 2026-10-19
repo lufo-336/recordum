@@ -1298,6 +1298,27 @@ Details: {0}</value>
   <data name="Restore.Errors.SwapFailed" xml:space="preserve">
     <value>The restored files couldn't be put in place. Your data is unchanged; the pre-restore snapshot is in the backup folder.</value>
   </data>
+  <data name="Restore.PluginInactive" xml:space="preserve">
+    <value>The backup uses the plugin “{0}”, which isn't active here.</value>
+  </data>
+  <data name="Restore.Errors.Failed" xml:space="preserve">
+    <value>The restore didn't complete. Details: {0}</value>
+  </data>
+  <data name="Backup.Errors.Failed" xml:space="preserve">
+    <value>The backup couldn't be created. Details: {0}</value>
+  </data>
+  <data name="Backup.FileFilter" xml:space="preserve">
+    <value>Recordum backup (*.recbak)|*.recbak</value>
+  </data>
+  <data name="Backup.Kind.Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="Backup.Kind.Auto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="Backup.Kind.PreRestore" xml:space="preserve">
+    <value>Before restore</value>
+  </data>
   <data name="Backup.History.Title" xml:space="preserve">
     <value>Backup history</value>
   </data>

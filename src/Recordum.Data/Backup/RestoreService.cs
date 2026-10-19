@@ -52,12 +52,12 @@ public sealed class RestoreService(
                     $"Backup was created by Recordum {manifest.AppVersion} (schema {manifest.SchemaVersion}). Update Recordum to restore it.");
 
             var activated = plugins.ListActivatedManifests().Select(m => m.Id).ToHashSet(StringComparer.Ordinal);
-            var warnings = manifest.Plugins
+            var inactive = manifest.Plugins
                 .Where(p => !activated.Contains(p.PluginId))
-                .Select(p => $"Plugin '{p.PluginId}' not currently activated.")
+                .Select(p => p.PluginId)
                 .ToArray();
 
-            return new RestorePreview(manifest, warnings);
+            return new RestorePreview(manifest, inactive);
         }
         finally
         {

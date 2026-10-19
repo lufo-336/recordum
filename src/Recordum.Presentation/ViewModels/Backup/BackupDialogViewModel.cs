@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
@@ -41,7 +42,7 @@ public sealed partial class BackupDialogViewModel(IBackupService backup, IBackup
     [RelayCommand]
     private async Task BrowseAsync()
     {
-        var path = await saveDialog.PromptAsync($"recordum-{clock.UtcNow.UtcDateTime:yyyyMMdd-HHmm}.recbak", "Recordum backup (*.recbak)|*.recbak");
+        var path = await saveDialog.PromptAsync($"recordum-{clock.UtcNow.UtcDateTime:yyyyMMdd-HHmm}.recbak", Strings.Backup_FileFilter);
         if (!string.IsNullOrWhiteSpace(path)) Destination = path;
     }
 
@@ -57,8 +58,14 @@ public sealed partial class BackupDialogViewModel(IBackupService backup, IBackup
             var result = await backup.CreateAsync(Destination, Passphrase, new BackupOptions(BackupKind.Manual));
             SuccessPath = result.Path;
         }
-        catch (BackupException ex) { ErrorMessage = ex.Code == "db_busy_retry_later" ? Strings.Backup_Errors_DbBusy : ex.Code; }
-        catch (Exception ex) { ErrorMessage = ex.Message; }
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-dialog UI string
+        catch (BackupException ex)
+        {
+            ErrorMessage = ex.Code == "db_busy_retry_later" ? Strings.Backup_Errors_DbBusy
+                : string.Format(CultureInfo.CurrentCulture, Strings.Backup_Errors_Failed, ex.Code);
+        }
+        catch (Exception ex) { ErrorMessage = string.Format(CultureInfo.CurrentCulture, Strings.Backup_Errors_Failed, ex.Message); }
+#pragma warning restore CA1863
         finally { IsRunning = false; RunCommand.NotifyCanExecuteChanged(); }
     }
 

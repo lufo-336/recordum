@@ -35,7 +35,7 @@
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** (`fixed`) quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" (`fixed`) ·
-**F2c-5** avviso di timeout impreciso (`fixed`) · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
+**F2c-5** avviso di timeout impreciso (`fixed`) · **F2c-6** stringhe inglesi preesistenti (`fixed`) · **F2c-7** "Salva" silenzioso (`fixed`) ·
 **F2c-8** stato della pagina col portachiavi irraggiungibile · **F2c-9** rekey e sblocco senza cancello.
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2078,7 +2078,10 @@ Nuovi, rimandati dalle review dell'onda:
   per questo avvio), sistema senza portachiavi usato da Recordum (Windows a passphrase); la finestra mostra il testo
   giusto. Era: Dice che il portachiavi "non è
   disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.
-- **F2c-6 — stringhe inglesi preesistenti ora visibili su Avalonia** · `reported` · Avvisi dei plugin del restore,
+- **F2c-6 — stringhe inglesi preesistenti ora visibili su Avalonia** · `fixed` · Tutto in `.resx` (en + it):
+  `RestorePreview` porta gli id dei plugin inattivi (`InactivePlugins`) e la frase la compone il ViewModel; un codice
+  o un'eccezione inattesi diventano "non riuscito. Dettagli: …"; il filtro dei dialog è localizzato; lo storico mostra
+  `KindDisplay` (Manuale / Automatico / Prima del ripristino). WPF resta sul `Kind` grezzo (congelata). Era: Avvisi dei plugin del restore,
   il fallback grezzo di `Readable(code)`, `ex.Code`/`ex.Message` in `BackupDialogViewModel`, l'etichetta del filtro
   "Recordum backup (*.recbak)" e il `Kind` grezzo nelle righe dello storico.
 - **F2c-7 — "Salva" in Dati e backup torna in silenzio con passphrase diverse o corta (< 12)** · `fixed` (`3f5948e`) ·

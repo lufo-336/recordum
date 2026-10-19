@@ -1272,6 +1272,27 @@
   <data name="Restore.Errors.SwapFailed" xml:space="preserve">
     <value>Non è stato possibile mettere al loro posto i file ripristinati. I dati sono invariati; la copia di sicurezza pre-ripristino è nella cartella dei backup.</value>
   </data>
+  <data name="Restore.PluginInactive" xml:space="preserve">
+    <value>Il backup usa il plugin «{0}», che qui non è attivo.</value>
+  </data>
+  <data name="Restore.Errors.Failed" xml:space="preserve">
+    <value>Il ripristino non è andato a buon fine. Dettagli: {0}</value>
+  </data>
+  <data name="Backup.Errors.Failed" xml:space="preserve">
+    <value>Non è stato possibile creare il backup. Dettagli: {0}</value>
+  </data>
+  <data name="Backup.FileFilter" xml:space="preserve">
+    <value>Backup di Recordum (*.recbak)|*.recbak</value>
+  </data>
+  <data name="Backup.Kind.Manual" xml:space="preserve">
+    <value>Manuale</value>
+  </data>
+  <data name="Backup.Kind.Auto" xml:space="preserve">
+    <value>Automatico</value>
+  </data>
+  <data name="Backup.Kind.PreRestore" xml:space="preserve">
+    <value>Prima del ripristino</value>
+  </data>
   <data name="Backup.History.Title" xml:space="preserve">
     <value>Cronologia backup</value>
   </data>

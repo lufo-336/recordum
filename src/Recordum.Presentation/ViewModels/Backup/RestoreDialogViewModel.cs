@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -36,7 +37,7 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
     [RelayCommand]
     private async Task BrowseAsync()
     {
-        var p = await openDialog.PromptAsync("Recordum backup (*.recbak)|*.recbak");
+        var p = await openDialog.PromptAsync(Strings.Backup_FileFilter);
         if (!string.IsNullOrWhiteSpace(p)) SourcePath = p;
     }
 
@@ -49,7 +50,10 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
             var p = await restore.PreviewAsync(SourcePath, Passphrase);
             Manifest = p.Manifest;
             Warnings.Clear();
-            foreach (var w in p.Warnings) Warnings.Add(w);
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-dialog UI string
+            foreach (var id in p.InactivePlugins)
+                Warnings.Add(string.Format(CultureInfo.CurrentCulture, Strings.Restore_PluginInactive, id));
+#pragma warning restore CA1863
             IsPreviewLoaded = true;
             RunCommand.NotifyCanExecuteChanged();
         }
@@ -82,7 +86,9 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
         "safety_snapshot_failed" => Strings.Restore_Errors_SafetySnapshotFailed,
         "busy" => Strings.Restore_Errors_Busy,
         "swap_failed" => Strings.Restore_Errors_SwapFailed,
-        _ => code,
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-dialog UI string
+        _ => string.Format(CultureInfo.CurrentCulture, Strings.Restore_Errors_Failed, code),
+#pragma warning restore CA1863
     };
 
     private bool CanPreview() =>

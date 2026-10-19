@@ -5,7 +5,8 @@ namespace Recordum.Presentation.Tests.Fixtures;
 public sealed class FakeOpenFileDialog : IOpenFileDialog
 {
     public string? Result { get; set; }
-    public Task<string?> PromptAsync(string filter) => Task.FromResult(Result);
+    public string? LastFilter { get; private set; }
+    public Task<string?> PromptAsync(string filter) { LastFilter = filter; return Task.FromResult(Result); }
 
     public string[] MultipleResult { get; set; } = [];
     public Task<string[]> PromptMultipleAsync(string filter) => Task.FromResult(MultipleResult);
