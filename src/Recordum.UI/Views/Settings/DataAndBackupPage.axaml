@@ -20,8 +20,14 @@
       <TextBox Name="RetentionBox" Text="{CompiledBinding Settings.RetentionCount, Mode=TwoWay}"
                AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Retention}"/>
       <TextBlock Text="{x:Static res:Strings.Backup_Settings_Folder}"/>
-      <TextBox Name="FolderBox" Text="{CompiledBinding Settings.Folder, Mode=TwoWay}"
-               AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Folder}"/>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Name="FolderBox" Text="{CompiledBinding Settings.Folder, Mode=TwoWay}"
+                 PlaceholderText="{CompiledBinding Settings.DefaultFolder}"
+                 AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Folder}"/>
+        <Button Name="BrowseFolderButton" Grid.Column="1" Content="{x:Static res:Strings.Backup_Settings_Browse}"
+                AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Browse}"
+                Command="{CompiledBinding Settings.BrowseFolderCommand}"/>
+      </Grid>
       <TextBlock Text="{x:Static res:Strings.Backup_Create_Passphrase}"/>
       <TextBox Name="PassphraseBox" PasswordChar="●" Text="{CompiledBinding Settings.NewPassphrase, Mode=TwoWay}"
                AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Passphrase}"/>

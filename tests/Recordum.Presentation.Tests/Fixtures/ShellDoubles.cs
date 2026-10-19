@@ -31,6 +31,7 @@ public static class ShellDoubles
         services.AddSingleton<ISaveFileDialog, FakeSaveFileDialog>();
         services.AddSingleton<IBackupSaveFileDialog, FakeBackupSaveFileDialog>();
         services.AddSingleton<IOpenFileDialog, FakeOpenFileDialog>();
+        services.AddSingleton<IFolderPicker, FakeFolderPicker>();
         services.AddSingleton<IClipboard, StubClipboard>();
         services.AddSingleton<IScreenColorPicker, FakeScreenColorPicker>();
         services.AddSingleton<IAutoBackupKeyStore, FakeAutoBackupKeyStore>();

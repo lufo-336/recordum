@@ -1744,4 +1744,16 @@
   <data name="Backup.Settings.KeyringUnavailable" xml:space="preserve">
     <value>Il portachiavi di sistema non è raggiungibile. Riprova, oppure controlla che sia sbloccato.</value>
   </data>
+  <data name="Backup.Settings.PassphraseTooShort" xml:space="preserve">
+    <value>La passphrase deve avere almeno 12 caratteri.</value>
+  </data>
+  <data name="Backup.Settings.PassphraseMismatch" xml:space="preserve">
+    <value>Le due passphrase non coincidono.</value>
+  </data>
+  <data name="Backup.Settings.Saved" xml:space="preserve">
+    <value>Salvato.</value>
+  </data>
+  <data name="Backup.Settings.Browse" xml:space="preserve">
+    <value>Sfoglia…</value>
+  </data>
 </root>

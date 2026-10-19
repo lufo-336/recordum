@@ -34,6 +34,11 @@ public class DataAndBackupPageTests
         public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(answer);
     }
 
+    private sealed class FixedFolder(string? path) : IFolderPicker
+    {
+        public Task<string?> PickFolderAsync(string? initialFolder) => Task.FromResult(path);
+    }
+
     private sealed class RecordingLauncher : ISettingsWindowLauncher
     {
         public int Shown;
@@ -135,6 +140,29 @@ public class DataAndBackupPageTests
             AutomationProperties.GetName(Find<TextBox>(window, "PassphraseBox")).Should().Be(Recordum.Presentation.Resources.Strings.Backup_Create_Passphrase);
             AutomationProperties.GetName(Find<TextBox>(window, "ConfirmBox")).Should().Be(Recordum.Presentation.Resources.Strings.Backup_Create_Confirm);
             Find<TextBox>(window, "PassphraseBox").PasswordChar.Should().Be('●');
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Folder_row_has_a_named_browse_button_that_fills_the_field_and_a_default_folder_hint()
+    {
+        var host = NewHost("set-browse", new FakeSecrets(false), s => s.AddSingleton<IFolderPicker>(new FixedFolder("/data/mine")));
+        await using var scope = host.Provider.CreateAsyncScope();
+        var (window, vm) = await OpenAsync(scope.ServiceProvider, showDeviceKey: true);
+        try
+        {
+            var button = Find<Button>(window, "BrowseFolderButton");
+            button.IsEffectivelyVisible.Should().BeTrue();
+            AutomationProperties.GetName(button).Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_Browse);
+            var box = Find<TextBox>(window, "FolderBox");
+            box.PlaceholderText.Should().NotBeNullOrEmpty().And.Be(vm.Settings.DefaultFolder);
+            box.IsReadOnly.Should().BeFalse();
+
+            button.Command!.Execute(null);
+            PrivateDbHost.Pump();
+            box.Text.Should().Be("/data/mine");
+            vm.Settings.Folder.Should().Be("/data/mine");
         }
         finally { window.Close(); }
     }

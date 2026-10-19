@@ -88,6 +88,7 @@ public class AvaloniaShellServicesTests
         sp.GetRequiredService<IBackupDialogLauncher>().Should().BeOfType<AvaloniaBackupDialogLauncher>();
         sp.GetRequiredService<IBackupSaveFileDialog>().Should().BeOfType<AvaloniaBackupSaveFileDialog>();
         sp.GetRequiredService<IOpenFileDialog>().Should().BeOfType<AvaloniaOpenFileDialog>();
+        sp.GetRequiredService<IFolderPicker>().Should().BeOfType<AvaloniaFolderPicker>();
     }
 
     [Fact]
@@ -106,6 +107,7 @@ public class AvaloniaShellServicesTests
         var open = sp.GetRequiredService<IOpenFileDialog>();
         (await open.PromptAsync("Images|*.png")).Should().BeNull();
         (await open.PromptMultipleAsync("Images|*.png")).Should().NotBeNull().And.BeEmpty();
+        (await sp.GetRequiredService<IFolderPicker>().PickFolderAsync(null)).Should().BeNull();
     }
 
     [Fact]

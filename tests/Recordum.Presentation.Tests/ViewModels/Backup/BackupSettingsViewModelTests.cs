@@ -16,7 +16,7 @@ public class BackupSettingsViewModelTests
         settings.Store["backup.auto.retention_count"] = "8";
         settings.Store["backup.auto.path"] = "";
         var keyStore = new FakeAutoBackupKeyStore { Has = true };
-        var vm = new BackupSettingsViewModel(settings, keyStore, new FakeBackupSchedulerRunner());
+        var vm = new BackupSettingsViewModel(settings, keyStore, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths());
         await vm.LoadAsync();
 
         vm.IsEnabled.Should().BeTrue();
@@ -35,7 +35,7 @@ public class BackupSettingsViewModelTests
         settings.Store["backup.auto.retention_count"] = "8";
         settings.Store["backup.auto.path"] = "";
         var keyStore = new FakeAutoBackupKeyStore();
-        var vm = new BackupSettingsViewModel(settings, keyStore, new FakeBackupSchedulerRunner());
+        var vm = new BackupSettingsViewModel(settings, keyStore, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths());
         await vm.LoadAsync();
         vm.IsEnabled = true;
         vm.FrequencyDays = 14;
@@ -60,7 +60,7 @@ public class BackupSettingsViewModelTests
         settings.Store["backup.auto.retention_count"] = "8";
         settings.Store["backup.auto.path"] = "";
         var keyStore = new FakeAutoBackupKeyStore { Has = false };
-        var vm = new BackupSettingsViewModel(settings, keyStore, new FakeBackupSchedulerRunner());
+        var vm = new BackupSettingsViewModel(settings, keyStore, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths());
         await vm.LoadAsync();
 
         vm.InertWarning.Should().BeTrue();
@@ -80,7 +80,7 @@ public class BackupSettingsViewModelTests
     public async Task LoadAsync_never_waits_for_the_keyring_on_the_calling_thread()
     {
         var store = new BlockingKeyStore();
-        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner());
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths());
         var me = Environment.CurrentManagedThreadId;
 
         var load = vm.LoadAsync();   // col codice rotto resta qui 5 s sul thread del chiamante
@@ -98,7 +98,7 @@ public class BackupSettingsViewModelTests
     {
         var store = new BlockingKeyStore();
         store.Gate.Set();
-        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner())
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths())
         {
             NewPassphrase = "passphrase-1234567890",
             ConfirmPassphrase = "passphrase-1234567890",
@@ -135,7 +135,7 @@ public class BackupSettingsViewModelTests
     public async Task TestAsync_never_runs_the_scheduler_on_the_calling_thread()
     {
         var runner = new BlockingRunner();
-        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), runner);
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), runner, new FakeFolderPicker(), new FakeBackupStoragePaths());
         var me = Environment.CurrentManagedThreadId;
 
         var test = vm.TestCommand.ExecuteAsync(null);   // col codice rotto resta qui 5 s sul thread del chiamante
@@ -153,7 +153,7 @@ public class BackupSettingsViewModelTests
     {
         var runner = new BlockingRunner { Throw = new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("GLib: raw english detail") };
         runner.Gate.Set();
-        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), runner);
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), runner, new FakeFolderPicker(), new FakeBackupStoragePaths());
 
         await vm.TestCommand.ExecuteAsync(null);
 
@@ -164,7 +164,7 @@ public class BackupSettingsViewModelTests
     public async Task SaveAsync_shows_a_localized_message_when_the_keyring_refuses_the_write()
     {
         var store = new ThrowingKeyStore(new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("GLib: raw"));
-        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner())
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths())
         { NewPassphrase = "passphrase-1234567890", ConfirmPassphrase = "passphrase-1234567890" };
 
         await vm.SaveCommand.ExecuteAsync(null);
@@ -176,10 +176,71 @@ public class BackupSettingsViewModelTests
     public async Task LoadAsync_survives_an_unavailable_keyring()
     {
         var store = new ThrowingKeyStore(new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("x"));
-        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner());
+        var vm = new BackupSettingsViewModel(new FakeAppSettingService(), store, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths());
 
         await vm.LoadAsync();
 
         vm.HasPassphrase.Should().BeFalse();
+    }
+
+    private static BackupSettingsViewModel NewVm(FakeAppSettingService settings, FakeAutoBackupKeyStore keys, FakeFolderPicker? picker = null) =>
+        new(settings, keys, new FakeBackupSchedulerRunner(), picker ?? new FakeFolderPicker(), new FakeBackupStoragePaths());
+
+    [Fact]
+    public async Task BrowseFolder_writes_the_picked_path_and_a_cancel_changes_nothing()
+    {
+        var picker = new FakeFolderPicker { Result = "/home/x/Backups" };
+        var vm = NewVm(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), picker);
+
+        await vm.BrowseFolderCommand.ExecuteAsync(null);
+        vm.Folder.Should().Be("/home/x/Backups");
+        picker.AskedInitial.Should().Be(vm.DefaultFolder, "folder vuota: il selettore parte dalla cartella predefinita");
+
+        picker.Result = null;
+        await vm.BrowseFolderCommand.ExecuteAsync(null);
+        vm.Folder.Should().Be("/home/x/Backups");
+        picker.AskedInitial.Should().Be("/home/x/Backups");
+    }
+
+    [Fact]
+    public void DefaultFolder_is_the_scheduler_default()
+    {
+        NewVm(new FakeAppSettingService(), new FakeAutoBackupKeyStore()).DefaultFolder.Should().Be(new FakeBackupStoragePaths().BackupsDirectory);
+    }
+
+    [Theory]
+    [InlineData("short-pass", "short-pass", "PassphraseTooShort")]
+    [InlineData("passphrase-1234567890", "passphrase-OTHER-1234", "PassphraseMismatch")]
+    public async Task SaveAsync_with_an_invalid_passphrase_says_why_and_writes_nothing(string pass, string confirm, string expected)
+    {
+        var settings = new FakeAppSettingService();
+        settings.Store["backup.auto.enabled"] = "false";
+        var keys = new FakeAutoBackupKeyStore();
+        var vm = NewVm(settings, keys);
+        await vm.LoadAsync();
+        vm.IsEnabled = true;
+        vm.NewPassphrase = pass;
+        vm.ConfirmPassphrase = confirm;
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        vm.TestResultMessage.Should().Be(expected == "PassphraseTooShort"
+            ? Recordum.Presentation.Resources.Strings.Backup_Settings_PassphraseTooShort
+            : Recordum.Presentation.Resources.Strings.Backup_Settings_PassphraseMismatch);
+        keys.Written.Should().BeNull();
+        settings.Store["backup.auto.enabled"].Should().Be("false");
+    }
+
+    [Fact]
+    public async Task SaveAsync_success_says_saved_and_writes_the_key()
+    {
+        var keys = new FakeAutoBackupKeyStore();
+        var vm = NewVm(new FakeAppSettingService(), keys);
+        vm.NewPassphrase = vm.ConfirmPassphrase = "passphrase-1234567890";
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_Saved);
+        keys.Written.Should().Be("passphrase-1234567890");
     }
 }

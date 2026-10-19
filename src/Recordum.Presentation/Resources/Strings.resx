@@ -1770,4 +1770,16 @@ Details: {0}</value>
   <data name="Backup.Settings.KeyringUnavailable" xml:space="preserve">
     <value>The system keyring couldn't be reached. Try again, or check that it is unlocked.</value>
   </data>
+  <data name="Backup.Settings.PassphraseTooShort" xml:space="preserve">
+    <value>The passphrase must be at least 12 characters.</value>
+  </data>
+  <data name="Backup.Settings.PassphraseMismatch" xml:space="preserve">
+    <value>The two passphrases don't match.</value>
+  </data>
+  <data name="Backup.Settings.Saved" xml:space="preserve">
+    <value>Saved.</value>
+  </data>
+  <data name="Backup.Settings.Browse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
 </root>

@@ -15,8 +15,13 @@ public interface IBackupSchedulerRunner
 public sealed partial class BackupSettingsViewModel(
     IAppSettingService settings,
     IAutoBackupKeyStore keyStore,
-    IBackupSchedulerRunner runner) : ObservableObject
+    IBackupSchedulerRunner runner,
+    IFolderPicker folderPicker,
+    IBackupStoragePaths paths) : ObservableObject
 {
+    /// <summary>La cartella che lo scheduler usa quando quella dell'utente e' vuota: la pagina la mostra come suggerimento.</summary>
+    public string DefaultFolder => paths.BackupsDirectory;
+
     [ObservableProperty] private bool _isEnabled;
     [ObservableProperty] private int _frequencyDays = 7;
     [ObservableProperty] private int _retentionCount = 8;
@@ -51,12 +56,19 @@ public sealed partial class BackupSettingsViewModel(
     partial void OnNewPassphraseChanged(string value) => OnPropertyChanged(nameof(InertWarning));
 
     [RelayCommand]
+    private async Task BrowseFolderAsync()
+    {
+        if (await folderPicker.PickFolderAsync(string.IsNullOrWhiteSpace(Folder) ? DefaultFolder : Folder).ConfigureAwait(true) is { } picked)
+            Folder = picked;
+    }
+
+    [RelayCommand]
     private async Task SaveAsync()
     {
         if (!string.IsNullOrEmpty(NewPassphrase))
         {
-            if (NewPassphrase != ConfirmPassphrase) return;
-            if (NewPassphrase.Length < 12) return;
+            if (NewPassphrase != ConfirmPassphrase) { TestResultMessage = Strings.Backup_Settings_PassphraseMismatch; return; }
+            if (NewPassphrase.Length < 12) { TestResultMessage = Strings.Backup_Settings_PassphraseTooShort; return; }
             var passphrase = NewPassphrase;
             try { await Task.Run(() => keyStore.WriteKey(passphrase)).ConfigureAwait(true); }
             catch (SecretStoreUnavailableException)
@@ -78,6 +90,7 @@ public sealed partial class BackupSettingsViewModel(
         }
         NewPassphrase = string.Empty;
         ConfirmPassphrase = string.Empty;
+        TestResultMessage = Strings.Backup_Settings_Saved;
     }
 
     [RelayCommand]

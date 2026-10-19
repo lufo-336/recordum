@@ -617,6 +617,10 @@ public static class Strings
     public static string Backup_Settings_SelfDisabledWarning => Get("Backup.Settings.SelfDisabledWarning");
     public static string Backup_Settings_TestOk => Get("Backup.Settings.TestOk");
     public static string Backup_Settings_KeyringUnavailable => Get("Backup.Settings.KeyringUnavailable");
+    public static string Backup_Settings_PassphraseTooShort => Get("Backup.Settings.PassphraseTooShort");
+    public static string Backup_Settings_PassphraseMismatch => Get("Backup.Settings.PassphraseMismatch");
+    public static string Backup_Settings_Saved => Get("Backup.Settings.Saved");
+    public static string Backup_Settings_Browse => Get("Backup.Settings.Browse");
 
     public static string Editor_MetricType_Integer => Get("Editor.MetricType.Integer");
     public static string Editor_MetricType_Decimal => Get("Editor.MetricType.Decimal");

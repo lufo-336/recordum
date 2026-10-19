@@ -22,7 +22,7 @@ public sealed class SettingsCultureViewTests
     private static SettingsWindowViewModel NewVm() => new(
         new SettingsViewModel(new FakeThemeService(), new FakeAppFontService()),
         new GeneralSettingsViewModel(new FakeAppSettingService(), new CultureService(new FakeAppSettingService()), new FakeClock()),
-        new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner()),
+        new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths()),
         new DiagnosticInfoViewModel(
             new FakeAppSettingService(), new FakeThemeService(), new FakeWebView2Availability(available: false),
             new FakeBackupStoragePaths(), new FakeBackupLogService(), new FakePluginManagerDiag(), new FakeClipboardDiag()));
