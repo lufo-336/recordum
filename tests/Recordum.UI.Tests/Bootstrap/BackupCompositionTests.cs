@@ -41,6 +41,15 @@ public sealed class BackupCompositionTests : IDisposable
         return sp;
     }
 
+    [Fact]
+    public void On_Linux_the_keyring_queues_the_operations_on_the_same_secret()
+    {
+        // F2c-4: senza la fila, un "Dimentica" puo' essere annullato da una scrittura dello sblocco tardiva.
+        var store = AppComposition.CreateSecretStore(Options());
+        if (OperatingSystem.IsLinux()) store.Should().BeOfType<SerializedSecretStore>();
+        else store.Should().BeOfType<NullSecretStore>();
+    }
+
     private static async Task SetAsync(ServiceProvider sp, string key, string value)
     {
         await using var db = await sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>().CreateDbContextAsync();

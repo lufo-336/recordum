@@ -1,0 +1,60 @@
+using FluentAssertions;
+using Recordum.Core.Abstractions.Security;
+using Recordum.Data.Security;
+using Xunit;
+
+namespace Recordum.Data.Tests.Security;
+
+/// <summary>F2c-4: una scrittura "ricorda" rimasta in volo (portachiavi in attesa di un prompt) non annulla un
+/// "Dimentica" arrivato dopo.</summary>
+public sealed class SerializedSecretStoreTests
+{
+    /// <summary>In memoria; la scrittura si ferma finche' non la si rilascia, come libsecret davanti a un prompt.</summary>
+    private sealed class PromptingStore : ISecretStore
+    {
+        private readonly Dictionary<SecretKind, string> _items = [];
+        public ManualResetEventSlim WriteEntered { get; } = new();
+        public ManualResetEventSlim ReleaseWrite { get; } = new();
+        public bool IsAvailable => true;
+        public string? TryRead(SecretKind kind) { lock (_items) return _items.GetValueOrDefault(kind); }
+        public void Write(SecretKind kind, string value)
+        {
+            WriteEntered.Set();
+            ReleaseWrite.Wait(TimeSpan.FromSeconds(10));
+            lock (_items) _items[kind] = value;
+        }
+        public void Delete(SecretKind kind) { lock (_items) _items.Remove(kind); }
+    }
+
+    [Fact]
+    public async Task A_forget_waits_for_a_late_remember_and_the_key_ends_up_forgotten()
+    {
+        var inner = new PromptingStore();
+        var store = new SerializedSecretStore(inner);
+
+        var remember = Task.Run(() => store.Write(SecretKind.DbKey, "k"));
+        inner.WriteEntered.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
+        var forget = Task.Run(() => store.Delete(SecretKind.DbKey));
+        await Task.Delay(150);
+        forget.IsCompleted.Should().BeFalse("la cancellazione aspetta la scrittura in volo");
+
+        inner.ReleaseWrite.Set();
+        await Task.WhenAll(remember, forget).WaitAsync(TimeSpan.FromSeconds(5));
+
+        store.TryRead(SecretKind.DbKey).Should().BeNull("l'ultima parola e' del Dimentica");
+    }
+
+    [Fact]
+    public async Task A_pending_write_of_one_secret_does_not_hold_the_other()
+    {
+        var inner = new PromptingStore();
+        var store = new SerializedSecretStore(inner);
+
+        var remember = Task.Run(() => store.Write(SecretKind.DbKey, "k"));
+        inner.WriteEntered.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
+        await Task.Run(() => store.Delete(SecretKind.AutoBackup)).WaitAsync(TimeSpan.FromSeconds(2));
+
+        inner.ReleaseWrite.Set();
+        await remember.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+}

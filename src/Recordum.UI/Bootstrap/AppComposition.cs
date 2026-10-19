@@ -83,10 +83,11 @@ public static class AppComposition
         return new DbUnlockService(options, secrets, new CrashLoggerAdapter<DbUnlockService>());
     }
 
-    /// <summary>Il portachiavi per sistema: libsecret su Linux, nessuno altrove (su Windows resta DPAPI).</summary>
+    /// <summary>Il portachiavi per sistema: libsecret su Linux, nessuno altrove (su Windows resta DPAPI). Le operazioni
+    /// sullo stesso segreto sono in fila (F2c-4): un "Dimentica" non e' annullato da una scrittura dello sblocco tardiva.</summary>
     public static ISecretStore CreateSecretStore(RecordumOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return OperatingSystem.IsLinux() ? new LibsecretSecretStore(options.DataDirectory) : new NullSecretStore();
+        return OperatingSystem.IsLinux() ? new SerializedSecretStore(new LibsecretSecretStore(options.DataDirectory)) : new NullSecretStore();
     }
 }

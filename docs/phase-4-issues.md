@@ -34,7 +34,7 @@
 
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** (`fixed`) quiesce di tutti gli utenti del DB durante un
-restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
+restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" (`fixed`) ·
 **F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
 **F2c-8** stato della pagina col portachiavi irraggiungibile · **F2c-9** rekey e sblocco senza cancello.
 
@@ -2069,7 +2069,9 @@ Nuovi, rimandati dalle review dell'onda:
 - **F2c-3 — un database ripristinato tiene il modo del file sorgente fino al riavvio successivo** · `fixed` · Il
   restore riallinea a 0600 subito dopo lo scambio. Era: Il
   riallineamento a 0600 avviene all'avvio; dopo un restore l'app si chiude e la cartella dati è 0700, quindi l'esposizione è minima.
-- **F2c-4 — una scrittura "ricorda" scaduta allo sblocco può completarsi dopo** · `reported` · Se l'utente risponde in
+- **F2c-4 — una scrittura "ricorda" scaduta allo sblocco può completarsi dopo** · `fixed` · Su Linux il portachiavi
+  è avvolto in `SerializedSecretStore`: le operazioni sullo stesso segreto vanno in fila, quindi un "Dimentica" aspetta
+  la scrittura in volo e arriva dopo. Era: Se l'utente risponde in
   ritardo al prompt del portachiavi, la `Write` annulla un "Dimentica" fatto nel frattempo.
 - **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `reported` · Dice che il portachiavi "non è
   disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.

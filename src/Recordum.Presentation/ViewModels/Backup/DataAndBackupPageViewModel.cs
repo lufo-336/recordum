@@ -92,8 +92,8 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
         await History.LoadAsync().ConfigureAwait(true);
     }
 
-    // Nota: una scrittura "ricorda" andata in timeout allo sblocco puo' completarsi piu' tardi, se l'utente risponde al
-    // prompt del portachiavi, e annullare un "Dimentica" fatto nel frattempo qui. Il caso e' noto e non e' corretto.
+    // Una scrittura "ricorda" andata in timeout allo sblocco puo' essere ancora in volo: il portachiavi della shell mette
+    // in fila le operazioni sullo stesso segreto (SerializedSecretStore, F2c-4), quindi questa cancellazione arriva dopo.
     [RelayCommand]
     private async Task ForgetDeviceKeyAsync()
     {
