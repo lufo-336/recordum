@@ -22,15 +22,16 @@ public sealed class AvaloniaBackupDialogLauncher(IServiceProvider services, Func
         await ShowAsync(new BackupDialog { DataContext = vm });
     }
 
-    public async Task ShowRestoreAsync()
+    public async Task<bool> ShowRestoreAsync()
     {
         await using var scope = services.CreateAsyncScope();
         var vm = scope.ServiceProvider.GetRequiredService<RestoreDialogViewModel>();
         await ShowAsync(new RestoreDialog { DataContext = vm });
-        if (!vm.IsCompleted) return;
+        if (!vm.IsCompleted) return false;
         // Il database e' stato sostituito: da qui all'uscita nessun backup automatico deve toccarlo.
         services.GetService<BackupSchedulerHost>()?.Dispose();
         services.GetRequiredService<IApplicationLifetime>().Shutdown();
+        return true;
     }
 
     private async Task ShowAsync(Window window)

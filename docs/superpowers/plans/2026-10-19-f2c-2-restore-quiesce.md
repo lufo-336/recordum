@@ -34,3 +34,7 @@ Branch `f2c-data-safety`. Decisioni confermate dall'autore il 2026-10-19.
 - `ConnectionClosed` non arriva dopo un'apertura fallita: per questo `ConnectionFailed` restituisce il permesso, e la
   tabella per connessione impedisce il doppio rilascio.
 - La ricifratura usa una `SqliteConnection` grezza sul file in chiaro: non passa dal gate, e va fatta prima di chiudere.
+- Dopo un restore riuscito **nessun chiamante interroga più il database**: un'apertura async aspetterebbe per sempre.
+  `IBackupDialogLauncher.ShowRestoreAsync` torna `true` in quel caso e la pagina non rilegge lo storico (era il blocco
+  della suite UI su Linux, CI 39299317717, nel test del portachiavi che fa un restore vero).
+- Un contesto rilasciato con la connessione aperta passa da `ConnectionDisposed`, non da `ConnectionClosed`.

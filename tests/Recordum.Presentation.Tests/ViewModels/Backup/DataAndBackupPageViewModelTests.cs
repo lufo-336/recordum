@@ -120,4 +120,24 @@ public class DataAndBackupPageViewModelTests
         await b.Page.LoadAsync();
         b.Page.AutoBackupOffWarning.Should().BeFalse();
     }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 0)]
+    public async Task Restore_reloads_the_history_only_when_the_database_was_not_replaced(bool restored, int rowsAfter)
+    {
+        // F2c-2: dopo un restore riuscito il database resta chiuso fino all'uscita; rileggere lo storico aspetterebbe
+        // per sempre (era il blocco della suite UI su Linux in CI 39299317717).
+        var log = new FakeBackupLogService();
+        var launcher = new FakeBackupDialogLauncher { Restored = restored };
+        var page = new DataAndBackupPageViewModel(
+            new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths()),
+            new BackupHistoryViewModel(log, new FakeFolderOpener()), launcher, new FakeSecrets(true), new FakeConfirmationDialog(), true);
+        await page.LoadAsync();
+        log.Rows.Add(new Recordum.Core.Models.BackupLog { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Kind = "PreRestore", Path = "/x", SizeBytes = 1, SchemaVersion = "2.18", AppVersion = "1.0.0" });
+
+        await page.RestoreCommand.ExecuteAsync(null);
+
+        page.History.Rows.Should().HaveCount(rowsAfter);
+    }
 }

@@ -17,13 +17,13 @@ public sealed class WpfBackupDialogLauncher(IServiceProvider services) : IBackup
         return Task.CompletedTask;
     }
 
-    public Task ShowRestoreAsync()
+    public Task<bool> ShowRestoreAsync()
     {
         var vm = services.GetRequiredService<RestoreDialogViewModel>();
         var dlg = new RestoreDialog(vm) { Owner = Application.Current?.MainWindow };
-        if (dlg.ShowDialog() == true)
-            Application.Current?.Shutdown(0);
-        return Task.CompletedTask;
+        if (dlg.ShowDialog() != true) return Task.FromResult(false);
+        Application.Current?.Shutdown(0);
+        return Task.FromResult(true);
     }
 
     // Backup settings moved into the unified SettingsWindow (Backup category).

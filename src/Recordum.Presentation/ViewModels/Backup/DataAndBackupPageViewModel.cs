@@ -87,7 +87,8 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
     [RelayCommand]
     private async Task RestoreAsync()
     {
-        await _launcher.ShowRestoreAsync().ConfigureAwait(true);
+        // Riuscito, il database e' chiuso fino all'uscita: rileggere lo storico aspetterebbe per sempre.
+        if (await _launcher.ShowRestoreAsync().ConfigureAwait(true)) return;
         await History.LoadAsync().ConfigureAwait(true);
     }
 

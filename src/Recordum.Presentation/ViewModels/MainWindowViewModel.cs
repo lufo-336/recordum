@@ -130,7 +130,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand] private Task BackupCreateAsync() => _backupLauncher.ShowBackupAsync();
-    [RelayCommand] private Task BackupRestoreAsync() => _backupLauncher.ShowRestoreAsync();
+    [RelayCommand] private async Task BackupRestoreAsync() => await _backupLauncher.ShowRestoreAsync().ConfigureAwait(true);
     [RelayCommand] private Task BackupSettingsAsync() => _settingsLauncher.ShowAsync(SettingsCategoryId.Backup);
     [RelayCommand] private Task ShowSettingsAsync() => _settingsLauncher.ShowAsync();
 

@@ -6,5 +6,6 @@ public sealed class FakeBackupDialogLauncher : IBackupDialogLauncher
 {
     public int BackupShown, RestoreShown;
     public Task ShowBackupAsync() { BackupShown++; return Task.CompletedTask; }
-    public Task ShowRestoreAsync() { RestoreShown++; return Task.CompletedTask; }
+    public bool Restored { get; set; }
+    public Task<bool> ShowRestoreAsync() { RestoreShown++; return Task.FromResult(Restored); }
 }
