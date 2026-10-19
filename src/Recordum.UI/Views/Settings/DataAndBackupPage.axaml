@@ -23,7 +23,16 @@
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBox Name="FolderBox" Text="{CompiledBinding Settings.Folder, Mode=TwoWay}"
                  PlaceholderText="{CompiledBinding Settings.DefaultFolder}"
-                 AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Folder}"/>
+                 AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Folder}">
+          <!-- Il placeholder e' la cartella di default, che su Windows e' lunga: lo ScrollViewer del TextBox gli da'
+               larghezza infinita, quindi lo si tiene alla larghezza visibile e lo si tronca. -->
+          <TextBox.Styles>
+            <Style Selector="TextBox#FolderBox /template/ TextBlock#PART_Placeholder">
+              <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+              <Setter Property="MaxWidth" Value="{Binding $parent[ScrollViewer].Bounds.Width}"/>
+            </Style>
+          </TextBox.Styles>
+        </TextBox>
         <Button Name="BrowseFolderButton" Grid.Column="1" Content="{x:Static res:Strings.Backup_Settings_Browse}"
                 AutomationProperties.Name="{x:Static res:Strings.Backup_Settings_Browse}"
                 Command="{CompiledBinding Settings.BrowseFolderCommand}"/>

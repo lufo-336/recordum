@@ -179,6 +179,10 @@ public class DataAndBackupPageTests
         try
         {
             window.ClientSize.Width.Should().Be(640);
+            // La cartella di default è il placeholder: su Windows il percorso è lungo e usciva dalla finestra (CI
+            // 39260061925), su Linux il percorso del test è corto. Lo si fissa lungo per provarlo ovunque.
+            Find<TextBox>(window, "FolderBox").PlaceholderText = @"C:\Users\runneradmin\AppData\Local\Temp\recordum-ui-set-fit-3f2a9c1e7b4d4e0f9a8b6c5d4e3f2a1b\Backups";
+            PrivateDbHost.Pump();
             var controls = window.GetVisualDescendants().Where(c => c is TextBlock or Button or TextBox or CheckBox or ItemsControl)
                 .Cast<Control>().Where(c => c.IsEffectivelyVisible && c.Bounds.Width > 0).ToList();
             controls.Should().NotBeEmpty();
