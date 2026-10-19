@@ -35,7 +35,7 @@
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** (`fixed`) quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" (`fixed`) ·
-**F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
+**F2c-5** avviso di timeout impreciso (`fixed`) · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
 **F2c-8** stato della pagina col portachiavi irraggiungibile · **F2c-9** rekey e sblocco senza cancello.
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2073,7 +2073,10 @@ Nuovi, rimandati dalle review dell'onda:
   è avvolto in `SerializedSecretStore`: le operazioni sullo stesso segreto vanno in fila, quindi un "Dimentica" aspetta
   la scrittura in volo e arriva dopo. Era: Se l'utente risponde in
   ritardo al prompt del portachiavi, la `Write` annulla un "Dimentica" fatto nel frattempo.
-- **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `reported` · Dice che il portachiavi "non è
+- **F2c-5 — l'avviso di timeout sulla finestra di sblocco è impreciso** · `fixed` · `StoredKeyUnlock` dice perché
+  non si può ricordare (`RememberUnavailableReason`): portachiavi assente su Linux, nessuna risposta in tempo (vale solo
+  per questo avvio), sistema senza portachiavi usato da Recordum (Windows a passphrase); la finestra mostra il testo
+  giusto. Era: Dice che il portachiavi "non è
   disponibile… a ogni avvio", falso dopo un timeout; compare anche su Windows con un database a passphrase.
 - **F2c-6 — stringhe inglesi preesistenti ora visibili su Avalonia** · `reported` · Avvisi dei plugin del restore,
   il fallback grezzo di `Readable(code)`, `ex.Code`/`ex.Message` in `BackupDialogViewModel`, l'etichetta del filtro

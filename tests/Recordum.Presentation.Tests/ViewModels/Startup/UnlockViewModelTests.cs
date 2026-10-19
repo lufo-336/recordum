@@ -236,6 +236,28 @@ public class UnlockViewModelTests
     }
 
     [Theory]
+    [InlineData(null, "Unlock.RememberUnavailable")]   // il default: Linux senza portachiavi
+    [InlineData(RememberUnavailableReason.NoKeyring, "Unlock.RememberUnavailable")]
+    [InlineData(RememberUnavailableReason.TimedOut, "Unlock.RememberTimedOut")]
+    [InlineData(RememberUnavailableReason.NotSupported, "Unlock.RememberNotSupported")]
+    public void The_unavailable_hint_says_the_real_reason(RememberUnavailableReason? reason, string key)
+    {
+        // F2c-5: dopo un timeout il portachiavi c'e' (riprova al prossimo avvio); su Windows non c'e' un portachiavi che
+        // Recordum usi. "Non disponibile, a ogni avvio" era falso in entrambi i casi.
+        var vm = reason is { } r
+            ? new UnlockViewModel(new FakeDbUnlockService(), DbUnlockState.NeedsPassphrase, canRememberOnDevice: false, storedKeyRejected: false, r)
+            : new UnlockViewModel(new FakeDbUnlockService(), DbUnlockState.NeedsPassphrase, canRememberOnDevice: false, storedKeyRejected: false);
+
+        var expected = key switch
+        {
+            "Unlock.RememberTimedOut" => Recordum.Presentation.Resources.Strings.Unlock_RememberTimedOut,
+            "Unlock.RememberNotSupported" => Recordum.Presentation.Resources.Strings.Unlock_RememberNotSupported,
+            _ => Recordum.Presentation.Resources.Strings.Unlock_RememberUnavailable,
+        };
+        Assert.Equal(expected, vm.RememberUnavailableHint);
+    }
+
+    [Theory]
     [InlineData(true, true, RememberChoice.Remember)]
     [InlineData(true, false, RememberChoice.Forget)]     // il parametro muto: la casella attiva e tolta cancella
     [InlineData(false, true, RememberChoice.LeaveAsIs)]  // casella non attiva: il portachiavi non si tocca

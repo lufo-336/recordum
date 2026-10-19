@@ -1630,6 +1630,12 @@
   <data name="Unlock.RememberUnavailable" xml:space="preserve">
     <value>Il portachiavi di sistema non è disponibile: Recordum chiederà la passphrase a ogni avvio.</value>
   </data>
+  <data name="Unlock.RememberTimedOut" xml:space="preserve">
+    <value>Il portachiavi di sistema non ha risposto in tempo: in questo avvio la passphrase non si può ricordare. Recordum riproverà al prossimo.</value>
+  </data>
+  <data name="Unlock.RememberNotSupported" xml:space="preserve">
+    <value>Su questo sistema la passphrase non si può ricordare: Recordum la chiederà a ogni avvio.</value>
+  </data>
   <data name="Unlock.StoredKeyRejected" xml:space="preserve">
     <value>La chiave salvata non apre più i dati. Inserisci la passphrase.</value>
   </data>

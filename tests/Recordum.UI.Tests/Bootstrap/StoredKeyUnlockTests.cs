@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Presentation.ViewModels.Startup;
 using Recordum.UI.Bootstrap;
 using Xunit;
 
@@ -39,7 +40,19 @@ public class StoredKeyUnlockTests
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5));
         result.Provider.Should().BeNull();
         result.CanRemember.Should().BeFalse("la sonda potrebbe bloccare ancora: niente casella attiva");
+        result.Reason.Should().Be(RememberUnavailableReason.TimedOut, "F2c-5: non risposto in tempo non e' \"non disponibile a ogni avvio\"");
         never.Set();
+    }
+
+    [Fact]
+    public async Task A_keyring_that_answers_it_is_missing_says_why_for_this_system()
+    {
+        var service = new Service(() => Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null)), () => false);
+
+        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30));
+
+        result.CanRemember.Should().BeFalse();
+        result.Reason.Should().Be(OperatingSystem.IsLinux() ? RememberUnavailableReason.NoKeyring : RememberUnavailableReason.NotSupported);
     }
 
     [Fact]

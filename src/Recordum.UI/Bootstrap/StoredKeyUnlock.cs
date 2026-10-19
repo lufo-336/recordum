@@ -1,4 +1,5 @@
 using Recordum.Core.Abstractions.Security;
+using Recordum.Presentation.ViewModels.Startup;
 
 namespace Recordum.UI.Bootstrap;
 
@@ -12,7 +13,11 @@ public static class StoredKeyUnlock
     /// <param name="Provider">Valorizzato se la chiave ricordata ha aperto il database.</param>
     /// <param name="CanRemember">Il portachiavi c'e' (falso anche se non ha risposto in tempo).</param>
     /// <param name="Rejected">La chiave ricordata non apriva piu' i dati ed e' stata cancellata.</param>
-    public sealed record Result(IDbKeyProvider? Provider, bool CanRemember, bool Rejected);
+    /// <param name="Reason">Perche' <paramref name="CanRemember"/> e' falso, quando lo e'.</param>
+    public sealed record Result(IDbKeyProvider? Provider, bool CanRemember, bool Rejected, RememberUnavailableReason Reason);
+
+    // Senza un portachiavi che risponde: su Linux manca il Secret Service, altrove Recordum non ne usa uno.
+    private static RememberUnavailableReason Missing => OperatingSystem.IsLinux() ? RememberUnavailableReason.NoKeyring : RememberUnavailableReason.NotSupported;
 
     public static async Task<Result> RunAsync(IDbUnlockService service, DbUnlockState state, TimeSpan cap)
     {
@@ -23,7 +28,7 @@ public static class StoredKeyUnlock
                 ? await service.TryUnlockWithStoredKeyAsync(abandoned.Token).ConfigureAwait(false)
                 : new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null);
             // Dopo il tentativo: la sonda e' gia' stata fatta e messa in cache. Prima di lui, sarebbe una seconda attesa.
-            return new Result(attempt.Provider, service.CanRememberOnDevice, attempt.Outcome == StoredKeyOutcome.StoredKeyRejected);
+            return new Result(attempt.Provider, service.CanRememberOnDevice, attempt.Outcome == StoredKeyOutcome.StoredKeyRejected, Missing);
         });
         using var delayCts = new CancellationTokenSource();
         var winner = await Task.WhenAny(work, Task.Delay(cap, delayCts.Token)).ConfigureAwait(false);
@@ -42,6 +47,6 @@ public static class StoredKeyUnlock
         }, TaskScheduler.Default);
         // CanRemember false e' strutturale: senza scritture in questa sessione, un Delete tardivo del tentativo abbandonato
         // non puo' correre contro una Write fresca e cancellare la chiave appena ricordata. Non "correggerlo" a true.
-        return new Result(null, CanRemember: false, Rejected: false);
+        return new Result(null, CanRemember: false, Rejected: false, RememberUnavailableReason.TimedOut);
     }
 }

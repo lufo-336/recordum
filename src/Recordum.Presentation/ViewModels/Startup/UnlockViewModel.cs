@@ -16,12 +16,15 @@ public sealed partial class UnlockViewModel : ObservableObject
 {
     private readonly IDbUnlockService _service;
     private readonly DbUnlockState _state;
+    private readonly RememberUnavailableReason _rememberUnavailable;
     private readonly TaskCompletionSource<IDbKeyProvider> _result = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <param name="canRememberOnDevice">Il portachiavi c'e'. Lo decide chi costruisce la finestra, fuori dal thread UI
     /// (la sonda puo' bloccare): il ViewModel non lo chiede al servizio.</param>
     /// <param name="storedKeyRejected">La chiave ricordata e' stata provata e non apriva piu' i dati.</param>
-    public UnlockViewModel(IDbUnlockService service, DbUnlockState state, bool canRememberOnDevice, bool storedKeyRejected)
+    /// <param name="rememberUnavailable">Perche' la casella e' spenta, quando lo e': cambia la spiegazione (F2c-5).</param>
+    public UnlockViewModel(IDbUnlockService service, DbUnlockState state, bool canRememberOnDevice, bool storedKeyRejected,
+        RememberUnavailableReason rememberUnavailable = RememberUnavailableReason.NoKeyring)
     {
         ArgumentNullException.ThrowIfNull(service);
         _service = service;
@@ -29,6 +32,7 @@ public sealed partial class UnlockViewModel : ObservableObject
         CanRemember = canRememberOnDevice;
         _rememberOnDevice = canRememberOnDevice;
         StoredKeyRejected = storedKeyRejected;
+        _rememberUnavailable = rememberUnavailable;
         if (state == DbUnlockState.Unsupported) _errorMessage = Strings.Unlock_Unsupported;
     }
 
@@ -85,7 +89,12 @@ public sealed partial class UnlockViewModel : ObservableObject
 
     public string RememberLabel => Strings.Unlock_RememberOnDevice;
 
-    public string RememberUnavailableHint => Strings.Unlock_RememberUnavailable;
+    public string RememberUnavailableHint => _rememberUnavailable switch
+    {
+        RememberUnavailableReason.TimedOut => Strings.Unlock_RememberTimedOut,
+        RememberUnavailableReason.NotSupported => Strings.Unlock_RememberNotSupported,
+        _ => Strings.Unlock_RememberUnavailable,
+    };
 
     public string StoredKeyRejectedMessage => Strings.Unlock_StoredKeyRejected;
 #pragma warning restore CA1822
@@ -147,4 +156,15 @@ public sealed partial class UnlockViewModel : ObservableObject
             SubmitCommand.NotifyCanExecuteChanged();   // dopo un successo, CanSubmit diventa false
         }
     }
+}
+
+/// <summary>Perche' la passphrase non si puo' ricordare in questo avvio.</summary>
+public enum RememberUnavailableReason
+{
+    /// <summary>Nessun portachiavi raggiungibile (Linux senza Secret Service): si chiedera' a ogni avvio.</summary>
+    NoKeyring,
+    /// <summary>Il portachiavi c'e' ma non ha risposto in tempo: vale solo per questo avvio.</summary>
+    TimedOut,
+    /// <summary>Il sistema non ha un portachiavi che Recordum usa (Windows con un database a passphrase).</summary>
+    NotSupported,
 }

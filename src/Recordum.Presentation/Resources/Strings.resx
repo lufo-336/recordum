@@ -1656,6 +1656,12 @@ Details: {0}</value>
   <data name="Unlock.RememberUnavailable" xml:space="preserve">
     <value>The system keyring isn't available, so Recordum will ask for the passphrase at every start.</value>
   </data>
+  <data name="Unlock.RememberTimedOut" xml:space="preserve">
+    <value>The system keyring didn't answer in time, so the passphrase can't be remembered on this start. Recordum will try again next time.</value>
+  </data>
+  <data name="Unlock.RememberNotSupported" xml:space="preserve">
+    <value>Remembering the passphrase isn't supported on this system, so Recordum will ask for it at every start.</value>
+  </data>
   <data name="Unlock.StoredKeyRejected" xml:space="preserve">
     <value>The saved key no longer opens your data. Enter your passphrase.</value>
   </data>

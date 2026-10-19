@@ -160,7 +160,7 @@ public partial class App : Application
         var stored = await StoredKeyUnlock.RunAsync(unlock, state, StoredKeyUnlock.DefaultCap).ConfigureAwait(true);
         if (stored.Provider is not null) return stored.Provider;
 
-        var viewModel = new UnlockViewModel(unlock, state, stored.CanRemember, stored.Rejected);
+        var viewModel = new UnlockViewModel(unlock, state, stored.CanRemember, stored.Rejected, stored.Reason);
         var window = new UnlockWindow(viewModel);
         var closed = new TaskCompletionSource();
         window.Closed += (_, _) => closed.TrySetResult();
