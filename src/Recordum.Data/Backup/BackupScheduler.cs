@@ -31,7 +31,7 @@ public sealed partial class BackupScheduler(
     public const string DisabledReasonKey = "backup.auto.disabled_reason";
     public const string NoPassphrase = "no_passphrase";
 
-    public async Task RunDueAsync(CancellationToken ct = default)
+    public async Task<BackupRunOutcome> RunDueAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         var settings = await db.AppSettings.AsTracking()
@@ -41,7 +41,7 @@ public sealed partial class BackupScheduler(
         var enabled = settings.TryGetValue("backup.auto.enabled", out var enabledSetting)
             && enabledSetting.Value == "true";
         IsEnabled = enabled;
-        if (!enabled) return;
+        if (!enabled) return BackupRunOutcome.Disabled;
 
         var frequencyDays = settings.TryGetValue("backup.auto.frequency_days", out var freqSetting)
             && int.TryParse(freqSetting.Value, out var d) ? d : 7;
@@ -55,7 +55,7 @@ public sealed partial class BackupScheduler(
         var nextRun = lastRun.AddDays(frequencyDays);
         NextRunUtc = nextRun;
 
-        if (clock.UtcNow.UtcDateTime < nextRun) return;
+        if (clock.UtcNow.UtcDateTime < nextRun) return BackupRunOutcome.NotDue;
 
         // Senza una passphrase leggibile l'auto-backup non può girare: si spegne, e ora lo scrive nel log. Prima si
         // spegneva in silenzio, e l'utente continuava a credere che i suoi dati fossero salvati (RV-5).
@@ -66,7 +66,7 @@ public sealed partial class BackupScheduler(
         {
             // Portachiavi irraggiungibile (non "passphrase mancante"): si salta il giro, si riprova al prossimo.
             LogKeyringUnavailable();
-            return;
+            return BackupRunOutcome.KeyringUnavailable;
         }
         if (passphrase is null)
         {
@@ -86,7 +86,7 @@ public sealed partial class BackupScheduler(
             }
             IsEnabled = false;
             LogSelfDisabled();
-            return;
+            return BackupRunOutcome.SwitchedOff;
         }
 
         var folder = settings.TryGetValue("backup.auto.path", out var pathSetting)
@@ -104,5 +104,6 @@ public sealed partial class BackupScheduler(
             lastRunEntry.UpdatedAt = clock.UtcNow.UtcDateTime;
             await db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
+        return BackupRunOutcome.Created;
     }
 }

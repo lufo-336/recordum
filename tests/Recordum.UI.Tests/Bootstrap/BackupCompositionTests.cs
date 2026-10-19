@@ -160,7 +160,7 @@ public sealed class BackupCompositionTests : IDisposable
 
     private sealed class ThreadRecorder(List<int> threads) : IBackupScheduler
     {
-        public Task RunDueAsync(CancellationToken ct = default) { lock (threads) threads.Add(Environment.CurrentManagedThreadId); return Task.CompletedTask; }
+        public Task<BackupRunOutcome> RunDueAsync(CancellationToken ct = default) { lock (threads) threads.Add(Environment.CurrentManagedThreadId); return Task.FromResult(BackupRunOutcome.NotDue); }
         public DateTime? NextRunUtc => null;
         public bool IsEnabled => true;
     }

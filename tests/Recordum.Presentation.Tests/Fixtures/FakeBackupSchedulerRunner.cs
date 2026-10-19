@@ -1,3 +1,4 @@
+using Recordum.Core.Backup;
 using Recordum.Presentation.ViewModels.Backup;
 
 namespace Recordum.Presentation.Tests.Fixtures;
@@ -5,5 +6,6 @@ namespace Recordum.Presentation.Tests.Fixtures;
 public sealed class FakeBackupSchedulerRunner : IBackupSchedulerRunner
 {
     public int RunCount { get; private set; }
-    public Task RunNowAsync(CancellationToken ct = default) { RunCount++; return Task.CompletedTask; }
+    public BackupRunOutcome Outcome { get; set; } = BackupRunOutcome.Created;
+    public Task<BackupRunOutcome> RunNowAsync(CancellationToken ct = default) { RunCount++; return Task.FromResult(Outcome); }
 }

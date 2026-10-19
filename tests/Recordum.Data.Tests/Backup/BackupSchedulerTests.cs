@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Core.Backup;
 using Recordum.Data.Backup;
 using Recordum.Data.Tests.Fixtures;
 using Xunit;
@@ -40,7 +41,7 @@ public class BackupSchedulerTests
         {
             // last_run = empty (overdue)
             var sched = fixture.NewScheduler(new MemoryKeyStore(Pass));
-            await sched.RunDueAsync();
+            (await sched.RunDueAsync()).Should().Be(BackupRunOutcome.Created);
 
             await using var db = await fixture.DbFactory.CreateDbContextAsync();
             var last = await db.AppSettings.AsNoTracking().FirstAsync(x => x.Key == "backup.auto.last_run_utc");
@@ -63,7 +64,7 @@ public class BackupSchedulerTests
                 await db.SaveChangesAsync();
             }
             var sched = fixture.NewScheduler(new MemoryKeyStore(Pass));
-            await sched.RunDueAsync();
+            (await sched.RunDueAsync()).Should().Be(BackupRunOutcome.NotDue);
 
             Directory.EnumerateFiles(fixture.Options.BackupsDirectory, "auto-*.recbak").Should().BeEmpty();
         }
@@ -78,7 +79,7 @@ public class BackupSchedulerTests
         {
             var log = new ListLogger();
             var sched = fixture.NewScheduler(new MemoryKeyStore(null), log);
-            await sched.RunDueAsync();
+            (await sched.RunDueAsync()).Should().Be(BackupRunOutcome.SwitchedOff);
 
             await using var db = await fixture.DbFactory.CreateDbContextAsync();
             var enabled = await db.AppSettings.AsNoTracking().FirstAsync(x => x.Key == "backup.auto.enabled");
@@ -88,6 +89,24 @@ public class BackupSchedulerTests
                 .Value.Should().Be("no_passphrase", "la pagina Impostazioni deve poter dire che e' stato lo scheduler");
             log.Levels.Should().ContainSingle().Which.Should().Be(LogLevel.Warning, "prima si spegneva in silenzio (RV-5)");
             Directory.EnumerateFiles(fixture.Options.BackupsDirectory, "auto-*.recbak").Should().BeEmpty();
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task A_switched_off_auto_backup_says_so()
+    {
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            await using (var db = await fixture.DbFactory.CreateDbContextAsync())
+            {
+                var s = await db.AppSettings.AsTracking().FirstAsync(x => x.Key == "backup.auto.enabled");
+                s.Value = "false";
+                await db.SaveChangesAsync();
+            }
+
+            (await fixture.NewScheduler(new MemoryKeyStore(Pass)).RunDueAsync()).Should().Be(BackupRunOutcome.Disabled);
         }
         finally { await fixture.DisposeAsync(); }
     }
@@ -124,7 +143,7 @@ public class BackupSchedulerTests
             var log = new ListLogger();
             var store = new CountingKeyStore(() => throw new SecretStoreUnavailableException("keyring down"));
             var sched = fixture.NewScheduler(store, log);
-            await sched.RunDueAsync();
+            (await sched.RunDueAsync()).Should().Be(BackupRunOutcome.KeyringUnavailable, "F2c-8: \"Prova\" deve poterlo dire");
 
             store.Reads.Should().Be(1);
             await using var db = await fixture.DbFactory.CreateDbContextAsync();

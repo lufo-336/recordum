@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Backup;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 
@@ -9,7 +10,7 @@ namespace Recordum.Presentation.ViewModels.Backup;
 
 public interface IBackupSchedulerRunner
 {
-    Task RunNowAsync(CancellationToken ct = default);
+    Task<BackupRunOutcome> RunNowAsync(CancellationToken ct = default);
 }
 
 public sealed partial class BackupSettingsViewModel(
@@ -33,10 +34,12 @@ public sealed partial class BackupSettingsViewModel(
     /// <summary>Lo scheduler ha spento il backup automatico da solo (passphrase illeggibile): vale finche' l'utente non
     /// lo riaccende con una passphrase salvata. Vuoto = nessun segnale.</summary>
     [ObservableProperty] private bool _selfDisabled;
+    /// <summary>Il portachiavi non ha risposto: della passphrase non si sa niente, quindi niente avviso "manca" (F2c-8).</summary>
+    [ObservableProperty] private bool _keyringUnavailable;
 
     private const string DisabledReasonKey = Recordum.Data.Backup.BackupScheduler.DisabledReasonKey;
 
-    public bool InertWarning => IsEnabled && !HasPassphrase && string.IsNullOrEmpty(NewPassphrase);
+    public bool InertWarning => IsEnabled && !HasPassphrase && !KeyringUnavailable && string.IsNullOrEmpty(NewPassphrase);
 
     public async Task LoadAsync(CancellationToken ct = default)
     {
@@ -45,14 +48,20 @@ public sealed partial class BackupSettingsViewModel(
         if (int.TryParse(await settings.GetAsync("backup.auto.retention_count", ct).ConfigureAwait(true), out var r)) RetentionCount = r;
         Folder = await settings.GetAsync("backup.auto.path", ct).ConfigureAwait(true) ?? string.Empty;
         // Il portachiavi di Linux e' una chiamata sincrona che puo' attendere un prompt di sblocco: mai sul thread dell'interfaccia (R6).
-        // Portachiavi irraggiungibile: la pagina si apre lo stesso (la passphrase risulta "non salvata").
-        try { HasPassphrase = await Task.Run(keyStore.HasKey, ct).ConfigureAwait(true); }
-        catch (SecretStoreUnavailableException) { HasPassphrase = false; }
+        // Portachiavi irraggiungibile: la pagina si apre lo stesso e lo dice; non afferma che la passphrase manca (F2c-8).
+        try { HasPassphrase = await Task.Run(keyStore.HasKey, ct).ConfigureAwait(true); KeyringUnavailable = false; }
+        catch (SecretStoreUnavailableException)
+        {
+            HasPassphrase = false;
+            KeyringUnavailable = true;
+            TestResultMessage = Strings.Backup_Settings_KeyringUnavailable;
+        }
         SelfDisabled = !string.IsNullOrEmpty(await settings.GetAsync(DisabledReasonKey, ct).ConfigureAwait(true));
         OnPropertyChanged(nameof(InertWarning));
     }
 
     partial void OnIsEnabledChanged(bool value) => OnPropertyChanged(nameof(InertWarning));
+    partial void OnKeyringUnavailableChanged(bool value) => OnPropertyChanged(nameof(InertWarning));
     partial void OnNewPassphraseChanged(string value) => OnPropertyChanged(nameof(InertWarning));
 
     [RelayCommand]
@@ -98,7 +107,19 @@ public sealed partial class BackupSettingsViewModel(
     {
         TestResultMessage = null;
         // Lo scheduler legge la passphrase dal portachiavi, una chiamata sincrona: fuori dal thread dell'interfaccia.
-        try { await Task.Run(() => runner.RunNowAsync()).ConfigureAwait(true); TestResultMessage = Strings.Backup_Settings_TestOk; }
+        try
+        {
+            var outcome = await Task.Run(() => runner.RunNowAsync()).ConfigureAwait(true);
+            TestResultMessage = outcome switch
+            {
+                BackupRunOutcome.Disabled => Strings.Backup_Settings_TestDisabled,
+                BackupRunOutcome.NotDue => Strings.Backup_Settings_TestNotDue,
+                BackupRunOutcome.Created => Strings.Backup_Settings_TestCreated,
+                BackupRunOutcome.KeyringUnavailable => Strings.Backup_Settings_KeyringUnavailable,
+                _ => Strings.Backup_Settings_SelfDisabledWarning,
+            };
+            if (outcome == BackupRunOutcome.SwitchedOff) { IsEnabled = false; SelfDisabled = true; }
+        }
         catch (SecretStoreUnavailableException) { TestResultMessage = Strings.Backup_Settings_KeyringUnavailable; }
         catch (Exception ex) { TestResultMessage = ex.Message; }
     }

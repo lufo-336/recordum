@@ -36,7 +36,7 @@
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** (`fixed`) quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" (`fixed`) ·
 **F2c-5** avviso di timeout impreciso (`fixed`) · **F2c-6** stringhe inglesi preesistenti (`fixed`) · **F2c-7** "Salva" silenzioso (`fixed`) ·
-**F2c-8** stato della pagina col portachiavi irraggiungibile · **F2c-9** rekey e sblocco senza cancello.
+**F2c-8** stato della pagina col portachiavi irraggiungibile (`fixed`) · **F2c-9** rekey e sblocco senza cancello.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2087,7 +2087,13 @@ Nuovi, rimandati dalle review dell'onda:
 - **F2c-7 — "Salva" in Dati e backup torna in silenzio con passphrase diverse o corta (< 12)** · `fixed` (`3f5948e`) ·
   Anche `backup.auto.enabled` non viene salvato: l'utente può credere che l'auto-backup sia acceso. Mostrare il motivo.
   Ora la pagina dice perché rifiuta (passphrase diverse o corta) e conferma "Salvato." quando riesce.
-- **F2c-8 — con il portachiavi irraggiungibile la pagina "Dati e backup" dice la cosa sbagliata** · `reported` · Al
+- **F2c-8 — con il portachiavi irraggiungibile la pagina "Dati e backup" dice la cosa sbagliata** · `fixed` · (a) Al
+  caricamento la pagina dice che il portachiavi non risponde e non mostra l'avviso "manca la passphrase"; (b)
+  `IBackupScheduler.RunDueAsync` torna `BackupRunOutcome` e "Prova" dice cosa è successo (spento, non dovuto, creato,
+  portachiavi irraggiungibile, spento per passphrase mancante); (c) `LibsecretSecretStore.TryRead`, se la lettura torna
+  vuota, cerca senza sbloccare: una voce che c'è ma è bloccata (prompt annullato) è "portachiavi irraggiungibile", non
+  "passphrase mancante", e lo scheduler salta il giro invece di spegnersi. Il ramo "bloccata" di (c) non è provabile in
+  CI (serve un prompt annullato): da verificare a schermo. Era: Al
   caricamento mostra "nessuna passphrase" invece del motivo vero; "Prova" risponde "controllo finito" anche se non ha
   letto niente (lo scheduler inghiotte l'eccezione, R11); un prompt di sblocco annullato conta come passphrase mancante e
   spegne l'auto-backup. Nessun dato perso: va mostrato lo stato vero.

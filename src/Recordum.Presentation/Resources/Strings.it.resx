@@ -1771,8 +1771,14 @@
   <data name="Backup.Settings.SelfDisabledWarning" xml:space="preserve">
     <value>Il backup automatico si è spento perché la sua passphrase non era leggibile. Impostala di nuovo per riaccenderlo.</value>
   </data>
-  <data name="Backup.Settings.TestOk" xml:space="preserve">
-    <value>Controllo del backup automatico concluso.</value>
+  <data name="Backup.Settings.TestDisabled" xml:space="preserve">
+    <value>Il backup automatico è spento: non è stato creato niente.</value>
+  </data>
+  <data name="Backup.Settings.TestNotDue" xml:space="preserve">
+    <value>Nessun backup è ancora dovuto: il prossimo partirà come previsto.</value>
+  </data>
+  <data name="Backup.Settings.TestCreated" xml:space="preserve">
+    <value>Backup automatico creato.</value>
   </data>
   <data name="Backup.Settings.KeyringUnavailable" xml:space="preserve">
     <value>Il portachiavi di sistema non è raggiungibile. Riprova, oppure controlla che sia sbloccato.</value>

@@ -122,12 +122,12 @@ public class BackupSettingsViewModelTests
         public readonly ManualResetEventSlim Gate = new(false);
         public int Thread;
         public Exception? Throw;
-        public Task RunNowAsync(CancellationToken ct = default)
+        public Task<Recordum.Core.Backup.BackupRunOutcome> RunNowAsync(CancellationToken ct = default)
         {
             Thread = Environment.CurrentManagedThreadId;
             Gate.Wait(TimeSpan.FromSeconds(5));   // come ReadKey() sul portachiavi: sincrono
             if (Throw is not null) throw Throw;
-            return Task.CompletedTask;
+            return Task.FromResult(Recordum.Core.Backup.BackupRunOutcome.Created);
         }
     }
 
@@ -145,7 +145,7 @@ public class BackupSettingsViewModelTests
         runner.Gate.Set();
         await test;
         runner.Thread.Should().NotBe(me);
-        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_TestOk);
+        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_TestCreated);
     }
 
     [Fact]
@@ -242,5 +242,57 @@ public class BackupSettingsViewModelTests
 
         vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_Saved);
         keys.Written.Should().Be("passphrase-1234567890");
+    }
+
+    private sealed class UnreachableKeyStore : Recordum.Core.Abstractions.Security.IAutoBackupKeyStore
+    {
+        public bool HasKey() => throw new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("locked");
+        public void WriteKey(string passphrase) { }
+        public void DeleteKey() { }
+        public string? ReadKey() => throw new Recordum.Core.Abstractions.Security.SecretStoreUnavailableException("locked");
+    }
+
+    [Fact]
+    public async Task With_the_keyring_unreachable_the_page_says_so_and_does_not_claim_the_passphrase_is_missing()
+    {
+        // F2c-8: prima diceva "nessuna passphrase, non partira'" anche quando il portachiavi semplicemente non rispondeva.
+        var settings = new FakeAppSettingService();
+        settings.Store["backup.auto.enabled"] = "true";
+        var vm = new BackupSettingsViewModel(settings, new UnreachableKeyStore(), new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths());
+
+        await vm.LoadAsync();
+
+        vm.IsEnabled.Should().BeTrue();
+        vm.KeyringUnavailable.Should().BeTrue();
+        vm.InertWarning.Should().BeFalse();
+        vm.TestResultMessage.Should().Be(Recordum.Presentation.Resources.Strings.Backup_Settings_KeyringUnavailable);
+    }
+
+    [Theory]
+    [InlineData(Recordum.Core.Backup.BackupRunOutcome.Disabled)]
+    [InlineData(Recordum.Core.Backup.BackupRunOutcome.NotDue)]
+    [InlineData(Recordum.Core.Backup.BackupRunOutcome.Created)]
+    [InlineData(Recordum.Core.Backup.BackupRunOutcome.KeyringUnavailable)]
+    [InlineData(Recordum.Core.Backup.BackupRunOutcome.SwitchedOff)]
+    public async Task Test_says_what_the_scheduler_actually_did(Recordum.Core.Backup.BackupRunOutcome outcome)
+    {
+        // F2c-8: prima ogni giro, anche saltato per il portachiavi, diceva "controllo finito".
+        var settings = new FakeAppSettingService();
+        settings.Store["backup.auto.enabled"] = "true";
+        var vm = new BackupSettingsViewModel(settings, new FakeAutoBackupKeyStore { Has = true }, new FakeBackupSchedulerRunner { Outcome = outcome }, new FakeFolderPicker(), new FakeBackupStoragePaths());
+        await vm.LoadAsync();
+
+        await vm.TestCommand.ExecuteAsync(null);
+
+        vm.TestResultMessage.Should().Be(outcome switch
+        {
+            Recordum.Core.Backup.BackupRunOutcome.Disabled => Recordum.Presentation.Resources.Strings.Backup_Settings_TestDisabled,
+            Recordum.Core.Backup.BackupRunOutcome.NotDue => Recordum.Presentation.Resources.Strings.Backup_Settings_TestNotDue,
+            Recordum.Core.Backup.BackupRunOutcome.Created => Recordum.Presentation.Resources.Strings.Backup_Settings_TestCreated,
+            Recordum.Core.Backup.BackupRunOutcome.KeyringUnavailable => Recordum.Presentation.Resources.Strings.Backup_Settings_KeyringUnavailable,
+            _ => Recordum.Presentation.Resources.Strings.Backup_Settings_SelfDisabledWarning,
+        });
+        vm.IsEnabled.Should().Be(outcome != Recordum.Core.Backup.BackupRunOutcome.SwitchedOff, "spento dallo scheduler: la casella lo segue");
+        vm.SelfDisabled.Should().Be(outcome == Recordum.Core.Backup.BackupRunOutcome.SwitchedOff);
     }
 }

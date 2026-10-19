@@ -12,6 +12,8 @@ public sealed partial class LibsecretSecretStore : ISecretStore
 {
     private const string Lib = "libsecret-1.so.0";
     private const string GLib = "libglib-2.0.so.0";
+    private const string GObject = "libgobject-2.0.so.0";
+    private const int SecretSearchAll = 1 << 1;   // SECRET_SEARCH_ALL: anche le voci bloccate, senza sbloccare ne' chiedere
     private const string SchemaName = "org.recordum.Secret";
 
     private readonly string _dataDir;
@@ -36,7 +38,14 @@ public sealed partial class LibsecretSecretStore : ISecretStore
         {
             var p = secret_password_lookup_sync(schema, IntPtr.Zero, out var err, "kind", Name(kind), "data_dir", _dataDir, IntPtr.Zero);
             ThrowIf(err);
-            if (p == IntPtr.Zero) return null;
+            if (p == IntPtr.Zero)
+            {
+                // Un prompt di sblocco annullato torna "niente" senza errore, come un segreto che non c'e'. Se la voce
+                // esiste ed e' bloccata, il portachiavi non e' raggiungibile: non e' una passphrase mancante (F2c-8),
+                // e lo scheduler non deve spegnere il backup automatico.
+                if (ExistsLocked(schema, kind)) throw new SecretStoreUnavailableException("The system keyring is locked.");
+                return null;
+            }
             try { return Marshal.PtrToStringUTF8(p); }
             finally { secret_password_free(p); }
         });
@@ -68,6 +77,21 @@ public sealed partial class LibsecretSecretStore : ISecretStore
             ThrowIf(err);
             return null;
         });
+    }
+
+    /// <summary>La voce c'e' (bloccata o no) secondo una ricerca che non sblocca. Su un libsecret senza
+    /// <c>secret_password_search_sync</c> (prima della 0.19) si torna al comportamento di prima: assente.</summary>
+    private bool ExistsLocked(IntPtr schema, SecretKind kind)
+    {
+        IntPtr list;
+        try { list = secret_password_search_sync(schema, SecretSearchAll, IntPtr.Zero, out var err, "kind", Name(kind), "data_dir", _dataDir, IntPtr.Zero); ThrowIf(err); }
+        catch (EntryPointNotFoundException) { return false; }
+        if (list == IntPtr.Zero) return false;
+        // GList { data, next, prev }: ogni data e' un SecretRetrievable (GObject) da rilasciare.
+        for (var node = list; node != IntPtr.Zero; node = Marshal.ReadIntPtr(node, IntPtr.Size))
+            g_object_unref(Marshal.ReadIntPtr(node));
+        g_list_free(list);
+        return true;
     }
 
     private static string Name(SecretKind kind) => kind == SecretKind.DbKey ? "db-key" : "auto-backup";
@@ -152,6 +176,16 @@ public sealed partial class LibsecretSecretStore : ISecretStore
 
     [LibraryImport(Lib)]
     private static partial void secret_password_free(IntPtr password);
+
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr secret_password_search_sync(IntPtr schema, int flags, IntPtr cancellable, out IntPtr error,
+        string a1, string v1, string a2, string v2, IntPtr end);
+
+    [LibraryImport(GLib)]
+    private static partial void g_list_free(IntPtr list);
+
+    [LibraryImport(GObject)]
+    private static partial void g_object_unref(IntPtr obj);
 
     [LibraryImport(GLib)]
     private static partial void g_error_free(IntPtr error);

@@ -626,7 +626,9 @@ public static class Strings
     public static string Settings_DeviceKey_Forget => Get("Settings.DeviceKey.Forget");
     public static string Settings_DeviceKey_ForgetConfirm => Get("Settings.DeviceKey.ForgetConfirm");
     public static string Backup_Settings_SelfDisabledWarning => Get("Backup.Settings.SelfDisabledWarning");
-    public static string Backup_Settings_TestOk => Get("Backup.Settings.TestOk");
+    public static string Backup_Settings_TestDisabled => Get("Backup.Settings.TestDisabled");
+    public static string Backup_Settings_TestNotDue => Get("Backup.Settings.TestNotDue");
+    public static string Backup_Settings_TestCreated => Get("Backup.Settings.TestCreated");
     public static string Backup_Settings_KeyringUnavailable => Get("Backup.Settings.KeyringUnavailable");
     public static string Backup_Settings_PassphraseTooShort => Get("Backup.Settings.PassphraseTooShort");
     public static string Backup_Settings_PassphraseMismatch => Get("Backup.Settings.PassphraseMismatch");

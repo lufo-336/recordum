@@ -14,10 +14,10 @@ public class BackupSchedulerHostTests
     {
         private int _runDueCount;
         public int RunDueCount => Volatile.Read(ref _runDueCount);
-        public Task RunDueAsync(CancellationToken ct = default)
+        public Task<BackupRunOutcome> RunDueAsync(CancellationToken ct = default)
         {
             Interlocked.Increment(ref _runDueCount);
-            return Task.CompletedTask;
+            return Task.FromResult(BackupRunOutcome.NotDue);
         }
         public DateTime? NextRunUtc => null;
         public bool IsEnabled => true;
