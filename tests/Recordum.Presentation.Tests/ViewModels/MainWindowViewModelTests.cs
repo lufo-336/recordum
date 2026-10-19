@@ -261,7 +261,7 @@ public class MainWindowViewModelTests
         var exportLauncher = new FakeExportDialogLauncher();
         var backupLauncher = new FakeBackupDialogLauncher();
         var backupLog = new FakeBackupLogService();
-        var backupHistory = new BackupHistoryViewModel(backupLog);
+        var backupHistory = new BackupHistoryViewModel(backupLog, new FakeFolderOpener());
         var settingsLauncher = new FakeSettingsWindowLauncher();
         var sut = new MainWindowViewModel(home, settings, timerStatusBar, workspace, charts, exportLauncher, backupLauncher, backupHistory, settingsLauncher, new FakeApplicationLifetime());
         return (sut, new Parts(query, nodes, home, workspace, settings, exportLauncher, settingsLauncher));

@@ -197,6 +197,7 @@ public static class ServiceRegistrar
         services.AddSingleton<IBackupSaveFileDialog, WpfBackupSaveFileDialog>();
         services.AddSingleton<IOpenFileDialog, WpfOpenFileDialog>();
         services.AddSingleton<IFolderPicker, WpfFolderPicker>();
+        services.AddSingleton<IFolderOpener, WpfFolderOpener>();
         services.AddScoped<IBackupService>(sp => new BackupService(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IDbKeyProvider>(),

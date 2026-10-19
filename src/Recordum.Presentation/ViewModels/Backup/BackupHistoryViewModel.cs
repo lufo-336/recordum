@@ -1,13 +1,13 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.Backup;
 
-public sealed partial class BackupHistoryViewModel(IBackupLogService log) : ObservableObject
+public sealed partial class BackupHistoryViewModel(IBackupLogService log, IFolderOpener folderOpener) : ObservableObject
 {
     public ObservableCollection<BackupHistoryRowViewModel> Rows { get; } = [];
 
@@ -28,12 +28,11 @@ public sealed partial class BackupHistoryViewModel(IBackupLogService log) : Obse
     }
 
     [RelayCommand]
-#pragma warning disable CA1822
-    private void OpenFolder(BackupHistoryRowViewModel row)
-#pragma warning restore CA1822
+    private async Task OpenFolderAsync(BackupHistoryRowViewModel row)
     {
+        ArgumentNullException.ThrowIfNull(row);
         var folder = Path.GetDirectoryName(row.Path);
         if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder)) return;
-        Process.Start(new ProcessStartInfo("explorer.exe", $"\"{folder}\"") { UseShellExecute = true });
+        await folderOpener.OpenAsync(folder).ConfigureAwait(true);
     }
 }

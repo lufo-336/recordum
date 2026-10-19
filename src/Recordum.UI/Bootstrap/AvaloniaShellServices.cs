@@ -61,6 +61,7 @@ public static class AvaloniaShellServices
         services.AddSingleton<IBackupSaveFileDialog>(_ => new AvaloniaBackupSaveFileDialog(TopmostWindow));
         services.AddSingleton<IOpenFileDialog>(_ => new AvaloniaOpenFileDialog(TopmostWindow));
         services.AddSingleton<IFolderPicker>(_ => new AvaloniaFolderPicker(TopmostWindow));
+        services.AddSingleton<IFolderOpener>(_ => new AvaloniaFolderOpener(TopmostWindow));
         services.AddSingleton<IClipboard, NullClipboard>();
         services.AddSingleton<IScreenColorPicker, NullScreenColorPicker>();
         services.AddSingleton<IEditorAvailability, NullEditorAvailability>();

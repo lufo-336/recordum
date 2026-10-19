@@ -7,6 +7,8 @@ using Avalonia.VisualTree;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Models;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.Backup;
@@ -37,6 +39,12 @@ public class DataAndBackupPageTests
     private sealed class FixedFolder(string? path) : IFolderPicker
     {
         public Task<string?> PickFolderAsync(string? initialFolder) => Task.FromResult(path);
+    }
+
+    private sealed class RecordingOpener : IFolderOpener
+    {
+        public readonly List<string> Opened = [];
+        public Task OpenAsync(string folder) { Opened.Add(folder); return Task.CompletedTask; }
     }
 
     private sealed class RecordingLauncher : ISettingsWindowLauncher
@@ -163,6 +171,40 @@ public class DataAndBackupPageTests
             PrivateDbHost.Pump();
             box.Text.Should().Be("/data/mine");
             vm.Settings.Folder.Should().Be("/data/mine");
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task History_row_has_a_named_open_folder_button_that_opens_the_backup_folder()
+    {
+        var opener = new RecordingOpener();
+        var host = NewHost("set-open", new FakeSecrets(false), s => s.AddSingleton<IFolderOpener>(opener));
+        await using var scope = host.Provider.CreateAsyncScope();
+        var dir = scope.ServiceProvider.GetRequiredService<IBackupStoragePaths>().BackupsDirectory;
+        Directory.CreateDirectory(dir);
+        await scope.ServiceProvider.GetRequiredService<IBackupLogService>().RecordAsync(new BackupLog
+        {
+            Id = Guid.NewGuid(), CreatedAt = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc), Kind = "Manual",
+            Path = Path.Combine(dir, "a.recbak"), SizeBytes = 1, SchemaVersion = "2.18", AppVersion = "1.0.0",
+        });
+        var (window, vm) = await OpenAsync(scope.ServiceProvider, showDeviceKey: true);
+        try
+        {
+            var button = Find<Button>(window, "OpenFolderButton");
+            button.IsEffectivelyVisible.Should().BeTrue();
+            AutomationProperties.GetName(button).Should().Be(Recordum.Presentation.Resources.Strings.Backup_History_OpenFolder);
+
+            button.Command!.Execute(button.CommandParameter);
+            PrivateDbHost.Pump();
+            opener.Opened.Should().ContainSingle().Which.Should().Be(dir);
+
+            // Il binding cercava i comandi su BackupHistoryViewModel, ma il DataContext dell'ItemsControl è la pagina:
+            // anche "Elimina" aveva un comando null e non faceva niente.
+            var delete = Find<Button>(window, "DeleteBackupButton");
+            delete.Command!.Execute(delete.CommandParameter);
+            PrivateDbHost.Pump();
+            vm.History.Rows.Should().BeEmpty();
         }
         finally { window.Close(); }
     }

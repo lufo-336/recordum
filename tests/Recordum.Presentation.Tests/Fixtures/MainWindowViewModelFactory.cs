@@ -35,7 +35,7 @@ public static class MainWindowViewModelFactory
         var exportLauncher = new FakeExportDialogLauncher();
         var backupLauncher = launcher ?? new FakeBackupDialogLauncher();
         var backupLog = log ?? new FakeBackupLogService();
-        var backupHistory = new BackupHistoryViewModel(backupLog);
+        var backupHistory = new BackupHistoryViewModel(backupLog, new FakeFolderOpener());
 
         return new MainWindowViewModel(home, settings, timerStatusBar, workspace, charts, exportLauncher, backupLauncher, backupHistory, new FakeSettingsWindowLauncher(), new FakeApplicationLifetime());
     }

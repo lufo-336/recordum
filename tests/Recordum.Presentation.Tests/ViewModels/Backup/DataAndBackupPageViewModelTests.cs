@@ -29,7 +29,7 @@ public class DataAndBackupPageViewModelTests
         var launcher = new FakeBackupDialogLauncher();
         var page = new DataAndBackupPageViewModel(
             new BackupSettingsViewModel(settings, keys, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths()),
-            new BackupHistoryViewModel(new FakeBackupLogService()), launcher, secrets, confirm, showDeviceKey);
+            new BackupHistoryViewModel(new FakeBackupLogService(), new FakeFolderOpener()), launcher, secrets, confirm, showDeviceKey);
         return (page, secrets, confirm, keys, launcher, settings);
     }
 

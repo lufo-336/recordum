@@ -33,7 +33,7 @@
 - Informativi: F1-1, F1-2, F1-3, F1-5, F1-8, F1-9, F1-10, F1-DND1, F1-LOG1 · `reported`
 
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
-di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante · **F2c-2** quiesce di tutti gli utenti del DB durante un
+di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
 **F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
 **F2c-8** stato della pagina col portachiavi irraggiungibile.
@@ -2054,8 +2054,10 @@ Esiti verificati contro codice e test dell'onda (branch `f2c-data-safety`, in pi
 
 Nuovi, rimandati dalle review dell'onda:
 
-- **F2c-1 — "Apri cartella" nello storico dei backup manca su Avalonia** · `reported` · WPF usava `explorer.exe`; serve un
-  lanciatore per piattaforma (`xdg-open` su Linux).
+- **F2c-1 — "Apri cartella" nello storico dei backup manca su Avalonia** · `fixed` · WPF usava `explorer.exe`; serve un
+  lanciatore per piattaforma (`xdg-open` su Linux). Ora `IFolderOpener` (WPF `explorer.exe`, Avalonia
+  `Launcher.LaunchDirectoryInfoAsync`). Trovato strada facendo: su Avalonia anche "Elimina" nello storico aveva un comando
+  null (il binding cercava `BackupHistoryViewModel` nel DataContext dell'`ItemsControl`, che è la pagina); corretto e provato.
 - **F2c-2 — quiesce di tutti gli utenti del DB durante un restore** · `reported` · Fra `RestoreService` e gli altri
   utenti del DB non c'è nessun cancello: il tick di `BackupSchedulerHost` è uno di essi, come ogni query della UI (CR1,
   preesistente). Su Windows un tick dovuto dentro il restore può far fallire lo scambio dei file (rollback, dati

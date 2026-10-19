@@ -84,7 +84,7 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
             typeof(IHabitBuilderLauncher), typeof(ISettingsWindowLauncher), typeof(IExportDialogLauncher),
             typeof(IBackupDialogLauncher), typeof(ISaveFileDialog), typeof(IBackupSaveFileDialog),
             typeof(IOpenFileDialog), typeof(IClipboard), typeof(IScreenColorPicker),
-            typeof(IAutoBackupKeyStore), typeof(IEditorAvailability), typeof(IFolderPicker),
+            typeof(IAutoBackupKeyStore), typeof(IEditorAvailability), typeof(IFolderPicker), typeof(IFolderOpener),
         ];
         Assert.All(platform, t => Assert.DoesNotContain(t, registered));
     }

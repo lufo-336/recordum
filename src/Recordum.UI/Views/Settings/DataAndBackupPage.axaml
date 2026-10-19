@@ -77,9 +77,15 @@
                 <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"
                            Text="{CompiledBinding Path}"/>
               </StackPanel>
-              <Button Grid.Column="1" VerticalAlignment="Center" Content="{x:Static res:Strings.Backup_History_Delete}"
-                      Command="{CompiledBinding $parent[ItemsControl].((vm:BackupHistoryViewModel)DataContext).DeleteCommand}"
-                      CommandParameter="{CompiledBinding}"/>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Name="OpenFolderButton" Content="{x:Static res:Strings.Backup_History_OpenFolder}"
+                        AutomationProperties.Name="{x:Static res:Strings.Backup_History_OpenFolder}"
+                        Command="{CompiledBinding $parent[ItemsControl].((vm:DataAndBackupPageViewModel)DataContext).History.OpenFolderCommand}"
+                        CommandParameter="{CompiledBinding}"/>
+                <Button Name="DeleteBackupButton" Content="{x:Static res:Strings.Backup_History_Delete}"
+                        Command="{CompiledBinding $parent[ItemsControl].((vm:DataAndBackupPageViewModel)DataContext).History.DeleteCommand}"
+                        CommandParameter="{CompiledBinding}"/>
+              </StackPanel>
             </Grid>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
