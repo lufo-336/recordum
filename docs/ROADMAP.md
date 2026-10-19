@@ -38,8 +38,8 @@
   Impostazioni; (7) un `.recbak` della VM Windows ripristinato su Linux; (8) `ls -l` della cartella dati: i tre file
   del database sono 0600.
 - **Prossimo**: le checklist dell'autore e i merge in ordine
-  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`), poi F2d. Il branch
-  `wip/f1-task6` è superato e si può cancellare.
+  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`), poi F2d.
+
 
 ## Il percorso
 
