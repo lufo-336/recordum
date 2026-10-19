@@ -14,16 +14,18 @@
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
   automatico su Avalonia, finestre Backup e Ripristina, finestra Impostazioni con "Dati e backup", `.recbak` incrociati
   Windows↔Linux, file del database 0600. Review dell'intero branch fatta, con un'onda di correzioni (R11: un portachiavi
-  momentaneamente irraggiungibile non spegne più l'auto-backup). Cronaca e conteggi in
+  momentaneamente irraggiungibile non spegne più l'auto-backup). Dopo la review: "Sfoglia…" per scegliere la cartella
+  dei backup automatici (`IFolderPicker`, la cartella di default come suggerimento) e "Salva" che dice l'esito
+  (chiude F2c-7). Cronaca e conteggi in
   `docs/MILESTONES.md`; finding in `docs/phase-4-issues.md`.
 - **WPF non si usa più** (decisione dell'autore, 2026-10-17): non si avvia per l'uso quotidiano né come riserva; il
   dogfooding parte e resta su Avalonia. WPF rimane nel repository, congelata, solo come **riferimento di comportamento**
   per i porting di F3–F7 e perché la CI Windows continui a compilare e testare il codice condiviso; si tocca solo dove un
   contratto condiviso lo obbliga. Si cancella a F8, con i criteri della spec Avalonia §7.
 - **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); intestazione della Home
-  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i residui di F2c (**F2c-1…8**: "Apri cartella", quiesce
-  del DB durante un restore, modo del file dopo un restore, "ricorda" scaduta, avviso di timeout, stringhe inglesi, "Salva"
-  silenzioso, stato della pagina col portachiavi irraggiungibile).
+  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i residui di F2c (**F2c-1…6, 8**: "Apri cartella", quiesce
+  del DB durante un restore, modo del file dopo un restore, "ricorda" scaduta, avviso di timeout, stringhe inglesi,
+  stato della pagina col portachiavi irraggiungibile).
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
 - **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario** (nota veloce con foto D10, editor
@@ -34,7 +36,8 @@
   builder, configurare ogni sezione, finestra stretta, **W2V-16** e **W2V-18**); **F2c su GNOME**: (1) primo avvio con
   "Ricorda su questo dispositivo"; (2) riavvio senza passphrase; (3) Seahorse mostra le due voci "Recordum …" con
   l'etichetta giusta; (4) "Dimentica su questo dispositivo" e riavvio con la passphrase; (5) backup automatico acceso con la sua
-  passphrase, e spento (con l'avviso nella pagina) se la si cancella in Seahorse; (6) "Backup ora" e "Ripristina…" dalle
+  passphrase, e spento (con l'avviso nella pagina) se la si cancella in Seahorse; "Sfoglia…" apre il selettore di
+  cartella del sistema e "Salva" dice l'esito; (6) "Backup ora" e "Ripristina…" dalle
   Impostazioni; (7) un `.recbak` della VM Windows ripristinato su Linux; (8) `ls -l` della cartella dati: i tre file
   del database sono 0600.
 - **Prossimo**: le checklist dell'autore e i merge in ordine

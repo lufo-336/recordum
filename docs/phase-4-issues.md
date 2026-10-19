@@ -35,7 +35,7 @@
 **Trovati in F2c (sezione "Onda F2c")** — F1-SEC1 e RV-5 sono `fixed` (verifica a schermo su GNOME); il pulsante Impostazioni
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante · **F2c-2** quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" ·
-**F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso ·
+**F2c-5** avviso di timeout impreciso · **F2c-6** stringhe inglesi preesistenti · **F2c-7** "Salva" silenzioso (`fixed`) ·
 **F2c-8** stato della pagina col portachiavi irraggiungibile.
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2069,8 +2069,9 @@ Nuovi, rimandati dalle review dell'onda:
 - **F2c-6 — stringhe inglesi preesistenti ora visibili su Avalonia** · `reported` · Avvisi dei plugin del restore,
   il fallback grezzo di `Readable(code)`, `ex.Code`/`ex.Message` in `BackupDialogViewModel`, l'etichetta del filtro
   "Recordum backup (*.recbak)" e il `Kind` grezzo nelle righe dello storico.
-- **F2c-7 — "Salva" in Dati e backup torna in silenzio con passphrase diverse o corta (< 12)** · `reported` ·
+- **F2c-7 — "Salva" in Dati e backup torna in silenzio con passphrase diverse o corta (< 12)** · `fixed` (`3f5948e`) ·
   Anche `backup.auto.enabled` non viene salvato: l'utente può credere che l'auto-backup sia acceso. Mostrare il motivo.
+  Ora la pagina dice perché rifiuta (passphrase diverse o corta) e conferma "Salvato." quando riesce.
 - **F2c-8 — con il portachiavi irraggiungibile la pagina "Dati e backup" dice la cosa sbagliata** · `reported` · Al
   caricamento mostra "nessuna passphrase" invece del motivo vero; "Prova" risponde "controllo finito" anche se non ha
   letto niente (lo scheduler inghiotte l'eccezione, R11); un prompt di sblocco annullato conta come passphrase mancante e
