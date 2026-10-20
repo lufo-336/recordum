@@ -26,8 +26,8 @@
   per i porting di F3–F7 e perché la CI Windows continui a compilare e testare il codice condiviso; si tocca solo dove un
   contratto condiviso lo obbliga. Si cancella a F8, con i criteri della spec Avalonia §7.
 - **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); intestazione della Home
-  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**); i residui di F2c (**F2c-9**: rekey e sblocco
-  senza cancello).
+  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**). **F2c-9** (rekey e sblocco senza cancello) è `triaged`:
+  nessun caso reale oggi; "cambia passphrase", quando arriverà, passa dal cancello.
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
 - **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario** (nota veloce con foto D10, editor

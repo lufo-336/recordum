@@ -36,7 +36,7 @@
 di F1-RAIL1 è riacceso. Nuovi, tutti `reported`: **F2c-1** "Apri cartella" mancante (`fixed`) · **F2c-2** (`fixed`) quiesce di tutti gli utenti del DB durante un
 restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un restore (`fixed`) · **F2c-4** "ricorda" scaduta che si completa dopo un "Dimentica" (`fixed`) ·
 **F2c-5** avviso di timeout impreciso (`fixed`) · **F2c-6** stringhe inglesi preesistenti (`fixed`) · **F2c-7** "Salva" silenzioso (`fixed`) ·
-**F2c-8** stato della pagina col portachiavi irraggiungibile (`fixed`) · **F2c-9** rekey e sblocco senza cancello.
+**F2c-8** stato della pagina col portachiavi irraggiungibile (`fixed`) · **F2c-9** rekey e sblocco senza cancello (`triaged`: nessun caso reale oggi).
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2097,7 +2097,11 @@ Nuovi, rimandati dalle review dell'onda:
   caricamento mostra "nessuna passphrase" invece del motivo vero; "Prova" risponde "controllo finito" anche se non ha
   letto niente (lo scheduler inghiotte l'eccezione, R11); un prompt di sblocco annullato conta come passphrase mancante e
   spegne l'auto-backup. Nessun dato perso: va mostrato lo stato vero.
-- **F2c-9 — rekey e sblocco svuotano il pool senza il cancello del database** · `reported` · `KeyTransitionService` e
+- **F2c-9 — rekey e sblocco svuotano il pool senza il cancello del database** · `triaged` · `KeyTransitionService` e
   `DbUnlockService` usano `ClearAllPools()` come faceva il restore prima di F2c-2: un'altra connessione aperta durante
-  un rekey non è fermata. Da valutare se passarli da `DatabaseGate.QuiesceAsync`.
+  un rekey non è fermata. Da valutare se passarli da `DatabaseGate.QuiesceAsync`. Valutato il 2026-10-20: nessun caso reale oggi.
+  Lo sblocco gira in `App.axaml.cs` prima che il container esista (il provider che restituisce serve a comporlo):
+  nessun altro utente del DB è aperto, e `DatabaseGate` non esiste ancora. Il rekey non ha chiamanti (registrato in DI,
+  nessuna schermata lo usa). **Obbligo**: la funzione "cambia passphrase", quando arriverà, passa da
+  `DatabaseGate.QuiesceAsync` come il restore.
 
