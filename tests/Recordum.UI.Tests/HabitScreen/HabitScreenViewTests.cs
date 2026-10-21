@@ -185,7 +185,7 @@ public class HabitScreenViewTests
         var id = await CreateHabitAsync("Chip", Red);
         var (_, view, w) = await OpenAsync(id);
         var chips = view.GetVisualDescendants().OfType<CheckBox>().Where(c => c.Classes.Contains("segment")).ToList();
-        chips.Should().HaveCount(4);
+        chips.Should().HaveCount(5);
         chips.Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipCronologia", "ChipConfigura");
         view.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "ExportButton").IsVisible.Should().BeFalse();
         w.Close();
