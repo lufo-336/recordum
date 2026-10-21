@@ -30,11 +30,19 @@ public sealed partial class AttachmentFileImport(
         {
             foreach (var dir in Directory.EnumerateDirectories(root).ToList())
             {
-                foreach (var file in Directory.EnumerateFiles(dir).ToList())
+                List<string> files;
+                try { files = Directory.EnumerateFiles(dir).ToList(); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    skipped++;
+                    LogFolderSkipped();
+                    continue;
+                }
+                foreach (var file in files)
                 {
                     ct.ThrowIfCancellationRequested();
                     var name = Path.GetFileNameWithoutExtension(file);
-                    if (!Guid.TryParse(name, out var id)) { LogLeftInPlace(); skipped++; continue; }
+                    if (!Guid.TryParseExact(name, "N", out var id)) { LogLeftInPlace(); skipped++; continue; }
 
                     try
                     {
@@ -50,14 +58,17 @@ public sealed partial class AttachmentFileImport(
                         row.IsMissing = false;
                         await db.SaveChangesAsync(ct).ConfigureAwait(false);
                         imported++;
-                        // Solo dopo il commit. Se questa cancellazione fallisce, il giro dopo lo tratta da avanzo.
-                        File.Delete(file);
                     }
                     catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                     {
                         skipped++;
                         LogSkipped(id);
+                        continue;
                     }
+
+                    // Solo dopo il commit. Se questa cancellazione fallisce, il giro dopo lo tratta da avanzo.
+                    try { File.Delete(file); }
+                    catch (Exception e) when (e is IOException or UnauthorizedAccessException) { LogSkipped(id); }
                 }
 
                 try { if (!Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir); }
@@ -79,7 +90,14 @@ public sealed partial class AttachmentFileImport(
         foreach (var row in rows)
         {
             var noteDir = Path.Combine(root, row.NoteId.ToString());
-            if (Directory.Exists(noteDir) && Directory.EnumerateFiles(noteDir, row.Id.ToString("N") + ".*").Any()) continue;
+            try
+            {
+                if (Directory.Exists(noteDir) && Directory.EnumerateFiles(noteDir, row.Id.ToString("N") + ".*").Any()) continue;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                continue; // non si riesce a guardare: il file potrebbe esserci, la riga non si marca
+            }
             row.IsMissing = true;
             marked++;
         }
@@ -95,6 +113,9 @@ public sealed partial class AttachmentFileImport(
 
     [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "Attachment file {Id} had no row (entry already deleted); file deleted")]
     private partial void LogOrphan(Guid id);
+
+    [LoggerMessage(EventId = 5, Level = LogLevel.Warning, Message = "An attachments subfolder could not be listed; left in place")]
+    private partial void LogFolderSkipped();
 
     [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "A file in the attachments folder is not named after an attachment; left in place")]
     private partial void LogLeftInPlace();

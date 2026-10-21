@@ -47,7 +47,7 @@ public sealed class AttachmentFileImportTests : IAsyncDisposable
 
     private async Task<Guid> SeedRowAsync(byte[]? content = null)
     {
-        await SeedNoteAsync().ContinueWith(_ => { }, TaskContinuationOptions.None);
+        await SeedNoteAsync();
         return await AddRowAsync(content);
     }
 
@@ -123,6 +123,55 @@ public sealed class AttachmentFileImportTests : IAsyncDisposable
 
         report.Should().Be(new AttachmentImportReport(0, 0, 1, 0, 0));
         File.Exists(path).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Dashed_guid_name_is_not_ours_and_stays()
+    {
+        var path = WriteFile(Path.Combine(_root, _noteId.ToString(), Guid.NewGuid() + ".jpg"), Png());
+
+        var report = await Sut().RunAsync(default);
+
+        report.Should().Be(new AttachmentImportReport(0, 0, 0, 1, 0));
+        File.Exists(path).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task File_of_a_note_in_a_soft_deleted_habit_is_imported_not_deleted_as_orphan()
+    {
+        var id = await SeedRowAsync();
+        await using (var db = await _fx.Factory.CreateDbContextAsync())
+        {
+            var h = await db.HabitNodes.SingleAsync();
+            h.DeletedAt = _fx.Clock.UtcNow.UtcDateTime;
+            await db.SaveChangesAsync();
+        }
+        var bytes = Png();
+        WriteFile(PathOf(id), bytes);
+
+        var report = await Sut().RunAsync(default);
+
+        report.Should().Be(new AttachmentImportReport(1, 0, 0, 0, 0));
+        (await RowAsync(id)).Content.Should().Equal(bytes);
+    }
+
+    [Fact]
+    [Trait("Category", "UnixOnly")]
+    public async Task Unlistable_note_folder_does_not_stop_the_run_nor_mark_its_row_missing()
+    {
+        var id = await SeedRowAsync();
+        var path = WriteFile(PathOf(id), Png());
+        var dir = Path.GetDirectoryName(path)!;
+        File.SetUnixFileMode(dir, UnixFileMode.None);
+        try
+        {
+            var report = await Sut().RunAsync(default);
+
+            report.Should().Be(new AttachmentImportReport(0, 0, 0, 1, 0));
+            (await RowAsync(id)).IsMissing.Should().BeFalse();
+        }
+        finally { File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+        File.Exists(path).Should().BeTrue();
     }
 
     [Fact]
