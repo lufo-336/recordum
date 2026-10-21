@@ -48,4 +48,22 @@ internal static class PhotoFixtures
         bytes.AsSpan().IndexOf("Exif\0\0"u8) >= 0;
 
     public static byte[] Heic() => [0, 0, 0, 24, .. "ftypheic"u8.ToArray(), .. new byte[64]];
+
+    /// <summary>A PNG whose header declares w x h but which holds no real pixel data (never decoded in full).</summary>
+    public static byte[] PngDeclaring(int w, int h)
+    {
+        var o = new List<byte> { 0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A };
+        void Chunk(string type, byte[] body)
+        {
+            var tb = System.Text.Encoding.ASCII.GetBytes(type).Concat(body).ToArray();
+            o.AddRange(BitConverter.GetBytes(body.Length).Reverse());
+            o.AddRange(tb);
+            uint crc = 0xFFFFFFFF;
+            foreach (var b in tb) { crc ^= b; for (var k = 0; k < 8; k++) crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : crc >> 1; }
+            o.AddRange(BitConverter.GetBytes(~crc).Reverse());
+        }
+        Chunk("IHDR", [.. BitConverter.GetBytes(w).Reverse(), .. BitConverter.GetBytes(h).Reverse(), 8, 6, 0, 0, 0]);
+        Chunk("IDAT", [0x78, 0x9C, 0, 0, 0, 0, 0, 0]);
+        return [.. o];
+    }
 }

@@ -130,6 +130,57 @@ public sealed class SkiaPhotoImporterTests : IDisposable
         ex.Filename.Should().Be(Path.GetFileName(path));
     }
 
+    [Theory]
+    [InlineData(30000, 30000)]   // over the pixel cap
+    [InlineData(20000, 10)]      // over the per-side cap
+    public async Task Declared_dimensions_over_the_cap_are_refused_before_allocating(int w, int h)
+    {
+        var path = Write("bomb.png", PhotoFixtures.PngDeclaring(w, h));
+        var ex = await Assert.ThrowsAsync<PhotoImportException>(() => Sut().ImportAsync(path, default));
+        ex.Reason.Should().Be(PhotoImportFailure.TooLarge);
+        ex.Filename.Should().Be("bomb.png");
+        Sut().TryMakeThumbnail(File.ReadAllBytes(path)).Should().BeNull();
+    }
+
+    [Fact]
+    public void TryMakeThumbnail_returns_null_instead_of_throwing()
+    {
+        var full = PhotoFixtures.Encode(800, 600, SKEncodedImageFormat.Jpeg);
+        Sut().TryMakeThumbnail("garbage"u8.ToArray()).Should().BeNull();
+        Sut().TryMakeThumbnail(full[..(full.Length / 2)]).Should().BeNull();
+        Sut().TryMakeThumbnail([]).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Reencoded_photo_gets_the_extension_of_its_bytes_and_keeporiginal_keeps_the_name()
+    {
+        var src = Write("foto.webp", PhotoFixtures.Encode(100, 80, SKEncodedImageFormat.Webp));
+        var photo = await Sut().ImportAsync(src, default);
+        photo.Filename.Should().Be("foto.jpg");
+        photo.MimeType.Should().Be("image/jpeg");
+
+        _settings[PhotoImportSettings.Key] = nameof(PhotoImportMode.KeepOriginal);
+        (await Sut().ImportAsync(src, default)).Filename.Should().Be("foto.webp");
+    }
+
+    [Fact]
+    public async Task Transparent_webp_becomes_white_not_black_in_jpeg()
+    {
+        using var bmp = new SKBitmap(64, 64);
+        bmp.Erase(SKColors.Transparent);
+        using var img = SKImage.FromBitmap(bmp);
+        var src = Write("t.webp", img.Encode(SKEncodedImageFormat.Webp, 90).ToArray());
+
+        var photo = await Sut().ImportAsync(src, default);
+
+        foreach (var bytes in new[] { photo.Content, photo.Thumbnail })
+        {
+            using var o = SKBitmap.Decode(bytes);
+            var px = o.GetPixel(32, 32);
+            px.Red.Should().BeGreaterThan(240); px.Green.Should().BeGreaterThan(240); px.Blue.Should().BeGreaterThan(240);
+        }
+    }
+
     [Fact]
     public async Task Source_file_is_untouched()
     {

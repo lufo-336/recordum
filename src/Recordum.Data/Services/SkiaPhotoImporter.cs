@@ -14,6 +14,9 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
     private const int MaxSide = 2048;
     private const int ThumbSide = 320;
     private const int JpegQuality = 85;
+    // Decompression-bomb cap: a tiny file can declare gigapixels. Checked on the header, before any allocation.
+    private const long MaxPixels = 100_000_000;
+    private const int MaxDimension = 16384;
 
     public async Task<ImportedPhoto> ImportAsync(string sourcePath, CancellationToken ct)
     {
@@ -31,7 +34,8 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
             using var bmp = Decode(content, "", out var format);
             return FitAndEncode(bmp, ThumbSide, format == SKEncodedImageFormat.Png ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Jpeg);
         }
-        catch (PhotoImportException) { return null; }
+        // Contract: null on any failure with these bytes (called at startup on legacy files, must never abort it).
+        catch (Exception e) when (e is not OperationCanceledException) { return null; }
     }
 
     private static ImportedPhoto Import(string path, string filename, PhotoImportMode mode)
@@ -60,11 +64,13 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
                 SKEncodedImageFormat.Webp => "image/webp",
                 _ => "image/jpeg",
             };
-            return new ImportedPhoto(filename, mime, bytes, thumb);
+            return new ImportedPhoto(filename, mime, bytes, thumb);   // original name: the bytes are the original
         }
 
         var content = FitAndEncode(oriented, mode == PhotoImportMode.ResizeAndClean ? MaxSide : int.MaxValue, outFormat);
-        return new ImportedPhoto(filename, isPng ? "image/png" : "image/jpeg", content, thumb);
+        // The bytes were re-encoded: the extension must say what they are (export links derive it from the name).
+        var name = Path.ChangeExtension(filename, isPng ? ".png" : ".jpg");
+        return new ImportedPhoto(name, isPng ? "image/png" : "image/jpeg", content, thumb);
     }
 
     /// <summary>Decodes to a bitmap with the EXIF orientation applied. Throws Unsupported / Unreadable.</summary>
@@ -75,6 +81,9 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
         if (codec is null || codec.EncodedFormat is not (SKEncodedImageFormat.Jpeg or SKEncodedImageFormat.Png or SKEncodedImageFormat.Webp))
             throw new PhotoImportException(filename, PhotoImportFailure.Unsupported);
         format = codec.EncodedFormat;
+        var (cw, ch) = (codec.Info.Width, codec.Info.Height);
+        if (cw <= 0 || ch <= 0 || cw > MaxDimension || ch > MaxDimension || (long)cw * ch > MaxPixels)
+            throw new PhotoImportException(filename, PhotoImportFailure.TooLarge);
 
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
         var bmp = new SKBitmap(info);
@@ -131,8 +140,19 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
 
     private static byte[] Encode(SKBitmap bmp, SKEncodedImageFormat format)
     {
-        using var img = SKImage.FromBitmap(bmp);
+        // JPEG has no alpha: flatten onto white, or transparent pixels turn black.
+        using var flat = format == SKEncodedImageFormat.Jpeg ? FlattenOnWhite(bmp) : null;
+        using var img = SKImage.FromBitmap(flat ?? bmp);
         using var data = img.Encode(format, format == SKEncodedImageFormat.Png ? 100 : JpegQuality);
         return data.ToArray();
+    }
+
+    private static SKBitmap FlattenOnWhite(SKBitmap src)
+    {
+        var dst = new SKBitmap(src.Width, src.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        using var canvas = new SKCanvas(dst);
+        canvas.Clear(SKColors.White);
+        canvas.DrawBitmap(src, 0, 0);
+        return dst;
     }
 }
