@@ -34,6 +34,11 @@ public sealed class CoreInitializer(
         await using (var scope = scopes.CreateAsyncScope())
             await scope.ServiceProvider.GetRequiredService<RetroactiveNoonBackfill>().RunAsync(ct).ConfigureAwait(false);
 
+        // F2d-1: le foto del vecchio layout su disco entrano nel database. Uno scope proprio, come sopra; un errore
+        // del database ferma l'avvio, un file illeggibile no (lo salta l'import stesso).
+        await using (var scope = scopes.CreateAsyncScope())
+            await scope.ServiceProvider.GetRequiredService<AttachmentFileImport>().RunAsync(ct).ConfigureAwait(false);
+
         _ = pluginManager.ListEnabled();
 
         foreach (var step in steps)

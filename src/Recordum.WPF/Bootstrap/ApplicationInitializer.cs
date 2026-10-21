@@ -19,7 +19,8 @@ public sealed class ApplicationInitializer(
     IExportEngineActivator exportEngine,
     IWebView2Availability webView2,
     BackupSchedulerHost backupHost,
-    RetroactiveNoonBackfill retroBackfill)
+    RetroactiveNoonBackfill retroBackfill,
+    AttachmentFileImport attachmentImport)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -40,6 +41,7 @@ public sealed class ApplicationInitializer(
         // legge giorni. Nessun try/catch: se fallisce deve fallire l'avvio come una migrazione
         // fallita — un backfill saltato in silenzio e' peggio di un avvio che si lamenta.
         await retroBackfill.RunAsync(ct).ConfigureAwait(false);
+        await attachmentImport.RunAsync(ct).ConfigureAwait(false);
 
         _ = pluginManager.ListEnabled();
 
