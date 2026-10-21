@@ -175,6 +175,22 @@ public sealed class AttachmentFileImportTests : IAsyncDisposable
     }
 
     [Fact]
+    [Trait("Category", "UnixOnly")]
+    public async Task Unreadable_attachments_root_does_not_stop_the_run_nor_mark_rows_missing()
+    {
+        var id = await SeedRowAsync();
+        File.SetUnixFileMode(_root, UnixFileMode.None);
+        try
+        {
+            var report = await Sut().RunAsync(default);
+
+            report.Should().Be(new AttachmentImportReport(0, 0, 0, 0, 0));
+            (await RowAsync(id)).IsMissing.Should().BeFalse();
+        }
+        finally { File.SetUnixFileMode(_root, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+    }
+
+    [Fact]
     public async Task File_that_is_not_a_guid_stays()
     {
         var path = WriteFile(Path.Combine(_root, _noteId.ToString(), "appunti.txt"), [1]);

@@ -28,14 +28,22 @@ public sealed partial class AttachmentFileImport(
 
         if (Directory.Exists(root))
         {
-            foreach (var dir in Directory.EnumerateDirectories(root).ToList())
+            List<string> dirs;
+            try { dirs = Directory.EnumerateDirectories(root).ToList(); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // Radice illeggibile: non si sa quali file esistano, quindi nemmeno si marca niente come mancante.
+                LogRootUnreadable();
+                return new AttachmentImportReport(0, 0, 0, 0, 0);
+            }
+            foreach (var dir in dirs)
             {
                 List<string> files;
                 try { files = Directory.EnumerateFiles(dir).ToList(); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                 {
                     skipped++;
-                    LogFolderSkipped();
+                    LogFolderSkipped(Path.GetFileName(dir));
                     continue;
                 }
                 foreach (var file in files)
@@ -114,8 +122,11 @@ public sealed partial class AttachmentFileImport(
     [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "Attachment file {Id} had no row (entry already deleted); file deleted")]
     private partial void LogOrphan(Guid id);
 
-    [LoggerMessage(EventId = 5, Level = LogLevel.Warning, Message = "An attachments subfolder could not be listed; left in place")]
-    private partial void LogFolderSkipped();
+    [LoggerMessage(EventId = 5, Level = LogLevel.Warning, Message = "Attachments subfolder {Folder} could not be listed; left in place")]
+    private partial void LogFolderSkipped(string folder);
+
+    [LoggerMessage(EventId = 6, Level = LogLevel.Warning, Message = "The attachments folder could not be listed; import skipped")]
+    private partial void LogRootUnreadable();
 
     [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "A file in the attachments folder is not named after an attachment; left in place")]
     private partial void LogLeftInPlace();
