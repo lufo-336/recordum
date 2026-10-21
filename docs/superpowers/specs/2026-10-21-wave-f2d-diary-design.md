@@ -120,10 +120,11 @@ Il costo è un DB più grande: con foto ridimensionate (~300 KB) un uso da food 
 - **Migrazione dei file esistenti** (schema 2.19): all'avvio, una volta, i file di `attachments/` entrano nel BLOB **così
   come sono** (non si ridimensionano: sono dell'utente, D10 vale all'import). Un file si cancella **solo dopo** il commit della
   sua riga; un file mancante o illeggibile si registra nel log e la riga resta, segnata come mancante, mai cancellata in
-  silenzio. A migrazione completata la cartella `attachments/` vuota si toglie.
+  silenzio. L'import gira a ogni avvio ed è idempotente (a cartella vuota non costa niente).
 - Chi legge le foto (export, miniature, editor) le chiede a `IAttachmentService` come byte o stream, non come percorso.
-  Il backup smette di copiare `attachments/`; il restore di un `.recbak` vecchio che contiene `attachments/` le importa nel BLOB
-  con la stessa logica della migrazione.
+  Backup e restore **non cambiano** (precisato scrivendo il piano): il backup copia ciò che resta in `attachments/` (file
+  illeggibili che l'import ha lasciato lì: meglio salvati che persi); il restore di un `.recbak` vecchio rimette i file in
+  `attachments/`, e l'avvio successivo li importa.
 - **Gli allegati sono della voce, non del testo** (mia scelta). Una foto appartiene alla voce finché la voce esiste o
   finché l'utente la toglie esplicitamente dall'elenco delle foto; un riferimento `![](…)` cancellato dal testo **non**
   cancella l'allegato (le versioni in `NoteHistory` possono ancora puntarci, e niente si perde per un taglia-incolla). Le due
