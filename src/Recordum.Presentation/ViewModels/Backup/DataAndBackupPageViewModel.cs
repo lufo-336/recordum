@@ -21,10 +21,12 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
         IBackupDialogLauncher launcher,
         ISecretStore secrets,
         IConfirmationDialog confirm,
+        PhotoImportSettingsViewModel photos,
         bool showDeviceKey)
     {
         Settings = settings;
         History = history;
+        Photos = photos;
         _launcher = launcher;
         _secrets = secrets;
         _confirm = confirm;
@@ -41,6 +43,7 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
 
     public BackupSettingsViewModel Settings { get; }
     public BackupHistoryViewModel History { get; }
+    public PhotoImportSettingsViewModel Photos { get; }
     public bool ShowDeviceKey { get; }
 
     [ObservableProperty]
@@ -65,6 +68,7 @@ public sealed partial class DataAndBackupPageViewModel : ObservableObject
     {
         await Settings.LoadAsync(ct).ConfigureAwait(true);
         await History.LoadAsync(ct).ConfigureAwait(true);
+        await Photos.LoadAsync(ct).ConfigureAwait(true);
         if (ShowDeviceKey) IsDeviceKeyRemembered = await Task.Run(ReadDeviceKeyState, ct).ConfigureAwait(true);
         OnPropertyChanged(nameof(AutoBackupOffWarning));
         OnPropertyChanged(nameof(AutoBackupOffText));

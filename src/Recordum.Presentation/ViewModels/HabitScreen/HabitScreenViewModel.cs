@@ -50,6 +50,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IResetTimeResolver _resetTimes;
     private readonly Recordum.Core.IAttachmentService _attachments;
     private readonly IPhotoImporter _photoImporter;
+    private readonly ITagService _tags;
     private readonly IOpenFileDialog _openFileDialog;
     private readonly IConfirmationDialog _confirmationDialog;
     private readonly ITickSourceFactory? _ticks;
@@ -560,6 +561,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IConfirmationDialog confirmationDialog,
         Recordum.Core.IAttachmentService attachments,
         IPhotoImporter photoImporter,
+        ITagService tags,
         IOpenFileDialog openFileDialog,
         IHabitUiPrefsService uiPrefs,
         IResetTimeResolver resetTimes,
@@ -601,6 +603,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _resetTimes = resetTimes;
         _attachments = attachments;
         _photoImporter = photoImporter;
+        ArgumentNullException.ThrowIfNull(tags);
+        _tags = tags;
         _openFileDialog = openFileDialog;
         _confirmationDialog = confirmationDialog;
         _ticks = ticks;
@@ -758,11 +762,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (node.HabitType == HabitType.Journal)
         {
             var prefs = await _uiPrefs.GetAsync(node.Id, ct).ConfigureAwait(true);
-            _isQuickNoteJournal = prefs.JournalGesture == JournalPrimaryGesture.QuickNote;
+            // Senza l'editor Markdown (Avalonia fino a F2d-2, WPF senza WebView2) ogni diario apre la nota veloce.
+            _isQuickNoteJournal = prefs.JournalGesture == JournalPrimaryGesture.QuickNote || !Availability.IsAvailable;
             if (_isQuickNoteJournal)
             {
                 var composer = new JournalQuickEntryViewModel(
-                    _diary, _noteService, _attachments, _photoImporter, _openFileDialog, _confirmationDialog, _clock);
+                    _diary, _noteService, _attachments, _photoImporter, _tags, _openFileDialog, _confirmationDialog, _clock);
                 await composer.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
                 JournalQuickEntry = composer;
                 QuickAdd = null;          // niente editor Markdown per questa abitudine

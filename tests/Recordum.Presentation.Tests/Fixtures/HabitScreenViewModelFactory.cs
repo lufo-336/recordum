@@ -66,7 +66,7 @@ public static class HabitScreenViewModelFactory
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             new FakeAbstinenceService(), clock, bus, new FakeEditorAvailability(), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakePhotoImporter(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
+            new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
 
         notes = noteService;
         configs = configService;

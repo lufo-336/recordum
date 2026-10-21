@@ -211,6 +211,7 @@ public static class RecordumServiceCollectionExtensions
         services.AddTransient<RestoreDialogViewModel>();
         services.AddTransient<BackupHistoryViewModel>();
         services.AddTransient<BackupSettingsViewModel>();
+        services.AddTransient<PhotoImportSettingsViewModel>();
         services.AddSingleton(new BackupSchedulerOptions());
         services.AddSingleton<BackupSchedulerHost>();
         services.AddScoped<IBackupSchedulerRunner, BackupSchedulerRunnerAdapter>();

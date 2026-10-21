@@ -335,7 +335,7 @@ public class DetailDayBoundaryTests
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, new FakeEventBus(), new FakeEditorAvailability(available: true), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakePhotoImporter(), new FakeOpenFileDialog(), uiPrefs, resetTimes);
+            new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs, resetTimes);
         return (vm, nodes, abstinence);
     }
 }

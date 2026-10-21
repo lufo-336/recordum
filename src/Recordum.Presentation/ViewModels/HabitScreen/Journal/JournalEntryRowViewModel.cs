@@ -1,18 +1,45 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Recordum.Core.Abstractions;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
 /// <summary>Una voce di diario nella lista del giorno. Nessun comando proprio: modifica ed
-/// eliminazione appartengono al VM padre, come per NoteRowViewModel.</summary>
-public sealed partial class JournalEntryRowViewModel(Note note) : ObservableObject
+/// eliminazione appartengono al VM padre, come per NoteRowViewModel. Foto aggiunte, foto tolte e
+/// riga Tag cambiano solo in memoria finché il padre non salva (annulla = <see cref="CancelEdit"/>).</summary>
+public sealed partial class JournalEntryRowViewModel : ObservableObject
 {
-    public Guid Id { get; } = note.Id;
-    public DateTime CreatedAt { get; } = note.CreatedAt;
+    private List<AttachmentViewModel> _photosBeforeEdit = [];
 
-    [ObservableProperty] private string _text = note.BodyMd;
+    public JournalEntryRowViewModel(Note note, IReadOnlyList<EntryTag> tags, IClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(note);
+        ArgumentNullException.ThrowIfNull(tags);
+        ArgumentNullException.ThrowIfNull(clock);
+        Id = note.Id;
+        CreatedAt = note.CreatedAt;
+        _text = note.BodyMd;
+        Tags = tags.Select(t => t.Name).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+        PropertyTagNames = tags.Where(t => t.Source == NoteTagSource.Property).Select(t => t.Name).ToList();
+        // CreatedAt è UTC; la riga mostra l'ora che l'utente ha vissuto (decisione 8). Invariant: i due punti restano due punti.
+        var utc = DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc);
+        TimeDisplay = TimeZoneInfo.ConvertTimeFromUtc(utc, clock.LocalTimeZone).ToString("HH:mm", CultureInfo.InvariantCulture);
+    }
+
+    public Guid Id { get; }
+    public DateTime CreatedAt { get; }
+    public string TimeDisplay { get; }
+
+    /// <summary>Tutti i tag della voce (nel testo e nella riga Tag), per nome.</summary>
+    public IReadOnlyList<string> Tags { get; }
+
+    internal IReadOnlyList<string> PropertyTagNames { get; }
+
+    [ObservableProperty] private string _text;
 
     /// <summary>Testo in corso di modifica in riga; valorizzato solo mentre <see cref="IsEditing"/>.</summary>
     [ObservableProperty] private string _editDraft = string.Empty;
@@ -20,4 +47,40 @@ public sealed partial class JournalEntryRowViewModel(Note note) : ObservableObje
     [ObservableProperty] private bool _isEditing;
 
     public ObservableCollection<AttachmentViewModel> Photos { get; } = [];
+
+    /// <summary>Riga Tag in modifica; null fuori dalla modifica (nessun template da costruire).</summary>
+    [ObservableProperty] private TagEditorViewModel? _editTags;
+
+    /// <summary>Foto scelte in modifica, ancora da salvare.</summary>
+    public ObservableCollection<ImportedPhoto> AddedPhotos { get; } = [];
+
+    /// <summary>Foto già salvate che l'utente ha tolto in modifica, ancora da cancellare.</summary>
+    public List<Guid> RemovedPhotoIds { get; } = [];
+
+    internal void BeginEdit(IReadOnlyList<string> knownTags)
+    {
+        EditDraft = Text;
+        _photosBeforeEdit = [.. Photos];
+        AddedPhotos.Clear();
+        RemovedPhotoIds.Clear();
+        var editor = new TagEditorViewModel { KnownNames = knownTags };
+        foreach (var t in PropertyTagNames) editor.Tags.Add(t);
+        EditTags = editor;
+        IsEditing = true;
+    }
+
+    internal void RemovePhoto(AttachmentViewModel photo)
+    {
+        if (Photos.Remove(photo)) RemovedPhotoIds.Add(photo.Id);
+    }
+
+    internal void CancelEdit()
+    {
+        IsEditing = false;
+        Photos.Clear();
+        foreach (var p in _photosBeforeEdit) Photos.Add(p);
+        AddedPhotos.Clear();
+        RemovedPhotoIds.Clear();
+        EditTags = null;
+    }
 }

@@ -67,7 +67,7 @@ public class DataAndBackupPageTests
         var real = scopeProvider.GetRequiredService<DataAndBackupPageViewModel>();
         var vm = showDeviceKey is null || showDeviceKey == real.ShowDeviceKey ? real
             : new DataAndBackupPageViewModel(real.Settings, real.History, scopeProvider.GetRequiredService<IBackupDialogLauncher>(),
-                scopeProvider.GetRequiredService<ISecretStore>(), scopeProvider.GetRequiredService<IConfirmationDialog>(), showDeviceKey.Value);
+                scopeProvider.GetRequiredService<ISecretStore>(), scopeProvider.GetRequiredService<IConfirmationDialog>(), real.Photos, showDeviceKey.Value);
         await vm.LoadAsync();
         var window = new SettingsWindow { DataContext = vm, Width = width };
         if (variant is not null) window.RequestedThemeVariant = variant;

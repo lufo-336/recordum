@@ -1795,4 +1795,31 @@
   <data name="Backup.Settings.Browse" xml:space="preserve">
     <value>Sfoglia…</value>
   </data>
+  <data name="Diario.QuickEntry.Error.PhotoUnsupported" xml:space="preserve">
+    <value>«{0}» non è un'immagine supportata. Usa JPEG, PNG o WebP.</value>
+  </data>
+  <data name="Diario.QuickEntry.Error.PhotoTooLarge" xml:space="preserve">
+    <value>«{0}» è troppo grande (il limite è 50 MB).</value>
+  </data>
+  <data name="Diario.QuickEntry.Error.PhotoUnreadable" xml:space="preserve">
+    <value>«{0}» non si può leggere.</value>
+  </data>
+  <data name="Diario.Tag.Create" xml:space="preserve">
+    <value>Crea «{0}»</value>
+  </data>
+  <data name="Settings.Photos.Title" xml:space="preserve">
+    <value>Foto</value>
+  </data>
+  <data name="Settings.Photos.Mode.ResizeAndClean" xml:space="preserve">
+    <value>Ridimensiona e togli i metadati (consigliato)</value>
+  </data>
+  <data name="Settings.Photos.Mode.CleanOnly" xml:space="preserve">
+    <value>Mantieni la dimensione, togli i metadati</value>
+  </data>
+  <data name="Settings.Photos.Mode.KeepOriginal" xml:space="preserve">
+    <value>Conserva il file originale</value>
+  </data>
+  <data name="Settings.Photos.GpsWarning" xml:space="preserve">
+    <value>Il file originale conserva i suoi metadati, compreso il luogo in cui la foto è stata scattata.</value>
+  </data>
 </root>

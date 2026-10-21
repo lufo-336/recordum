@@ -1,6 +1,9 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
+using Recordum.Presentation.Resources;
+using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 using Xunit;
@@ -16,7 +19,7 @@ public class JournalQuickEntryViewModelTests
     };
 
     private static (JournalQuickEntryViewModel Sut, FakeDiaryService Diary, FakeAttachmentService Photos,
-                    FakeOpenFileDialog Dialog, FakeConfirmationDialog Confirm, FakeNoteService Notes, FakePhotoImporter Importer) Build()
+                    FakeOpenFileDialog Dialog, FakeConfirmationDialog Confirm, FakeNoteService Notes, FakePhotoImporter Importer) Build(FakeClock? clock = null)
     {
         var notes = new FakeNoteService();
         var diary = new FakeDiaryService(notes);
@@ -24,7 +27,7 @@ public class JournalQuickEntryViewModelTests
         var dialog = new FakeOpenFileDialog();
         var confirm = new FakeConfirmationDialog();
         var importer = new FakePhotoImporter();
-        var sut = new JournalQuickEntryViewModel(diary, notes, photos, importer, dialog, confirm, new FakeClock());
+        var sut = new JournalQuickEntryViewModel(diary, notes, photos, importer, new FakeTagService(), dialog, confirm, clock ?? new FakeClock());
         return (sut, diary, photos, dialog, confirm, notes, importer);
     }
 
@@ -78,9 +81,9 @@ public class JournalQuickEntryViewModelTests
         dialog.MultipleResult = ["C:\\tmp\\a.jpg"];
         sut.AddPhotoCommand.Execute(null);
 
-        // Prima del salvataggio non deve esistere nessuna nota e nessun import.
+        // La foto si importa alla scelta (decisione 3); prima del salvataggio non esiste nessuna nota.
         diary.SavedEntries.Should().BeEmpty();
-        importer.ImportCalls.Should().BeEmpty();
+        importer.ImportCalls.Should().ContainSingle();
         sut.PendingPhotos.Should().ContainSingle();
 
         sut.Draft = "colazione";
@@ -99,14 +102,14 @@ public class JournalQuickEntryViewModelTests
         await sut.LoadAsync(Journal(), DayBoundary.Utc);
         importer.ThrowOnImport["C:\\tmp\\rotta.jpg"] = new IOException("locked");
         dialog.MultipleResult = ["C:\\tmp\\rotta.jpg", "C:\\tmp\\buona.jpg"];
-        sut.AddPhotoCommand.Execute(null);
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        sut.ErrorMessage.Should().NotBeNull("l'errore si vede subito, alla scelta");
         sut.Draft = "pranzo";
 
         await sut.SaveCommand.ExecuteAsync(null);
 
         diary.SavedEntries.Should().ContainSingle("la voce resta salvata anche se la foto fallisce");
         diary.SavedPhotos.Single().Photos.Should().ContainSingle().Which.Filename.Should().Be("buona.jpg");
-        sut.ErrorMessage.Should().NotBeNull();
     }
 
     [Fact]
@@ -265,5 +268,115 @@ public class JournalQuickEntryViewModelTests
 
         sut.Entries.Should().ContainSingle().Which.Text.Should().Be("giorno B",
             "il reload superato non deve ne' sovrascrivere ne' aggiungersi alla lista di B");
+    }
+
+    // ---- F2d-1 Task 6: tag e foto ----
+
+    [Fact]
+    public async Task Save_sends_text_tag_row_and_photos_as_one_draft()
+    {
+        var (sut, diary, _, dialog, _, _, _) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        dialog.MultipleResult = ["C:\\tmp\\a.jpg", "C:\\tmp\\b.jpg"];
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        sut.Draft = "pranzo #fuori";
+        sut.PropertyTags.Add("salute");
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        var draft = diary.Drafts.Should().ContainSingle().Subject;
+        draft.Text.Should().Be("pranzo #fuori");
+        draft.PropertyTags.Should().Equal("salute");
+        draft.Photos.Select(p => p.Filename).Should().Equal("a.jpg", "b.jpg");
+        sut.PropertyTags.Tags.Should().BeEmpty();
+        sut.PendingPhotos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_failing_save_leaves_draft_tags_and_photos_where_the_user_left_them()
+    {
+        var (sut, diary, _, dialog, _, _, _) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        dialog.MultipleResult = ["C:\\tmp\\a.jpg"];
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        sut.Draft = "pranzo";
+        sut.PropertyTags.Add("salute");
+        diary.ThrowOnWrite = new InvalidOperationException("database is locked");
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        sut.Draft.Should().Be("pranzo");
+        sut.PropertyTags.Tags.Should().Equal("salute");
+        sut.PendingPhotos.Should().ContainSingle();
+        sut.ErrorMessage.Should().Be("database is locked");
+        sut.IsSaving.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_rejected_file_names_itself_and_does_not_stop_the_others()
+    {
+        var (sut, _, _, dialog, _, _, importer) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        importer.ThrowOnImport["C:\\tmp\\b.heic"] = new PhotoImportException("b.heic", PhotoImportFailure.Unsupported);
+        dialog.MultipleResult = ["C:\\tmp\\a.jpg", "C:\\tmp\\b.heic", "C:\\tmp\\c.jpg"];
+
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+
+        sut.PendingPhotos.Select(p => p.Filename).Should().Equal("a.jpg", "c.jpg");
+        sut.ErrorMessage.Should().Be(string.Format(Strings.Diario_QuickEntry_Error_PhotoUnsupported, "b.heic"));
+    }
+
+    [Fact]
+    public void An_entry_shows_its_time_in_the_local_zone()
+    {
+        var rome = TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome");
+        var clock = new FakeClock(localTimeZone: rome);
+        var note = new Note
+        {
+            Id = Guid.NewGuid(), BodyMd = "x",
+            CreatedAt = new DateTime(2026, 7, 1, 11, 42, 0, DateTimeKind.Utc),
+        };
+
+        new JournalEntryRowViewModel(note, [], clock).TimeDisplay.Should().Be("13:42");
+    }
+
+    [Fact]
+    public async Task Edit_applies_added_and_removed_photos_only_on_save_and_cancel_discards_them()
+    {
+        var (sut, diary, atts, dialog, _, _, _) = Build();
+        var node = Journal();
+        await sut.LoadAsync(node, DayBoundary.Utc);
+        sut.Draft = "colazione";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var noteId = diary.SavedEntries.Single().NoteId;
+        var kept = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "old.jpg", MimeType = "image/jpeg" };
+        atts.Store[kept.Id] = kept;
+        await sut.LoadAsync(node, DayBoundary.Utc);
+        var row = sut.Entries.Single();
+        row.Photos.Should().ContainSingle();
+
+        // Annulla: nessuna chiamata, la riga com'era.
+        sut.BeginEditCommand.Execute(row);
+        sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
+        dialog.MultipleResult = ["C:\\tmp\\new.jpg"];
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        row.Photos.Should().BeEmpty();
+        row.AddedPhotos.Should().ContainSingle();
+        sut.CancelEditCommand.Execute(null);
+        diary.Edits.Should().BeEmpty();
+        row.Photos.Should().ContainSingle().Which.Id.Should().Be(kept.Id);
+        row.AddedPhotos.Should().BeEmpty();
+        row.RemovedPhotoIds.Should().BeEmpty();
+
+        // Salva: una sola DiaryEntryEdit con entrambe.
+        sut.BeginEditCommand.Execute(row);
+        sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        var edit = diary.Edits.Should().ContainSingle().Subject.Edit;
+        edit.RemovedPhotoIds.Should().Equal(kept.Id);
+        edit.AddedPhotos.Select(p => p.Filename).Should().Equal("new.jpg");
+        edit.PropertyTags.Should().BeEmpty("la riga Tag si manda sempre in modifica");
     }
 }

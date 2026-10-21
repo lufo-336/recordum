@@ -646,6 +646,15 @@ public static class Strings
     public static string Editor_AiSharing_None => Get("Editor.AiSharing.None");
     public static string Editor_AiSharing_LocalOnly => Get("Editor.AiSharing.LocalOnly");
     public static string Editor_AiSharing_ApiAllowed => Get("Editor.AiSharing.ApiAllowed");
+    public static string Diario_QuickEntry_Error_PhotoUnsupported => Get("Diario.QuickEntry.Error.PhotoUnsupported");
+    public static string Diario_QuickEntry_Error_PhotoTooLarge => Get("Diario.QuickEntry.Error.PhotoTooLarge");
+    public static string Diario_QuickEntry_Error_PhotoUnreadable => Get("Diario.QuickEntry.Error.PhotoUnreadable");
+    public static string Diario_Tag_Create => Get("Diario.Tag.Create");
+    public static string Settings_Photos_Title => Get("Settings.Photos.Title");
+    public static string Settings_Photos_Mode_ResizeAndClean => Get("Settings.Photos.Mode.ResizeAndClean");
+    public static string Settings_Photos_Mode_CleanOnly => Get("Settings.Photos.Mode.CleanOnly");
+    public static string Settings_Photos_Mode_KeepOriginal => Get("Settings.Photos.Mode.KeepOriginal");
+    public static string Settings_Photos_GpsWarning => Get("Settings.Photos.GpsWarning");
 
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");

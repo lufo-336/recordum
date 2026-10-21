@@ -29,7 +29,7 @@ public class DataAndBackupPageViewModelTests
         var launcher = new FakeBackupDialogLauncher();
         var page = new DataAndBackupPageViewModel(
             new BackupSettingsViewModel(settings, keys, new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths()),
-            new BackupHistoryViewModel(new FakeBackupLogService(), new FakeFolderOpener()), launcher, secrets, confirm, showDeviceKey);
+            new BackupHistoryViewModel(new FakeBackupLogService(), new FakeFolderOpener()), launcher, secrets, confirm, new PhotoImportSettingsViewModel(settings), showDeviceKey);
         return (page, secrets, confirm, keys, launcher, settings);
     }
 
@@ -132,7 +132,7 @@ public class DataAndBackupPageViewModelTests
         var launcher = new FakeBackupDialogLauncher { Restored = restored };
         var page = new DataAndBackupPageViewModel(
             new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths()),
-            new BackupHistoryViewModel(log, new FakeFolderOpener()), launcher, new FakeSecrets(true), new FakeConfirmationDialog(), true);
+            new BackupHistoryViewModel(log, new FakeFolderOpener()), launcher, new FakeSecrets(true), new FakeConfirmationDialog(), new PhotoImportSettingsViewModel(new FakeAppSettingService()), true);
         await page.LoadAsync();
         log.Rows.Add(new Recordum.Core.Models.BackupLog { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Kind = "PreRestore", Path = "/x", SizeBytes = 1, SchemaVersion = "2.19", AppVersion = "1.0.0" });
 

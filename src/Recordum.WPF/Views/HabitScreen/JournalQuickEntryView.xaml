@@ -26,7 +26,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,0,6,6">
-                            <Image Source="{Binding}" Width="48" Height="48" Stretch="UniformToFill"/>
+                            <Image Source="{Binding Thumbnail}" Width="48" Height="48" Stretch="UniformToFill"/>
                             <Button Content="✕" Width="16" Height="16" Padding="0"
                                     HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Command="{Binding DataContext.RemovePendingPhotoCommand,
@@ -63,7 +63,7 @@
                                 <DockPanel>
                                     <TextBlock DockPanel.Dock="Left" Margin="0,0,8,0"
                                                Foreground="{DynamicResource Brush.TextMuted}"
-                                               Text="{Binding CreatedAt, StringFormat=HH:mm}"/>
+                                               Text="{Binding TimeDisplay}"/>
                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                         <Button Content="{x:Static res:Strings.Diario_QuickEntry_Edit}"
                                                 Command="{Binding DataContext.BeginEditCommand,

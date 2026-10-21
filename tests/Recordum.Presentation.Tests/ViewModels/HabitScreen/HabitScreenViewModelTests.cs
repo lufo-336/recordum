@@ -57,7 +57,8 @@ public class HabitScreenViewModelTests
         out FakeEventBus bus,
         out FakeNoteService noteSvc,
         out FakeAbstinenceService abstinence,
-        out FakeHabitUiPrefsService uiPrefs)
+        out FakeHabitUiPrefsService uiPrefs,
+        bool editorAvailable = true)
     {
         nodes = new FakeHabitNodeService();
         completions = new FakeCompletionService();
@@ -81,9 +82,9 @@ public class HabitScreenViewModelTests
             nodes, completions, timers, metrics, new FakeReferenceData(), configs,
             noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            abstinence, clock, bus, new FakeEditorAvailability(true), settings, editor,
+            abstinence, clock, bus, new FakeEditorAvailability(editorAvailable), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakePhotoImporter(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
+            new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
     }
 
     public static HabitScreenViewModel CreateSut(
@@ -554,6 +555,22 @@ public class HabitScreenViewModelTests
 
         sut.QuickAddForDiario.Should().NotBeNull();
         sut.QuickEntryForDiario.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task A_diary_gesture_journal_opens_the_quick_note_only_when_the_editor_is_unavailable(
+        bool editorAvailable, bool expectsQuickNote)
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out _, out var uiPrefs, editorAvailable);
+        var node = AddJournal(nodes, "Daily journal");
+        await uiPrefs.SetAsync(node.Id, new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.Diary });
+
+        await sut.LoadAsync(node.Id);
+
+        (sut.QuickEntryForDiario is not null).Should().Be(expectsQuickNote);
+        (sut.QuickAddForDiario is not null).Should().Be(!expectsQuickNote);
     }
 
     [Fact]

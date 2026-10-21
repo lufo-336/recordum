@@ -82,19 +82,37 @@ public sealed class FakeDiaryService : IDiaryService
     /// <summary>Photos carried by each saved draft, by the note they were saved with.</summary>
     public List<(Guid NoteId, IReadOnlyList<ImportedPhoto> Photos)> SavedPhotos { get; } = [];
 
+    /// <summary>Every full draft the VM sent (text, Tag row, photos), in order.</summary>
+    public List<DiaryEntryDraft> Drafts { get; } = [];
+
+    /// <summary>Every full edit the VM sent, by note.</summary>
+    public List<(Guid NoteId, DiaryEntryEdit Edit)> Edits { get; } = [];
+
+    /// <summary>When set, the next Save/Edit throws it (a busy database, a failing transaction).</summary>
+    public Exception? ThrowOnWrite { get; set; }
+
+    /// <summary>Tags returned by <see cref="GetEntryTagsAsync"/>, by note.</summary>
+    public Dictionary<Guid, IReadOnlyList<EntryTag>> Tags { get; } = [];
+
     public async ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, DiaryEntryDraft draft, CancellationToken ct = default)
     {
+        if (ThrowOnWrite is { } boom) { ThrowOnWrite = null; throw boom; }
+        Drafts.Add(draft);
         var id = await SaveEntryAsync(habitNodeId, day, draft.Text, ct);
         SavedPhotos.Add((id, draft.Photos));
         return id;
     }
 
     public ValueTask EditEntryAsync(Guid noteId, DiaryEntryEdit edit, CancellationToken ct = default)
-        => EditEntryAsync(noteId, edit.Text, ct);
+    {
+        if (ThrowOnWrite is { } boom) { ThrowOnWrite = null; throw boom; }
+        Edits.Add((noteId, edit));
+        return EditEntryAsync(noteId, edit.Text, ct);
+    }
 
     public ValueTask<IReadOnlyDictionary<Guid, IReadOnlyList<EntryTag>>> GetEntryTagsAsync(
         IReadOnlyCollection<Guid> noteIds, CancellationToken ct = default)
-        => new(new Dictionary<Guid, IReadOnlyList<EntryTag>>());
+        => new(Tags.Where(t => noteIds.Contains(t.Key)).ToDictionary(t => t.Key, t => t.Value));
 
     public ValueTask DeleteEntryAsync(Guid noteOrCompletionId, CancellationToken ct = default)
     {

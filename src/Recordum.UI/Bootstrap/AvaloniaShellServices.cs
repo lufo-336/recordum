@@ -54,6 +54,7 @@ public static class AvaloniaShellServices
             sp.GetRequiredService<IBackupDialogLauncher>(),
             sp.GetRequiredService<ISecretStore>(),
             sp.GetRequiredService<IConfirmationDialog>(),
+            sp.GetRequiredService<PhotoImportSettingsViewModel>(),
             showDeviceKey: !OperatingSystem.IsWindows()));
         services.AddSingleton<IExportDialogLauncher, NullExportDialogLauncher>();
         services.AddSingleton<IBackupDialogLauncher>(sp => new AvaloniaBackupDialogLauncher(sp, TopmostWindow));

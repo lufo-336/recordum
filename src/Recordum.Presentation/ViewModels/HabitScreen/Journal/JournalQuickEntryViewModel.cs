@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
@@ -15,9 +17,9 @@ namespace Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
 /// <summary>Composer "nota veloce" della colonna Diario (Onda 2.4, U7). Ogni salvataggio e' una
 /// voce di diario vera — Nota(Diario) + Completion via IDiaryService — cosi' streak, heatmap e
-/// cifra chiave funzionano senza semantica nuova. Le foto restano percorsi in memoria finche' non
-/// esiste il noteId: allegare prima vorrebbe dire creare una nota-bozza che, se abbandoni, resta
-/// orfana.</summary>
+/// cifra chiave funzionano senza semantica nuova. Le foto si importano (normalizzano) quando le scegli, cosi'
+/// l'errore su un file si vede subito, e restano in memoria come <see cref="ImportedPhoto"/> fino a "Salva":
+/// testo, riga Tag e foto viaggiano nella stessa transazione, e se fallisce non si perde niente.</summary>
 public sealed partial class JournalQuickEntryViewModel : ObservableObject
 {
     private const string ImageFileFilter =
@@ -27,6 +29,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private readonly INoteService _notes;
     private readonly IAttachmentService _attachments;
     private readonly IPhotoImporter _photoImporter;
+    private readonly ITagService _tags;
     private readonly IOpenFileDialog _dialog;
     private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
@@ -42,8 +45,18 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private bool _isSaving;
 
-    /// <summary>Percorsi scelti e non ancora allegati. Diventano allegati solo dopo il salvataggio.</summary>
-    public ObservableCollection<string> PendingPhotos { get; } = [];
+    private IReadOnlyList<string> _knownTags = [];
+    private string _inlineText = string.Empty;
+    private TagQuery? _inlineQuery;
+
+    /// <summary>Foto scelte e gia' normalizzate, non ancora salvate.</summary>
+    public ObservableCollection<ImportedPhoto> PendingPhotos { get; } = [];
+
+    /// <summary>La riga Tag della voce nuova.</summary>
+    public TagEditorViewModel PropertyTags { get; } = new();
+
+    /// <summary>Tag esistenti proposti dal menu <c>#</c> mentre si scrive nel testo (vuoto = menu chiuso).</summary>
+    [ObservableProperty] private IReadOnlyList<string> _inlineSuggestions = [];
 
     public ObservableCollection<JournalEntryRowViewModel> Entries { get; } = [];
 
@@ -52,6 +65,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         INoteService notes,
         IAttachmentService attachments,
         IPhotoImporter photoImporter,
+        ITagService tags,
         IOpenFileDialog dialog,
         IConfirmationDialog confirm,
         IClock clock)
@@ -60,6 +74,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(notes);
         ArgumentNullException.ThrowIfNull(attachments);
         ArgumentNullException.ThrowIfNull(photoImporter);
+        ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(dialog);
         ArgumentNullException.ThrowIfNull(confirm);
         ArgumentNullException.ThrowIfNull(clock);
@@ -67,6 +82,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         _notes = notes;
         _attachments = attachments;
         _photoImporter = photoImporter;
+        _tags = tags;
         _dialog = dialog;
         _confirm = confirm;
         _clock = clock;
@@ -88,6 +104,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         Draft = string.Empty;
         ErrorMessage = null;
         PendingPhotos.Clear();
+        PropertyTags.Tags.Clear();
+        InlineSuggestions = [];
+        await RefreshKnownTagsAsync(ct).ConfigureAwait(true);
         await ReloadEntriesAsync(ct).ConfigureAwait(true);
     }
 
@@ -139,10 +158,14 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         // by whichever reload turns out to still be current. Two overlapping SetDay calls used to
         // interleave through a shared Entries.Clear() (I4); this can't, because neither call's
         // partial state is ever visible to the other.
+        var tagsByNote = await _diary.GetEntryTagsAsync(ofDay.Select(n => n.Id).ToList(), ct).ConfigureAwait(true);
+        if (generation != _reloadGeneration) return; // superseded while awaiting the tags
+
         var rows = new List<JournalEntryRowViewModel>();
         foreach (var n in ofDay)
         {
-            var row = new JournalEntryRowViewModel(n);
+            var row = new JournalEntryRowViewModel(
+                n, tagsByNote.TryGetValue(n.Id, out var t) ? t : [], _clock);
             foreach (var a in await _attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(true))
                 row.Photos.Add(new AttachmentViewModel(a, await _attachments.ReadThumbnailAsync(a.Id, ct).ConfigureAwait(true)));
             if (generation != _reloadGeneration) return; // superseded mid-build; drop this partial batch
@@ -154,42 +177,114 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         foreach (var row in rows) Entries.Add(row);
     }
 
-    [RelayCommand]
-    private async Task AddPhotoAsync()
+    // I nomi per il menu e per la riga Tag. Un elenco che non si legge non deve fermare la nota: niente suggerimenti.
+    private async Task RefreshKnownTagsAsync(CancellationToken ct)
     {
-        foreach (var path in await _dialog.PromptMultipleAsync(ImageFileFilter))
-            PendingPhotos.Add(path);
+        try
+        {
+            _knownTags = (await _tags.ListAsync(ct).ConfigureAwait(true)).Select(t => t.Name).ToList();
+            PropertyTags.KnownNames = _knownTags;
+        }
+#pragma warning disable CA1031 // suggerimenti opzionali
+        catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
+        {
+            System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel tag list failed: {ex}");
+        }
+    }
+
+    /// <summary>Il testo o il cursore sono cambiati: aggiorna il menu <c>#</c>.</summary>
+    public void UpdateInlineQuery(string text, int caret)
+    {
+        _inlineText = text ?? string.Empty;
+        _inlineQuery = TagCompletion.Find(_inlineText, caret);
+        InlineSuggestions = _inlineQuery is { } q ? TagEditorViewModel.Match(_knownTags, q.Prefix, []) : [];
+    }
+
+    /// <summary>L'utente sceglie un suggerimento del menu <c>#</c>: torna il testo e il cursore nuovi (la view li applica).</summary>
+    public (string Text, int Caret) AcceptInlineSuggestion(string name)
+    {
+        if (_inlineQuery is not { } q) return (_inlineText, _inlineText.Length);
+        var result = TagCompletion.Apply(_inlineText, q, name);
+        _inlineQuery = null;
+        InlineSuggestions = [];
+        return result;
+    }
+
+#pragma warning disable CA1863 // messaggi d'errore rari, non vale una CompositeFormat
+    private static string Format(string template, string filename) => string.Format(CultureInfo.CurrentCulture, template, filename);
+#pragma warning restore CA1863
+
+    private JournalEntryRowViewModel? EditingRow => Entries.FirstOrDefault(r => r.IsEditing);
+
+    [RelayCommand]
+    private async Task AddPhotoAsync(CancellationToken ct)
+    {
+        // Durante una modifica le foto vanno alla voce che si sta modificando, non al composer.
+        ObservableCollection<ImportedPhoto> target = EditingRow?.AddedPhotos ?? PendingPhotos;
+        var errors = new List<string>();
+        foreach (var path in await _dialog.PromptMultipleAsync(ImageFileFilter).ConfigureAwait(true))
+        {
+            try
+            {
+                target.Add(await _photoImporter.ImportAsync(path, ct).ConfigureAwait(true));
+            }
+            catch (PhotoImportException ex)
+            {
+                errors.Add(Format(ex.Reason switch
+                {
+                    PhotoImportFailure.Unsupported => Strings.Diario_QuickEntry_Error_PhotoUnsupported,
+                    PhotoImportFailure.TooLarge => Strings.Diario_QuickEntry_Error_PhotoTooLarge,
+                    _ => Strings.Diario_QuickEntry_Error_PhotoUnreadable,
+                }, ex.Filename));
+            }
+#pragma warning disable CA1031 // un file illeggibile non deve fermare le altre foto della stessa scelta
+            catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
+            {
+                errors.Add(Format(Strings.Diario_QuickEntry_Error_PhotoUnreadable, path[(path.LastIndexOfAny(['\\', '/']) + 1)..]));
+            }
+        }
+        ErrorMessage = errors.Count == 0 ? null : string.Join(Environment.NewLine, errors);
     }
 
     [RelayCommand]
-    private void RemovePendingPhoto(string? path)
+    private void RemovePendingPhoto(ImportedPhoto? photo)
     {
-        if (path is not null) PendingPhotos.Remove(path);
+        if (photo is null) return;
+        PendingPhotos.Remove(photo);
+        EditingRow?.AddedPhotos.Remove(photo);
+    }
+
+    /// <summary>Toglie, in modifica, una foto gia' salvata: sparisce davvero solo con "Salva".</summary>
+    [RelayCommand]
+    private void RemoveEditPhoto(AttachmentViewModel? photo)
+    {
+        if (photo is not null) EditingRow?.RemovePhoto(photo);
     }
 
     [RelayCommand]
     private void BeginEdit(JournalEntryRowViewModel? row)
     {
         if (row is null) return;
-        foreach (var r in Entries) r.IsEditing = false;
-        row.EditDraft = row.Text;
-        row.IsEditing = true;
+        CancelEdit();
+        row.BeginEdit(_knownTags);
     }
 
     [RelayCommand]
     private void CancelEdit()
     {
-        foreach (var r in Entries) r.IsEditing = false;
+        foreach (var r in Entries.Where(r => r.IsEditing)) r.CancelEdit();
     }
 
     [RelayCommand]
     private async Task Save(CancellationToken ct)
     {
-        if (_habitNodeId == Guid.Empty) return;
+        if (_habitNodeId == Guid.Empty || IsSaving) return;
         ErrorMessage = null;
 
         // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.
-        if (Entries.FirstOrDefault(r => r.IsEditing) is { } editing)
+        if (EditingRow is { } editing)
         {
             var editText = editing.EditDraft?.Trim() ?? string.Empty;
             if (editText.Length == 0)
@@ -201,9 +296,17 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             IsSaving = true;
             try
             {
-                await _diary.EditEntryAsync(editing.Id, editText, ct).ConfigureAwait(true);
+                var edit = new DiaryEntryEdit(
+                    editText, editing.EditTags?.Tags.ToList() ?? [], editing.AddedPhotos.ToList(), editing.RemovedPhotoIds.ToList());
+                await _diary.EditEntryAsync(editing.Id, edit, ct).ConfigureAwait(true);
                 editing.Text = editText;
                 editing.IsEditing = false;
+                await RefreshKnownTagsAsync(ct).ConfigureAwait(true);
+                await ReloadEntriesAsync(ct).ConfigureAwait(true);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                ErrorMessage = ex.Message; // la modifica resta aperta, con tutto quello che c'era
             }
             finally
             {
@@ -222,32 +325,18 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         IsSaving = true;
         try
         {
-            // Le foto si normalizzano qui e viaggiano nella stessa transazione della voce. Un file che
-            // non si importa si salta (messaggio) e le altre entrano.
-            var photos = new List<ImportedPhoto>();
-            var failed = false;
-            foreach (var path in PendingPhotos.ToList())
-            {
-                try
-                {
-                    photos.Add(await _photoImporter.ImportAsync(path, ct).ConfigureAwait(true));
-                }
-#pragma warning disable CA1031 // un file illeggibile non deve abortire il resto del batch
-                catch (Exception)
-#pragma warning restore CA1031
-                {
-                    failed = true;
-                }
-            }
-            await _diary.SaveEntryAsync(_habitNodeId, _day, new DiaryEntryDraft(text, [], photos), ct).ConfigureAwait(true);
+            var draft = new DiaryEntryDraft(text, PropertyTags.Tags.ToList(), PendingPhotos.ToList());
+            await _diary.SaveEntryAsync(_habitNodeId, _day, draft, ct).ConfigureAwait(true);
 
-            if (failed) ErrorMessage = Strings.Diario_QuickEntry_Error_PhotoFailed;
-
+            // Solo dopo il successo si svuota: un salvataggio che fallisce non toglie niente all'utente.
             Draft = string.Empty;
             PendingPhotos.Clear();
+            PropertyTags.Tags.Clear();
+            InlineSuggestions = [];
+            await RefreshKnownTagsAsync(ct).ConfigureAwait(true);
             await ReloadEntriesAsync(ct).ConfigureAwait(true);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             ErrorMessage = ex.Message;
         }
