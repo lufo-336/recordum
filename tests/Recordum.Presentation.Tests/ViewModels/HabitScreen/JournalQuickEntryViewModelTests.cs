@@ -32,6 +32,30 @@ public class JournalQuickEntryViewModelTests
     }
 
     [Fact]
+    public async Task Inline_menu_lists_matches_then_a_create_entry_when_the_prefix_is_not_a_known_tag()
+    {
+        var notes = new FakeNoteService();
+        var tags = new FakeTagService();
+        var sut = new JournalQuickEntryViewModel(new FakeDiaryService(notes), notes, new FakeAttachmentService(), new FakePhotoImporter(),
+            tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock());
+        await tags.CreateAsync(new Tag { Name = "pranzo" });
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+
+        sut.UpdateInlineQuery("#pra", 4);
+        sut.InlineSuggestions.Should().Equal("pranzo", string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, "pra"));
+
+        sut.UpdateInlineQuery("#PRANZO", 7);
+        sut.InlineSuggestions.Should().Equal("pranzo", "un nome noto (senza maiuscole) non offre Crea");
+
+        sut.UpdateInlineQuery("#", 1);
+        sut.InlineSuggestions.Should().BeEmpty("prefisso vuoto: niente Crea");
+
+        sut.UpdateInlineQuery("#zup", 4);
+        var create = sut.InlineSuggestions.Should().ContainSingle().Subject;
+        sut.AcceptInlineSuggestion(create).Should().Be(("#zup ", 5), "la voce Crea torna il testo digitato");
+    }
+
+    [Fact]
     public async Task Save_creates_a_diary_entry_so_the_day_counts_as_done()
     {
         var (sut, diary, _, _, _, _, _) = Build();

@@ -12,6 +12,7 @@ using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 using Recordum.Core.Time;
+using Recordum.Core.Text;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
@@ -198,13 +199,20 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     {
         _inlineText = text ?? string.Empty;
         _inlineQuery = TagCompletion.Find(_inlineText, caret);
-        InlineSuggestions = _inlineQuery is { } q ? TagEditorViewModel.Match(_knownTags, q.Prefix, []) : [];
+        if (_inlineQuery is not { } q) { InlineSuggestions = []; return; }
+        var list = TagEditorViewModel.Match(_knownTags, q.Prefix, []);
+        // Come la riga Tag: un prefisso che non e' ancora un tag noto offre "Crea «…»" in coda.
+        if (q.Prefix.Length is > 0 and <= InlineTags.MaxLength
+            && !_knownTags.Contains(q.Prefix, StringComparer.OrdinalIgnoreCase))
+            list.Add(TagEditorViewModel.CreateLabel(q.Prefix));
+        InlineSuggestions = list;
     }
 
     /// <summary>L'utente sceglie un suggerimento del menu <c>#</c>: torna il testo e il cursore nuovi (la view li applica).</summary>
     public (string Text, int Caret) AcceptInlineSuggestion(string name)
     {
         if (_inlineQuery is not { } q) return (_inlineText, _inlineText.Length);
+        if (name == TagEditorViewModel.CreateLabel(q.Prefix)) name = q.Prefix;
         var result = TagCompletion.Apply(_inlineText, q, name);
         _inlineQuery = null;
         InlineSuggestions = [];

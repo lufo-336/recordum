@@ -66,7 +66,7 @@ public sealed partial class TagEditorViewModel : ObservableObject
     }
 
 #pragma warning disable CA1863 // etichetta breve costruita a ogni battuta, non vale una CompositeFormat
-    private static string CreateLabel(string name) => string.Format(CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, name);
+    public static string CreateLabel(string name) => string.Format(CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, name);
 #pragma warning restore CA1863
 
     private void Refresh()
