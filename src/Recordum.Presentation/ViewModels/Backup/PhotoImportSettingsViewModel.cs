@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.ViewModels.Backup;
 
@@ -12,6 +13,8 @@ public sealed partial class PhotoImportSettingsViewModel(IAppSettingService sett
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowsGpsWarning))]
     private PhotoImportMode _mode = PhotoImportMode.ResizeAndClean;
+
+    [ObservableProperty] private string? _errorMessage;
 
     public bool ShowsGpsWarning => Mode == PhotoImportMode.KeepOriginal;
 
@@ -32,6 +35,7 @@ public sealed partial class PhotoImportSettingsViewModel(IAppSettingService sett
     {
         try
         {
+            ErrorMessage = null;
             await settings.SetEnumAsync(PhotoImportSettings.Key, value).ConfigureAwait(true);
         }
 #pragma warning disable CA1031 // fire-and-forget dal setter: nessun chiamante a cui propagare
@@ -39,6 +43,7 @@ public sealed partial class PhotoImportSettingsViewModel(IAppSettingService sett
 #pragma warning restore CA1031
         {
             System.Diagnostics.Debug.WriteLine($"PhotoImportSettingsViewModel save failed: {ex}");
+            ErrorMessage = Strings.Settings_Photos_SaveFailed;
         }
     }
 }

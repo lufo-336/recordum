@@ -1529,9 +1529,6 @@ Details: {0}</value>
   <data name="Diario.QuickEntry.Error.Empty" xml:space="preserve">
     <value>Write something or add a photo.</value>
   </data>
-  <data name="Diario.QuickEntry.Error.PhotoFailed" xml:space="preserve">
-    <value>Some photos could not be attached.</value>
-  </data>
   <data name="Diario.QuickEntry.DeleteConfirm.Title" xml:space="preserve">
     <value>Delete entry</value>
   </data>
@@ -1847,5 +1844,8 @@ Details: {0}</value>
   </data>
   <data name="Settings.Photos.GpsWarning" xml:space="preserve">
     <value>The original file keeps its metadata, including the place where the photo was taken.</value>
+  </data>
+  <data name="Settings.Photos.SaveFailed" xml:space="preserve">
+    <value>Could not save the photo setting.</value>
   </data>
 </root>

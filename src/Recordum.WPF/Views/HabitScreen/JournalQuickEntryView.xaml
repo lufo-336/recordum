@@ -26,7 +26,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,0,6,6">
-                            <Image Source="{Binding Thumbnail}" Width="48" Height="48" Stretch="UniformToFill"/>
+                            <Image Source="{Binding Thumbnail, Converter={StaticResource BytesToImageSource}}" Width="48" Height="48" Stretch="UniformToFill"/>
                             <Button Content="✕" Width="16" Height="16" Padding="0"
                                     HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Command="{Binding DataContext.RemovePendingPhotoCommand,

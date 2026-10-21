@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Text;
 using Recordum.Presentation.Resources;
 
@@ -35,6 +36,7 @@ public sealed partial class TagEditorViewModel : ObservableObject
 
     /// <summary>Aggiunge un tag. Accetta anche la voce "Crea «…»" dei suggerimenti (vale come il testo digitato).
     /// Nome vuoto, oltre 64 caratteri o già scelto: ignorato.</summary>
+    [RelayCommand]
     public void Add(string? name)
     {
         if (name is not null && name == CreateLabel(Query.Trim())) name = Query;
@@ -45,6 +47,7 @@ public sealed partial class TagEditorViewModel : ObservableObject
         Query = string.Empty;
     }
 
+    [RelayCommand]
     public void Remove(string? name)
     {
         if (name is not null) Tags.Remove(name);
@@ -70,8 +73,7 @@ public sealed partial class TagEditorViewModel : ObservableObject
     {
         var q = Query.Trim();
         var list = q.Length == 0 ? [] : Match(_knownNames, q, Tags);
-        // "Crea" solo se non c'è niente da scegliere: un prefisso che corrisponde a tag esistenti li propone e basta.
-        if (list.Count == 0 && q.Length > 0 && q.Length <= InlineTags.MaxLength
+        if (q.Length > 0 && q.Length <= InlineTags.MaxLength
             && !_knownNames.Contains(q, StringComparer.OrdinalIgnoreCase)
             && !Tags.Contains(q, StringComparer.OrdinalIgnoreCase))
             list.Add(CreateLabel(q));

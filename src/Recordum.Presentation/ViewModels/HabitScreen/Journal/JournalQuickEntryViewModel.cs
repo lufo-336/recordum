@@ -23,7 +23,7 @@ namespace Recordum.Presentation.ViewModels.HabitScreen.Journal;
 public sealed partial class JournalQuickEntryViewModel : ObservableObject
 {
     private const string ImageFileFilter =
-        "Image files (*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp";
+        "Image files (*.jpg;*.jpeg;*.png;*.webp)|*.jpg;*.jpeg;*.png;*.webp";
 
     private readonly IDiaryService _diary;
     private readonly INoteService _notes;
@@ -220,6 +220,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task AddPhotoAsync(CancellationToken ct)
     {
+        // Mai durante un salvataggio: le foto scelte nel frattempo non finirebbero nella transazione e il successo le svuoterebbe.
+        if (IsSaving) return;
         // Durante una modifica le foto vanno alla voce che si sta modificando, non al composer.
         ObservableCollection<ImportedPhoto> target = EditingRow?.AddedPhotos ?? PendingPhotos;
         var errors = new List<string>();
@@ -280,7 +282,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task Save(CancellationToken ct)
     {
-        if (_habitNodeId == Guid.Empty || IsSaving) return;
+        // Salvare mentre una scelta di foto e' in corso perderebbe quelle che arrivano dopo lo snapshot.
+        if (_habitNodeId == Guid.Empty || IsSaving || AddPhotoCommand.IsRunning) return;
         ErrorMessage = null;
 
         // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.

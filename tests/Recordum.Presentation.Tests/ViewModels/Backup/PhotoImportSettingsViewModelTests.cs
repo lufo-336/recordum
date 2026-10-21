@@ -44,4 +44,17 @@ public class PhotoImportSettingsViewModelTests
         sut.Mode = PhotoImportMode.CleanOnly;
         sut.ShowsGpsWarning.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task A_failed_save_is_visible()
+    {
+        var settings = new FakeAppSettingService();
+        var sut = new PhotoImportSettingsViewModel(settings);
+        await sut.LoadAsync();
+        settings.ThrowOnSet = new InvalidOperationException("locked");
+
+        sut.Mode = PhotoImportMode.CleanOnly;
+
+        sut.ErrorMessage.Should().NotBeNullOrEmpty();
+    }
 }

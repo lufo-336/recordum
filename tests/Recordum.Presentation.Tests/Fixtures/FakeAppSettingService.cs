@@ -12,8 +12,11 @@ public sealed class FakeAppSettingService : IAppSettingService
     public ValueTask<string?> GetAsync(string key, CancellationToken ct = default) =>
         new ValueTask<string?>(Store.TryGetValue(key, out var v) ? v : null);
 
+    public Exception? ThrowOnSet { get; set; }
+
     public ValueTask SetAsync(string key, string value, CancellationToken ct = default)
     {
+        if (ThrowOnSet is { } boom) throw boom;
         SetCount++;
         Store[key] = value;
         return ValueTask.CompletedTask;

@@ -379,4 +379,54 @@ public class JournalQuickEntryViewModelTests
         edit.AddedPhotos.Select(p => p.Filename).Should().Equal("new.jpg");
         edit.PropertyTags.Should().BeEmpty("la riga Tag si manda sempre in modifica");
     }
+
+    [Fact]
+    public async Task A_photo_picked_while_a_save_is_in_flight_is_refused_not_lost()
+    {
+        var (sut, diary, _, dialog, _, _, _) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        sut.Draft = "cena";
+        var gate = new TaskCompletionSource();
+        diary.NextWriteDelay = () => gate.Task;
+        var save = sut.SaveCommand.ExecuteAsync(null);
+
+        dialog.MultipleResult = ["C:\\tmp\\late.jpg"];
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        gate.SetResult();
+        await save;
+
+        sut.PendingPhotos.Should().BeEmpty("la scelta durante il salvataggio e' rifiutata, non persa in silenzio");
+        diary.Drafts.Single().Photos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_failing_edit_save_keeps_the_edit_open_with_everything_in_it()
+    {
+        var (sut, diary, atts, dialog, _, _, _) = Build();
+        var node = Journal();
+        await sut.LoadAsync(node, DayBoundary.Utc);
+        sut.Draft = "colazione";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var noteId = diary.SavedEntries.Single().NoteId;
+        atts.Store[Guid.NewGuid()] = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "old.jpg", MimeType = "image/jpeg" };
+        await sut.LoadAsync(node, DayBoundary.Utc);
+        var row = sut.Entries.Single();
+        sut.BeginEditCommand.Execute(row);
+        row.EditDraft = "nuovo testo";
+        row.EditTags!.Add("salute");
+        sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
+        dialog.MultipleResult = ["C:\\tmp\\new.jpg"];
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        diary.ThrowOnWrite = new InvalidOperationException("database is locked");
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        row.IsEditing.Should().BeTrue();
+        row.EditDraft.Should().Be("nuovo testo");
+        row.EditTags!.Tags.Should().Equal("salute");
+        row.AddedPhotos.Should().ContainSingle();
+        row.RemovedPhotoIds.Should().ContainSingle();
+        sut.ErrorMessage.Should().Be("database is locked");
+        sut.IsSaving.Should().BeFalse();
+    }
 }

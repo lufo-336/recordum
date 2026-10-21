@@ -566,7 +566,6 @@ public static class Strings
     public static string Diario_QuickEntry_Cancel => Get("Diario.QuickEntry.Cancel");
     public static string Diario_QuickEntry_Delete => Get("Diario.QuickEntry.Delete");
     public static string Diario_QuickEntry_Error_Empty => Get("Diario.QuickEntry.Error.Empty");
-    public static string Diario_QuickEntry_Error_PhotoFailed => Get("Diario.QuickEntry.Error.PhotoFailed");
     public static string Diario_QuickEntry_DeleteConfirm_Title => Get("Diario.QuickEntry.DeleteConfirm.Title");
     public static string Diario_QuickEntry_DeleteConfirm_Message => Get("Diario.QuickEntry.DeleteConfirm.Message");
 
@@ -655,6 +654,7 @@ public static class Strings
     public static string Settings_Photos_Mode_CleanOnly => Get("Settings.Photos.Mode.CleanOnly");
     public static string Settings_Photos_Mode_KeepOriginal => Get("Settings.Photos.Mode.KeepOriginal");
     public static string Settings_Photos_GpsWarning => Get("Settings.Photos.GpsWarning");
+    public static string Settings_Photos_SaveFailed => Get("Settings.Photos.SaveFailed");
 
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");

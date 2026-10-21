@@ -10,13 +10,13 @@ public class TagEditorViewModelTests
     private static TagEditorViewModel Build(params string[] known) => new() { KnownNames = known };
 
     [Fact]
-    public void A_prefix_lists_the_existing_tags_and_no_create_entry()
+    public void A_prefix_lists_the_existing_tags_and_ends_with_the_create_entry()
     {
         var sut = Build("Pranzo", "pranzo-fuori", "cena");
 
         sut.Query = "pra";
 
-        sut.Suggestions.Should().Equal("Pranzo", "pranzo-fuori");
+        sut.Suggestions.Should().Equal("Pranzo", "pranzo-fuori", string.Format(Strings.Diario_Tag_Create, "pra"));
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class TagEditorViewModelTests
 
         sut.Query = "t";
 
-        sut.Suggestions.Should().HaveCount(8).And.NotContain("t01");
+        sut.Suggestions.Where(s => s.StartsWith('t')).Should().HaveCount(8).And.NotContain("t01");
     }
 
     [Fact]
@@ -85,5 +85,14 @@ public class TagEditorViewModelTests
         sut.Remove("a");
 
         sut.Tags.Should().Equal("b");
+    }
+
+    [Fact]
+    public void Add_and_Remove_are_commands()
+    {
+        var sut = Build();
+        sut.AddCommand.Execute("a");
+        sut.RemoveCommand.Execute("a");
+        sut.Tags.Should().BeEmpty();
     }
 }
