@@ -186,7 +186,7 @@ public class DataAndBackupPageTests
         await scope.ServiceProvider.GetRequiredService<IBackupLogService>().RecordAsync(new BackupLog
         {
             Id = Guid.NewGuid(), CreatedAt = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc), Kind = "Manual",
-            Path = Path.Combine(dir, "a.recbak"), SizeBytes = 1, SchemaVersion = "2.18", AppVersion = "1.0.0",
+            Path = Path.Combine(dir, "a.recbak"), SizeBytes = 1, SchemaVersion = "2.19", AppVersion = "1.0.0",
         });
         var (window, vm) = await OpenAsync(scope.ServiceProvider, showDeviceKey: true);
         try

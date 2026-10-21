@@ -30,6 +30,10 @@ public class CrossMachineRestoreTests
 
             await fixture.NewRestoreService().RestoreAsync(source, Pass, new RestoreOptions(SkipSafetySnapshot: true));
 
+            // The restore leaves the old schema in place; the next start migrates it (CoreInitializer).
+            await using (var db = await fixture.DbFactory.CreateDbContextAsync())
+                await db.Database.MigrateAsync();
+
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
                 (await db.Notes.SingleAsync(n => n.Id == NoteId)).BodyMd.Should().Be(noteBody);
 

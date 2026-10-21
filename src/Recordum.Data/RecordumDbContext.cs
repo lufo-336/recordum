@@ -24,6 +24,7 @@ public sealed class RecordumDbContext(DbContextOptions<RecordumDbContext> option
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<HabitNodeTag> HabitNodeTags => Set<HabitNodeTag>();
+    public DbSet<NoteTag> NoteTags => Set<NoteTag>();
     public DbSet<HabitTemplate> HabitTemplates => Set<HabitTemplate>();
     public DbSet<ExportTemplate> ExportTemplates => Set<ExportTemplate>();
     public DbSet<ExportJob> ExportJobs => Set<ExportJob>();

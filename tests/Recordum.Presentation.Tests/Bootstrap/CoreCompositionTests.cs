@@ -153,7 +153,7 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
 
         await using var scope = provider.CreateAsyncScope();
         var settings = scope.ServiceProvider.GetRequiredService<IAppSettingService>();
-        Assert.Equal("2.18", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
+        Assert.Equal("2.19", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
         Assert.Equal("true", await settings.GetAsync("maintenance.retro_noon_backfill_done")); // il backfill R9 ha girato
         Assert.Equal(1, steps.Calls);                                          // gli step opzionali, una volta
     }

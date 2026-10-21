@@ -15,7 +15,7 @@ namespace Recordum.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.20");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("Recordum.Core.Models.AIInsight", b =>
                 {
@@ -298,8 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 9, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.18"
+                            UpdatedAt = new DateTime(2026, 10, 21, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.19"
                         });
                 });
 
@@ -1559,6 +1559,33 @@ namespace Recordum.Data.Migrations
                     b.ToTable("note_histories", (string)null);
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.NoteTag", b =>
+                {
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note_id");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tag_id");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("source");
+
+                    b.HasKey("NoteId", "TagId", "Source")
+                        .HasName("pk_note_tag");
+
+                    b.HasIndex("TagId")
+                        .HasDatabaseName("ix_note_tag_tag_id");
+
+                    b.ToTable("note_tag", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_note_tag_source", "source IN ('Inline','Property')");
+                        });
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2052,6 +2079,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
+                    b.Property<byte[]>("Content")
+                        .HasColumnType("BLOB")
+                        .HasColumnName("content");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
@@ -2065,6 +2096,12 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("filename");
 
+                    b.Property<bool>("IsMissing")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_missing");
+
                     b.Property<string>("MimeType")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -2073,6 +2110,10 @@ namespace Recordum.Data.Migrations
                     b.Property<Guid>("NoteId")
                         .HasColumnType("TEXT")
                         .HasColumnName("note_id");
+
+                    b.Property<byte[]>("Thumbnail")
+                        .HasColumnType("BLOB")
+                        .HasColumnName("thumbnail");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT")
@@ -2357,6 +2398,23 @@ namespace Recordum.Data.Migrations
                         .HasConstraintName("fk_note_histories_notes_note_id");
 
                     b.Navigation("Note");
+                });
+
+            modelBuilder.Entity("Recordum.Core.Models.NoteTag", b =>
+                {
+                    b.HasOne("Recordum.Core.Models.Note", null)
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_note_tag_note_id");
+
+                    b.HasOne("Recordum.Core.Models.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_note_tag_tag_id");
                 });
 
             modelBuilder.Entity("Recordum.Core.Models.Notification", b =>

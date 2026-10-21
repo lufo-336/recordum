@@ -134,7 +134,7 @@ public class DataAndBackupPageViewModelTests
             new BackupSettingsViewModel(new FakeAppSettingService(), new FakeAutoBackupKeyStore(), new FakeBackupSchedulerRunner(), new FakeFolderPicker(), new FakeBackupStoragePaths()),
             new BackupHistoryViewModel(log, new FakeFolderOpener()), launcher, new FakeSecrets(true), new FakeConfirmationDialog(), true);
         await page.LoadAsync();
-        log.Rows.Add(new Recordum.Core.Models.BackupLog { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Kind = "PreRestore", Path = "/x", SizeBytes = 1, SchemaVersion = "2.18", AppVersion = "1.0.0" });
+        log.Rows.Add(new Recordum.Core.Models.BackupLog { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Kind = "PreRestore", Path = "/x", SizeBytes = 1, SchemaVersion = "2.19", AppVersion = "1.0.0" });
 
         await page.RestoreCommand.ExecuteAsync(null);
 

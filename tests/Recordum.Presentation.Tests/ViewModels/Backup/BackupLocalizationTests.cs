@@ -27,7 +27,7 @@ public sealed class BackupLocalizationTests : IDisposable
     [InlineData("Imported", "Imported")]   // sconosciuto: resta com'e'
     public void History_rows_show_the_kind_in_the_user_language(string kind, string shown)
     {
-        var row = new BackupHistoryRowViewModel(new BackupLog { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Kind = kind, Path = "/x", SizeBytes = 1, SchemaVersion = "2.18", AppVersion = "1.0.0" });
+        var row = new BackupHistoryRowViewModel(new BackupLog { Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, Kind = kind, Path = "/x", SizeBytes = 1, SchemaVersion = "2.19", AppVersion = "1.0.0" });
         row.KindDisplay.Should().Be(shown);
     }
 

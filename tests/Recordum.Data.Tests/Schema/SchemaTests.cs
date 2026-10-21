@@ -15,7 +15,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         _fixture = fixture;
     }
 
-    // 29 tables: 25 from InitialSchema + active_timer added in ActiveTimerV25 + backup_log added in BackupLogV27 + note_histories added in NoteHistoryV29 + abstinence_period added in AbstinencePeriodV212 (snake_case, EF naming)
+    // 30 tables: 25 from InitialSchema + active_timer added in ActiveTimerV25 + backup_log added in BackupLogV27 + note_histories added in NoteHistoryV29 + abstinence_period added in AbstinencePeriodV212 + note_tag added in NoteTagAttachmentBlobV219 (snake_case, EF naming)
     private static readonly string[] ExpectedTables =
     [
         "abstinence_period",
@@ -31,6 +31,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         "completion_values",
         "completion_segments",
         "streak_pauses",
+        "note_tag",
         "notes",
         "note_histories",
         "attachment",
@@ -77,7 +78,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
     ];
 
     [Fact]
-    public void All_29_tables_exist_after_migration()
+    public void All_30_tables_exist_after_migration()
     {
         using var conn = _fixture.OpenRawConnection();
         using var cmd = conn.CreateCommand();
@@ -88,7 +89,7 @@ public sealed class SchemaTests : IClassFixture<SchemaFixture>
         while (reader.Read())
             actualTables.Add(reader.GetString(0));
 
-        Assert.Equal(29, actualTables.Count);
+        Assert.Equal(30, actualTables.Count);
 
         foreach (var expected in ExpectedTables)
             Assert.Contains(expected, actualTables);
