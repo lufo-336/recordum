@@ -58,9 +58,9 @@ public sealed class JsonExportFormatterTests
     }
 
     [Fact]
-    public void Write_includes_attachments_array_but_never_the_absolute_path()
+    public void Write_includes_attachments_array_but_never_the_content()
     {
-        var bytes = new JsonExportFormatter().Write(SampleModel.WithNoteAttachments(@"C:\Users\someone\AppData\Local\Recordum\attachments\note1\lake.jpg"));
+        var bytes = new JsonExportFormatter().Write(SampleModel.WithNoteAttachments("someone-private-bytes"u8.ToArray()));
         using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
         var attachments = doc.RootElement.GetProperty("habits")[0].GetProperty("notes")[0].GetProperty("attachments");
         Assert.Equal(2, attachments.GetArrayLength());
@@ -69,9 +69,8 @@ public sealed class JsonExportFormatterTests
         Assert.Equal("image/jpeg", lake.GetProperty("mime_type").GetString());
         Assert.Equal("attachments/note1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg", lake.GetProperty("relative_path").GetString());
 
-        // AbsolutePath must never leak into the exported JSON (local filesystem layout / username).
-        Assert.False(lake.TryGetProperty("absolute_path", out _));
-        Assert.False(lake.TryGetProperty("absolutePath", out _));
-        Assert.DoesNotContain("someone", Encoding.UTF8.GetString(bytes), StringComparison.Ordinal);
+        // The photo bytes must never leak into the exported JSON (size, and the photo itself).
+        Assert.False(lake.TryGetProperty("content", out _));
+        Assert.DoesNotContain(Convert.ToBase64String("someone-private-bytes"u8.ToArray()), Encoding.UTF8.GetString(bytes), StringComparison.Ordinal);
     }
 }

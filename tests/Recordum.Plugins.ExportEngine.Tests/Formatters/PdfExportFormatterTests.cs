@@ -37,21 +37,13 @@ public sealed class PdfExportFormatterTests
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
     [Fact]
-    public void Write_embeds_existing_attachment_and_skips_missing_one()
+    public void Write_embeds_attachment_content_and_skips_one_without()
     {
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-        var photoPath = Path.Combine(Path.GetTempPath(), "recordum-pdf-export-test-" + Guid.NewGuid().ToString("N") + ".png");
-        File.WriteAllBytes(photoPath, Convert.FromBase64String(OnePixelPngBase64));
-        try
-        {
-            // Must not throw even though the second attachment's file doesn't exist on disk.
-            var bytes = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(photoPath));
-            Assert.NotEmpty(bytes);
-            Assert.Equal((byte)'%', bytes[0]);
-        }
-        finally
-        {
-            File.Delete(photoPath);
-        }
+        var with = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(Convert.FromBase64String(OnePixelPngBase64)));
+        var without = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(null));
+        Assert.Equal((byte)'%', with[0]);
+        // The image is in the document: the same model without content is a smaller file.
+        Assert.True(with.Length > without.Length, $"{with.Length} <= {without.Length}");
     }
 }

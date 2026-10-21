@@ -37,10 +37,12 @@ public class CrossMachineRestoreTests
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
                 (await db.Notes.SingleAsync(n => n.Id == NoteId)).BodyMd.Should().Be(noteBody);
 
-            var attachments = new AttachmentService(fixture.DbFactory, fixture.Clock, new FakePluginContext(), fixture.RootDir);
+            var attachments = new AttachmentService(fixture.DbFactory, fixture.Clock, new FakePluginContext());
             var rows = await attachments.ListByNoteAsync(NoteId, default);
             rows.Should().ContainSingle();
-            (await File.ReadAllBytesAsync(attachments.ResolveAbsolutePath(rows[0])))
+            // Un backup 2.18 porta ancora il file su disco (lo importerà il passo d'avvio, Task 5): la riga
+            // migrata non ha contenuto, il file è dove lo scrisse la versione vecchia.
+            (await File.ReadAllBytesAsync(Path.Combine(fixture.RootDir, attachments.ResolveRelativePath(rows[0]))))
                 .Should().Equal("CROSS-MACHINE-PHOTO"u8.ToArray());
         }
         finally { await fixture.DisposeAsync(); }

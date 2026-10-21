@@ -6,34 +6,39 @@ namespace Recordum.Presentation.Tests.Fixtures;
 public sealed class FakeAttachmentService : IAttachmentService
 {
     public Dictionary<Guid, Attachment> Store { get; } = [];
-    public List<(Guid NoteId, string SourceFilePath)> AddCalls { get; } = [];
+    public List<(Guid NoteId, string Filename)> AddCalls { get; } = [];
     public List<Guid> DeleteCalls { get; } = [];
 
-    /// <summary>When set, AddAsync throws this for a source path that matches (case-insensitive),
-    /// so tests can simulate one bad file in a multi-file batch.</summary>
-    public Dictionary<string, Exception> ThrowOnAdd { get; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Stored photos by attachment id, for the content/thumbnail reads.</summary>
+    public Dictionary<Guid, ImportedPhoto> Photos { get; } = [];
 
     /// <summary>When set, AddAsync awaits this before completing, so tests can control the exact
     /// interleaving of a batch add against other state changes (e.g. the selection moving on).</summary>
     public TaskCompletionSource<bool>? AddGate { get; set; }
 
-    public async Task<Attachment> AddAsync(Guid noteId, string sourceFilePath, CancellationToken ct)
+    public async Task<Attachment> AddAsync(Guid noteId, ImportedPhoto photo, CancellationToken ct)
     {
-        AddCalls.Add((noteId, sourceFilePath));
-        if (ThrowOnAdd.TryGetValue(sourceFilePath, out var ex)) throw ex;
+        AddCalls.Add((noteId, photo.Filename));
         if (AddGate is not null) await AddGate.Task.ConfigureAwait(true);
 
         var attachment = new Attachment
         {
             Id = Guid.NewGuid(),
             NoteId = noteId,
-            Filename = Path.GetFileName(sourceFilePath),
-            MimeType = "image/jpeg",
-            FileSizeBytes = 100,
+            Filename = photo.Filename,
+            MimeType = photo.MimeType,
+            FileSizeBytes = photo.Content.Length,
         };
         Store[attachment.Id] = attachment;
+        Photos[attachment.Id] = photo;
         return attachment;
     }
+
+    public Task<byte[]?> ReadContentAsync(Guid attachmentId, CancellationToken ct) =>
+        Task.FromResult(Photos.TryGetValue(attachmentId, out var p) ? p.Content : null);
+
+    public Task<byte[]?> ReadThumbnailAsync(Guid attachmentId, CancellationToken ct) =>
+        Task.FromResult(Photos.TryGetValue(attachmentId, out var p) ? p.Thumbnail : null);
 
     public Task DeleteAsync(Guid attachmentId, CancellationToken ct)
     {
@@ -49,6 +54,4 @@ public sealed class FakeAttachmentService : IAttachmentService
         Task.FromResult<IReadOnlyList<Attachment>>(Store.Values.ToList());
 
     public string ResolveRelativePath(Attachment attachment) => $"attachments/{attachment.NoteId}/{attachment.Id:N}.bin";
-
-    public string ResolveAbsolutePath(Attachment attachment) => Path.Combine("C:\\fake-root", ResolveRelativePath(attachment));
 }

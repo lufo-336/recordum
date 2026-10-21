@@ -19,6 +19,9 @@ public sealed class DbFixture : IAsyncDisposable
 
     public IClock Clock { get; }
 
+    /// <summary>Il testo degli SELECT eseguiti (per asserire cosa NON si legge, es. le colonne BLOB).</summary>
+    public List<string> Sql => _counter.Sql;
+
     public FakePluginContext PluginContext { get; }
 
     public IDbContextFactory<RecordumDbContext> Factory { get; }
@@ -85,12 +88,14 @@ public sealed class DbFixture : IAsyncDisposable
     public sealed class CommandCounterInterceptor : DbCommandInterceptor
     {
         private int _count;
+        public List<string> Sql { get; } = [];
         public int Count => Volatile.Read(ref _count);
 
         public override InterceptionResult<DbDataReader> ReaderExecuting(
             DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
         {
             Interlocked.Increment(ref _count);
+            lock (Sql) Sql.Add(command.CommandText);
             return base.ReaderExecuting(command, eventData, result);
         }
 
@@ -99,6 +104,7 @@ public sealed class DbFixture : IAsyncDisposable
             CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref _count);
+            lock (Sql) Sql.Add(command.CommandText);
             return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
         }
     }

@@ -83,7 +83,7 @@ public class HabitScreenViewModelTests
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, bus, new FakeEditorAvailability(true), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
+            new FakeAttachmentService(), new FakePhotoImporter(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
     }
 
     public static HabitScreenViewModel CreateSut(

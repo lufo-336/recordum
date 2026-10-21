@@ -30,7 +30,7 @@ public sealed class NotesTabViewSmokeTests
         dialog = new FakeOpenFileDialog();
         var confirm = new FakeConfirmationDialog();
         return new NotesViewModel(
-            notes, bus, clock, new FakeWebView2Availability(available: false), attachments, dialog, confirm);
+            notes, bus, clock, new FakeWebView2Availability(available: false), attachments, new FakePhotoImporter(), dialog, confirm);
     }
 
     [WpfFact]

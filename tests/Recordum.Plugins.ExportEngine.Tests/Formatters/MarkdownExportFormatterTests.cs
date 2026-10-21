@@ -75,7 +75,7 @@ public sealed class MarkdownExportFormatterTests
     [Fact]
     public void Write_renders_a_markdown_image_link_per_attachment()
     {
-        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.WithNoteAttachments("unused.jpg")));
+        var md = Encoding.UTF8.GetString(new MarkdownExportFormatter().Write(SampleModel.WithNoteAttachments(null)));
         Assert.Contains("![lake.jpg](attachments/note1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg)", md, StringComparison.Ordinal);
         Assert.Contains("![missing.png](attachments/note1/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png)", md, StringComparison.Ordinal);
     }

@@ -133,12 +133,12 @@ public sealed class ExportQueryService(
             foreach (var n in await notes.ListByHabitAsync(node.Id, ct).ConfigureAwait(false))
             {
                 var noteAttachments = await attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(false);
-                var attachmentRefs = noteAttachments
-                    .Select(a => new ExportAttachmentRef(a.Filename, a.MimeType, attachments.ResolveRelativePath(a))
+                var attachmentRefs = new List<ExportAttachmentRef>();
+                foreach (var a in noteAttachments)
+                    attachmentRefs.Add(new ExportAttachmentRef(a.Filename, a.MimeType, attachments.ResolveRelativePath(a))
                     {
-                        AbsolutePath = attachments.ResolveAbsolutePath(a),
-                    })
-                    .ToList();
+                        Content = await attachments.ReadContentAsync(a.Id, ct).ConfigureAwait(false),
+                    });
                 noteRows.Add(new ExportNoteRow(DateTimeOffset.FromUnixTimeMilliseconds(n.UpdatedAtMs), n.BodyMd)
                 {
                     Attachments = attachmentRefs,

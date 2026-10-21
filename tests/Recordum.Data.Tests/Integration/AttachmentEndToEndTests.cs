@@ -56,7 +56,7 @@ public class AttachmentEndToEndTests
         try
         {
             var attachments = new AttachmentService(
-                fixture.DbFactory, fixture.Clock, new FakePluginContext(), fixture.RootDir);
+                fixture.DbFactory, fixture.Clock, new FakePluginContext());
 
             Guid habitId, noteId;
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
@@ -71,12 +71,8 @@ public class AttachmentEndToEndTests
             }
 
             // Attach two photos to the same note (Task 2).
-            var source1 = Path.Combine(fixture.RootDir, "plate.jpg");
-            var source2 = Path.Combine(fixture.RootDir, "dessert.png");
-            await File.WriteAllBytesAsync(source1, "PLATE-BYTES"u8.ToArray());
-            await File.WriteAllBytesAsync(source2, "DESSERT-BYTES"u8.ToArray());
-            var a1 = await attachments.AddAsync(noteId, source1, default);
-            var a2 = await attachments.AddAsync(noteId, source2, default);
+            await attachments.AddAsync(noteId, new ImportedPhoto("plate.jpg", "image/jpeg", "PLATE-BYTES"u8.ToArray(), [1]), default);
+            await attachments.AddAsync(noteId, new ImportedPhoto("dessert.png", "image/png", "DESSERT-BYTES"u8.ToArray(), [2]), default);
 
             // Export sees both, correctly attributed to the note (Task 3).
             var exportService = BuildExportService(fixture, attachments);
@@ -91,24 +87,17 @@ public class AttachmentEndToEndTests
             var bk = await fixture.CreateBackupAsync(Pass);
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
                 await db.Attachments.Where(a => a.NoteId == noteId).ExecuteDeleteAsync();
-            File.Delete(attachments.ResolveAbsolutePath(a1));
-            File.Delete(attachments.ResolveAbsolutePath(a2));
 
             var restore = fixture.NewRestoreService();
             var result = await restore.RestoreAsync(bk.Path, Pass, new RestoreOptions(SkipSafetySnapshot: true));
             result.UnavailablePlugins.Should().BeEmpty();
 
-            // Both attachments are back, byte-identical, at the location the app expects them.
+            // Both attachments are back, byte-identical, from the database.
             var restoredRows = await attachments.ListByNoteAsync(noteId, default);
             restoredRows.Should().HaveCount(2);
-            foreach (var row in restoredRows)
-            {
-                var path = attachments.ResolveAbsolutePath(row);
-                File.Exists(path).Should().BeTrue();
-            }
-            (await File.ReadAllBytesAsync(attachments.ResolveAbsolutePath(restoredRows.Single(r => r.Filename == "plate.jpg"))))
+            (await attachments.ReadContentAsync(restoredRows.Single(r => r.Filename == "plate.jpg").Id, default))
                 .Should().Equal("PLATE-BYTES"u8.ToArray());
-            (await File.ReadAllBytesAsync(attachments.ResolveAbsolutePath(restoredRows.Single(r => r.Filename == "dessert.png"))))
+            (await attachments.ReadContentAsync(restoredRows.Single(r => r.Filename == "dessert.png").Id, default))
                 .Should().Equal("DESSERT-BYTES"u8.ToArray());
 
             // A fresh export after restore still sees both photos correctly.

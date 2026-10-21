@@ -137,8 +137,7 @@ public class DayBoundaryParityTests
             new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
             new IntensityRampResolver(), Aggregator(fx),
             new AbstinenceService(fx.Factory, fx.Clock, bus, fx.ResetTimes),
-            new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext,
-                Path.Combine(Path.GetTempPath(), "recordum-parity-" + Guid.NewGuid().ToString("N"))),
+            new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext),
             new ReferenceDataQueryService(fx.Factory), fx.ResetTimes);
         var model = await export.BuildAsync(
             new ExportRequest(ExportSubject.SingleHabit, habitId, day, day, new ExportLayout()));

@@ -26,6 +26,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private readonly IDiaryService _diary;
     private readonly INoteService _notes;
     private readonly IAttachmentService _attachments;
+    private readonly IPhotoImporter _photoImporter;
     private readonly IOpenFileDialog _dialog;
     private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
@@ -50,6 +51,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         IDiaryService diary,
         INoteService notes,
         IAttachmentService attachments,
+        IPhotoImporter photoImporter,
         IOpenFileDialog dialog,
         IConfirmationDialog confirm,
         IClock clock)
@@ -57,12 +59,14 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(diary);
         ArgumentNullException.ThrowIfNull(notes);
         ArgumentNullException.ThrowIfNull(attachments);
+        ArgumentNullException.ThrowIfNull(photoImporter);
         ArgumentNullException.ThrowIfNull(dialog);
         ArgumentNullException.ThrowIfNull(confirm);
         ArgumentNullException.ThrowIfNull(clock);
         _diary = diary;
         _notes = notes;
         _attachments = attachments;
+        _photoImporter = photoImporter;
         _dialog = dialog;
         _confirm = confirm;
         _clock = clock;
@@ -140,7 +144,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         {
             var row = new JournalEntryRowViewModel(n);
             foreach (var a in await _attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(true))
-                row.Photos.Add(new AttachmentViewModel(a, _attachments));
+                row.Photos.Add(new AttachmentViewModel(a, await _attachments.ReadThumbnailAsync(a.Id, ct).ConfigureAwait(true)));
             if (generation != _reloadGeneration) return; // superseded mid-build; drop this partial batch
             rows.Add(row);
         }
@@ -218,14 +222,15 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         IsSaving = true;
         try
         {
-            var noteId = await _diary.SaveEntryAsync(_habitNodeId, _day, text, ct).ConfigureAwait(true);
-
+            // Le foto si normalizzano qui e viaggiano nella stessa transazione della voce. Un file che
+            // non si importa si salta (messaggio) e le altre entrano.
+            var photos = new List<ImportedPhoto>();
             var failed = false;
             foreach (var path in PendingPhotos.ToList())
             {
                 try
                 {
-                    await _attachments.AddAsync(noteId, path, ct).ConfigureAwait(true);
+                    photos.Add(await _photoImporter.ImportAsync(path, ct).ConfigureAwait(true));
                 }
 #pragma warning disable CA1031 // un file illeggibile non deve abortire il resto del batch
                 catch (Exception)
@@ -234,6 +239,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
                     failed = true;
                 }
             }
+            await _diary.SaveEntryAsync(_habitNodeId, _day, new DiaryEntryDraft(text, [], photos), ct).ConfigureAwait(true);
+
             if (failed) ErrorMessage = Strings.Diario_QuickEntry_Error_PhotoFailed;
 
             Draft = string.Empty;

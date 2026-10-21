@@ -194,24 +194,6 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
     }
 
     [Fact]
-    public async Task Attachments_follow_the_data_directory_of_the_options()
-    {
-        // Prima AttachmentService si ricavava la radice da LocalApplicationData per conto suo: con --data-dir
-        // il database finiva nella cartella scelta e le foto in quella vera (decisione B del Passo 0).
-        var options = Options();
-        var services = new ServiceCollection();
-        services.AddRecordumCore(options);
-        services.AddShellDoubles(new FixedKeyProvider(new byte[KeyMaterial.LengthBytes]));
-        await using var provider = services.BuildServiceProvider();
-        await using var scope = provider.CreateAsyncScope();
-
-        var path = scope.ServiceProvider.GetRequiredService<Recordum.Core.IAttachmentService>()
-            .ResolveAbsolutePath(new Recordum.Core.Models.Attachment { Id = Guid.NewGuid(), NoteId = Guid.NewGuid(), Filename = "p.jpg" });
-
-        Assert.StartsWith(options.DataDirectory + Path.DirectorySeparatorChar, path, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task The_demo_seeder_refuses_the_real_data_folder()
     {
         var o = Options();

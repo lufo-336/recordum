@@ -37,8 +37,7 @@ public sealed class ExportQueryServiceTests
         var refData = new ReferenceDataQueryService(fx.Factory);
         // Fresh temp dataRoot per Build() call: none of these tests except the attachment-specific
         // one below ever exercise disk I/O through AttachmentService, so the directory need not exist.
-        var attachments = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext,
-            Path.Combine(Path.GetTempPath(), "recordum-export-tests-" + Guid.NewGuid().ToString("N")));
+        var attachments = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext);
         return new ExportQueryService(fx.Factory, fx.Clock, completions, notes, metrics, goals, configs, ramp, streaks, abstinence, attachments, refData, fx.ResetTimes);
     }
 
@@ -288,7 +287,6 @@ public sealed class ExportQueryServiceTests
         var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));
         var habitId = Guid.NewGuid();
         var noteId = Guid.NewGuid();
-        var dataRoot = Path.Combine(Path.GetTempPath(), "recordum-export-attachments-" + Guid.NewGuid().ToString("N"));
         await using (var db = await fx.Factory.CreateDbContextAsync())
         {
             db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "Diary" });
@@ -296,10 +294,9 @@ public sealed class ExportQueryServiceTests
             await db.SaveChangesAsync();
         }
 
-        var attachmentService = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext, dataRoot);
-        var sourceFile = Path.Combine(Path.GetTempPath(), "recordum-export-attachments-source-" + Guid.NewGuid().ToString("N") + ".jpg");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
-        var attachment = await attachmentService.AddAsync(noteId, sourceFile, default);
+        var attachmentService = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext);
+        var attachment = await attachmentService.AddAsync(
+            noteId, new ImportedPhoto("photo.jpg", "image/jpeg", "fake image data"u8.ToArray(), [1]), default);
 
         var bus = new RecordingEventBus();
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);
@@ -323,12 +320,9 @@ public sealed class ExportQueryServiceTests
         Assert.Equal(attachment.Filename, attachmentRef.Filename);
         Assert.Equal("image/jpeg", attachmentRef.MimeType);
         Assert.Equal($"attachments/{noteId}/{attachment.Id:N}.jpg", attachmentRef.RelativePath);
-        Assert.NotNull(attachmentRef.AbsolutePath);
-        Assert.True(File.Exists(attachmentRef.AbsolutePath));
+        Assert.Equal("fake image data"u8.ToArray(), attachmentRef.Content);
 
         await fx.DisposeAsync();
-        File.Delete(sourceFile);
-        if (Directory.Exists(dataRoot)) Directory.Delete(dataRoot, recursive: true);
     }
 
     [Fact]

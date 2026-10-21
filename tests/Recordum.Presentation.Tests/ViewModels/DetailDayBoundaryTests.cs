@@ -307,7 +307,7 @@ public class DetailDayBoundaryTests
 
     private static NotesViewModel BuildNotes(FakeNoteService notes, FakeClock clock) => new(
         notes, new FakeEventBus(), clock, new FakeEditorAvailability(available: true),
-        new FakeAttachmentService(), new FakeOpenFileDialog(), new FakeConfirmationDialog());
+        new FakeAttachmentService(), new FakePhotoImporter(), new FakeOpenFileDialog(), new FakeConfirmationDialog());
 
     /// <summary>Screen su un orologio e un confine scelti dal chiamante — il factory condiviso li
     /// fissa entrambi, e con quelli "oggi" del confine e data UTC coincidono sempre.</summary>
@@ -335,7 +335,7 @@ public class DetailDayBoundaryTests
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, new FakeEventBus(), new FakeEditorAvailability(available: true), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakeOpenFileDialog(), uiPrefs, resetTimes);
+            new FakeAttachmentService(), new FakePhotoImporter(), new FakeOpenFileDialog(), uiPrefs, resetTimes);
         return (vm, nodes, abstinence);
     }
 }

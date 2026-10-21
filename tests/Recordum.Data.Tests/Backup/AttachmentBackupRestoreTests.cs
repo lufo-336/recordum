@@ -20,7 +20,7 @@ public class AttachmentBackupRestoreTests
         try
         {
             var attachments = new AttachmentService(
-                fixture.DbFactory, fixture.Clock, new FakePluginContext(), fixture.RootDir);
+                fixture.DbFactory, fixture.Clock, new FakePluginContext());
 
             Guid noteId;
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
@@ -33,18 +33,14 @@ public class AttachmentBackupRestoreTests
                 noteId = note.Id;
             }
 
-            var sourceFile = Path.Combine(fixture.RootDir, "source.jpg");
             var photoBytes = "REAL-PHOTO-BYTES"u8.ToArray();
-            await File.WriteAllBytesAsync(sourceFile, photoBytes);
-            var added = await attachments.AddAsync(noteId, sourceFile, default);
+            var added = await attachments.AddAsync(noteId, new ImportedPhoto("source.jpg", "image/jpeg", photoBytes, [1]), default);
 
             // Backup, then wipe the live row + file to make the restore observable.
             var bk = await fixture.CreateBackupAsync(Pass);
 
             await using (var db = await fixture.DbFactory.CreateDbContextAsync())
                 await db.Attachments.Where(a => a.NoteId == noteId).ExecuteDeleteAsync();
-            var livePath = attachments.ResolveAbsolutePath(added);
-            File.Delete(livePath);
 
             var restore = fixture.NewRestoreService();
             var result = await restore.RestoreAsync(bk.Path, Pass, new RestoreOptions(SkipSafetySnapshot: true));
@@ -53,9 +49,8 @@ public class AttachmentBackupRestoreTests
             var restoredRows = await attachments.ListByNoteAsync(noteId, default);
             restoredRows.Should().ContainSingle().Which.Id.Should().Be(added.Id);
 
-            var restoredPath = attachments.ResolveAbsolutePath(restoredRows[0]);
-            File.Exists(restoredPath).Should().BeTrue();
-            (await File.ReadAllBytesAsync(restoredPath)).Should().Equal(photoBytes);
+            (await attachments.ReadContentAsync(added.Id, default)).Should().Equal(photoBytes);
+            (await attachments.ReadThumbnailAsync(added.Id, default)).Should().Equal(1);
         }
         finally { await fixture.DisposeAsync(); }
     }

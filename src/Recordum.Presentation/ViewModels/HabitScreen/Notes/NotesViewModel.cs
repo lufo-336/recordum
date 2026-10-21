@@ -23,6 +23,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
 
     private readonly INoteService _notes;
     private readonly IAttachmentService _attachments;
+    private readonly IPhotoImporter _photoImporter;
     private readonly IOpenFileDialog _dialog;
     private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
@@ -44,6 +45,21 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isLightboxOpen;
     [ObservableProperty] private AttachmentViewModel? _lightboxAttachment;
 
+    /// <summary>Full photo bytes of <see cref="LightboxAttachment"/>, read from the database when it changes.</summary>
+    [ObservableProperty] private byte[]? _lightboxContent;
+
+    partial void OnLightboxAttachmentChanged(AttachmentViewModel? value)
+    {
+        LightboxContent = null;
+        if (value is not null) _ = LoadLightboxContentAsync(value);
+    }
+
+    private async Task LoadLightboxContentAsync(AttachmentViewModel vm)
+    {
+        var bytes = await _attachments.ReadContentAsync(vm.Id, CancellationToken.None).ConfigureAwait(true);
+        if (LightboxAttachment == vm) LightboxContent = bytes; // not if the lightbox moved on meanwhile
+    }
+
     /// <summary>Prev/Next only make sense with more than one photo.</summary>
     public bool CanNavigateLightbox => Attachments.Count > 1;
 
@@ -62,6 +78,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         IClock clock,
         IEditorAvailability availability,
         IAttachmentService attachments,
+        IPhotoImporter photoImporter,
         IOpenFileDialog dialog,
         IConfirmationDialog confirm)
     {
@@ -70,11 +87,13 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(availability);
         ArgumentNullException.ThrowIfNull(attachments);
+        ArgumentNullException.ThrowIfNull(photoImporter);
         ArgumentNullException.ThrowIfNull(dialog);
         ArgumentNullException.ThrowIfNull(confirm);
         _notes = notes;
         _clock = clock;
         _attachments = attachments;
+        _photoImporter = photoImporter;
         _dialog = dialog;
         _confirm = confirm;
         Availability = availability;
@@ -206,8 +225,12 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         var list = await _attachments.ListByNoteAsync(noteId, ct).ConfigureAwait(true);
         // Guard against a stale reload landing after the selection moved on again.
         if (SelectedNote?.Id != noteId) return;
+        var items = new List<AttachmentViewModel>();
+        foreach (var a in list)
+            items.Add(new AttachmentViewModel(a, await _attachments.ReadThumbnailAsync(a.Id, ct).ConfigureAwait(true)));
+        if (SelectedNote?.Id != noteId) return; // moved on while reading the thumbnails
         Attachments.Clear();
-        foreach (var a in list) Attachments.Add(new AttachmentViewModel(a, _attachments));
+        foreach (var vm in items) Attachments.Add(vm);
     }
 
     [RelayCommand]
@@ -220,14 +243,15 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         {
             try
             {
-                var attachment = await _attachments.AddAsync(noteId, path, ct).ConfigureAwait(true);
+                var photo = await _photoImporter.ImportAsync(path, ct).ConfigureAwait(true);
+                var attachment = await _attachments.AddAsync(noteId, photo, ct).ConfigureAwait(true);
                 // The add itself (File.Copy + SaveChangesAsync) is a real await boundary — if the
                 // user switched to a different note mid-batch, this note's Attachments collection
                 // has already been cleared/reloaded for the new selection. Still persist the file
                 // to the originally-selected note (the user's intent), just don't let it land in a
                 // list that now represents a different note; a later reselect reloads it correctly.
                 if (SelectedNote?.Id == noteId)
-                    Attachments.Add(new AttachmentViewModel(attachment, _attachments));
+                    Attachments.Add(new AttachmentViewModel(attachment, photo.Thumbnail));
             }
 #pragma warning disable CA1031 // one bad file (unreadable/moved) must not abort the rest of the batch
             catch (Exception)

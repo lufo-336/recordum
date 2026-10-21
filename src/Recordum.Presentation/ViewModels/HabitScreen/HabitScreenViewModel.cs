@@ -49,6 +49,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private readonly IHabitUiPrefsService _uiPrefs;
     private readonly IResetTimeResolver _resetTimes;
     private readonly Recordum.Core.IAttachmentService _attachments;
+    private readonly IPhotoImporter _photoImporter;
     private readonly IOpenFileDialog _openFileDialog;
     private readonly IConfirmationDialog _confirmationDialog;
     private readonly ITickSourceFactory? _ticks;
@@ -558,6 +559,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IDiaryService diary,
         IConfirmationDialog confirmationDialog,
         Recordum.Core.IAttachmentService attachments,
+        IPhotoImporter photoImporter,
         IOpenFileDialog openFileDialog,
         IHabitUiPrefsService uiPrefs,
         IResetTimeResolver resetTimes,
@@ -598,6 +600,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _uiPrefs = uiPrefs;
         _resetTimes = resetTimes;
         _attachments = attachments;
+        _photoImporter = photoImporter;
         _openFileDialog = openFileDialog;
         _confirmationDialog = confirmationDialog;
         _ticks = ticks;
@@ -609,7 +612,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _periodList.Changed += OnAbstinenceChanged;
         Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary, confirmationDialog), _periodList, clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock, ticks, events);
-        Notes = new NotesViewModel(noteService, events, clock, availability, attachments, openFileDialog, confirmationDialog);
+        Notes = new NotesViewModel(noteService, events, clock, availability, attachments, photoImporter, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
         TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock, ticks);
@@ -759,7 +762,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (_isQuickNoteJournal)
             {
                 var composer = new JournalQuickEntryViewModel(
-                    _diary, _noteService, _attachments, _openFileDialog, _confirmationDialog, _clock);
+                    _diary, _noteService, _attachments, _photoImporter, _openFileDialog, _confirmationDialog, _clock);
                 await composer.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
                 JournalQuickEntry = composer;
                 QuickAdd = null;          // niente editor Markdown per questa abitudine

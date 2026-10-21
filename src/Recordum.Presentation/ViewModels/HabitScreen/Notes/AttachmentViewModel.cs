@@ -1,4 +1,3 @@
-using Recordum.Core;
 using Recordum.Core.Models;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.Notes;
@@ -15,18 +14,21 @@ public sealed class AttachmentViewModel
     public string MimeType { get; }
     public long FileSizeBytes { get; }
 
-    /// <summary>Resolved ABSOLUTE path on disk, for Image.Source binding.</summary>
-    public string FilePath { get; }
+    /// <summary>The thumbnail bytes (from the database), for the image binding. Null when there is none.</summary>
+    public byte[]? Thumbnail { get; }
 
-    public AttachmentViewModel(Attachment attachment, IAttachmentService attachments)
+    /// <summary>True when a legacy photo's file is gone and there is nothing to show.</summary>
+    public bool IsMissing { get; }
+
+    public AttachmentViewModel(Attachment attachment, byte[]? thumbnail)
     {
         ArgumentNullException.ThrowIfNull(attachment);
-        ArgumentNullException.ThrowIfNull(attachments);
         Id = attachment.Id;
         NoteId = attachment.NoteId;
         Filename = attachment.Filename;
         MimeType = attachment.MimeType;
         FileSizeBytes = attachment.FileSizeBytes;
-        FilePath = attachments.ResolveAbsolutePath(attachment);
+        Thumbnail = thumbnail;
+        IsMissing = attachment.IsMissing;
     }
 }

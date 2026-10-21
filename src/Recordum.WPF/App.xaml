@@ -15,7 +15,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <conv:HexToBrushConverter x:Key="HexToBrush"/>
-            <conv:FilePathToImageSourceConverter x:Key="FilePathToImageSource"/>
+            <conv:BytesToImageSourceConverter x:Key="BytesToImageSource"/>
             <conv:HabitTypeLabelConverter x:Key="HabitTypeLabel"/>
             <conv:ScheduleTypeLabelConverter x:Key="ScheduleTypeLabel"/>
             <conv:StreakModeLabelConverter x:Key="StreakModeLabel"/>

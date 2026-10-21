@@ -103,7 +103,7 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Image Source="{Binding FilePath}" Width="56" Height="56"
+                                            <Image Source="{Binding Thumbnail, Converter={StaticResource BytesToImageSource}}" Width="56" Height="56"
                                                    Stretch="UniformToFill" Margin="0,0,6,6"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>

@@ -47,10 +47,10 @@ internal static class SampleModel
             },
         ]);
 
-    /// <summary>A note with two attachments: one whose AbsolutePath points at a real file
-    /// (existingPhotoPath, caller-supplied so it can assert on the embedded bytes) and one whose
-    /// AbsolutePath points nowhere — formatters must render the first and silently skip the second.</summary>
-    public static ExportModel WithNoteAttachments(string existingPhotoPath) => new(
+    /// <summary>A note with two attachments: one carrying content
+    /// (photo, caller-supplied so it can assert on the embedded bytes) and one with no content
+    /// (legacy / missing file) — formatters must render the first and silently skip the second.</summary>
+    public static ExportModel WithNoteAttachments(byte[]? photo) => new(
         ExportSubject.SingleHabit, "Diary",
         new DateOnly(2026, 1, 1), new DateOnly(2026, 5, 25),
         new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero),
@@ -66,11 +66,11 @@ internal static class SampleModel
                         [
                             new ExportAttachmentRef("lake.jpg", "image/jpeg", "attachments/note1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg")
                             {
-                                AbsolutePath = existingPhotoPath,
+                                Content = photo,
                             },
                             new ExportAttachmentRef("missing.png", "image/png", "attachments/note1/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png")
                             {
-                                AbsolutePath = Path.Combine(Path.GetTempPath(), "recordum-export-tests-missing-" + Guid.NewGuid().ToString("N") + ".png"),
+                                Content = null,
                             },
                         ],
                     },

@@ -57,12 +57,11 @@ public sealed record ExportNoteRow(DateTimeOffset UpdatedAt, string BodyMd)
 /// <summary>One photo/file attached to a note, described for export purposes.</summary>
 public sealed record ExportAttachmentRef(string Filename, string MimeType, string RelativePath)
 {
-    /// <summary>Absolute on-disk path, resolved by the host at model-build time so HTML/PDF
-    /// formatters can read the file's bytes without depending on <c>IAttachmentService</c>
-    /// themselves. Never serialized: it would leak the local filesystem layout (and, on Windows,
-    /// the user's account name via the LocalAppData path) into a shared export file.</summary>
+    /// <summary>The photo bytes, read from the database at model-build time so HTML/PDF formatters can
+    /// embed them without depending on <c>IAttachmentService</c>. Never serialized: it would bloat (and
+    /// duplicate) the JSON export. Null when the row has no content (legacy, missing file).</summary>
     [JsonIgnore]
-    public string? AbsolutePath { get; init; }
+    public byte[]? Content { get; init; }
 }
 
 /// <summary>One abstinence attempt: start, optional end (open = still running), elapsed span.</summary>

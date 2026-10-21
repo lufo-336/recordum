@@ -52,22 +52,14 @@ public sealed class HtmlExportFormatterTests
     }
 
     [Fact]
-    public void Write_embeds_existing_attachment_and_skips_missing_one()
+    public void Write_embeds_attachment_content_and_skips_one_without()
     {
-        var photoPath = Path.Combine(Path.GetTempPath(), "recordum-html-export-test-" + Guid.NewGuid().ToString("N") + ".jpg");
-        File.WriteAllBytes(photoPath, "fake image bytes"u8.ToArray());
-        try
-        {
-            var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.WithNoteAttachments(photoPath)));
-            var expectedBase64 = Convert.ToBase64String("fake image bytes"u8.ToArray());
-            Assert.Contains($"data:image/jpeg;base64,{expectedBase64}", html, StringComparison.Ordinal);
-            Assert.Contains("alt=\"lake.jpg\"", html, StringComparison.Ordinal);
-            // The second attachment's AbsolutePath doesn't exist on disk — must be skipped silently.
-            Assert.DoesNotContain("missing.png", html, StringComparison.Ordinal);
-        }
-        finally
-        {
-            File.Delete(photoPath);
-        }
+        var photo = "fake image bytes"u8.ToArray();
+        var html = Encoding.UTF8.GetString(new HtmlExportFormatter().Write(SampleModel.WithNoteAttachments(photo)));
+        var expectedBase64 = Convert.ToBase64String(photo);
+        Assert.Contains($"data:image/jpeg;base64,{expectedBase64}", html, StringComparison.Ordinal);
+        Assert.Contains("alt=\"lake.jpg\"", html, StringComparison.Ordinal);
+        // The second attachment has no content — must be skipped silently.
+        Assert.DoesNotContain("missing.png", html, StringComparison.Ordinal);
     }
 }

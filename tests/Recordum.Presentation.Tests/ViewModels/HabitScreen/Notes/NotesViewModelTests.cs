@@ -29,7 +29,8 @@ public class NotesViewModelTests
         out FakeClock clock,
         out FakeAttachmentService attachments,
         out FakeOpenFileDialog dialog,
-        out FakeConfirmationDialog confirm)
+        out FakeConfirmationDialog confirm,
+        FakePhotoImporter? importer = null)
     {
         notes = new FakeNoteService();
         bus = new FakeEventBus();
@@ -37,7 +38,7 @@ public class NotesViewModelTests
         attachments = new FakeAttachmentService();
         dialog = new FakeOpenFileDialog();
         confirm = new FakeConfirmationDialog();
-        return new NotesViewModel(notes, bus, clock, new FakeEditorAvailability(available: true), attachments, dialog, confirm);
+        return new NotesViewModel(notes, bus, clock, new FakeEditorAvailability(available: true), attachments, importer ?? new FakePhotoImporter(), dialog, confirm);
     }
 
     [Fact]
@@ -371,13 +372,14 @@ public class NotesViewModelTests
     [Fact]
     public async Task AddAttachmentCommand_continues_batch_when_one_file_throws()
     {
-        var sut = CreateSut(out var svc, out _, out _, out var attachments, out var dialog);
+        var importer = new FakePhotoImporter();
+        var sut = CreateSut(out var svc, out _, out _, out _, out var dialog, out _, importer);
         var n = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
         svc.Store[n.Id] = n;
         sut.Notes.Add(new NoteRowViewModel(n, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
         dialog.MultipleResult = ["C:\\photos\\bad.jpg", "C:\\photos\\good.jpg"];
-        attachments.ThrowOnAdd["C:\\photos\\bad.jpg"] = new IOException("locked");
+        importer.ThrowOnImport["C:\\photos\\bad.jpg"] = new IOException("locked");
 
         await sut.AddAttachmentCommand.ExecuteAsync(null);
 

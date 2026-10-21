@@ -65,6 +65,7 @@ public sealed partial class DiaryService(
         db.Notes.Add(note);
         db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = note.Id, BodyMd = text, CreatedAt = now });
         await NoteTagWriter.SyncAsync(db, note.Id, text, draft.PropertyTags, ct);
+        foreach (var photo in draft.Photos) db.Attachments.Add(AttachmentService.ToEntity(note.Id, photo));
         // Single SaveChanges = single atomic transaction for the whole pair.
         await db.SaveChangesAsync(ct);
 
@@ -114,6 +115,14 @@ public sealed partial class DiaryService(
             db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = noteId, BodyMd = edit.Text, CreatedAt = clock.UtcNow.UtcDateTime });
         }
         await NoteTagWriter.SyncAsync(db, noteId, edit.Text, edit.PropertyTags, ct);
+        foreach (var photo in edit.AddedPhotos) db.Attachments.Add(AttachmentService.ToEntity(noteId, photo));
+        if (edit.RemovedPhotoIds.Count > 0)
+        {
+            // Solo foto di QUESTA nota: un id di un'altra nota si ignora, mai cancellare foto altrui.
+            var removed = edit.RemovedPhotoIds.ToList();
+            db.Attachments.RemoveRange(await db.Attachments
+                .Where(a => a.NoteId == noteId && removed.Contains(a.Id)).ToListAsync(ct));
+        }
         if (!db.ChangeTracker.HasChanges()) return;
         await db.SaveChangesAsync(ct);
         eventBus.Publish(new NoteUpdatedPayload(note.Id, note.HabitNodeId));

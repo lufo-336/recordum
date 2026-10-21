@@ -24,8 +24,7 @@ public class AttachmentServiceTests : IAsyncLifetime
         _service = new AttachmentService(
             _fixture.Factory,
             _fixture.Clock,
-            _fixture.PluginContext,
-            _tempDir); // Pass custom temp directory for testing
+            _fixture.PluginContext);
         return Task.CompletedTask;
     }
 
@@ -57,62 +56,54 @@ public class AttachmentServiceTests : IAsyncLifetime
         return noteId;
     }
 
-    [Fact]
-    public async Task AddAsync_copies_file_and_inserts_row()
-    {
-        var sourceFile = Path.Combine(_tempDir, "test.jpg");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
+    private static ImportedPhoto Photo(string name = "test.jpg", string mime = "image/jpeg", byte[]? content = null) =>
+        new(name, mime, content ?? [1, 2, 3, 4], [9, 9]);
 
+    [Fact]
+    public async Task AddAsync_stores_content_and_thumbnail_in_the_row_and_nothing_on_disk()
+    {
         var noteId = await SeedNoteAsync();
 
-        var attachment = await _service.AddAsync(noteId, sourceFile, default);
+        var attachment = await _service.AddAsync(noteId, Photo(content: [7, 7, 7]), default);
 
         Assert.Equal(noteId, attachment.NoteId);
         Assert.Equal("image/jpeg", attachment.MimeType);
-        Assert.True(attachment.FileSizeBytes > 0);
-        Assert.True(attachment.CreatedAt > DateTimeOffset.MinValue);
+        Assert.Equal(3, attachment.FileSizeBytes);
         Assert.Equal(_fixture.Clock.UtcNow, attachment.CreatedAt);
-        Assert.Equal(_fixture.Clock.UtcNow, attachment.UpdatedAt);
         Assert.Equal(_fixture.Clock.UtcNowMs, attachment.UpdatedAtMs);
 
         await using (var db = await _fixture.Factory.CreateDbContextAsync())
         {
             var row = await db.Attachments.FindAsync(attachment.Id);
-            Assert.NotNull(row);
-            Assert.Equal(noteId, row!.NoteId);
-            Assert.Equal(".jpg", Path.GetExtension(row.Filename));
+            Assert.Equal(new byte[] { 7, 7, 7 }, row!.Content);
+            Assert.Equal(new byte[] { 9, 9 }, row.Thumbnail);
         }
-
-        var expectedPath = Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".jpg");
-        Assert.True(File.Exists(expectedPath));
+        Assert.Equal(new byte[] { 7, 7, 7 }, await _service.ReadContentAsync(attachment.Id, default));
+        Assert.Equal(new byte[] { 9, 9 }, await _service.ReadThumbnailAsync(attachment.Id, default));
+        Assert.False(Directory.Exists(Path.Combine(_tempDir, "attachments")));
     }
 
     [Fact]
-    public async Task AddAsync_throws_when_source_file_missing()
+    public async Task Read_returns_null_for_an_unknown_id()
     {
-        var noteId = await SeedNoteAsync();
-        var missing = Path.Combine(_tempDir, "does-not-exist.png");
-
-        await Assert.ThrowsAsync<FileNotFoundException>(
-            () => _service.AddAsync(noteId, missing, default));
+        Assert.Null(await _service.ReadContentAsync(Guid.NewGuid(), default));
+        Assert.Null(await _service.ReadThumbnailAsync(Guid.NewGuid(), default));
     }
 
     [Fact]
-    public async Task ListByNoteAsync_returns_all_for_note()
+    public async Task ListByNoteAsync_returns_all_for_note_without_selecting_the_blob_columns()
     {
         var noteId = await SeedNoteAsync();
+        await _service.AddAsync(noteId, Photo("a.jpg"), default);
+        await _service.AddAsync(noteId, Photo("b.png", "image/png"), default);
 
-        var file1 = Path.Combine(_tempDir, "photo1.jpg");
-        var file2 = Path.Combine(_tempDir, "photo2.png");
-        await File.WriteAllTextAsync(file1, "a");
-        await File.WriteAllTextAsync(file2, "b");
-
-        await _service.AddAsync(noteId, file1, default);
-        await _service.AddAsync(noteId, file2, default);
-
+        lock (_fixture.Sql) _fixture.Sql.Clear();
         var attachments = await _service.ListByNoteAsync(noteId, default);
 
         Assert.Equal(2, attachments.Count);
+        var select = Assert.Single(_fixture.Sql, q => q.Contains("FROM \"attachment\"", StringComparison.Ordinal));
+        Assert.DoesNotContain("content", select, StringComparison.Ordinal);
+        Assert.DoesNotContain("thumbnail", select, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -120,14 +111,8 @@ public class AttachmentServiceTests : IAsyncLifetime
     {
         var noteId1 = await SeedNoteAsync();
         var noteId2 = await SeedNoteAsync();
-
-        var file1 = Path.Combine(_tempDir, "a.jpg");
-        var file2 = Path.Combine(_tempDir, "b.jpg");
-        await File.WriteAllTextAsync(file1, "a");
-        await File.WriteAllTextAsync(file2, "b");
-
-        await _service.AddAsync(noteId1, file1, default);
-        await _service.AddAsync(noteId2, file2, default);
+        await _service.AddAsync(noteId1, Photo(), default);
+        await _service.AddAsync(noteId2, Photo(), default);
 
         var all = await _service.ListAllAsync(default);
 
@@ -135,104 +120,32 @@ public class AttachmentServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task DeleteAsync_removes_row_and_file()
+    public async Task DeleteAsync_removes_the_row()
     {
         var noteId = await SeedNoteAsync();
-        var sourceFile = Path.Combine(_tempDir, "photo.jpg");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
-
-        var attachment = await _service.AddAsync(noteId, sourceFile, default);
-        var diskPath = Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".jpg");
-        Assert.True(File.Exists(diskPath));
+        var attachment = await _service.AddAsync(noteId, Photo(), default);
 
         await _service.DeleteAsync(attachment.Id, default);
 
         await using (var db = await _fixture.Factory.CreateDbContextAsync())
-        {
-            var row = await db.Attachments.FindAsync(attachment.Id);
-            Assert.Null(row);
-        }
-        Assert.False(File.Exists(diskPath));
-
-        var remaining = await _service.ListByNoteAsync(noteId, default);
-        Assert.Empty(remaining);
+            Assert.Null(await db.Attachments.FindAsync(attachment.Id));
+        Assert.Empty(await _service.ListByNoteAsync(noteId, default));
     }
 
     [Fact]
     public async Task DeleteAsync_is_a_no_op_when_attachment_missing()
     {
-        // Should not throw for an unknown id (idempotent delete).
         await _service.DeleteAsync(Guid.NewGuid(), default);
     }
 
     [Fact]
-    public async Task DeleteAsync_does_not_throw_when_file_already_gone()
+    public async Task ResolveRelativePath_lowercases_the_extension_and_falls_back_to_bin()
     {
         var noteId = await SeedNoteAsync();
-        var sourceFile = Path.Combine(_tempDir, "photo.jpg");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
+        var upper = await _service.AddAsync(noteId, Photo("photo.JPG"), default);
+        var bare = await _service.AddAsync(noteId, Photo("photo_no_ext"), default);
 
-        var attachment = await _service.AddAsync(noteId, sourceFile, default);
-        var diskPath = Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".jpg");
-        File.Delete(diskPath); // simulate the file already missing from disk
-
-        await _service.DeleteAsync(attachment.Id, default);
-
-        await using var db = await _fixture.Factory.CreateDbContextAsync();
-        Assert.Null(await db.Attachments.FindAsync(attachment.Id));
-    }
-
-    [Fact]
-    public async Task ResolveAbsolutePath_finds_the_file_AddAsync_wrote_for_uppercase_extension()
-    {
-        var noteId = await SeedNoteAsync();
-        var sourceFile = Path.Combine(_tempDir, "photo.JPG");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
-
-        var attachment = await _service.AddAsync(noteId, sourceFile, default);
-
-        var relative = _service.ResolveRelativePath(attachment);
-        var absolute = _service.ResolveAbsolutePath(attachment);
-
-        // Normalized to lowercase regardless of the original file's casing.
-        Assert.EndsWith(".jpg", relative, StringComparison.Ordinal);
-        Assert.True(File.Exists(absolute));
-        Assert.Equal(Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".jpg"), absolute);
-    }
-
-    [Fact]
-    public async Task ResolveAbsolutePath_finds_the_file_AddAsync_wrote_for_extensionless_original()
-    {
-        var noteId = await SeedNoteAsync();
-        var sourceFile = Path.Combine(_tempDir, "photo_no_ext");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
-
-        var attachment = await _service.AddAsync(noteId, sourceFile, default);
-
-        var relative = _service.ResolveRelativePath(attachment);
-        var absolute = _service.ResolveAbsolutePath(attachment);
-
-        Assert.EndsWith(".bin", relative, StringComparison.Ordinal);
-        Assert.True(File.Exists(absolute));
-    }
-
-    [Fact]
-    public async Task DeleteAsync_removes_file_when_original_had_no_extension()
-    {
-        // Regression for the DeleteAsync bug: it used to re-derive the extension straight from
-        // entity.Filename (no lowercasing, no "bin" fallback), so for an extensionless original it
-        // computed a path with no extension at all while AddAsync had actually written "<id>.bin" —
-        // the delete would silently miss the real file.
-        var noteId = await SeedNoteAsync();
-        var sourceFile = Path.Combine(_tempDir, "photo_no_ext");
-        await File.WriteAllTextAsync(sourceFile, "fake image data");
-
-        var attachment = await _service.AddAsync(noteId, sourceFile, default);
-        var diskPath = Path.Combine(_tempDir, "attachments", noteId.ToString(), attachment.Id.ToString("N") + ".bin");
-        Assert.True(File.Exists(diskPath));
-
-        await _service.DeleteAsync(attachment.Id, default);
-
-        Assert.False(File.Exists(diskPath));
+        Assert.EndsWith(".jpg", _service.ResolveRelativePath(upper), StringComparison.Ordinal);
+        Assert.EndsWith(".bin", _service.ResolveRelativePath(bare), StringComparison.Ordinal);
     }
 }
