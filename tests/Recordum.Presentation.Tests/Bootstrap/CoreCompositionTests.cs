@@ -33,6 +33,17 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
     }
 
     [Fact]
+    public void Photo_importer_resolves_to_the_skia_implementation()
+    {
+        var services = new ServiceCollection();
+        services.AddRecordumCore(Options());
+        services.AddShellDoubles();
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        Assert.IsType<Data.Services.SkiaPhotoImporter>(scope.ServiceProvider.GetRequiredService<IPhotoImporter>());
+    }
+
+    [Fact]
     public void Every_service_registered_by_core_resolves_with_shell_doubles()
     {
         var services = new ServiceCollection();

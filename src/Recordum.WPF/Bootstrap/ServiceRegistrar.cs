@@ -117,6 +117,7 @@ public static class ServiceRegistrar
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
+        services.AddScoped<IPhotoImporter, SkiaPhotoImporter>();
         services.AddScoped<IRecentColorStore, RecentColorStore>();
         services.AddScoped<IFavoriteColorStore, FavoriteColorStore>();
         services.AddScoped<IResetTimeResolver, ResetTimeResolver>();

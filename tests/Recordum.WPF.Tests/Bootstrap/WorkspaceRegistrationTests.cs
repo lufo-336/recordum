@@ -16,6 +16,15 @@ public sealed class WorkspaceRegistrationTests
             .BuildServiceProvider();
 
     [Fact]
+    public void Photo_importer_resolves_to_the_skia_implementation()
+    {
+        using var sp = BuildProvider();
+        using var scope = sp.CreateScope();
+        scope.ServiceProvider.GetRequiredService<Recordum.Core.Abstractions.Services.IPhotoImporter>()
+            .Should().BeOfType<Recordum.Data.Services.SkiaPhotoImporter>();
+    }
+
+    [Fact]
     public void Subject_screen_factory_creates_distinct_screens_in_their_own_scopes()
     {
         using var sp = BuildProvider();
