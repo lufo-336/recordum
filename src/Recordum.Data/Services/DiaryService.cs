@@ -21,8 +21,9 @@ public sealed partial class DiaryService(
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Diary entry {NoteId} saved for habit {HabitId}")]
     private partial void LogSaved(Guid noteId, Guid habitId);
 
-    public async ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, string text, CancellationToken ct = default)
+    public async ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, DiaryEntryDraft draft, CancellationToken ct = default)
     {
+        var text = draft.Text;
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var habit = await db.HabitNodes.FirstOrDefaultAsync(n => n.Id == habitNodeId, ct)
             ?? throw new HabitNodeNotFoundException(habitNodeId);
@@ -63,6 +64,7 @@ public sealed partial class DiaryService(
         db.Completions.Add(completion);
         db.Notes.Add(note);
         db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = note.Id, BodyMd = text, CreatedAt = now });
+        await NoteTagWriter.SyncAsync(db, note.Id, text, draft.PropertyTags, ct);
         // Single SaveChanges = single atomic transaction for the whole pair.
         await db.SaveChangesAsync(ct);
 
@@ -100,17 +102,37 @@ public sealed partial class DiaryService(
             eventBus.Publish(new CompletionDeletedPayload(cid3, note.HabitNodeId, completedAt ?? default));
     }
 
-    public async ValueTask EditEntryAsync(Guid noteId, string text, CancellationToken ct = default)
+    public async ValueTask EditEntryAsync(Guid noteId, DiaryEntryEdit edit, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var note = await db.Notes.FirstOrDefaultAsync(n => n.Id == noteId, ct);
         if (note is null) return;
-        if (note.BodyMd == text) return; // no-op, no spurious version
-        note.BodyMd = text;
-        note.UpdatedAtMs = clock.UtcNowMs;
-        db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = noteId, BodyMd = text, CreatedAt = clock.UtcNow.UtcDateTime });
+        if (note.BodyMd != edit.Text) // same text: no spurious version
+        {
+            note.BodyMd = edit.Text;
+            note.UpdatedAtMs = clock.UtcNowMs;
+            db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = noteId, BodyMd = edit.Text, CreatedAt = clock.UtcNow.UtcDateTime });
+        }
+        await NoteTagWriter.SyncAsync(db, noteId, edit.Text, edit.PropertyTags, ct);
+        if (!db.ChangeTracker.HasChanges()) return;
         await db.SaveChangesAsync(ct);
         eventBus.Publish(new NoteUpdatedPayload(note.Id, note.HabitNodeId));
+    }
+
+    public async ValueTask<IReadOnlyDictionary<Guid, IReadOnlyList<EntryTag>>> GetEntryTagsAsync(
+        IReadOnlyCollection<Guid> noteIds, CancellationToken ct = default)
+    {
+        if (noteIds.Count == 0) return new Dictionary<Guid, IReadOnlyList<EntryTag>>();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var ids = noteIds.ToHashSet();
+        var rows = await (from nt in db.NoteTags.AsNoTracking()
+                          join t in db.Tags.AsNoTracking() on nt.TagId equals t.Id
+                          where ids.Contains(nt.NoteId)
+                          select new { nt.NoteId, t.Name, nt.Source }).ToListAsync(ct);
+        return rows.GroupBy(r => r.NoteId).ToDictionary(
+            g => g.Key,
+            g => (IReadOnlyList<EntryTag>)g.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(r => r.Source).Select(r => new EntryTag(r.Name, r.Source)).ToList());
     }
 
     public async ValueTask<Note?> GetEntryByCompletionAsync(Guid completionId, CancellationToken ct = default)

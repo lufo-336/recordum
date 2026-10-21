@@ -22,7 +22,7 @@ public class DiaryServiceTests
         return (fx, h.Id);
     }
 
-    private static DiaryService NewService(DbFixture fx, out RecordingEventBus bus)
+    private static Recordum.Core.Abstractions.Services.IDiaryService NewService(DbFixture fx, out RecordingEventBus bus)
     {
         bus = new RecordingEventBus();
         return new DiaryService(fx.Factory, fx.Clock, NullLogger<DiaryService>.Instance, bus, fx.ResetTimes);

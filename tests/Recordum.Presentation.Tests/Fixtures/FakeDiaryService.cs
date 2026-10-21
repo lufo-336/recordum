@@ -79,6 +79,16 @@ public sealed class FakeDiaryService : IDiaryService
         return noteId; // the method is async now: the ValueTask wrapper is implicit
     }
 
+    public ValueTask<Guid> SaveEntryAsync(Guid habitNodeId, DateOnly day, DiaryEntryDraft draft, CancellationToken ct = default)
+        => SaveEntryAsync(habitNodeId, day, draft.Text, ct);
+
+    public ValueTask EditEntryAsync(Guid noteId, DiaryEntryEdit edit, CancellationToken ct = default)
+        => EditEntryAsync(noteId, edit.Text, ct);
+
+    public ValueTask<IReadOnlyDictionary<Guid, IReadOnlyList<EntryTag>>> GetEntryTagsAsync(
+        IReadOnlyCollection<Guid> noteIds, CancellationToken ct = default)
+        => new(new Dictionary<Guid, IReadOnlyList<EntryTag>>());
+
     public ValueTask DeleteEntryAsync(Guid noteOrCompletionId, CancellationToken ct = default)
     {
         DeleteCalls.Add(noteOrCompletionId);
