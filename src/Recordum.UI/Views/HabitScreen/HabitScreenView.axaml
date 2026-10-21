@@ -5,6 +5,8 @@
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:local="using:Recordum.UI.Views.HabitScreen"
              xmlns:today="using:Recordum.UI.Views.HabitScreen.Today"
+             xmlns:journal="using:Recordum.UI.Views.HabitScreen.Journal"
+             xmlns:jvm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
              xmlns:calendar="using:Recordum.UI.Views.HabitScreen.Calendar"
              x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
              x:DataType="vm:HabitScreenViewModel"
@@ -76,16 +78,20 @@
       </Grid>
     </Border>
 
-    <!-- Fascia "Oggi" (Task 2). Un gruppo non ne ha; il diario neppure in F2a (decisione 3). -->
+    <!-- Fascia "Oggi" (Task 2). Un gruppo non ne ha; il diario ha il suo pulsante (F2d-1). -->
     <Border Grid.Row="2" x:Name="TodayHost" IsVisible="{CompiledBinding ShowTodayStrip}">
       <today:TodayStripView DataContext="{CompiledBinding TodayStrip}"/>
     </Border>
 
-    <!-- Chip delle colonne. Panoramica (F3), Diario (F2d), Dettaglio (F3) e Note (F3) non sono ancora
+    <!-- Chip delle colonne. Panoramica (F3), Dettaglio (F3) e Note (F3) non sono ancora
          portate: statici e nascosti (decisione 2); Configura e' di F2b (decisione 3). Un gruppo in F2a mostra
          intestazione e chip senza colonne: la Panoramica e' di F3. -->
     <StackPanel Grid.Row="3" x:Name="ChipBar" Orientation="Horizontal" Margin="12,8,12,4"
                 IsVisible="{CompiledBinding ShowChipBar}">
+      <CheckBox Classes="segment" x:Name="ChipDiario" Margin="0,0,4,0"
+                Content="{x:Static res:Strings.HabitScreen_Column_Diario}"
+                IsChecked="{CompiledBinding IsDiarioOpen, Mode=TwoWay}"
+                IsVisible="{CompiledBinding IsJournal}"/>
       <CheckBox Classes="segment" x:Name="ChipCronologia"
                 Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
                 IsChecked="{CompiledBinding IsCronologiaOpen, Mode=TwoWay}"
@@ -111,9 +117,40 @@
          code-behind (UpdateColumns) dal ViewModel. -->
     <ScrollViewer Grid.Row="4" x:Name="ColumnsScroll" Margin="12,4,12,12"
                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-      <Grid x:Name="ColumnsGrid" ColumnDefinitions="0,0"
+      <Grid x:Name="ColumnsGrid" ColumnDefinitions="0,0,0"
             Width="{Binding #ColumnsScroll.Viewport.Width}">
-        <Border x:Name="CronologiaColumn" Grid.Column="0"
+        <Border x:Name="DiarioColumn" Grid.Column="0"
+                Background="{DynamicResource Brush.Background}"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
+                IsVisible="{CompiledBinding ShowDiario}">
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" Height="30" ColumnDefinitions="*,Auto,Auto" Background="{DynamicResource Brush.Surface}">
+              <TextBlock Margin="12,0" VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
+                         Text="{x:Static res:Strings.HabitScreen_Column_Diario}" Foreground="{DynamicResource Brush.TextMuted}"/>
+              <Button Grid.Column="1" x:Name="DiarioFocusButton" Classes="column-icon"
+                      Command="{CompiledBinding ToggleFocusCommand}" CommandParameter="{x:Static vm:HabitColumn.Diario}"
+                      ToolTip.Tip="{x:Static res:Strings.HabitScreen_Focus}"
+                      AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Focus}">
+                <Path Data="{StaticResource Icon.Maximize2}" Classes="column-icon"/>
+              </Button>
+              <Button Grid.Column="2" x:Name="DiarioCloseButton" Classes="column-icon"
+                      Command="{CompiledBinding ToggleColumnCommand}" CommandParameter="{x:Static vm:HabitColumn.Diario}"
+                      ToolTip.Tip="{x:Static res:Strings.HabitScreen_Close}"
+                      AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Close}">
+                <Path Data="{StaticResource Icon.X}" Classes="column-icon"/>
+              </Button>
+            </Grid>
+            <!-- Una colonna per tipo, mai un ContentTemplate statico (CLAUDE.md 8): per un'abitudine che non e' un
+                 diario QuickEntryForDiario e' null e nessun composer viene costruito. -->
+            <ContentControl x:Name="DiarioHost" Content="{CompiledBinding QuickEntryForDiario}">
+              <ContentControl.DataTemplates>
+                <DataTemplate DataType="jvm:JournalQuickEntryViewModel"><journal:JournalQuickEntryView/></DataTemplate>
+              </ContentControl.DataTemplates>
+            </ContentControl>
+          </DockPanel>
+        </Border>
+
+        <Border x:Name="CronologiaColumn" Grid.Column="1"
                 Background="{DynamicResource Brush.Background}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
                 IsVisible="{CompiledBinding ShowCronologia}">
@@ -140,7 +177,7 @@
           </Grid>
         </Border>
 
-        <Border x:Name="ConfiguraColumn" Grid.Column="1"
+        <Border x:Name="ConfiguraColumn" Grid.Column="2"
                 Background="{DynamicResource Brush.Background}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,1,1" CornerRadius="6"
                 IsVisible="{CompiledBinding ShowConfigura}">
@@ -169,7 +206,7 @@
         </Border>
 
         <!-- Un'unica maniglia sul confine Cronologia|Configura (solo con due colonne aperte). -->
-        <Thumb x:Name="ColumnResizeThumb" Grid.Column="0" Classes="column-resize" HorizontalAlignment="Right"
+        <Thumb x:Name="ColumnResizeThumb" Grid.Column="1" Classes="column-resize" HorizontalAlignment="Right"
                IsVisible="False" ZIndex="1"/>
       </Grid>
     </ScrollViewer>

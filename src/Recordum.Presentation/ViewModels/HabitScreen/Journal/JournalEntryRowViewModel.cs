@@ -24,6 +24,10 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         CreatedAt = note.CreatedAt;
         _text = note.BodyMd;
         Tags = tags.Select(t => t.Name).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+        // Un nome presente nei due modi si mostra come tag della riga Tag (quello scelto a parte).
+        TagChips = tags.GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new TagChip(g.First().Name, g.Any(t => t.Source == NoteTagSource.Property)))
+            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
         PropertyTagNames = tags.Where(t => t.Source == NoteTagSource.Property).Select(t => t.Name).ToList();
         // CreatedAt è UTC; la riga mostra l'ora che l'utente ha vissuto (decisione 8). Invariant: i due punti restano due punti.
         var utc = DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc);
@@ -36,6 +40,9 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
 
     /// <summary>Tutti i tag della voce (nel testo e nella riga Tag), per nome.</summary>
     public IReadOnlyList<string> Tags { get; }
+
+    /// <summary>I tag per la view: <see cref="TagChip.IsProperty"/> distingue la riga Tag dal <c>#</c> nel testo (due stili).</summary>
+    public IReadOnlyList<TagChip> TagChips { get; }
 
     internal IReadOnlyList<string> PropertyTagNames { get; }
 
@@ -84,3 +91,5 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         EditTags = null;
     }
 }
+
+public sealed record TagChip(string Name, bool IsProperty);

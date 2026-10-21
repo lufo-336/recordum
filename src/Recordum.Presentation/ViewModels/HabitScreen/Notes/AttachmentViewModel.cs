@@ -20,6 +20,9 @@ public sealed class AttachmentViewModel
     /// <summary>True when a legacy photo's file is gone and there is nothing to show.</summary>
     public bool IsMissing { get; }
 
+    /// <summary>Niente da mostrare: la view disegna l'icona "foto non disponibile" al posto della miniatura.</summary>
+    public bool ShowsPlaceholder => IsMissing || Thumbnail is null;
+
     public AttachmentViewModel(Attachment attachment, byte[]? thumbnail)
     {
         ArgumentNullException.ThrowIfNull(attachment);

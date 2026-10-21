@@ -61,4 +61,20 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
     </Style>
 
+    <!-- Chip dei tag di una voce di diario. "property" = scelto nella riga Tag (pieno); "inline" = scritto con # nel
+         testo (solo contorno). Il colore dell'abitudine (Brush.Accent della schermata) li distingue dal resto. -->
+    <Style Selector="Border.tag-chip">
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="8,1"/>
+        <Setter Property="Margin" Value="0,0,4,4"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+    <Style Selector="Border.tag-chip.property">
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+    </Style>
+    <Style Selector="Border.tag-chip.inline">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
 </Styles>

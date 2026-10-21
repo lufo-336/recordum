@@ -47,12 +47,15 @@ public partial class HabitScreenView : UserControl
         if (_vm is not { } vm) return;
         var both = vm.ShowCronologia && vm.ShowConfigura;
         var defs = ColumnsGrid.ColumnDefinitions;
-        defs[0].Width = !vm.ShowCronologia ? new GridLength(0)
+        // Colonne: 0 Diario (solo diari), 1 Cronologia, 2 Configura. Diario e Configura si dividono il resto a stella.
+        defs[0].Width = vm.ShowDiario ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        defs[0].MinWidth = vm.ShowDiario ? 320 : 0;
+        defs[1].Width = !vm.ShowCronologia ? new GridLength(0)
             : both ? new GridLength(vm.CronologiaWidth) : new GridLength(1, GridUnitType.Star);
-        defs[0].MinWidth = vm.ShowCronologia ? 320 : 0;
-        defs[1].Width = vm.ShowConfigura ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-        defs[1].MinWidth = vm.ShowConfigura ? 320 : 0;
-        ColumnsGrid.MinWidth = both ? vm.CronologiaWidth + 320 : vm.OpenColumnsMinWidth;
+        defs[1].MinWidth = vm.ShowCronologia ? 320 : 0;
+        defs[2].Width = vm.ShowConfigura ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        defs[2].MinWidth = vm.ShowConfigura ? 320 : 0;
+        ColumnsGrid.MinWidth = both ? vm.CronologiaWidth + 320 * (vm.ShowDiario ? 2 : 1) : vm.OpenColumnsMinWidth;
         ColumnResizeThumb.IsVisible = both;
         if (vm.ShowCronologia && CronologiaHost.Child is null)
             CronologiaHost.Child = new CronologiaColumnView { DataContext = vm };
@@ -79,6 +82,7 @@ public partial class HabitScreenView : UserControl
     {
         if (e.PropertyName == nameof(HabitScreenViewModel.Node)) ApplyAccent();
         if (e.PropertyName is nameof(HabitScreenViewModel.ShowCronologia) or nameof(HabitScreenViewModel.ShowConfigura)
+            or nameof(HabitScreenViewModel.ShowDiario)
             or nameof(HabitScreenViewModel.CronologiaWidth) or nameof(HabitScreenViewModel.ConfiguraWidth)
             or nameof(HabitScreenViewModel.OpenColumnsMinWidth)) UpdateColumns();
     }

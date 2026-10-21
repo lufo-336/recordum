@@ -95,20 +95,20 @@ public sealed class TodayStripTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task A_journal_builds_no_strip_and_no_border()
+    public async Task A_journal_builds_its_own_button_in_the_strip()
     {
         var (_, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Oggi-Diario"));
-        ContentViews(view).Should().BeEmpty();
+        ContentViews(view).Should().BeEmpty("nessuna delle quattro view per tipo");
         var strip = view.GetVisualDescendants().OfType<TodayStripView>().Single();
-        strip.IsVisible.Should().BeFalse();
-        strip.GetVisualDescendants().OfType<Border>().Should().BeEmpty("neppure il bordo della fascia");
+        strip.IsVisible.Should().BeTrue();
+        strip.GetVisualDescendants().OfType<JournalTodayView>().Should().ContainSingle();
     }
 
     [AvaloniaFact]
-    public void The_template_returns_null_for_journal_and_unknown_content()
+    public void The_template_builds_the_journal_view_and_returns_null_for_unknown_content()
     {
         using var scope = Host.Provider.CreateScope();
-        TodayContentTemplate.Instance.Build(new JournalTodayContent(Svc<IHabitUiPrefsService>(scope))).Should().BeNull();
+        TodayContentTemplate.Instance.Build(new JournalTodayContent(Svc<IHabitUiPrefsService>(scope))).Should().BeOfType<JournalTodayView>();
         TodayContentTemplate.Instance.Build(new object()).Should().BeNull();
         TodayContentTemplate.Instance.Build(null).Should().BeNull();
     }

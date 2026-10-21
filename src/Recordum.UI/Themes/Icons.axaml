@@ -140,6 +140,8 @@
     <!-- plus.svg: 2 lines -->
     <StreamGeometry x:Key="Icon.Plus">M5 12h14 M12 5v14</StreamGeometry>
     <StreamGeometry x:Key="Icon.Maximize2">M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7</StreamGeometry>
+    <!-- image-off.svg: 3 linee + 3 path (concatenati) -->
+    <StreamGeometry x:Key="Icon.ImageOff">M2 2l20 20 M10.41 10.41a2 2 0 1 1-2.83-2.83 M13.5 13.5L6 21 M18 12l3 3 M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59 M21 15V5a2 2 0 0 0-2-2H9</StreamGeometry>
     <StreamGeometry x:Key="Icon.X">M18 6 6 18 M6 6l12 12</StreamGeometry>
 
 </ResourceDictionary>

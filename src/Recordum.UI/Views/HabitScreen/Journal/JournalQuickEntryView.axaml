@@ -1,0 +1,198 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:core="using:Recordum.Core.Models"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
+             xmlns:notes="using:Recordum.Presentation.ViewModels.HabitScreen.Notes"
+             xmlns:local="using:Recordum.UI.Views.HabitScreen.Journal"
+             x:Class="Recordum.UI.Views.HabitScreen.Journal.JournalQuickEntryView"
+             x:DataType="vm:JournalQuickEntryViewModel">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12" Spacing="10">
+
+      <!-- Composer. Il menu # e' un Popup sotto il cursore: non ruba il fuoco alla TextBox (frecce/Invio/Tab/Esc
+           li gestisce il code-behind in tunnel, cosi' Invio con il menu aperto non va a capo). -->
+      <Grid>
+        <TextBox x:Name="DraftBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"
+                 Text="{CompiledBinding Draft, Mode=TwoWay}"
+                 PlaceholderText="{x:Static res:Strings.Diario_QuickEntry_Placeholder}"
+                 AutomationProperties.Name="{x:Static res:Strings.Diario_QuickEntry_Placeholder}"/>
+        <Popup x:Name="TagMenu" PlacementTarget="{Binding #DraftBox}" Placement="BottomEdgeAlignedLeft"
+               IsLightDismissEnabled="False" Focusable="False">
+          <Border Background="{DynamicResource Brush.SurfaceElevated}" BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="1" CornerRadius="6" MinWidth="160" MaxHeight="220">
+            <ListBox x:Name="InlineList" ItemsSource="{CompiledBinding InlineSuggestions}" Focusable="False"
+                     Background="Transparent" AutomationProperties.Name="{x:Static res:Strings.Diario_QuickEntry_Tags}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{CompiledBinding}"/>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- Riga Tag: chip scelti a parte, con lo stesso menu dietro "+ tag". -->
+      <local:TagEditorView x:Name="PropertyTagsView" DataContext="{CompiledBinding PropertyTags}"/>
+
+      <!-- Foto in attesa: miniatura con la croce. -->
+      <ItemsControl x:Name="PendingPhotos" ItemsSource="{CompiledBinding PendingPhotos}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="core:ImportedPhoto">
+            <Panel Width="64" Height="64" Margin="0,0,6,6">
+              <Border CornerRadius="4" ClipToBounds="True">
+                <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+              </Border>
+              <Button Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                      Background="{DynamicResource Brush.SurfaceElevated}"
+                      Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).RemovePendingPhotoCommand}"
+                      CommandParameter="{CompiledBinding}"
+                      ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Remove}"
+                      AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Remove}">
+                <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
+                      StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
+              </Button>
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="AddPhotoButton" Content="{x:Static res:Strings.Diario_QuickEntry_AddPhoto}"
+                Command="{CompiledBinding AddPhotoCommand}" IsEnabled="{CompiledBinding !IsSaving}"/>
+        <!-- Salva e' rifiutato dal ViewModel mentre una scelta di foto e' in corso: qui si vede. -->
+        <Button x:Name="SaveButton" Classes="primary" Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
+                Command="{CompiledBinding SaveCommand}" IsEnabled="{CompiledBinding !AddPhotoCommand.IsRunning}"/>
+      </StackPanel>
+      <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Danger}"
+                 Text="{CompiledBinding ErrorMessage}"
+                 IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+      <!-- Oggi: le voci del giorno. -->
+      <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,8,0,0"
+                 Text="{x:Static res:Strings.Diario_QuickEntry_Today}"/>
+      <TextBlock x:Name="EmptyText" Foreground="{DynamicResource Brush.TextMuted}"
+                 Text="{x:Static res:Strings.Diario_QuickEntry_Empty}" IsVisible="{CompiledBinding !Entries.Count}"/>
+      <ItemsControl x:Name="EntriesList" ItemsSource="{CompiledBinding Entries}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:JournalEntryRowViewModel">
+            <Border Padding="0,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{CompiledBinding TimeDisplay}" FontSize="{DynamicResource FontSize.Small}"
+                           Foreground="{DynamicResource Brush.TextMuted}"/>
+
+                <!-- Lettura -->
+                <TextBlock Text="{CompiledBinding Text}" TextWrapping="Wrap" IsVisible="{CompiledBinding !IsEditing}"/>
+
+                <!-- Modifica: testo e riga Tag (il ContentControl non costruisce niente a EditTags null). -->
+                <TextBox AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" IsVisible="{CompiledBinding IsEditing}"
+                         Text="{CompiledBinding EditDraft, Mode=TwoWay}"/>
+                <ContentControl Content="{CompiledBinding EditTags}">
+                  <ContentControl.DataTemplates>
+                    <DataTemplate DataType="vm:TagEditorViewModel"><local:TagEditorView/></DataTemplate>
+                  </ContentControl.DataTemplates>
+                </ContentControl>
+
+                <ItemsControl ItemsSource="{CompiledBinding TagChips}" IsVisible="{CompiledBinding !IsEditing}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TagChip">
+                      <Border Classes="tag-chip" Classes.property="{CompiledBinding IsProperty}" Classes.inline="{CompiledBinding !IsProperty}">
+                        <TextBlock Text="{CompiledBinding Name}" FontSize="{DynamicResource FontSize.Small}"/>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Foto salvate (in modifica con la croce) e, in modifica, quelle appena aggiunte. -->
+                <WrapPanel Orientation="Horizontal">
+                  <ItemsControl ItemsSource="{CompiledBinding Photos}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="notes:AttachmentViewModel">
+                        <Panel Width="64" Height="64" Margin="0,0,6,6">
+                          <Border CornerRadius="4" ClipToBounds="True" IsVisible="{CompiledBinding !ShowsPlaceholder}">
+                            <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+                          </Border>
+                          <Border CornerRadius="4" Background="{DynamicResource Brush.Surface}" IsVisible="{CompiledBinding ShowsPlaceholder}"
+                                  ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"
+                                  AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Missing}">
+                            <Path x:Name="MissingPhoto" Data="{StaticResource Icon.ImageOff}" Width="24" Height="24" Stretch="Uniform"
+                                  StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                                  Stroke="{DynamicResource Brush.TextMuted}" ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"/>
+                          </Border>
+                          <Button x:Name="RemoveExistingPhotoButton" Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0"
+                                  HorizontalAlignment="Right" VerticalAlignment="Top"
+                                  Background="{DynamicResource Brush.SurfaceElevated}"
+                                  IsVisible="{CompiledBinding $parent[ItemsControl].((vm:JournalEntryRowViewModel)DataContext).IsEditing}"
+                                  Command="{CompiledBinding $parent[ItemsControl;1].((vm:JournalQuickEntryViewModel)DataContext).RemoveEditPhotoCommand}"
+                                  CommandParameter="{CompiledBinding}"
+                                  ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Remove}"
+                                  AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Remove}">
+                            <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
+                                  StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
+                          </Button>
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <ItemsControl ItemsSource="{CompiledBinding AddedPhotos}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:ImportedPhoto">
+                        <Panel Width="64" Height="64" Margin="0,0,6,6">
+                          <Border CornerRadius="4" ClipToBounds="True">
+                            <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+                          </Border>
+                          <Button Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                  Background="{DynamicResource Brush.SurfaceElevated}"
+                                  Command="{CompiledBinding $parent[ItemsControl;1].((vm:JournalQuickEntryViewModel)DataContext).RemovePendingPhotoCommand}"
+                                  CommandParameter="{CompiledBinding}"
+                                  ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Remove}"
+                                  AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Remove}">
+                            <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
+                                  StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
+                          </Button>
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </WrapPanel>
+
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{CompiledBinding !IsEditing}">
+                  <Button Classes="ghost" Content="{x:Static res:Strings.Diario_QuickEntry_Edit}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).BeginEditCommand}"
+                          CommandParameter="{CompiledBinding}"/>
+                  <Button Classes="ghost" Content="{x:Static res:Strings.Diario_QuickEntry_Delete}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).DeleteCommand}"
+                          CommandParameter="{CompiledBinding}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{CompiledBinding IsEditing}">
+                  <Button Content="{x:Static res:Strings.Diario_QuickEntry_AddPhoto}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).AddPhotoCommand}"
+                          IsEnabled="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).IsSaving, Converter={x:Static BoolConverters.Not}}"/>
+                  <Button Classes="primary" Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).SaveCommand}"
+                          IsEnabled="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).AddPhotoCommand.IsRunning, Converter={x:Static BoolConverters.Not}}"/>
+                  <Button Content="{x:Static res:Strings.Diario_QuickEntry_Cancel}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).CancelEditCommand}"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

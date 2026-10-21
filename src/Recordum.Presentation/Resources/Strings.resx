@@ -1848,4 +1848,19 @@ Details: {0}</value>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Could not save the photo setting.</value>
   </data>
+  <data name="Diario.Tag.Add" xml:space="preserve">
+    <value>+ tag</value>
+  </data>
+  <data name="Diario.Tag.Remove" xml:space="preserve">
+    <value>Remove tag</value>
+  </data>
+  <data name="Diario.Photo.Remove" xml:space="preserve">
+    <value>Remove photo</value>
+  </data>
+  <data name="Diario.Photo.Missing" xml:space="preserve">
+    <value>Photo not available</value>
+  </data>
+  <data name="Diario.QuickEntry.Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
 </root>

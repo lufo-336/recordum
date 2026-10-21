@@ -5,7 +5,7 @@ using Recordum.Presentation.ViewModels.HabitScreen.Today;
 namespace Recordum.UI.Views.HabitScreen.Today;
 
 /// <summary>Sceglie la view della fascia Oggi dal tipo del contenuto e costruisce SOLO quella. Per il
-/// diario (decisione 3 di F2a: la sua view arriva con F2d) e per un contenuto sconosciuto torna null.</summary>
+/// contenuto sconosciuto torna null (la fascia si collassa).</summary>
 public sealed class TodayContentTemplate : IDataTemplate
 {
     public static TodayContentTemplate Instance { get; } = new();
@@ -18,6 +18,7 @@ public sealed class TodayContentTemplate : IDataTemplate
         CounterTodayContent => new CounterTodayView(),
         ResistanceTodayContent => new ResistanceTodayView(),
         StateTodayContent => new StateTodayView(),
+        JournalTodayContent => new JournalTodayView(),
         _ => null,
     };
 }

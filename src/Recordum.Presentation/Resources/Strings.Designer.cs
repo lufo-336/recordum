@@ -655,6 +655,11 @@ public static class Strings
     public static string Settings_Photos_Mode_KeepOriginal => Get("Settings.Photos.Mode.KeepOriginal");
     public static string Settings_Photos_GpsWarning => Get("Settings.Photos.GpsWarning");
     public static string Settings_Photos_SaveFailed => Get("Settings.Photos.SaveFailed");
+    public static string Diario_Tag_Add => Get("Diario.Tag.Add");
+    public static string Diario_Tag_Remove => Get("Diario.Tag.Remove");
+    public static string Diario_Photo_Remove => Get("Diario.Photo.Remove");
+    public static string Diario_Photo_Missing => Get("Diario.Photo.Missing");
+    public static string Diario_QuickEntry_Tags => Get("Diario.QuickEntry.Tags");
 
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");

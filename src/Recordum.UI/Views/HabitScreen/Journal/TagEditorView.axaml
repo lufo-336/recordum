@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
+             x:Class="Recordum.UI.Views.HabitScreen.Journal.TagEditorView"
+             x:DataType="vm:TagEditorViewModel">
+  <!-- La riga Tag: chip scelti con la loro croce, poi il campo "+ tag" e, mentre si scrive, i suggerimenti
+       (esistenti per prefisso, in fondo "Crea «…»"). Invio aggiunge il primo suggerimento o quello che hai scritto. -->
+  <StackPanel Spacing="4">
+    <WrapPanel Orientation="Horizontal">
+      <ItemsControl x:Name="ChipList" ItemsSource="{CompiledBinding Tags}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <Border Classes="tag-chip property">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="{CompiledBinding}" VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}"/>
+                <Button Classes="ghost" Padding="0" Width="16" Height="16" MinHeight="0" VerticalAlignment="Center"
+                        Command="{CompiledBinding $parent[ItemsControl].((vm:TagEditorViewModel)DataContext).RemoveCommand}"
+                        CommandParameter="{CompiledBinding}"
+                        ToolTip.Tip="{x:Static res:Strings.Diario_Tag_Remove}"
+                        AutomationProperties.Name="{x:Static res:Strings.Diario_Tag_Remove}">
+                  <Path Data="{StaticResource Icon.X}" Width="9" Height="9" Stretch="Uniform" StrokeThickness="1.6"
+                        StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.TextMuted}"/>
+                </Button>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBox x:Name="TagBox" MinWidth="110" MinHeight="0" Padding="8,2" VerticalAlignment="Top"
+               Text="{CompiledBinding Query, Mode=TwoWay}"
+               PlaceholderText="{x:Static res:Strings.Diario_Tag_Add}"
+               AutomationProperties.Name="{x:Static res:Strings.Diario_Tag_Add}"/>
+    </WrapPanel>
+    <ItemsControl x:Name="SuggestionList" ItemsSource="{CompiledBinding Suggestions}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <Button Classes="ghost" Padding="8,2" Margin="0,0,4,0" Content="{CompiledBinding}"
+                  Command="{CompiledBinding $parent[ItemsControl].((vm:TagEditorViewModel)DataContext).AddCommand}"
+                  CommandParameter="{CompiledBinding}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

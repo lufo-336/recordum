@@ -2,6 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels.Backup"
              xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:enums="using:Recordum.Core.Enums"
              x:Class="Recordum.UI.Views.Settings.DataAndBackupPage"
              x:DataType="vm:DataAndBackupPageViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -90,6 +92,22 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+
+      <!-- Foto: come si conservano quelle scelte per le voci del diario (D10) -->
+      <StackPanel Name="PhotosPanel" Spacing="4" Margin="0,16,0,0">
+        <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Photos_Title}"/>
+        <RadioButton Name="PhotoModeResizeAndClean" GroupName="PhotoMode" Content="{x:Static res:Strings.Settings_Photos_Mode_ResizeAndClean}"
+                     IsChecked="{CompiledBinding Photos.Mode, Mode=TwoWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:PhotoImportMode.ResizeAndClean}}"/>
+        <RadioButton Name="PhotoModeCleanOnly" GroupName="PhotoMode" Content="{x:Static res:Strings.Settings_Photos_Mode_CleanOnly}"
+                     IsChecked="{CompiledBinding Photos.Mode, Mode=TwoWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:PhotoImportMode.CleanOnly}}"/>
+        <RadioButton Name="PhotoModeKeepOriginal" GroupName="PhotoMode" Content="{x:Static res:Strings.Settings_Photos_Mode_KeepOriginal}"
+                     IsChecked="{CompiledBinding Photos.Mode, Mode=TwoWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:PhotoImportMode.KeepOriginal}}"/>
+        <TextBlock Name="PhotoGpsWarning" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Danger}"
+                   IsVisible="{CompiledBinding Photos.ShowsGpsWarning}" Text="{x:Static res:Strings.Settings_Photos_GpsWarning}"/>
+        <TextBlock Name="PhotoError" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Danger}"
+                   IsVisible="{CompiledBinding Photos.ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   Text="{CompiledBinding Photos.ErrorMessage}"/>
+      </StackPanel>
 
       <!-- Chiave del dispositivo: solo dove c'e' un portachiavi (la decide la composizione) -->
       <StackPanel Name="DeviceKeyPanel" Spacing="6" Margin="0,16,0,0" IsVisible="{CompiledBinding ShowDeviceKey}">
