@@ -16,7 +16,8 @@ public partial class TagEditorView : UserControl
     {
         if (e.Key != Key.Enter || DataContext is not TagEditorViewModel vm) return;
         e.Handled = true;
-        var name = vm.Suggestions.Count > 0 ? vm.Suggestions[0] : vm.Query;
-        vm.AddCommand.Execute(name);
+        // Il nome noto esatto (con le sue maiuscole), altrimenti quello digitato (si crea): mai il primo per prefisso.
+        var typed = vm.Query.Trim();
+        vm.AddCommand.Execute(vm.Suggestions.FirstOrDefault(n => string.Equals(n, typed, StringComparison.OrdinalIgnoreCase)) ?? typed);
     }
 }

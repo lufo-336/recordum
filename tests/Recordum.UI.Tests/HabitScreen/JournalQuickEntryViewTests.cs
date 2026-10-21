@@ -91,7 +91,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         Find<Border>(view, "DiarioColumn").IsVisible.Should().BeTrue();
         view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().ContainSingle();
         Find<TextBox>(view, "DraftBox").IsEffectivelyVisible.Should().BeTrue();
-        Find<CheckBox>(view, "ChipDiario").IsVisible.Should().BeTrue("il chip Diario c'e' per i diari");
+        Find<CheckBox>(view, "ChipDiario").IsVisible.Should().BeFalse("il chip Diario resta nascosto fino a F2d-2 (spec 5.2): la colonna si apre dal pulsante Oggi");
     }
 
     [AvaloniaFact]
@@ -108,7 +108,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         PrivateDbHost.Pump();
 
         menu.IsOpen.Should().BeTrue();
-        view.GetVisualDescendants().OfType<JournalQuickEntryView>().Single().FindControl<ListBox>("InlineList")!.Items.Cast<string>().Should().Equal("pranzo");
+        Items(view).Should().Equal("pranzo", CreateLabel("pra"));
 
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         PrivateDbHost.Pump();
@@ -117,6 +117,133 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         vm.QuickEntryForDiario!.Draft.Should().Be("#pranzo ");
         box.Text.Should().NotContain("\n");
         menu.IsOpen.Should().BeFalse();
+    }
+
+    private static ListBox List(Avalonia.Visual view) => view.GetVisualDescendants().OfType<JournalQuickEntryView>().Single().FindControl<ListBox>("InlineList")!;
+    private static IEnumerable<string> Items(Avalonia.Visual view) => List(view).Items.Cast<string>();
+    private static string CreateLabel(string n) => string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.Presentation.Resources.Strings.Diario_Tag_Create, n);
+
+    private static void Type(TextBox box, string text)
+    {
+        box.Focus();
+        box.Text = text;
+        box.CaretIndex = text.Length;
+        PrivateDbHost.Pump();
+    }
+
+    [AvaloniaFact]
+    public async Task With_no_matching_tag_the_menu_offers_only_create_and_enter_makes_the_tag_without_a_line_break()
+    {
+        var (_, view, window) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-crea"));
+        var box = Find<TextBox>(view, "DraftBox");
+        Type(box, "#zupqx");
+        Items(view).Should().Equal([CreateLabel("zupqx")]);
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        PrivateDbHost.Pump();
+        box.Text.Should().Be("#zupqx ");
+        box.Text.Should().NotContain("\n");
+    }
+
+    [AvaloniaFact]
+    public async Task A_partial_prefix_lists_the_match_then_create()
+    {
+        await EnsureTagAsync("pranzo");
+        var (_, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-crea2"));
+        Type(Find<TextBox>(view, "DraftBox"), "#pra");
+        Items(view).Should().Equal("pranzo", CreateLabel("pra"));
+    }
+
+    [AvaloniaFact]
+    public async Task Down_then_enter_accepts_the_second_suggestion_and_tab_accepts_too()
+    {
+        await EnsureTagAsync("zebra1");
+        await EnsureTagAsync("zebra2");
+        var (_, view, window) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-giu"));
+        var box = Find<TextBox>(view, "DraftBox");
+        Type(box, "#zebra");
+        Items(view).Should().Equal("zebra1", "zebra2", CreateLabel("zebra"));
+        window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        PrivateDbHost.Pump();
+        box.Text.Should().Be("#zebra2 ");
+
+        Type(box, "#zebra");
+        window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, null);
+        PrivateDbHost.Pump();
+        box.Text.Should().Be("#zebra1 ");
+    }
+
+    [AvaloniaFact]
+    public async Task The_menu_closes_when_focus_leaves_the_text_box_and_a_tap_on_an_item_still_picks()
+    {
+        await EnsureTagAsync("pranzo");
+        var (_, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-fuoco"));
+        var box = Find<TextBox>(view, "DraftBox");
+        var menu = Find<Avalonia.Controls.Primitives.Popup>(view, "TagMenu");
+        Type(box, "#pra");
+        menu.IsOpen.Should().BeTrue();
+
+        Find<TextBox>(view, "TagBox").Focus();
+        PrivateDbHost.Pump();
+        menu.IsOpen.Should().BeFalse("fuori fuoco il menu non copre la riga Tag");
+
+        Type(box, "#pran");
+        menu.IsOpen.Should().BeTrue();
+        var item = List(view).GetVisualDescendants().OfType<ListBoxItem>().First();
+        List(view).SelectedItem = item.DataContext;
+        var release = new Avalonia.Input.PointerReleasedEventArgs(item, new Avalonia.Input.Pointer(0, Avalonia.Input.PointerType.Mouse, true),
+            TopLevel.GetTopLevel(item)!, new Avalonia.Point(1, 1), 0,
+            new Avalonia.Input.PointerPointProperties(RawInputModifiers.None, Avalonia.Input.PointerUpdateKind.LeftButtonReleased), KeyModifiers.None, MouseButton.Left);
+        item.RaiseEvent(new Avalonia.Input.TappedEventArgs(Avalonia.Input.InputElement.TappedEvent, release));
+        PrivateDbHost.Pump();
+        box.Text.Should().Be("#pranzo ");
+    }
+
+    [AvaloniaFact]
+    public async Task The_menu_is_placed_under_the_caret_line()
+    {
+        await EnsureTagAsync("pranzo");
+        var (_, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-cursore"));
+        var box = Find<TextBox>(view, "DraftBox");
+        var menu = Find<Avalonia.Controls.Primitives.Popup>(view, "TagMenu");
+        Type(box, "#pra");
+        var y1 = menu.PlacementRect!.Value.Y;
+        Type(box, "uno\ndue\ntre #pra");
+        var y3 = menu.PlacementRect!.Value.Y;
+        y3.Should().BeGreaterThan(y1 + 10, "con il testo sulla terza riga il menu scende con il cursore");
+    }
+
+    [AvaloniaFact]
+    public async Task The_composer_is_built_only_while_the_diario_column_is_shown()
+    {
+        var (vm, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-chiuso"));
+        vm.IsDiarioOpen = false;
+        PrivateDbHost.Pump();
+        view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().BeEmpty("colonna chiusa: nessun composer nell'intera view");
+        vm.IsDiarioOpen = true;
+        PrivateDbHost.Pump();
+        view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().ContainSingle();
+    }
+
+    [AvaloniaFact]
+    public async Task Enter_in_the_tag_row_adds_the_exact_known_tag_not_the_first_prefix_match()
+    {
+        await EnsureTagAsync("cenone");
+        var (vm, view, window) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-riga"));
+        var qe = vm.QuickEntryForDiario!;
+        var tagBox = Find<TextBox>(view, "TagBox");
+        tagBox.Focus();
+        tagBox.Text = "cenon";
+        PrivateDbHost.Pump();
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        PrivateDbHost.Pump();
+        qe.PropertyTags.Tags.Should().Equal(["cenon"], "digitato ma non noto: si crea, non si completa");
+
+        tagBox.Text = "CENONE";
+        PrivateDbHost.Pump();
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        PrivateDbHost.Pump();
+        qe.PropertyTags.Tags.Should().Equal("cenon", "cenone");
     }
 
     [AvaloniaFact]

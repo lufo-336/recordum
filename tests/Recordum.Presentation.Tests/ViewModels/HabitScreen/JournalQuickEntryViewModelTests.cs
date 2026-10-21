@@ -45,10 +45,10 @@ public class JournalQuickEntryViewModelTests
         sut.InlineSuggestions.Should().Equal("pranzo", string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, "pra"));
 
         sut.UpdateInlineQuery("#PRANZO", 7);
-        sut.InlineSuggestions.Should().Equal("pranzo", "un nome noto (senza maiuscole) non offre Crea");
+        sut.InlineSuggestions.Should().Equal(["pranzo"], "un nome noto (senza maiuscole) non offre Crea");
 
         sut.UpdateInlineQuery("#", 1);
-        sut.InlineSuggestions.Should().BeEmpty("prefisso vuoto: niente Crea");
+        sut.InlineSuggestions.Should().Equal(["pranzo"], "prefisso vuoto: tutti i tag, niente Crea");
 
         sut.UpdateInlineQuery("#zup", 4);
         var create = sut.InlineSuggestions.Should().ContainSingle().Subject;

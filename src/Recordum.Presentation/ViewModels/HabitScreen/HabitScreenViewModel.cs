@@ -190,6 +190,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowTodayStrip));
         OnPropertyChanged(nameof(ShowPanoramica));
         OnPropertyChanged(nameof(ShowDiario));
+        OnPropertyChanged(nameof(QuickEntryShownInDiario));
         OnPropertyChanged(nameof(ShowCronologia));
         OnPropertyChanged(nameof(ShowDettaglio));
         OnPropertyChanged(nameof(ShowNote));
@@ -526,12 +527,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     // continua a istanziarsi una volta sola (cautela spec §3.5) e su un food diary mai.
     public QuickAddViewModelBase? QuickAddForDiario => IsJournal && !_isQuickNoteJournal ? QuickAdd : null;
     public JournalQuickEntryViewModel? QuickEntryForDiario => IsJournal && _isQuickNoteJournal ? JournalQuickEntry : null;
+    /// <summary>Il composer solo a colonna Diario mostrata: chiusa, non si costruisce (come Cronologia e Configura).</summary>
+    public JournalQuickEntryViewModel? QuickEntryShownInDiario => ShowDiario ? QuickEntryForDiario : null;
     public QuickAddViewModelBase? QuickAddForCronologia => IsJournal ? null : QuickAdd;
 
     private void NotifyQuickAddRouting()
     {
         OnPropertyChanged(nameof(QuickAddForDiario));
         OnPropertyChanged(nameof(QuickEntryForDiario));
+        OnPropertyChanged(nameof(QuickEntryShownInDiario));
         OnPropertyChanged(nameof(QuickAddForCronologia));
     }
 

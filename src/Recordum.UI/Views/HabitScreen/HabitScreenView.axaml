@@ -88,10 +88,11 @@
          intestazione e chip senza colonne: la Panoramica e' di F3. -->
     <StackPanel Grid.Row="3" x:Name="ChipBar" Orientation="Horizontal" Margin="12,8,12,4"
                 IsVisible="{CompiledBinding ShowChipBar}">
+      <!-- Il chip Diario resta nascosto fino a F2d-2 (spec 5.2): la colonna si apre dal pulsante Oggi. -->
       <CheckBox Classes="segment" x:Name="ChipDiario" Margin="0,0,4,0"
                 Content="{x:Static res:Strings.HabitScreen_Column_Diario}"
                 IsChecked="{CompiledBinding IsDiarioOpen, Mode=TwoWay}"
-                IsVisible="{CompiledBinding IsJournal}"/>
+                IsVisible="False"/>
       <CheckBox Classes="segment" x:Name="ChipCronologia"
                 Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
                 IsChecked="{CompiledBinding IsCronologiaOpen, Mode=TwoWay}"
@@ -142,7 +143,7 @@
             </Grid>
             <!-- Una colonna per tipo, mai un ContentTemplate statico (CLAUDE.md 8): per un'abitudine che non e' un
                  diario QuickEntryForDiario e' null e nessun composer viene costruito. -->
-            <ContentControl x:Name="DiarioHost" Content="{CompiledBinding QuickEntryForDiario}">
+            <ContentControl x:Name="DiarioHost" Content="{CompiledBinding QuickEntryShownInDiario}">
               <ContentControl.DataTemplates>
                 <DataTemplate DataType="jvm:JournalQuickEntryViewModel"><journal:JournalQuickEntryView/></DataTemplate>
               </ContentControl.DataTemplates>

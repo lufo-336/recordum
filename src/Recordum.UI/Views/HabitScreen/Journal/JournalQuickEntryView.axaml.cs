@@ -2,6 +2,8 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Controls.Presenters;
+using Avalonia.VisualTree;
 using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
 namespace Recordum.UI.Views.HabitScreen.Journal;
@@ -25,6 +27,8 @@ public partial class JournalQuickEntryView : UserControl
             if (e.Property == TextBox.TextProperty) OnTextOrCaretChanged(typing: true);
             else if (e.Property == TextBox.CaretIndexProperty) OnTextOrCaretChanged(typing: false);
         };
+        // Fuori fuoco il menu non deve coprire la riga Tag; se il puntatore e' sul menu e' una scelta col mouse: resta.
+        DraftBox.LostFocus += (_, _) => { if (!TagMenu.Child!.IsPointerOver) TagMenu.IsOpen = false; };
         InlineList.Tapped += (_, _) => { if (InlineList.SelectedItem is string name) Accept(name); };
     }
 
@@ -53,7 +57,18 @@ public partial class JournalQuickEntryView : UserControl
     {
         var any = _vm is { InlineSuggestions.Count: > 0 };
         if (any && InlineList.SelectedIndex < 0) InlineList.SelectedIndex = 0;
+        if (any) PlaceUnderCaret();
         TagMenu.IsOpen = any && !_dismissed;
+    }
+
+    // Il menu si ancora alla riga del cursore, non al fondo dell'intera TextBox.
+    private void PlaceUnderCaret()
+    {
+        var presenter = DraftBox.GetVisualDescendants().OfType<TextPresenter>().FirstOrDefault();
+        if (presenter?.TextLayout is not { } layout) { TagMenu.PlacementRect = null; return; }
+        var caret = layout.HitTestTextPosition(DraftBox.CaretIndex);
+        var top = presenter.TranslatePoint(caret.TopLeft, DraftBox);
+        TagMenu.PlacementRect = top is { } p ? new Rect(p.X, p.Y, 1, caret.Height) : null;
     }
 
     private void Accept(string name)
