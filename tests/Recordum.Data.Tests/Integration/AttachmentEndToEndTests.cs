@@ -71,8 +71,8 @@ public class AttachmentEndToEndTests
             }
 
             // Attach two photos to the same note (Task 2).
-            await attachments.AddAsync(noteId, new ImportedPhoto("plate.jpg", "image/jpeg", "PLATE-BYTES"u8.ToArray(), [1]), default);
-            await attachments.AddAsync(noteId, new ImportedPhoto("dessert.png", "image/png", "DESSERT-BYTES"u8.ToArray(), [2]), default);
+            await attachments.AddAsync(noteId, new ImportedPhoto(Guid.NewGuid(), "plate.jpg", "image/jpeg", "PLATE-BYTES"u8.ToArray(), [1]), default);
+            await attachments.AddAsync(noteId, new ImportedPhoto(Guid.NewGuid(), "dessert.png", "image/png", "DESSERT-BYTES"u8.ToArray(), [2]), default);
 
             // Export sees both, correctly attributed to the note (Task 3).
             var exportService = BuildExportService(fixture, attachments);

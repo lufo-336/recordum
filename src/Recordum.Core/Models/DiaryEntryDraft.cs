@@ -17,3 +17,6 @@ public sealed record DiaryEntryEdit(
 
 /// <summary>Un tag di una voce e da dove viene (testo o riga Tag).</summary>
 public sealed record EntryTag(string Name, NoteTagSource Source);
+
+/// <summary>Il riassunto di una voce per la Cronologia: nota, testo e tag ordinati per nome.</summary>
+public sealed record DiaryEntrySummary(Guid NoteId, string Body, IReadOnlyList<EntryTag> Tags);

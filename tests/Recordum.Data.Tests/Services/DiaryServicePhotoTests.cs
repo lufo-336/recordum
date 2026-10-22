@@ -14,7 +14,7 @@ public class DiaryServicePhotoTests
 {
     private static readonly DateOnly Day = new(2026, 10, 21);
 
-    private static ImportedPhoto Photo(string name, byte b) => new(name, "image/jpeg", [b, b, b], [b]);
+    private static ImportedPhoto Photo(string name, byte b) => new(Guid.NewGuid(), name, "image/jpeg", [b, b, b], [b]);
 
     private static async Task<(DbFixture fx, Guid habitId, DiaryService sut)> SetUpAsync()
     {
@@ -44,6 +44,16 @@ public class DiaryServicePhotoTests
         rows[0].Thumbnail.Should().Equal(1);
         rows[1].Content.Should().Equal(2, 2, 2);
         rows[1].FileSizeBytes.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Saved_attachment_row_keeps_the_id_of_the_imported_photo()
+    {
+        var (fx, habit, sut) = await SetUpAsync();
+        var photo = Photo("a.jpg", 1);
+        var id = await sut.SaveEntryAsync(habit, Day, new DiaryEntryDraft("pranzo", [], [photo]));
+
+        (await RowsOf(fx, id)).Single().Id.Should().Be(photo.Id);
     }
 
     [Fact]

@@ -296,7 +296,7 @@ public sealed class ExportQueryServiceTests
 
         var attachmentService = new AttachmentService(fx.Factory, fx.Clock, fx.PluginContext);
         var attachment = await attachmentService.AddAsync(
-            noteId, new ImportedPhoto("photo.jpg", "image/jpeg", "fake image data"u8.ToArray(), [1]), default);
+            noteId, new ImportedPhoto(Guid.NewGuid(), "photo.jpg", "image/jpeg", "fake image data"u8.ToArray(), [1]), default);
 
         var bus = new RecordingEventBus();
         var completions = new CompletionService(fx.Factory, fx.Clock, NullLogger<CompletionService>.Instance, bus, fx.ResetTimes);

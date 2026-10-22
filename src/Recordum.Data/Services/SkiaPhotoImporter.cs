@@ -64,13 +64,13 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
                 SKEncodedImageFormat.Webp => "image/webp",
                 _ => "image/jpeg",
             };
-            return new ImportedPhoto(filename, mime, bytes, thumb);   // original name: the bytes are the original
+            return new ImportedPhoto(Guid.NewGuid(), filename, mime, bytes, thumb);   // original name: the bytes are the original
         }
 
         var content = FitAndEncode(oriented, mode == PhotoImportMode.ResizeAndClean ? MaxSide : int.MaxValue, outFormat);
         // The bytes were re-encoded: the extension must say what they are (export links derive it from the name).
         var name = Path.ChangeExtension(filename, isPng ? ".png" : ".jpg");
-        return new ImportedPhoto(name, isPng ? "image/png" : "image/jpeg", content, thumb);
+        return new ImportedPhoto(Guid.NewGuid(), name, isPng ? "image/png" : "image/jpeg", content, thumb);
     }
 
     /// <summary>Decodes to a bitmap with the EXIF orientation applied. Throws Unsupported / Unreadable.</summary>

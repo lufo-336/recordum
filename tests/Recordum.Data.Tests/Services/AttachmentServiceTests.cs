@@ -57,7 +57,7 @@ public class AttachmentServiceTests : IAsyncLifetime
     }
 
     private static ImportedPhoto Photo(string name = "test.jpg", string mime = "image/jpeg", byte[]? content = null) =>
-        new(name, mime, content ?? [1, 2, 3, 4], [9, 9]);
+        new(Guid.NewGuid(), name, mime, content ?? [1, 2, 3, 4], [9, 9]);
 
     [Fact]
     public async Task AddAsync_stores_content_and_thumbnail_in_the_row_and_nothing_on_disk()

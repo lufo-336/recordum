@@ -41,6 +41,16 @@ public sealed class SkiaPhotoImporterTests : IDisposable
     private static (int W, int H) Size(byte[] b) { using var bmp = SKBitmap.Decode(b); return (bmp.Width, bmp.Height); }
 
     [Fact]
+    public async Task Importing_the_same_file_twice_gives_different_ids()
+    {
+        var src = BigExifJpeg();
+        var a = await Sut().ImportAsync(src, default);
+        var b = await Sut().ImportAsync(src, default);
+        a.Id.Should().NotBe(Guid.Empty);
+        a.Id.Should().NotBe(b.Id);
+    }
+
+    [Fact]
     public async Task Default_mode_resizes_applies_orientation_and_strips_exif()
     {
         var src = BigExifJpeg();

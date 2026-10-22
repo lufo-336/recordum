@@ -246,12 +246,12 @@ public class DiaryServiceTests
     }
 
     [Fact]
-    public async Task GetEntryBodiesByCompletionsAsync_maps_completion_ids_to_bodies()
+    public async Task GetEntrySummariesByCompletionsAsync_maps_completions_to_body_and_sorted_tags()
     {
         var (fx, habitId) = await SeedJournalAsync();
         var sut = NewService(fx, out _);
         var today = DateOnly.FromDateTime(fx.Clock.UtcNow.UtcDateTime);
-        var n1 = await sut.SaveEntryAsync(habitId, today, "first");
+        var n1 = await sut.SaveEntryAsync(habitId, today, new DiaryEntryDraft("first #zeta", ["alfa"], []));
         var n2 = await sut.SaveEntryAsync(habitId, today, "second");
         Guid c1, c2;
         await using (var db = await fx.Factory.CreateDbContextAsync())
@@ -260,11 +260,15 @@ public class DiaryServiceTests
             c2 = (await db.Notes.SingleAsync(n => n.Id == n2)).CompletionId!.Value;
         }
 
-        var map = await sut.GetEntryBodiesByCompletionsAsync(new[] { c1, c2, Guid.NewGuid() });
+        var map = await sut.GetEntrySummariesByCompletionsAsync(new[] { c1, c2, Guid.NewGuid() });
 
         map.Should().HaveCount(2);
-        map[c1].Should().Be("first");
-        map[c2].Should().Be("second");
+        map[c1].NoteId.Should().Be(n1);
+        map[c1].Body.Should().Be("first #zeta");
+        map[c1].Tags.Should().Equal(new EntryTag("alfa", NoteTagSource.Property), new EntryTag("zeta", NoteTagSource.Inline));
+        map[c2].NoteId.Should().Be(n2);
+        map[c2].Body.Should().Be("second");
+        map[c2].Tags.Should().BeEmpty();
         await fx.DisposeAsync();
     }
 }

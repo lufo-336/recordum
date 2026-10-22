@@ -490,7 +490,7 @@ public class JournalQuickEntryViewModelTests
         var (sut, diary, atts, _, _, _, _) = Build();
         var node = Journal();
         await sut.LoadAsync(node, DayBoundary.Utc);
-        sut.PendingPhotos.Add(new ImportedPhoto("a.jpg", "image/jpeg", [1], [2]));
+        sut.PendingPhotos.Add(new ImportedPhoto(Guid.NewGuid(), "a.jpg", "image/jpeg", [1], [2]));
         await sut.SaveCommand.ExecuteAsync(null);
         var noteId = diary.SavedEntries.Single().NoteId;
         var kept = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "a.jpg", MimeType = "image/jpeg" };
@@ -525,7 +525,7 @@ public class JournalQuickEntryViewModelTests
         sut.ErrorMessage.Should().Be(Strings.Diario_QuickEntry_Error_Empty);
         row.IsEditing.Should().BeTrue();
 
-        row.AddedPhotos.Add(new ImportedPhoto("b.jpg", "image/jpeg", [1], [2]));
+        row.AddedPhotos.Add(new ImportedPhoto(Guid.NewGuid(), "b.jpg", "image/jpeg", [1], [2]));
         await sut.SaveCommand.ExecuteAsync(null);
 
         diary.Edits.Should().ContainSingle();

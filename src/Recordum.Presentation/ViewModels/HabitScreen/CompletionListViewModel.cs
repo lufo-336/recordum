@@ -76,12 +76,12 @@ public sealed partial class CompletionListViewModel : ObservableObject
     private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, CancellationToken ct)
     {
         Rows.Clear();
-        IReadOnlyDictionary<Guid, string> bodies = IsJournal
-            ? await _diary.GetEntryBodiesByCompletionsAsync(list.Select(c => c.Id).ToList(), ct).ConfigureAwait(true)
-            : new Dictionary<Guid, string>();
+        IReadOnlyDictionary<Guid, DiaryEntrySummary> entries = IsJournal
+            ? await _diary.GetEntrySummariesByCompletionsAsync(list.Select(c => c.Id).ToList(), ct).ConfigureAwait(true)
+            : new Dictionary<Guid, DiaryEntrySummary>();
         foreach (var c in list.OrderByDescending(c => c.CompletedAtMs))
         {
-            string? overrideNotes = IsJournal && bodies.TryGetValue(c.Id, out var body) ? body : null;
+            string? overrideNotes = IsJournal && entries.TryGetValue(c.Id, out var entry) ? entry.Body : null;
             Func<Guid, CancellationToken, Task>? del = IsJournal
                 ? (id, token) => _diary.DeleteEntryAsync(id, token).AsTask()
                 : null;

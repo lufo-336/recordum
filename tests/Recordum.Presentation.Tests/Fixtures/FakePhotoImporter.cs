@@ -17,7 +17,7 @@ public sealed class FakePhotoImporter : IPhotoImporter
     {
         ImportCalls.Add(sourcePath);
         if (ThrowOnImport.TryGetValue(sourcePath, out var ex)) throw ex;
-        return Task.FromResult(new ImportedPhoto(sourcePath.Split('\\', '/')[^1], "image/jpeg", FakeContent, FakeThumbnail));
+        return Task.FromResult(new ImportedPhoto(Guid.NewGuid(), sourcePath.Split('\\', '/')[^1], "image/jpeg", FakeContent, FakeThumbnail));
     }
 
     public byte[]? TryMakeThumbnail(byte[] content) => FakeThumbnail;

@@ -41,7 +41,7 @@ public sealed class AttachmentService(
     /// writes note and photos in one SaveChanges.</summary>
     internal static Models.Attachment ToEntity(Guid noteId, ImportedPhoto photo) => new()
     {
-        Id = Guid.NewGuid(),
+        Id = photo.Id,
         NoteId = noteId,
         Filename = photo.Filename,
         MimeType = photo.MimeType,

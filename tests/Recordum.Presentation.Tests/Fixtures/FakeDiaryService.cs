@@ -137,13 +137,14 @@ public sealed class FakeDiaryService : IDiaryService
     public ValueTask<Note?> GetEntryByCompletionAsync(Guid completionId, CancellationToken ct = default)
         => new(Notes.Values.FirstOrDefault(n => n.CompletionId == completionId));
 
-    public ValueTask<IReadOnlyDictionary<Guid, string>> GetEntryBodiesByCompletionsAsync(
+    public ValueTask<IReadOnlyDictionary<Guid, DiaryEntrySummary>> GetEntrySummariesByCompletionsAsync(
         IReadOnlyCollection<Guid> completionIds, CancellationToken ct = default)
     {
         var set = completionIds.ToHashSet();
-        IReadOnlyDictionary<Guid, string> map = Notes.Values
+        IReadOnlyDictionary<Guid, DiaryEntrySummary> map = Notes.Values
             .Where(n => n.CompletionId is { } c && set.Contains(c))
-            .ToDictionary(n => n.CompletionId!.Value, n => n.BodyMd);
+            .ToDictionary(n => n.CompletionId!.Value,
+                n => new DiaryEntrySummary(n.Id, n.BodyMd, Tags.GetValueOrDefault(n.Id) ?? []));
         return new(map);
     }
 }

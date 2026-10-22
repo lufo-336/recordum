@@ -34,7 +34,7 @@ public class AttachmentBackupRestoreTests
             }
 
             var photoBytes = "REAL-PHOTO-BYTES"u8.ToArray();
-            var added = await attachments.AddAsync(noteId, new ImportedPhoto("source.jpg", "image/jpeg", photoBytes, [1]), default);
+            var added = await attachments.AddAsync(noteId, new ImportedPhoto(Guid.NewGuid(), "source.jpg", "image/jpeg", photoBytes, [1]), default);
 
             // Backup, then wipe the live row + file to make the restore observable.
             var bk = await fixture.CreateBackupAsync(Pass);
