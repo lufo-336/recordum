@@ -38,7 +38,7 @@ public class CrashLoggerTests
             // Il file sparisce a meta' sessione: la scrittura successiva lo ricrea, ancora 0600.
             File.Delete(CrashLogger.LogPath!);
             CrashLogger.Log("ricreato", new InvalidOperationException("motivo"));
-            File.ReadAllText(CrashLogger.LogPath!).Should().Contain("ricreato");
+            ReadLog().Should().Contain("ricreato");
             File.GetUnixFileMode(CrashLogger.LogPath!).Should().Be(OwnerFile);
         }
         finally
@@ -62,14 +62,14 @@ public class CrashLoggerTests
             var marker = $"orfano-{Guid.NewGuid():N}";
             FaultAndAbandonATask(marker);
             // Il finalizzatore del Task parte quando vuole il GC: si insiste finche' il guasto compare.
-            for (var i = 0; i < 50 && !File.ReadAllText(CrashLogger.LogPath!).Contains(marker, StringComparison.Ordinal); i++)
+            for (var i = 0; i < 50 && !ReadLog().Contains(marker, StringComparison.Ordinal); i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 Thread.Sleep(20);
             }
 
-            var log = File.ReadAllText(CrashLogger.LogPath!);
+            var log = ReadLog();
             log.Should().Contain(marker, "il GC non ha finalizzato il Task nei tentativi: non e' un difetto dell'aggancio");
             // Il marker compare due volte in una voce sola (AggregateException + interna): si contano le voci.
             log.Split("] TaskScheduler.UnobservedTaskException").Count(entry => entry.Contains(marker, StringComparison.Ordinal))
@@ -102,7 +102,7 @@ public class CrashLoggerTests
 
             run.Should().NotThrow("l'errore di dominio è gestito, il ciclo dell'interfaccia continua");
             reported.Should().ContainSingle().Which.Should().BeOfType<ActiveTimerNotFoundException>();
-            File.ReadAllText(CrashLogger.LogPath!).Should().Contain(id.ToString());
+            ReadLog().Should().Contain(id.ToString());
         }
         finally
         {
@@ -165,7 +165,7 @@ public class CrashLoggerTests
             var result = await service.UnlockAsync(DbUnlockState.NeedsCreation, passphrase, remember: RememberChoice.LeaveAsIs);
 
             result.Outcome.Should().Be(UnlockOutcome.Failed);
-            var log = File.ReadAllText(CrashLogger.LogPath!);
+            var log = ReadLog();
             log.Should().Contain("Unlock failed in state NeedsCreation")
                 .And.Contain("IOException", "la causa vera, non solo il fatto che e' fallito");
             log.Should().NotContain(passphrase);
@@ -176,5 +176,13 @@ public class CrashLoggerTests
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
+    }
+
+    // Windows: il logger tiene il file aperto in scrittura; si legge condividendo (CLAUDE.md §7).
+    private static string ReadLog()
+    {
+        using var fs = new FileStream(CrashLogger.LogPath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(fs);
+        return reader.ReadToEnd();
     }
 }
