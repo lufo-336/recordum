@@ -4,10 +4,10 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-16
+## Dove siamo — 2026-10-22
 
-- **Branch di lavoro**: `f2c-data-safety`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
-  `f2b-creation` → `f2c-data-safety`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
+- **Branch di lavoro**: `f2d1-tags-photos`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
+  `f2b-creation` → `f2c-data-safety` → `f2d1-tags-photos`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
   girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
@@ -30,8 +30,8 @@
   nessun caso reale oggi; "cambia passphrase", quando arriverà, passa dal cancello.
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
-- **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario** (nota veloce con foto D10, editor
-  minimo); chiude F2 il lancio stabile su Linux (publish + `.desktop`).
+- **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario**: F2d-1 (nota veloce con tag e foto D10) a codice completo, F2d-2 (editor
+  minimo) prossima; chiude F2 il lancio stabile su Linux (publish + `.desktop`).
 - **Checklist a schermo dell'autore** (GNOME per tutte; Windows per F1; la lista D7 è nel piano F1): F1 (finestra, tab,
   trascinamento, barra di sistema); F2a (i quattro tipi dalla colonna "Oggi" e dal quick-add, "ieri" vicino al reset, timer
   dopo riavvio, separatore decimale, chiaro e scuro, rinomina e cancellazione); F2b (creare da tutti e otto i template e dal
@@ -43,8 +43,31 @@
   raggiungibile" e il backup automatico resta acceso; nello storico "Apri cartella" apre il file manager ed "Elimina" toglie la riga; (6) "Backup ora" e "Ripristina…" dalle
   Impostazioni; (7) un `.recbak` della VM Windows ripristinato su Linux; (8) `ls -l` della cartella dati: i tre file
   del database sono 0600.
+- **F2d-1 (tag e foto nella nota veloce)**: a codice completo su `f2d1-tags-photos` (testa `f8bcf4d5`), in pila sopra
+  F1 → PERF1 → F2a → F2b → F2c, **nessuno in `main`**. Schema **2.19**: tag sulle voci (`note_tag`, nel testo con `#` e nella
+  riga Tag) e foto **dentro il database cifrato** (ridimensionate e senza metadati, D10); all'avvio le foto già su disco
+  entrano nel DB e i file spariscono. Review dell'intero branch fatta, con un'onda di correzioni (voce di sole foto
+  modificabile, nomi di tag validi inline, minori M1-M7). Aperti e decisioni: `docs/phase-4-issues.md`, sezione "Onda F2d-1".
+  **Prossimo: F2d-2 (editor del diario)**, che porta anche i chip dei tag in Cronologia.
+- **Checklist a schermo dell'autore per F2d-1** (GNOME), in quest'ordine:
+  - [ ] (Ruling 6) **primo avvio su una COPIA della cartella dati vera** (`--data-dir`, mai l'originale): le foto esistenti
+    entrano nel DB, `attachments/` non ha più file, le voci vecchie mostrano le loro foto; **cronometrare il primo avvio**;
+    backup e ripristino della copia; `ls -lR` della cartella non mostra nessuna immagine;
+  - [ ] nota veloce dal diario del Cibo e da un diario normale;
+  - [ ] `#` con suggerimenti (mostrati come `#nome`) e «Crea «#…»»; scegliere un suggerimento con un **vero clic del MOUSE**
+    lo inserisce (nei test c'è solo un tap sintetico);
+  - [ ] la riga Tag (provare un nome con spazi: rifiutato);
+  - [ ] una foto dal telefono esce dritta e ridimensionata; un HEIC è rifiutato con un messaggio che nomina il file; un
+    panorama molto grande o una foto da 200 MP dà il messaggio «troppi pixel»;
+  - [ ] una voce di sole foto, poi modificarne solo i tag;
+  - [ ] modifica con una foto tolta, poi Annulla;
+  - [ ] le tre scelte D10 in «Dati e backup»;
+  - [ ] l'ora delle voci è l'ora locale;
+  - [ ] nessuna immagine leggibile nella cartella dati;
+  - [ ] **decisioni per l'autore**: Ruling 7 (miniature sul thread UI, F2d1-4) e Ruling 8 (pulsanti del composer durante una
+    modifica, F2d1-5).
 - **Prossimo**: le checklist dell'autore e i merge in ordine
-  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`), poi F2d.
+  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`, `f2d1-tags-photos`), poi F2d-2.
 
 
 ## Il percorso

@@ -38,6 +38,14 @@ restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un res
 **F2c-5** avviso di timeout impreciso (`fixed`) · **F2c-6** stringhe inglesi preesistenti (`fixed`) · **F2c-7** "Salva" silenzioso (`fixed`) ·
 **F2c-8** stato della pagina col portachiavi irraggiungibile (`fixed`) · **F2c-9** rekey e sblocco senza cancello (`triaged`: nessun caso reale oggi).
 
+**Trovati in F2d-1 (sezione "Onda F2d-1")** — tag e foto nelle voci del diario, schema 2.19. `fixed` dal giro finale: **F2d1-1** voce
+di sole foto non modificabile · **F2d1-2** nomi della riga Tag non validi inline · **F2d1-3** minori M1-M7. `triaged`, da decidere o
+da fare: **F2d1-4** miniature sul thread UI (l'autore firma) · **F2d1-5** pulsanti del composer durante una modifica (scelta
+dell'autore) · **F2d1-6** `BeginEdit` su un'altra riga scarta la modifica aperta · **F2d1-7** chip dei tag in Cronologia (F2d-2) ·
+**F2d1-8** decodifica JPEG scalata · **F2d1-9** import al primo avvio senza avanzamento · **F2d1-10** log di salvataggio solo su
+`Debug.WriteLine` · **F2d1-11** "#pra" nella riga Tag senza Crea · **F2d1-12** CrashLoggerTests su Windows (`fixed` nel test) ·
+**F2d1-13** minori rimandati.
+
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
 - **F2a-1** — un gruppo in F2a ha l'intestazione ma né chip né colonne (la Panoramica è F3) · **F2a-2** — vista Anno e menu di
@@ -2105,3 +2113,67 @@ Nuovi, rimandati dalle review dell'onda:
   nessuna schermata lo usa). **Obbligo**: la funzione "cambia passphrase", quando arriverà, passa da
   `DatabaseGate.QuiesceAsync` come il restore.
 
+## Onda F2d-1 — Tag e foto nella nota veloce (`F2d1-*`)
+
+Esiti verificati contro codice, test e review dell'onda (branch `f2d1-tags-photos`, in pila dopo `f2c-data-safety`; nessuno in
+`main`). Schema 2.19: `note_tag` e le foto nel database cifrato (`attachment`: contenuto, miniatura, "mancante"). Review finale
+(opus) "con correzioni": due Important e sette minori, tutti chiusi nell'onda `bb56b86d..f8bcf4d5`, riesaminati (sonnet) senza
+nuovi problemi.
+
+Chiusi dal giro finale:
+
+- **F2d1-1 — una voce di sole foto non si poteva modificare** · `fixed` (`f8bcf4d5`) · Il percorso di modifica rifiutava
+  il testo vuoto qualunque fossero le foto, mentre il composer accetta voci di sole foto. Ora rifiuta solo se testo vuoto **e**
+  nessuna foto resta dopo la modifica. Provato: modifica dei soli tag di una voce di sole foto salvata; rimozione dell'ultima
+  foto a testo vuoto rifiutata.
+- **F2d1-2 — la riga Tag accettava nomi che la grammatica inline non regge** · `fixed` (`f8bcf4d5`) · Spazi, `#` iniziale,
+  punteggiatura: il nome finiva nel menu `#` e inserire `pranzo fuori` salvava in silenzio il tag `pranzo`. Ora `Add` toglie
+  un `#` iniziale e accetta solo ciò che `InlineTags.Parse("#" + nome)` rilegge identico; la stessa validità (un solo punto) filtra
+  i suggerimenti inline e la condizione di "Crea" (niente Crea per `#2`).
+- **F2d1-3 — minori M1-M7 della review finale** · `fixed` (`86424e48`, `f8bcf4d5`) · M1 messaggio dedicato "troppi pixel" per il
+  tetto di pixel e di lato (prima diceva "limite 50 MB"); M2 un allegato storico illeggibile o vuoto non fa più fallire
+  l'export PDF; M3 un file storico oltre il tetto resta dov'è con una riga di log, non entra nel DB; M4 il salvataggio fallito
+  mostra un messaggio localizzato, non `ex.Message` grezzo; M5 una modifica solo di tag o solo di foto aggiorna
+  `Note.UpdatedAtMs` (LWW della sync); M6 `CrashLoggerTests` legge il log con `FileShare.ReadWrite | Delete`; M7 il menu `#`
+  mostra `#nome` e `Crea «#…»` come nel mockup della spec §5.1 (l'inserito non cambia).
+
+Aperti, con le decisioni del controllore:
+
+- **F2d1-4 — le miniature si decodificano sul thread dell'interfaccia** · `triaged` · Scostamento accettato dalla spec §5.3
+  (Ruling 7): misurato 40-50 ms per 10 PNG da 320 px nel caso peggiore (4-5 ms l'una), una pausa breve, non un blocco. **L'autore
+  firma.** Se serve: decodifica nel ViewModel con `Task.Run`. Costa se sbagliato: scatti visibili in giorni con 20+ foto.
+- **F2d1-5 — "Aggiungi foto" e "Salva" del composer agiscono sulla riga in modifica** · `triaged` · Scelta di UX dell'autore
+  (Ruling 8): disabilitarli o riagganciarli alla nuova voce. Oggi una foto può finire sulla voce sbagliata (si recupera con
+  "Annulla"); ogni riga ha i suoi pulsanti.
+- **F2d1-6 — `BeginEdit` su un'altra riga scarta in silenzio testo, foto e tag della modifica aperta** · `triaged` ·
+  Mancano un avviso o il salvataggio implicito; da decidere con F2d-2 (editor).
+- **F2d1-7 — i chip dei tag mancano in Cronologia (spec §5.1)** · `triaged` · Lacuna del piano, non regressione: si fa in F2d-2.
+- **F2d1-8 — decodifica JPEG scalata** · `triaged` · Le foto da 200 MP sono rifiutate con "troppi pixel"; sotto il tetto la
+  decodifica a dimensione piena può usare ~400 MB a 100 MP. Serve una decodifica scalata (Skia `SampleSize`/scaled codec).
+- **F2d1-9 — l'import al primo avvio non dà avanzamento e decodifica ogni file storico** · `triaged` · Da misurare sui
+  dati veri dell'autore (checklist ROADMAP, primo punto).
+- **F2d1-10 — il log del salvataggio fallito va solo a `Debug.WriteLine`** · `triaged` · Si perde nelle build Release (nel
+  ViewModel non c'è un logger e non si è aggiunta una dipendenza per questo); da risolvere quando ci sarà un logger portabile.
+- **F2d1-11 — nella riga Tag "#pra" non offre Crea** · `triaged` · Cosmetico: la query grezza è validata prima di togliere il
+  `#`, mentre `Add` lo toglie.
+- **F2d1-12 — `CrashLoggerTests` falliva su Windows con una violazione di condivisione** · `fixed` (`86424e48`, nel test) ·
+  Non era un difetto di `CrashLogger`: il test leggeva il log mentre il logger lo teneva aperto. Una volta rosso in CI su
+  `9b36e51f` e verde al rilancio, prima del fix.
+- **F2d1-13 — minori rimandati (possono aspettare)** · `triaged`, una riga ciascuno:
+  - `NoteTagSchemaTests` asserisce il nome del vincolo dentro il messaggio SQLite (fragile se cambia la formulazione);
+  - test 2.11: l'interceptor lancia al primo salvataggio, quindi non distingue uno da due `SaveChanges`;
+  - `NoteTagWriter` carica tutti i tag tracciati a ogni salvataggio;
+  - nessun test diretto del default di `SaveEntryAsync(h, d, text)`; `FakeDiaryService.GetEntryTagsAsync` sempre vuoto;
+  - `ct` non rispettato durante la decodifica della foto;
+  - WPF: `BytesToImageSourceConverter` non passa mai `DecodePixelWidth` (il lightbox decodifica a piena dimensione);
+  - `NotesViewModel.LightboxContent` senza test; caricamento fire-and-forget senza gestione dell'eccezione;
+  - export: PDF controlla `Content` non nullo, HTML `Length > 0`; `ReadContentAsync` N+1, byte caricati anche per MD/JSON/CSV;
+    commento vecchio in `ExportQueryServiceTests.Build()`;
+  - testo vuoto con tutte le importazioni fallite salva comunque una voce vuota (preesistente);
+  - import all'avvio: nessun RED prima dell'implementazione per 5.1-5.8 (solo mutazione); nessun test per "cancellazione
+    fallita dopo il commit conta solo Imported"; `Directory.Exists(root)` potrebbe lanciare con un genitore illeggibile;
+  - `TagCompletion.IsTagChar` usa `char.IsLetterOrDigit`, `InlineTags` `\p{N}` (², ½);
+  - percorso di rifiuto di una foto durante il salvataggio in modifica coperto solo a ragionamento;
+  - `LostFocus` dereferenzia `TagMenu.Child!` (sicuro finché il menu è dichiarato in XAML); un tag chiamato come l'etichetta
+    "Crea" sarebbe mappato male (trascurabile);
+  - il menu `#` non si riapre al rifocus finché non si preme un tasto.

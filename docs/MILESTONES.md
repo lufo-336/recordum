@@ -643,3 +643,19 @@ di timeout preciso: `docs/phase-4-issues.md`, sezione "Onda F2c" (F2c-1…5). Su
 UI 376 (en_US e it_IT; `Category!=Performance`). **Prossimo**: review dell'intero branch e CI, la checklist a schermo
 dell'autore su GNOME (v. ROADMAP), poi F2d.
 
+**Progresso 2026-10-22 (onda F2d-1: tag e foto nella nota veloce: codice completo, non mergiata).** Piano
+`2026-10-21-wave-f2d1-tags-photos`, 8 task su `f2d1-tags-photos` (da `f2c-data-safety`; nessun branch della pila in `main`),
+dal 2026-10-21 al 2026-10-22, `0693a5d..f8bcf4d5` (16 commit).
+*Cosa esiste ora*: schema 2.19 (`note_tag`; le foto nel DB cifrato con miniatura); `IPhotoImporter` (Skia: orientamento EXIF
+applicato, metadati tolti, ridimensionamento, tetto di pixel, tre scelte D10); import all'avvio dei file storici nel DB, con
+cancellazione dei file orfani; tag nel testo (`#nome`) e nella riga Tag, menu `#` con «Crea «#…»»; nota veloce su Avalonia con
+tag e foto, lightbox, export con le foto del DB.
+*Cosa ha insegnato*: un'immagine piccola con dimensioni enormi esaurisce la memoria (il tetto di pixel è nato dalla security
+review di T3); l'orologio di sistema andato indietro ha fatto saltare la build incrementale (`--no-incremental`); la review
+finale ha trovato ciò che quelle per task non vedevano: una voce di sole foto non modificabile e nomi della riga Tag che il menu
+`#` inseriva come un altro tag (F2d1-1, F2d1-2), più sette minori (F2d1-3), tutti corretti con la riesamina.
+*Non consegnato*: miniature fuori dal thread UI (da firmare), pulsanti del composer durante una modifica, chip dei tag in
+Cronologia (F2d-2), decodifica JPEG scalata, avanzamento dell'import al primo avvio: `docs/phase-4-issues.md`, sezione "Onda
+F2d-1" (F2d1-4…13). Suite su Linux: Core 170, Data 646 (+1 saltato), Presentation 1067, UI 401 + 3 Performance (en_US e it_IT),
+ExportEngine 39. **Prossimo**: la checklist a schermo dell'autore, con la prova su una copia dei dati veri in testa (v. ROADMAP),
+poi F2d-2.
