@@ -1824,6 +1824,12 @@ Details: {0}</value>
   <data name="Diario.QuickEntry.Error.PhotoTooLarge" xml:space="preserve">
     <value>“{0}” is too large (the limit is 50 MB).</value>
   </data>
+  <data name="Diario.QuickEntry.Error.PhotoTooManyPixels" xml:space="preserve">
+    <value>“{0}” has too many pixels (the limit is 100 megapixels).</value>
+  </data>
+  <data name="Diario.QuickEntry.Error.SaveFailed" xml:space="preserve">
+    <value>The entry could not be saved. Nothing was lost: try again.</value>
+  </data>
   <data name="Diario.QuickEntry.Error.PhotoUnreadable" xml:space="preserve">
     <value>“{0}” could not be read.</value>
   </data>

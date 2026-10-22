@@ -46,4 +46,17 @@ public sealed class PdfExportFormatterTests
         // The image is in the document: the same model without content is a smaller file.
         Assert.True(with.Length > without.Length, $"{with.Length} <= {without.Length}");
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Write_skips_a_zero_length_or_undecodable_attachment_instead_of_failing(int kind)
+    {
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        var bad = kind == 0 ? Array.Empty<byte>() : "not an image at all"u8.ToArray();
+
+        var pdf = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(bad));
+
+        Assert.Equal((byte)'%', pdf[0]);
+    }
 }

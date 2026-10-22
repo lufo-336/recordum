@@ -273,4 +273,21 @@ public sealed class AttachmentFileImportTests : IAsyncDisposable
         File.Exists(path).Should().BeTrue("the file is deleted only after its row's commit");
         (await RowAsync(id)).Content.Should().BeNull();
     }
+
+    [Fact]
+    public async Task A_file_over_the_size_cap_stays_in_place_and_is_not_imported()
+    {
+        var id = await SeedRowAsync();
+        var path = PathOf(id);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using (var fs = new FileStream(path, FileMode.Create)) fs.SetLength(SkiaPhotoImporter.MaxBytes + 1);   // sparse
+
+        var report = await Sut().RunAsync(default);
+
+        report.Imported.Should().Be(0);
+        report.Skipped.Should().Be(1);
+        File.Exists(path).Should().BeTrue();
+        (await RowAsync(id)).Content.Should().BeNull();
+        report.MarkedMissing.Should().Be(0, "il file c'e', la riga non e' mancante");
+    }
 }

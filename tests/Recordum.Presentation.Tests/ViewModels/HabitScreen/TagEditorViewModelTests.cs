@@ -95,4 +95,30 @@ public class TagEditorViewModelTests
         sut.RemoveCommand.Execute("a");
         sut.Tags.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Add_strips_one_leading_hash_and_refuses_names_the_text_cannot_hold()
+    {
+        var sut = Build();
+
+        sut.Add("#pranzo");
+        sut.Add("pranzo fuori");
+        sut.Add("##x");
+        sut.Add("a.b");
+        sut.Add("2026");
+
+        sut.Tags.Should().Equal("pranzo");
+    }
+
+    [Fact]
+    public void Suggestions_skip_known_names_that_are_not_valid_inline_tags_and_never_offer_to_create_one()
+    {
+        var sut = Build("pranzo fuori", "pranzo");
+
+        sut.Query = "pranzo f";
+
+        sut.Suggestions.Should().BeEmpty("'pranzo f' non e' un tag valido: niente Crea; il nome con lo spazio non si suggerisce");
+        sut.Query = "pra";
+        sut.Suggestions.Should().Equal("pranzo", string.Format(Strings.Diario_Tag_Create, "pra"));
+    }
 }

@@ -108,7 +108,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         PrivateDbHost.Pump();
 
         menu.IsOpen.Should().BeTrue();
-        Items(view).Should().Equal("pranzo", CreateLabel("pra"));
+        Items(view).Should().Equal("#pranzo", CreateLabel("#pra"));
 
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         PrivateDbHost.Pump();
@@ -137,7 +137,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         var (_, view, window) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-crea"));
         var box = Find<TextBox>(view, "DraftBox");
         Type(box, "#zupqx");
-        Items(view).Should().Equal([CreateLabel("zupqx")]);
+        Items(view).Should().Equal([CreateLabel("#zupqx")]);
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         PrivateDbHost.Pump();
         box.Text.Should().Be("#zupqx ");
@@ -150,7 +150,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         await EnsureTagAsync("pranzo");
         var (_, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-crea2"));
         Type(Find<TextBox>(view, "DraftBox"), "#pra");
-        Items(view).Should().Equal("pranzo", CreateLabel("pra"));
+        Items(view).Should().Equal("#pranzo", CreateLabel("#pra"));
     }
 
     [AvaloniaFact]
@@ -161,7 +161,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         var (_, view, window) = await OpenAsync(await CreateAsync(HabitType.Journal, "Diario-giu"));
         var box = Find<TextBox>(view, "DraftBox");
         Type(box, "#zebra");
-        Items(view).Should().Equal("zebra1", "zebra2", CreateLabel("zebra"));
+        Items(view).Should().Equal("#zebra1", "#zebra2", CreateLabel("#zebra"));
         window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
         window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         PrivateDbHost.Pump();

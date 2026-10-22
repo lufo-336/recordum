@@ -42,17 +42,48 @@ public class JournalQuickEntryViewModelTests
         await sut.LoadAsync(Journal(), DayBoundary.Utc);
 
         sut.UpdateInlineQuery("#pra", 4);
-        sut.InlineSuggestions.Should().Equal("pranzo", string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, "pra"));
+        sut.InlineSuggestions.Should().Equal("#pranzo", string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, "#pra"));
 
         sut.UpdateInlineQuery("#PRANZO", 7);
-        sut.InlineSuggestions.Should().Equal(["pranzo"], "un nome noto (senza maiuscole) non offre Crea");
+        sut.InlineSuggestions.Should().Equal(["#pranzo"], "un nome noto (senza maiuscole) non offre Crea");
 
         sut.UpdateInlineQuery("#", 1);
-        sut.InlineSuggestions.Should().Equal(["pranzo"], "prefisso vuoto: tutti i tag, niente Crea");
+        sut.InlineSuggestions.Should().Equal(["#pranzo"], "prefisso vuoto: tutti i tag, niente Crea");
 
         sut.UpdateInlineQuery("#zup", 4);
         var create = sut.InlineSuggestions.Should().ContainSingle().Subject;
         sut.AcceptInlineSuggestion(create).Should().Be(("#zup ", 5), "la voce Crea torna il testo digitato");
+
+        sut.UpdateInlineQuery("#pra", 4);
+        sut.AcceptInlineSuggestion("#pranzo").Should().Be(("#pranzo ", 8), "il '#' mostrato non si raddoppia nel testo");
+    }
+
+    [Theory]
+    [InlineData("#2026")]
+    [InlineData("#")]
+    public async Task Inline_menu_does_not_offer_Crea_for_a_prefix_the_text_would_not_read_back_as_a_tag(string text)
+    {
+        var (sut, _, _, _, _, _, _) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+
+        sut.UpdateInlineQuery(text, text.Length);
+
+        sut.InlineSuggestions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Inline_menu_never_suggests_an_existing_name_the_text_cannot_hold()
+    {
+        var notes = new FakeNoteService();
+        var tags = new FakeTagService();
+        var sut = new JournalQuickEntryViewModel(new FakeDiaryService(notes), notes, new FakeAttachmentService(), new FakePhotoImporter(),
+            tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock());
+        await tags.CreateAsync(new Tag { Name = "pranzo fuori" });
+        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+
+        sut.UpdateInlineQuery("#pra", 4);
+
+        sut.InlineSuggestions.Should().Equal(string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, "#pra"));
     }
 
     [Fact]
@@ -332,7 +363,7 @@ public class JournalQuickEntryViewModelTests
         sut.Draft.Should().Be("pranzo");
         sut.PropertyTags.Tags.Should().Equal("salute");
         sut.PendingPhotos.Should().ContainSingle();
-        sut.ErrorMessage.Should().Be("database is locked");
+        sut.ErrorMessage.Should().Be(Strings.Diario_QuickEntry_Error_SaveFailed, "mai il messaggio grezzo dell'eccezione");
         sut.IsSaving.Should().BeFalse();
     }
 
@@ -450,7 +481,53 @@ public class JournalQuickEntryViewModelTests
         row.EditTags!.Tags.Should().Equal("salute");
         row.AddedPhotos.Should().ContainSingle();
         row.RemovedPhotoIds.Should().ContainSingle();
-        sut.ErrorMessage.Should().Be("database is locked");
+        sut.ErrorMessage.Should().Be(Strings.Diario_QuickEntry_Error_SaveFailed, "mai il messaggio grezzo dell'eccezione");
         sut.IsSaving.Should().BeFalse();
+    }
+
+    private static async Task<(JournalQuickEntryViewModel Sut, FakeDiaryService Diary, JournalEntryRowViewModel Row)> PhotoOnlyEntryAsync()
+    {
+        var (sut, diary, atts, _, _, _, _) = Build();
+        var node = Journal();
+        await sut.LoadAsync(node, DayBoundary.Utc);
+        sut.PendingPhotos.Add(new ImportedPhoto("a.jpg", "image/jpeg", [1], [2]));
+        await sut.SaveCommand.ExecuteAsync(null);
+        var noteId = diary.SavedEntries.Single().NoteId;
+        var kept = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "a.jpg", MimeType = "image/jpeg" };
+        atts.Store[kept.Id] = kept;
+        await sut.LoadAsync(node, DayBoundary.Utc);
+        return (sut, diary, sut.Entries.Single());
+    }
+
+    [Fact]
+    public async Task A_photo_only_entry_can_be_edited_when_it_keeps_a_photo()
+    {
+        var (sut, diary, row) = await PhotoOnlyEntryAsync();
+
+        sut.BeginEditCommand.Execute(row);
+        row.EditTags!.Add("casa");
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        sut.ErrorMessage.Should().BeNull();
+        diary.Edits.Should().ContainSingle().Which.Edit.PropertyTags.Should().Equal("casa");
+    }
+
+    [Fact]
+    public async Task Removing_the_last_photo_of_a_textless_entry_is_refused_unless_a_new_one_is_added()
+    {
+        var (sut, diary, row) = await PhotoOnlyEntryAsync();
+
+        sut.BeginEditCommand.Execute(row);
+        sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        diary.Edits.Should().BeEmpty();
+        sut.ErrorMessage.Should().Be(Strings.Diario_QuickEntry_Error_Empty);
+        row.IsEditing.Should().BeTrue();
+
+        row.AddedPhotos.Add(new ImportedPhoto("b.jpg", "image/jpeg", [1], [2]));
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        diary.Edits.Should().ContainSingle();
     }
 }

@@ -124,6 +124,7 @@ public sealed partial class DiaryService(
                 .Where(a => a.NoteId == noteId && removed.Contains(a.Id)).ToListAsync(ct));
         }
         if (!db.ChangeTracker.HasChanges()) return;
+        note.UpdatedAtMs = clock.UtcNowMs; // anche per una modifica di soli tag/foto: e' il timbro LWW della sync
         await db.SaveChangesAsync(ct);
         eventBus.Publish(new NoteUpdatedPayload(note.Id, note.HabitNodeId));
     }

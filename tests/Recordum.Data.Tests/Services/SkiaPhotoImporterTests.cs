@@ -137,7 +137,7 @@ public sealed class SkiaPhotoImporterTests : IDisposable
     {
         var path = Write("bomb.png", PhotoFixtures.PngDeclaring(w, h));
         var ex = await Assert.ThrowsAsync<PhotoImportException>(() => Sut().ImportAsync(path, default));
-        ex.Reason.Should().Be(PhotoImportFailure.TooLarge);
+        ex.Reason.Should().Be(PhotoImportFailure.TooManyPixels);
         ex.Filename.Should().Be("bomb.png");
         Sut().TryMakeThumbnail(File.ReadAllBytes(path)).Should().BeNull();
     }

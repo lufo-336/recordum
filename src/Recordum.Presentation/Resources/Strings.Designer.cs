@@ -647,6 +647,8 @@ public static class Strings
     public static string Editor_AiSharing_ApiAllowed => Get("Editor.AiSharing.ApiAllowed");
     public static string Diario_QuickEntry_Error_PhotoUnsupported => Get("Diario.QuickEntry.Error.PhotoUnsupported");
     public static string Diario_QuickEntry_Error_PhotoTooLarge => Get("Diario.QuickEntry.Error.PhotoTooLarge");
+    public static string Diario_QuickEntry_Error_PhotoTooManyPixels => Get("Diario.QuickEntry.Error.PhotoTooManyPixels");
+    public static string Diario_QuickEntry_Error_SaveFailed => Get("Diario.QuickEntry.Error.SaveFailed");
     public static string Diario_QuickEntry_Error_PhotoUnreadable => Get("Diario.QuickEntry.Error.PhotoUnreadable");
     public static string Diario_Tag_Create => Get("Diario.Tag.Create");
     public static string Settings_Photos_Title => Get("Settings.Photos.Title");

@@ -18,6 +18,11 @@ public static partial class InlineTags
     [GeneratedRegex(@"(?<![^\s(\[{""'«“])#([\p{L}\p{N}_-]+)")]
     private static partial Regex Candidate();
 
+    /// <summary>Vero se <paramref name="name"/> scritto come <c>#nome</c> nel testo viene letto da <see cref="Parse"/>
+    /// come esattamente quel tag (niente spazi, punteggiatura, solo cifre o oltre <see cref="MaxLength"/>).</summary>
+    public static bool IsValidName([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? name)
+        => !string.IsNullOrEmpty(name) && Parse("#" + name) is [var only] && string.Equals(only, name, StringComparison.Ordinal);
+
     /// <summary>I tag in ordine di prima comparsa, distinti senza badare alle maiuscole (vince la prima grafia).</summary>
     public static IReadOnlyList<string> Parse(string markdown)
     {

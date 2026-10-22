@@ -200,11 +200,11 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         _inlineText = text ?? string.Empty;
         _inlineQuery = TagCompletion.Find(_inlineText, caret);
         if (_inlineQuery is not { } q) { InlineSuggestions = []; return; }
-        var list = TagEditorViewModel.Match(_knownTags, q.Prefix, []);
+        var list = TagEditorViewModel.Match(_knownTags, q.Prefix, []).Select(n => "#" + n).ToList();
         // Come la riga Tag: un prefisso che non e' ancora un tag noto offre "Crea «…»" in coda.
-        if (q.Prefix.Length is > 0 and <= InlineTags.MaxLength
+        if (InlineTags.IsValidName(q.Prefix)
             && !_knownTags.Contains(q.Prefix, StringComparer.OrdinalIgnoreCase))
-            list.Add(TagEditorViewModel.CreateLabel(q.Prefix));
+            list.Add(TagEditorViewModel.CreateLabel("#" + q.Prefix));
         InlineSuggestions = list;
     }
 
@@ -212,7 +212,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     public (string Text, int Caret) AcceptInlineSuggestion(string name)
     {
         if (_inlineQuery is not { } q) return (_inlineText, _inlineText.Length);
-        if (name == TagEditorViewModel.CreateLabel(q.Prefix)) name = q.Prefix;
+        // Le voci mostrano il '#' (spec §5.1); nel testo ne va uno solo, quello che c'e' gia'.
+        if (name == TagEditorViewModel.CreateLabel("#" + q.Prefix)) name = q.Prefix;
+        else if (name is ['#', ..]) name = name[1..];
         var result = TagCompletion.Apply(_inlineText, q, name);
         _inlineQuery = null;
         InlineSuggestions = [];
@@ -245,6 +247,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
                 {
                     PhotoImportFailure.Unsupported => Strings.Diario_QuickEntry_Error_PhotoUnsupported,
                     PhotoImportFailure.TooLarge => Strings.Diario_QuickEntry_Error_PhotoTooLarge,
+                    PhotoImportFailure.TooManyPixels => Strings.Diario_QuickEntry_Error_PhotoTooManyPixels,
                     _ => Strings.Diario_QuickEntry_Error_PhotoUnreadable,
                 }, ex.Filename));
             }
@@ -298,9 +301,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         if (EditingRow is { } editing)
         {
             var editText = editing.EditDraft?.Trim() ?? string.Empty;
-            if (editText.Length == 0)
+            if (editText.Length == 0 && editing.Photos.Count + editing.AddedPhotos.Count == 0)
             {
-                // Stessa regola del composer piu' sotto: una voce non puo' restare senza testo.
+                // Stessa regola del composer piu' sotto: una voce non puo' restare senza testo ne' foto.
                 ErrorMessage = Strings.Diario_QuickEntry_Error_Empty;
                 return;
             }
@@ -317,7 +320,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                ErrorMessage = ex.Message; // la modifica resta aperta, con tutto quello che c'era
+                System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel edit save failed: {ex}");
+                ErrorMessage = Strings.Diario_QuickEntry_Error_SaveFailed; // la modifica resta aperta, con tutto quello che c'era
             }
             finally
             {
@@ -349,7 +353,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            ErrorMessage = ex.Message;
+            System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel save failed: {ex}");
+            ErrorMessage = Strings.Diario_QuickEntry_Error_SaveFailed;
         }
         finally
         {

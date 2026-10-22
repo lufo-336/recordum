@@ -154,4 +154,17 @@ public class DiaryServiceTagTests
             => new(new DbContextOptionsBuilder<RecordumDbContext>()
                 .UseSqlite(conn).UseSnakeCaseNamingConvention().AddInterceptors(interceptors).Options);
     }
+
+    [Fact]
+    public async Task A_tags_only_edit_raises_the_note_UpdatedAtMs_for_the_sync()
+    {
+        var (fx, habit, sut) = await SetUpAsync();
+        var id = await sut.SaveEntryAsync(habit, Day, new DiaryEntryDraft("a", ["casa"], []));
+        ((Fixtures.FakeClock)fx.Clock).Advance(TimeSpan.FromMinutes(5));
+
+        await sut.EditEntryAsync(id, new DiaryEntryEdit("a", ["lavoro"], [], []));
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        (await db2.Notes.AsNoTracking().SingleAsync(n => n.Id == id)).UpdatedAtMs.Should().Be(fx.Clock.UtcNowMs);
+    }
 }

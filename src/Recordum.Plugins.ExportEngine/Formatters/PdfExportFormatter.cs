@@ -1,6 +1,7 @@
 using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
+using SkiaSharp;
 using Recordum.Core.Enums;
 using Recordum.Plugins.Contracts.Export;
 
@@ -86,7 +87,8 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                                 foreach (var att in n.Attachments)
                                 {
                                     var bytes = att.Content;
-                                    if (bytes is not null)
+                                    // Un allegato vuoto o non decodificabile (import legacy) si salta: non deve far cadere l'export.
+                                    if (bytes is { Length: > 0 } && IsDecodable(bytes))
                                         col.Item().MaxWidth(200).Image(bytes).FitWidth();
                                 }
                         }
@@ -95,5 +97,11 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                 page.Footer().AlignCenter().Text(x => x.CurrentPageNumber());
             });
         }).GeneratePdf();
+    }
+
+    private static bool IsDecodable(byte[] bytes)
+    {
+        using var img = SKImage.FromEncodedData(bytes);
+        return img is not null;
     }
 }

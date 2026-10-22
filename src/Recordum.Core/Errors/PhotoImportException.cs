@@ -1,6 +1,6 @@
 namespace Recordum.Core.Errors;
 
-public enum PhotoImportFailure { Unsupported, TooLarge, Unreadable }
+public enum PhotoImportFailure { Unsupported, TooLarge, TooManyPixels, Unreadable }
 
 /// <summary>A chosen photo could not be imported; carries the file name (name only) and why.</summary>
 public sealed class PhotoImportException(string filename, PhotoImportFailure reason)

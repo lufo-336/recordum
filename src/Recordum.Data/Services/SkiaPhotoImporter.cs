@@ -10,7 +10,7 @@ namespace Recordum.Data.Services;
 /// write no EXIF, so re-encoding is what strips GPS and the rest; the EXIF orientation is applied to the pixels first.</summary>
 public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImporter
 {
-    private const long MaxBytes = 50L * 1024 * 1024;
+    internal const long MaxBytes = 50L * 1024 * 1024;
     private const int MaxSide = 2048;
     private const int ThumbSide = 320;
     private const int JpegQuality = 85;
@@ -83,7 +83,7 @@ public sealed class SkiaPhotoImporter(IAppSettingService settings) : IPhotoImpor
         format = codec.EncodedFormat;
         var (cw, ch) = (codec.Info.Width, codec.Info.Height);
         if (cw <= 0 || ch <= 0 || cw > MaxDimension || ch > MaxDimension || (long)cw * ch > MaxPixels)
-            throw new PhotoImportException(filename, PhotoImportFailure.TooLarge);
+            throw new PhotoImportException(filename, PhotoImportFailure.TooManyPixels);
 
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
         var bmp = new SKBitmap(info);

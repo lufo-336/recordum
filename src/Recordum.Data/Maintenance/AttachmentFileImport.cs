@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Data.Services;
 
 namespace Recordum.Data.Maintenance;
 
@@ -58,6 +59,9 @@ public sealed partial class AttachmentFileImport(
                         var row = await db.Attachments.FirstOrDefaultAsync(a => a.Id == id, ct).ConfigureAwait(false);
                         if (row is null) { File.Delete(file); orphans++; LogOrphan(id); continue; }
                         if (row.Content is not null) { File.Delete(file); leftovers++; continue; }
+
+                        // Un BLOB enorme farebbe fallire SaveChanges a ogni avvio: oltre il tetto del normalizzatore il file resta.
+                        if (new FileInfo(file).Length > SkiaPhotoImporter.MaxBytes) { skipped++; LogTooBig(id); continue; }
 
                         var bytes = await File.ReadAllBytesAsync(file, ct).ConfigureAwait(false);
                         row.Content = bytes;
@@ -127,6 +131,9 @@ public sealed partial class AttachmentFileImport(
 
     [LoggerMessage(EventId = 6, Level = LogLevel.Warning, Message = "The attachments folder could not be listed; import skipped")]
     private partial void LogRootUnreadable();
+
+    [LoggerMessage(EventId = 7, Level = LogLevel.Warning, Message = "Attachment file {Id} is over the size cap; left in place, not imported")]
+    private partial void LogTooBig(Guid id);
 
     [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "A file in the attachments folder is not named after an attachment; left in place")]
     private partial void LogLeftInPlace();
