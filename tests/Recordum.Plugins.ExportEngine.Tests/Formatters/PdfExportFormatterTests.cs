@@ -11,7 +11,7 @@ public sealed class PdfExportFormatterTests
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
         var f = new PdfExportFormatter();
         Assert.Equal(ExportFormat.Pdf, f.Format);
-        var bytes = f.Write(SampleModel.One());
+        var bytes = f.Write(SampleModel.One()).Document;
         Assert.NotEmpty(bytes);
         Assert.Equal((byte)'%', bytes[0]);
         Assert.Equal((byte)'P', bytes[1]);
@@ -23,7 +23,7 @@ public sealed class PdfExportFormatterTests
     public void Write_renders_periods_table_for_resistance_habit()
     {
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-        var bytes = new PdfExportFormatter().Write(SampleModel.WithAbstinencePeriods());
+        var bytes = new PdfExportFormatter().Write(SampleModel.WithAbstinencePeriods()).Document;
         Assert.NotEmpty(bytes);
         Assert.Equal((byte)'%', bytes[0]);
         Assert.Equal((byte)'P', bytes[1]);
@@ -40,8 +40,8 @@ public sealed class PdfExportFormatterTests
     public void Write_embeds_attachment_content_and_skips_one_without()
     {
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-        var with = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(Convert.FromBase64String(OnePixelPngBase64)));
-        var without = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(null));
+        var with = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(Convert.FromBase64String(OnePixelPngBase64))).Document;
+        var without = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(null)).Document;
         Assert.Equal((byte)'%', with[0]);
         // The image is in the document: the same model without content is a smaller file.
         Assert.True(with.Length > without.Length, $"{with.Length} <= {without.Length}");
@@ -55,7 +55,7 @@ public sealed class PdfExportFormatterTests
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
         var bad = kind == 0 ? Array.Empty<byte>() : "not an image at all"u8.ToArray();
 
-        var pdf = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(bad));
+        var pdf = new PdfExportFormatter().Write(SampleModel.WithNoteAttachments(bad)).Document;
 
         Assert.Equal((byte)'%', pdf[0]);
     }

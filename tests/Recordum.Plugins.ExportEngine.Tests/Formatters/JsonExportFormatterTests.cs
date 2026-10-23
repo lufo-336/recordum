@@ -22,7 +22,7 @@ public sealed class JsonExportFormatterTests
     [Fact]
     public void Write_produces_parseable_json_with_the_title()
     {
-        var bytes = new JsonExportFormatter().Write(SampleModel.One());
+        var bytes = new JsonExportFormatter().Write(SampleModel.One()).Document;
         using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
         Assert.Equal("Run", doc.RootElement.GetProperty("title").GetString());
         Assert.Equal(1, doc.RootElement.GetProperty("habits").GetArrayLength());
@@ -31,7 +31,7 @@ public sealed class JsonExportFormatterTests
     [Fact]
     public void Write_carries_the_unit_alongside_the_numeric_value()
     {
-        var bytes = new JsonExportFormatter().Write(SampleModel.One());
+        var bytes = new JsonExportFormatter().Write(SampleModel.One()).Document;
         using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
         var row = doc.RootElement.GetProperty("habits")[0].GetProperty("completions")[0];
         Assert.Equal(5, row.GetProperty("value").GetDecimal());
@@ -41,7 +41,7 @@ public sealed class JsonExportFormatterTests
     [Fact]
     public void Write_renders_periods_array_for_resistance_habit()
     {
-        var bytes = new JsonExportFormatter().Write(SampleModel.WithAbstinencePeriods());
+        var bytes = new JsonExportFormatter().Write(SampleModel.WithAbstinencePeriods()).Document;
         using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
         var periods = doc.RootElement.GetProperty("habits")[0].GetProperty("periods");
         Assert.Equal(2, periods.GetArrayLength());
@@ -60,14 +60,14 @@ public sealed class JsonExportFormatterTests
     [Fact]
     public void Write_includes_attachments_array_but_never_the_content()
     {
-        var bytes = new JsonExportFormatter().Write(SampleModel.WithNoteAttachments("someone-private-bytes"u8.ToArray()));
+        var bytes = new JsonExportFormatter().Write(SampleModel.WithNoteAttachments("someone-private-bytes"u8.ToArray())).Document;
         using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
         var attachments = doc.RootElement.GetProperty("habits")[0].GetProperty("notes")[0].GetProperty("attachments");
         Assert.Equal(2, attachments.GetArrayLength());
 
         var lake = attachments.EnumerateArray().First(a => a.GetProperty("filename").GetString() == "lake.jpg");
         Assert.Equal("image/jpeg", lake.GetProperty("mime_type").GetString());
-        Assert.Equal("attachments/note1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg", lake.GetProperty("relative_path").GetString());
+        Assert.Equal("images/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg", lake.GetProperty("relative_path").GetString());
 
         // The photo bytes must never leak into the exported JSON (size, and the photo itself).
         Assert.False(lake.TryGetProperty("content", out _));

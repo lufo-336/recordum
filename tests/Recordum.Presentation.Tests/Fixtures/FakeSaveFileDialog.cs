@@ -8,6 +8,7 @@ public sealed class FakeSaveFileDialog : ISaveFileDialog
     public string? Result { get; set; }
     public string? LastSavedPath { get; private set; }
     public byte[]? LastBytes { get; private set; }
+    public List<(string Path, byte[] Bytes)> Writes { get; } = [];
 
     public string? Prompt(string suggestedFileName, ExportFormat format) => Result;
 
@@ -15,6 +16,7 @@ public sealed class FakeSaveFileDialog : ISaveFileDialog
     {
         LastSavedPath = path;
         LastBytes = bytes;
+        Writes.Add((path, bytes));
         return Task.CompletedTask;
     }
 }

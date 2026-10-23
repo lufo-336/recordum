@@ -17,10 +17,10 @@ public sealed class JsonExportFormatter : ExportFormatterBase
 
     public override ExportFormat Format => ExportFormat.Json;
 
-    public override byte[] Write(ExportModel model)
+    public override ExportOutput Write(ExportModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(model, Options));
+        return ExportOutput.Single(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(model, Options)));
     }
 
     /// <summary>

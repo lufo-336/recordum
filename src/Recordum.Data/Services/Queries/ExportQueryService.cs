@@ -135,7 +135,7 @@ public sealed class ExportQueryService(
                 var noteAttachments = await attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(false);
                 var attachmentRefs = new List<ExportAttachmentRef>();
                 foreach (var a in noteAttachments)
-                    attachmentRefs.Add(new ExportAttachmentRef(a.Filename, a.MimeType, attachments.ResolveRelativePath(a))
+                    attachmentRefs.Add(new ExportAttachmentRef(a.Id, a.Filename, a.MimeType, ExportImagePath(a))
                     {
                         Content = await attachments.ReadContentAsync(a.Id, ct).ConfigureAwait(false),
                     });
@@ -154,6 +154,14 @@ public sealed class ExportQueryService(
 
         return new ExportHabitModel(node.Id, node.Name, node.HabitType?.ToString() ?? "", node.Color,
             summary, completionRows, noteRows, heatmap) { Periods = periodRows };
+    }
+
+    /// <summary>Where an exported photo lives next to the document: <c>images/&lt;id:N&gt;.&lt;ext&gt;</c>. The id keeps
+    /// two photos named <c>IMG_0001.jpg</c> apart.</summary>
+    private static string ExportImagePath(Recordum.Core.Models.Attachment a)
+    {
+        var ext = Path.GetExtension(a.Filename).TrimStart('.').ToLowerInvariant();
+        return $"images/{a.Id:N}.{(string.IsNullOrEmpty(ext) ? "bin" : ext)}";
     }
 
     private async Task<ExportSummary> BuildSummaryAsync(

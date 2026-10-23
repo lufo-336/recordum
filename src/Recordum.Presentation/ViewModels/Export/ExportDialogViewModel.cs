@@ -114,8 +114,16 @@ public sealed partial class ExportDialogViewModel : ObservableObject
         var request = new ExportRequest(_subject, _habitId, from, today, layout);
 
         var model = await _query.BuildAsync(request, ct).ConfigureAwait(true);
-        var bytes = formatter.Write(model);
-        await _save.WriteAsync(path, bytes, ct).ConfigureAwait(true);
+        var output = formatter.Write(model);
+        if (output.Files.Count == 0)
+            await _save.WriteAsync(path, output.Document, ct).ConfigureAwait(true);
+        else
+        {
+            // Un documento con file accessori (le immagini) esce come cartella <nome>/<nome>.ext.
+            var targets = ExportFolder.Plan(path, output, Directory.Exists);
+            foreach (var (target, content) in targets)
+                await _save.WriteAsync(target, content, ct).ConfigureAwait(true);
+        }
         await _jobs.RecordAsync(new ExportJob { Format = SelectedFormat, FilePath = path }, ct).ConfigureAwait(true);
         Closed?.Invoke(this, EventArgs.Empty);
     }

@@ -1,4 +1,5 @@
 using Recordum.Core.Enums;
+using Recordum.Core.Text;
 using Recordum.Plugins.Contracts.Export;
 using Recordum.Plugins.Contracts.ExtensionPoints;
 
@@ -13,7 +14,7 @@ public abstract class ExportFormatterBase : IExportFormatter
 
     public abstract ExportFormat Format { get; }
     public bool CanFormat(ExportFormat format) => format == Format;
-    public abstract byte[] Write(ExportModel model);
+    public abstract ExportOutput Write(ExportModel model);
 
     /// <summary>Formats an abstinence period's elapsed span as <c>d.hh:mm:ss</c>, invariant.</summary>
     protected static string FormatPeriodDuration(TimeSpan t)
@@ -42,4 +43,34 @@ public abstract class ExportFormatterBase : IExportFormatter
         var number = v.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return string.IsNullOrEmpty(row.Unit) ? number : number + " " + row.Unit;
     }
+
+    /// <summary>Walks a note body: plain stretches go through <paramref name="text"/>, each <c>photo:</c> reference
+    /// through <paramref name="photo"/> (null attachment = the id matches none of the note's attachments).</summary>
+    protected static string RenderBody(
+        string body, IReadOnlyList<ExportAttachmentRef> attachments,
+        Func<string, string> text, Func<ExportAttachmentRef?, string> photo)
+    {
+        var sb = new System.Text.StringBuilder();
+        var pos = 0;
+        foreach (var r in PhotoRefs.Find(body))
+        {
+            sb.Append(text(body[pos..r.Start])).Append(photo(attachments.FirstOrDefault(a => a.Id == r.Id)));
+            pos = r.Start + r.Length;
+        }
+        return sb.Append(text(body[pos..])).ToString();
+    }
+
+    /// <summary>Attachments with bytes the body does not mention: formatters append them after the text.
+    /// One without bytes and without a reference has nothing to show and is skipped.</summary>
+    protected static IEnumerable<ExportAttachmentRef> Unreferenced(string body, IReadOnlyList<ExportAttachmentRef> attachments)
+    {
+        var ids = PhotoRefs.Find(body).Select(r => r.Id).ToHashSet();
+        return attachments.Where(a => !ids.Contains(a.Id) && a.Content is { Length: > 0 });
+    }
+
+    /// <summary>Same note text with every photo reference removed (for formats that cannot place the image).</summary>
+    public static string StripPhotoRefs(string body) => PhotoRefs.Replace(body, _ => "");
+
+    protected static string MissingMarker(string? filename)
+        => "[" + (filename ?? "photo").Replace("]", "", StringComparison.Ordinal) + " \u2014 missing]";
 }

@@ -25,7 +25,7 @@ public sealed class ExportEngineE2ETests
             .OfType<IExportFormatter>()
             .Single(f => f.CanFormat(format));
 
-        var bytes = formatter.Write(SampleModel.One());
+        var bytes = formatter.Write(SampleModel.One()).Document;
         Assert.NotEmpty(bytes);
     }
 }

@@ -11,10 +11,10 @@ public sealed class PdfExportFormatter : ExportFormatterBase
 {
     public override ExportFormat Format => ExportFormat.Pdf;
 
-    public override byte[] Write(ExportModel model)
+    public override ExportOutput Write(ExportModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return Document.Create(doc =>
+        var pdf = Document.Create(doc =>
         {
             doc.Page(page =>
             {
@@ -80,6 +80,10 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                             });
                         }
 
+                        foreach (var n in h.Notes)
+                            if (StripPhotoRefs(n.BodyMd).Trim() is { Length: > 0 } text)
+                                col.Item().Text(text);
+
                         if (h.Notes.Any(n => n.Attachments.Count > 0))
                         {
                             col.Item().PaddingTop(4).Text("Attachments").SemiBold();
@@ -97,6 +101,7 @@ public sealed class PdfExportFormatter : ExportFormatterBase
                 page.Footer().AlignCenter().Text(x => x.CurrentPageNumber());
             });
         }).GeneratePdf();
+        return ExportOutput.Single(pdf);
     }
 
     private static bool IsDecodable(byte[] bytes)

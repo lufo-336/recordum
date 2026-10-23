@@ -10,7 +10,7 @@ public sealed class HtmlExportFormatter : ExportFormatterBase
 {
     public override ExportFormat Format => ExportFormat.Html;
 
-    public override byte[] Write(ExportModel model)
+    public override ExportOutput Write(ExportModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         var sb = new StringBuilder();
@@ -63,24 +63,22 @@ public sealed class HtmlExportFormatter : ExportFormatterBase
                 sb.Append("<h3>Notes</h3><ul>");
                 foreach (var n in h.Notes)
                 {
-                    sb.Append("<li>").Append(WebUtility.HtmlEncode(n.BodyMd));
-                    foreach (var att in n.Attachments)
-                        AppendAttachmentImage(sb, att);
+                    sb.Append("<li>").Append(RenderBody(n.BodyMd, n.Attachments, WebUtility.HtmlEncode, Image));
+                    foreach (var att in Unreferenced(n.BodyMd, n.Attachments))
+                        sb.Append(Image(att));
                     sb.Append("</li>");
                 }
                 sb.Append("</ul>");
             }
         }
         sb.Append("</body></html>");
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        return ExportOutput.Single(Encoding.UTF8.GetBytes(sb.ToString()));
     }
 
-    /// <summary>Embeds the attachment as a base64 data URI; skips it when the row carries no content.</summary>
-    private static void AppendAttachmentImage(StringBuilder sb, ExportAttachmentRef att)
-    {
-        if (att.Content is not { Length: > 0 } bytes) return;
-        var base64 = Convert.ToBase64String(bytes);
-        sb.Append("<img src=\"data:").Append(att.MimeType).Append(";base64,").Append(base64)
-          .Append("\" alt=\"").Append(WebUtility.HtmlEncode(att.Filename)).Append("\" />");
-    }
+    /// <summary>The attachment as a base64 data URI; a photo with no bytes shows as a "missing" marker.</summary>
+    private static string Image(ExportAttachmentRef? att)
+        => att?.Content is not { Length: > 0 } bytes
+            ? WebUtility.HtmlEncode(MissingMarker(att?.Filename))
+            : "<img src=\"data:" + WebUtility.HtmlEncode(att.MimeType) + ";base64," + Convert.ToBase64String(bytes)
+              + "\" alt=\"" + WebUtility.HtmlEncode(att.Filename) + "\" />";
 }

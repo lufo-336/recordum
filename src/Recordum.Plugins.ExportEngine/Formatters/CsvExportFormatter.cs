@@ -9,7 +9,7 @@ public sealed class CsvExportFormatter : ExportFormatterBase
 {
     public override ExportFormat Format => ExportFormat.Csv;
 
-    public override byte[] Write(ExportModel model)
+    public override ExportOutput Write(ExportModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         var sb = new StringBuilder();
@@ -42,7 +42,7 @@ public sealed class CsvExportFormatter : ExportFormatterBase
                       .Append(p.IsOpen ? "open" : "relapsed").Append("\r\n");
         }
 
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        return ExportOutput.Single(Encoding.UTF8.GetBytes(sb.ToString()));
     }
 
     private static string Q(string s)

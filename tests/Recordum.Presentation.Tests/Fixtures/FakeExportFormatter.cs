@@ -13,5 +13,6 @@ public sealed class FakeExportFormatter(ExportFormat format) : IExportFormatter
     public string PluginId => "test.export";
     public ExportFormat Format => _format;
     public bool CanFormat(ExportFormat format) => format == _format;
-    public byte[] Write(ExportModel model) { WriteCalled = true; return [1, 2, 3]; }
+    public ExportOutput Write(ExportModel model) { WriteCalled = true; return Output; }
+    public ExportOutput Output { get; set; } = ExportOutput.Single([1, 2, 3]);
 }

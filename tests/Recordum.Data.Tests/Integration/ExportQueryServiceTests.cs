@@ -319,7 +319,8 @@ public sealed class ExportQueryServiceTests
         var attachmentRef = Assert.Single(note.Attachments);
         Assert.Equal(attachment.Filename, attachmentRef.Filename);
         Assert.Equal("image/jpeg", attachmentRef.MimeType);
-        Assert.Equal($"attachments/{noteId}/{attachment.Id:N}.jpg", attachmentRef.RelativePath);
+        Assert.Equal($"images/{attachment.Id:N}.jpg", attachmentRef.RelativePath);
+        Assert.Equal(attachment.Id, attachmentRef.Id);
         Assert.Equal("fake image data"u8.ToArray(), attachmentRef.Content);
 
         await fx.DisposeAsync();

@@ -64,11 +64,11 @@ internal static class SampleModel
                     {
                         Attachments =
                         [
-                            new ExportAttachmentRef("lake.jpg", "image/jpeg", "attachments/note1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg")
+                            new ExportAttachmentRef(Guid.Parse("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "lake.jpg", "image/jpeg", "images/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg")
                             {
                                 Content = photo,
                             },
-                            new ExportAttachmentRef("missing.png", "image/png", "attachments/note1/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png")
+                            new ExportAttachmentRef(Guid.Parse("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"), "missing.png", "image/png", "images/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.png")
                             {
                                 Content = null,
                             },

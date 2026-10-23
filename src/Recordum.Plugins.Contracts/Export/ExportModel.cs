@@ -54,8 +54,9 @@ public sealed record ExportNoteRow(DateTimeOffset UpdatedAt, string BodyMd)
     public IReadOnlyList<ExportAttachmentRef> Attachments { get; init; } = [];
 }
 
-/// <summary>One photo/file attached to a note, described for export purposes.</summary>
-public sealed record ExportAttachmentRef(string Filename, string MimeType, string RelativePath)
+/// <summary>One photo/file attached to a note, described for export purposes. <paramref name="Id"/> is the id
+/// the note text refers to (<c>photo:&lt;id&gt;</c>); <paramref name="RelativePath"/> is <c>images/&lt;id:N&gt;.&lt;ext&gt;</c>.</summary>
+public sealed record ExportAttachmentRef(Guid Id, string Filename, string MimeType, string RelativePath)
 {
     /// <summary>The photo bytes, read from the database at model-build time so HTML/PDF formatters can
     /// embed them without depending on <c>IAttachmentService</c>. Never serialized: it would bloat (and

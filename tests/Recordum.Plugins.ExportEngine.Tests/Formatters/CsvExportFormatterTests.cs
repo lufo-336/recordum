@@ -11,7 +11,7 @@ public sealed class CsvExportFormatterTests
     {
         var f = new CsvExportFormatter();
         Assert.Equal(ExportFormat.Csv, f.Format);
-        var text = Encoding.UTF8.GetString(f.Write(SampleModel.One()));
+        var text = Encoding.UTF8.GetString(f.Write(SampleModel.One()).Document);
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal("habit,date,value,metric,unit,retroactive", lines[0].Trim());
         Assert.Contains(lines, l => l.StartsWith("Run,2026-05-20", StringComparison.Ordinal));
@@ -22,7 +22,7 @@ public sealed class CsvExportFormatterTests
     {
         // The value column stays numeric for machine consumers; the unit rides in its own column,
         // or "5" could mean kilometres in one file and hours in the next.
-        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(SampleModel.One()));
+        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(SampleModel.One()).Document);
         Assert.Contains("Run,2026-05-20,5,Distance,km,false", text, StringComparison.Ordinal);
     }
 
@@ -33,7 +33,7 @@ public sealed class CsvExportFormatterTests
         var habit = model.Habits[0];
         var bare = habit.Completions[0] with { Unit = null };
         var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(
-            model with { Habits = [habit with { Completions = [bare] }] }));
+            model with { Habits = [habit with { Completions = [bare] }] }).Document);
 
         Assert.Contains("Run,2026-05-20,5,Distance,,false", text, StringComparison.Ordinal);
     }
@@ -45,14 +45,14 @@ public sealed class CsvExportFormatterTests
         {
             Habits = [SampleModel.One().Habits[0] with { Name = "Run, fast" }],
         };
-        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(model));
+        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(model).Document);
         Assert.Contains("\"Run, fast\"", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Write_renders_periods_table_for_resistance_habit()
     {
-        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(SampleModel.WithAbstinencePeriods()));
+        var text = Encoding.UTF8.GetString(new CsvExportFormatter().Write(SampleModel.WithAbstinencePeriods()).Document);
         Assert.Contains("habit,started,ended,duration,outcome", text, StringComparison.Ordinal);
         Assert.Contains("Quit smoking,2026-06-13 09:00,2026-07-01 19:00,18.10:00:00,relapsed", text, StringComparison.Ordinal);
         Assert.Contains("Quit smoking,2026-07-02 08:00,,0.04:30:00,open", text, StringComparison.Ordinal);

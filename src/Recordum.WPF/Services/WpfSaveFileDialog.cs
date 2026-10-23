@@ -23,5 +23,8 @@ public sealed class WpfSaveFileDialog : ISaveFileDialog
     }
 
     public async Task WriteAsync(string path, byte[] bytes, CancellationToken ct = default)
-        => await File.WriteAllBytesAsync(path, bytes, ct).ConfigureAwait(false);
+    {
+        if (Path.GetDirectoryName(path) is { Length: > 0 } dir) Directory.CreateDirectory(dir);
+        await File.WriteAllBytesAsync(path, bytes, ct).ConfigureAwait(false);
+    }
 }
