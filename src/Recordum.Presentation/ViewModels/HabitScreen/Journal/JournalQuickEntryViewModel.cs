@@ -61,6 +61,71 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
 
     public ObservableCollection<JournalEntryRowViewModel> Entries { get; } = [];
 
+    /// <summary>Fissata al caricamento: nel diario (gesto Diary) la voce nuova e quella in modifica si scrivono nello stesso
+    /// editor e le immagini sono riferimenti nel testo; in nota veloce nulla cambia.</summary>
+    public bool IsDiaryMode { get; private set; }
+
+    /// <summary>La voce che sta nell'editor al posto della nuova (solo in modalita' diario).</summary>
+    public JournalEntryRowViewModel? EditingEntry => IsDiaryMode ? EditingRow : null;
+
+    public string? EditingBanner => EditingEntry is { } e
+        ? Format(Strings.Diario_Editor_EditingBanner, e.TimeDisplay)
+        : null;
+
+    /// <summary>Il testo che l'editor sta scrivendo: in modalita' diario quello della voce in modifica se c'e', altrimenti <see cref="Draft"/>.</summary>
+    public string ActiveText
+    {
+        get => EditingEntry?.EditDraft ?? Draft;
+        set
+        {
+            if (EditingEntry is { } e) e.EditDraft = value ?? string.Empty;
+            else Draft = value ?? string.Empty;
+        }
+    }
+
+    /// <summary>La riga Tag dell'editor: quella della voce in modifica (diario) o della voce nuova.</summary>
+    public TagEditorViewModel ActiveTags => EditingEntry?.EditTags ?? PropertyTags;
+
+    /// <summary>Miniature delle foto in attesa e di quelle delle voci del giorno, per id (null = mancante), per l'editor.</summary>
+    public IReadOnlyDictionary<Guid, byte[]?> PhotoThumbnails
+    {
+        get
+        {
+            var map = new Dictionary<Guid, byte[]?>();
+            foreach (var p in PendingPhotos) map[p.Id] = p.Thumbnail;
+            foreach (var row in Entries)
+            {
+                foreach (var p in row.AddedPhotos) map[p.Id] = p.Thumbnail;
+                foreach (var a in row.Photos) map[a.Id] = a.Thumbnail;
+            }
+            return map;
+        }
+    }
+
+    partial void OnDraftChanged(string value) => OnPropertyChanged(nameof(ActiveText));
+
+    private void OnActiveSurfaceChanged()
+    {
+        _inlineQuery = null;
+        InlineSuggestions = [];
+        OnPropertyChanged(nameof(EditingEntry));
+        OnPropertyChanged(nameof(EditingBanner));
+        OnPropertyChanged(nameof(ActiveText));
+        OnPropertyChanged(nameof(ActiveTags));
+    }
+
+    private void Watch(JournalEntryRowViewModel row)
+    {
+        row.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(JournalEntryRowViewModel.IsEditing)) OnActiveSurfaceChanged();
+            else if (e.PropertyName == nameof(JournalEntryRowViewModel.EditDraft)) OnPropertyChanged(nameof(ActiveText));
+            else if (e.PropertyName == nameof(JournalEntryRowViewModel.EditTags)) OnPropertyChanged(nameof(ActiveTags));
+        };
+        row.Photos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PhotoThumbnails));
+        row.AddedPhotos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PhotoThumbnails));
+    }
+
     public JournalQuickEntryViewModel(
         IDiaryService diary,
         INoteService notes,
@@ -88,16 +153,20 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         _confirm = confirm;
         _clock = clock;
         _day = Today();
+        PendingPhotos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PhotoThumbnails));
+        Entries.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(PhotoThumbnails)); OnActiveSurfaceChanged(); };
     }
 
     private DateOnly Today() => _dayBoundary.Today(_clock);
 
     private DayBoundary _dayBoundary = DayBoundary.Utc;
 
-    public async Task LoadAsync(HabitNode node, DayBoundary dayBoundary, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, DayBoundary dayBoundary, bool isDiaryMode, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         _habitNodeId = node.Id;
+        IsDiaryMode = isDiaryMode;
+        OnPropertyChanged(nameof(IsDiaryMode));
         // Il confine arriva dallo screen: va impostato PRIMA di ri-derivare il giorno corrente,
         // altrimenti il composer si apre sul giorno che diceva il vecchio confine.
         _dayBoundary = dayBoundary;
@@ -167,6 +236,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         {
             var row = new JournalEntryRowViewModel(
                 n, tagsByNote.TryGetValue(n.Id, out var t) ? t : [], _clock);
+            Watch(row);
             foreach (var a in await _attachments.ListByNoteAsync(n.Id, ct).ConfigureAwait(true))
                 row.Photos.Add(new AttachmentViewModel(a, await _attachments.ReadThumbnailAsync(a.Id, ct).ConfigureAwait(true)));
             if (generation != _reloadGeneration) return; // superseded mid-build; drop this partial batch
@@ -222,7 +292,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     }
 
 #pragma warning disable CA1863 // messaggi d'errore rari, non vale una CompositeFormat
-    private static string Format(string template, string filename) => string.Format(CultureInfo.CurrentCulture, template, filename);
+    private static string Format(string template, string arg) => string.Format(CultureInfo.CurrentCulture, template, arg);
 #pragma warning restore CA1863
 
     private JournalEntryRowViewModel? EditingRow => Entries.FirstOrDefault(r => r.IsEditing);
@@ -230,8 +300,16 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task AddPhotoAsync(CancellationToken ct)
     {
+        await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
+    }
+
+    /// <summary>Sceglie i file, li importa e li aggiunge alla voce attiva (quella in modifica, altrimenti il composer).
+    /// Torna le foto entrate; gli errori per file vanno in <see cref="ErrorMessage"/>.</summary>
+    private async Task<List<ImportedPhoto>> ImportChosenPhotosAsync(CancellationToken ct)
+    {
+        var imported = new List<ImportedPhoto>();
         // Mai durante un salvataggio: le foto scelte nel frattempo non finirebbero nella transazione e il successo le svuoterebbe.
-        if (IsSaving) return;
+        if (IsSaving) return imported;
         // Durante una modifica le foto vanno alla voce che si sta modificando, non al composer.
         ObservableCollection<ImportedPhoto> target = EditingRow?.AddedPhotos ?? PendingPhotos;
         var errors = new List<string>();
@@ -239,7 +317,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         {
             try
             {
-                target.Add(await _photoImporter.ImportAsync(path, ct).ConfigureAwait(true));
+                var photo = await _photoImporter.ImportAsync(path, ct).ConfigureAwait(true);
+                target.Add(photo);
+                imported.Add(photo);
             }
             catch (PhotoImportException ex)
             {
@@ -259,6 +339,22 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             }
         }
         ErrorMessage = errors.Count == 0 ? null : string.Join(Environment.NewLine, errors);
+        return imported;
+    }
+
+    /// <summary>"Inserisci immagine…": sceglie e importa i file (stesso dialogo e stessi errori di <see cref="AddPhotoCommand"/>) e
+    /// mette al cursore una riga di riferimento per foto. Torna il testo e il cursore nuovi (dopo i riferimenti, a inizio riga),
+    /// o null se nessuna foto e' entrata.</summary>
+    public async Task<(string Text, int Caret)?> InsertPhotosAsync(string text, int caret, CancellationToken ct)
+    {
+        var photos = await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
+        if (photos.Count == 0) return null;
+        text ??= string.Empty;
+        caret = Math.Clamp(caret, 0, text.Length);
+        var block = new System.Text.StringBuilder();
+        if (caret > 0 && text[caret - 1] != '\n') block.Append('\n'); // il riferimento sta in una riga a se'
+        foreach (var p in photos) block.Append(PhotoRefs.Format(p.Id, p.Filename)).Append('\n');
+        return (text.Insert(caret, block.ToString()), caret + block.Length);
     }
 
     [RelayCommand]
@@ -277,9 +373,17 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void BeginEdit(JournalEntryRowViewModel? row)
+    private async Task BeginEditAsync(JournalEntryRowViewModel? row)
     {
         if (row is null) return;
+        // Cambiare voce con modifiche aperte chiede prima di scartarle (in tutte e due le modalita').
+        if (EditingRow is { } open && open != row && open.HasChanges)
+        {
+            var ok = await _confirm.ConfirmAsync(
+                Strings.Diario_Editor_DiscardEdit_Title,
+                Format(Strings.Diario_Editor_DiscardEdit_Message, open.TimeDisplay)).ConfigureAwait(true);
+            if (!ok) return;
+        }
         CancelEdit();
         row.BeginEdit(_knownTags);
     }
@@ -288,6 +392,13 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private void CancelEdit()
     {
         foreach (var r in Entries.Where(r => r.IsEditing)) r.CancelEdit();
+    }
+
+    /// <summary>Toglie dal testo i riferimenti a foto che non sono fra <paramref name="validIds"/> (ne' in attesa ne' allegate).</summary>
+    private static string StripUnknownRefs(string text, IEnumerable<Guid> validIds)
+    {
+        var valid = validIds.ToHashSet();
+        return PhotoRefs.Replace(text, r => valid.Contains(r.Id) ? text.Substring(r.Start, r.Length) : string.Empty).Trim();
     }
 
     [RelayCommand]
@@ -301,7 +412,22 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         if (EditingRow is { } editing)
         {
             var editText = editing.EditDraft?.Trim() ?? string.Empty;
-            if (editText.Length == 0 && editing.Photos.Count + editing.AddedPhotos.Count == 0)
+            var kept = editing.Photos.Select(p => p.Id).ToList();
+            var added = editing.AddedPhotos.ToList();
+            var removed = editing.RemovedPhotoIds.ToList();
+            if (IsDiaryMode)
+            {
+                // Decisione 6: si tolgono solo le foto il cui riferimento c'era all'inizio della modifica e ora non c'e' piu';
+                // quelle nate senza riferimento (nota veloce) restano. Entrano solo le nuove con il riferimento nel testo.
+                var before = JournalEntryRowViewModel.ReferencedIds(editing.Text);
+                var now = JournalEntryRowViewModel.ReferencedIds(editing.EditDraft);
+                var dropped = kept.Where(id => before.Contains(id) && !now.Contains(id)).ToList();
+                removed.AddRange(dropped);
+                kept.RemoveAll(dropped.Contains);
+                added = added.Where(p => now.Contains(p.Id)).ToList();
+                editText = StripUnknownRefs(editText, [.. kept, .. added.Select(p => p.Id)]);
+            }
+            if (editText.Length == 0 && kept.Count + added.Count == 0)
             {
                 // Stessa regola del composer piu' sotto: una voce non puo' restare senza testo ne' foto.
                 ErrorMessage = Strings.Diario_QuickEntry_Error_Empty;
@@ -311,7 +437,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             try
             {
                 var edit = new DiaryEntryEdit(
-                    editText, editing.EditTags?.Tags.ToList() ?? [], editing.AddedPhotos.ToList(), editing.RemovedPhotoIds.ToList());
+                    editText, editing.EditTags?.Tags.ToList() ?? [], added, removed);
                 await _diary.EditEntryAsync(editing.Id, edit, ct).ConfigureAwait(true);
                 editing.Text = editText;
                 editing.IsEditing = false;
@@ -331,7 +457,15 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         }
 
         var text = Draft?.Trim() ?? string.Empty;
-        if (text.Length == 0 && PendingPhotos.Count == 0)
+        var photos = PendingPhotos.ToList();
+        if (IsDiaryMode)
+        {
+            // Entrano solo le foto con il riferimento ancora nel testo; i riferimenti a id sconosciuti si tolgono.
+            var now = JournalEntryRowViewModel.ReferencedIds(text);
+            photos = photos.Where(p => now.Contains(p.Id)).ToList();
+            text = StripUnknownRefs(text, photos.Select(p => p.Id));
+        }
+        if (text.Length == 0 && photos.Count == 0)
         {
             ErrorMessage = Strings.Diario_QuickEntry_Error_Empty;
             return;
@@ -340,7 +474,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         IsSaving = true;
         try
         {
-            var draft = new DiaryEntryDraft(text, PropertyTags.Tags.ToList(), PendingPhotos.ToList());
+            var draft = new DiaryEntryDraft(text, PropertyTags.Tags.ToList(), photos);
             await _diary.SaveEntryAsync(_habitNodeId, _day, draft, ct).ConfigureAwait(true);
 
             // Solo dopo il successo si svuota: un salvataggio che fallisce non toglie niente all'utente.

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Core.Text;
 using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.Journal;
@@ -32,6 +33,7 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         // CreatedAt è UTC; la riga mostra l'ora che l'utente ha vissuto (decisione 8). Invariant: i due punti restano due punti.
         var utc = DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc);
         TimeDisplay = TimeZoneInfo.ConvertTimeFromUtc(utc, clock.LocalTimeZone).ToString("HH:mm", CultureInfo.InvariantCulture);
+        Photos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(UnreferencedPhotos));
     }
 
     public Guid Id { get; }
@@ -54,6 +56,32 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
     [ObservableProperty] private bool _isEditing;
 
     public ObservableCollection<AttachmentViewModel> Photos { get; } = [];
+
+    /// <summary>Le foto della voce il cui riferimento non e' nel testo (quello in modifica, se si sta modificando):
+    /// in modalita' diario la striscia di miniature mostra solo queste, le altre stanno nel testo.</summary>
+    public IReadOnlyList<AttachmentViewModel> UnreferencedPhotos
+    {
+        get
+        {
+            var referenced = ReferencedIds(IsEditing ? EditDraft : Text);
+            return [.. Photos.Where(p => !referenced.Contains(p.Id))];
+        }
+    }
+
+    internal static HashSet<Guid> ReferencedIds(string? text) => [.. PhotoRefs.Find(text ?? string.Empty).Select(r => r.Id)];
+
+    partial void OnTextChanged(string value) => OnPropertyChanged(nameof(UnreferencedPhotos));
+    partial void OnEditDraftChanged(string value) => OnPropertyChanged(nameof(UnreferencedPhotos));
+    partial void OnIsEditingChanged(bool value) => OnPropertyChanged(nameof(UnreferencedPhotos));
+
+    /// <summary>Qualcosa e' cambiato rispetto a quando e' iniziata la modifica (serve a chiedere conferma prima di scartarla).</summary>
+    internal bool HasChanges =>
+        IsEditing
+        && (EditDraft != Text
+            || AddedPhotos.Count > 0
+            || RemovedPhotoIds.Count > 0
+            || !(EditTags?.Tags ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase)
+                    .SetEquals(PropertyTagNames));
 
     /// <summary>Riga Tag in modifica; null fuori dalla modifica (nessun template da costruire).</summary>
     [ObservableProperty] private TagEditorViewModel? _editTags;

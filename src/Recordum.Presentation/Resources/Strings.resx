@@ -1535,6 +1535,15 @@ Details: {0}</value>
   <data name="Diario.QuickEntry.DeleteConfirm.Message" xml:space="preserve">
     <value>This entry and its photos will be removed.</value>
   </data>
+  <data name="Diario.Editor.EditingBanner" xml:space="preserve">
+    <value>Editing the entry from {0}</value>
+  </data>
+  <data name="Diario.Editor.DiscardEdit.Title" xml:space="preserve">
+    <value>Discard changes?</value>
+  </data>
+  <data name="Diario.Editor.DiscardEdit.Message" xml:space="preserve">
+    <value>Discard the changes to the entry from {0}?</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Schedule type</value>

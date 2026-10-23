@@ -573,6 +573,21 @@ public class HabitScreenViewModelTests
         (sut.QuickAddForDiario is not null).Should().Be(!expectsQuickNote);
     }
 
+    [Theory]
+    [InlineData(JournalPrimaryGesture.Diary, true)]
+    [InlineData(JournalPrimaryGesture.QuickNote, false)]
+    public async Task The_composer_is_in_diary_mode_only_for_the_diary_gesture(JournalPrimaryGesture gesture, bool expectsDiaryMode)
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out _, out var uiPrefs, editorAvailable: false);
+        var node = AddJournal(nodes, "Daily journal");
+        await uiPrefs.SetAsync(node.Id, new HabitUiPrefs { JournalGesture = gesture });
+
+        await sut.LoadAsync(node.Id);
+
+        sut.JournalQuickEntry.Should().NotBeNull();
+        sut.JournalQuickEntry!.IsDiaryMode.Should().Be(expectsDiaryMode);
+    }
+
     [Fact]
     public async Task A_journal_with_no_pref_defaults_to_the_diary_editor()
     {

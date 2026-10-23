@@ -39,7 +39,7 @@ public class JournalQuickEntryViewModelTests
         var sut = new JournalQuickEntryViewModel(new FakeDiaryService(notes), notes, new FakeAttachmentService(), new FakePhotoImporter(),
             tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock());
         await tags.CreateAsync(new Tag { Name = "pranzo" });
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
 
         sut.UpdateInlineQuery("#pra", 4);
         sut.InlineSuggestions.Should().Equal("#pranzo", string.Format(System.Globalization.CultureInfo.CurrentCulture, Strings.Diario_Tag_Create, "#pra"));
@@ -64,7 +64,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Inline_menu_does_not_offer_Crea_for_a_prefix_the_text_would_not_read_back_as_a_tag(string text)
     {
         var (sut, _, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
 
         sut.UpdateInlineQuery(text, text.Length);
 
@@ -79,7 +79,7 @@ public class JournalQuickEntryViewModelTests
         var sut = new JournalQuickEntryViewModel(new FakeDiaryService(notes), notes, new FakeAttachmentService(), new FakePhotoImporter(),
             tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock());
         await tags.CreateAsync(new Tag { Name = "pranzo fuori" });
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
 
         sut.UpdateInlineQuery("#pra", 4);
 
@@ -90,7 +90,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_creates_a_diary_entry_so_the_day_counts_as_done()
     {
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "Insalata di farro";
 
         await sut.SaveCommand.ExecuteAsync(null);
@@ -104,7 +104,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_refuses_an_entry_with_neither_text_nor_photo()
     {
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "   ";
 
         await sut.SaveCommand.ExecuteAsync(null);
@@ -117,7 +117,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_accepts_a_photo_with_no_text()
     {
         var (sut, diary, _, dialog, _, _, importer) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         dialog.MultipleResult = ["C:\\tmp\\piatto.jpg"];
         sut.AddPhotoCommand.Execute(null);
 
@@ -132,7 +132,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Photos_travel_in_the_draft_of_the_same_save_not_in_a_second_call()
     {
         var (sut, diary, photos, dialog, _, _, importer) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         dialog.MultipleResult = ["C:\\tmp\\a.jpg"];
         sut.AddPhotoCommand.Execute(null);
 
@@ -154,7 +154,7 @@ public class JournalQuickEntryViewModelTests
     public async Task A_failing_photo_does_not_lose_the_entry_or_the_other_photos()
     {
         var (sut, diary, _, dialog, _, _, importer) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         importer.ThrowOnImport["C:\\tmp\\rotta.jpg"] = new IOException("locked");
         dialog.MultipleResult = ["C:\\tmp\\rotta.jpg", "C:\\tmp\\buona.jpg"];
         await sut.AddPhotoCommand.ExecuteAsync(null);
@@ -171,7 +171,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_uses_the_selected_day_so_yesterdays_dinner_lands_on_yesterday()
     {
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         var yesterday = new DateOnly(2026, 8, 7);
         sut.SetDay(yesterday);
         sut.Draft = "cena di ieri";
@@ -185,7 +185,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Delete_asks_for_confirmation_and_removes_the_entry()
     {
         var (sut, diary, _, _, confirm, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "da buttare";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -204,7 +204,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Editing_a_row_updates_the_body_without_creating_a_second_entry()
     {
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -222,7 +222,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Editing_a_row_to_empty_text_is_refused_like_the_composer()
     {
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -244,7 +244,7 @@ public class JournalQuickEntryViewModelTests
         // alza mai. Il gate tiene la scrittura aperta finche' non la rilasciamo, cosi' lo stato
         // "in volo" e' davvero osservabile.
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "cena";
         sut.IsSaving.Should().BeFalse();
 
@@ -264,7 +264,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_sets_IsSaving_during_the_in_row_edit_path_too()
     {
         var (sut, diary, _, _, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "Pasta al pesto";
         await sut.SaveCommand.ExecuteAsync(null);
         var row = sut.Entries.Single();
@@ -294,7 +294,7 @@ public class JournalQuickEntryViewModelTests
         // fires B (which completes immediately), then releases A: only B's day must survive.
         var (sut, _, _, _, _, notes, _) = Build();
         var node = Journal();
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         var dayA = new DateOnly(2026, 8, 1);
         var dayB = new DateOnly(2026, 8, 2);
         var noteAId = Guid.NewGuid();
@@ -331,7 +331,7 @@ public class JournalQuickEntryViewModelTests
     public async Task Save_sends_text_tag_row_and_photos_as_one_draft()
     {
         var (sut, diary, _, dialog, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         dialog.MultipleResult = ["C:\\tmp\\a.jpg", "C:\\tmp\\b.jpg"];
         await sut.AddPhotoCommand.ExecuteAsync(null);
         sut.Draft = "pranzo #fuori";
@@ -351,7 +351,7 @@ public class JournalQuickEntryViewModelTests
     public async Task A_failing_save_leaves_draft_tags_and_photos_where_the_user_left_them()
     {
         var (sut, diary, _, dialog, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         dialog.MultipleResult = ["C:\\tmp\\a.jpg"];
         await sut.AddPhotoCommand.ExecuteAsync(null);
         sut.Draft = "pranzo";
@@ -371,7 +371,7 @@ public class JournalQuickEntryViewModelTests
     public async Task A_rejected_file_names_itself_and_does_not_stop_the_others()
     {
         var (sut, _, _, dialog, _, _, importer) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         importer.ThrowOnImport["C:\\tmp\\b.heic"] = new PhotoImportException("b.heic", PhotoImportFailure.Unsupported);
         dialog.MultipleResult = ["C:\\tmp\\a.jpg", "C:\\tmp\\b.heic", "C:\\tmp\\c.jpg"];
 
@@ -400,13 +400,13 @@ public class JournalQuickEntryViewModelTests
     {
         var (sut, diary, atts, dialog, _, _, _) = Build();
         var node = Journal();
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "colazione";
         await sut.SaveCommand.ExecuteAsync(null);
         var noteId = diary.SavedEntries.Single().NoteId;
         var kept = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "old.jpg", MimeType = "image/jpeg" };
         atts.Store[kept.Id] = kept;
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         var row = sut.Entries.Single();
         row.Photos.Should().ContainSingle();
 
@@ -439,7 +439,7 @@ public class JournalQuickEntryViewModelTests
     public async Task A_photo_picked_while_a_save_is_in_flight_is_refused_not_lost()
     {
         var (sut, diary, _, dialog, _, _, _) = Build();
-        await sut.LoadAsync(Journal(), DayBoundary.Utc);
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "cena";
         var gate = new TaskCompletionSource();
         diary.NextWriteDelay = () => gate.Task;
@@ -459,12 +459,12 @@ public class JournalQuickEntryViewModelTests
     {
         var (sut, diary, atts, dialog, _, _, _) = Build();
         var node = Journal();
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         sut.Draft = "colazione";
         await sut.SaveCommand.ExecuteAsync(null);
         var noteId = diary.SavedEntries.Single().NoteId;
         atts.Store[Guid.NewGuid()] = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "old.jpg", MimeType = "image/jpeg" };
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         var row = sut.Entries.Single();
         sut.BeginEditCommand.Execute(row);
         row.EditDraft = "nuovo testo";
@@ -489,13 +489,13 @@ public class JournalQuickEntryViewModelTests
     {
         var (sut, diary, atts, _, _, _, _) = Build();
         var node = Journal();
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         sut.PendingPhotos.Add(new ImportedPhoto(Guid.NewGuid(), "a.jpg", "image/jpeg", [1], [2]));
         await sut.SaveCommand.ExecuteAsync(null);
         var noteId = diary.SavedEntries.Single().NoteId;
         var kept = new Attachment { Id = Guid.NewGuid(), NoteId = noteId, Filename = "a.jpg", MimeType = "image/jpeg" };
         atts.Store[kept.Id] = kept;
-        await sut.LoadAsync(node, DayBoundary.Utc);
+        await sut.LoadAsync(node, DayBoundary.Utc, isDiaryMode: false);
         return (sut, diary, sut.Entries.Single());
     }
 

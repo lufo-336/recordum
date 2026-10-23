@@ -1509,6 +1509,15 @@
   <data name="Diario.QuickEntry.DeleteConfirm.Message" xml:space="preserve">
     <value>Questa voce e le sue foto verranno rimosse.</value>
   </data>
+  <data name="Diario.Editor.EditingBanner" xml:space="preserve">
+    <value>Stai modificando la voce delle {0}</value>
+  </data>
+  <data name="Diario.Editor.DiscardEdit.Title" xml:space="preserve">
+    <value>Scartare le modifiche?</value>
+  </data>
+  <data name="Diario.Editor.DiscardEdit.Message" xml:space="preserve">
+    <value>Scartare le modifiche alla voce delle {0}?</value>
+  </data>
   <!-- Editor section field labels (B9) -->
   <data name="Editor.Field.ScheduleType" xml:space="preserve">
     <value>Tipo di pianificazione</value>

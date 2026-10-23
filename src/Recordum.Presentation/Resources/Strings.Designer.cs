@@ -568,6 +568,9 @@ public static class Strings
     public static string Diario_QuickEntry_Error_Empty => Get("Diario.QuickEntry.Error.Empty");
     public static string Diario_QuickEntry_DeleteConfirm_Title => Get("Diario.QuickEntry.DeleteConfirm.Title");
     public static string Diario_QuickEntry_DeleteConfirm_Message => Get("Diario.QuickEntry.DeleteConfirm.Message");
+    public static string Diario_Editor_EditingBanner => Get("Diario.Editor.EditingBanner");
+    public static string Diario_Editor_DiscardEdit_Title => Get("Diario.Editor.DiscardEdit.Title");
+    public static string Diario_Editor_DiscardEdit_Message => Get("Diario.Editor.DiscardEdit.Message");
 
     // Help menu + Diagnostic dialog
     public static string Workspace_Help => Get("Workspace.Help");
