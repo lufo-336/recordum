@@ -67,10 +67,6 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         return (vm, view, w);
     }
 
-    // In modalita' diario (gesto Diary, il default) una foto entra solo se il suo riferimento e' nel testo (decisione 6 di F2d-2).
-    private static string Ref(JournalQuickEntryViewModel qe) =>
-        Recordum.Core.Text.PhotoRefs.Format(qe.PendingPhotos[0].Id, qe.PendingPhotos[0].Filename);
-
     private static T Find<T>(Avalonia.Visual root, string name) where T : Control =>
         root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
 
@@ -287,7 +283,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
             Find<ItemsControl>(view, "PendingPhotos").GetVisualDescendants().OfType<Image>()
                 .Should().ContainSingle(i => i.Source != null, "la miniatura in attesa");
 
-            Find<TextBox>(view, "DraftBox").Text = "Zuppa #pranzo\n" + Ref(qe);
+            Find<TextBox>(view, "DraftBox").Text = "Zuppa #pranzo\n" + qe.Draft; // AddPhoto ha gia' messo il riferimento in coda: scrivere sopra lo cancellerebbe
             qe.PropertyTags.Add("cena");
             PrivateDbHost.Pump();
 
@@ -342,7 +338,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
             await WaitAsync(() => qe.PendingPhotos.Count == 1);
-            Find<TextBox>(view, "DraftBox").Text = "Ciao\n" + Ref(qe);
+            Find<TextBox>(view, "DraftBox").Text = "Ciao\n" + qe.Draft;
             Find<Button>(view, "SaveButton").Command!.Execute(null);
             await WaitAsync(() => qe.Entries.Count == 1);
             PrivateDbHost.Pump();
@@ -436,7 +432,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
             await WaitAsync(() => qe.PendingPhotos.Count == 1);
-            Find<TextBox>(view, "DraftBox").Text = "Insalata e un caffe #pranzo\n" + Ref(qe);
+            Find<TextBox>(view, "DraftBox").Text = "Insalata e un caffe #pranzo\n" + qe.Draft;
             qe.PropertyTags.Add("salute");
             Find<Button>(view, "SaveButton").Command!.Execute(null);
             await WaitAsync(() => qe.Entries.Count == 1);

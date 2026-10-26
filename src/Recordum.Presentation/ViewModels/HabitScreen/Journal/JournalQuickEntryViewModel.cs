@@ -300,8 +300,20 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task AddPhotoAsync(CancellationToken ct)
     {
-        await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
+        var photos = await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
+        // In modalita' diario una foto vale solo col riferimento nel testo (Save scarta le altre): senza cursore va in coda.
+        if (IsDiaryMode && photos.Count > 0) ActiveText = AppendPhotoRefs(ActiveText, photos);
     }
+
+    private static string AppendPhotoRefs(string? text, IEnumerable<ImportedPhoto> photos)
+    {
+        var sb = new System.Text.StringBuilder(text ?? string.Empty);
+        if (sb.Length > 0 && sb[^1] != '\n') sb.Append('\n');
+        foreach (var p in photos) sb.Append(PhotoRefs.Format(p.Id, p.Filename)).Append('\n');
+        return sb.ToString();
+    }
+
+    private bool _isInserting;
 
     /// <summary>Sceglie i file, li importa e li aggiunge alla voce attiva (quella in modifica, altrimenti il composer).
     /// Torna le foto entrate; gli errori per file vanno in <see cref="ErrorMessage"/>.</summary>
@@ -347,7 +359,10 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     /// o null se nessuna foto e' entrata.</summary>
     public async Task<(string Text, int Caret)?> InsertPhotosAsync(string text, int caret, CancellationToken ct)
     {
-        var photos = await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
+        List<ImportedPhoto> photos;
+        _isInserting = true; // Save non parte mentre l'import e' in corso (come AddPhotoCommand.IsRunning)
+        try { photos = await ImportChosenPhotosAsync(ct).ConfigureAwait(true); }
+        finally { _isInserting = false; }
         if (photos.Count == 0) return null;
         text ??= string.Empty;
         caret = Math.Clamp(caret, 0, text.Length);
@@ -398,14 +413,29 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private static string StripUnknownRefs(string text, IEnumerable<Guid> validIds)
     {
         var valid = validIds.ToHashSet();
-        return PhotoRefs.Replace(text, r => valid.Contains(r.Id) ? text.Substring(r.Start, r.Length) : string.Empty).Trim();
+        var sb = new System.Text.StringBuilder(text);
+        foreach (var r in PhotoRefs.Find(text).Reverse().Where(r => !valid.Contains(r.Id)))
+        {
+            var end = r.Start + r.Length;
+            var lineStart = r.Start == 0 ? 0 : text.LastIndexOf('\n', r.Start - 1) + 1;
+            var nl = text.IndexOf('\n', end);
+            var lineEnd = nl < 0 ? text.Length : nl;
+            if (string.IsNullOrWhiteSpace(text[lineStart..r.Start]) && string.IsNullOrWhiteSpace(text[end..lineEnd]))
+            {
+                // Il riferimento era l'unico contenuto della riga: via la riga, non resta un buco.
+                if (nl >= 0) sb.Remove(lineStart, nl + 1 - lineStart);
+                else sb.Remove(Math.Max(lineStart - 1, 0), lineEnd - Math.Max(lineStart - 1, 0));
+            }
+            else sb.Remove(r.Start, r.Length);
+        }
+        return sb.ToString().Trim();
     }
 
     [RelayCommand]
     private async Task Save(CancellationToken ct)
     {
         // Salvare mentre una scelta di foto e' in corso perderebbe quelle che arrivano dopo lo snapshot.
-        if (_habitNodeId == Guid.Empty || IsSaving || AddPhotoCommand.IsRunning) return;
+        if (_habitNodeId == Guid.Empty || IsSaving || _isInserting || AddPhotoCommand.IsRunning) return;
         ErrorMessage = null;
 
         // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.

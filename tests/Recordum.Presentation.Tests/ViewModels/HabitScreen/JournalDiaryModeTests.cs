@@ -212,4 +212,84 @@ public class JournalDiaryModeTests
         r.Confirm.Calls.Should().Be(0);
         r.Sut.Entries[1].IsEditing.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)] // il parametro muto: in nota veloce AddPhoto non tocca il testo
+    public async Task AddPhoto_appends_the_reference_only_in_diary_mode(bool diaryMode, bool expectsRef)
+    {
+        var r = await BuildAsync(diaryMode);
+        r.Dialog.MultipleResult = ["/x/x.jpg"];
+        r.Sut.Draft = "Cena";
+
+        await r.Sut.AddPhotoCommand.ExecuteAsync(null);
+        var photo = r.Sut.PendingPhotos.Should().ContainSingle().Subject;
+        r.Sut.ActiveText.Should().Be(expectsRef ? $"Cena\n{PhotoRefs.Format(photo.Id, "x.jpg")}\n" : "Cena");
+
+        await r.Sut.SaveCommand.ExecuteAsync(null);
+        r.Diary.Drafts.Single().Photos.Should().HaveCount(1, "la foto resta in entrambe le modalita'");
+    }
+
+    [Fact]
+    public async Task ActiveText_ActiveTags_and_EditingBanner_notify_when_editing_starts_and_stops()
+    {
+        var r = await BuildAsync();
+        var (row, _) = await SeedEntryAsync(r, "Pranzo", photos: 0);
+        var seen = new List<string?>();
+        r.Sut.PropertyChanged += (_, e) => seen.Add(e.PropertyName);
+
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        seen.Should().Contain(["ActiveText", "ActiveTags", "EditingBanner"]);
+
+        seen.Clear();
+        r.Sut.CancelEditCommand.Execute(null);
+        seen.Should().Contain(["ActiveText", "ActiveTags", "EditingBanner"]);
+    }
+
+    [Fact]
+    public async Task Edit_save_attaches_a_photo_added_in_the_edit_and_strips_a_dangling_reference()
+    {
+        var r = await BuildAsync();
+        var (row, _) = await SeedEntryAsync(r, "Pranzo", photos: 0);
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        r.Dialog.MultipleResult = ["/x/n.jpg"];
+        await r.Sut.AddPhotoCommand.ExecuteAsync(null); // in diario mette il riferimento in coda a EditDraft
+        var added = row.AddedPhotos.Should().ContainSingle().Subject;
+        r.Sut.ActiveText += $"{PhotoRefs.Format(Guid.NewGuid(), "ghost.jpg")}\nfine";
+
+        await r.Sut.SaveCommand.ExecuteAsync(null);
+
+        var edit = r.Diary.Edits.Should().ContainSingle().Subject.Edit;
+        edit.AddedPhotos.Select(p => p.Id).Should().Equal(added.Id);
+        edit.Text.Should().Contain(added.Id.ToString("N")).And.NotContain("ghost").And.EndWith("fine");
+    }
+
+    [Fact]
+    public async Task Save_does_not_run_while_InsertPhotos_is_importing()
+    {
+        var r = await BuildAsync();
+        r.Sut.Draft = "Cena";
+        var gate = new TaskCompletionSource<string[]>();
+        r.Dialog.PendingMultiple = gate.Task;
+
+        var inserting = r.Sut.InsertPhotosAsync("Cena", 4, default);
+        await r.Sut.SaveCommand.ExecuteAsync(null);
+        r.Diary.Drafts.Should().BeEmpty();
+
+        gate.SetResult([]);
+        await inserting;
+        await r.Sut.SaveCommand.ExecuteAsync(null);
+        r.Diary.Drafts.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Stripping_a_reference_that_filled_a_whole_line_removes_the_line()
+    {
+        var r = await BuildAsync();
+        r.Sut.Draft = $"uno\n{PhotoRefs.Format(Guid.NewGuid(), "g.jpg")}\ndue {PhotoRefs.Format(Guid.NewGuid(), "h.jpg")}fine";
+
+        await r.Sut.SaveCommand.ExecuteAsync(null);
+
+        r.Diary.Drafts.Single().Text.Should().Be("uno\ndue fine");
+    }
 }

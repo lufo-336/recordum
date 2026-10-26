@@ -9,5 +9,7 @@ public sealed class FakeOpenFileDialog : IOpenFileDialog
     public Task<string?> PromptAsync(string filter) { LastFilter = filter; return Task.FromResult(Result); }
 
     public string[] MultipleResult { get; set; } = [];
-    public Task<string[]> PromptMultipleAsync(string filter) => Task.FromResult(MultipleResult);
+    /// <summary>Se impostato, la scelta resta in sospeso finche' il test non la completa.</summary>
+    public Task<string[]>? PendingMultiple { get; set; }
+    public Task<string[]> PromptMultipleAsync(string filter) => PendingMultiple ?? Task.FromResult(MultipleResult);
 }
