@@ -27,14 +27,17 @@ public class JournalDraftTests
         public List<(string Key, string Value)> WrittenWithKey { get; } = [];
         public int InFlight { get; private set; }
         public int MaxInFlight { get; private set; }
-        public List<TaskCompletionSource> Gates { get; } = [];
+        private readonly List<TaskCompletionSource> _gates = [];
+
+        // Senza contesto di sincronizzazione le continuazioni del VM girano sul pool: la lista va letta sotto lock.
+        public TaskCompletionSource[] Gates { get { lock (_gates) return [.. _gates]; } }
 
         public ValueTask<string?> GetAsync(string key, CancellationToken ct = default) => new((string?)null);
 
         public async ValueTask SetAsync(string key, string value, CancellationToken ct = default)
         {
             var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Gates.Add(gate);
+            lock (_gates) _gates.Add(gate);
             InFlight++;
             MaxInFlight = Math.Max(MaxInFlight, InFlight);
             await gate.Task;
@@ -200,7 +203,7 @@ public class JournalDraftTests
         var load = sut.LoadAsync(other, DayBoundary.Utc, true);
         while (!load.IsCompleted)
         {
-            foreach (var g in settings.Gates.ToList()) g.TrySetResult();
+            foreach (var g in settings.Gates) g.TrySetResult();
             await Task.Yield();
         }
         await load;
