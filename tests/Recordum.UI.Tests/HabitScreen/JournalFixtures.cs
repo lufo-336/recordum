@@ -30,6 +30,13 @@ internal static class JournalFixtures
     public static string WritePng(int w = 64, int h = 48)
     {
         var path = Path.Combine(Path.GetTempPath(), $"recordum-ui-photo-{Guid.NewGuid():N}.png");
+        File.WriteAllBytes(path, PngBytes(w, h));
+        return path;
+    }
+
+    /// <summary>I byte di un PNG vero (rosso), come una miniatura letta dal DB.</summary>
+    public static byte[] PngBytes(int w = 64, int h = 48)
+    {
         using var bmp = new WriteableBitmap(new PixelSize(w, h), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
         using (var fb = bmp.Lock())
         {
@@ -37,9 +44,10 @@ internal static class JournalFixtures
             for (var i = 0; i < px.Length; i += 4) { px[i] = 0x30; px[i + 1] = 0x30; px[i + 2] = 0xE0; px[i + 3] = 0xFF; }
             System.Runtime.InteropServices.Marshal.Copy(px, 0, fb.Address, px.Length);
         }
-        #pragma warning disable CS0618 // l'overload con BitmapEncoderOptions non esiste in 12.1.2
-        bmp.Save(path);
+        using var stream = new MemoryStream();
+#pragma warning disable CS0618 // l'overload con BitmapEncoderOptions non esiste in 12.1.2
+        bmp.Save(stream);
 #pragma warning restore CS0618
-        return path;
+        return stream.ToArray();
     }
 }

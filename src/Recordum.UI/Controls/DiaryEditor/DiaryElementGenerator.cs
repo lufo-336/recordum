@@ -1,43 +1,32 @@
 using System;
+using Avalonia;
+using Avalonia.Controls;
 using AvaloniaEdit.Rendering;
 
 namespace Recordum.UI.Controls;
 
 /// <summary>
-/// Sonda Live Preview (branch avalonia-linux-slice, NON una feature): nasconde i marcatori
-/// markdown (<c>**</c>, <c>*</c>/<c>_</c>, <c>#…# </c>) — è QUESTA la parte che decide se la
-/// sonda ha una risposta positiva o no (vedi report, "Verdict"). Stile invece va a
-/// <see cref="MarkdownLivePreviewColorizer"/>.
-///
-/// Hook AvaloniaEdit: <c>VisualLineElementGenerator</c>, aggiunto a
-/// <c>TextView.ElementGenerators</c>. Il motore chiama <see cref="GetFirstInterestedOffset"/>
-/// con offset crescenti per trovare la prossima posizione "interessante" nella riga visuale in
-/// costruzione, poi <see cref="ConstructElement"/> sull'offset trovato per ottenere l'elemento
-/// sostitutivo. Nascondere = restituire un <c>FormattedTextElement</c> con testo vuoto ma
-/// <c>documentLength</c> pari alla lunghezza del marcatore: occupa zero pixel a schermo ma zero
-/// offset nel documento sottostante (undo/redo, selezione, ecc. restano intatti).
+/// Sostituisce i marcatori delle righe fuori dal cursore (la scansione è <see cref="DiaryLineScanner"/>): nascosti
+/// (<c>#</c> dei titoli, <c>**</c>, <c>*</c>, <c>_</c>), il pallino dell'elenco, la barra della citazione,
+/// l'immagine al posto di <c>![nome](photo:id)</c>.
+/// <para>Ogni elemento copre nel documento la lunghezza del marcatore: offset, selezione e undo restano quelli del
+/// testo. AvaloniaEdit vuole almeno una colonna visuale per elemento, quindi un marcatore nascosto vale una
+/// colonna larga zero pixel.</para>
 /// </summary>
-internal sealed class MarkdownLivePreviewMarkerGenerator : VisualLineElementGenerator
+internal sealed class DiaryElementGenerator(Func<int> caretLine, Func<Guid, Control> photoView)
+    : VisualLineElementGenerator
 {
-    private readonly Func<int> _caretLine;
-
-    public MarkdownLivePreviewMarkerGenerator(Func<int> caretLine) => _caretLine = caretLine;
-
-    internal static int InvocationCount;
-
     public override int GetFirstInterestedOffset(int startOffset)
     {
-        InvocationCount++;
         var document = CurrentContext?.Document;
         if (document is null || startOffset >= document.TextLength) return -1;
 
         var line = document.GetLineByOffset(startOffset);
-        if (line.LineNumber == _caretLine()) return -1; // riga del caret: marcatori restano visibili // riga del caret: marcatori restano visibili
+        if (line.LineNumber == caretLine()) return -1;
 
-        var text = document.GetText(line);
-        foreach (var range in MarkdownLineScanner.MatchMarkerRanges(text))
+        foreach (var marker in DiaryLineScanner.Scan(document.GetText(line)).Markers)
         {
-            var absolute = line.Offset + range.Start;
+            var absolute = line.Offset + marker.Start;
             if (absolute >= startOffset) return absolute;
         }
         return -1;
@@ -47,12 +36,30 @@ internal sealed class MarkdownLivePreviewMarkerGenerator : VisualLineElementGene
     {
         var document = CurrentContext!.Document;
         var line = document.GetLineByOffset(offset);
-        var text = document.GetText(line);
-        foreach (var range in MarkdownLineScanner.MatchMarkerRanges(text))
+        foreach (var marker in DiaryLineScanner.Scan(document.GetText(line)).Markers)
         {
-            if (line.Offset + range.Start == offset)
-                return new FormattedTextElement(string.Empty, range.Length);
+            if (line.Offset + marker.Start != offset) continue;
+            return marker.Kind switch
+            {
+                DiaryMarkerKind.Bullet => new FormattedTextElement("• ", marker.Length),
+                DiaryMarkerKind.QuoteBar => new InlineObjectElement(marker.Length, QuoteBar()),
+                DiaryMarkerKind.Photo => new InlineObjectElement(marker.Length, photoView(marker.PhotoId)),
+                _ => new FormattedTextElement(string.Empty, marker.Length),
+            };
         }
-        return null; // non dovrebbe accadere se GetFirstInterestedOffset è coerente con questo metodo
+        return null;
+    }
+
+    private Border QuoteBar()
+    {
+        var bar = new Border
+        {
+            Width = 3,
+            Height = CurrentContext.TextView.DefaultLineHeight,
+            Margin = new Thickness(2, 0, 10, 0),
+            CornerRadius = new CornerRadius(1.5),
+        };
+        bar.SetResourceReference(Border.BackgroundProperty, "Brush.TextMuted");
+        return bar;
     }
 }

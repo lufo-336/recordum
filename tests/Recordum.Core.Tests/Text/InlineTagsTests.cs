@@ -22,6 +22,10 @@ public class InlineTagsTests
         => InlineTags.Parse(text).Should().BeEmpty();
 
     [Fact]
+    public void Find_gives_the_position_of_every_tag_repeats_included_and_skips_code()
+        => InlineTags.Find("`#no` #pranzo e #Pranzo").Should().Equal((6, 7), (16, 7));
+
+    [Fact]
     public void Tags_are_distinct_ignoring_case_first_spelling_wins()
         => InlineTags.Parse("#pranzo #Pranzo").Should().Equal("pranzo");
 

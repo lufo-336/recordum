@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Recordum.Core.HomeRow;
+using Recordum.Core.Text;
 using Recordum.UI.Controls;
 
 namespace Recordum.UI.Tests;
@@ -37,39 +38,34 @@ internal static class ControlGalleries
         }
     }
 
-    /// <summary>Il documento dell'editor: titoli, grassetto/corsivo, lista, link, blocco di codice.</summary>
-    public static MarkdownEditorControl MarkdownEditor() => new()
-    {
-        Markdown =
-            "# Diario — 10 settembre\n\n" +
-            "Oggi ho **finito** la sonda editor. È stata *più semplice* del previsto.\n\n" +
-            "Cose fatte:\n\n" +
-            "- letto `editor.js` per capire cosa usa davvero Toast UI\n" +
-            "- verificato Markdown.Avalonia contro Avalonia 12\n" +
-            "- scritto il controllo nativo\n\n" +
-            "Dettagli nel [report del probe](https://example.invalid/report).\n\n" +
-            "```csharp\n" +
-            "var editor = new MarkdownEditorControl { Markdown = \"# ciao\" };\n" +
-            "```\n",
-    };
+    /// <summary>L'id della foto della galleria che ha la miniatura; <see cref="UnsavedPhotoId"/> non ce l'ha.</summary>
+    public static readonly Guid SavedPhotoId = Guid.Parse("5f2b9c1e0d3a4e7f8a6b1c2d3e4f5a6b");
+    public static readonly Guid UnsavedPhotoId = Guid.Parse("00000000000000000000000000000abc");
 
-    /// <summary>Il documento della Live Preview, col caret piazzato sulla riga 3 (quella con
-    /// grassetto e corsivo): un solo frame mostra entrambi i comportamenti — la riga del caret
-    /// grezza, le altre rese.</summary>
-    public static LivePreviewEditorControl LivePreviewEditor()
+    /// <summary>Il documento del diario, una riga per costrutto (1-based): 1 titolo, 3 grassetto/corsivo/tag,
+    /// 4-6 elenco puntato, 7-8 numerato, 9 citazione, 11 foto con miniatura, 12 foto non salvata, 13 riga del cursore.
+    /// Il cursore sta sulla riga 13: un solo frame mostra la riga grezza e le altre rese.</summary>
+    public static DiaryEditor DiaryEditor(byte[]? thumbnail = null)
     {
-        var editor = new LivePreviewEditorControl
+        var editor = new DiaryEditor
         {
             Markdown =
                 "# Diario — 10 settembre\n" +
                 "\n" +
-                "Oggi ho **finito** la sonda live preview. È stata *più semplice* del previsto.\n" +
+                "Oggi ho **finito** la sonda. È stata *più semplice* del previsto. #lavoro\n" +
+                "- uno\n" +
+                "* due\n" +
+                "+ tre\n" +
+                "1. primo\n" +
+                "12. dodicesimo\n" +
+                "> una citazione che resta in tono attenuato\n" +
                 "\n" +
-                "Riga **non** del caret: qui il grassetto e il *corsivo* devono RENDERSI, marcatori spariti.\n" +
-                "\n" +
-                "Un'altra riga qualsiasi, ancora piana, per dare respiro al documento.\n",
+                PhotoRefs.Format(SavedPhotoId, "pranzo.jpg") + "\n" +
+                PhotoRefs.Format(UnsavedPhotoId, "persa.jpg") + "\n" +
+                "Riga del **cursore**: qui il markdown resta grezzo.",
+            Photos = new Dictionary<Guid, byte[]?> { [SavedPhotoId] = thumbnail },
         };
-        editor.MoveCaretTo(3, 10);
+        editor.CaretOffset = editor.Markdown.Length;
         return editor;
     }
 }

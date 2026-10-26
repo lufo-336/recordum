@@ -13,17 +13,9 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <!-- Sonda editor (branch avalonia-linux-slice): vedi docs/design/2026-09-09-avalonia-editor-probe.md.
-         Avalonia.AvaloniaEdit (id NuGet corretto: NON "AvaloniaEdit", che si è fermato a 0.10.12 su
-         Avalonia 0.10 pre-1.0) dichiara Avalonia >=12.0.0, quindi 12.1.2 lo soddisfa direttamente e
-         funziona (compila E gira, verificato negli screenshot).
-         Markdown.Avalonia 11.0.3 COMPILA pulito contro 12.1.2 ma esplode a runtime
-         (MissingMethodException su DynamicResourceExtension.ProvideValue dentro il suo stile
-         FluentTheme precompilato — un vero breaking change binario Avalonia 11->12, non solo un
-         vincolo di nuspec) — vedi il report per lo stack trace. 12.0.0-a3, la riga prerelease dello
-         stesso progetto ricompilata esplicitamente per Avalonia 12.0.0 + net10.0, è quella usata qui. -->
+    <!-- L'editor del diario (Controls/DiaryEditor). Id NuGet Avalonia.AvaloniaEdit, NON "AvaloniaEdit" (fermo a
+         0.10.12, Avalonia pre-1.0). -->
     <PackageReference Include="Avalonia.AvaloniaEdit" />
-    <PackageReference Include="Markdown.Avalonia" />
   </ItemGroup>
 
   <ItemGroup>

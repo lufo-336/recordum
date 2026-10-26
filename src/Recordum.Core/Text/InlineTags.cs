@@ -26,16 +26,32 @@ public static partial class InlineTags
     /// <summary>I tag in ordine di prima comparsa, distinti senza badare alle maiuscole (vince la prima grafia).</summary>
     public static IReadOnlyList<string> Parse(string markdown)
     {
-        if (string.IsNullOrEmpty(markdown)) return [];
-        var text = InlineCode().Replace(FencedCode().Replace(markdown, " "), " ");
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<string>();
-        foreach (Match m in Candidate().Matches(text))
+        foreach (var (start, length) in Find(markdown))
         {
-            var name = m.Groups[1].Value;
-            if (name.Length > MaxLength || name.All(char.IsDigit)) continue;
+            var name = markdown.Substring(start + 1, length - 1);
             if (seen.Add(name)) result.Add(name);
         }
         return result;
     }
+
+    /// <summary>Dove stanno i tag nel testo, ripetuti compresi: <c>Start</c> è il <c>#</c>, <c>Length</c> copre
+    /// <c>#nome</c>. Stessa regola di <see cref="Parse"/>: l'editor colora esattamente ciò che verrà salvato.</summary>
+    public static IReadOnlyList<(int Start, int Length)> Find(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown)) return [];
+        // Il codice si maschera con spazi della stessa lunghezza: gli indici restano quelli del testo originale.
+        var text = InlineCode().Replace(FencedCode().Replace(markdown, Blank), Blank);
+        var result = new List<(int, int)>();
+        foreach (Match m in Candidate().Matches(text))
+        {
+            var name = m.Groups[1].Value;
+            if (name.Length > MaxLength || name.All(char.IsDigit)) continue;
+            result.Add((m.Index, m.Length));
+        }
+        return result;
+    }
+
+    private static string Blank(Match m) => new(' ', m.Length);
 }

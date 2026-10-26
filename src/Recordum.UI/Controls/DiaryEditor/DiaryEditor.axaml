@@ -3,30 +3,21 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ae="using:AvaloniaEdit"
+             xmlns:c="using:Recordum.UI.Controls"
              mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="360"
-             x:Class="Recordum.UI.Controls.LivePreviewEditorControl">
+             x:Class="Recordum.UI.Controls.DiaryEditor"
+             x:DataType="c:DiaryEditor">
 
-  <!--
-  Sonda Live Preview (branch avalonia-linux-slice, NON una feature): UNA sola superficie di
-  editing — non sorgente+anteprima come in MarkdownEditorControl.axaml (sonda editor
-  precedente). Il testo si formatta mentre si digita via MarkdownLivePreviewColorizer +
-  MarkdownLivePreviewMarkerGenerator (code-behind), tranne sulla riga del caret, che resta
-  grezza per poterla editare. Vedi docs/design/2026-09-10-avalonia-live-preview-probe.md.
-
-  Sorella deliberata di MarkdownEditorControl, non un'estensione: la Live Preview collassa le
-  due metà del modello precedente in una, quindi portarsi dietro il pannello Markdown.Avalonia
-  di sola lettura sarebbe un secondo rendering ridondante dello stesso documento.
-  -->
-
-  <Border Background="{DynamicResource Brush.Surface}">
-    <ae:TextEditor x:Name="Editor"
-                   ShowLineNumbers="False"
-                   WordWrap="True"
-                   Padding="10,8"
-                   FontFamily="{DynamicResource Font.Default}"
-                   FontSize="{DynamicResource FontSize.Body}"
-                   Background="{DynamicResource Brush.Surface}"
-                   Foreground="{DynamicResource Brush.Text}"/>
-  </Border>
+  <!-- Una sola superficie: il markdown si rende mentre si scrive, tranne sulla riga del cursore, che resta grezza.
+       Lo stile e i marcatori sono in code-behind (DiaryColorizer, DiaryElementGenerator). Lo sfondo lo mette chi
+       ospita il controllo. -->
+  <ae:TextEditor x:Name="Editor"
+                 ShowLineNumbers="False"
+                 WordWrap="True"
+                 Padding="10,8"
+                 FontFamily="{DynamicResource Font.Serif}"
+                 FontSize="{DynamicResource FontSize.Body}"
+                 Background="Transparent"
+                 Foreground="{DynamicResource Brush.Text}"/>
 
 </UserControl>

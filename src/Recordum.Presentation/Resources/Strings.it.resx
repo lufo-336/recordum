@@ -1840,6 +1840,9 @@
   <data name="Diario.Editor.DraftReadFailed" xml:space="preserve">
     <value>Non sono riuscito a leggere la bozza salvata. Puoi continuare a scrivere, ma la bozza precedente potrebbe andare persa.</value>
   </data>
+  <data name="Diario.Editor.PhotoNotSaved" xml:space="preserve">
+    <value>Foto non salvata</value>
+  </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Impossibile salvare l'impostazione delle foto.</value>
   </data>
