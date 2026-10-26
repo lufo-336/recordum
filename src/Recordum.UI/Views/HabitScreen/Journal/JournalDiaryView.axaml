@@ -20,7 +20,8 @@
           <TextBlock x:Name="EditingBannerText" VerticalAlignment="Center" TextWrapping="Wrap"
                      Text="{CompiledBinding EditingBanner}"/>
           <Button Grid.Column="1" x:Name="CancelEditButton" Classes="ghost"
-                  Content="{x:Static res:Strings.Diario_QuickEntry_Cancel}" Command="{CompiledBinding CancelEditCommand}"/>
+                  Content="{x:Static res:Strings.Diario_QuickEntry_Cancel}" Command="{CompiledBinding CancelEditCommand}"
+                  IsEnabled="{CompiledBinding !IsInserting}"/>
         </Grid>
       </Border>
 
@@ -118,6 +119,7 @@
                 <!-- La voce che sta nell'editor non si riapre ne' si elimina da qui: la striscia in alto la chiude. -->
                 <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{CompiledBinding !IsEditing}">
                   <Button Classes="ghost" Content="{x:Static res:Strings.Diario_QuickEntry_Edit}"
+                          IsEnabled="{CompiledBinding !$parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).IsInserting}"
                           Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).BeginEditCommand}"
                           CommandParameter="{CompiledBinding}"/>
                   <Button Classes="ghost" Content="{x:Static res:Strings.Diario_QuickEntry_Delete}"

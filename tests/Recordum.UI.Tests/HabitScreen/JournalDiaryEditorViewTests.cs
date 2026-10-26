@@ -36,12 +36,30 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
     public void Dispose() { foreach (var w in _windows) w.Close(); }
 
     private static readonly ZonedClock Clock = new();
-    private static readonly FakeOpenFileDialog Dialog = new();
+    private static readonly Picker Dialog = new();
+    private static readonly Confirm Answer = new();
     private static readonly PrivateDbHost Host = new("recordum-ui-diary", s =>
     {
         s.AddSingleton<Recordum.Core.Abstractions.IClock>(Clock);
         s.AddSingleton<IOpenFileDialog>(Dialog);
+        s.AddSingleton<IConfirmationDialog>(Answer);
     });
+
+    /// <summary>La finestra dei file: i percorsi dati, o un'attesa che il test sblocca (o fa fallire).</summary>
+    private sealed class Picker : IOpenFileDialog
+    {
+        public string[] Paths { get; set; } = [];
+        public Task<string[]>? Pending { get; set; }
+        public Task<string?> PromptAsync(string filter) => Task.FromResult(Paths.FirstOrDefault());
+        public Task<string[]> PromptMultipleAsync(string filter) => Pending ?? Task.FromResult(Paths);
+    }
+
+    private sealed class Confirm : IConfirmationDialog
+    {
+        public bool Yes { get; set; }
+        public int Asked { get; set; }
+        public Task<bool> ConfirmAsync(string title, string message) { Asked++; return Task.FromResult(Yes); }
+    }
 
     private static readonly DateOnly Today = new(2026, 3, 15);
     private static T Svc<T>(IServiceScope scope) where T : notnull => scope.ServiceProvider.GetRequiredService<T>();
@@ -82,12 +100,14 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         await Svc<IDiaryService>(scope).SaveEntryAsync(id, day, new DiaryEntryDraft(text, [], photos));
     }
 
-    private async Task<(HabitScreenViewModel Vm, HabitScreenView View, Window Window)> OpenAsync(Guid id, ThemeVariant? variant = null)
+    private async Task<(HabitScreenViewModel Vm, HabitScreenView View, Window Window)> OpenAsync(Guid id, ThemeVariant? variant = null, double height = 900)
     {
+        Dialog.Pending = null;
+        Answer.Yes = false; Answer.Asked = 0;
         var vm = Host.Provider.CreateScope().ServiceProvider.GetRequiredService<HabitScreenViewModel>();
         await vm.LoadAsync(id);
         var view = new HabitScreenView { DataContext = vm };
-        var w = new Window { Width = 900, Height = 900, Content = view };
+        var w = new Window { Width = 900, Height = height, Content = view };
         if (variant is not null) w.RequestedThemeVariant = variant;
         _windows.Add(w);
         w.Show();
@@ -136,6 +156,21 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         w.MouseUp(p, MouseButton.Left);
         PrivateDbHost.Pump();
     }
+
+    private static void PressEnter(Window window)
+    {
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        window.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        PrivateDbHost.Pump();
+    }
+
+    private static Button EditButton(Avalonia.Visual view) =>
+        Find<ItemsControl>(view, "EntriesList").GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(b.Content, Strings.Diario_QuickEntry_Edit));
+
+    private static Button DayCell(Avalonia.Visual view, DateOnly date) =>
+        view.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Classes.Contains("day") && ((CalendarDayCellViewModel)b.DataContext!).Date == date);
 
     // ---- 7.1 ----
 
@@ -443,5 +478,147 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         Find<ItemsControl>(view, "EntriesList").GetVisualDescendants().OfType<Border>()
             .Should().ContainSingle(b => b.Classes.Contains("tag-chip") && b.Classes.Contains("inline"));
         Find<Button>(view, "InsertImageButton").Content.Should().Be(Strings.Diario_Editor_InsertImage);
+    }
+
+    // ---- Fix round 1 ----
+
+    [AvaloniaFact]
+    public async Task Typing_past_the_bottom_scrolls_the_column_to_the_caret()
+    {
+        var (_, view, window) = await OpenAsync(await CreateAsync(HabitType.Journal, "Sera-I1"), height: 700);
+        var scroll = view.GetVisualDescendants().OfType<JournalDiaryView>().Single().FindControl<ScrollViewer>("Scroll")!;
+        FocusComposer(view);
+
+        for (var i = 1; i <= 40; i++)
+        {
+            window.KeyTextInput($"riga {i}");
+            PressEnter(window);
+        }
+        window.KeyTextInput("ultima");
+        PrivateDbHost.Pump();
+
+        var editor = Composer(view);
+        editor.Bounds.Height.Should().BeGreaterThan(scroll.Viewport.Height, "l'editor e' piu' alto della colonna");
+        scroll.Offset.Y.Should().BeGreaterThan(0, "la colonna segue il cursore");
+        var caret = editor.CaretBounds()!.Value;
+        var top = editor.TranslatePoint(caret.TopLeft, scroll)!.Value.Y;
+        top.Should().BeGreaterThanOrEqualTo(0);
+        (top + caret.Height).Should().BeLessThanOrEqualTo(scroll.Viewport.Height, "il cursore e' dentro la parte visibile");
+    }
+
+    [AvaloniaFact]
+    public async Task Choosing_another_day_with_an_open_edit_asks_and_no_keeps_day_and_edit()
+    {
+        var yesterday = Today.AddDays(-1);
+        var id = await CreateAsync(HabitType.Journal, "Sera-I2");
+        await SeedAsync(id, yesterday, "Ieri");
+        await SeedAsync(id, Today, "Oggi");
+        var (vm, view, window) = await OpenAsync(id);
+        var qe = vm.QuickEntryForDiario!;
+        await WaitAsync(() => Rendered(view).Count == 1);
+        Click(EditButton(view));
+        await WaitAsync(() => qe.EditingEntry is not null);
+        Composer(view).ReplaceText("Oggi, corretto", 0);
+        PrivateDbHost.Pump();
+        vm.IsCronologiaOpen = true;
+        PrivateDbHost.Pump();
+
+        Answer.Yes = false;
+        ClickAt(window, DayCell(view, yesterday));
+        await WaitAsync(() => Answer.Asked == 1);
+
+        vm.Calendar.SelectedDate.Should().Be(Today, "No: il calendario torna al giorno mostrato");
+        DayCell(view, Today).Classes.Should().Contain("selected");
+        qe.Day.Should().Be(Today);
+        qe.EditingEntry.Should().NotBeNull();
+        Text(Composer(view)).Should().Be("Oggi, corretto", "la modifica resta");
+        Text(Rendered(view).Single()).Should().Be("Oggi");
+
+        Answer.Yes = true;
+        ClickAt(window, DayCell(view, yesterday));
+        await WaitAsync(() => Rendered(view).Count == 1 && Rendered(view)[0].Markdown == "Ieri");
+        Answer.Asked.Should().Be(2);
+        qe.EditingEntry.Should().BeNull("Si': la modifica e' scartata");
+        vm.Calendar.SelectedDate.Should().Be(yesterday);
+    }
+
+    [AvaloniaFact]
+    public async Task Text_from_the_binding_does_not_open_the_menu_and_focus_loss_closes_it()
+    {
+        await EnsureTagAsync("lago");
+        var id = await CreateAsync(HabitType.Journal, "Sera-M2");
+        await SeedAsync(id, Today, "Cena al #lago");
+        var (vm, view, window) = await OpenAsync(id);
+        var qe = vm.QuickEntryForDiario!;
+        var menu = Find<Popup>(view, "TagMenu");
+        await WaitAsync(() => Rendered(view).Count == 1);
+
+        var edit = EditButton(view);
+        edit.Focus();
+        Click(edit);
+        await WaitAsync(() => qe.EditingEntry is not null);
+        Text(Composer(view)).Should().Be("Cena al #lago");
+        menu.IsOpen.Should().BeFalse("il testo e' arrivato dal binding, non si sta scrivendo");
+
+        Click(Find<Button>(view, "CancelEditButton"));
+        menu.IsOpen.Should().BeFalse();
+
+        FocusComposer(view);
+        window.KeyTextInput("#la");
+        PrivateDbHost.Pump();
+        menu.IsOpen.Should().BeTrue();
+        Find<TextBox>(view, "TagBox").Focus();
+        PrivateDbHost.Pump();
+        menu.IsOpen.Should().BeFalse("fuori fuoco il menu non copre la riga Tag");
+    }
+
+    [AvaloniaFact]
+    public async Task A_failing_file_chooser_says_so()
+    {
+        var (vm, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Sera-M3"));
+        var gate = new TaskCompletionSource<string[]>();
+        Dialog.Pending = gate.Task;
+        Click(Find<Button>(view, "InsertImageButton"));
+        gate.SetException(new InvalidOperationException("portale non disponibile"));
+        await WaitAsync(() => vm.QuickEntryForDiario!.ErrorMessage is not null);
+
+        Find<TextBlock>(view, "ErrorText").Text.Should().Be(Strings.Diario_Editor_InsertImageFailed);
+        Find<TextBlock>(view, "ErrorText").IsEffectivelyVisible.Should().BeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Text_typed_while_the_image_imports_is_kept_and_the_surface_waits()
+    {
+        var id = await CreateAsync(HabitType.Journal, "Sera-M4");
+        await SeedAsync(id, Today, "Una voce");
+        var (vm, view, window) = await OpenAsync(id);
+        var qe = vm.QuickEntryForDiario!;
+        await WaitAsync(() => Rendered(view).Count == 1);
+        FocusComposer(view);
+        window.KeyTextInput("Pranzo");
+        PrivateDbHost.Pump();
+
+        var gate = new TaskCompletionSource<string[]>();
+        Dialog.Pending = gate.Task;
+        Click(Find<Button>(view, "InsertImageButton"));
+        qe.IsInserting.Should().BeTrue();
+        EditButton(view).IsEffectivelyEnabled.Should().BeFalse("Modifica aspetta la fine dell'inserimento");
+
+        FocusComposer(view);
+        window.KeyTextInput(" al mare");
+        PrivateDbHost.Pump();
+
+        var png = JournalFixtures.WritePng();
+        try
+        {
+            gate.SetResult([png]);
+            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
+        }
+        finally { File.Delete(png); }
+
+        var reference = PhotoRefs.Format(qe.PendingPhotos[0].Id, qe.PendingPhotos[0].Filename);
+        Text(Composer(view)).Should().Be("Pranzo al mare\n" + reference + "\n", "il testo scritto durante l'import resta, il riferimento va al cursore");
+        qe.EditingEntry.Should().BeNull();
+        EditButton(view).IsEffectivelyEnabled.Should().BeTrue();
     }
 }

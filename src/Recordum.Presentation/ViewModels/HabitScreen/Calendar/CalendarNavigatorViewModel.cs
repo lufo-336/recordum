@@ -327,6 +327,15 @@ public sealed partial class CalendarNavigatorViewModel : ObservableObject
         SelectedDateChanged?.Invoke(this, cell.Date);
     }
 
+    /// <summary>Riporta la selezione a <paramref name="date"/> senza sollevare <see cref="SelectedDateChanged"/>: chi ha
+    /// ricevuto l'evento ha rifiutato il cambio di giorno (Ruling 6 di F2d-2), e il calendario non deve mostrare un giorno
+    /// che il resto dello schermo non ha caricato.</summary>
+    public void RestoreSelection(DateOnly date)
+    {
+        SelectedDate = date;
+        RefreshSelection();
+    }
+
     private static List<string> BuildWeekdayHeaders()
     {
         var dtf = CultureInfo.CurrentCulture.DateTimeFormat;

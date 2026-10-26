@@ -55,13 +55,14 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
 
     public ObservableCollection<AttachmentViewModel> Photos { get; } = [];
 
-    /// <summary>Le foto della voce il cui riferimento non e' nel testo (quello in modifica, se si sta modificando):
-    /// in modalita' diario la striscia di miniature mostra solo queste, le altre stanno nel testo.</summary>
+    /// <summary>Le foto della voce il cui riferimento non e' nel testo salvato: in modalita' diario la riga mostra il
+    /// testo salvato reso (anche mentre la voce e' nell'editor) e la striscia di miniature solo queste, le altre stanno
+    /// nel testo. Dal testo in modifica una foto il cui riferimento si e' appena cancellato comparirebbe due volte.</summary>
     public IReadOnlyList<AttachmentViewModel> UnreferencedPhotos
     {
         get
         {
-            var referenced = ReferencedIds(IsEditing ? EditDraft : Text);
+            var referenced = ReferencedIds(Text);
             return [.. Photos.Where(p => !referenced.Contains(p.Id))];
         }
     }
@@ -69,8 +70,6 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
     internal static HashSet<Guid> ReferencedIds(string? text) => [.. PhotoRefs.Find(text ?? string.Empty).Select(r => r.Id)];
 
     partial void OnTextChanged(string value) => OnPropertyChanged(nameof(UnreferencedPhotos));
-    partial void OnEditDraftChanged(string value) => OnPropertyChanged(nameof(UnreferencedPhotos));
-    partial void OnIsEditingChanged(bool value) => OnPropertyChanged(nameof(UnreferencedPhotos));
 
     /// <summary>Qualcosa e' cambiato rispetto a quando e' iniziata la modifica (serve a chiedere conferma prima di scartarla).</summary>
     internal bool HasChanges =>

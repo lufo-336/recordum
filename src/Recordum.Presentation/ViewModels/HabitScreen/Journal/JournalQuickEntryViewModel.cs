@@ -308,6 +308,26 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         finally { _draftRestoring = false; }
     }
 
+    /// <summary>Il giorno delle voci mostrate (e su cui va una voce nuova).</summary>
+    public DateOnly Day => _day;
+
+    /// <summary>Prima di cambiare giorno (Ruling 6): una modifica aperta con cambiamenti chiede con la domanda di
+    /// <see cref="BeginEditCommand"/> (decisione 5); "No" = il giorno resta. Durante "Inserisci immagine…" il giorno resta
+    /// senza chiedere. Vero = si puo' cambiare: la modifica aperta e' scartata.</summary>
+    public async Task<bool> ConfirmDayChangeAsync()
+    {
+        if (IsInserting) return false;
+        if (EditingRow is { HasChanges: true } open)
+        {
+            var ok = await _confirm.ConfirmAsync(
+                Strings.Diario_Editor_DiscardEdit_Title,
+                Format(Strings.Diario_Editor_DiscardEdit_Message, open.TimeDisplay)).ConfigureAwait(true);
+            if (!ok) return false;
+        }
+        CancelEdit();
+        return true;
+    }
+
     /// <summary>Allinea il composer al giorno selezionato nel calendario di Cronologia — e' cosi'
     /// che si registra la cena di ieri, senza un secondo selettore di data. Fire-and-forget (nessun
     /// caller ha un CancellationToken da propagare da un click calendario), quindi guardato: una
@@ -441,7 +461,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         return sb.ToString();
     }
 
-    private bool _isInserting;
+    /// <summary>"Inserisci immagine…" e' in corso (dialogo e import): Salva, Modifica, Annulla e il cambio di giorno
+    /// aspettano, cosi' la superficie che riceve le foto e' quella che ricevera' i riferimenti.</summary>
+    [ObservableProperty] private bool _isInserting;
 
     /// <summary>Sceglie i file, li importa e li aggiunge alla voce attiva (quella in modifica, altrimenti il composer).
     /// Torna le foto entrate; gli errori per file vanno in <see cref="ErrorMessage"/>.</summary>
@@ -488,16 +510,24 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     public async Task<(string Text, int Caret)?> InsertPhotosAsync(string text, int caret, CancellationToken ct)
     {
         List<ImportedPhoto> photos;
-        _isInserting = true; // Save non parte mentre l'import e' in corso (come AddPhotoCommand.IsRunning)
+        IsInserting = true; // Save non parte mentre l'import e' in corso (come AddPhotoCommand.IsRunning)
         try { photos = await ImportChosenPhotosAsync(ct).ConfigureAwait(true); }
-        finally { _isInserting = false; }
+        finally { IsInserting = false; }
         if (photos.Count == 0) return null;
+        var refs = new System.Text.StringBuilder();
+        foreach (var p in photos) refs.Append(PhotoRefs.Format(p.Id, p.Filename)).Append('\n');
+        return InsertReferenceLines(text, caret, refs.ToString());
+    }
+
+    /// <summary>Mette <paramref name="refs"/> (righe di riferimento, ciascuna col suo a capo) al cursore, in una riga a se'.
+    /// Torna il testo e il cursore dopo i riferimenti.</summary>
+    public static (string Text, int Caret) InsertReferenceLines(string? text, int caret, string refs)
+    {
+        ArgumentNullException.ThrowIfNull(refs);
         text ??= string.Empty;
         caret = Math.Clamp(caret, 0, text.Length);
-        var block = new System.Text.StringBuilder();
-        if (caret > 0 && text[caret - 1] != '\n') block.Append('\n'); // il riferimento sta in una riga a se'
-        foreach (var p in photos) block.Append(PhotoRefs.Format(p.Id, p.Filename)).Append('\n');
-        return (text.Insert(caret, block.ToString()), caret + block.Length);
+        if (caret > 0 && text[caret - 1] != '\n') refs = "\n" + refs;
+        return (text.Insert(caret, refs), caret + refs.Length);
     }
 
     [RelayCommand]
@@ -518,7 +548,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task BeginEditAsync(JournalEntryRowViewModel? row)
     {
-        if (row is null) return;
+        if (row is null || IsInserting) return;
         // Cambiare voce con modifiche aperte chiede prima di scartarle (in tutte e due le modalita').
         if (EditingRow is { } open && open != row && open.HasChanges)
         {
@@ -534,6 +564,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     [RelayCommand]
     private void CancelEdit()
     {
+        if (IsInserting) return;
         foreach (var r in Entries.Where(r => r.IsEditing)) r.CancelEdit();
     }
 
@@ -563,7 +594,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private async Task Save(CancellationToken ct)
     {
         // Salvare mentre una scelta di foto e' in corso perderebbe quelle che arrivano dopo lo snapshot.
-        if (_habitNodeId == Guid.Empty || IsSaving || _isInserting || AddPhotoCommand.IsRunning) return;
+        if (_habitNodeId == Guid.Empty || IsSaving || IsInserting || AddPhotoCommand.IsRunning) return;
         ErrorMessage = null;
 
         // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.

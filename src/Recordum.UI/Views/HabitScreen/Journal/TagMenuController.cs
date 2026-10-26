@@ -16,6 +16,7 @@ namespace Recordum.UI.Views.HabitScreen.Journal;
 internal sealed class TagMenuController
 {
     private readonly Popup _menu;
+    private readonly InputElement _surface;
     private readonly ListBox _list;
     private readonly Func<string> _text;
     private readonly Func<int> _caret;
@@ -34,6 +35,7 @@ internal sealed class TagMenuController
         Action<string, int> apply, Func<Rect?> caretRect, Action focus)
     {
         _menu = menu;
+        _surface = surface;
         _list = list;
         _text = text;
         _caret = caret;
@@ -76,7 +78,8 @@ internal sealed class TagMenuController
         var any = _vm is { InlineSuggestions.Count: > 0 };
         if (any && _list.SelectedIndex < 0) _list.SelectedIndex = 0;
         if (any) _menu.PlacementRect = _caretRect();
-        _menu.IsOpen = any && !_dismissed;
+        // Solo con il fuoco nella superficie: un testo portato dal binding (Modifica, Annulla, bozza) non apre il menu.
+        _menu.IsOpen = any && !_dismissed && _surface.IsKeyboardFocusWithin;
     }
 
     private void Accept(string name)

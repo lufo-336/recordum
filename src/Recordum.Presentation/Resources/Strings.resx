@@ -1875,6 +1875,9 @@ Details: {0}</value>
   <data name="Diario.Editor.Name" xml:space="preserve">
     <value>Diary entry</value>
   </data>
+  <data name="Diario.Editor.InsertImageFailed" xml:space="preserve">
+    <value>The image could not be added. Your text is unchanged: try again.</value>
+  </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Could not save the photo setting.</value>
   </data>

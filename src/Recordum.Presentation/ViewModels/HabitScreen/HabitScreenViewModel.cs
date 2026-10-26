@@ -1140,6 +1140,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         try
         {
+            // Una modifica aperta nel diario con cambiamenti chiede prima di sparire col giorno (Ruling 6): "No" lascia
+            // tutto sul giorno di prima, calendario compreso.
+            if (JournalQuickEntry is { } journal && date != journal.Day
+                && !await journal.ConfirmDayChangeAsync().ConfigureAwait(true))
+            {
+                Calendar.RestoreSelection(journal.Day);
+                return;
+            }
             if (QuickAdd is not null)
                 QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
             // The tap quick-add's count belongs to the day it was loaded for: without this it kept

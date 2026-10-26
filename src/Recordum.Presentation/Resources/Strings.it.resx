@@ -1849,6 +1849,9 @@
   <data name="Diario.Editor.Name" xml:space="preserve">
     <value>Voce del diario</value>
   </data>
+  <data name="Diario.Editor.InsertImageFailed" xml:space="preserve">
+    <value>Non sono riuscito ad aggiungere l'immagine. Il testo non è cambiato: riprova.</value>
+  </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Impossibile salvare l'impostazione delle foto.</value>
   </data>

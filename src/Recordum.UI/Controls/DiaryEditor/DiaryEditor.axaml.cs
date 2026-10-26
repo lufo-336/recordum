@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using Recordum.Presentation.Resources;
@@ -111,13 +112,31 @@ public partial class DiaryEditor : UserControl
                 RedrawLine(newLine);
             }
             TextOrCaretChanged?.Invoke(this, EventArgs.Empty);
+            BringCaretIntoView();
         };
 
         Editor.Document.TextChanged += (_, _) =>
         {
             if (!_pushingText) SetCurrentValue(MarkdownProperty, Editor.Document.Text);
             TextOrCaretChanged?.Invoke(this, EventArgs.Empty);
+            BringCaretIntoView();
         };
+    }
+
+    private bool _bringPending;
+
+    // Dentro una lista l'editor cresce col testo e il suo ScrollViewer non scorre mai: il cursore lo deve mostrare chi
+    // contiene l'editor. BringIntoView sale dal controllo, quindi raggiunge lo ScrollViewer esterno. Dopo il layout, cosi'
+    // la riga nuova c'e' gia'; solo con il fuoco dentro, cosi' un testo dal binding non fa scorrere la colonna.
+    private void BringCaretIntoView()
+    {
+        if (_bringPending || !IsKeyboardFocusWithin) return;
+        _bringPending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _bringPending = false;
+            if (CaretBounds() is { } caret) this.BringIntoView(caret.Inflate(new Thickness(0, 4)));
+        }, DispatcherPriority.Background);
     }
 
     /// <summary>Il rettangolo del cursore nelle coordinate del controllo (per ancorare il menu <c>#</c>); null finché

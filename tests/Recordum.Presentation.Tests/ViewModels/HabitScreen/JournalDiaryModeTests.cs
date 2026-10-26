@@ -199,6 +199,92 @@ public class JournalDiaryModeTests
         second.IsEditing.Should().BeTrue();
     }
 
+    // ---- Ruling 6: cambiare giorno con una modifica aperta ----
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)] // il parametro muto: stessa domanda in nota veloce
+    public async Task Changing_day_with_unsaved_changes_asks_and_no_keeps_the_edit(bool diaryMode)
+    {
+        var r = await BuildAsync(diaryMode);
+        var (row, _) = await SeedEntryAsync(r, "Pranzo", photos: 0);
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        row.EditDraft = "Pranzo modificato";
+        r.Confirm.Result = false;
+
+        (await r.Sut.ConfirmDayChangeAsync()).Should().BeFalse();
+
+        r.Confirm.Calls.Should().Be(1);
+        row.IsEditing.Should().BeTrue();
+        row.EditDraft.Should().Be("Pranzo modificato");
+    }
+
+    [Fact]
+    public async Task Changing_day_with_unsaved_changes_and_yes_discards_the_edit()
+    {
+        var r = await BuildAsync();
+        var (row, _) = await SeedEntryAsync(r, "Pranzo", photos: 0);
+        r.Sut.Draft = "bozza";
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        row.EditDraft = "Pranzo modificato";
+        r.Confirm.Result = true;
+
+        (await r.Sut.ConfirmDayChangeAsync()).Should().BeTrue();
+
+        r.Confirm.Calls.Should().Be(1);
+        row.IsEditing.Should().BeFalse();
+        r.Sut.EditingEntry.Should().BeNull();
+        r.Sut.ActiveText.Should().Be("bozza", "la bozza della voce nuova resta");
+    }
+
+    [Fact]
+    public async Task Changing_day_without_changes_does_not_ask_and_closes_the_edit()
+    {
+        var r = await BuildAsync();
+        var (row, _) = await SeedEntryAsync(r, "Pranzo", photos: 0);
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+
+        (await r.Sut.ConfirmDayChangeAsync()).Should().BeTrue();
+
+        r.Confirm.Calls.Should().Be(0);
+        row.IsEditing.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task While_an_image_is_being_inserted_the_surface_and_the_day_do_not_change()
+    {
+        var r = await BuildAsync();
+        var (row, _) = await SeedEntryAsync(r, "Pranzo", photos: 0);
+        var gate = new TaskCompletionSource<string[]>();
+        r.Dialog.PendingMultiple = gate.Task;
+
+        var inserting = r.Sut.InsertPhotosAsync("Cena", 4, default);
+        r.Sut.IsInserting.Should().BeTrue();
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        row.IsEditing.Should().BeFalse("Modifica aspetta la fine dell'inserimento");
+        (await r.Sut.ConfirmDayChangeAsync()).Should().BeFalse("il giorno resta, senza chiedere");
+        r.Confirm.Calls.Should().Be(0);
+
+        gate.SetResult([]);
+        await inserting;
+        r.Sut.IsInserting.Should().BeFalse();
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        row.IsEditing.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UnreferencedPhotos_follows_the_saved_text_while_the_entry_is_edited()
+    {
+        var r = await BuildAsync();
+        var (row, ids) = await SeedEntryAsync(r, "", photos: 2,
+            ids => $"{PhotoRefs.Format(ids[0], "a.jpg")}\nciao");
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+
+        row.EditDraft = "ciao"; // riferimento cancellato nell'editor: la riga mostra ancora il testo salvato, che lo contiene
+
+        row.UnreferencedPhotos.Select(p => p.Id).Should().Equal(ids[1]);
+    }
+
     [Fact]
     public async Task Switching_entry_without_changes_does_not_ask()
     {

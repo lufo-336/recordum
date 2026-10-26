@@ -27,23 +27,28 @@ public partial class JournalDiaryView : UserControl
 
     private void FocusEditor() => Editor.GetVisualDescendants().OfType<TextArea>().FirstOrDefault()?.Focus();
 
-    // async void: e' un gestore di evento. InsertPhotosAsync riporta gli errori per file in ErrorMessage.
+    // async void: e' un gestore di evento. InsertPhotosAsync riporta gli errori per file in ErrorMessage. Mentre l'import
+    // gira (IsInserting) la superficie non cambia (Modifica, Annulla, giorno aspettano), ma il testo si'.
     private async void OnInsertImage(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not JournalQuickEntryViewModel vm) return;
+        if (DataContext is not JournalQuickEntryViewModel { IsInserting: false } vm) return; // un inserimento alla volta
+        var caret = Editor.CaretOffset;
         try
         {
-            if (await vm.InsertPhotosAsync(Editor.Markdown, Editor.CaretOffset, CancellationToken.None).ConfigureAwait(true) is { } r)
-            {
-                Editor.ReplaceText(r.Text, r.Caret); // un passo di annulla, il cursore dopo i riferimenti
-                FocusEditor();
-            }
+            if (await vm.InsertPhotosAsync(Editor.Markdown, caret, CancellationToken.None).ConfigureAwait(true) is not { } r) return;
+            // Il testo scritto durante l'import resta: dal risultato si prendono solo le righe di riferimento e si mettono
+            // al cursore di adesso (un passo di annulla).
+            var refs = r.Text[caret..r.Caret].TrimStart('\n');
+            var (text, at) = JournalQuickEntryViewModel.InsertReferenceLines(Editor.Markdown, Editor.CaretOffset, refs);
+            Editor.ReplaceText(text, at);
+            FocusEditor();
         }
-#pragma warning disable CA1031 // un'eccezione in un async void chiuderebbe l'app: si traccia, il testo resta
+#pragma warning disable CA1031 // un'eccezione in un async void chiuderebbe l'app: si dice, il testo resta
         catch (Exception ex)
 #pragma warning restore CA1031
         {
             System.Diagnostics.Debug.WriteLine($"JournalDiaryView insert image failed: {ex}");
+            vm.ErrorMessage = Recordum.Presentation.Resources.Strings.Diario_Editor_InsertImageFailed;
         }
     }
 }
