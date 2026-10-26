@@ -113,6 +113,34 @@ public class RecordsViewTests
         finally { o.Window.Close(); }
     }
 
+    [AvaloniaTheory]
+    [InlineData("en-US", "[photo]")]
+    [InlineData("it-IT", "[foto]")]
+    public async Task A_diary_row_shows_its_tag_chips_and_the_photo_label(string culture, string label)
+    {
+        var previous = Recordum.Presentation.Resources.Strings.Culture;
+        Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+        var o = await OpenAsync(HabitType.Journal, async (scope, id) =>
+        {
+            var draft = new DiaryEntryDraft($"corsa #fiato\n![mare.jpg](photo:{Guid.NewGuid():N})", ["sera"], []);
+            await scope.ServiceProvider.GetRequiredService<IDiaryService>()
+                .SaveEntryAsync(id, new DateOnly(2026, 3, 15), draft);
+        });
+        try
+        {
+            o.Vm.IsCronologiaOpen = true;   // un diario apre il suo editor, non la Cronologia
+            Pump();
+            await UntilAsync(() => RecordsHost(o).GetVisualDescendants().OfType<Border>().Any(b => b.Classes.Contains("tag-chip")));
+            var chips = RecordsHost(o).GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("tag-chip"))
+                .OrderBy(b => ((TextBlock)b.Child!).Text).ToList();
+            chips.Select(b => ((TextBlock)b.Child!).Text).Should().Equal("fiato", "sera");
+            chips[0].Classes.Should().Contain("inline").And.NotContain("property");
+            chips[1].Classes.Should().Contain("property").And.NotContain("inline");
+            Lines(o).Should().Contain(t => t.Contains(label, StringComparison.Ordinal) && !t.Contains("photo:", StringComparison.Ordinal));
+        }
+        finally { o.Window.Close(); Recordum.Presentation.Resources.Strings.Culture = previous; }
+    }
+
     [AvaloniaFact]
     public async Task Rows_have_only_a_delete_button_no_edit()
     {

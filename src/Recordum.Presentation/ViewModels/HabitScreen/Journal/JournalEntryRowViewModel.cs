@@ -26,9 +26,7 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         _text = note.BodyMd;
         Tags = tags.Select(t => t.Name).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
         // Un nome presente nei due modi si mostra come tag della riga Tag (quello scelto a parte).
-        TagChips = tags.GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(g => new TagChip(g.First().Name, g.Any(t => t.Source == NoteTagSource.Property)))
-            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        TagChips = TagChip.From(tags);
         PropertyTagNames = tags.Where(t => t.Source == NoteTagSource.Property).Select(t => t.Name).ToList();
         // CreatedAt è UTC; la riga mostra l'ora che l'utente ha vissuto (decisione 8). Invariant: i due punti restano due punti.
         var utc = DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc);
@@ -120,4 +118,11 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
     }
 }
 
-public sealed record TagChip(string Name, bool IsProperty);
+public sealed record TagChip(string Name, bool IsProperty)
+{
+    /// <summary>I chip di una voce: un nome presente nei due modi è un chip della riga Tag; ordinati per nome.</summary>
+    public static IReadOnlyList<TagChip> From(IEnumerable<EntryTag> tags) =>
+        [.. tags.GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new TagChip(g.First().Name, g.Any(t => t.Source == NoteTagSource.Property)))
+            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
+}

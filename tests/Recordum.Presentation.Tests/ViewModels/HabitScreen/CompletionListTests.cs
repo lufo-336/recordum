@@ -3,6 +3,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 using Xunit;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitScreen;
@@ -399,6 +400,60 @@ public class CompletionListViewModelTests
         var row = sut.Rows.Should().ContainSingle().Subject;
         row.Notes.Should().Be("diary body");
         row.CanInlineEdit.Should().BeFalse();
+    }
+
+    private static async Task<(CompletionListViewModel Sut, Guid HabitId)> JournalListAsync(
+        string body, bool journal = true, params EntryTag[] tags)
+    {
+        var completions = new FakeCompletionService();
+        var diary = new FakeDiaryService();
+        var habitId = Guid.NewGuid();
+        var noteId = await diary.SaveEntryAsync(habitId, new DateOnly(2026, 6, 19), body);
+        diary.Tags[noteId] = tags;
+        var completionId = diary.Notes[noteId].CompletionId!.Value;
+        completions.Store[completionId] = diary.Completions[completionId];
+        var sut = new CompletionListViewModel(completions, new FakeMetricDefinitionService(), new FakeReferenceData(), diary)
+        {
+            IsJournal = journal,
+        };
+        await sut.LoadAsync(habitId);
+        return (sut, habitId);
+    }
+
+    [Fact]
+    public async Task Journal_rows_carry_row_and_inline_tag_chips_with_their_two_kinds()
+    {
+        var (sut, _) = await JournalListAsync("oggi #corsa", true,
+            new EntryTag("sera", NoteTagSource.Property), new EntryTag("corsa", NoteTagSource.Inline));
+
+        sut.Rows.Single().TagChips.Should().Equal(new TagChip("corsa", false), new TagChip("sera", true));
+    }
+
+    [Fact]
+    public async Task Rows_outside_a_journal_have_no_tag_chips()
+    {
+        var (sut, _) = await JournalListAsync("x", false, new EntryTag("sera", NoteTagSource.Property));
+
+        sut.Rows.Single().TagChips.Should().BeEmpty();
+    }
+
+    [Collection(ProcessGlobalCultureCollection.Name)]
+    public sealed class PhotoLabel : IDisposable
+    {
+        private readonly System.Globalization.CultureInfo? _previous = Recordum.Presentation.Resources.Strings.Culture;
+        public void Dispose() => Recordum.Presentation.Resources.Strings.Culture = _previous;
+
+        [Theory]
+        [InlineData("en-US", "[photo]")]
+        [InlineData("it-IT", "[foto]")]
+        public async Task A_photo_reference_reads_as_a_label_not_as_syntax(string culture, string label)
+        {
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+            var id = Guid.NewGuid();
+            var (sut, _) = await JournalListAsync($"prima\n![mare.jpg](photo:{id:N})\ndopo");
+
+            sut.Rows.Single().Notes.Should().Be($"prima\n{label}\ndopo");
+        }
     }
 
     [Fact]

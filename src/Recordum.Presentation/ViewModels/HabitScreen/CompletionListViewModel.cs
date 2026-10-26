@@ -4,10 +4,12 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Text;
 using Recordum.Core.Time;
 using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
@@ -81,7 +83,11 @@ public sealed partial class CompletionListViewModel : ObservableObject
             : new Dictionary<Guid, DiaryEntrySummary>();
         foreach (var c in list.OrderByDescending(c => c.CompletedAtMs))
         {
-            string? overrideNotes = IsJournal && entries.TryGetValue(c.Id, out var entry) ? entry.Body : null;
+            var hasEntry = entries.TryGetValue(c.Id, out var entry);
+            // Nella lista un riferimento a una foto è solo un'etichetta: l'immagine si vede nell'editor.
+            string? overrideNotes = hasEntry
+                ? PhotoRefs.Replace(entry!.Body, _ => Strings.Diario_Photo_Label)
+                : null;
             Func<Guid, CancellationToken, Task>? del = IsJournal
                 ? (id, token) => _diary.DeleteEntryAsync(id, token).AsTask()
                 : null;
@@ -92,7 +98,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
                 deleteOverride: del,
                 canInlineEdit: !IsJournal,
                 dayBoundary: DayBoundary,
-                confirm: _confirm));
+                confirm: _confirm,
+                tagChips: hasEntry ? TagChip.From(entry!.Tags) : []));
         }
     }
 

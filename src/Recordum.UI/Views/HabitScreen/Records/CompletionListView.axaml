@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:res="using:Recordum.Presentation.Resources" xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:res="using:Recordum.Presentation.Resources" xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen" xmlns:jvm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
              x:Class="Recordum.UI.Views.HabitScreen.Records.CompletionListView"
              x:DataType="vm:CompletionListViewModel">
   <!-- Nessun pulsante di modifica (decisione 9 di F2a): in WPF il ✎ accendeva IsEditing e non si vedeva nulla. -->
@@ -18,6 +18,18 @@
               </ItemsControl>
               <TextBlock Text="{CompiledBinding Notes}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"
                          IsVisible="{CompiledBinding Notes, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+              <ItemsControl x:Name="TagChipList" ItemsSource="{CompiledBinding TagChips}" IsVisible="{CompiledBinding HasTagChips}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="jvm:TagChip">
+                    <Border Classes="tag-chip" Classes.property="{CompiledBinding IsProperty}" Classes.inline="{CompiledBinding !IsProperty}">
+                      <TextBlock Text="{CompiledBinding Name}" FontSize="{DynamicResource FontSize.Small}"/>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
             <Button Grid.Column="1" x:Name="DeleteButton" Width="28" Height="28" Padding="0" VerticalAlignment="Top"
                     Background="Transparent" BorderThickness="0"

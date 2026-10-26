@@ -666,6 +666,7 @@ public static class Strings
     public static string Diario_Tag_Remove => Get("Diario.Tag.Remove");
     public static string Diario_Photo_Remove => Get("Diario.Photo.Remove");
     public static string Diario_Photo_Missing => Get("Diario.Photo.Missing");
+    public static string Diario_Photo_Label => Get("Diario.Photo.Label");
     public static string Diario_QuickEntry_Tags => Get("Diario.QuickEntry.Tags");
 
     private static string Get(string name) =>

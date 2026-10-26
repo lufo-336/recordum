@@ -1852,6 +1852,9 @@
   <data name="Diario.Photo.Remove" xml:space="preserve">
     <value>Togli la foto</value>
   </data>
+  <data name="Diario.Photo.Label" xml:space="preserve">
+    <value>[foto]</value>
+  </data>
   <data name="Diario.Photo.Missing" xml:space="preserve">
     <value>Foto non disponibile</value>
   </data>

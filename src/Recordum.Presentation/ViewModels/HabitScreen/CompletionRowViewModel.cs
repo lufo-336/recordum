@@ -5,6 +5,7 @@ using Recordum.Core.Models;
 using Recordum.Core.Time;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
@@ -26,6 +27,10 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     /// <summary>Pre-formatted "metric: value unit" / "metric: scale-label" lines for this completion's fields.</summary>
     public IReadOnlyList<string> FieldDisplays { get; }
     public bool HasFieldDisplays => FieldDisplays.Count > 0;
+
+    /// <summary>I tag della voce di diario (stile di F2d-1); vuota fuori dai diari.</summary>
+    public IReadOnlyList<TagChip> TagChips { get; }
+    public bool HasTagChips => TagChips.Count > 0;
 
     /// <summary>False for journal rows: the diary text is edited in the Note column, not inline here.</summary>
     public bool CanInlineEdit { get; }
@@ -50,7 +55,8 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         Func<Guid, CancellationToken, Task>? deleteOverride = null,
         bool canInlineEdit = true,
         DayBoundary? dayBoundary = null,
-        IConfirmationDialog? confirm = null)
+        IConfirmationDialog? confirm = null,
+        IReadOnlyList<TagChip>? tagChips = null)
     {
         ArgumentNullException.ThrowIfNull(completion);
         ArgumentNullException.ThrowIfNull(completions);
@@ -59,6 +65,7 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         _onDeleted = onDeleted;
         Values = values ?? [];
         FieldDisplays = fieldDisplays ?? [];
+        TagChips = tagChips ?? [];
         _overrideNotes = overrideNotes;
         _deleteOverride = deleteOverride;
         CanInlineEdit = canInlineEdit;
