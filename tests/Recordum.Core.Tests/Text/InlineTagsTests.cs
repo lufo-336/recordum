@@ -26,6 +26,15 @@ public class InlineTagsTests
         => InlineTags.Find("`#no` #pranzo e #Pranzo").Should().Equal((6, 7), (16, 7));
 
     [Fact]
+    public void A_hash_inside_a_photo_reference_is_not_a_tag()
+    {
+        var text = "al mare " + PhotoRefs.Format(Guid.NewGuid(), "vacanza #mare.jpg") + " #sole";
+
+        InlineTags.Parse(text).Should().Equal("sole");
+        InlineTags.Find(text).Should().ContainSingle();
+    }
+
+    [Fact]
     public void Tags_are_distinct_ignoring_case_first_spelling_wins()
         => InlineTags.Parse("#pranzo #Pranzo").Should().Equal("pranzo");
 

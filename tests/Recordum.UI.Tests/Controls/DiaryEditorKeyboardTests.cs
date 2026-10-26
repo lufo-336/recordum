@@ -120,6 +120,53 @@ public class DiaryEditorKeyboardTests
         Text(editor).Should().Be("ciao");
     }
 
+    private static void Undo(Window window) => Press(window, PhysicalKey.Z, RawInputModifiers.Control);
+
+    [AvaloniaFact]
+    public void Text_set_through_Markdown_cannot_be_undone()
+    {
+        // Il binding porta la voce da modificare, la bozza o il testo dopo Salva: Ctrl+Z non deve riportare il testo di prima.
+        var (editor, window) = Show("bozza", 0);
+        editor.Markdown = "testo della voce";
+
+        Undo(window);
+
+        Text(editor).Should().Be("testo della voce");
+    }
+
+    [AvaloniaFact]
+    public void ReplaceText_can_be_undone()
+    {
+        var (editor, window) = Show("ciao #pr", 8);
+        editor.ReplaceText("ciao #pranzo ", 13);
+
+        Undo(window);
+
+        Text(editor).Should().Be("ciao #pr");
+    }
+
+    [AvaloniaFact]
+    public void One_undo_takes_back_a_whole_Ctrl_B()
+    {
+        var (editor, window) = Show("ciao", 0, selectionLength: 4);
+        Press(window, PhysicalKey.B, RawInputModifiers.Control);
+
+        Undo(window);
+
+        Text(editor).Should().Be("ciao");
+    }
+
+    [AvaloniaFact]
+    public void One_undo_takes_back_the_new_list_item()
+    {
+        var (editor, window) = Show("- uno", 5);
+        Press(window, PhysicalKey.Enter);
+
+        Undo(window);
+
+        Text(editor).Should().Be("- uno");
+    }
+
     [AvaloniaFact]
     public void ReplaceText_sets_text_and_caret_and_raises_the_change()
     {

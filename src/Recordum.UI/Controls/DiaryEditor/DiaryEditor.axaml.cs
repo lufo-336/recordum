@@ -28,8 +28,8 @@ public partial class DiaryEditor : UserControl
 {
     private bool _pushingText;
     private int _caretLine = 1;
-    // Una decodifica per id; se cambia il contenuto (un altro array) si decodifica di nuovo.
-    // ponytail: le bitmap non si liberano a mano (le libera il finalizzatore); sono miniature da 320 px.
+    // Una decodifica per id; se cambia il contenuto (un altro array) si decodifica di nuovo. Le bitmap sono del
+    // controllo: si liberano quando l'id esce da Photos o il contenuto cambia.
     private readonly Dictionary<Guid, (byte[] Source, Bitmap? Bitmap)> _bitmaps = [];
     // La larghezza offerta al controllo nell'ultima misura. AvaloniaEdit misura un oggetto in linea senza limiti e
     // costruisce le righe durante la misura, prima di qualunque Bounds: il tetto dell'immagine si prende da qui.
@@ -82,7 +82,11 @@ public partial class DiaryEditor : UserControl
             c.Editor.IsReadOnly = e.NewValue is true;
             c.Editor.TextArea.TextView.Redraw();
         });
-        PhotosProperty.Changed.AddClassHandler<DiaryEditor>((c, _) => c.Editor.TextArea.TextView.Redraw());
+        PhotosProperty.Changed.AddClassHandler<DiaryEditor>((c, _) =>
+        {
+            c.PruneBitmaps();
+            c.Editor.TextArea.TextView.Redraw();
+        });
     }
 
     public DiaryEditor()
@@ -164,7 +168,11 @@ public partial class DiaryEditor : UserControl
     private Bitmap? Decode(Guid id, byte[]? bytes)
     {
         if (bytes is null) return null;
-        if (_bitmaps.TryGetValue(id, out var cached) && ReferenceEquals(cached.Source, bytes)) return cached.Bitmap;
+        if (_bitmaps.TryGetValue(id, out var cached))
+        {
+            if (ReferenceEquals(cached.Source, bytes)) return cached.Bitmap;
+            cached.Bitmap?.Dispose();
+        }
         Bitmap? bitmap;
         try { bitmap = new Bitmap(new MemoryStream(bytes)); }
         // Una miniatura che Skia non sa leggere si mostra come mancante: il testo resta modificabile.
@@ -174,7 +182,17 @@ public partial class DiaryEditor : UserControl
         return bitmap;
     }
 
-    private static TextBlock Placeholder(string text)
+    // Le righe si ricostruiscono (Redraw) prima del prossimo disegno, quindi nessuna Image mostra una bitmap liberata.
+    private void PruneBitmaps()
+    {
+        foreach (var id in _bitmaps.Keys.Where(id => Photos is null || !Photos.ContainsKey(id)).ToList())
+        {
+            _bitmaps[id].Bitmap?.Dispose();
+            _bitmaps.Remove(id);
+        }
+    }
+
+        private static TextBlock Placeholder(string text)
     {
         var block = new TextBlock { Text = text, FontStyle = FontStyle.Italic };
         block.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
@@ -242,7 +260,13 @@ public partial class DiaryEditor : UserControl
     {
         if (Editor.Document.Text == markdown) return;
         _pushingText = true;
-        try { Editor.Document.Text = markdown; }
+        try
+        {
+            Editor.Document.Text = markdown;
+            // Un testo portato dal binding (voce da modificare, bozza, testo dopo Salva) non si annulla: Ctrl+Z
+            // riporterebbe il testo di prima sotto un'altra voce. ReplaceText invece resta annullabile.
+            Editor.Document.UndoStack.ClearAll();
+        }
         finally { _pushingText = false; }
     }
 }

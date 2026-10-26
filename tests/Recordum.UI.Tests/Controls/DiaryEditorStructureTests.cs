@@ -122,6 +122,20 @@ public class DiaryEditorStructureTests
     }
 
     [AvaloniaFact]
+    public void A_photo_dropped_from_Photos_turns_into_the_placeholder_after_a_render()
+    {
+        // Togliere l'id libera la sua bitmap: il frame successivo deve disegnare il segnaposto, non la bitmap liberata.
+        var (editor, control, window) = Show();
+        InlineControl<Image>(Visual(editor, SavedPhotoLine));
+
+        control.Photos = new Dictionary<Guid, byte[]?>();
+        Settle();
+        window.CaptureRenderedFrame().Should().NotBeNull();
+
+        InlineControl<TextBlock>(Visual(editor, SavedPhotoLine)).Text.Should().Be(Strings.Diario_Editor_PhotoNotSaved);
+    }
+
+    [AvaloniaFact]
     public void A_photo_whose_content_is_missing_says_so()
     {
         var (editor, _, _) = Show(setup: c => c.Photos = new Dictionary<Guid, byte[]?> { [ControlGalleries.SavedPhotoId] = null });
@@ -138,7 +152,7 @@ public class DiaryEditorStructureTests
         {
             var docLine = editor.Document.GetLineByNumber(n);
             var raw = editor.Document.GetText(docLine);
-            if (raw.Length == 0 || raw.StartsWith("1", StringComparison.Ordinal)) continue; // vuote e numerate: niente da nascondere
+            if (raw.Length == 0 || raw.StartsWith('1')) continue; // vuote e numerate: niente da nascondere
             Visual(editor, n).VisualLength.Should().BeLessThan(docLine.Length, $"in sola lettura nessuna riga resta grezza (riga {n}: {raw})");
         }
     }

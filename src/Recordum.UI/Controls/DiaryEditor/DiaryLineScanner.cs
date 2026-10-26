@@ -70,7 +70,7 @@ internal static partial class DiaryLineScanner
             case DiaryBlock.Quote: markers.Add(new(0, markerLength, DiaryMarkerKind.QuoteBar)); break;
         }
 
-        // Le immagini prima di tutto: dentro "![nome](photo:…)" niente è grassetto, corsivo o tag.
+        // Le immagini prima di tutto: dentro "![nome](photo:…)" niente è grassetto o corsivo.
         var taken = new List<(int Start, int End)>();
         foreach (var photo in PhotoRefs.Find(line))
         {
@@ -87,9 +87,9 @@ internal static partial class DiaryLineScanner
         Collect(ItalicUnderscore(), 1);
         spans.Sort((a, b) => a.Start.CompareTo(b.Start));
 
-        var tags = new List<(int Start, int Length)>();
-        foreach (var tag in InlineTags.Find(line))
-            if (tag.Start >= markerLength && !Overlaps(tag.Start, tag.Start + tag.Length)) tags.Add(tag);
+        // I tag sono esattamente quelli che il salvataggio legge, anche dentro un grassetto o un corsivo; dentro un
+        // riferimento a una foto InlineTags.Find non ne trova.
+        var tags = InlineTags.Find(line);
 
         markers.Sort((a, b) => a.Start.CompareTo(b.Start));
         return new DiaryLine(block, level, markerLength, spans, tags, markers);

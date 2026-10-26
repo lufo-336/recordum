@@ -46,6 +46,14 @@ public class DiaryLineScannerTests
         => DiaryLineScanner.Scan("a #pranzo").Tags.Should().Equal((2, 7));
 
     [Fact]
+    public void A_tag_inside_bold_is_still_a_tag_as_it_is_when_saved()
+    {
+        const string line = "**pranzo con #amici**";
+
+        DiaryLineScanner.Scan(line).Tags.Should().Equal(InlineTags.Find(line)).And.Equal((13, 6));
+    }
+
+    [Fact]
     public void A_heading_hash_is_not_a_tag()
     {
         var scan = DiaryLineScanner.Scan("# Titolo");

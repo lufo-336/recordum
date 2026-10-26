@@ -37,12 +37,22 @@ public static partial class InlineTags
     }
 
     /// <summary>Dove stanno i tag nel testo, ripetuti compresi: <c>Start</c> è il <c>#</c>, <c>Length</c> copre
-    /// <c>#nome</c>. Stessa regola di <see cref="Parse"/>: l'editor colora esattamente ciò che verrà salvato.</summary>
+    /// <c>#nome</c>. Stessa regola di <see cref="Parse"/>: l'editor colora esattamente ciò che verrà salvato. Dentro il
+    /// codice e dentro un riferimento a una foto (<see cref="PhotoRefs"/>) non ci sono tag.</summary>
     public static IReadOnlyList<(int Start, int Length)> Find(string markdown)
     {
         if (string.IsNullOrEmpty(markdown)) return [];
         // Il codice si maschera con spazi della stessa lunghezza: gli indici restano quelli del testo originale.
         var text = InlineCode().Replace(FencedCode().Replace(markdown, Blank), Blank);
+        // Neanche il nome di una foto porta tag: "![vacanza #mare.jpg](photo:…)" non salva "mare". Si maschera con un
+        // carattere che non è spazio, così un "#tag" attaccato alla ")" resta non-tag come prima.
+        var photos = PhotoRefs.Find(markdown);
+        if (photos.Count > 0)
+        {
+            var chars = text.ToCharArray();
+            foreach (var photo in photos) Array.Fill(chars, '\0', photo.Start, photo.Length);
+            text = new string(chars);
+        }
         var result = new List<(int, int)>();
         foreach (Match m in Candidate().Matches(text))
         {
