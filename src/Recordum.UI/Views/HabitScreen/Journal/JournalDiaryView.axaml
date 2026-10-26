@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:c="using:Recordum.UI.Controls"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
+             xmlns:notes="using:Recordum.Presentation.ViewModels.HabitScreen.Notes"
+             xmlns:local="using:Recordum.UI.Views.HabitScreen.Journal"
+             x:Class="Recordum.UI.Views.HabitScreen.Journal.JournalDiaryView"
+             x:DataType="vm:JournalQuickEntryViewModel">
+  <!-- Il diario della sera (decisione 4): una superficie sola per la voce nuova e per quella in modifica; sotto, le voci
+       del giorno rese dallo stesso editor in sola lettura. -->
+  <ScrollViewer x:Name="Scroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12" Spacing="10">
+
+      <!-- La striscia di modifica: c'e' solo mentre una voce del giorno sta nell'editor. -->
+      <Border x:Name="EditingStrip" Background="{DynamicResource Brush.Surface}" CornerRadius="6" Padding="10,4,4,4"
+              IsVisible="{CompiledBinding EditingEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock x:Name="EditingBannerText" VerticalAlignment="Center" TextWrapping="Wrap"
+                     Text="{CompiledBinding EditingBanner}"/>
+          <Button Grid.Column="1" x:Name="CancelEditButton" Classes="ghost"
+                  Content="{x:Static res:Strings.Diario_QuickEntry_Cancel}" Command="{CompiledBinding CancelEditCommand}"/>
+        </Grid>
+      </Border>
+
+      <!-- L'editor e il menu #: il Popup non ruba il fuoco, i tasti li intercetta TagMenuController in tunnel. -->
+      <Grid>
+        <Border Background="{DynamicResource Brush.SurfaceElevated}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1" CornerRadius="6">
+          <c:DiaryEditor x:Name="Editor" MinHeight="160"
+                         Markdown="{CompiledBinding ActiveText, Mode=TwoWay}"
+                         Photos="{CompiledBinding PhotoThumbnails}"
+                         AutomationProperties.Name="{x:Static res:Strings.Diario_Editor_Name}"/>
+        </Border>
+        <Popup x:Name="TagMenu" PlacementTarget="{Binding #Editor}" Placement="BottomEdgeAlignedLeft"
+               IsLightDismissEnabled="False" Focusable="False">
+          <Border Background="{DynamicResource Brush.SurfaceElevated}" BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="1" CornerRadius="6" MinWidth="160" MaxHeight="220">
+            <ListBox x:Name="InlineList" ItemsSource="{CompiledBinding InlineSuggestions}" Focusable="False"
+                     Background="Transparent" AutomationProperties.Name="{x:Static res:Strings.Diario_QuickEntry_Tags}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{CompiledBinding}"/>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </Popup>
+      </Grid>
+
+      <!-- La riga Tag della voce nell'editor (nuova o in modifica). -->
+      <local:TagEditorView x:Name="ActiveTagsView" DataContext="{CompiledBinding ActiveTags}"/>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="InsertImageButton" Content="{x:Static res:Strings.Diario_Editor_InsertImage}"
+                Click="OnInsertImage" IsEnabled="{CompiledBinding !IsSaving}"/>
+        <Button x:Name="SaveButton" Classes="primary" Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
+                Command="{CompiledBinding SaveCommand}"/>
+      </StackPanel>
+      <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Danger}"
+                 Text="{CompiledBinding ErrorMessage}"
+                 IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+      <!-- Le voci del giorno scelto, rese. -->
+      <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,8,0,0"
+                 Text="{x:Static res:Strings.Diario_QuickEntry_Today}"/>
+      <TextBlock x:Name="EmptyText" Foreground="{DynamicResource Brush.TextMuted}"
+                 Text="{x:Static res:Strings.Diario_QuickEntry_Empty}" IsVisible="{CompiledBinding !Entries.Count}"/>
+      <ItemsControl x:Name="EntriesList" ItemsSource="{CompiledBinding Entries}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:JournalEntryRowViewModel">
+            <Border Padding="0,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{CompiledBinding TimeDisplay}" FontSize="{DynamicResource FontSize.Small}"
+                           Foreground="{DynamicResource Brush.TextMuted}"/>
+
+                <!-- Il margine negativo annulla il Padding dell'editor: il testo si allinea all'ora e ai chip. -->
+                <c:DiaryEditor IsReadOnly="True" Margin="-10,-8" Markdown="{CompiledBinding Text, Mode=OneWay}"
+                               Photos="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).PhotoThumbnails}"/>
+
+                <ItemsControl ItemsSource="{CompiledBinding TagChips}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TagChip">
+                      <Border Classes="tag-chip" Classes.property="{CompiledBinding IsProperty}" Classes.inline="{CompiledBinding !IsProperty}">
+                        <TextBlock Text="{CompiledBinding Name}" FontSize="{DynamicResource FontSize.Small}"/>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Le foto senza riferimento nel testo (es. una voce nata come nota veloce); le altre sono nel testo. -->
+                <ItemsControl x:Name="UnreferencedPhotos" ItemsSource="{CompiledBinding UnreferencedPhotos}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="notes:AttachmentViewModel">
+                      <Panel Width="64" Height="64" Margin="0,0,6,6">
+                        <Border CornerRadius="4" ClipToBounds="True" IsVisible="{CompiledBinding !ShowsPlaceholder}">
+                          <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+                        </Border>
+                        <Border CornerRadius="4" Background="{DynamicResource Brush.Surface}" IsVisible="{CompiledBinding ShowsPlaceholder}"
+                                ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"
+                                AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Missing}">
+                          <Path Data="{StaticResource Icon.ImageOff}" Width="24" Height="24" Stretch="Uniform"
+                                StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                                Stroke="{DynamicResource Brush.TextMuted}"/>
+                        </Border>
+                      </Panel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- La voce che sta nell'editor non si riapre ne' si elimina da qui: la striscia in alto la chiude. -->
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{CompiledBinding !IsEditing}">
+                  <Button Classes="ghost" Content="{x:Static res:Strings.Diario_QuickEntry_Edit}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).BeginEditCommand}"
+                          CommandParameter="{CompiledBinding}"/>
+                  <Button Classes="ghost" Content="{x:Static res:Strings.Diario_QuickEntry_Delete}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).DeleteCommand}"
+                          CommandParameter="{CompiledBinding}"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

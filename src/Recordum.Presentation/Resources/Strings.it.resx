@@ -1843,6 +1843,12 @@
   <data name="Diario.Editor.PhotoNotSaved" xml:space="preserve">
     <value>Foto non salvata</value>
   </data>
+  <data name="Diario.Editor.InsertImage" xml:space="preserve">
+    <value>Inserisci immagine…</value>
+  </data>
+  <data name="Diario.Editor.Name" xml:space="preserve">
+    <value>Voce del diario</value>
+  </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Impossibile salvare l'impostazione delle foto.</value>
   </data>

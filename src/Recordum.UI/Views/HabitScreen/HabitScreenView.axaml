@@ -6,7 +6,6 @@
              xmlns:local="using:Recordum.UI.Views.HabitScreen"
              xmlns:today="using:Recordum.UI.Views.HabitScreen.Today"
              xmlns:journal="using:Recordum.UI.Views.HabitScreen.Journal"
-             xmlns:jvm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
              xmlns:calendar="using:Recordum.UI.Views.HabitScreen.Calendar"
              x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
              x:DataType="vm:HabitScreenViewModel"
@@ -88,11 +87,11 @@
          intestazione e chip senza colonne: la Panoramica e' di F3. -->
     <StackPanel Grid.Row="3" x:Name="ChipBar" Orientation="Horizontal" Margin="12,8,12,4"
                 IsVisible="{CompiledBinding ShowChipBar}">
-      <!-- Il chip Diario resta nascosto fino a F2d-2 (spec 5.2): la colonna si apre dal pulsante Oggi. -->
+      <!-- Il chip Diario c'e' per i diari (F2d-2, spec 5.2); per gli altri tipi la colonna non esiste. -->
       <CheckBox Classes="segment" x:Name="ChipDiario" Margin="0,0,4,0"
                 Content="{x:Static res:Strings.HabitScreen_Column_Diario}"
                 IsChecked="{CompiledBinding IsDiarioOpen, Mode=TwoWay}"
-                IsVisible="False"/>
+                IsVisible="{CompiledBinding IsJournal}"/>
       <CheckBox Classes="segment" x:Name="ChipCronologia"
                 Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
                 IsChecked="{CompiledBinding IsCronologiaOpen, Mode=TwoWay}"
@@ -142,10 +141,11 @@
               </Button>
             </Grid>
             <!-- Una colonna per tipo, mai un ContentTemplate statico (CLAUDE.md 8): per un'abitudine che non e' un
-                 diario QuickEntryForDiario e' null e nessun composer viene costruito. -->
+                 diario QuickEntryForDiario e' null e nessun composer viene costruito. Il template sceglie la view dalla
+                 modalita' (diario della sera o nota veloce) e costruisce solo quella. -->
             <ContentControl x:Name="DiarioHost" Content="{CompiledBinding QuickEntryShownInDiario}">
               <ContentControl.DataTemplates>
-                <DataTemplate DataType="jvm:JournalQuickEntryViewModel"><journal:JournalQuickEntryView/></DataTemplate>
+                <journal:JournalComposerTemplate/>
               </ContentControl.DataTemplates>
             </ContentControl>
           </DockPanel>

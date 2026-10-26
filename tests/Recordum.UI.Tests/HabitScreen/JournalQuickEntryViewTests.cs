@@ -20,7 +20,8 @@ using Xunit;
 
 namespace Recordum.UI.Tests.HabitScreen;
 
-/// <summary>F2d-1, Task 7: la nota veloce del diario su Avalonia (composer con menu #, riga Tag, foto, "Oggi" con le voci).</summary>
+/// <summary>F2d-1, Task 7: la nota veloce del diario su Avalonia (composer con menu #, riga Tag, foto, "Oggi" con le voci).
+/// I diari di questa classe hanno il gesto "nota veloce": la modalita' diario (gesto Diary) e' in JournalDiaryEditorViewTests.</summary>
 public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisposable
 {
     private readonly List<Window> _windows = [];
@@ -39,10 +40,13 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
     private static async Task<Guid> CreateAsync(HabitType type, string name)
     {
         using var scope = Host.Provider.CreateScope();
-        return await Svc<IHabitNodeService>(scope).CreateAsync(new HabitNode
+        var id = await Svc<IHabitNodeService>(scope).CreateAsync(new HabitNode
         {
             NodeType = NodeType.Habit, HabitType = type, Name = name, Color = "#7C5CBF",
         });
+        if (type == HabitType.Journal)
+            await Svc<IHabitUiPrefsService>(scope).SetAsync(id, new HabitUiPrefs { JournalGesture = JournalPrimaryGesture.QuickNote });
+        return id;
     }
 
     // Il DB e' condiviso fra i test della classe: un tag con quel nome puo' esistere gia' (nome unico, NOCASE).
@@ -92,7 +96,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         Find<Border>(view, "DiarioColumn").IsVisible.Should().BeTrue();
         view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().ContainSingle();
         Find<TextBox>(view, "DraftBox").IsEffectivelyVisible.Should().BeTrue();
-        Find<CheckBox>(view, "ChipDiario").IsVisible.Should().BeFalse("il chip Diario resta nascosto fino a F2d-2 (spec 5.2): la colonna si apre dal pulsante Oggi");
+        Find<CheckBox>(view, "ChipDiario").IsVisible.Should().BeTrue("da F2d-2 il chip Diario c'e' per i diari (spec 5.2)");
     }
 
     [AvaloniaFact]
@@ -280,11 +284,11 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         {
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
-            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
+            await WaitAsync(() => qe.PendingPhotos.Count == 1);
             Find<ItemsControl>(view, "PendingPhotos").GetVisualDescendants().OfType<Image>()
                 .Should().ContainSingle(i => i.Source != null, "la miniatura in attesa");
 
-            Find<TextBox>(view, "DraftBox").Text = "Zuppa #pranzo\n" + qe.Draft; // AddPhoto ha gia' messo il riferimento in coda: scrivere sopra lo cancellerebbe
+            Find<TextBox>(view, "DraftBox").Text = "Zuppa #pranzo";
             qe.PropertyTags.Add("cena");
             PrivateDbHost.Pump();
 
@@ -296,7 +300,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
             var row = qe.Entries.Single();
             row.TimeDisplay.Should().Be("13:42", "11:42 UTC con l'orologio finto a +02:00");
             list.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t => t.Text == "13:42");
-            list.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t => t.Text != null && t.Text.StartsWith("Zuppa #pranzo", StringComparison.Ordinal));
+            list.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t => t.Text == "Zuppa #pranzo");
             list.GetVisualDescendants().OfType<Image>().Should().ContainSingle(i => i.Source != null, "la miniatura della voce");
             var chips = list.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("tag-chip")).ToList();
             chips.Should().ContainSingle(b => b.Classes.Contains("inline"));
@@ -338,8 +342,8 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         {
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
-            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
-            Find<TextBox>(view, "DraftBox").Text = "Ciao\n" + qe.Draft;
+            await WaitAsync(() => qe.PendingPhotos.Count == 1);
+            Find<TextBox>(view, "DraftBox").Text = "Ciao";
             Find<Button>(view, "SaveButton").Command!.Execute(null);
             await WaitAsync(() => qe.Entries.Count == 1);
             PrivateDbHost.Pump();
@@ -432,8 +436,8 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         {
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
-            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
-            Find<TextBox>(view, "DraftBox").Text = "Insalata e un caffe #pranzo\n" + qe.Draft;
+            await WaitAsync(() => qe.PendingPhotos.Count == 1);
+            Find<TextBox>(view, "DraftBox").Text = "Insalata e un caffe #pranzo";
             qe.PropertyTags.Add("salute");
             Find<Button>(view, "SaveButton").Command!.Execute(null);
             await WaitAsync(() => qe.Entries.Count == 1);
