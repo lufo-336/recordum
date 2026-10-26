@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core;
@@ -34,6 +35,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private readonly IOpenFileDialog _dialog;
     private readonly IConfirmationDialog _confirm;
     private readonly IClock _clock;
+    private readonly IAppSettingService _appSettings;
 
     private Guid _habitNodeId;
     private DateOnly _day;
@@ -102,7 +104,11 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         }
     }
 
-    partial void OnDraftChanged(string value) => OnPropertyChanged(nameof(ActiveText));
+    partial void OnDraftChanged(string value)
+    {
+        OnPropertyChanged(nameof(ActiveText));
+        ScheduleDraftWrite();
+    }
 
     private void OnActiveSurfaceChanged()
     {
@@ -118,9 +124,14 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     {
         row.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(JournalEntryRowViewModel.IsEditing)) OnActiveSurfaceChanged();
-            else if (e.PropertyName == nameof(JournalEntryRowViewModel.EditDraft)) OnPropertyChanged(nameof(ActiveText));
-            else if (e.PropertyName == nameof(JournalEntryRowViewModel.EditTags)) OnPropertyChanged(nameof(ActiveTags));
+            if (e.PropertyName == nameof(JournalEntryRowViewModel.IsEditing)) { OnActiveSurfaceChanged(); ScheduleDraftWrite(); }
+            else if (e.PropertyName == nameof(JournalEntryRowViewModel.EditDraft)) { OnPropertyChanged(nameof(ActiveText)); ScheduleDraftWrite(); }
+            else if (e.PropertyName == nameof(JournalEntryRowViewModel.EditTags))
+            {
+                OnPropertyChanged(nameof(ActiveTags));
+                if (row.EditTags is { } et) et.Tags.CollectionChanged += (_, _) => ScheduleDraftWrite();
+                ScheduleDraftWrite();
+            }
         };
         row.Photos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PhotoThumbnails));
         row.AddedPhotos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PhotoThumbnails));
@@ -134,7 +145,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         ITagService tags,
         IOpenFileDialog dialog,
         IConfirmationDialog confirm,
-        IClock clock)
+        IClock clock,
+        IAppSettingService appSettings)
     {
         ArgumentNullException.ThrowIfNull(diary);
         ArgumentNullException.ThrowIfNull(notes);
@@ -144,6 +156,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(dialog);
         ArgumentNullException.ThrowIfNull(confirm);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(appSettings);
         _diary = diary;
         _notes = notes;
         _attachments = attachments;
@@ -152,6 +165,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         _dialog = dialog;
         _confirm = confirm;
         _clock = clock;
+        _appSettings = appSettings;
+        PropertyTags.Tags.CollectionChanged += (_, _) => ScheduleDraftWrite();
         _day = Today();
         PendingPhotos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PhotoThumbnails));
         Entries.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(PhotoThumbnails)); OnActiveSurfaceChanged(); };
@@ -171,13 +186,117 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         // altrimenti il composer si apre sul giorno che diceva il vecchio confine.
         _dayBoundary = dayBoundary;
         _day = Today();
-        Draft = string.Empty;
-        ErrorMessage = null;
-        PendingPhotos.Clear();
-        PropertyTags.Tags.Clear();
-        InlineSuggestions = [];
+        // Una scrittura di bozza in volo finisce prima che la si rilegga.
+        await FlushDraftAsync().ConfigureAwait(true);
+        _draftRestoring = true; // azzerare lo stato qui non e' una modifica dell'utente: non deve riscrivere la bozza
+        try
+        {
+            Draft = string.Empty;
+            ErrorMessage = null;
+            PendingPhotos.Clear();
+            PropertyTags.Tags.Clear();
+            InlineSuggestions = [];
+        }
+        finally { _draftRestoring = false; }
         await RefreshKnownTagsAsync(ct).ConfigureAwait(true);
         await ReloadEntriesAsync(ct).ConfigureAwait(true);
+        await RestoreDraftAsync(ct).ConfigureAwait(true);
+    }
+
+    // ---- Bozza (decisione 3): ogni modifica la scrive in app_setting; LoadAsync la rilegge, mai la riscrive. ----
+
+    private sealed record DraftDto(
+        string? Text, List<string>? Tags, Guid? EditNoteId, string? EditText, List<string>? EditTags);
+
+    private static readonly JsonSerializerOptions DraftJson = new(JsonSerializerDefaults.Web); // camelCase: text, tags, editNoteId...
+
+    private string DraftKey => "diary.draft." + _habitNodeId.ToString("N");
+
+    private bool _draftRestoring;
+    private bool _draftWriting;
+    private bool _draftDirty;
+    private Task _draftTask = Task.CompletedTask;
+
+    /// <summary>Attende la scrittura della bozza in volo (e quelle che si accodano). Per i test e per <see cref="LoadAsync"/>:
+    /// la chiusura della tab non attende niente, la finestra di perdita e' una scrittura di pochi ms.</summary>
+    public async Task FlushDraftAsync()
+    {
+        while (!_draftTask.IsCompleted) await _draftTask.ConfigureAwait(true);
+    }
+
+    private void ScheduleDraftWrite()
+    {
+        if (_draftRestoring || _habitNodeId == Guid.Empty) return;
+        _draftDirty = true;
+        if (_draftWriting) return; // la scrittura in volo, finita, rilegge lo stato e riscrive
+        _draftWriting = true;
+        _draftTask = WriteDraftLoopAsync();
+    }
+
+    // Coalescente, senza timer: al piu' una scrittura in volo; a fine scrittura, se nel frattempo e' cambiato qualcosa, ancora.
+    private async Task WriteDraftLoopAsync()
+    {
+        try
+        {
+            while (_draftDirty)
+            {
+                _draftDirty = false;
+                try
+                {
+                    await _appSettings.SetAsync(DraftKey, BuildDraftJson()).AsTask().ConfigureAwait(true);
+                }
+#pragma warning disable CA1031 // un errore di scrittura non ferma l'editor: si mostra e il testo resta
+                catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
+                {
+                    System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel draft write failed: {ex}");
+                    ErrorMessage = Strings.Diario_Editor_DraftFailed;
+                }
+            }
+        }
+        finally { _draftWriting = false; }
+    }
+
+    private string BuildDraftJson()
+    {
+        var tags = PropertyTags.Tags.ToList();
+        var edit = IsDiaryMode ? EditingRow : null;
+        var editTags = edit?.EditTags?.Tags.ToList();
+        var dto = new DraftDto(Draft, tags, edit?.Id, edit?.EditDraft, editTags);
+        // Niente da ricordare = stringa vuota.
+        return Draft.Length == 0 && tags.Count == 0 && edit is null ? string.Empty : JsonSerializer.Serialize(dto, DraftJson);
+    }
+
+    private async Task RestoreDraftAsync(CancellationToken ct)
+    {
+        DraftDto? dto = null;
+        try
+        {
+            var raw = await _appSettings.GetAsync(DraftKey, ct).ConfigureAwait(true);
+            if (!string.IsNullOrEmpty(raw)) dto = JsonSerializer.Deserialize<DraftDto>(raw, DraftJson);
+        }
+#pragma warning disable CA1031 // valore illeggibile = nessuna bozza
+        catch (Exception ex) when (ex is not OperationCanceledException)
+#pragma warning restore CA1031
+        {
+            System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel draft read failed: {ex}");
+        }
+        if (dto is null) return;
+        _draftRestoring = true;
+        try
+        {
+            Draft = dto.Text ?? string.Empty;
+            foreach (var t in dto.Tags ?? []) PropertyTags.Tags.Add(t);
+            // La parte di modifica torna solo se la voce e' fra quelle del giorno caricato.
+            if (IsDiaryMode && dto.EditNoteId is { } id && Entries.FirstOrDefault(r => r.Id == id) is { } row)
+            {
+                row.BeginEdit(_knownTags);
+                row.EditDraft = dto.EditText ?? row.Text;
+                row.EditTags?.Tags.Clear();
+                foreach (var t in dto.EditTags ?? []) row.EditTags?.Tags.Add(t);
+            }
+        }
+        finally { _draftRestoring = false; }
     }
 
     /// <summary>Allinea il composer al giorno selezionato nel calendario di Cronologia — e' cosi'

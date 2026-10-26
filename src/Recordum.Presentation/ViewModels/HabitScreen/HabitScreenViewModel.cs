@@ -771,7 +771,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (_isQuickNoteJournal)
             {
                 var composer = new JournalQuickEntryViewModel(
-                    _diary, _noteService, _attachments, _photoImporter, _tags, _openFileDialog, _confirmationDialog, _clock);
+                    _diary, _noteService, _attachments, _photoImporter, _tags, _openFileDialog, _confirmationDialog, _clock, _appSettings);
                 await composer.LoadAsync(node, _dayBoundary, prefs.JournalGesture != JournalPrimaryGesture.QuickNote, ct).ConfigureAwait(true);
                 JournalQuickEntry = composer;
                 QuickAdd = null;          // niente editor Markdown per questa abitudine

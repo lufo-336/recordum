@@ -1860,6 +1860,9 @@ Details: {0}</value>
   <data name="Settings.Photos.GpsWarning" xml:space="preserve">
     <value>The original file keeps its metadata, including the place where the photo was taken.</value>
   </data>
+  <data name="Diario.Editor.DraftFailed" xml:space="preserve">
+    <value>The draft could not be saved. Your text is still here; keep this window open until you save the entry.</value>
+  </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Could not save the photo setting.</value>
   </data>

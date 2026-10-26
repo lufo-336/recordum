@@ -27,7 +27,7 @@ public class JournalQuickEntryViewModelTests
         var dialog = new FakeOpenFileDialog();
         var confirm = new FakeConfirmationDialog();
         var importer = new FakePhotoImporter();
-        var sut = new JournalQuickEntryViewModel(diary, notes, photos, importer, new FakeTagService(), dialog, confirm, clock ?? new FakeClock());
+        var sut = new JournalQuickEntryViewModel(diary, notes, photos, importer, new FakeTagService(), dialog, confirm, clock ?? new FakeClock(), new FakeAppSettingService());
         return (sut, diary, photos, dialog, confirm, notes, importer);
     }
 
@@ -37,7 +37,7 @@ public class JournalQuickEntryViewModelTests
         var notes = new FakeNoteService();
         var tags = new FakeTagService();
         var sut = new JournalQuickEntryViewModel(new FakeDiaryService(notes), notes, new FakeAttachmentService(), new FakePhotoImporter(),
-            tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock());
+            tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock(), new FakeAppSettingService());
         await tags.CreateAsync(new Tag { Name = "pranzo" });
         await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
 
@@ -77,7 +77,7 @@ public class JournalQuickEntryViewModelTests
         var notes = new FakeNoteService();
         var tags = new FakeTagService();
         var sut = new JournalQuickEntryViewModel(new FakeDiaryService(notes), notes, new FakeAttachmentService(), new FakePhotoImporter(),
-            tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock());
+            tags, new FakeOpenFileDialog(), new FakeConfirmationDialog(), new FakeClock(), new FakeAppSettingService());
         await tags.CreateAsync(new Tag { Name = "pranzo fuori" });
         await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
 

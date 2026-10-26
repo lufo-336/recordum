@@ -1834,6 +1834,9 @@
   <data name="Settings.Photos.GpsWarning" xml:space="preserve">
     <value>Il file originale conserva i suoi metadati, compreso il luogo in cui la foto è stata scattata.</value>
   </data>
+  <data name="Diario.Editor.DraftFailed" xml:space="preserve">
+    <value>Non sono riuscito a salvare la bozza. Il testo è ancora qui: tieni aperta la finestra finché non salvi la voce.</value>
+  </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Impossibile salvare l'impostazione delle foto.</value>
   </data>

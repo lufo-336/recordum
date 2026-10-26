@@ -29,7 +29,7 @@ public class JournalDiaryModeTests
         var atts = new FakeAttachmentService();
         var dialog = new FakeOpenFileDialog();
         var confirm = new FakeConfirmationDialog();
-        var sut = new JournalQuickEntryViewModel(diary, notes, atts, new FakePhotoImporter(), new FakeTagService(), dialog, confirm, new FakeClock());
+        var sut = new JournalQuickEntryViewModel(diary, notes, atts, new FakePhotoImporter(), new FakeTagService(), dialog, confirm, new FakeClock(), new FakeAppSettingService());
         var node = Journal();
         await sut.LoadAsync(node, DayBoundary.Utc, diaryMode);
         return new Rig(sut, diary, atts, dialog, confirm, node);
