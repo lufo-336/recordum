@@ -9,8 +9,13 @@ public sealed class FakeAppSettingService : IAppSettingService
     /// <summary>Number of <see cref="SetAsync"/> calls — lets tests assert write storms / suppression.</summary>
     public int SetCount { get; private set; }
 
-    public ValueTask<string?> GetAsync(string key, CancellationToken ct = default) =>
-        new ValueTask<string?>(Store.TryGetValue(key, out var v) ? v : null);
+    public Exception? ThrowOnGet { get; set; }
+
+    public ValueTask<string?> GetAsync(string key, CancellationToken ct = default)
+    {
+        if (ThrowOnGet is { } boom) throw boom;
+        return new ValueTask<string?>(Store.TryGetValue(key, out var v) ? v : null);
+    }
 
     public Exception? ThrowOnSet { get; set; }
 

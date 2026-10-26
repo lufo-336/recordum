@@ -654,6 +654,7 @@ public static class Strings
     public static string Diario_QuickEntry_Error_SaveFailed => Get("Diario.QuickEntry.Error.SaveFailed");
     public static string Diario_QuickEntry_Error_PhotoUnreadable => Get("Diario.QuickEntry.Error.PhotoUnreadable");
     public static string Diario_Editor_DraftFailed => Get("Diario.Editor.DraftFailed");
+    public static string Diario_Editor_DraftReadFailed => Get("Diario.Editor.DraftReadFailed");
     public static string Diario_Tag_Create => Get("Diario.Tag.Create");
     public static string Settings_Photos_Title => Get("Settings.Photos.Title");
     public static string Settings_Photos_Mode_ResizeAndClean => Get("Settings.Photos.Mode.ResizeAndClean");

@@ -1861,7 +1861,10 @@ Details: {0}</value>
     <value>The original file keeps its metadata, including the place where the photo was taken.</value>
   </data>
   <data name="Diario.Editor.DraftFailed" xml:space="preserve">
-    <value>The draft could not be saved. Your text is still here; keep this window open until you save the entry.</value>
+    <value>The draft could not be saved. Your text is still here; keep this tab open until you save the entry.</value>
+  </data>
+  <data name="Diario.Editor.DraftReadFailed" xml:space="preserve">
+    <value>The saved draft could not be read. You can keep writing, but the previous draft may be lost.</value>
   </data>
   <data name="Settings.Photos.SaveFailed" xml:space="preserve">
     <value>Could not save the photo setting.</value>

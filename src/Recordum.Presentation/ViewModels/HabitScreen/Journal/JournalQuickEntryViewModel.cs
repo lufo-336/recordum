@@ -179,6 +179,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     public async Task LoadAsync(HabitNode node, DayBoundary dayBoundary, bool isDiaryMode, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
+        // Prima si finisce la scrittura in volo (ancora del vecchio abito), poi si cambia abitudine: una
+        // iterazione coalescente non deve mai scrivere il testo di A sotto la chiave di B.
+        await FlushDraftAsync().ConfigureAwait(true);
         _habitNodeId = node.Id;
         IsDiaryMode = isDiaryMode;
         OnPropertyChanged(nameof(IsDiaryMode));
@@ -186,8 +189,6 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         // altrimenti il composer si apre sul giorno che diceva il vecchio confine.
         _dayBoundary = dayBoundary;
         _day = Today();
-        // Una scrittura di bozza in volo finisce prima che la si rilegga.
-        await FlushDraftAsync().ConfigureAwait(true);
         _draftRestoring = true; // azzerare lo stato qui non e' una modifica dell'utente: non deve riscrivere la bozza
         try
         {
@@ -241,9 +242,13 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             while (_draftDirty)
             {
                 _draftDirty = false;
+                var key = DraftKey; // chiave e valore presi insieme, per questa scrittura
+                var json = BuildDraftJson();
                 try
                 {
-                    await _appSettings.SetAsync(DraftKey, BuildDraftJson()).AsTask().ConfigureAwait(true);
+                    await _appSettings.SetAsync(key, json).AsTask().ConfigureAwait(true);
+                    // Il messaggio di bozza sparisce alla prima scrittura riuscita; un errore di Salva non si nasconde.
+                    if (ErrorMessage == Strings.Diario_Editor_DraftFailed) ErrorMessage = null;
                 }
 #pragma warning disable CA1031 // un errore di scrittura non ferma l'editor: si mostra e il testo resta
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -270,16 +275,20 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     private async Task RestoreDraftAsync(CancellationToken ct)
     {
         DraftDto? dto = null;
-        try
-        {
-            var raw = await _appSettings.GetAsync(DraftKey, ct).ConfigureAwait(true);
-            if (!string.IsNullOrEmpty(raw)) dto = JsonSerializer.Deserialize<DraftDto>(raw, DraftJson);
-        }
-#pragma warning disable CA1031 // valore illeggibile = nessuna bozza
+        string? raw = null;
+        try { raw = await _appSettings.GetAsync(DraftKey, ct).ConfigureAwait(true); }
+#pragma warning disable CA1031 // la lettura fallita non ferma l'apertura: si dice che la bozza non si e' potuta leggere
         catch (Exception ex) when (ex is not OperationCanceledException)
 #pragma warning restore CA1031
         {
             System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel draft read failed: {ex}");
+            ErrorMessage = Strings.Diario_Editor_DraftReadFailed;
+            return;
+        }
+        try { if (!string.IsNullOrEmpty(raw)) dto = JsonSerializer.Deserialize<DraftDto>(raw, DraftJson); }
+        catch (JsonException ex) // valore illeggibile = nessuna bozza
+        {
+            System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel draft unreadable: {ex}");
         }
         if (dto is null) return;
         _draftRestoring = true;

@@ -24,6 +24,7 @@ public class JournalDraftTests
     private sealed class GatedSettings : IAppSettingService
     {
         public List<string> Written { get; } = [];
+        public List<(string Key, string Value)> WrittenWithKey { get; } = [];
         public int InFlight { get; private set; }
         public int MaxInFlight { get; private set; }
         public List<TaskCompletionSource> Gates { get; } = [];
@@ -39,6 +40,7 @@ public class JournalDraftTests
             await gate.Task;
             InFlight--;
             Written.Add(value);
+            WrittenWithKey.Add((key, value));
         }
 
         public ValueTask<T?> GetEnumAsync<T>(string key, CancellationToken ct = default) where T : struct, Enum => new((T?)null);
@@ -183,5 +185,103 @@ public class JournalDraftTests
 
         sut.Draft.Should().BeEmpty();
         sut.ErrorMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Switching_habit_with_a_write_in_flight_never_writes_the_old_text_under_the_new_key()
+    {
+        var settings = new GatedSettings();
+        var (sut, _, _) = Build(settings);
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.Draft = "testo di A";
+        sut.Draft = "testo di A, ancora"; // il primo SetAsync e' fermo: questo e' il valore sporco
+
+        var other = new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "B" };
+        var load = sut.LoadAsync(other, DayBoundary.Utc, true);
+        while (!load.IsCompleted)
+        {
+            foreach (var g in settings.Gates.ToList()) g.TrySetResult();
+            await Task.Yield();
+        }
+        await load;
+        await sut.FlushDraftAsync();
+
+        var keyB = "diary.draft." + other.Id.ToString("N");
+        settings.WrittenWithKey.Where(w => w.Key == keyB).Should().BeEmpty();
+        sut.Draft.Should().BeEmpty("B non eredita il testo di A");
+    }
+
+    [Fact]
+    public async Task A_failed_draft_read_shows_an_error_and_does_not_stop_loading()
+    {
+        var settings = new FakeAppSettingService { ThrowOnGet = new InvalidOperationException("boom") };
+        var (sut, _, _) = Build(settings);
+
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+
+        sut.ErrorMessage.Should().Be(Recordum.Presentation.Resources.Strings.Diario_Editor_DraftReadFailed);
+    }
+
+    [Fact]
+    public async Task The_draft_error_goes_away_on_the_next_successful_write_but_other_errors_stay()
+    {
+        var settings = new FakeAppSettingService { ThrowOnSet = new InvalidOperationException("boom") };
+        var (sut, _, _) = Build(settings);
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.Draft = "uno";
+        await sut.FlushDraftAsync();
+        sut.ErrorMessage.Should().Be(Recordum.Presentation.Resources.Strings.Diario_Editor_DraftFailed);
+
+        settings.ThrowOnSet = null;
+        sut.Draft = "due";
+        await sut.FlushDraftAsync();
+        sut.ErrorMessage.Should().BeNull();
+
+        sut.ErrorMessage = "errore di Salva";
+        sut.Draft = "tre";
+        await sut.FlushDraftAsync();
+        sut.ErrorMessage.Should().Be("errore di Salva");
+    }
+
+    [Fact]
+    public async Task Saving_an_edit_clears_the_stored_edit_part_and_keeps_the_new_entry_draft()
+    {
+        var settings = new FakeAppSettingService();
+        var (sut, _, _) = Build(settings);
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.Draft = "voce";
+        await sut.SaveCommand.ExecuteAsync(null);
+        sut.Draft = "bozza nuova";
+        await sut.BeginEditCommand.ExecuteAsync(sut.Entries.Single());
+        sut.ActiveText = "voce cambiata";
+        await sut.FlushDraftAsync();
+        JsonDocument.Parse(settings.Store[Key]).RootElement.GetProperty("editNoteId").ValueKind.Should().NotBe(JsonValueKind.Null);
+
+        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.FlushDraftAsync();
+
+        var json = JsonDocument.Parse(settings.Store[Key]).RootElement;
+        json.GetProperty("text").GetString().Should().Be("bozza nuova");
+        json.GetProperty("editNoteId").ValueKind.Should().Be(JsonValueKind.Null);
+        json.GetProperty("editText").ValueKind.Should().Be(JsonValueKind.Null);
+        json.GetProperty("editTags").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task In_quick_note_mode_a_stored_edit_part_is_not_restored()
+    {
+        var settings = new FakeAppSettingService();
+        var (sut, notes, diary) = Build(settings);
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.Draft = "voce";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var id = sut.Entries.Single().Id;
+        settings.Store[Key] = JsonSerializer.Serialize(new { text = "bozza", tags = Array.Empty<string>(), editNoteId = id, editText = "modificata", editTags = Array.Empty<string>() });
+
+        var quick = BuildOn(notes, diary, settings);
+        await quick.LoadAsync(Node, DayBoundary.Utc, false);
+
+        quick.Draft.Should().Be("bozza");
+        quick.Entries.Should().ContainSingle().Which.IsEditing.Should().BeFalse();
     }
 }
