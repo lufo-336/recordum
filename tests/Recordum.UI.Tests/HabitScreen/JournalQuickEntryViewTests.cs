@@ -73,6 +73,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
     private static async Task WaitAsync(Func<bool> done)
     {
         for (var i = 0; i < 150 && !done(); i++) { await Task.Delay(20); PrivateDbHost.Pump(); }
+        PrivateDbHost.Pump(); // la condizione e' vera ma layout e binding possono essere ancora in coda: svuotarli prima di guardare le viste
         done().Should().BeTrue("la condizione doveva avverarsi");
     }
 
@@ -279,7 +280,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         {
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
-            await WaitAsync(() => qe.PendingPhotos.Count == 1);
+            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
             Find<ItemsControl>(view, "PendingPhotos").GetVisualDescendants().OfType<Image>()
                 .Should().ContainSingle(i => i.Source != null, "la miniatura in attesa");
 
@@ -337,7 +338,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         {
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
-            await WaitAsync(() => qe.PendingPhotos.Count == 1);
+            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
             Find<TextBox>(view, "DraftBox").Text = "Ciao\n" + qe.Draft;
             Find<Button>(view, "SaveButton").Command!.Execute(null);
             await WaitAsync(() => qe.Entries.Count == 1);
@@ -431,7 +432,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         {
             Dialog.Paths = [png];
             Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
-            await WaitAsync(() => qe.PendingPhotos.Count == 1);
+            await WaitAsync(() => qe.PendingPhotos.Count == 1 && qe.Draft.Contains("photo:", StringComparison.Ordinal));
             Find<TextBox>(view, "DraftBox").Text = "Insalata e un caffe #pranzo\n" + qe.Draft;
             qe.PropertyTags.Add("salute");
             Find<Button>(view, "SaveButton").Command!.Execute(null);
