@@ -354,8 +354,11 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
             list.GetVisualDescendants().OfType<Button>().Where(b => b.Name == "RemoveExistingPhotoButton")
                 .Should().ContainSingle(b => b.IsEffectivelyVisible);
 
+            // Composer spento durante la modifica (F2d1-5), riattivo dopo Annulla; agisce il bottone della riga.
+            Find<Button>(view, "AddPhotoButton").IsEffectivelyEnabled.Should().BeFalse();
+            Find<Button>(view, "SaveButton").IsEffectivelyEnabled.Should().BeFalse();
             Dialog.Paths = [png];
-            Find<Button>(view, "AddPhotoButton").Command!.Execute(null);
+            list.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "RowAddPhotoButton" && b.IsEffectivelyVisible).Command!.Execute(null);
             await WaitAsync(() => qe.Entries.Single().AddedPhotos.Count == 1);
             list.GetVisualDescendants().OfType<Image>().Count(i => i.IsEffectivelyVisible && i.Source != null)
                 .Should().Be(2, "la foto salvata e quella aggiunta, una accanto all'altra");
@@ -369,6 +372,8 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
             PrivateDbHost.Pump();
             qe.Entries.Single().Photos.Should().HaveCount(1, "Annulla riporta la foto tolta");
             qe.Entries.Single().AddedPhotos.Should().BeEmpty();
+            Find<Button>(view, "AddPhotoButton").IsEffectivelyEnabled.Should().BeTrue();
+            Find<Button>(view, "SaveButton").IsEffectivelyEnabled.Should().BeTrue();
         }
         finally { File.Delete(png); }
     }

@@ -118,6 +118,16 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         OnPropertyChanged(nameof(EditingBanner));
         OnPropertyChanged(nameof(ActiveText));
         OnPropertyChanged(nameof(ActiveTags));
+        NotifyComposerCommands();
+    }
+
+    // F2d1-5: in nota veloce, con una voce in modifica il composer (Aggiungi foto, Salva) e' spento: agisce la riga.
+    private bool ComposerEnabled => IsDiaryMode || EditingRow is null;
+
+    private void NotifyComposerCommands()
+    {
+        AddPhotoCommand.NotifyCanExecuteChanged();
+        SaveCommand.NotifyCanExecuteChanged();
     }
 
     private void Watch(JournalEntryRowViewModel row)
@@ -185,6 +195,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         _habitNodeId = node.Id;
         IsDiaryMode = isDiaryMode;
         OnPropertyChanged(nameof(IsDiaryMode));
+        NotifyComposerCommands();
         // Il confine arriva dallo screen: va impostato PRIMA di ri-derivare il giorno corrente,
         // altrimenti il composer si apre sul giorno che diceva il vecchio confine.
         _dayBoundary = dayBoundary;
@@ -474,9 +485,10 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
 
     private JournalEntryRowViewModel? EditingRow => Entries.FirstOrDefault(r => r.IsEditing);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(ComposerEnabled))]
     private async Task AddPhotoAsync(CancellationToken ct)
     {
+        if (!ComposerEnabled) return; // ExecuteAsync non consulta CanExecute
         var photos = await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
         // In modalita' diario una foto vale solo col riferimento nel testo (Save scarta le altre): senza cursore va in coda.
         if (IsDiaryMode && photos.Count > 0) ActiveText = AppendPhotoRefs(ActiveText, photos);
@@ -559,6 +571,14 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         return (text.Insert(caret, refs), caret + refs.Length);
     }
 
+    /// <summary>"Aggiungi foto" della riga in modifica (nota veloce): le foto vanno alla voce, non al composer.</summary>
+    [RelayCommand]
+    private async Task AddEditPhotoAsync(CancellationToken ct)
+    {
+        if (EditingRow is null) return;
+        await ImportChosenPhotosAsync(ct).ConfigureAwait(true);
+    }
+
     [RelayCommand]
     private void RemovePendingPhoto(ImportedPhoto? photo)
     {
@@ -619,11 +639,25 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         return sb.ToString().Trim();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(ComposerEnabled))]
     private async Task Save(CancellationToken ct)
     {
+        if (!ComposerEnabled) return; // ExecuteAsync non consulta CanExecute
+        await SaveCoreAsync(ct).ConfigureAwait(true);
+    }
+
+    /// <summary>"Salva" della riga in modifica (nota veloce): stessa logica di <see cref="SaveCommand"/>, che li' e' spento.</summary>
+    [RelayCommand]
+    private async Task SaveEdit(CancellationToken ct)
+    {
+        if (EditingRow is null) return;
+        await SaveCoreAsync(ct).ConfigureAwait(true);
+    }
+
+    private async Task SaveCoreAsync(CancellationToken ct)
+    {
         // Salvare mentre una scelta di foto e' in corso perderebbe quelle che arrivano dopo lo snapshot.
-        if (_habitNodeId == Guid.Empty || IsSaving || IsInserting || AddPhotoCommand.IsRunning) return;
+        if (_habitNodeId == Guid.Empty || IsSaving || IsInserting || AddPhotoCommand.IsRunning || AddEditPhotoCommand.IsRunning) return;
         ErrorMessage = null;
 
         // Una modifica in riga in corso vince sul composer: e' l'azione che l'utente sta guardando.

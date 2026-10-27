@@ -211,7 +211,7 @@ public class JournalQuickEntryViewModelTests
 
         sut.BeginEditCommand.Execute(row);
         row.EditDraft = "Pasta al pomodoro";
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         diary.SavedEntries.Should().ContainSingle("la modifica non crea una voce nuova");
         diary.EditedEntries.Single().Text.Should().Be("Pasta al pomodoro");
@@ -229,7 +229,7 @@ public class JournalQuickEntryViewModelTests
 
         sut.BeginEditCommand.Execute(row);
         row.EditDraft = "   ";
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         diary.EditedEntries.Should().BeEmpty("un salvataggio con testo vuoto non deve modificare la voce");
         sut.ErrorMessage.Should().NotBeNull();
@@ -274,7 +274,7 @@ public class JournalQuickEntryViewModelTests
 
         var gate = new TaskCompletionSource();
         diary.NextWriteDelay = () => gate.Task;
-        var save = sut.SaveCommand.ExecuteAsync(null);
+        var save = sut.SaveEditCommand.ExecuteAsync(null);
 
         sut.IsSaving.Should().BeTrue("anche la modifica in riga deve alzare il flag mentre scrive");
 
@@ -414,7 +414,7 @@ public class JournalQuickEntryViewModelTests
         sut.BeginEditCommand.Execute(row);
         sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
         dialog.MultipleResult = ["C:\\tmp\\new.jpg"];
-        await sut.AddPhotoCommand.ExecuteAsync(null);
+        await sut.AddEditPhotoCommand.ExecuteAsync(null);
         row.Photos.Should().BeEmpty();
         row.AddedPhotos.Should().ContainSingle();
         sut.CancelEditCommand.Execute(null);
@@ -426,8 +426,8 @@ public class JournalQuickEntryViewModelTests
         // Salva: una sola DiaryEntryEdit con entrambe.
         sut.BeginEditCommand.Execute(row);
         sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
-        await sut.AddPhotoCommand.ExecuteAsync(null);
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.AddEditPhotoCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         var edit = diary.Edits.Should().ContainSingle().Subject.Edit;
         edit.RemovedPhotoIds.Should().Equal(kept.Id);
@@ -471,10 +471,10 @@ public class JournalQuickEntryViewModelTests
         row.EditTags!.Add("salute");
         sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
         dialog.MultipleResult = ["C:\\tmp\\new.jpg"];
-        await sut.AddPhotoCommand.ExecuteAsync(null);
+        await sut.AddEditPhotoCommand.ExecuteAsync(null);
         diary.ThrowOnWrite = new InvalidOperationException("database is locked");
 
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         row.IsEditing.Should().BeTrue();
         row.EditDraft.Should().Be("nuovo testo");
@@ -506,7 +506,7 @@ public class JournalQuickEntryViewModelTests
 
         sut.BeginEditCommand.Execute(row);
         row.EditTags!.Add("casa");
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         sut.ErrorMessage.Should().BeNull();
         diary.Edits.Should().ContainSingle().Which.Edit.PropertyTags.Should().Equal("casa");
@@ -519,15 +519,64 @@ public class JournalQuickEntryViewModelTests
 
         sut.BeginEditCommand.Execute(row);
         sut.RemoveEditPhotoCommand.Execute(row.Photos.Single());
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         diary.Edits.Should().BeEmpty();
         sut.ErrorMessage.Should().Be(Strings.Diario_QuickEntry_Error_Empty);
         row.IsEditing.Should().BeTrue();
 
         row.AddedPhotos.Add(new ImportedPhoto(Guid.NewGuid(), "b.jpg", "image/jpeg", [1], [2]));
-        await sut.SaveCommand.ExecuteAsync(null);
+        await sut.SaveEditCommand.ExecuteAsync(null);
 
         diary.Edits.Should().ContainSingle();
+    }
+
+    // ---- F2d1-5: il composer e' spento mentre una riga e' in modifica (nota veloce) ----
+
+    [Fact]
+    public async Task Quick_note_composer_commands_are_off_while_a_row_is_edited_and_do_nothing_if_executed()
+    {
+        var (sut, diary, _, dialog, _, _, _) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: false);
+        sut.Draft = "prima";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var row = sut.Entries.Single();
+        sut.SaveCommand.CanExecute(null).Should().BeTrue();
+        sut.AddPhotoCommand.CanExecute(null).Should().BeTrue();
+
+        sut.BeginEditCommand.Execute(row);
+        row.EditDraft = "modificata";
+        sut.Draft = "nuova";
+        dialog.MultipleResult = ["C:\\tmp\\new.jpg"];
+
+        sut.SaveCommand.CanExecute(null).Should().BeFalse();
+        sut.AddPhotoCommand.CanExecute(null).Should().BeFalse();
+        await sut.SaveCommand.ExecuteAsync(null); // ExecuteAsync ignora CanExecute: la guardia e' nel metodo
+        await sut.AddPhotoCommand.ExecuteAsync(null);
+        diary.Edits.Should().BeEmpty();
+        diary.SavedEntries.Should().ContainSingle();
+        row.AddedPhotos.Should().BeEmpty();
+        sut.PendingPhotos.Should().BeEmpty();
+
+        sut.CancelEditCommand.Execute(null);
+        sut.SaveCommand.CanExecute(null).Should().BeTrue("finita la modifica il composer torna acceso");
+        sut.AddPhotoCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Diary_mode_Save_still_saves_the_edit_while_a_row_is_edited()
+    {
+        var (sut, diary, _, _, _, _, _) = Build();
+        await sut.LoadAsync(Journal(), DayBoundary.Utc, isDiaryMode: true);
+        sut.Draft = "prima";
+        await sut.SaveCommand.ExecuteAsync(null);
+        var row = sut.Entries.Single();
+        sut.BeginEditCommand.Execute(row);
+        row.EditDraft = "dopo";
+
+        sut.SaveCommand.CanExecute(null).Should().BeTrue("in diario Salva agisce sulla voce in modifica");
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        diary.Edits.Should().ContainSingle().Which.Edit.Text.Should().Be("dopo");
     }
 }

@@ -179,12 +179,12 @@
                           CommandParameter="{CompiledBinding}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{CompiledBinding IsEditing}">
-                  <Button Content="{x:Static res:Strings.Diario_QuickEntry_AddPhoto}"
-                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).AddPhotoCommand}"
+                  <Button x:Name="RowAddPhotoButton" Content="{x:Static res:Strings.Diario_QuickEntry_AddPhoto}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).AddEditPhotoCommand}"
                           IsEnabled="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).IsSaving, Converter={x:Static BoolConverters.Not}}"/>
-                  <Button Classes="primary" Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
-                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).SaveCommand}"
-                          IsEnabled="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).AddPhotoCommand.IsRunning, Converter={x:Static BoolConverters.Not}}"/>
+                  <Button x:Name="RowSaveButton" Classes="primary" Content="{x:Static res:Strings.Diario_QuickEntry_Save}"
+                          Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).SaveEditCommand}"
+                          IsEnabled="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).AddEditPhotoCommand.IsRunning, Converter={x:Static BoolConverters.Not}}"/>
                   <Button Content="{x:Static res:Strings.Diario_QuickEntry_Cancel}"
                           Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).CancelEditCommand}"/>
                 </StackPanel>
