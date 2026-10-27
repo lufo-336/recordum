@@ -97,6 +97,37 @@ public class FinalReviewFixTests
     }
 
     [Fact]
+    public async Task A_draft_written_on_another_day_opens_the_composer_and_the_calendar_on_that_day()
+    {
+        var r = await BuildAsync();
+        var key = "diary.draft." + r.Node.Id.ToString("N");
+        r.Settings.Store[key] = JsonSerializer.Serialize(new { text = "cena di ieri", tags = Array.Empty<string>(), day = "2026-05-20" });
+
+        await r.Sut.LoadAsync(r.Node.Id);
+        await SettleAsync();
+
+        var yesterday = new DateOnly(2026, 5, 20);
+        r.Sut.JournalQuickEntry!.Day.Should().Be(yesterday);
+        r.Sut.JournalQuickEntry.Draft.Should().Be("cena di ieri");
+        r.Sut.Calendar.SelectedDate.Should().Be(yesterday);
+        r.Settings.SetCount.Should().Be(0, "caricare non riscrive la bozza");
+    }
+
+    [Fact]
+    public async Task A_draft_without_day_opens_on_today()
+    {
+        var r = await BuildAsync();
+        var key = "diary.draft." + r.Node.Id.ToString("N");
+        r.Settings.Store[key] = JsonSerializer.Serialize(new { text = "vecchia", tags = Array.Empty<string>() });
+
+        await r.Sut.LoadAsync(r.Node.Id);
+        await SettleAsync();
+
+        r.Sut.JournalQuickEntry!.Day.Should().Be(new DateOnly(2026, 5, 21));
+        r.Sut.Calendar.SelectedDate.Should().Be(new DateOnly(2026, 5, 21));
+    }
+
+    [Fact]
     public async Task Same_day_SetDay_keeps_an_open_edit()
     {
         var r = await BuildAsync();

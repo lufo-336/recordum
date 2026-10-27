@@ -218,9 +218,13 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     // ---- Bozza (decisione 3): ogni modifica la scrive in app_setting; LoadAsync la rilegge, mai la riscrive. ----
 
     private sealed record DraftDto(
-        string? Text, List<string>? Tags, Guid? EditNoteId, string? EditText, List<string>? EditTags);
+        string? Text, List<string>? Tags, Guid? EditNoteId, string? EditText, List<string>? EditTags, string? Day = null);
 
     private static readonly JsonSerializerOptions DraftJson = new(JsonSerializerDefaults.Web); // camelCase: text, tags, editNoteId...
+
+    private const string DayFormat = "yyyy-MM-dd";
+
+    private bool HasDraftContent => Draft.Length > 0 || PropertyTags.Tags.Count > 0 || EditingRow is not null;
 
     private string DraftKey => "diary.draft." + _habitNodeId.ToString("N");
 
@@ -278,7 +282,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         var tags = PropertyTags.Tags.ToList();
         var edit = IsDiaryMode ? EditingRow : null;
         var editTags = edit?.EditTags?.Tags.ToList();
-        var dto = new DraftDto(Draft, tags, edit?.Id, edit?.EditDraft, editTags);
+        // Il giorno che l'utente sta guardando: la bozza riapre su quello (F2d2-6).
+        var dto = new DraftDto(Draft, tags, edit?.Id, edit?.EditDraft, editTags, _day.ToString(DayFormat, CultureInfo.InvariantCulture));
         // Niente da ricordare = stringa vuota.
         return Draft.Length == 0 && tags.Count == 0 && edit is null ? string.Empty : JsonSerializer.Serialize(dto, DraftJson);
     }
@@ -302,6 +307,15 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel draft unreadable: {ex}");
         }
         if (dto is null) return;
+        // Una bozza con contenuto riapre sul giorno in cui era stata scritta (senza "day" = bozza di una versione
+        // vecchia: resta il giorno di oggi). _day si assegna senza SetDay: caricare non deve riscrivere la bozza.
+        var hasContent = !string.IsNullOrEmpty(dto.Text) || dto.Tags is { Count: > 0 } || dto.EditNoteId is not null;
+        if (hasContent && DateOnly.TryParseExact(dto.Day, DayFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var draftDay)
+            && draftDay != _day)
+        {
+            _day = draftDay;
+            await ReloadEntriesAsync(ct).ConfigureAwait(true);
+        }
         _draftRestoring = true;
         try
         {
@@ -350,6 +364,7 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         // ricarica, o la riga in modifica sparisce e la prossima battuta scrive editNoteId:null (C1).
         if (day == _day) return;
         _day = day;
+        if (HasDraftContent) ScheduleDraftWrite(); // il giorno memorizzato segue quello che l'utente vede
         _ = ReloadEntriesGuardedAsync();
     }
 

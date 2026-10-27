@@ -287,4 +287,62 @@ public class JournalDraftTests
         quick.Draft.Should().Be("bozza");
         quick.Entries.Should().ContainSingle().Which.IsEditing.Should().BeFalse();
     }
+
+    // ---- F2d2-6: la bozza ricorda il suo giorno ----
+
+    private static readonly DateOnly Yesterday = new(2025, 12, 31); // FakeClock parte il 2026-01-01
+
+    [Fact]
+    public async Task A_draft_written_on_yesterday_reopens_on_yesterday_and_Save_puts_the_entry_there()
+    {
+        var settings = new FakeAppSettingService();
+        var (sut, notes, diary) = Build(settings);
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.SetDay(Yesterday);
+        sut.Draft = "cena di ieri";
+        await sut.FlushDraftAsync();
+
+        var writesBefore = settings.SetCount;
+        var again = BuildOn(notes, diary, settings);
+        await again.LoadAsync(Node, DayBoundary.Utc, true);
+        await again.FlushDraftAsync();
+
+        again.Day.Should().Be(Yesterday);
+        again.Draft.Should().Be("cena di ieri");
+        settings.SetCount.Should().Be(writesBefore, "riaprire sul giorno della bozza non la riscrive");
+        await again.SaveCommand.ExecuteAsync(null);
+        diary.SavedEntries.Single().Day.Should().Be(Yesterday);
+    }
+
+    [Fact]
+    public async Task SetDay_with_draft_content_writes_the_new_day_and_without_content_writes_nothing()
+    {
+        var settings = new FakeAppSettingService();
+        var (sut, _, _) = Build(settings);
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.SetDay(Yesterday);
+        await sut.FlushDraftAsync();
+        settings.SetCount.Should().Be(0, "senza contenuto non c'e' niente da ricordare");
+
+        sut.Draft = "x";
+        await sut.FlushDraftAsync();
+        JsonDocument.Parse(settings.Store[Key]).RootElement.GetProperty("day").GetString().Should().Be("2025-12-31");
+
+        sut.SetDay(new DateOnly(2025, 12, 30));
+        await sut.FlushDraftAsync();
+        JsonDocument.Parse(settings.Store[Key]).RootElement.GetProperty("day").GetString().Should().Be("2025-12-30");
+    }
+
+    [Fact]
+    public async Task A_draft_without_day_from_an_older_build_opens_on_today()
+    {
+        var settings = new FakeAppSettingService();
+        settings.Store[Key] = JsonSerializer.Serialize(new { text = "vecchia", tags = new[] { "t" } });
+        var (sut, _, _) = Build(settings);
+
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+
+        sut.Day.Should().Be(new DateOnly(2026, 1, 1));
+        sut.Draft.Should().Be("vecchia");
+    }
 }

@@ -727,7 +727,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // A39: il mese aperto e il giorno preselezionato vengono dal confine, non dall'ora locale
         // nuda — o con reset 04:00 il calendario si apre sul giorno dopo rispetto a tutto il resto.
         var today = _dayBoundary.Today(_clock);
-        await Calendar.LoadAsync(today.Year, today.Month, today, _dayBoundary, ct).ConfigureAwait(true);
+        // Il composer del diario puo' aprirsi su un altro giorno (bozza scritta ieri): il calendario mostra quello.
+        var shown = JournalQuickEntry?.Day ?? today;
+        await Calendar.LoadAsync(shown.Year, shown.Month, shown, _dayBoundary, ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
 
         // Mirror the calendar's pre-selected day into QuickAdd so both controls agree before the first click.
