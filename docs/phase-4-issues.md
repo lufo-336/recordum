@@ -41,10 +41,19 @@ restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un res
 **Trovati in F2d-1 (sezione "Onda F2d-1")** — tag e foto nelle voci del diario, schema 2.19. `fixed` dal giro finale: **F2d1-1** voce
 di sole foto non modificabile · **F2d1-2** nomi della riga Tag non validi inline · **F2d1-3** minori M1-M7. `triaged`, da decidere o
 da fare: **F2d1-4** miniature sul thread UI (l'autore firma) · **F2d1-5** pulsanti del composer durante una modifica (scelta
-dell'autore) · **F2d1-6** `BeginEdit` su un'altra riga scarta la modifica aperta · **F2d1-7** chip dei tag in Cronologia (F2d-2) ·
+dell'autore) · **F2d1-6** `BeginEdit` su un'altra riga scarta la modifica aperta (`fixed` in F2d-2) · **F2d1-7** chip dei tag in
+Cronologia (`fixed` in F2d-2) ·
 **F2d1-8** decodifica JPEG scalata · **F2d1-9** import al primo avvio senza avanzamento · **F2d1-10** log di salvataggio solo su
 `Debug.WriteLine` · **F2d1-11** "#pra" nella riga Tag senza Crea · **F2d1-12** CrashLoggerTests su Windows (`fixed` nel test) ·
 **F2d1-13** minori rimandati.
+
+**Trovati in F2d-2 (sezione "Onda F2d-2")** — editor del diario della sera. `fixed` dal giro finale: **F2d2-1** la bozza di una
+modifica non sopravviveva alla riapertura (né a un clic sul giorno già scelto) · **F2d2-2** Cronologia ferma dopo la modifica di
+una voce · **F2d2-3** minori M1-M4 · **F2d2-4** editor invisibile senza `Markdown.Avalonia` (tema di AvaloniaEdit mancante).
+`triaged`: **F2d2-5** foto senza riferimento non rimovibili in modalità diario (l'autore decide) · **F2d2-6** bozza non legata a un
+giorno (l'autore decide) · **F2d2-7** gesto Nota veloce dopo un crash perde la parte di modifica · **F2d2-8** export non raggiungibile
+su Avalonia fino a F6 · **F2d2-9** un editor completo per voce, senza virtualizzazione · **F2d2-10** "Aggiungi foto" della nota
+veloce durante una modifica · **F2d2-11** minori rimandati.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2144,10 +2153,13 @@ Aperti, con le decisioni del controllore:
   firma.** Se serve: decodifica nel ViewModel con `Task.Run`. Costa se sbagliato: scatti visibili in giorni con 20+ foto.
 - **F2d1-5 — "Aggiungi foto" e "Salva" del composer agiscono sulla riga in modifica** · `triaged` · Scelta di UX dell'autore
   (Ruling 8): disabilitarli o riagganciarli alla nuova voce. Oggi una foto può finire sulla voce sbagliata (si recupera con
-  "Annulla"); ogni riga ha i suoi pulsanti.
-- **F2d1-6 — `BeginEdit` su un'altra riga scarta in silenzio testo, foto e tag della modifica aperta** · `triaged` ·
-  Mancano un avviso o il salvataggio implicito; da decidere con F2d-2 (editor).
-- **F2d1-7 — i chip dei tag mancano in Cronologia (spec §5.1)** · `triaged` · Lacuna del piano, non regressione: si fa in F2d-2.
+  "Annulla"); ogni riga ha i suoi pulsanti. In modalità diario (F2d-2) la domanda non si pone più: c'è una superficie sola;
+  resta per la nota veloce.
+- **F2d1-6 — `BeginEdit` su un'altra riga scarta in silenzio testo, foto e tag della modifica aperta** · `fixed` in F2d-2 ·
+  Con modifiche aperte, passare a un'altra voce (e, in F2d-2, cambiare giorno) chiede "Scartare le modifiche alla voce delle
+  HH:mm?", in tutte e due le modalità.
+- **F2d1-7 — i chip dei tag mancano in Cronologia (spec §5.1)** · `fixed` in F2d-2 · Chip dei tag e "[foto]" nelle righe del
+  diario in Cronologia.
 - **F2d1-8 — decodifica JPEG scalata** · `triaged` · Le foto da 200 MP sono rifiutate con "troppi pixel"; sotto il tetto la
   decodifica a dimensione piena può usare ~400 MB a 100 MP. Serve una decodifica scalata (Skia `SampleSize`/scaled codec).
 - **F2d1-9 — l'import al primo avvio non dà avanzamento e decodifica ogni file storico** · `triaged` · Da misurare sui
@@ -2177,3 +2189,59 @@ Aperti, con le decisioni del controllore:
   - `LostFocus` dereferenzia `TagMenu.Child!` (sicuro finché il menu è dichiarato in XAML); un tag chiamato come l'etichetta
     "Crea" sarebbe mappato male (trascurabile);
   - il menu `#` non si riapre al rifocus finché non si preme un tasto.
+
+## Onda F2d-2 — Editor del diario della sera (`F2d2-*`)
+
+Esiti verificati contro codice, test e review dell'onda (branch `f2d2-editor`, in pila dopo `f2d1-tags-photos`; nessuno in
+`main`). Nessuna migrazione: la bozza vive in `app_setting` (dentro il DB cifrato), le foto nel testo sono riferimenti
+`![nome](photo:<id>)` alle righe `attachment` di F2d-1. Review finale (opus) "non pronta": un Critical, un Important e quattro
+minori, tutti chiusi in `5172e730` e riesaminati.
+
+Chiusi:
+
+- **F2d2-1 — la modifica ripristinata dalla bozza spariva subito** · `fixed` (`5172e730`) · `SetDay` ricaricava le voci anche
+  a giorno invariato: all'apertura la schermata richiama `SetDay` sul giorno già caricato, la riga in modifica spariva e il primo
+  tasto riscriveva la bozza senza la modifica; un clic sul giorno già scelto scartava una modifica senza chiedere. Ora `SetDay`
+  non fa niente se il giorno non cambia. Provato con due test di regressione (dalla schermata e dal composer), rossi prima.
+- **F2d2-2 — la Cronologia non si aggiornava dopo la modifica di una voce** · `fixed` (`5172e730`) · `NoteUpdated` ricaricava
+  solo il calendario; ora ricarica anche la Cronologia dei diari (testo e chip).
+- **F2d2-3 — minori M1-M4 della review finale** · `fixed` (`5172e730`) · M1 l'export Markdown dava l'ora UTC nei titoli delle
+  voci, ora quella locale; M2 la nota veloce salvava riferimenti a foto inesistenti, ora li toglie come il diario; M3 Ctrl+Z
+  portava testo da una voce all'altra quando i due testi erano uguali; M4 una voce cancellata dalla Cronologia restava nella
+  colonna Diario (una modifica aperta su quella voce passa nella bozza, le foto aggiunte solo lì si perdono).
+- **F2d2-4 — senza `Markdown.Avalonia` l'editor sarebbe stato invisibile** · `fixed` (`277582a5`) · `App.axaml` non includeva il
+  tema di AvaloniaEdit: lo caricava `Markdown.Avalonia` come effetto collaterale. Era anche la causa del "priming" dei test
+  headless. Tema incluso, priming tolto, `Markdown.Avalonia` e il `MarkdownEditorControl` di Avalonia cancellati.
+
+Aperti, con le decisioni del controllore:
+
+- **F2d2-5 — in modalità diario le foto senza riferimento non si tolgono** · `triaged` · La decisione 6 le tiene (voci nate
+  come nota veloce); oggi si tolgono solo col gesto Nota veloce. **L'autore decide** se serve un comando.
+- **F2d2-6 — la bozza non è legata a un giorno** · `triaged` · Una voce nuova cominciata su ieri torna, dopo un crash, sul
+  giorno che si apre (oggi). La decisione 3 la lega solo all'abitudine. **L'autore decide.**
+- **F2d2-7 — aprire col gesto Nota veloce dopo un crash perde la parte di modifica della bozza** · `triaged` · Al primo tasto la
+  bozza si riscrive senza modifica (la decisione 3 ripristina la modifica solo in modalità diario).
+- **F2d2-8 — l'export non si raggiunge da Avalonia fino a F6** · `triaged` · I dialoghi di export sono ancora `Null` su
+  Avalonia; l'export con le immagini si prova da WPF sulla stessa cartella dati, oppure a F6.
+- **F2d2-9 — un editor AvaloniaEdit completo per ogni voce del giorno, senza virtualizzazione** · `triaged` · Va bene nei giorni
+  normali; ogni cambio delle miniature ridisegna tutte le voci. Un test di prestazioni prima della v1.0 (20+ voci).
+- **F2d2-10 — "Aggiungi foto" della nota veloce sceglie la voce prima del dialogo** · `triaged` · Premere Modifica o Annulla
+  durante l'import può allegare la foto alla voce sbagliata; in modalità diario la superficie è bloccata durante l'inserimento.
+  Stessa famiglia di F2d1-5.
+- **F2d2-11 — minori rimandati (possono aspettare)** · `triaged`, una riga ciascuno:
+  - `PhotoRefs.Format` non toglie i backtick dal nome e `[` nel nome rompe il link nel Markdown esportato;
+  - export: un percorso non sicuro o un errore a metà scrittura lancia senza messaggio nel dialogo e può lasciare una cartella
+    a metà; l'estensione dell'immagine viene dal nome senza filtro; `ExportJob.FilePath` registra il percorso scelto, non quello
+    scritto;
+  - composer: `BeginEditAsync` rientrante durante la conferma; `PhotoThumbnails` ricostruita a ogni accesso e il menu `#`
+    chiuso a ogni ricarica; una riga con due riferimenti sconosciuti lascia una riga di spazi; `_isInserting` è un bool semplice;
+    Salva rifiutato in silenzio durante un inserimento; un clic sul calendario durante un import torna indietro senza dirlo;
+  - bozza: due composer della stessa abitudine (ricarica della schermata) possono leggere una bozza vecchia di pochi ms;
+  - ricarica delle voci su un evento di completion (`RefreshEntriesAsync`): un Annulla nei pochi ms della ricarica può far
+    riaprire la modifica (confrontare `_reloadGeneration` invece di dedurre da `IsEditing`); una modifica riapplicata non porta
+    con sé le foto aggiunte o segnate per la rimozione; `JournalDiaryView` si stacca da `PropertyChanged` solo al cambio di
+    `DataContext`; nessun test di M2 sul percorso di modifica della nota veloce;
+  - editor: maschera degli span di codice con spazi (`` `x`#tag `` è un tag) e dei riferimenti con `\0`; test di tastiera
+    senza selezione dopo Ctrl+B, Invio su CRLF e miniatura indecodificabile; tema scuro provato solo dal PNG;
+  - test: `RecordsViewTests` imposta la cultura prima del `try`; firma di `CompletionListTests.JournalListAsync`;
+  - storia: `ab77aa48` non compila da solo (rinomine senza contenuto; il commit dopo lo completa).

@@ -108,8 +108,9 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
 - Filtri `dotnet test` per **nome di classe**, e controllare il totale eseguito: un filtro vuoto sembra verde.
 - Quando cambia una firma, l'elenco dei chiamanti lo dà il compilatore, non un `grep`: un `new(...)` senza tipo li nasconde.
 - **Avalonia**: `InitializeComponent()`, mai `AvaloniaXamlLoader.Load(this)`; `x:DataType` su ogni view e template
-  (binding compilati); in headless il primo controllo può non fare il layout (si prima con una vista diversa,
-  `RunJobs()` + `ForceRenderTimerTick()`), e un PNG non prova niente senza un'asserzione strutturale; un `[Fact]` che
+  (binding compilati); un controllo che resta 0x0 in headless di solito ha perso il suo tema (il "priming" di un tempo
+  copriva lo `StyleInclude` di AvaloniaEdit mancante in `App.axaml`); dopo un'azione `RunJobs()` +
+  `ForceRenderTimerTick()`, e un PNG non prova niente senza un'asserzione strutturale; un `[Fact]` che
   tocca tipi Avalonia va reso `[AvaloniaFact]`; l'assembly UI gira senza parallelismo. `Recordum.UI.Tests` è xunit v3
   (serve `using Xunit;`, mai referenziare `Presentation.Tests`).
 

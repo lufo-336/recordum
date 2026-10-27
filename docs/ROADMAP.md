@@ -4,10 +4,10 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-22
+## Dove siamo — 2026-10-27
 
-- **Branch di lavoro**: `f2d1-tags-photos`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
-  `f2b-creation` → `f2c-data-safety` → `f2d1-tags-photos`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
+- **Branch di lavoro**: `f2d2-editor`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
+  `f2b-creation` → `f2c-data-safety` → `f2d1-tags-photos` → `f2d2-editor`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
   girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
@@ -30,8 +30,8 @@
   nessun caso reale oggi; "cambia passphrase", quando arriverà, passa dal cancello.
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
-- **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario**: F2d-1 (nota veloce con tag e foto D10) a codice completo, F2d-2 (editor
-  minimo) prossima; chiude F2 il lancio stabile su Linux (publish + `.desktop`).
+- **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario**: F2d-1 (nota veloce con tag e foto D10) e F2d-2 (editor
+  della sera) a codice completo; chiude F2 il lancio stabile su Linux (publish + `.desktop`).
 - **Checklist a schermo dell'autore** (GNOME per tutte; Windows per F1; la lista D7 è nel piano F1): F1 (finestra, tab,
   trascinamento, barra di sistema); F2a (i quattro tipi dalla colonna "Oggi" e dal quick-add, "ieri" vicino al reset, timer
   dopo riavvio, separatore decimale, chiaro e scuro, rinomina e cancellazione); F2b (creare da tutti e otto i template e dal
@@ -48,7 +48,31 @@
   riga Tag) e foto **dentro il database cifrato** (ridimensionate e senza metadati, D10); all'avvio le foto già su disco
   entrano nel DB e i file spariscono. Review dell'intero branch fatta, con un'onda di correzioni (voce di sole foto
   modificabile, nomi di tag validi inline, minori M1-M7). Aperti e decisioni: `docs/phase-4-issues.md`, sezione "Onda F2d-1".
-  **Prossimo: F2d-2 (editor del diario)**, che porta anche i chip dei tag in Cronologia.
+- **F2d-2 (editor del diario della sera)**: a codice completo su `f2d2-editor` (in pila sopra `f2d1-tags-photos`, **nessuno in
+  `main`**), nessuna migrazione. Col gesto Diario la colonna Diario è un editor solo (`DiaryEditor`, AvaloniaEdit): titoli,
+  grassetto e corsivo, elenchi che continuano con Invio, citazioni, `#tag` col menu, immagini nel testo
+  (`![nome](photo:<id>)`, "Inserisci immagine…"); sotto, le voci del giorno rese, con Modifica (striscia "Stai modificando…")
+  ed Elimina. Salva esplicito più una bozza che si scrive a ogni modifica e torna dopo un crash. Cronologia con chip dei tag e
+  "[foto]"; export Markdown come cartella con le immagini, HTML con l'immagine al suo posto. Col gesto Nota veloce resta la
+  nota veloce di F2d-1. Review dell'intero branch fatta, con un'onda di correzioni (la modifica ripristinata dalla bozza
+  spariva all'apertura; Cronologia ferma dopo una modifica). Aperti: `docs/phase-4-issues.md`, sezione "Onda F2d-2".
+- **Checklist a schermo dell'autore per F2d-2** (GNOME; gesto Diario):
+  - [ ] diario della sera con un titolo, un elenco (Invio che continua, Invio su voce vuota che chiude), una citazione,
+    Ctrl+B e Ctrl+I con e senza selezione;
+  - [ ] `#` con la tastiera (frecce, Invio che sceglie senza andare a capo) e con un **vero clic del mouse**;
+  - [ ] "Inserisci immagine…": la miniatura appare nel testo fuori dalla riga del cursore; scrivere a lungo: la colonna segue
+    il cursore;
+  - [ ] Salva, poi rilettura dalla Cronologia: chip dei tag e "[foto]";
+  - [ ] Modifica di una voce, Annulla (torna la bozza di prima); Modifica con cambi, poi un'altra voce o un altro giorno: chiede;
+  - [ ] chiudere la finestra a metà frase e riaprire: la bozza torna; `kill -9` a metà frase (anche durante una Modifica) e
+    riaprire: torna anche la modifica;
+  - [ ] ieri dal calendario: le voci di ieri rese con le immagini; una voce nuova scritta lì va su ieri;
+  - [ ] chiaro e scuro;
+  - [ ] **export** (F2d2-8: su Avalonia arriva con F6): creare la voce con un'immagine sull'app Avalonia della VM Windows ed
+    esportare da WPF sulla stessa cartella dati — Markdown aperto in Obsidian con le immagini, HTML con l'immagine al suo
+    posto; oppure rimandare questi due punti a F6;
+  - [ ] **decisioni per l'autore**: F2d2-5 (togliere le foto senza riferimento in modalità diario) e F2d2-6 (bozza legata al
+    giorno?).
 - **Checklist a schermo dell'autore per F2d-1** (GNOME), in quest'ordine:
   - [ ] (Ruling 6) **primo avvio su una COPIA della cartella dati vera** (`--data-dir`, mai l'originale): le foto esistenti
     entrano nel DB, `attachments/` non ha più file, le voci vecchie mostrano le loro foto; **cronometrare il primo avvio**;
@@ -67,7 +91,8 @@
   - [ ] **decisioni per l'autore**: Ruling 7 (miniature sul thread UI, F2d1-4) e Ruling 8 (pulsanti del composer durante una
     modifica, F2d1-5).
 - **Prossimo**: le checklist dell'autore e i merge in ordine
-  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`, `f2d1-tags-photos`), poi F2d-2.
+  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`, `f2d1-tags-photos`,
+  `f2d2-editor`), poi il lancio stabile su Linux che chiude F2.
 
 
 ## Il percorso

@@ -659,3 +659,24 @@ Cronologia (F2d-2), decodifica JPEG scalata, avanzamento dell'import al primo av
 F2d-1" (F2d1-4…13). Suite su Linux: Core 170, Data 646 (+1 saltato), Presentation 1067, UI 401 + 3 Performance (en_US e it_IT),
 ExportEngine 39. **Prossimo**: la checklist a schermo dell'autore, con la prova su una copia dei dati veri in testa (v. ROADMAP),
 poi F2d-2.
+
+**Progresso 2026-10-27 (onda F2d-2: editor del diario della sera: codice completo, non mergiata).** Piano
+`2026-10-22-wave-f2d2-diary-editor`, 8 task su `f2d2-editor` (da `f2d1-tags-photos`; nessun branch della pila in `main`), dal
+2026-10-22 al 2026-10-27, `f3ff895f..5172e730` (con una pausa chiesta dall'autore a metà del Task 3).
+*Cosa esiste ora*: `DiaryEditor` (AvaloniaEdit) con anteprima dal vivo fuori dalla riga del cursore — titoli, grassetto e corsivo,
+elenchi che continuano con Invio, citazioni, `#tag` nel colore d'accento col menu condiviso con la nota veloce
+(`TagMenuController`), immagini nel testo come `![nome](photo:<id>)` con la miniatura; la colonna Diario in modalità diario (gesto
+Diario) con una superficie sola per voce nuova e voce in modifica, conferma prima di scartare una modifica (anche cambiando giorno),
+bozza scritta a ogni modifica in `app_setting` e ripresa dopo un crash; Cronologia con chip dei tag e "[foto]"; export Markdown
+come cartella con le immagini e riferimenti risolti (`ExportOutput`), HTML con l'immagine al suo posto, PDF col testo delle voci;
+`Markdown.Avalonia` e le sonde tolte.
+*Cosa ha insegnato*: il "priming" dei test headless copriva un bug di produzione (il tema di AvaloniaEdit non era incluso in
+`App.axaml`: senza il pacchetto che lo caricava per caso, l'editor sarebbe stato 0x0); un testo messo nel documento da un binding
+va tolto dalla pila di annullamento, o Ctrl+Z riporta la bozza di prima sopra una voce; la review finale ha trovato che la
+schermata richiamava `SetDay` sullo stesso giorno subito dopo aver ripristinato la bozza, e la ricarica cancellava la modifica
+appena ripresa: i test del composer passavano perché non passavano dalla schermata (F2d2-1). Un fake che sblocca scritture da più
+thread ha fatto un rosso solo su Windows (lista senza lock). Un commit intermedio pushato non compila da solo (`ab77aa48`).
+*Non consegnato*: rimozione delle foto senza riferimento in modalità diario e bozza per giorno (decisioni dell'autore), export
+da Avalonia (F6), virtualizzazione delle voci, minori: `docs/phase-4-issues.md`, sezione "Onda F2d-2" (F2d2-5…11). Suite su
+Linux: Core 177, Data 649 (+1 saltato), Presentation 1124, UI 453 (`Category!=Performance`), ExportEngine 46. **Prossimo**: le
+checklist a schermo dell'autore (F2d-1 con la prova sui dati veri, poi F2d-2; v. ROADMAP) e i merge della pila.
