@@ -844,6 +844,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // The tap quick-add counts the day in a local field it bumps per tap, so a completion
             // deleted from the records list would leave it reading high (W23-VF1). Re-read from the DB.
             if (QuickAdd is CounterTapQuickAddViewModel tap) reloads.Add(tap.LoadDayAsync());
+            // Una voce cancellata dalla Cronologia non deve restare nella colonna Diario (M4).
+            if (JournalQuickEntry is { } journal && IsJournal) reloads.Add(journal.RefreshEntriesAsync());
             await Task.WhenAll(reloads).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCompletionEvent failed: {ex}"); }
@@ -885,7 +887,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 _ => Guid.Empty,
             };
             if (habitId != Node.Id) return;
-            await Calendar.JumpAsync().ConfigureAwait(true);
+            // Una voce del diario modificata pubblica solo NoteUpdated: la Cronologia si rilegge qui (I1).
+            if (CompletionList.IsJournal) await Task.WhenAll(Calendar.JumpAsync(), CompletionList.LoadAsync(Node.Id)).ConfigureAwait(true);
+            else await Calendar.JumpAsync().ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnNoteEvent failed: {ex}"); }
     }

@@ -335,6 +335,9 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
     /// Entries con un mix di due giorni (I4), e un fallimento si traccia invece di sparire nel nulla.</summary>
     public void SetDay(DateOnly day)
     {
+        // Stesso giorno (clic sul giorno gia' selezionato, primo carico dopo il ripristino della bozza): niente
+        // ricarica, o la riga in modifica sparisce e la prossima battuta scrive editNoteId:null (C1).
+        if (day == _day) return;
         _day = day;
         _ = ReloadEntriesGuardedAsync();
     }
@@ -351,6 +354,32 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         {
             System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel.ReloadEntriesAsync failed: {ex}");
         }
+    }
+
+    /// <summary>Rilegge le voci del giorno dopo un evento esterno (una voce cancellata dalla Cronologia). Una modifica
+    /// aperta sopravvive alla ricarica; se la sua voce non esiste piu' il testo non si perde: passa in coda alla bozza.</summary>
+    public async Task RefreshEntriesAsync(CancellationToken ct = default)
+    {
+        var open = EditingRow;
+        var openId = open?.Id;
+        var editText = open?.EditDraft ?? string.Empty;
+        var editTags = open?.EditTags?.Tags.ToList() ?? [];
+        await ReloadEntriesAsync(ct).ConfigureAwait(true);
+        if (openId is not { } id) return;
+        if (Entries.FirstOrDefault(r => r.Id == id) is { } row)
+        {
+            if (row.IsEditing) return; // ricarica superata: le righe sono ancora quelle di prima
+            row.BeginEdit(_knownTags);
+            row.EditDraft = editText;
+            row.EditTags?.Tags.Clear();
+            foreach (var t in editTags) row.EditTags?.Tags.Add(t);
+        }
+        else if (editText.Length > 0)
+        {
+            Draft = Draft.Length == 0 ? editText : Draft + "\n\n" + editText;
+            foreach (var t in editTags.Where(t => !PropertyTags.Tags.Contains(t))) PropertyTags.Tags.Add(t);
+        }
+        else ScheduleDraftWrite(); // la voce e' sparita: la bozza non deve piu' puntare a lei
     }
 
     private async Task ReloadEntriesAsync(CancellationToken ct)
@@ -614,8 +643,8 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
                 removed.AddRange(dropped);
                 kept.RemoveAll(dropped.Contains);
                 added = added.Where(p => now.Contains(p.Id)).ToList();
-                editText = StripUnknownRefs(editText, [.. kept, .. added.Select(p => p.Id)]);
             }
+            editText = StripUnknownRefs(editText, [.. kept, .. added.Select(p => p.Id)]);
             if (editText.Length == 0 && kept.Count + added.Count == 0)
             {
                 // Stessa regola del composer piu' sotto: una voce non puo' restare senza testo ne' foto.
@@ -649,11 +678,12 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
         var photos = PendingPhotos.ToList();
         if (IsDiaryMode)
         {
-            // Entrano solo le foto con il riferimento ancora nel testo; i riferimenti a id sconosciuti si tolgono.
+            // Entrano solo le foto con il riferimento ancora nel testo.
             var now = JournalEntryRowViewModel.ReferencedIds(text);
             photos = photos.Where(p => now.Contains(p.Id)).ToList();
-            text = StripUnknownRefs(text, photos.Select(p => p.Id));
         }
+        // I riferimenti a id sconosciuti si tolgono in entrambe le modalita' (M2); in nota veloce le foto senza riferimento restano.
+        text = StripUnknownRefs(text, photos.Select(p => p.Id));
         if (text.Length == 0 && photos.Count == 0)
         {
             ErrorMessage = Strings.Diario_QuickEntry_Error_Empty;

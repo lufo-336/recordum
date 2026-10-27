@@ -275,6 +275,10 @@ public partial class DiaryEditor : UserControl
         Editor.TextArea.TextView.Redraw(document.GetLineByNumber(lineNumber));
     }
 
+    /// <summary>Svuota la cronologia di annulla. Lo chiama chi cambia la superficie (voce nuova ↔ voce in modifica): con
+    /// testi uguali <see cref="PushToEditor"/> esce subito e Ctrl+Z porterebbe il testo di un'altra voce.</summary>
+    public void ClearUndo() => Editor.Document.UndoStack.ClearAll();
+
     private void PushToEditor(string markdown)
     {
         if (Editor.Document.Text == markdown) return;

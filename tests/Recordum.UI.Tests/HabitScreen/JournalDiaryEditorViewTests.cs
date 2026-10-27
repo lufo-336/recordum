@@ -621,4 +621,28 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         qe.EditingEntry.Should().BeNull();
         EditButton(view).IsEffectivelyEnabled.Should().BeTrue();
     }
+
+    [AvaloniaFact]
+    public async Task Undo_after_Modifica_does_not_carry_the_text_typed_in_the_new_entry()
+    {
+        // Stesso testo nelle due superfici: PushToEditor esce subito e l'annulla della voce nuova restava vivo (M3).
+        var id = await CreateAsync(HabitType.Journal, "Sera-undo-surface");
+        await SeedAsync(id, Today, "abc");
+        var (vm, view, window) = await OpenAsync(id);
+        FocusComposer(view);
+        window.KeyTextInput("abc");
+        PrivateDbHost.Pump();
+        Text(Composer(view)).Should().Be("abc");
+
+        Click(EditButton(view));
+        vm.QuickEntryForDiario!.EditingEntry.Should().NotBeNull();
+        Text(Composer(view)).Should().Be("abc");
+        FocusComposer(view);
+        window.KeyPressQwerty(PhysicalKey.Z, RawInputModifiers.Control);
+        window.KeyReleaseQwerty(PhysicalKey.Z, RawInputModifiers.Control);
+        PrivateDbHost.Pump();
+
+        Text(Composer(view)).Should().Be("abc", "Ctrl+Z non riporta il testo dell'altra superficie");
+        vm.QuickEntryForDiario.EditingEntry!.EditDraft.Should().Be("abc");
+    }
 }

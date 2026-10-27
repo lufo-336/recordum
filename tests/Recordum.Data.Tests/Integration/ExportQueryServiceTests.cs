@@ -282,6 +282,24 @@ public sealed class ExportQueryServiceTests
     }
 
     [Fact]
+    public async Task Note_times_are_exported_in_the_local_time_zone_not_utc()
+    {
+        var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 8, 20, 20, 30, 0, TimeSpan.Zero), Plus2));
+        var habitId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, NodeType = NodeType.Habit, HabitType = HabitType.Journal, Name = "Diary" });
+            // UpdatedAtMs lo compila il TimestampInterceptor dal clock: 20:30 UTC = 22:30 a +2
+            db.Notes.Add(new Note { Id = Guid.NewGuid(), HabitNodeId = habitId, BodyMd = "sera" });
+            await db.SaveChangesAsync();
+        }
+        var request = new ExportRequest(ExportSubject.SingleHabit, habitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 8, 21), new ExportLayout());
+        var note = Assert.Single(Assert.Single((await Build(fx).BuildAsync(request)).Habits).Notes);
+        Assert.Equal("2026-08-20 22:30", note.UpdatedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture));
+        await fx.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Notes_carry_their_attachments()
     {
         var fx = new DbFixture(new FakeClock(new DateTimeOffset(2026, 5, 25, 12, 0, 0, TimeSpan.Zero)));

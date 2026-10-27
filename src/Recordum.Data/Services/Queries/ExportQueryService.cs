@@ -139,7 +139,9 @@ public sealed class ExportQueryService(
                     {
                         Content = await attachments.ReadContentAsync(a.Id, ct).ConfigureAwait(false),
                     });
-                noteRows.Add(new ExportNoteRow(DateTimeOffset.FromUnixTimeMilliseconds(n.UpdatedAtMs), n.BodyMd)
+                // Ora locale, non UTC: le intestazioni dell'export mostrano l'ora che l'utente ha vissuto (M1).
+                noteRows.Add(new ExportNoteRow(
+                    TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(n.UpdatedAtMs), clock.LocalTimeZone), n.BodyMd)
                 {
                     Attachments = attachmentRefs,
                 });

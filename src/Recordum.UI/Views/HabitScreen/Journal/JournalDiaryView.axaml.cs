@@ -21,8 +21,28 @@ public partial class JournalDiaryView : UserControl
             Editor.ReplaceText,
             Editor.CaretBounds,
             FocusEditor);
-        DataContextChanged += (_, _) => _tagMenu.ViewModel = DataContext as JournalQuickEntryViewModel;
+        DataContextChanged += (_, _) =>
+        {
+            if (_watched is not null) _watched.PropertyChanged -= OnViewModelPropertyChanged;
+            _watched = DataContext as JournalQuickEntryViewModel;
+            if (_watched is not null) _watched.PropertyChanged += OnViewModelPropertyChanged;
+            _editing = _watched?.EditingEntry;
+            _tagMenu.ViewModel = _watched;
+        };
         Editor.TextOrCaretChanged += (_, _) => _tagMenu.OnTextOrCaretChanged();
+    }
+
+    private JournalQuickEntryViewModel? _watched;
+    private JournalEntryRowViewModel? _editing;
+
+    // Cambia la superficie (voce nuova ↔ voce in modifica): l'annulla non deve portare il testo dell'una nell'altra (M3).
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(JournalQuickEntryViewModel.EditingEntry)) return;
+        var now = _watched?.EditingEntry;
+        if (ReferenceEquals(now, _editing)) return;
+        _editing = now;
+        Editor.ClearUndo();
     }
 
     private void FocusEditor() => Editor.GetVisualDescendants().OfType<TextArea>().FirstOrDefault()?.Focus();
