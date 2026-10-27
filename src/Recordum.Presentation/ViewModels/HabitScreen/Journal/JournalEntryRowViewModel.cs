@@ -31,7 +31,11 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         // CreatedAt è UTC; la riga mostra l'ora che l'utente ha vissuto (decisione 8). Invariant: i due punti restano due punti.
         var utc = DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc);
         TimeDisplay = TimeZoneInfo.ConvertTimeFromUtc(utc, clock.LocalTimeZone).ToString("HH:mm", CultureInfo.InvariantCulture);
-        Photos.CollectionChanged += (_, _) => OnPropertyChanged(nameof(UnreferencedPhotos));
+        Photos.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(UnreferencedPhotos));
+            OnPropertyChanged(nameof(EditUnreferencedPhotos));
+        };
     }
 
     public Guid Id { get; }
@@ -67,9 +71,25 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         }
     }
 
+    /// <summary>In modifica (diario): le foto della voce il cui riferimento non e' nel testo che si sta scrivendo (quelle nel
+    /// testo sono gia' inline). L'editor le mostra sotto, ognuna con la sua croce; vuoto fuori dalla modifica.</summary>
+    public IReadOnlyList<AttachmentViewModel> EditUnreferencedPhotos
+    {
+        get
+        {
+            if (!IsEditing) return [];
+            var referenced = ReferencedIds(EditDraft);
+            return [.. Photos.Where(p => !referenced.Contains(p.Id))];
+        }
+    }
+
     internal static HashSet<Guid> ReferencedIds(string? text) => [.. PhotoRefs.Find(text ?? string.Empty).Select(r => r.Id)];
 
     partial void OnTextChanged(string value) => OnPropertyChanged(nameof(UnreferencedPhotos));
+
+    partial void OnEditDraftChanged(string value) => OnPropertyChanged(nameof(EditUnreferencedPhotos));
+
+    partial void OnIsEditingChanged(bool value) => OnPropertyChanged(nameof(EditUnreferencedPhotos));
 
     /// <summary>Qualcosa e' cambiato rispetto a quando e' iniziata la modifica (serve a chiedere conferma prima di scartarla).</summary>
     internal bool HasChanges =>

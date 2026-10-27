@@ -378,4 +378,42 @@ public class JournalDiaryModeTests
 
         r.Diary.Drafts.Single().Text.Should().Be("uno\ndue fine");
     }
+
+    // ---- F2d2-5: in modifica, le foto senza riferimento nel testo si tolgono con la croce ----
+
+    [Fact]
+    public async Task EditUnreferencedPhotos_is_the_rows_photos_not_referenced_in_the_edit_text_and_follows_EditDraft()
+    {
+        var r = await BuildAsync();
+        var (row, ids) = await SeedEntryAsync(r, "", photos: 2, ids => $"{PhotoRefs.Format(ids[0], "a.jpg")}\nciao");
+        row.EditUnreferencedPhotos.Should().BeEmpty("fuori dalla modifica non c'e' niente");
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+
+        row.EditUnreferencedPhotos.Select(p => p.Id).Should().Equal(ids[1]);
+
+        row.EditDraft = "ciao"; // riferimento cancellato: la foto 0 passa nell'elenco
+        row.EditUnreferencedPhotos.Select(p => p.Id).Should().BeEquivalentTo([ids[0], ids[1]]);
+
+        row.EditDraft = $"{PhotoRefs.Format(ids[0], "a.jpg")}\n{PhotoRefs.Format(ids[1], "a.jpg")}";
+        row.EditUnreferencedPhotos.Should().BeEmpty("le foto nel testo sono inline");
+    }
+
+    [Fact]
+    public async Task Removing_an_unreferenced_photo_in_the_editor_deletes_it_on_Save_and_Annulla_restores_it()
+    {
+        var r = await BuildAsync();
+        var (row, ids) = await SeedEntryAsync(r, "ciao", photos: 1);
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        r.Sut.RemoveEditPhotoCommand.Execute(row.EditUnreferencedPhotos.Single());
+        row.EditUnreferencedPhotos.Should().BeEmpty();
+
+        r.Sut.CancelEditCommand.Execute(null);
+        row.Photos.Select(p => p.Id).Should().Equal(ids);
+
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        r.Sut.RemoveEditPhotoCommand.Execute(row.EditUnreferencedPhotos.Single());
+        await r.Sut.SaveCommand.ExecuteAsync(null);
+
+        r.Diary.Edits.Should().ContainSingle().Which.Edit.RemovedPhotoIds.Should().Equal(ids);
+    }
 }

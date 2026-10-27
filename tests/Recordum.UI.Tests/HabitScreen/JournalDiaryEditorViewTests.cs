@@ -645,4 +645,38 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         Text(Composer(view)).Should().Be("abc", "Ctrl+Z non riporta il testo dell'altra superficie");
         vm.QuickEntryForDiario.EditingEntry!.EditDraft.Should().Be("abc");
     }
+
+    [AvaloniaFact]
+    public async Task Modifica_shows_a_refless_photo_under_the_editor_with_a_cross_and_Salva_removes_it()
+    {
+        var id = await CreateAsync(HabitType.Journal, "Sera-F2d25");
+        using (var scope = Host.Provider.CreateScope())
+        {
+            var png = JournalFixtures.WritePng(160, 120);
+            try
+            {
+                var photo = await Svc<IPhotoImporter>(scope).ImportAsync(png, CancellationToken.None);
+                await Svc<IDiaryService>(scope).SaveEntryAsync(id, Today, new DiaryEntryDraft("senza riferimento", [], [photo]));
+            }
+            finally { File.Delete(png); }
+        }
+        var (vm, view, _) = await OpenAsync(id);
+        var qe = vm.QuickEntryForDiario!;
+        await WaitAsync(() => qe.Entries.Count == 1 && qe.Entries[0].Photos.Count == 1);
+        var strip = Find<ItemsControl>(view, "EditUnreferencedPhotos");
+        strip.GetVisualDescendants().OfType<Button>().Should().BeEmpty("fuori dalla modifica non c'e' niente");
+
+        Click(EditButton(view));
+        await WaitAsync(() => strip.GetVisualDescendants().OfType<Button>().Any(b => b.Name == "RemoveEditPhotoButton" && b.IsEffectivelyVisible));
+        strip.GetVisualDescendants().OfType<Image>().Should().ContainSingle(i => i.Source != null, "la miniatura della foto senza riferimento");
+        Find<ItemsControl>(view, "UnreferencedPhotos").GetVisualDescendants().OfType<Image>()
+            .Where(i => i.IsEffectivelyVisible).Should().BeEmpty("la striscia di sola lettura della riga in modifica resta nascosta (niente doppione)");
+
+        Click(strip.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "RemoveEditPhotoButton"));
+        Click(Find<Button>(view, "SaveButton"));
+        await WaitAsync(() => !qe.Entries[0].IsEditing && qe.Entries[0].Photos.Count == 0);
+
+        Find<ItemsControl>(view, "UnreferencedPhotos").GetVisualDescendants().OfType<Image>().Should().BeEmpty("la foto e' sparita dalla voce");
+        strip.GetVisualDescendants().OfType<Button>().Should().BeEmpty();
+    }
 }

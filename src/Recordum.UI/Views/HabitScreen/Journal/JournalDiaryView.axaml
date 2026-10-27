@@ -50,6 +50,39 @@
         </Popup>
       </Grid>
 
+      <!-- In modifica: le foto della voce senza riferimento nel testo che si sta scrivendo (le altre sono inline), con la croce. -->
+      <ItemsControl x:Name="EditUnreferencedPhotos" ItemsSource="{CompiledBinding EditingEntry.EditUnreferencedPhotos}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="notes:AttachmentViewModel">
+            <Panel Width="64" Height="64" Margin="0,0,6,6">
+              <Border CornerRadius="4" ClipToBounds="True" IsVisible="{CompiledBinding !ShowsPlaceholder}">
+                <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+              </Border>
+              <Border CornerRadius="4" Background="{DynamicResource Brush.Surface}" IsVisible="{CompiledBinding ShowsPlaceholder}"
+                      ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"
+                      AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Missing}">
+                <Path Data="{StaticResource Icon.ImageOff}" Width="24" Height="24" Stretch="Uniform"
+                      StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                      Stroke="{DynamicResource Brush.TextMuted}"/>
+              </Border>
+              <Button x:Name="RemoveEditPhotoButton" Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0"
+                      HorizontalAlignment="Right" VerticalAlignment="Top"
+                      Background="{DynamicResource Brush.SurfaceElevated}"
+                      Command="{CompiledBinding $parent[ItemsControl].((vm:JournalQuickEntryViewModel)DataContext).RemoveEditPhotoCommand}"
+                      CommandParameter="{CompiledBinding}"
+                      ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Remove}"
+                      AutomationProperties.Name="{x:Static res:Strings.Diario_Photo_Remove}">
+                <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
+                      StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
+              </Button>
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
       <!-- La riga Tag della voce nell'editor (nuova o in modifica). -->
       <local:TagEditorView x:Name="ActiveTagsView" DataContext="{CompiledBinding ActiveTags}"/>
 
@@ -94,7 +127,7 @@
                 </ItemsControl>
 
                 <!-- Le foto senza riferimento nel testo (es. una voce nata come nota veloce); le altre sono nel testo. -->
-                <ItemsControl x:Name="UnreferencedPhotos" ItemsSource="{CompiledBinding UnreferencedPhotos}">
+                <ItemsControl x:Name="UnreferencedPhotos" ItemsSource="{CompiledBinding UnreferencedPhotos}" IsVisible="{CompiledBinding !IsEditing}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
