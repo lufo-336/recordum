@@ -680,3 +680,11 @@ thread ha fatto un rosso solo su Windows (lista senza lock). Un commit intermedi
 da Avalonia (F6), virtualizzazione delle voci, minori: `docs/phase-4-issues.md`, sezione "Onda F2d-2" (F2d2-5…11). Suite su
 Linux: Core 177, Data 649 (+1 saltato), Presentation 1124, UI 453 (`Category!=Performance`), ExportEngine 46. **Prossimo**: le
 checklist a schermo dell'autore (F2d-1 con la prova sui dati veri, poi F2d-2; v. ROADMAP) e i merge della pila.
+
+**Progresso 2026-10-27 (lancio stabile su Linux e decisioni dell'autore, `f2e-linux-launch`).** Decise dall'autore: D9
+(SQLite3MC, opzione A della sonda, onda a sé prima dei dati veri), F2d1-4 (miniature sul thread UI accettate), F2d1-5, F2d2-5,
+F2d2-6. Fatto: `scripts/install-linux.sh` (Release di `main` da `git archive`, `~/.local/share/recordum/app`, `.desktop` con
+`StartupWMClass=recordum` e la finestra che dichiara lo stesso `WM_CLASS`, icona provvisoria, domanda sul backup,
+`app.prev` per tornare indietro), provato in una cartella di prova; composer della nota veloce spento durante una modifica,
+con comandi propri per la riga; × sulle foto senza riferimento in modifica nel diario; bozza che ricorda il suo giorno e
+riapre composer e calendario su quello. Con questo F2 è a codice completo: restano le checklist a schermo, il merge e D9.

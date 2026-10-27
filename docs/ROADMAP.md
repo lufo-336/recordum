@@ -6,8 +6,9 @@
 
 ## Dove siamo — 2026-10-27
 
-- **Branch di lavoro**: `f2d2-editor`, in pila `avalonia-linux-slice` → `f1`/`f2-perf1-home` → `f2a-registration` →
-  `f2b-creation` → `f2c-data-safety` → `f2d1-tags-photos` → `f2d2-editor`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
+- **Branch di lavoro**: `f2e-linux-launch`, in pila `avalonia-linux-slice` → `f2-perf1-home` → `f2a-registration` →
+  `f2b-creation` → `f2c-data-safety` → `f2d1-tags-photos` → `f2d2-editor` → `f2e-linux-launch`, lineare: un solo
+  fast-forward di `f2e-linux-launch` porta tutto in `main`; **nessuno è in `main`** (`main` = `5bf4fdd`, 2026-09-30). I test di prestazioni non
   girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
@@ -32,7 +33,11 @@
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 decisa il 2026-10-27**:
   SQLite3MC, in un'onda a sé prima dei dati veri.
 - **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario**: F2d-1 (nota veloce con tag e foto D10) e F2d-2 (editor
-  della sera) a codice completo; chiude F2 il lancio stabile su Linux (publish + `.desktop`).
+  della sera) a codice completo; **lancio stabile su Linux** fatto (`f2e-linux-launch`): `scripts/install-linux.sh`
+  compila `main` in Release da un `git archive`, lo installa in `~/.local/share/recordum/app` con `recordum.desktop` e
+  l'icona (provvisoria), chiede del backup manuale prima di sostituire una build e tiene la precedente in `app.prev`.
+  Sullo stesso branch le decisioni dell'autore del 2026-10-27: composer della nota veloce spento durante una modifica
+  (F2d1-5), × sulle foto senza riferimento in modifica nel diario (F2d2-5), bozza che ricorda il suo giorno (F2d2-6).
 - **Checklist a schermo dell'autore** (GNOME per tutte; Windows per F1; la lista D7 è nel piano F1): F1 (finestra, tab,
   trascinamento, barra di sistema); F2a (i quattro tipi dalla colonna "Oggi" e dal quick-add, "ieri" vicino al reset, timer
   dopo riavvio, separatore decimale, chiaro e scuro, rinomina e cancellazione); F2b (creare da tutti e otto i template e dal
@@ -87,9 +92,11 @@
   - [ ] le tre scelte D10 in «Dati e backup»;
   - [ ] l'ora delle voci è l'ora locale;
   - [ ] nessuna immagine leggibile nella cartella dati;
-- **Prossimo**: le checklist dell'autore e i merge in ordine
-  (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`, `f2d1-tags-photos`,
-  `f2d2-editor`), poi il lancio stabile su Linux che chiude F2.
+- **Prossimo**: (1) il merge dell'autore, un fast-forward: `git switch main`, poi
+  `git merge --ff-only f2e-linux-launch && git push origin main`; (2) **l'onda D9** (SQLite3MC) — **prima** di aprire i dati
+  veri con la build installata; (3) la checklist di F2d-1 su una **copia** dei dati veri (`--data-dir`), poi le altre;
+  (4) `scripts/install-linux.sh` e il dogfooding. **Finché D9 e la prova sulla copia non sono fatte, la voce Recordum
+  del menu apre la cartella dati vera: non avviarla.**
 
 
 ## Il percorso
