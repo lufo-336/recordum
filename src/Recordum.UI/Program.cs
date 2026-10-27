@@ -13,5 +13,7 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            // Lega la finestra a recordum.desktop (icona e nome nella shell): scripts/install-linux.sh.
+            .With(new X11PlatformOptions { WmClass = "recordum" })
             .LogToTrace();
 }
