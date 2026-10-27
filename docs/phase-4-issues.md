@@ -40,8 +40,8 @@ restore (il tick dell'auto-backup è uno) · **F2c-3** modo del file dopo un res
 
 **Trovati in F2d-1 (sezione "Onda F2d-1")** — tag e foto nelle voci del diario, schema 2.19. `fixed` dal giro finale: **F2d1-1** voce
 di sole foto non modificabile · **F2d1-2** nomi della riga Tag non validi inline · **F2d1-3** minori M1-M7. `triaged`, da decidere o
-da fare: **F2d1-4** miniature sul thread UI (l'autore firma) · **F2d1-5** pulsanti del composer durante una modifica (scelta
-dell'autore) · **F2d1-6** `BeginEdit` su un'altra riga scarta la modifica aperta (`fixed` in F2d-2) · **F2d1-7** chip dei tag in
+da fare: **F2d1-4** miniature sul thread UI (accettato dall'autore, si rivede col test di F2d2-9) · **F2d1-5** pulsanti del
+composer durante una modifica (deciso: spenti durante una modifica) · **F2d1-6** `BeginEdit` su un'altra riga scarta la modifica aperta (`fixed` in F2d-2) · **F2d1-7** chip dei tag in
 Cronologia (`fixed` in F2d-2) ·
 **F2d1-8** decodifica JPEG scalata · **F2d1-9** import al primo avvio senza avanzamento · **F2d1-10** log di salvataggio solo su
 `Debug.WriteLine` · **F2d1-11** "#pra" nella riga Tag senza Crea · **F2d1-12** CrashLoggerTests su Windows (`fixed` nel test) ·
@@ -50,8 +50,8 @@ Cronologia (`fixed` in F2d-2) ·
 **Trovati in F2d-2 (sezione "Onda F2d-2")** — editor del diario della sera. `fixed` dal giro finale: **F2d2-1** la bozza di una
 modifica non sopravviveva alla riapertura (né a un clic sul giorno già scelto) · **F2d2-2** Cronologia ferma dopo la modifica di
 una voce · **F2d2-3** minori M1-M4 · **F2d2-4** editor invisibile senza `Markdown.Avalonia` (tema di AvaloniaEdit mancante).
-`triaged`: **F2d2-5** foto senza riferimento non rimovibili in modalità diario (l'autore decide) · **F2d2-6** bozza non legata a un
-giorno (l'autore decide) · **F2d2-7** gesto Nota veloce dopo un crash perde la parte di modifica · **F2d2-8** export non raggiungibile
+`triaged`: **F2d2-5** foto senza riferimento non rimovibili in modalità diario (deciso: × in modifica) · **F2d2-6** bozza non legata a
+un giorno (deciso: la bozza ricorda il giorno) · **F2d2-7** gesto Nota veloce dopo un crash perde la parte di modifica · **F2d2-8** export non raggiungibile
 su Avalonia fino a F6 · **F2d2-9** un editor completo per voce, senza virtualizzazione · **F2d2-10** "Aggiungi foto" della nota
 veloce durante una modifica · **F2d2-11** minori rimandati.
 
@@ -2150,9 +2150,10 @@ Aperti, con le decisioni del controllore:
 
 - **F2d1-4 — le miniature si decodificano sul thread dell'interfaccia** · `triaged` · Scostamento accettato dalla spec §5.3
   (Ruling 7): misurato 40-50 ms per 10 PNG da 320 px nel caso peggiore (4-5 ms l'una), una pausa breve, non un blocco. **L'autore
-  firma.** Se serve: decodifica nel ViewModel con `Task.Run`. Costa se sbagliato: scatti visibili in giorni con 20+ foto.
+  firma.** **Accettato dall'autore il 2026-10-27**: si rivede col test di prestazioni di F2d2-9 o se scatta nell'uso. Se serve: decodifica nel ViewModel con `Task.Run`. Costa se sbagliato: scatti visibili in giorni con 20+ foto.
 - **F2d1-5 — "Aggiungi foto" e "Salva" del composer agiscono sulla riga in modifica** · `triaged` · Scelta di UX dell'autore
-  (Ruling 8): disabilitarli o riagganciarli alla nuova voce. Oggi una foto può finire sulla voce sbagliata (si recupera con
+  (Ruling 8): disabilitarli o riagganciarli alla nuova voce. **Deciso dall'autore il 2026-10-27: spenti durante una modifica**
+  (la riga ha i suoi pulsanti). Oggi una foto può finire sulla voce sbagliata (si recupera con
   "Annulla"); ogni riga ha i suoi pulsanti. In modalità diario (F2d-2) la domanda non si pone più: c'è una superficie sola;
   resta per la nota veloce.
 - **F2d1-6 — `BeginEdit` su un'altra riga scarta in silenzio testo, foto e tag della modifica aperta** · `fixed` in F2d-2 ·
@@ -2216,9 +2217,11 @@ Chiusi:
 Aperti, con le decisioni del controllore:
 
 - **F2d2-5 — in modalità diario le foto senza riferimento non si tolgono** · `triaged` · La decisione 6 le tiene (voci nate
-  come nota veloce); oggi si tolgono solo col gesto Nota veloce. **L'autore decide** se serve un comando.
+  come nota veloce); oggi si tolgono solo col gesto Nota veloce. **Deciso dall'autore il 2026-10-27**: in modifica le foto
+  senza riferimento della voce compaiono sotto l'editor con una ×, come nella nota veloce.
 - **F2d2-6 — la bozza non è legata a un giorno** · `triaged` · Una voce nuova cominciata su ieri torna, dopo un crash, sul
-  giorno che si apre (oggi). La decisione 3 la lega solo all'abitudine. **L'autore decide.**
+  giorno che si apre (oggi). La decisione 3 la lega solo all'abitudine. **Deciso dall'autore il 2026-10-27**: la bozza
+  ricorda il suo giorno e alla riapertura il diario torna su quel giorno.
 - **F2d2-7 — aprire col gesto Nota veloce dopo un crash perde la parte di modifica della bozza** · `triaged` · Al primo tasto la
   bozza si riscrive senza modifica (la decisione 3 ripristina la modifica solo in modalità diario).
 - **F2d2-8 — l'export non si raggiunge da Avalonia fino a F6** · `triaged` · I dialoghi di export sono ancora `Null` su

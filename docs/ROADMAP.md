@@ -29,7 +29,8 @@
   stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**). **F2c-9** (rekey e sblocco senza cancello) è `triaged`:
   nessun caso reale oggi; "cambia passphrase", quando arriverà, passa dal cancello.
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
-  propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 aspetta l'autore**.
+  propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 decisa il 2026-10-27**:
+  SQLite3MC, in un'onda a sé prima dei dati veri.
 - **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario**: F2d-1 (nota veloce con tag e foto D10) e F2d-2 (editor
   della sera) a codice completo; chiude F2 il lancio stabile su Linux (publish + `.desktop`).
 - **Checklist a schermo dell'autore** (GNOME per tutte; Windows per F1; la lista D7 è nel piano F1): F1 (finestra, tab,
@@ -71,8 +72,6 @@
   - [ ] **export** (F2d2-8: su Avalonia arriva con F6): creare la voce con un'immagine sull'app Avalonia della VM Windows ed
     esportare da WPF sulla stessa cartella dati — Markdown aperto in Obsidian con le immagini, HTML con l'immagine al suo
     posto; oppure rimandare questi due punti a F6;
-  - [ ] **decisioni per l'autore**: F2d2-5 (togliere le foto senza riferimento in modalità diario) e F2d2-6 (bozza legata al
-    giorno?).
 - **Checklist a schermo dell'autore per F2d-1** (GNOME), in quest'ordine:
   - [ ] (Ruling 6) **primo avvio su una COPIA della cartella dati vera** (`--data-dir`, mai l'originale): le foto esistenti
     entrano nel DB, `attachments/` non ha più file, le voci vecchie mostrano le loro foto; **cronometrare il primo avvio**;
@@ -88,8 +87,6 @@
   - [ ] le tre scelte D10 in «Dati e backup»;
   - [ ] l'ora delle voci è l'ora locale;
   - [ ] nessuna immagine leggibile nella cartella dati;
-  - [ ] **decisioni per l'autore**: Ruling 7 (miniature sul thread UI, F2d1-4) e Ruling 8 (pulsanti del composer durante una
-    modifica, F2d1-5).
 - **Prossimo**: le checklist dell'autore e i merge in ordine
   (`avalonia-linux-slice`, `f2-perf1-home`, `f2a-registration`, `f2b-creation`, `f2c-data-safety`, `f2d1-tags-photos`,
   `f2d2-editor`), poi il lancio stabile su Linux che chiude F2.
@@ -118,11 +115,12 @@
 
 | # | Decisione | Serve entro |
 |---|---|---|
-| D9 | Provider di cifratura al posto del bundle SQLCipher deprecato. Sonda fatta: la proposta è SQLite3 Multiple Ciphers col formato SQLCipher 4 invariato (`docs/design/2026-09-30-encryption-provider-probe.md`) | prima dei dati veri, cioè prima del dogfooding |
 | D6 | Builder dei grafici nella v1.0 o nella 1.1 | F7 |
 | D8 | Repository pubblico (minuti di CI illimitati) o privato | quando si decide di pubblicare |
 
-Decise il 2026-09-25: D1 dogfooding su Windows **e** Linux; D2 niente promemoria prima del dogfooding; D4 merge in `main`
+**D9 decisa il 2026-10-27**: SQLite3 Multiple Ciphers (`SQLite3MC.PCLRaw.bundle`, MIT) col formato SQLCipher 4
+invariato, l'opzione A della sonda (`docs/design/2026-09-30-encryption-provider-probe.md`); si fa in un'onda a sé, con gli
+obblighi di test della sonda, **prima dei dati veri**. Decise il 2026-09-25: D1 dogfooding su Windows **e** Linux; D2 niente promemoria prima del dogfooding; D4 merge in `main`
 a ogni onda chiusa; D5 piani fatti di decisioni, interfacce e test. Decise il 2026-09-30: **D7** su Linux la barra del
 titolo di sistema (la nostra resta dove il sistema la supporta, cioè Windows); **D3** su Linux lo sblocco passa dal
 portachiavi di sistema (Secret Service: GNOME Keyring, KWallet), con la passphrase come ripiego — lo stesso portachiavi
