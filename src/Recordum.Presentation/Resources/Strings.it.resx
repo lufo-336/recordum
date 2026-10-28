@@ -1873,4 +1873,19 @@
   <data name="Diario.QuickEntry.Tags" xml:space="preserve">
     <value>Tag</value>
   </data>
+  <data name="Home.Title.Today" xml:space="preserve">
+    <value>Oggi</value>
+  </data>
+  <data name="Home.StripHeader.Today" xml:space="preserve">
+    <value>oggi</value>
+  </data>
+  <data name="Home.Filter.Done" xml:space="preserve">
+    <value>fatte</value>
+  </data>
+  <data name="Home.Group.Progress" xml:space="preserve">
+    <value>{0} di {1}</value>
+  </data>
+  <data name="Home.NewMenu.Label" xml:space="preserve">
+    <value>Nuova</value>
+  </data>
 </root>

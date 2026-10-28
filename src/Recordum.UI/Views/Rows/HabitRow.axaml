@@ -17,9 +17,10 @@
     <ContextMenu x:Key="RowMenu" x:DataType="vm:HomeRowViewModel">
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Rename}"
                 Command="{CompiledBinding BeginRenameCommand}"
-                IsVisible="{CompiledBinding ShowRenameMenu}"/>
+                IsVisible="{CompiledBinding ShowRenameMenu}"><MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.Pencil}"/></MenuItem.Icon></MenuItem>
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin}"
                 IsVisible="{CompiledBinding ShowPinMenu}">
+        <MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.Pin}"/></MenuItem.Icon>
         <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Pin_None}"
                   Command="{CompiledBinding SetPinScopeCommand}"
                   CommandParameter="{x:Static enums:PinScope.None}"/>
@@ -32,19 +33,19 @@
       </MenuItem>
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Archive}"
                 Command="{CompiledBinding ArchiveCommand}"
-                IsVisible="{CompiledBinding ShowArchive}"/>
+                IsVisible="{CompiledBinding ShowArchive}"><MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.Archive}"/></MenuItem.Icon></MenuItem>
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Unarchive}"
                 Command="{CompiledBinding UnarchiveCommand}"
-                IsVisible="{CompiledBinding ShowUnarchive}"/>
+                IsVisible="{CompiledBinding ShowUnarchive}"><MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.Archive}"/></MenuItem.Icon></MenuItem>
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_SoftDelete}"
                 Command="{CompiledBinding SoftDeleteCommand}"
-                IsVisible="{CompiledBinding ShowSoftDelete}"/>
+                IsVisible="{CompiledBinding ShowSoftDelete}" Classes="danger"><MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.Trash2}"/></MenuItem.Icon></MenuItem>
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Restore}"
                 Command="{CompiledBinding RestoreCommand}"
-                IsVisible="{CompiledBinding ShowRestore}"/>
+                IsVisible="{CompiledBinding ShowRestore}"><MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.RotateCcw}"/></MenuItem.Icon></MenuItem>
       <MenuItem Header="{x:Static res:Strings.Home_ContextMenu_Purge}"
                 Command="{CompiledBinding PurgeCommand}"
-                IsVisible="{CompiledBinding ShowPurge}"/>
+                IsVisible="{CompiledBinding ShowPurge}" Classes="danger"><MenuItem.Icon><Path Classes="menuicon" Data="{StaticResource Icon.Trash2}"/></MenuItem.Icon></MenuItem>
     </ContextMenu>
   </UserControl.Resources>
 
@@ -57,6 +58,9 @@
             Classes.dragging="{CompiledBinding IsBeingDragged}"
             Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
             Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
+      <Panel>
+      <!-- La tinta: il colore pieno all'opacità del tema, sopra il pannello (stile in RowCardStyles.axaml). -->
+      <Border Classes="tint"/>
       <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}"
             ColumnDefinitions="Auto,*,Auto,Auto,Auto">
         <Rectangle Grid.Column="0"
@@ -82,7 +86,8 @@
                 IsVisible="{CompiledBinding IsPinned}"/>
           <Panel Grid.Column="2" VerticalAlignment="Center">
             <TextBlock Text="{CompiledBinding Name}"
-                       FontSize="{StaticResource FontSize.Body}"
+                       FontSize="{StaticResource FontSize.Body}" FontWeight="Medium"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource Brush.Text}"
                        IsVisible="{CompiledBinding !IsRenaming}"/>
             <TextBox Text="{CompiledBinding PendingName, Mode=TwoWay}"
@@ -95,8 +100,8 @@
         <TextBlock Grid.Column="2" Classes="keyfigure"
                    Classes.zero="{CompiledBinding IsKeyFigureZero}"
                    Margin="8,0,8,0" VerticalAlignment="Center"
-                   FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
-                   Foreground="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                   FontSize="{StaticResource FontSize.Small}" FontWeight="Medium"
+                   Foreground="{DynamicResource Brush.TextMuted}"
                    Text="{CompiledBinding KeyFigureText}"
                    ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"
                    IsVisible="{CompiledBinding ShowKeyFigure}"/>
@@ -108,15 +113,15 @@
                           AccentColor="{CompiledBinding ColorHex}"
                           ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
 
-        <Button Grid.Column="4" Classes="ghost" Margin="0,0,8,0"
-                Width="26" Height="26" Padding="0" VerticalAlignment="Center"
+        <Button Grid.Column="4" Classes="quicklog" Margin="0,0,7,0" VerticalAlignment="Center"
                 ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"
                 Command="{CompiledBinding QuickActionCommand}"
                 IsVisible="{CompiledBinding CanQuickAction}">
-          <TextBlock Text="+" FontSize="16" FontWeight="SemiBold"
-                     Foreground="{DynamicResource Brush.Text}"/>
+          <Path Data="{CompiledBinding HabitType, Converter={x:Static conv:QuickLogIconConverter.Instance}}"
+                Stroke="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
         </Button>
       </Grid>
+      </Panel>
     </Border>
   </Panel>
 </UserControl>

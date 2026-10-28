@@ -12,7 +12,8 @@ namespace Recordum.Presentation.ViewModels.Workspace;
 /// Ships no XAML; Plans 2–3 render it.</summary>
 public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
 {
-    internal const double DefaultSidebarWidth = 280d;
+    // 340 dalla direzione visiva (§5, spec 2026-10-28): la Home con l'intestazione dei giorni e gli strumenti non sta in 280.
+    internal const double DefaultSidebarWidth = 340d;
     internal const double MaxSidebarWidth = 460d;   // matches the drag clamp in MainWindow.OnSidebarSplitterDragCompleted
     internal const string StateSettingKey = "ui.workspace";
 

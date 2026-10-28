@@ -3,30 +3,37 @@
         xmlns:vm="using:Recordum.Presentation.ViewModels"
         xmlns:conv="using:Recordum.UI.Converters">
 
-  <!-- La card di riga. Il fondo è il colore dell'abitudine al ~10% di alfa: un Setter con binding
-       compilato, non un MultiBinding. Lo `x:DataType` sullo Style è ciò che lo rende possibile. -->
+  <!-- La card di riga (direzione visiva §4.3): il pannello, e sopra un livello col colore pieno dell'abitudine
+       (Border.tint) all'opacità del token tematico Opacity.RowTint. Così la tinta segue il tema a runtime e in scuro
+       non diventa fango: è il colore mescolato al pannello scuro, non un alfa sul fondo della finestra. -->
   <Style Selector="Border.habitblock" x:DataType="vm:HomeRowViewModel">
     <Setter Property="CornerRadius" Value="6"/>
     <Setter Property="Margin" Value="0,1"/>
     <Setter Property="ClipToBounds" Value="True"/>
     <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="Background"
-            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HabitTintConverter.Instance}, ConverterParameter=26}"/>
+    <Setter Property="Background" Value="{DynamicResource Brush.Pane}"/>
   </Style>
-
-  <Style Selector="Border.habitblock.selected" x:DataType="vm:HomeRowViewModel">
+  <Style Selector="Border.habitblock Border.tint" x:DataType="vm:HomeRowViewModel">
+    <Setter Property="IsHitTestVisible" Value="False"/>
     <Setter Property="Background"
-            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HabitTintConverter.Instance}, ConverterParameter=51}"/>
+            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+    <Setter Property="Opacity" Value="{DynamicResource Opacity.RowTint}"/>
+  </Style>
+  <!-- L'intestazione di un gruppo non è una card: niente pannello sotto, solo la barra e il nome. -->
+  <Style Selector="Border.habitblock.group">
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="Border.habitblock.selected Border.tint, Border.habitblock.droptarget Border.tint">
+    <Setter Property="Opacity" Value="{DynamicResource Opacity.RowTintSelected}"/>
+  </Style>
+  <Style Selector="Border.habitblock.selected" x:DataType="vm:HomeRowViewModel">
     <Setter Property="BorderBrush"
             Value="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
     <Setter Property="BorderThickness" Value="1.5"/>
   </Style>
-
   <!-- DOPO `selected`, di proposito: a parità di specificità vince l'ultimo dichiarato, ed è così
        che l'affordance di rilascio prevale sulla selezione come nei DataTrigger WPF. -->
   <Style Selector="Border.habitblock.droptarget" x:DataType="vm:HomeRowViewModel">
-    <Setter Property="Background"
-            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HabitTintConverter.Instance}, ConverterParameter=51}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
     <Setter Property="BorderThickness" Value="1.5"/>
   </Style>
@@ -43,6 +50,26 @@
   <Style Selector="Border.habitblock.dropafter">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
     <Setter Property="BorderThickness" Value="0,0,0,2"/>
+  </Style>
+
+  <!-- Il log rapido: il solo comando nel colore dell'abitudine (§4.4), a contorno, l'icona del tipo nel colore. -->
+  <Style Selector="Button.quicklog" x:DataType="vm:HomeRowViewModel">
+    <Setter Property="Width" Value="28"/>
+    <Setter Property="Height" Value="26"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Background" Value="{DynamicResource Brush.Pane}"/>
+    <Setter Property="BorderBrush"
+            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HabitTintConverter.Instance}, ConverterParameter=110}"/>
+    <Setter Property="Foreground"
+            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+  </Style>
+  <Style Selector="Button.quicklog Path">
+    <Setter Property="Width" Value="14"/>
+    <Setter Property="Height" Value="14"/>
+    <Setter Property="Stretch" Value="Uniform"/>
+    <Setter Property="StrokeThickness" Value="2"/>
+    <Setter Property="StrokeLineCap" Value="Round"/>
+    <Setter Property="StrokeJoin" Value="Round"/>
   </Style>
 
   <!-- Cifra chiave a zero: smorzata, non nascosta (2.1-bis, A13a). -->

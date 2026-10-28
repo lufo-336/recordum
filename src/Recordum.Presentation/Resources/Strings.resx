@@ -1899,4 +1899,19 @@ Details: {0}</value>
   <data name="Diario.QuickEntry.Tags" xml:space="preserve">
     <value>Tags</value>
   </data>
+  <data name="Home.Title.Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Home.StripHeader.Today" xml:space="preserve">
+    <value>today</value>
+  </data>
+  <data name="Home.Filter.Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Home.Group.Progress" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="Home.NewMenu.Label" xml:space="preserve">
+    <value>New</value>
+  </data>
 </root>

@@ -73,7 +73,7 @@ public class ShellIntegrationTests(ITestOutputHelper output)
 
         // E il guscio si riorganizza: la Home diventa barra laterale e compare il divisore.
         var grid = window.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "HomeWorkspace");
-        grid.ColumnDefinitions[0].Width.Should().Be(new GridLength(280));
+        grid.ColumnDefinitions[0].Width.Should().Be(new GridLength(340));
         window.GetVisualDescendants().OfType<GridSplitter>().Single().IsVisible.Should().BeTrue();
     }
 

@@ -51,6 +51,24 @@ public partial class HeatmapStrip : UserControl
         set => SetValue(ValuesProperty, value);
     }
 
+    /// <summary>Quanti giorni mostrano le strisce di valori sotto questo elemento: lo decide la Home dalla sua larghezza
+    /// (7 stretta, 14 larga) e lo eredita ogni riga, così intestazione e strisce hanno le stesse colonne.</summary>
+    public static readonly AttachedProperty<int> VisibleDaysProperty =
+        AvaloniaProperty.RegisterAttached<HeatmapStrip, Control, int>("VisibleDays", 7, inherits: true);
+
+    public static int GetVisibleDays(Control element) => element.GetValue(VisibleDaysProperty);
+    public static void SetVisibleDays(Control element, int value) => element.SetValue(VisibleDaysProperty, value);
+
+    /// <summary>L'intestazione dei giorni: le celle sono i nomi brevi, nel testo attenuato, e "oggi" in grassetto.</summary>
+    public static readonly StyledProperty<bool> IsHeaderProperty =
+        AvaloniaProperty.Register<HeatmapStrip, bool>(nameof(IsHeader));
+
+    public bool IsHeader
+    {
+        get => GetValue(IsHeaderProperty);
+        set => SetValue(IsHeaderProperty, value);
+    }
+
     public ImmutableArray<int> Counts
     {
         get => GetValue(CountsProperty);
@@ -85,6 +103,8 @@ public partial class HeatmapStrip : UserControl
         KindProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         AccentColorProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         ValuesProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
+        VisibleDaysProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => { if (!strip.Values.IsDefaultOrEmpty) strip.Rebuild(); });
+        IsHeaderProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
     }
 
 
@@ -131,29 +151,31 @@ public partial class HeatmapStrip : UserControl
             Cells.Children.Add(border);
     }
 
-    /// <summary>Larghezza di una cella di valori: più stretta per le strisce da 14 giorni, che devono stare nella riga.</summary>
-    public static double ValueSlotWidth(int cellCount) => cellCount > 7 ? 18d : 24d;
+    /// <summary>Larghezza di una cella di valori, uguale per tutte le strisce: le colonne dei giorni si allineano.</summary>
+    public const double ValueSlotWidth = 26d;
 
     // La striscia della Home (direzione visiva §5): i valori del giorno nella variante "testo" del colore dell'abitudine,
     // i giorni vuoti nel testo tenue. Ogni cella è larga uguale, così oggi resta sotto "oggi" dell'intestazione.
     private List<TextBlock> BuildValueCells()
     {
-        var values = Values;
-        var slot = ValueSlotWidth(values.Length);
-        var on = Converters.HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
-        var off = Converters.HabitTextBrushConverter.Resource<IBrush>(
-            global::Avalonia.Application.Current!, "Brush.TextFaint", ActualThemeVariant) ?? Brushes.Gray;
-        var size = values.Length > 7 ? 12d : 13d;
+        var shown = Math.Min(Values.Length, Math.Max(1, GetVisibleDays(this)));
+        var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
+        var app = global::Avalonia.Application.Current!;
+        IBrush Token(string key) => Converters.HabitTextBrushConverter.Resource<IBrush>(app, key, ActualThemeVariant) ?? Brushes.Gray;
+        var on = IsHeader ? Token("Brush.TextMuted") : Converters.HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
+        var off = IsHeader ? Token("Brush.TextMuted") : Token("Brush.TextFaint");
         return values.Select(cell => new TextBlock
         {
             Text = cell.Glyph,
-            Width = slot,
+            Width = ValueSlotWidth,
             TextAlignment = TextAlignment.Center,
+            TextTrimming = TextTrimming.None,
             VerticalAlignment = VerticalAlignment.Center,
-            FontSize = size,
-            FontWeight = cell.On ? FontWeight.SemiBold : FontWeight.Normal,
+            FontSize = IsHeader ? (cell.IsToday ? 10d : 11d) : 13d,   // "today" a 11 px non sta nei 26 px della colonna
+            FontWeight = IsHeader ? (cell.IsToday ? FontWeight.SemiBold : FontWeight.Normal)
+                                  : (cell.On ? FontWeight.SemiBold : FontWeight.Normal),
             FontFeatures = new FontFeatureCollection { FontFeature.Parse("+tnum") },
-            Foreground = cell.On ? on : off,
+            Foreground = IsHeader && cell.IsToday ? Token("Brush.Text") : (cell.On ? on : off),
         }).ToList();
     }
 

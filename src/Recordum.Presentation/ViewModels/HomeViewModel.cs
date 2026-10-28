@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -48,6 +49,15 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     [ObservableProperty] private ImmutableHashSet<HabitType> _typeFilter = ImmutableHashSet<HabitType>.Empty;
     [ObservableProperty] private ImmutableHashSet<Guid> _tagFilter = ImmutableHashSet<Guid>.Empty;
     [ObservableProperty] private bool _hideCompletedToday;
+
+    /// <summary>La data lunga del giorno dell'app accanto a "Oggi" ("mercoledì 28 ottobre"); vuota senza orologio.</summary>
+    [ObservableProperty] private string _todayLabel = string.Empty;
+
+    /// <summary>L'intestazione dei giorni sopra le strisce: 14 celle dal più vecchio, l'ultima è "oggi".</summary>
+    [ObservableProperty] private ImmutableArray<StripCell> _stripHeader = ImmutableArray<StripCell>.Empty;
+
+    /// <summary>La striscia più lunga fra le righe visibili: quante celle dell'intestazione mostrare.</summary>
+    [ObservableProperty] private int _maxVisibleStripLength;
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private HomeSort _sortOption = HomeSort.Manual;
 
@@ -118,6 +128,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
                 : await _query.GetHomeTreeAsync();
             await PrefetchPrefsAsync();
             Rebuild();
+            await RefreshHeaderAsync();
         }
         catch (Exception ex)
         {
@@ -477,9 +488,65 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
             }
         }
         finally { _rebuilding = false; }
+        ApplyGroupProgress();
+        MaxVisibleStripLength = Rows.Count == 0 ? 0 : Rows.Max(r => r.StripCells.Length);
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
         ApplySelectionToRows();
         _ = FillKeyFiguresAsync();
+    }
+
+    /// <summary>"3 di 5" dei gruppi: le abitudini discendenti del gruppo fra quelle non archiviate, non solo le righe
+    /// visibili, così il filtro "fatte" non cambia il conto.</summary>
+    private void ApplyGroupProgress()
+    {
+        var live = _lastFetched.Where(r => !r.IsArchived).ToList();
+        var byParent = live.ToLookup(r => r.ParentId);
+        (int Done, int Total) Count(Guid groupId)
+        {
+            int done = 0, total = 0;
+            foreach (var child in byParent[groupId])
+            {
+                if (child.HabitType is null)
+                {
+                    var (d, t) = Count(child.HabitNodeId);
+                    done += d; total += t;
+                }
+                else
+                {
+                    total++;
+                    if (child.IsCompletedToday) done++;
+                }
+            }
+            return (done, total);
+        }
+        foreach (var vm in Rows.Where(r => r.IsGroup))
+        {
+            var (done, total) = Count(vm.HabitNodeId);
+            vm.SetGroupProgress(done, total);
+        }
+    }
+
+    /// <summary>La testa della Home: la data lunga e i 14 giorni dell'intestazione, dal giorno dell'app
+    /// (<c>daily_reset_time</c>) risolto una volta. Senza orologio resta vuota (superfici di design, test).</summary>
+    private async Task RefreshHeaderAsync()
+    {
+        if (_clock is null) return;
+        var appDay = _resetTimes is null
+            ? DayBoundary.Utc
+            : await _resetTimes.GetAppDayBoundaryAsync().ConfigureAwait(true);
+        var today = appDay.Today(_clock);
+        var culture = CultureInfo.CurrentCulture;
+        var date = today.ToDateTime(TimeOnly.MinValue);
+        TodayLabel = $"{date.ToString("dddd", culture)} {date.ToString(culture.DateTimeFormat.MonthDayPattern, culture)}";
+        var cells = ImmutableArray.CreateBuilder<StripCell>(14);
+        for (var back = 13; back >= 0; back--)
+        {
+            var day = today.AddDays(-back).ToDateTime(TimeOnly.MinValue);
+            cells.Add(back == 0
+                ? new StripCell(Resources.Strings.Home_StripHeader_Today, false, true)
+                : new StripCell(day.ToString("ddd", culture), false, false));
+        }
+        StripHeader = cells.MoveToImmutable();
     }
 
     /// <summary>Loads per-node presentation prefs for the current fetch, once, into a lookup the

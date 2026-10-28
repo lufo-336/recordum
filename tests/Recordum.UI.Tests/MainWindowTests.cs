@@ -61,7 +61,7 @@ public class MainWindowTests
         zen.ShowSplitter.Should().BeFalse();
 
         // Larghezza persistita a zero (stato iniziale mai salvato) -> il default, non una barra invisibile.
-        MainWindow.ResolveColumns(false, false, 0, false).Sidebar.Should().Be(new GridLength(280));
+        MainWindow.ResolveColumns(false, false, 0, false).Sidebar.Should().Be(new GridLength(340));
     }
 
     [AvaloniaFact]
@@ -269,7 +269,7 @@ public class MainWindowTests
         await vm.Workspace.OpenSubjectAsync(Guid.NewGuid(), Presentation.ViewModels.Workspace.WorkspaceTabKind.Habit, "Corsa");
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Dispatcher.UIThread.RunJobs();
-        sidebar.Width.Should().Be(new GridLength(280), "con un tab aperto la Home diventa barra laterale");
+        sidebar.Width.Should().Be(new GridLength(340), "con un tab aperto la Home diventa barra laterale (340 px, direzione visiva §5)");
         splitter.IsVisible.Should().BeTrue();
 
         // Il trascinamento scrive un valore LOCALE sulla colonna, che il ViewModel non conosce.

@@ -19,6 +19,40 @@ public partial class HomeView : UserControl
         InitializeComponent();
         AddHandler(PointerPressedEvent, OnPointerPressedTunnel, RoutingStrategies.Tunnel);
         AddHandler(PointerReleasedEvent, OnPointerReleasedTunnel, RoutingStrategies.Tunnel);
+        PropertyChanged += (_, e) => { if (e.Property == BoundsProperty) ApplyWidthRules(); };
+        DataContextChanged += (_, _) => WatchStripLength();
+    }
+
+    // La Home dalla sua larghezza (direzione visiva §5): sotto i 640 px le strisce mostrano 7 giorni, sopra 14 (lo
+    // eredita ogni riga); sotto i 320 px la data accanto a "Oggi" si nasconde. L'intestazione dei giorni non è più
+    // lunga della striscia più lunga fra le righe.
+    internal const double FourteenDaysFrom = 640;
+    internal const double DateFrom = 320;
+
+    private HomeViewModel? _watched;
+
+    private void WatchStripLength()
+    {
+        if (_watched is not null) _watched.PropertyChanged -= OnHomePropertyChanged;
+        _watched = DataContext as HomeViewModel;
+        if (_watched is not null) _watched.PropertyChanged += OnHomePropertyChanged;
+        ApplyWidthRules();
+    }
+
+    private void OnHomePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HomeViewModel.MaxVisibleStripLength)) ApplyWidthRules();
+    }
+
+    private void ApplyWidthRules()
+    {
+        var width = Bounds.Width;
+        if (width <= 0) return;
+        var days = width >= FourteenDaysFrom ? 14 : 7;
+        Controls.HeatmapStrip.SetVisibleDays(this, days);
+        var longest = (DataContext as HomeViewModel)?.MaxVisibleStripLength ?? days;
+        Controls.HeatmapStrip.SetVisibleDays(StripHeader, Math.Max(1, Math.Min(days, longest)));
+        TodayDate.IsVisible = width >= DateFrom;
     }
 
     // Le scorciatoie della Home (Ctrl+F e i tasti di riga, D5) non possono stare su HomeView: un

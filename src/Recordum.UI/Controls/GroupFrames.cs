@@ -55,8 +55,9 @@ public sealed class GroupFrames : Control
             var top = s.IsTop ? 1 : -2 * Radius;
             var rect = new Rect(s.Level * IndentStep, top, w - s.Level * (IndentStep + RightStep), bottom - top)
                 .Deflate(0.5);   // il tratto da 1 cade sul pixel, non a cavallo di due
-            // Stessi alfa della cornice WPF: fondo 10, bordo 80.
-            context.DrawRectangle(new ImmutableSolidColorBrush(Color.FromArgb(10, c.R, c.G, c.B)),
+            // Solo il bordo nel colore del gruppo (alfa 80, come WPF): il fondo tinto è uscito con la direzione visiva
+            // (§5: il gruppo non è tinto, il colore identifica e non decora).
+            context.DrawRectangle(null,
                 new ImmutablePen(new ImmutableSolidColorBrush(Color.FromArgb(80, c.R, c.G, c.B))),
                 rect, Radius, Radius);
         }

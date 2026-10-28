@@ -118,6 +118,27 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public IReadOnlyList<GroupFrameSlice> FrameSlices { get; init; } = [];
     public DateTime? LastCompletionAt { get; }
     public bool IsCompletedToday { get; }
+
+    /// <summary>Per un gruppo: quante abitudini discendenti sono completate oggi, e quante sono (direzione visiva §5).</summary>
+    public int ChildrenDoneToday { get; private set; }
+
+    /// <inheritdoc cref="ChildrenDoneToday"/>
+    public int ChildrenTotal { get; private set; }
+
+    /// <summary>"{0} di {1}" della riga del gruppo.</summary>
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for a once-per-rebuild group label
+    public string GroupProgressText => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        Resources.Strings.Home_Group_Progress, ChildrenDoneToday, ChildrenTotal);
+#pragma warning restore CA1863
+
+    internal void SetGroupProgress(int done, int total)
+    {
+        ChildrenDoneToday = done;
+        ChildrenTotal = total;
+        OnPropertyChanged(nameof(ChildrenDoneToday));
+        OnPropertyChanged(nameof(ChildrenTotal));
+        OnPropertyChanged(nameof(GroupProgressText));
+    }
     public int IndentLevel { get; }
 
     [ObservableProperty] private string _name = string.Empty;

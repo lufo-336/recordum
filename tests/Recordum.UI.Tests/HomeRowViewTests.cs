@@ -125,12 +125,12 @@ public class HomeRowViewTests
 
         var frame = w.CaptureRenderedFrame()!;
         var background = Pixel(frame, new Point(w.Width - 2, w.Height - 2));
-        var fill = Over(background, 10);
+        var fill = background;   // niente fondo tinto dalla direzione visiva: fra bordo e card c'è il fondo della finestra
         var border = Over(fill, 80);
         Pixel(frame, At(group, 0)).Should().Match<Color>(c => Near(c, border), "il bordo sinistro sulla riga del gruppo");
         Pixel(frame, At(child, 0)).Should().Match<Color>(c => Near(c, border), "il bordo continua sulla figlia");
         Pixel(frame, At(child, GroupFrames.IndentStep / 2)).Should().Match<Color>(c => Near(c, fill),
-            "fra il bordo e la card rientrata della figlia c'è il fondo della cornice");
+            "fra il bordo e la card rientrata della figlia c'è il fondo della finestra, non una tinta");
 
         vm.Rows.Single(r => r.IsGroup).IsExpanded = false;
         Pump();

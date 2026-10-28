@@ -64,6 +64,20 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
     </Style>
 
+    <!-- L'icona Lucide di una voce di menu: 16 px, tratto 1,75, nel testo attenuato (in rosso con la voce pericolosa). -->
+    <Style Selector="Path.menuicon">
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="StrokeThickness" Value="1.75"/>
+        <Setter Property="StrokeLineCap" Value="Round"/>
+        <Setter Property="StrokeJoin" Value="Round"/>
+        <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <Style Selector="MenuItem.danger Path.menuicon">
+        <Setter Property="Stroke" Value="{DynamicResource Brush.Danger}"/>
+    </Style>
+
     <!-- Voce di menu pericolosa (Elimina definitivamente, Sposta nel cestino): il testo in rosso, l'icona con lui. -->
     <Style Selector="MenuItem.danger">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}"/>

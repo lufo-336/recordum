@@ -184,6 +184,11 @@ public static class Strings
     public static string Home_Error_Generic => Get("Home.Error.Generic");
     public static string Home_Error_Retry => Get("Home.Error.Retry");
     public static string Home_GroupChildCount_Format => Get("Home.GroupChildCount.Format");
+    public static string Home_Title_Today => Get("Home.Title.Today");
+    public static string Home_StripHeader_Today => Get("Home.StripHeader.Today");
+    public static string Home_Filter_Done => Get("Home.Filter.Done");
+    public static string Home_Group_Progress => Get("Home.Group.Progress");
+    public static string Home_NewMenu_Label => Get("Home.NewMenu.Label");
 
     // Settings
     public static string Settings_Title => Get("Settings.Title");

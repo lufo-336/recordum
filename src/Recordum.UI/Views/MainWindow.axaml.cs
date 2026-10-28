@@ -78,13 +78,17 @@ public partial class MainWindow : Window
     /// barra laterale, quanto largo il workspace, e se il divisore si vede. Sta qui e non in un
     /// ViewModel perche' <see cref="GridLength"/> e' un tipo d'interfaccia e
     /// <c>Recordum.Presentation</c> non puo' nominarlo.</summary>
+    /// <summary>La Home come barra laterale: 340 px di partenza, mai meno di 280 trascinando il divisore (§5).</summary>
+    internal const double DefaultSidebarWidth = 340d;
+    internal const double MinSidebarWidth = 280d;
+
     internal static (GridLength Sidebar, GridLength Workspace, bool ShowSplitter) ResolveColumns(
         bool panoramica, bool collapsed, double sidebarWidth, bool focusZen)
     {
         if (focusZen) return (new GridLength(0), new GridLength(1, GridUnitType.Star), false);
         if (panoramica) return (new GridLength(1, GridUnitType.Star), new GridLength(0), false);
         if (collapsed) return (new GridLength(0), new GridLength(1, GridUnitType.Star), false);
-        var width = sidebarWidth > 0 ? sidebarWidth : 280d;
+        var width = sidebarWidth > 0 ? sidebarWidth : DefaultSidebarWidth;
         return (new GridLength(width), new GridLength(1, GridUnitType.Star), true);
     }
 
@@ -98,6 +102,8 @@ public partial class MainWindow : Window
         var w = _viewModel.Workspace;
         var (sidebar, workspace, showSplitter) =
             ResolveColumns(w.IsPanoramicaActive, w.SidebarCollapsed, w.SidebarWidth, w.IsFocusZen);
+        // Il minimo vale solo quando la barra c'è: chiusa o a pieno schermo la larghezza deve poter andare a 0.
+        SidebarColumn.MinWidth = showSplitter ? MinSidebarWidth : 0;
         SidebarColumn.Width = sidebar;
         WorkspaceColumn.Width = workspace;
         SidebarSplitter.IsVisible = showSplitter;

@@ -36,7 +36,7 @@
        GroupFrames a fette, riga per riga (F1-PERF1). -->
   <Panel>
     <ctl:GroupFrames Slices="{CompiledBinding FrameSlices}"/>
-    <Border Classes="habitblock"
+    <Border Classes="habitblock group"
             Margin="{CompiledBinding Converter={x:Static conv:RowCardMarginConverter.Instance}}"
             Classes.selected="{CompiledBinding IsSelected}"
             Classes.droptarget="{CompiledBinding IsDropTarget}"
@@ -51,18 +51,21 @@
                 StrokeThickness="1.8" StrokeLineCap="Round" StrokeJoin="Round"/>
         </ToggleButton>
 
-        <Rectangle Grid.Column="1" Width="{StaticResource Layout.AccentBarWidth}" Opacity="0.6"
+        <!-- Il gruppo non è tinto (direzione visiva §5): la barra nel suo colore, il nome come titolo piccolo e quante
+             figlie sono fatte oggi. -->
+        <Rectangle Grid.Column="1" Width="{StaticResource Layout.AccentBarWidth}" Height="18" RadiusX="2" RadiusY="2"
                    Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
 
         <TextBlock Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"
-                   FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold"
-                   Foreground="{DynamicResource Brush.Text}"
+                   FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
+                   TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource Brush.TextMuted}"
                    Text="{CompiledBinding Name}"/>
 
         <TextBlock Grid.Column="3" Margin="0,0,12,0" VerticalAlignment="Center"
-                   FontSize="{StaticResource FontSize.Small}" Opacity="0.5"
+                   FontSize="{StaticResource FontSize.Small}"
                    Foreground="{DynamicResource Brush.TextMuted}"
-                   Text="{CompiledBinding ChildCount, StringFormat={x:Static res:Strings.Home_GroupChildCount_Format}}"/>
+                   Text="{CompiledBinding GroupProgressText}"/>
       </Grid>
     </Border>
   </Panel>

@@ -115,7 +115,7 @@
             <!-- NESSUN binding su queste due larghezze: un drag del GridSplitter scrive un valore
                  locale che uccide il binding (misurato su Avalonia 12.1.2, esattamente come in
                  WPF). Le larghezze le imposta il code-behind da ResolveColumns. -->
-            <ColumnDefinition Width="280"/>   <!-- [0] SidebarColumn -->
+            <ColumnDefinition Width="340"/>   <!-- [0] SidebarColumn -->
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="0"/>     <!-- [2] WorkspaceColumn -->
           </Grid.ColumnDefinitions>
