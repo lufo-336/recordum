@@ -89,4 +89,25 @@ public class HomeRowStripCellsTests
         text.Should().Be(expected);
         text.Length.Should().BeLessThanOrEqualTo(4);
     }
+
+    [Theory]
+    [InlineData("45", "45s")]
+    [InlineData("2700", "45m")]
+    [InlineData("5400", "1,5h")]
+    [InlineData("0", "0s")]
+    public void Durations_under_a_minute_are_seconds(string seconds, string expected)
+        // Review M-3: un plank da 45 s segnava "0m" ogni giorno.
+        => StripValueFormat.Duration(decimal.Parse(seconds, CultureInfo.InvariantCulture), It).Should().Be(expected);
+
+    [Theory]
+    [InlineData("-5", "-5")]
+    [InlineData("-0.5", "-0,5")]
+    [InlineData("-1234.5", "-1k")]
+    [InlineData("-12000", "-12k")]
+    public void Negative_values_stay_within_four_characters(string value, string expected)
+    {
+        var text = StripValueFormat.Compact(decimal.Parse(value, CultureInfo.InvariantCulture), It);
+        text.Should().Be(expected);
+        text.Length.Should().BeLessThanOrEqualTo(4);
+    }
 }

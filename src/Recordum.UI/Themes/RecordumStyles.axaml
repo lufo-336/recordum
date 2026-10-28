@@ -55,7 +55,8 @@
         <Setter Property="Padding" Value="8,5"/>
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
         <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text}"/>
-        <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource Brush.TextSelection}"/>
+        <Setter Property="SelectionForegroundBrush" Value="{DynamicResource Brush.Text}"/>
     </Style>
     <!-- Setter diretto su BorderBrush (non su una parte del template): il default TextBox lo
          espone via TemplateBinding, quindi arriva al bordo senza dover conoscere il nome interno

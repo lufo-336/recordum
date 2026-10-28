@@ -82,4 +82,51 @@ public class HomeHeaderTests
         igiene.ChildrenDoneToday.Should().Be(2);
         igiene.ChildrenTotal.Should().Be(2);
     }
+
+    [Fact]
+    public async Task An_empty_group_shows_no_progress()
+    {
+        // Review M-2: "0 di 0" su un gruppo vuoto non dice niente.
+        var sut = await Loaded(Wed1000, Row("Vuoto", type: null));
+        sut.Rows.Single().ShowGroupProgress.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_group_with_habits_shows_its_progress()
+    {
+        var group = Row("Mattina", type: null);
+        var sut = await Loaded(Wed1000, group, Row("Acqua", group.HabitNodeId));
+        sut.Rows.Single(r => r.IsGroup).ShowGroupProgress.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_failing_day_boundary_leaves_the_rows_and_hides_the_header()
+    {
+        // Review M-6: l'intestazione è un di più: se il confine del giorno non si legge, la Home mostra le righe lo stesso.
+        var query = new FakeHabitTreeQueryService();
+        query.HomeRows.Add(Row("a"));
+        var sut = new HomeViewModel(query, new FakeHabitNodeService(), new FakePurgeService(),
+            clock: new FakeClock(Wed1000), resetTimes: new ThrowingResolver());
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.State.Should().Be(HomeState.Loaded);
+        sut.Rows.Should().ContainSingle();
+        sut.ShowStripHeader.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task The_header_shows_only_with_loaded_rows()
+    {
+        var sut = await Loaded(Wed1000, Row("a"));
+        sut.ShowStripHeader.Should().BeTrue();
+        sut.State = HomeState.Error;
+        sut.ShowStripHeader.Should().BeFalse("in errore o in caricamento l'intestazione non resta sola");
+    }
+
+    private sealed class ThrowingResolver : Recordum.Core.Abstractions.Services.IResetTimeResolver
+    {
+        public ValueTask<TimeOnly> GetEffectiveResetTimeAsync(Guid habitNodeId, CancellationToken ct = default) => throw new InvalidOperationException("db");
+        public ValueTask<DayBoundary> GetDayBoundaryAsync(Guid habitNodeId, CancellationToken ct = default) => throw new InvalidOperationException("db");
+        public ValueTask<IReadOnlyDictionary<Guid, DayBoundary>> GetDayBoundariesAsync(IReadOnlyCollection<Guid> habitNodeIds, CancellationToken ct = default) => throw new InvalidOperationException("db");
+        public ValueTask<DayBoundary> GetAppDayBoundaryAsync(CancellationToken ct = default) => throw new InvalidOperationException("db");
+    }
 }

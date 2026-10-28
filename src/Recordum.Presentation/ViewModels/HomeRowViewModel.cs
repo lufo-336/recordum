@@ -131,6 +131,9 @@ public sealed partial class HomeRowViewModel : ObservableObject
         Resources.Strings.Home_Group_Progress, ChildrenDoneToday, ChildrenTotal);
 #pragma warning restore CA1863
 
+    /// <summary>Il conto "x di y" ha senso solo per un gruppo con abitudini, fra le Attive.</summary>
+    public bool ShowGroupProgress => IsGroup && ChildrenTotal > 0 && CurrentTab == HomeTab.Active;
+
     internal void SetGroupProgress(int done, int total)
     {
         ChildrenDoneToday = done;
@@ -138,6 +141,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         OnPropertyChanged(nameof(ChildrenDoneToday));
         OnPropertyChanged(nameof(ChildrenTotal));
         OnPropertyChanged(nameof(GroupProgressText));
+        OnPropertyChanged(nameof(ShowGroupProgress));
     }
     public int IndentLevel { get; }
 

@@ -9,19 +9,31 @@ public static class StripValueFormat
     public static string Compact(decimal value, CultureInfo culture)
     {
         ArgumentNullException.ThrowIfNull(culture);
+        if (value < 0m)
+        {
+            // Il segno costa un carattere: oltre i 3 restanti si toglie il decimale ("-1k", non "-1,2k").
+            var abs = Compact(-value, culture);
+            return abs.Length <= 3 ? "-" + abs : "-" + WholeScaled(-value, culture);
+        }
         if (value < 10m && value != decimal.Truncate(value)) return Floor1(value).ToString("0.#", culture);
         if (value < 1000m) return decimal.Truncate(value).ToString("0", culture);
         return Scaled(value / 1000m, "k", culture);
     }
 
-    /// <summary>Una durata in secondi: minuti sotto l'ora ("45m"), ore oltre ("1,5h", "12h").</summary>
+    /// <summary>Una durata in secondi: secondi sotto il minuto ("45s"), minuti sotto l'ora ("45m"), ore oltre ("1,5h", "12h").</summary>
     public static string Duration(decimal seconds, CultureInfo culture)
     {
         ArgumentNullException.ThrowIfNull(culture);
+        if (seconds < 60m) return decimal.Truncate(seconds).ToString("0", culture) + "s";   // un plank da 45 s non è "0m"
         if (seconds < 3600m) return decimal.Truncate(seconds / 60m).ToString("0", culture) + "m";
         var hours = seconds / 3600m;
         return (hours < 10m ? Floor1(hours).ToString("0.#", culture) : decimal.Truncate(hours).ToString("0", culture)) + "h";
     }
+
+    private static string WholeScaled(decimal v, CultureInfo culture) =>
+        v < 1000m ? decimal.Truncate(v).ToString("0", culture)
+        : v < 1_000_000m ? decimal.Truncate(v / 1000m).ToString("0", culture) + "k"
+        : decimal.Truncate(v / 1_000_000m).ToString("0", culture) + "M";
 
     private static string Scaled(decimal v, string suffix, CultureInfo culture)
     {

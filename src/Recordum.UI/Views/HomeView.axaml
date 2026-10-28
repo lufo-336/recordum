@@ -107,7 +107,7 @@
          quello del log rapido della riga (28 + 7) più quello della striscia (8). -->
     <ctl:HeatmapStrip x:Name="StripHeader" Grid.Row="3" IsHeader="True" HorizontalAlignment="Right" Margin="0,0,43,2"
                       Values="{CompiledBinding StripHeader}"
-                      IsVisible="{CompiledBinding MaxVisibleStripLength, Converter={x:Static conv:IsPositiveConverter.Instance}}"/>
+                      IsVisible="{CompiledBinding ShowStripHeader}"/>
 
     <!-- Lo sfondo Transparent (non null) rende lo spazio vuoto sotto le righe colpibile dal
          puntatore: è il clic che deseleziona. Vale in Avalonia come in WPF. -->

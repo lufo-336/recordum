@@ -718,4 +718,4 @@ scuro) li hanno trovati le immagini, non i test, e solo dopo sono diventati test
 più semplice di avere una tinta che segue il tema a runtime. La macchina ha avuto due ondate di carico sul disco (suite da
 3 a 20 minuti) e una sospensione per memoria: si misura in alternanza prima/dopo, mai contro un numero del mattino.
 *Non consegnato*: le onde 2 e 3; ricarica della Home con 300 righe da ~120 a ~185 ms (budget 500 rispettato). Suite su Linux:
-Presentation 1154, UI 533 (`Category!=Performance`).
+Presentation 1166, UI 540 (`Category!=Performance`), dopo la review dell'intero branch e la sua onda di correzioni.

@@ -103,6 +103,24 @@
         <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Brush.Ink"/>
+        <!-- La selezione del testo: un tono neutro col testo normale sopra (non l'inchiostro: review I-1). -->
+        <SolidColorBrush x:Key="Brush.TextSelection" Color="#FFD8D5CC"/>
+        <!-- Gli stati che Fluent ricava dall'accento, riportati sui token (review I-2, I-3): la spunta sopra l'inchiostro,
+             le voci selezionate di elenchi e menu a tendina sulla selezione neutra col testo normale. -->
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="SystemControlHighlightListAccentLowBrush" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="SystemControlHighlightListAccentMediumBrush" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="SystemControlHighlightListAccentHighBrush" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="SystemControlHighlightAltBaseHighBrush" ResourceKey="Brush.Text"/>
       </ResourceDictionary>
 
       <ResourceDictionary x:Key="Dark">
@@ -154,6 +172,24 @@
         <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Brush.Ink"/>
+        <!-- La selezione del testo: un tono neutro col testo normale sopra (non l'inchiostro: review I-1). -->
+        <SolidColorBrush x:Key="Brush.TextSelection" Color="#FF57554F"/>
+        <!-- Gli stati che Fluent ricava dall'accento, riportati sui token (review I-2, I-3): la spunta sopra l'inchiostro,
+             le voci selezionate di elenchi e menu a tendina sulla selezione neutra col testo normale. -->
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="Brush.OnInk"/>
+        <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ComboBoxItemForegroundSelectedPointerOver" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ComboBoxItemForegroundSelectedPressed" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="SystemControlHighlightListAccentLowBrush" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="SystemControlHighlightListAccentMediumBrush" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="SystemControlHighlightListAccentHighBrush" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="SystemControlHighlightAltBaseHighBrush" ResourceKey="Brush.Text"/>
       </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

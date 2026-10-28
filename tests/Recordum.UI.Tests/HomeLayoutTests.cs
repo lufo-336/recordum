@@ -161,4 +161,16 @@ public class HomeLayoutTests
         menu.Items.OfType<MenuItem>().Where(m => m.Classes.Contains("danger")).Should().HaveCount(2, "cestino ed elimina definitivamente");
         w.Close();
     }
+
+    [AvaloniaFact]
+    public void Group_row_menu_items_have_icons()
+    {
+        // Review M-1: il menu della riga di gruppo era rimasto senza icone e senza il rosso sulle voci che cancellano.
+        var (w, view, _) = Show(900, Row("Mattina", type: null) with { HabitNodeId = GroupId }, Row("Acqua", parent: GroupId));
+        var row = view.GetVisualDescendants().OfType<GroupRow>().Single();
+        var menu = (ContextMenu)row.Resources["RowMenu"]!;
+        menu.Items.OfType<MenuItem>().Should().OnlyContain(m => m.Icon != null);
+        menu.Items.OfType<MenuItem>().Where(m => m.Classes.Contains("danger")).Should().HaveCount(2);
+        w.Close();
+    }
 }

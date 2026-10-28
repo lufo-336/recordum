@@ -43,7 +43,9 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private bool _syncingSelection;
 
     [ObservableProperty] private HomeTab _activeTab = HomeTab.Active;
-    [ObservableProperty] private HomeState _state = HomeState.Loading;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowStripHeader))]
+    private HomeState _state = HomeState.Loading;
     [ObservableProperty] private string? _errorMessage;
 
     [ObservableProperty] private ImmutableHashSet<HabitType> _typeFilter = ImmutableHashSet<HabitType>.Empty;
@@ -54,10 +56,17 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     [ObservableProperty] private string _todayLabel = string.Empty;
 
     /// <summary>L'intestazione dei giorni sopra le strisce: 14 celle dal più vecchio, l'ultima è "oggi".</summary>
-    [ObservableProperty] private ImmutableArray<StripCell> _stripHeader = ImmutableArray<StripCell>.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowStripHeader))]
+    private ImmutableArray<StripCell> _stripHeader = ImmutableArray<StripCell>.Empty;
 
     /// <summary>La striscia più lunga fra le righe visibili: quante celle dell'intestazione mostrare.</summary>
-    [ObservableProperty] private int _maxVisibleStripLength;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowStripHeader))]
+    private int _maxVisibleStripLength;
+
+    /// <summary>L'intestazione dei giorni: solo con le righe caricate, una striscia e il giorno risolto.</summary>
+    public bool ShowStripHeader => State == HomeState.Loaded && MaxVisibleStripLength > 0 && !StripHeader.IsDefaultOrEmpty;
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private HomeSort _sortOption = HomeSort.Manual;
 
@@ -128,14 +137,17 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
                 : await _query.GetHomeTreeAsync();
             await PrefetchPrefsAsync();
             Rebuild();
-            await RefreshHeaderAsync();
         }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
             State = HomeState.Error;
             Rows.Clear();
+            return;
         }
+        // Fuori dal try: l'intestazione è un di più, e un confine del giorno che non si legge non spegne la Home (review M-6).
+        try { await RefreshHeaderAsync(); }
+        catch (Exception) { StripHeader = ImmutableArray<StripCell>.Empty; TodayLabel = string.Empty; }
     }
 
     [RelayCommand]
