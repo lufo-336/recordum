@@ -1,0 +1,51 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .w{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px;display:grid;grid-template-columns:330px 1fr;gap:14px}
+  .b,.r{border:1px solid #e4e3df;border-radius:10px;background:#fff;padding:16px}
+  .b h3,.r h3{margin:0 0 12px;font-size:14px}
+  .blk{margin-bottom:14px}.blk .t{font-size:12px;font-weight:600;color:#6b6a65;margin-bottom:6px}
+  .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #d6d5d0;border-radius:6px;padding:5px 9px;margin:0 4px 4px 0;background:#fff}
+  .chip s{width:4px;height:12px;border-radius:2px;background:var(--c);text-decoration:none}
+  .chip.add{border-style:dashed;color:#6b6a65}
+  .hint{font-size:12px;color:#a3a29c}
+  .tbl{display:grid;grid-template-columns:200px 1fr 70px 70px;gap:6px 10px;align-items:center}
+  .tbl .h{font-size:11.5px;color:#6b6a65}
+  .tbl b.bar{height:14px;border-radius:3px;display:block;background:#4f63c4}
+  .tbl .lab{display:flex;gap:4px;flex-wrap:wrap}
+  .tag{font-size:11.5px;border-radius:4px;padding:1px 6px;background:color-mix(in srgb,var(--c) 14%,#fff);color:color-mix(in srgb,var(--c) 80%,#000)}
+  .tag.no{background:#f1f0ed;color:#6b6a65}
+  .ok{color:#3f7a26;font-size:12px}.weak{color:#a3a29c;font-size:12px}
+  .lead{font-size:15px;font-weight:500;margin:0 0 4px}
+  .f{color:#6b6a65;font-size:12px;margin:0 0 14px}
+  .save{margin-top:16px;padding-top:12px;border-top:1px solid #ecebe8;display:flex;gap:8px}
+  .btn{border:1px solid #d6d5d0;border-radius:6px;padding:6px 11px;font-weight:500}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:12px 2px 0;line-height:1.5}
+</style>
+<h2>Esplora: costruisci tu la domanda</h2>
+<p class="subtitle">Quattro blocchi da riempire; la risposta si aggiorna mentre scegli. Qui: com'è il Sonno a seconda di Corsa e Caffè dopo le 16, insieme.</p>
+<div class="w">
+ <div class="b"><h3>La tua domanda</h3>
+  <div class="blk"><div class="t">1 · Cosa vuoi capire</div>
+   <span class="chip" style="--c:#4f63c4"><s></s>Sonno · ore ▾</span>
+   <div class="hint">un'abitudine e cosa ne misuri: fatto sì/no, valore, durata, ora</div></div>
+  <div class="blk"><div class="t">2 · A seconda di (fino a 3)</div>
+   <span class="chip" style="--c:#c2405b"><s></s>Corsa · fatta ▾</span><span class="chip" style="--c:#8a6a4f"><s></s>Caffè dopo le 16 · sì ▾</span><span class="chip add">+ altro</span>
+   <div class="hint">altre abitudini, il giorno della settimana, la settimana o il mese, l'ora; anche "il giorno prima"</div></div>
+  <div class="blk"><div class="t">3 · Quando</div><span class="chip">ultimi 90 giorni ▾</span></div>
+  <div class="blk"><div class="t">4 · Mostra come</div><span class="chip">tabella con barre ▾</span>
+   <div class="hint">tabella, barre, linea nel tempo, punti (due valori)</div></div>
+ </div>
+ <div class="r"><h3>Risposta</h3>
+  <p class="lead">Dormi di più nei giorni con Corsa e senza caffè: 7 h 40, contro 5 h 50 con caffè e senza corsa.</p>
+  <p class="f">Media delle ore di sonno, per combinazione · 90 giorni</p>
+  <div class="tbl">
+   <span class="h">Giorni con</span><span class="h"></span><span class="h">Sonno</span><span class="h">giorni</span>
+   <span class="lab"><span class="tag" style="--c:#c2405b">Corsa</span><span class="tag no">niente caffè</span></span><b class="bar" style="width:96%"></b><span>7 h 40</span><span>31 <span class="ok">· chiara</span></span>
+   <span class="lab"><span class="tag" style="--c:#c2405b">Corsa</span><span class="tag" style="--c:#8a6a4f">caffè</span></span><b class="bar" style="width:80%"></b><span>6 h 25</span><span>7 <span class="weak">· pochi giorni</span></span>
+   <span class="lab"><span class="tag no">niente corsa</span><span class="tag no">niente caffè</span></span><b class="bar" style="width:86%"></b><span>6 h 55</span><span>38 <span class="ok">· chiara</span></span>
+   <span class="lab"><span class="tag no">niente corsa</span><span class="tag" style="--c:#8a6a4f">caffè</span></span><b class="bar" style="width:72%"></b><span>5 h 50</span><span>14 <span class="weak">· incerta</span></span>
+  </div>
+  <div class="save"><span class="btn">Salva come mia domanda</span><span class="btn">Esporta i dati</span></div>
+ </div>
+</div>
+<p class="note">Come resta onesta: ogni riga dice su quanti giorni si basa; sotto una soglia (es. 14) la riga è "pochi giorni" e non entra nella frase in cima; una differenza che potrebbe essere caso è "incerta". Più fattori metti, più le combinazioni si dividono i giorni: con 3 fattori sono 8 combinazioni, ed è per questo che il limite è 3. Una domanda salvata compare nell'elenco delle domande semplici: le due versioni sono la stessa cosa vista da due lati.</p>

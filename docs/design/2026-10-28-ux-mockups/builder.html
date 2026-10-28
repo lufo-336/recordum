@@ -1,0 +1,79 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .win{--ink:#1f1f1d;--mut:#6b6a65;--fnt:#a3a29c;--line:#ecebe8;--bg:#fbfbfa;--c:#2f7fc1;
+       font-family:Inter,sans-serif;font-size:14px;color:var(--ink);border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:#fff}
+  .body{display:grid;grid-template-columns:1fr 300px}
+  .main{padding:22px 28px}
+  .side{background:var(--bg);border-left:1px solid var(--line);padding:22px 20px}
+  .id{display:flex;gap:12px;align-items:center}
+  .ic{width:44px;height:44px;border-radius:10px;border:1px dashed #c9c8c3;display:grid;place-items:center;color:var(--mut)}
+  .ic svg,.tile svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.75}
+  .name{flex:1;font-size:20px;font-weight:600;border-bottom:1px solid var(--line);padding:6px 0}
+  .dotc{width:28px;height:28px;border-radius:14px;background:var(--c);box-shadow:0 0 0 1px #fff,0 0 0 2px #d6d5d0}
+  .type{margin:10px 0 0 56px;font-size:13px;color:var(--mut)}.type b{color:var(--ink);font-weight:500}
+  h3{font-size:13px;font-weight:600;margin:26px 0 4px}
+  .help{font-size:12.5px;color:var(--mut);margin:0 0 10px}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .tile{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+  .tile small{color:var(--mut);font-size:12px;line-height:1.35}
+  .field{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:10px}
+  .field .k{font-size:12px;color:var(--mut);background:#f1f0ed;border-radius:4px;padding:2px 6px}
+  .in{border:1px solid #d6d5d0;border-radius:6px;padding:5px 8px;color:var(--ink)}
+  .ck{display:flex;align-items:flex-start;gap:8px;margin:8px 0}.ck i{width:16px;height:16px;border:1.5px solid #a3a29c;border-radius:4px;flex:none;margin-top:1px}
+  .ck small{display:block;color:var(--mut);font-size:12px}
+  .fold{border:1px solid var(--line);border-radius:8px;padding:11px 12px;display:flex;justify-content:space-between;margin-top:8px}
+  .fold span{color:var(--mut)}
+  .add{color:var(--mut);margin-top:8px;padding:8px 12px;border:1px dashed #d6d5d0;border-radius:8px}
+  .side h4{font-size:12px;color:var(--mut);font-weight:500;margin:0 0 8px}
+  .row{height:40px;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-weight:500;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) 9%,#fff)}
+  .row span{margin-left:auto;font-weight:600;color:var(--c)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:8px;font-size:13px}
+  .foot{display:flex;gap:8px;align-items:center;padding:12px 20px;border-top:1px solid var(--line)}
+  .btn{border:1px solid #d6d5d0;border-radius:6px;padding:7px 12px;font-weight:500;font-size:13px;background:#fff}
+  .pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ghost{border-color:transparent;color:var(--mut)}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:10px 2px 0;line-height:1.5}
+</style>
+
+<h2>Nuova abitudine, da zero</h2>
+<p class="subtitle">Stessi pezzi di oggi, in tre blocchi che si leggono dall'alto in basso: chi è, cosa registri, quando conta. L'anteprima a destra resta.</p>
+
+<div class="win">
+ <div class="body">
+  <div class="main">
+   <div class="id">
+    <div class="ic" title="Icona"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    <div class="name">Acqua</div>
+    <div class="dotc" title="Colore"></div>
+   </div>
+   <div class="type">Si comporta come <b>contatore</b> · cambia da solo con quello che registri</div>
+
+   <h3>Cosa registri</h3>
+   <p class="help">Senza niente, è un'azione da spuntare. Aggiungi quello che vuoi misurare ogni volta.</p>
+   <div class="tiles">
+    <div class="tile"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>Quantità<small>bicchieri, km, pagine</small></div>
+    <div class="tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/></svg>Tempo<small>quanto è durato</small></div>
+    <div class="tile"><svg viewBox="0 0 24 24"><path d="M3 18h18M6 18v-4M10 18V9M14 18v-6M18 18V5"/></svg>Scala<small>da 1 a 5, con le etichette</small></div>
+    <div class="tile"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10"/></svg>Testo<small>una nota libera</small></div>
+   </div>
+   <div class="field"><span class="k">Quantità</span><span class="in" style="flex:1">Bicchieri</span><span class="in">unità ▾</span><span class="ck" style="margin:0"><i></i>decimali</span></div>
+
+   <h3>Come si registra</h3>
+   <div class="ck"><i></i><div>Più volte al giorno<small>Ogni registrazione è una riga sua; il giorno somma.</small></div></div>
+   <div class="ck"><i></i><div>Un tocco = +1<small>Niente campi da compilare: solo un contatore.</small></div></div>
+   <div class="ck"><i></i><div>È un'astinenza<small>Conta i giorni da quando hai smesso.</small></div></div>
+
+   <h3>Quando conta</h3>
+   <div class="fold"><b style="font-weight:500">Programma e serie</b><span>Ogni giorno · serie giornaliera ›</span></div>
+   <div class="add">+ Obiettivo &nbsp;·&nbsp; + Sessione a tempo</div>
+  </div>
+  <div class="side">
+   <h4>In Home</h4>
+   <div class="row">Acqua<span>2</span></div>
+   <h4 style="margin-top:20px">Quando registri</h4>
+   <div class="card">Bicchieri &nbsp;<span class="in">2</span>&nbsp; <b style="font-weight:500;margin-left:6px">Registra</b></div>
+  </div>
+ </div>
+ <div class="foot"><span class="btn ghost">Annulla</span><span style="flex:1"></span><span class="btn">Salva come modello</span><span class="btn pri">Crea abitudine</span></div>
+</div>
+<p class="note">Cosa cambia: nome grande con icona e colore accanto (i tre "sempre visibili" di §11); "Mattoni" diventa "Cosa registri", con le quattro tessere che dicono a cosa servono; le tre caselle sparse diventano "Come si registra", ognuna con una riga di spiegazione; "Programma, Obiettivo, Sessione" diventano "Quando conta", chiusi con il riassunto. "Lancia" diventa "Crea abitudine"; "Colore (hex)" e "Dati d'esempio" vuoto spariscono.</p>

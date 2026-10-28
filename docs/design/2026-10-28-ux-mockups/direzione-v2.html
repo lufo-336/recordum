@@ -1,0 +1,56 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .frame{border:1px solid #d4d4d8;border-radius:8px;overflow:hidden}
+  .cap{font:600 13px Inter,sans-serif;padding:8px 12px;background:#52525b;color:#fff}
+  .b{--bg:#fbfbfa;--row:#fff;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#c9c8c3;--line:#ecebe8;--chip:#ecebe8;--mix:9%;
+     font-family:Inter,sans-serif;font-size:14px;background:var(--bg);color:var(--ink);padding:14px 0}
+  .b.dark{--bg:#1b1b1a;--row:#222221;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#55544f;--line:#2c2c2a;--chip:#2e2e2c;--mix:16%}
+  .b .bar{display:flex;align-items:center;gap:10px;padding:0 18px 12px}
+  .b .bar h1{font:600 20px Inter,sans-serif;margin:0}
+  .b .tabs{display:flex;gap:2px;margin-left:16px;font-size:13px;color:var(--mut)}
+  .b .tabs span{padding:4px 10px;border-radius:6px}.b .tabs .sel{background:var(--chip);color:var(--ink);font-weight:500}
+  .b .pri{margin-left:auto;background:var(--ink);color:var(--bg);border-radius:6px;padding:6px 12px;font-size:13px;font-weight:500}
+  .b .days{display:flex;padding:0 18px 4px;font-size:11px;color:var(--mut);opacity:.8}
+  .b .days .sp{flex:1}.b .days span{width:30px;text-align:center}
+  .b .row{display:flex;align-items:center;height:40px;margin:0 10px 4px;padding:0 8px 0 10px;border-radius:6px;
+          border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) var(--mix),var(--row))}
+  .b .row .n{font-weight:500}
+  .b .row .m{color:var(--mut);font-size:12px;margin-left:8px}
+  .b .row .d{margin-left:auto;display:flex}
+  .b .row .d span{width:30px;text-align:center;color:var(--fnt);font-size:15px}
+  .b .row .d span.on{color:var(--c2,var(--c));font-weight:600}
+  .b.dark .row .d span.on{color:color-mix(in srgb,var(--c) 70%,#fff)}
+  .b .grp{padding:12px 20px 6px;font-size:12px;font-weight:600;color:var(--mut)}
+  .b .serif{font-family:'Source Serif 4',serif;font-style:italic;font-size:13px}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:8px 2px 0}
+</style>
+
+<h2>B con il blocco colorato, in chiaro e in scuro</h2>
+<p class="subtitle">La riga resta tinta del colore dell'abitudine, come oggi; cambia la dose: più tenue in chiaro, mescolata al fondo in scuro, così valori e nome restano leggibili.</p>
+
+<div class="cmp">
+ <div class="frame"><div class="cap">Chiaro</div>
+  <div class="b">
+   <div class="bar"><h1>Oggi</h1><div class="tabs"><span class="sel">Attive</span><span>Archiviate</span><span>Cestino</span></div><span class="pri">+ Nuova</span></div>
+   <div class="days"><span class="sp"></span><span>gio</span><span>mer</span><span>mar</span><span>lun</span><span>dom</span></div>
+   <div class="row" style="--c:#2f7fc1"><span class="n">Acqua</span><span class="m">5 bicchieri</span><span class="d"><span class="on">5</span><span class="on">6</span><span>·</span><span class="on">4</span><span class="on">8</span></span></div>
+   <div class="row" style="--c:#c2405b"><span class="n">Corsa</span><span class="d"><span class="on">✓</span><span>·</span><span class="on">✓</span><span>·</span><span>·</span></span></div>
+   <div class="row" style="--c:#7a5bc4"><span class="n">Diario della sera</span><span class="m serif">«Stasera scrivo del lago…»</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span>·</span><span class="on">✓</span></span></div>
+   <div class="grp">Salute</div>
+   <div class="row" style="--c:#c98a1e"><span class="n">Senza fumo</span><span class="m">12 giorni</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span></span></div>
+   <div class="row" style="--c:#2f9c8c"><span class="n">Umore</span><span class="d"><span class="on">4</span><span class="on">3</span><span>·</span><span class="on">4</span><span class="on">5</span></span></div>
+  </div></div>
+ <div class="frame"><div class="cap">Scuro</div>
+  <div class="b dark">
+   <div class="bar"><h1>Oggi</h1><div class="tabs"><span class="sel">Attive</span><span>Archiviate</span><span>Cestino</span></div><span class="pri">+ Nuova</span></div>
+   <div class="days"><span class="sp"></span><span>gio</span><span>mer</span><span>mar</span><span>lun</span><span>dom</span></div>
+   <div class="row" style="--c:#2f7fc1"><span class="n">Acqua</span><span class="m">5 bicchieri</span><span class="d"><span class="on">5</span><span class="on">6</span><span>·</span><span class="on">4</span><span class="on">8</span></span></div>
+   <div class="row" style="--c:#c2405b"><span class="n">Corsa</span><span class="d"><span class="on">✓</span><span>·</span><span class="on">✓</span><span>·</span><span>·</span></span></div>
+   <div class="row" style="--c:#7a5bc4"><span class="n">Diario della sera</span><span class="m serif">«Stasera scrivo del lago…»</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span>·</span><span class="on">✓</span></span></div>
+   <div class="grp">Salute</div>
+   <div class="row" style="--c:#c98a1e"><span class="n">Senza fumo</span><span class="m">12 giorni</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span></span></div>
+   <div class="row" style="--c:#2f9c8c"><span class="n">Umore</span><span class="d"><span class="on">4</span><span class="on">3</span><span>·</span><span class="on">4</span><span class="on">5</span></span></div>
+  </div></div>
+</div>
+<p class="note">Il colore della tinta e quello dei valori vengono dallo stesso colore dell'abitudine: in scuro il valore si schiarisce invece di scurirsi, come fa Loop.</p>

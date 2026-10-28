@@ -1,0 +1,49 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .w{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px;display:grid;grid-template-columns:300px 1fr;gap:14px}
+  .list,.ans{border:1px solid #e4e3df;border-radius:10px;background:#fff;padding:14px}
+  .list h3,.ans h3{margin:0 0 10px;font-size:14px}
+  .q{padding:9px 10px;border-radius:7px;display:flex;flex-direction:column;gap:2px;margin-bottom:2px}
+  .q small{color:#6b6a65;font-size:12px}
+  .q.sel{background:#f1f0ed}
+  .q b{font-weight:500}
+  .sep{font-size:11.5px;color:#a3a29c;margin:10px 10px 4px}
+  .ans .lead{font-size:15px;font-weight:500;margin:0 0 4px}
+  .ans .f{color:#6b6a65;font-size:12px;margin:0 0 14px}
+  .wk{display:grid;grid-template-columns:120px repeat(7,1fr);gap:4px;align-items:center;font-size:12px}
+  .wk .h{color:#a3a29c;text-align:center;font-size:11px}
+  .wk i{height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:#1f1f1d}
+  .wk .n{display:flex;gap:6px;align-items:center;font-weight:500}.wk .n s{width:4px;height:14px;border-radius:2px;background:var(--c);text-decoration:none}
+  .pick{display:flex;gap:8px;align-items:center;margin-top:18px;padding-top:12px;border-top:1px solid #ecebe8;flex-wrap:wrap}
+  .sel2{border:1px solid #d6d5d0;border-radius:6px;padding:5px 9px}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:12px 2px 0;line-height:1.5}
+</style>
+<h2>"Cosa dice il gruppo": le domande</h2>
+<p class="subtitle">Un elenco di domande in parole tue, ognuna con la sua risposta e quanti giorni ci sono dietro. In fondo, il confronto libero fra due abitudini.</p>
+<div class="w">
+ <div class="list"><h3>Domande · ultimi 90 giorni</h3>
+  <div class="q"><b>Quale faccio meno?</b><small>Corsa · 41% dei giorni previsti</small></div>
+  <div class="q sel"><b>In che giorni salto?</b><small>Corsa il lunedì, Meditazione il sabato</small></div>
+  <div class="q"><b>Quando sono andato meglio?</b><small>la settimana dal 6 ottobre · 33 su 35</small></div>
+  <div class="q"><b>A che ora le faccio?</b><small>Corsa 7:30, Meditazione 22:10</small></div>
+  <div class="q"><b>Chi sta migliorando, chi peggiora?</b><small>Sonno ↗ · Corsa ↘ rispetto ai 30 giorni prima</small></div>
+  <div class="sep">Insieme</div>
+  <div class="q"><b>Cosa va insieme?</b><small>Corsa e Umore: nei giorni di corsa +0,9</small></div>
+  <div class="q"><b>Cosa si ostacola?</b><small>Caffè dopo le 16 e Sonno: −1 h 10</small></div>
+ </div>
+ <div class="ans"><h3>In che giorni salto?</h3>
+  <p class="lead">Corsa la salti soprattutto il lunedì; Meditazione il sabato.</p>
+  <p class="f">Percentuale dei giorni previsti in cui l'hai fatta, per giorno della settimana · 13 settimane</p>
+  <div class="wk">
+   <span></span><span class="h">lun</span><span class="h">mar</span><span class="h">mer</span><span class="h">gio</span><span class="h">ven</span><span class="h">sab</span><span class="h">dom</span>
+   <span class="n" style="--c:#c2405b"><s></s>Corsa</span>
+   <i style="background:color-mix(in srgb,#c2405b 12%,#fff)">15%</i><i style="background:color-mix(in srgb,#c2405b 45%,#fff)">54%</i><i style="background:color-mix(in srgb,#c2405b 40%,#fff)">46%</i><i style="background:color-mix(in srgb,#c2405b 50%,#fff)">62%</i><i style="background:color-mix(in srgb,#c2405b 30%,#fff)">31%</i><i style="background:color-mix(in srgb,#c2405b 75%,#fff);color:#fff">85%</i><i style="background:color-mix(in srgb,#c2405b 60%,#fff)">69%</i>
+   <span class="n" style="--c:#7a5bc4"><s></s>Meditazione</span>
+   <i style="background:color-mix(in srgb,#7a5bc4 70%,#fff);color:#fff">85%</i><i style="background:color-mix(in srgb,#7a5bc4 70%,#fff);color:#fff">85%</i><i style="background:color-mix(in srgb,#7a5bc4 65%,#fff);color:#fff">77%</i><i style="background:color-mix(in srgb,#7a5bc4 70%,#fff);color:#fff">85%</i><i style="background:color-mix(in srgb,#7a5bc4 55%,#fff)">69%</i><i style="background:color-mix(in srgb,#7a5bc4 15%,#fff)">23%</i><i style="background:color-mix(in srgb,#7a5bc4 50%,#fff)">62%</i>
+   <span class="n" style="--c:#2f7fc1"><s></s>Acqua</span>
+   <i style="background:color-mix(in srgb,#2f7fc1 75%,#fff);color:#fff">92%</i><i style="background:color-mix(in srgb,#2f7fc1 75%,#fff);color:#fff">92%</i><i style="background:color-mix(in srgb,#2f7fc1 70%,#fff);color:#fff">85%</i><i style="background:color-mix(in srgb,#2f7fc1 75%,#fff);color:#fff">92%</i><i style="background:color-mix(in srgb,#2f7fc1 75%,#fff);color:#fff">92%</i><i style="background:color-mix(in srgb,#2f7fc1 65%,#fff);color:#fff">77%</i><i style="background:color-mix(in srgb,#2f7fc1 70%,#fff);color:#fff">85%</i>
+  </div>
+  <div class="pick"><b style="font-weight:500">Confronta:</b> nei giorni con <span class="sel2">Corsa ▾</span> com'è <span class="sel2">Umore ▾</span> negli <span class="sel2">ultimi 90 giorni ▾</span></div>
+ </div>
+</div>
+<p class="note">Ogni risposta: una frase in chiaro, il grafico più semplice che la regge, e su quanti giorni si basa. Le domande "Insieme" compaiono solo con abbastanza giorni da entrambe le parti, e dicono "va insieme", mai "causa". Calcolato sul dispositivo; niente esce. Queste stesse domande, ristrette a una sola abitudine, sono il seme della futura pagina delle statistiche.</p>

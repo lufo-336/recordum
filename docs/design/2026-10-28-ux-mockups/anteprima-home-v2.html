@@ -1,0 +1,139 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  .app{--bg:#fbfbfa;--pane:#fff;--rail:#f4f3f1;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#c9c8c3;--line:#ecebe8;--chip:#ecebe8;--mix:9%;--field:#fff;--fb:#d6d5d0;--cell:#f4f3f1;
+       font-family:Inter,sans-serif;font-size:14px;color:var(--ink);border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:var(--bg);
+       display:grid;grid-template-columns:52px 380px 1fr;height:760px}
+  .app.dark{--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#55544f;--line:#2e2e2c;--chip:#2e2e2c;--mix:16%;--field:#2a2a28;--fb:#3a3a37;--cell:#2a2a28}
+  .rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px}
+  .rail .logo{font-family:'Source Serif 4',serif;font-weight:600;font-size:20px;margin-bottom:8px}
+  .rail span{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--mut)}
+  .rail span.on{background:var(--chip);color:var(--ink)}.rail span.off{color:var(--fnt)}
+  .rail svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.75}
+  .home{border-right:1px solid var(--line);background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+  .hbar{display:flex;align-items:center;gap:8px;padding:14px 14px 8px}
+  .hbar h1{font-size:20px;font-weight:600;margin:0}
+  .pri{margin-left:auto;background:var(--ink);color:var(--bg);border-radius:6px;padding:6px 11px;font-size:13px;font-weight:500}
+  .filt{display:flex;gap:6px;padding:0 14px 8px;font-size:12.5px;color:var(--mut)}
+  .filt span{padding:3px 9px;border-radius:6px}.filt .sel{background:var(--chip);color:var(--ink);font-weight:500}
+  .days{display:flex;padding:0 14px 4px 14px;font-size:11px;color:var(--mut)}
+  .days .sp{flex:1}.days span{width:26px;text-align:center}
+  .row{display:flex;align-items:center;height:38px;margin:0 8px 4px;padding:0 6px 0 10px;border-radius:6px;border-left:4px solid var(--c);
+       background:color-mix(in srgb,var(--c) var(--mix),var(--pane))}
+  .row.sel{box-shadow:inset 0 0 0 1.5px var(--c)}
+  .row .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .d{margin-left:auto;display:flex}
+  .row .d span{width:26px;text-align:center;color:var(--fnt);font-size:13.5px}
+  .row .d span.on{color:var(--c);font-weight:600}
+  .dark .row .d span.on{color:color-mix(in srgb,var(--c) 70%,#fff)}
+  .grp{display:flex;align-items:center;gap:6px;padding:10px 16px 5px;font-size:12px;font-weight:600;color:var(--mut)}
+  .ind{margin-left:22px}
+  .ws{display:flex;flex-direction:column;overflow:hidden}
+  .tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line)}
+  .tab{padding:7px 12px;border-radius:7px 7px 0 0;display:flex;gap:8px;align-items:center;color:var(--mut);font-size:13px}
+  .tab s{width:8px;height:8px;border-radius:4px;background:var(--c);text-decoration:none}
+  .tab.on{background:var(--pane);color:var(--ink);font-weight:500;border:1px solid var(--line);border-bottom-color:var(--pane);margin-bottom:-1px}
+  .tab x{color:var(--mut);margin-left:4px;opacity:.6}
+  .body{flex:1;background:var(--pane);border-top:3px solid #c2405b;display:grid;grid-template-columns:1fr 300px;gap:0;overflow:hidden}
+  .col{padding:18px 22px;overflow:hidden}
+  .col+.col{border-left:1px solid var(--line);background:var(--bg)}
+  .hd{display:flex;align-items:flex-start;gap:12px}
+  .hd h2{font-size:22px;font-weight:600;margin:0;color:#c2405b}
+  .dark .hd h2{color:color-mix(in srgb,#c2405b 70%,#fff)}
+  .hd .sub{font-size:13px;color:var(--mut);margin-top:3px}
+  .act{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .done{background:#c2405b;color:#fff;border-radius:8px;padding:8px 13px;font-weight:600}
+  .act small{font-size:12px;color:var(--mut)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);margin:16px 0 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .stats div{padding:9px 0}.stats b{display:block;font-size:19px;font-weight:600;color:#c2405b}.stats span{font-size:12px;color:var(--mut)}
+  .dark .stats b{color:color-mix(in srgb,#c2405b 70%,#fff)}
+  .h{display:flex;align-items:center;margin:14px 0 8px}.h b{font-size:13px;font-weight:600}
+  .h .seg{margin-left:auto;display:flex;gap:2px;font-size:12px;color:var(--mut)}.h .seg span{padding:3px 9px;border-radius:5px}.h .seg .s{background:var(--chip);color:var(--ink)}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:12px;max-width:430px}
+  .cal .w{color:var(--mut);text-align:center;font-size:11px}
+  .cal i{height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-style:normal;background:var(--cell)}
+  .cal i.o{color:var(--fnt);background:transparent}.cal i.y{background:#c2405b;color:#fff;font-weight:600}.cal i.t{box-shadow:inset 0 0 0 2px var(--ink)}
+  .year{display:grid;grid-template-rows:repeat(7,8px);grid-auto-flow:column;grid-auto-columns:8px;gap:2px}.year i{border-radius:2px;display:block}
+  .cfg h3{font-size:12px;font-weight:600;color:var(--mut);margin:16px 0 6px}
+  .cfg .r{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}.cfg .r span{color:var(--mut)}
+  .cfg .t{font-size:15px;font-weight:600;margin:0 0 2px}
+  .tg{display:flex;gap:8px;align-items:center;margin:0 0 10px;font:13px Inter,sans-serif;color:#52525b}
+  .tg span{border:1px solid #d4d4d8;border-radius:6px;padding:5px 10px;cursor:pointer;background:#fff}
+
+  .colbtn{display:flex;gap:4px;margin:12px 0 0}
+  .colbtn span{border:1px solid var(--fb);border-radius:6px;padding:4px 10px;font-size:12.5px;color:var(--mut);display:flex;gap:6px;align-items:center}
+  .colbtn span.on{background:var(--chip);color:var(--ink);border-color:transparent;font-weight:500}
+  .colhd{display:flex;align-items:center;margin:0 0 2px}.colhd x{margin-left:auto;color:var(--mut);font-size:15px}
+  .day{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .day .dt{font-weight:600;font-size:13px;margin-bottom:6px}
+  .rec{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}.rec span{color:var(--mut)}
+  .note{margin-top:8px;border:1px dashed var(--fb);border-radius:6px;padding:7px 9px;color:var(--mut);font-size:13px}
+  .note.has{border-style:solid;background:color-mix(in srgb,#c2405b 6%,var(--pane));color:var(--ink);font-family:'Source Serif 4',serif;font-size:14px}
+  .hist .it{display:grid;grid-template-columns:110px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .hist .it span{color:var(--mut)}.hist .it em{font-family:'Source Serif 4',serif;color:var(--ink)}
+  .col{overflow:auto}
+</style>
+<h2>La Home con due abitudini aperte · v2</h2>
+<p class="subtitle">Rimesse le tre cose che mancavano: le colonne si aprono e si chiudono dalla testa (e con la × di ognuna); il giorno scelto ha la sua nota; sotto la mappa c'è la Cronologia.</p>
+<div class="tg">Tema: <span onclick="document.getElementById('app').classList.remove('dark')">Chiaro</span><span onclick="document.getElementById('app').classList.add('dark')">Scuro</span></div>
+<div class="app" id="app">
+ <div class="rail"><div class="logo">R</div>
+  <span class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg></span>
+  <span class="off"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/></svg></span>
+  <span class="off"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+  <span style="margin-top:auto"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span>
+ </div>
+ <div class="home">
+  <div class="hbar"><h1>Oggi</h1><span class="pri">+ Nuova</span></div>
+  <div class="filt"><span class="sel">Attive</span><span>Archiviate</span><span>Cestino</span></div>
+  <div class="days"><span class="sp"></span><span>mer</span><span>mar</span><span>lun</span><span>dom</span><span>sab</span></div>
+  <div class="row" style="--c:#2f7fc1"><span class="n">Acqua</span><span class="d"><span class="on">5</span><span class="on">6</span><span>·</span><span class="on">4</span><span class="on">8</span></span></div>
+  <div class="row sel" style="--c:#c2405b"><span class="n">Corsa</span><span class="d"><span class="on">✓</span><span>·</span><span class="on">✓</span><span>·</span><span class="on">✓</span></span></div>
+  <div class="row" style="--c:#a352a8"><span class="n">Diario della sera</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span>·</span><span class="on">✓</span></span></div>
+  <div class="row" style="--c:#c98a1e"><span class="n">Umore</span><span class="d"><span class="on">4</span><span class="on">3</span><span>·</span><span class="on">4</span><span class="on">5</span></span></div>
+  <div class="grp">▾ Mattina <span style="font-weight:400;margin-left:auto">3 di 5</span></div>
+  <div class="row ind" style="--c:#2f9c8c"><span class="n">Denti</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span></span></div>
+  <div class="row ind" style="--c:#7a5bc4"><span class="n">Meditazione</span><span class="d"><span>·</span><span class="on">12</span><span class="on">10</span><span class="on">15</span><span>·</span></span></div>
+  <div class="row ind" style="--c:#5f9a3c"><span class="n">Senza fumo</span><span class="d"><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span><span class="on">✓</span></span></div>
+  <div class="row" style="--c:#4f63c4"><span class="n">Sonno</span><span class="d"><span class="on">7h</span><span class="on">6h</span><span class="on">8h</span><span class="on">7h</span><span>·</span></span></div>
+ </div>
+ <div class="ws">
+  <div class="tabs"><span class="tab on" style="--c:#c2405b"><s></s>Corsa<x>×</x></span><span class="tab" style="--c:#a352a8"><s></s>Diario della sera<x>×</x></span></div>
+  <div class="body">
+   <div class="col">
+    <div class="hd"><div><h2>Corsa</h2><div class="sub">Ogni giorno · di solito verso le 7:30</div></div>
+     <div class="act"><div class="done">✓ Fatto oggi</div><small>annulla · per un altro giorno</small></div></div>
+    <div class="colbtn"><span class="on">Cronologia</span><span class="on">Configura</span><span>Note</span></div>
+    <div class="stats"><div><b>4</b><span>serie attuale</span></div><div><b>12</b><span>migliore</span></div><div><b>63%</b><span>30 giorni</span></div><div><b>148</b><span>in tutto</span></div></div>
+    <div class="h"><b>Mappa</b><div class="seg"><span>Settimana</span><span class="s">Mese</span><span>Anno</span></div></div>
+    <div class="cal">
+     <span class="w">lun</span><span class="w">mar</span><span class="w">mer</span><span class="w">gio</span><span class="w">ven</span><span class="w">sab</span><span class="w">dom</span>
+     <i class="o">28</i><i class="o">29</i><i class="o">30</i><i>1</i><i class="y">2</i><i>3</i><i class="y">4</i>
+     <i class="y">5</i><i>6</i><i class="y">7</i><i class="y">8</i><i>9</i><i class="y">10</i><i class="y">11</i>
+     <i>12</i><i class="y">13</i><i class="y">14</i><i>15</i><i class="y">16</i><i class="y">17</i><i>18</i>
+     <i class="y">19</i><i>20</i><i class="y">21</i><i>22</i><i class="y">23</i><i>24</i><i class="y">25</i>
+     <i>26</i><i class="y">27</i><i class="y t">28</i><i>29</i><i>30</i><i>31</i><i class="o">1</i>
+    </div>
+    <div class="h"><b>L'ultimo anno</b></div><div class="year" id="yr"></div>
+    <div class="day"><div class="dt">Mercoledì 28 ottobre · oggi</div>
+     <div class="rec">Fatto <span>alle 7:42 · ×</span></div>
+     <div class="note has">Gambe pesanti, ma l'ultimo chilometro è andato bene.</div></div>
+    <div class="h"><b>Cronologia</b><div class="seg"><span class="s">Tutto</span><span>Con note</span></div></div>
+    <div class="hist">
+     <div class="it"><b style="font-weight:500">mer 28 ott</b><em>Gambe pesanti, ma l'ultimo chilometro…</em><span>7:42</span></div>
+     <div class="it"><b style="font-weight:500">mar 27 ott</b><span>—</span><span>7:35</span></div>
+     <div class="it"><b style="font-weight:500">dom 25 ott</b><em>Lungo al parco, 12 km.</em><span>9:10</span></div>
+     <div class="it"><b style="font-weight:500">sab 24 ott</b><span>—</span><span>8:02</span></div>
+    </div>
+   </div>
+   <div class="col cfg"><div class="colhd"><div class="t">Configura</div><x title="Chiudi la colonna">×</x></div>
+    <h3>Chi è</h3><div class="r">Nome, icona e colore <span>Corsa ›</span></div><div class="r">Descrizione <span>facoltativa ›</span></div>
+    <h3>Cosa registri</h3><div class="r">Campi <span>nessuno: si spunta ›</span></div><div class="r">Più volte al giorno <span>no ›</span></div>
+    <h3>Quando conta</h3><div class="r">Programma e serie <span>Ogni giorno ›</span></div><div class="r">Obiettivo <span>nessuno ›</span></div>
+    <div style="color:var(--mut);font-size:13px;margin-top:12px">Avanzate ›</div>
+   </div>
+  </div>
+ </div>
+</div>
+<script>(function(){var y=document.getElementById('yr');var lv=[null,25,50,75,100];
+for(var i=0;i<7*48;i++){var e=document.createElement('i');var r=Math.random();var k=r<.38?0:r<.55?1:r<.72?2:r<.88?3:4;
+e.style.background=k==0?'var(--cell)':'color-mix(in srgb,#c2405b '+lv[k]+'%,var(--pane))';y.appendChild(e);}})();</script>

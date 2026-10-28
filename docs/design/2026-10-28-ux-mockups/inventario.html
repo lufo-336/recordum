@@ -1,0 +1,92 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .w{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px;line-height:1.45}
+  .per{border:1px solid #e4e3df;border-radius:10px;background:#fff;padding:14px 16px;margin-bottom:18px}
+  .per .bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .seg{display:flex;gap:2px;background:#f1f0ed;border-radius:7px;padding:2px}
+  .seg span{padding:4px 10px;border-radius:6px;color:#6b6a65}.seg .s{background:#fff;color:#1f1f1d;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .nav{display:flex;gap:4px;align-items:center;margin-left:8px}.nav b{font-weight:500;min-width:150px;text-align:center}
+  .nav i{border:1px solid #d6d5d0;border-radius:6px;padding:2px 8px;font-style:normal}
+  .chip{border:1px dashed #c9c8c3;border-radius:6px;padding:4px 9px;color:#6b6a65}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;background:#fff;border:1px solid #e4e3df;border-radius:10px;overflow:hidden}
+  th{text-align:left;font-size:12px;color:#6b6a65;font-weight:600;padding:8px 10px;background:#fbfbfa;border-bottom:1px solid #ecebe8}
+  td{padding:7px 10px;border-bottom:1px solid #f1f0ed;vertical-align:top}
+  td:first-child{width:24%;font-weight:500}
+  .ok{color:#3f7a26;font-weight:500;white-space:nowrap}.add{color:#b45309;font-weight:500;white-space:nowrap}.fut{color:#6b6a65;white-space:nowrap}
+  h3{font-size:14px;margin:18px 0 6px}
+</style>
+<h2>Periodi, e il controllo di tutto quello che c'è già</h2>
+<p class="subtitle">Sopra: un solo selettore di periodo che comanda mappa e Cronologia insieme. Sotto: ogni funzione che il frontend Avalonia ha oggi (estratta dalle viste), e dove va nel nuovo disegno.</p>
+<div class="w">
+ <div class="per"><b style="font-weight:600">Periodo · comanda mappa e Cronologia</b>
+  <div class="bar" style="margin-top:10px">
+   <div class="seg"><span>Settimana</span><span class="s">Mese</span><span>3 mesi</span><span>Anno</span><span>Tutto</span></div>
+   <div class="nav"><i>‹</i><b>ottobre 2026</b><i>›</i></div><span class="chip">Dal… al…</span><span style="margin-left:auto;color:#6b6a65">Oggi</span>
+  </div>
+  <div style="color:#6b6a65;margin-top:8px">La mappa cambia forma col periodo (settimana = 7 caselle grandi, mese = calendario, 3 mesi e anno = heatmap, tutto = una heatmap per anno); la Cronologia elenca le registrazioni di quel periodo, con il filtro "Con note". ‹ › spostano il periodo, "Dal… al…" ne sceglie uno libero, "Oggi" torna al presente.</div>
+ </div>
+
+ <h3>Home e cornice</h3>
+ <table><tr><th>Funzione di oggi</th><th>Nel nuovo disegno</th><th></th></tr>
+  <tr><td>Cerca, Nascondi completate oggi, ordinamento (Manuale…)</td><td>Riga dei filtri sotto "Attive · Archiviate · Cestino"</td><td class="add">da mostrare</td></tr>
+  <tr><td>Trascina per riordinare e per spostare nei gruppi</td><td>Invariato</td><td class="ok">c'è</td></tr>
+  <tr><td>Menu della riga: Rinomina, Archivia, Fissa in alto / nel gruppo, Cestino, Ripristina, Elimina definitivamente</td><td>Invariato, con le icone Lucide</td><td class="add">da mostrare</td></tr>
+  <tr><td>Log rapido (+) sulla riga</td><td>Il comando a destra della riga (tocco = registra oggi)</td><td class="add">da mostrare</td></tr>
+  <tr><td>"+ Nuova ▾": Nuova abitudine / Nuovo gruppo</td><td>Pulsante primario con il menu</td><td class="ok">c'è</td></tr>
+  <tr><td>Caricamento, errore + Riprova; vuoti di Home, Archivio, Cestino</td><td>Stessa lingua della Home vuota</td><td class="ok">c'è</td></tr>
+  <tr><td>Menu ☰: Home, Grafici, Backup (crea, ripristina, cronologia), Esporta libreria, Informazioni diagnostiche, Impostazioni</td><td>Barra a sinistra (sezioni) + menu ☰ per le azioni; nessuna voce sparisce</td><td class="add">da decidere</td></tr>
+  <tr><td>Barra del titolo propria su Windows (riduci, ingrandisci, chiudi)</td><td>Invariata, con i nuovi token; su Linux resta quella di sistema (D7)</td><td class="ok">c'è</td></tr>
+  <tr><td>Barra del timer in basso (pausa, riprendi, ferma)</td><td>Invariata, col colore dell'abitudine che corre</td><td class="add">da mostrare</td></tr>
+  <tr><td>Schede: chiudi, fissa / sblocca, "seleziona un'abitudine" a vuoto</td><td>Schede col pallino del colore, più il fermaglio di "fissa"</td><td class="add">da mostrare</td></tr>
+ </table>
+
+ <h3>Schermata dell'abitudine</h3>
+ <table><tr><th>Funzione di oggi</th><th>Nel nuovo disegno</th><th></th></tr>
+  <tr><td>Colonne Diario, Cronologia, Dettaglio, Note, Configura; Focus di una colonna (Esc per uscire)</td><td>Pulsanti delle colonne in testa + × e "a tutta finestra" su ogni colonna</td><td class="ok">c'è (v2)</td></tr>
+  <tr><td>Registrare per un altro giorno ("Registrando per")</td><td>"per un altro giorno" sotto il comando; clic su un giorno della mappa = quel giorno</td><td class="ok">c'è</td></tr>
+  <tr><td>Azione: segna / togli; % e "di solito verso le"</td><td>Comando in testa; i quattro numeri</td><td class="ok">c'è</td></tr>
+  <tr><td>Contatore a tocco: +1, Annulla ultima</td><td>+1 e − in testa</td><td class="ok">c'è</td></tr>
+  <tr><td>Misurato: celle con cronometro (avvia, ferma e compila)</td><td>Il campo in testa tiene il suo cronometro</td><td class="add">da mostrare</td></tr>
+  <tr><td>Serie: aggiungi, rinomina, togli; "Registra N serie"</td><td>Righe delle serie sotto il comando</td><td class="add">da mostrare</td></tr>
+  <tr><td>Stato: scala con "ultimo: …"</td><td>I gradini in testa</td><td class="ok">c'è</td></tr>
+  <tr><td>Astinenza: Inizio, Ricaduta, periodi con "In corso"</td><td>"Ho ceduto…" in testa; i periodi in Cronologia</td><td class="ok">c'è</td></tr>
+  <tr><td>Timer: avvia, pausa, riprendi, ferma, segmento successivo</td><td>"▶ Inizia" in testa diventa i controlli mentre corre</td><td class="add">da mostrare</td></tr>
+  <tr><td>Elimina una registrazione</td><td>× sulla registrazione del giorno</td><td class="ok">c'è (v2)</td></tr>
+  <tr><td>Note del giorno (colonna Note, marcatore sul calendario)</td><td>Nota nel blocco del giorno + colonna Note; il marcatore resta sulla mappa</td><td class="ok">c'è (v2)</td></tr>
+  <tr><td>Diario: voce o nota veloce, foto, tag (+ tag, togli), modifica, elimina, inserisci immagine, "foto non disponibile"</td><td>Colonna Diario + tutta finestra + schermo intero</td><td class="ok">c'è</td></tr>
+  <tr><td>Esporta (oggi nascosto, arriva a F6)</td><td>Posto nel menu ⋯ della testa</td><td class="fut">futuro</td></tr>
+ </table>
+
+ <h3>Configura e creatore</h3>
+ <table><tr><th>Funzione di oggi</th><th>Nel nuovo disegno</th><th></th></tr>
+  <tr><td>Nome, descrizione, icona, colore (preferiti), colore del marcatore delle note</td><td>Chi è</td><td class="add">marcatore da aggiungere</td></tr>
+  <tr><td>Riga in Home: valore chiave e striscia</td><td>Nuovo blocco "Come appare", con l'anteprima della riga</td><td class="add">da aggiungere</td></tr>
+  <tr><td>Campi/metriche, scale con etichette proprie, unità nuove (nome, simbolo), nomi delle serie</td><td>Cosa registri</td><td class="ok">c'è</td></tr>
+  <tr><td>Gesto principale, più volte al giorno, contatore a tocco, astinenza</td><td>Come si registra</td><td class="ok">c'è</td></tr>
+  <tr><td>Sessione: timer integrato, modalità, obiettivo, riposo, segmenti, richiesta automatica</td><td>Cosa registri → Sessione; i dettagli in Avanzate</td><td class="add">da mostrare</td></tr>
+  <tr><td>Programma: giorni, ogni X giorni, volte a settimana</td><td>Quando conta</td><td class="ok">c'è</td></tr>
+  <tr><td>Serie (streak): modalità, recupero, tolleranza in minuti</td><td>Quando conta; tolleranza in Avanzate</td><td class="ok">c'è</td></tr>
+  <tr><td>Obiettivo: nome, periodo, giorni mobili</td><td>Quando conta; giorni mobili in Avanzate</td><td class="ok">c'è</td></tr>
+  <tr><td>Inizio della giornata (reset), con l'avviso che rilegge lo storico</td><td>Quando conta, con l'avviso accanto</td><td class="add">da aggiungere</td></tr>
+  <tr><td>Condivisione dati con l'AI (spenta)</td><td>Avanzate, "in arrivo" finché l'AI non c'è</td><td class="add">da aggiungere</td></tr>
+  <tr><td>Creatore: anteprima per ogni tipo, Salva come modello ("Salvato ✓")</td><td>Anteprima a destra; "Salva come modello"</td><td class="ok">c'è</td></tr>
+  <tr><td>Modelli tuoi: rinomina, elimina</td><td>Menu della scheda nel selettore</td><td class="ok">c'è</td></tr>
+ </table>
+
+ <h3>Impostazioni, backup, avvio</h3>
+ <table><tr><th>Funzione di oggi</th><th>Nel nuovo disegno</th><th></th></tr>
+  <tr><td>Backup automatico (frequenza, quanti, cartella, passphrase, prova ora); backup e ripristino; cronologia (apri cartella, elimina)</td><td>Dati e backup</td><td class="ok">c'è</td></tr>
+  <tr><td>Finestre Crea backup (destinazione, passphrase) e Ripristina (anteprima dello schema)</td><td>Finestrelle con gli stessi token; da ridisegnare insieme</td><td class="add">da mostrare</td></tr>
+  <tr><td>Foto: le tre scelte D10 con l'avviso sul luogo</td><td>Diario e foto</td><td class="ok">c'è</td></tr>
+  <tr><td>Dimentica su questo dispositivo</td><td>Sicurezza</td><td class="ok">c'è</td></tr>
+  <tr><td>Sblocco: primo avvio con conferma, ricorda su questo dispositivo; errore fatale</td><td>Sblocco ridisegnato; il primo avvio ha la conferma</td><td class="ok">c'è</td></tr>
+ </table>
+
+ <h3>Discusse, non ancora fatte: il disegno deve lasciare il posto</h3>
+ <table><tr><th>Cosa</th><th>Dove arriverà</th><th></th></tr>
+  <tr><td>Dettaglio (F3), Grafici (F7), Export (F6)</td><td>Colonna Dettaglio, sezione Statistiche nella barra, menu ⋯</td><td class="fut">posto lasciato</td></tr>
+  <tr><td>"Cosa dice il gruppo" ed Esplora</td><td>Il progetto separato di oggi</td><td class="fut">spec a parte</td></tr>
+  <tr><td>Modalità Calendario (spec 2026-08-19, Onda 5)</td><td>Una sezione della barra a sinistra</td><td class="fut">posto lasciato</td></tr>
+  <tr><td>Barra di navigazione e Ctrl+5 (F1-RAIL1), promemoria (dopo il dogfooding)</td><td>Barra a sinistra; promemoria "in arrivo"</td><td class="fut">posto lasciato</td></tr>
+ </table>
+</div>

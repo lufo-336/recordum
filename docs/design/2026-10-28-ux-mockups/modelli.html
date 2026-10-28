@@ -1,0 +1,58 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .win{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px;border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:#fff;display:grid;grid-template-columns:1fr 300px}
+  .main{padding:20px 22px}
+  .side{background:#fbfbfa;border-left:1px solid #ecebe8;padding:20px}
+  h1{font-size:20px;font-weight:600;margin:0 0 14px}
+  .start{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .st{border:1px solid #e4e3df;border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+  .st .i{width:34px;height:34px;border-radius:8px;background:#f1f0ed;display:grid;place-items:center}
+  .st b{font-weight:500;display:block}.st small{color:#6b6a65}
+  .i svg{width:18px;height:18px;stroke:#1f1f1d;fill:none;stroke-width:1.75}
+  .sec{display:flex;align-items:center;margin:4px 0 8px}.sec b{font-size:13px;font-weight:600}.sec span{margin-left:auto;color:#6b6a65}
+  .srch{border:1px solid #d6d5d0;border-radius:6px;padding:5px 9px;color:#a3a29c;width:170px}
+  .g{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+  .c{border:1px solid #ecebe8;border-radius:8px;padding:10px 12px;display:flex;gap:10px;border-left:4px solid var(--c)}
+  .c.sel{box-shadow:0 0 0 2px #1f1f1d;border-color:transparent;border-left-color:var(--c)}
+  .c b{font-weight:500;display:block}.c small{color:#6b6a65;line-height:1.35;display:block}
+  .c .ty{font-size:11px;color:color-mix(in srgb,var(--c) 75%,#000);margin-top:3px}
+  .side h2{font-size:17px;font-weight:600;margin:0 0 2px;color:#a352a8}
+  .side .d{color:#6b6a65;margin:0 0 12px;line-height:1.45}
+  .side .t{font-size:12px;font-weight:600;color:#6b6a65;margin:14px 0 6px}
+  .side .r{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ecebe8}.side .r span{color:#6b6a65}
+  .row{height:36px;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-weight:500;border-left:4px solid #a352a8;background:color-mix(in srgb,#a352a8 9%,#fff)}
+  .use{margin-top:16px;display:flex;gap:8px}
+  .btn{border:1px solid #d6d5d0;border-radius:6px;padding:7px 12px;font-weight:500;background:#fff}.pri{background:#1f1f1d;color:#fff;border-color:#1f1f1d}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:10px 2px 0;line-height:1.5}
+</style>
+<h2>Scegliere da dove partire</h2>
+<p class="subtitle">Oggi: due voci in alto e i modelli in una sezione a scomparsa, in inglese. Proposta: le due partenze in vista, i modelli come schede con il loro colore, e a destra cosa ottieni prima di usarlo.</p>
+<div class="win">
+ <div class="main"><h1>Nuova abitudine</h1>
+  <div class="start">
+   <div class="st"><span class="i"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><div><b>Da zero</b><small>Componi tu i pezzi</small></div></div>
+   <div class="st"><span class="i"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg></span><div><b>Gruppo vuoto</b><small>Per tenere insieme più abitudini</small></div></div>
+  </div>
+  <div class="sec"><b>Modelli</b><span class="srch">Cerca un modello…</span></div>
+  <div class="g">
+   <div class="c" style="--c:#a352a8"><div><b>Diario quotidiano</b><small>Una voce libera al giorno, con foto e tag.</small><div class="ty">diario</div></div></div>
+   <div class="c sel" style="--c:#a352a8"><div><b>Diario del cibo</b><small>Ogni pasto in pochi secondi: una nota e una foto.</small><div class="ty">diario · più volte al giorno</div></div></div>
+   <div class="c" style="--c:#c98a1e"><div><b>Umore</b><small>Come stai, su una scala da 1 a 5 con le parole.</small><div class="ty">stato</div></div></div>
+   <div class="c" style="--c:#c2405b"><div><b>Routine del mattino</b><small>Un'azione da spuntare per cominciare la giornata.</small><div class="ty">azione</div></div></div>
+   <div class="c" style="--c:#4f63c4"><div><b>Sonno</b><small>Ore dormite e com'è andata, ogni mattina.</small><div class="ty">contatore · ore + scala</div></div></div>
+   <div class="c" style="--c:#5f9a3c"><div><b>Smettere di fumare</b><small>Il tempo da quando hai smesso.</small><div class="ty">astinenza</div></div></div>
+   <div class="c" style="--c:#2f7fc1"><div><b>Acqua</b><small>Quanti bicchieri, verso un obiettivo.</small><div class="ty">contatore · obiettivo</div></div></div>
+   <div class="c" style="--c:#4f63c4"><div><b>Allenamento</b><small>Serie, ripetizioni e peso.</small><div class="ty">contatore a serie</div></div></div>
+  </div>
+  <div class="sec"><b>I tuoi modelli</b><span>2</span></div>
+  <div class="g"><div class="c" style="--c:#5f9a3c"><div><b>Mattina</b><small>Gruppo con 5 abitudini.</small><div class="ty">gruppo</div></div></div></div>
+ </div>
+ <div class="side">
+  <h2>Diario del cibo</h2><p class="d">Ogni pasto in pochi secondi: una nota breve e una foto, tutte le volte che vuoi nella giornata.</p>
+  <div class="t">In Home apparirà così</div><div class="row">Diario del cibo</div>
+  <div class="t">Cosa contiene</div>
+  <div class="r">Registri <span>testo, foto, tag</span></div><div class="r">Quante volte <span>più volte al giorno</span></div><div class="r">Gesto principale <span>nota veloce</span></div>
+  <div class="use"><span class="btn pri">Usa questo modello</span><span class="btn">Personalizza…</span></div>
+ </div>
+</div>
+<p class="note">"Usa" crea l'abitudine così com'è; "Personalizza…" apre il creatore già riempito, con i tre blocchi (principio 8: un modello è una composizione salvata, quindi si apre sempre nel creatore). I nomi e le descrizioni dei modelli si traducono come ogni altra stringa: inglese per primo, poi italiano. I tuoi modelli hanno Rinomina ed Elimina nel menu della scheda.</p>

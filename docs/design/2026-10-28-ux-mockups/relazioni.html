@@ -1,0 +1,39 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .wrap{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px}
+  .opt{border:1px solid #e4e3df;border-radius:10px;background:#fff;padding:16px 18px;margin-bottom:16px}
+  .opt h3{margin:0 0 2px;font-size:15px}.opt .d{color:#6b6a65;margin:0 0 12px}
+  .al{display:grid;grid-template-columns:150px 1fr;row-gap:5px;align-items:center}
+  .al .n{font-weight:500;display:flex;align-items:center;gap:7px}.al .n i{width:4px;height:16px;border-radius:2px;background:var(--c);display:block}
+  .cells{display:grid;grid-template-columns:repeat(30,1fr);gap:2px}
+  .cells i{height:18px;border-radius:3px;display:block}
+  .days{grid-column:2;display:grid;grid-template-columns:repeat(30,1fr);font-size:10px;color:#a3a29c}
+  .days span:nth-child(7n+1){color:#6b6a65}
+  .cmp{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .card{border:1px solid #ecebe8;border-radius:8px;padding:12px}
+  .card .q{font-weight:500;margin-bottom:8px}
+  .bars{display:grid;grid-template-columns:110px 1fr 40px;gap:6px;align-items:center;font-size:12px;color:#6b6a65}
+  .bars b{height:10px;border-radius:3px;display:block;background:var(--c)}
+  .card .f{font-size:11.5px;color:#a3a29c;margin-top:8px}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:4px 2px 0;line-height:1.5}
+</style>
+<h2>Vedere le abitudini del gruppo insieme</h2>
+<p class="subtitle">Due modi, dal più semplice al più "analitico". Il primo non calcola niente: mette i giorni uno sotto l'altro. Il secondo confronta.</p>
+<div class="wrap">
+ <div class="opt"><h3>A · Le figlie sugli stessi giorni</h3><p class="d">Ogni abitudine del gruppo è una riga, tutte sulla stessa colonna di giorni (30, 90 o un anno). L'occhio vede da solo che "nei giorni di corsa dormo di più". Nessun numero inventato.</p>
+  <div class="al" id="al"></div></div>
+ <div class="opt"><h3>B · "Nei giorni in cui…" — confronti semplici</h3><p class="d">Per una coppia scelta da te (o le coppie che il gruppo propone), la media di un'abitudine nei giorni con e senza l'altra. Calcolato sul dispositivo, nessuna AI. Mostrato solo con abbastanza giorni, e detto come confronto, non come causa.</p>
+  <div class="cmp">
+   <div class="card"><div class="q">Umore, nei giorni con e senza Corsa</div>
+    <div class="bars" style="--c:#c98a1e"><span>con Corsa (38 g)</span><b style="width:82%"></b><span>4,1</span><span>senza (52 g)</span><b style="width:64%;opacity:.55"></b><span>3,2</span></div>
+    <div class="f">ultimi 90 giorni · è un confronto, non dice che una causa l'altra</div></div>
+   <div class="card"><div class="q">Sonno, nei giorni con e senza Caffè dopo le 16</div>
+    <div class="bars" style="--c:#4f63c4"><span>con caffè (21 g)</span><b style="width:58%"></b><span>6 h 10</span><span>senza (69 g)</span><b style="width:80%;opacity:.55"></b><span>7 h 20</span></div>
+    <div class="f">ultimi 90 giorni · servono almeno 14 giorni per lato</div></div>
+  </div></div>
+</div>
+<script>(function(){var al=document.getElementById('al');var hs=[['Corsa','#c2405b',function(i){return i%2==0||i%7==3?1:0}],['Sonno','#4f63c4',function(i){return (i%2==0||i%7==3)?.75+Math.random()*.25:.3+Math.random()*.3}],['Umore','#c98a1e',function(i){return (i%2==0?.6:.3)+Math.random()*.4}],['Caffè dopo le 16','#8a6a4f',function(i){return i%2==1&&Math.random()<.6?1:0}]];
+hs.forEach(function(h){var n=document.createElement('div');n.className='n';n.style.setProperty('--c',h[1]);n.innerHTML='<i></i>'+h[0];al.appendChild(n);var c=document.createElement('div');c.className='cells';
+for(var i=0;i<30;i++){var e=document.createElement('i');var v=Math.min(1,h[2](i));e.style.background=v<=0.01?'#eeede9':'color-mix(in srgb,'+h[1]+' '+Math.round(20+80*v)+'%,#fff)';c.appendChild(e);}al.appendChild(c);});
+var d=document.createElement('div');d.className='days';for(var i=0;i<30;i++){var s=document.createElement('span');s.textContent=(i%7==0)?(i+1):'';d.appendChild(s);}al.appendChild(document.createElement('span'));al.appendChild(d);})();</script>
+<p class="note">A entra in quest'onda senza toccare i dati: usa le serie che le viste hanno già. B ha bisogno di un servizio nuovo nei dati (le serie allineate per giorno di ogni tipo, le soglie, i test), quindi è un'onda sua, piccola; e sposta "statistiche e correlazioni" da "dopo la v1.0" a dentro, nella versione senza AI.</p>

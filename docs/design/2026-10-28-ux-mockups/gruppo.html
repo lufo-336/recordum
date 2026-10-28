@@ -1,0 +1,59 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .win{--ink:#1f1f1d;--mut:#6b6a65;--fnt:#c9c8c3;--line:#ecebe8;--bg:#fbfbfa;--c:#5f9a3c;
+       font-family:Inter,sans-serif;font-size:14px;color:var(--ink);border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:var(--bg);border-top:3px solid var(--c)}
+  .cols{display:grid;grid-template-columns:1fr 300px;gap:12px;padding:12px}
+  .col{background:#fff;border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+  .hd{display:flex;align-items:center;gap:12px}
+  .hd h1{font-size:22px;font-weight:600;margin:0;color:var(--c)}
+  .hd .sub{font-size:13px;color:var(--mut);margin-top:3px}
+  .prog{margin-left:auto;text-align:right}
+  .prog b{font-size:20px;color:var(--c)}.prog small{display:block;font-size:12px;color:var(--mut)}
+  .bar{height:6px;border-radius:3px;background:#eeede9;margin-top:6px;width:160px;overflow:hidden}.bar i{display:block;height:100%;width:60%;background:var(--c)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);margin:16px 0 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .stats div{padding:10px 0}.stats b{display:block;font-size:18px;font-weight:600;color:var(--c)}.stats span{font-size:12px;color:var(--mut)}
+  .h{font-size:13px;font-weight:600;margin:16px 0 8px}
+  .row{display:flex;align-items:center;height:40px;margin:0 0 4px;padding:0 10px;border-radius:6px;border-left:4px solid var(--rc);background:color-mix(in srgb,var(--rc) 9%,#fff)}
+  .row .n{font-weight:500}.row .m{margin-left:8px;color:var(--mut);font-size:12px}
+  .row .q{margin-left:auto;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:600}
+  .row .q.ok{color:var(--rc)}
+  .row .q.todo{border:1px solid color-mix(in srgb,var(--rc) 50%,#fff);color:var(--rc);background:#fff}
+  .sg{font-size:12px;font-weight:600;color:var(--mut);margin:10px 0 6px 2px}
+  .year{display:grid;grid-template-rows:repeat(7,9px);grid-auto-flow:column;grid-auto-columns:9px;gap:2px}.year i{border-radius:2px;display:block}
+  .cfg h2{font-size:15px;font-weight:600;margin:0 0 2px}.cfg .help{font-size:12.5px;color:var(--mut);margin:0 0 12px}
+  .cfg h3{font-size:12px;font-weight:600;color:var(--mut);margin:18px 0 6px}
+  .cfg .r{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}.cfg .r span{color:var(--mut)}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:10px 2px 0;line-height:1.5}
+</style>
+
+<h2>Aprire un gruppo</h2>
+<p class="subtitle">Oggi è la colonna "Panoramica": quante fatte oggi, le abitudini figlie, l'obiettivo del gruppo. Stesso schema delle abitudini, ma il comando non è del gruppo: è delle figlie.</p>
+
+<div class="win"><div class="cols">
+ <div class="col">
+  <div class="hd"><div><h1>Mattina</h1><div class="sub">5 abitudini · la giornata comincia alle 5:00</div></div>
+   <div class="prog"><b>3 di 5</b><small>fatte oggi</small><div class="bar"><i></i></div></div></div>
+  <div class="stats">
+   <div><b>6</b><span>giorni completi di fila</span></div><div><b>71%</b><span>ultimi 30 giorni</span></div>
+   <div><b>4 di 5</b><span>obiettivo del gruppo</span></div><div><b>Corsa</b><span>la più saltata</span></div>
+  </div>
+  <div class="h">Oggi</div>
+  <div class="row" style="--rc:#2f7fc1"><span class="n">Acqua al risveglio</span><span class="q ok">✓</span></div>
+  <div class="row" style="--rc:#c2405b"><span class="n">Corsa</span><span class="m">di solito 7:30</span><span class="q todo">Fatto</span></div>
+  <div class="row" style="--rc:#7a5bc4"><span class="n">Meditazione</span><span class="m">10 min</span><span class="q todo">▶ Inizia</span></div>
+  <div class="sg">Igiene · sottogruppo</div>
+  <div class="row" style="--rc:#2f9c8c;margin-left:14px"><span class="n">Denti</span><span class="q ok">✓</span></div>
+  <div class="row" style="--rc:#2f9c8c;margin-left:14px"><span class="n">Doccia fredda</span><span class="q ok">✓</span></div>
+  <div class="h">L'ultimo anno</div>
+  <div class="year" id="yr"></div>
+  <div style="font-size:11.5px;color:var(--mut);margin-top:6px">intensità = quante delle figlie quel giorno (5 gradini); pieno = tutte</div>
+ </div>
+ <div class="col cfg"><h2>Configura il gruppo</h2><p class="help">Quello che il gruppo decide per le figlie.</p>
+  <h3>Chi è</h3><div class="r">Nome, icona e colore <span>Mattina ›</span></div>
+  <h3>Per le figlie</h3><div class="r">Inizio della giornata <span>5:00 ›</span></div><div class="r">Obiettivo del gruppo <span>4 di 5 al giorno ›</span></div>
+  <h3>Contenuto</h3><div class="r">Abitudini e sottogruppi <span>5 · riordina ›</span></div><div class="r">Salva come modello <span>›</span></div>
+ </div>
+</div></div>
+<script>(function(){var y=document.getElementById('yr');var lv=['#eeede9','color-mix(in srgb,#5f9a3c 25%,#fff)','color-mix(in srgb,#5f9a3c 50%,#fff)','color-mix(in srgb,#5f9a3c 75%,#fff)','#5f9a3c'];
+for(var i=0;i<7*52;i++){var e=document.createElement('i');var r=Math.random();e.style.background=lv[r<.15?0:r<.3?1:r<.5?2:r<.75?3:4];y.appendChild(e);}})();</script>
+<p class="note">Cosa cambia rispetto a un'abitudine: in testa non c'è un comando ma l'avanzamento di oggi; le figlie si segnano da qui, ognuna col suo comando (lo stesso della sua schermata, in piccolo), e un clic sul nome apre la figlia; i sottogruppi sono rientrati; la mappa dell'anno dice quante figlie, non sì/no. Configura del gruppo ha solo quello che un gruppo decide davvero: l'inizio della giornata che le figlie ereditano, l'obiettivo del gruppo, il contenuto e "salva come modello" (un gruppo salvato è un template, principio 8).</p>

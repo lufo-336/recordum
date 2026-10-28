@@ -1,0 +1,79 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px}
+  .k{border:1px solid #e4e3df;border-radius:10px;background:#fff;padding:14px 16px;border-top:3px solid var(--c)}
+  .k .t{font-size:11.5px;color:#6b6a65;margin-bottom:6px}
+  .k .hd{display:flex;align-items:center;gap:10px}
+  .k h3{margin:0;font-size:17px;font-weight:600;color:var(--c)}
+  .k .sub{font-size:12px;color:#6b6a65}
+  .k .act{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .p{background:var(--c);color:#fff;border-radius:7px;padding:6px 11px;font-weight:600;white-space:nowrap}
+  .s{border:1px solid #d6d5d0;border-radius:7px;padding:5px 9px;white-space:nowrap}
+  .in{border:1px solid #d6d5d0;border-radius:6px;padding:4px 7px;min-width:28px;text-align:right}
+  .st{display:grid;grid-template-columns:repeat(4,1fr);margin:10px 0 8px;border-top:1px solid #ecebe8;border-bottom:1px solid #ecebe8}
+  .st div{padding:7px 0}.st b{display:block;font-size:16px;color:var(--c)}.st span{font-size:11px;color:#6b6a65}
+  .map{display:flex;gap:3px;align-items:flex-end;height:26px}
+  .map i{flex:1;border-radius:3px;display:block}
+  .m{font-size:11.5px;color:#6b6a65;margin-top:5px}
+  .serif{font-family:'Source Serif 4',serif;font-style:italic}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:12px 2px 0;line-height:1.5}
+</style>
+
+<h2>Le combinazioni, nella stessa schermata</h2>
+<p class="subtitle">Dalla grammatica del codice (HabitCompositionRules) e dalle viste per tipo che esistono già: cosa c'è in testa, i quattro numeri, com'è la mappa.</p>
+
+<div class="grid">
+ <div class="k" style="--c:#c2405b"><div class="t">Azione · nessun campo</div>
+  <div class="hd"><div><h3>Corsa</h3><div class="sub">Ogni giorno</div></div><div class="act"><span class="p">✓ Fatto oggi</span></div></div>
+  <div class="st"><div><b>4</b><span>serie</span></div><div><b>12</b><span>migliore</span></div><div><b>63%</b><span>30 giorni</span></div><div><b>148</b><span>in tutto</span></div></div>
+  <div class="map" id="m1"></div><div class="m">fatto / non fatto: pieno o vuoto</div></div>
+
+ <div class="k" style="--c:#2f7fc1"><div class="t">Contatore a tocco · +1</div>
+  <div class="hd"><div><h3>Bicchieri d'acqua</h3><div class="sub">Obiettivo 8 al giorno</div></div><div class="act"><span class="s">−</span><span class="p">+1 &nbsp;·&nbsp; 5/8</span></div></div>
+  <div class="st"><div><b>5</b><span>oggi</span></div><div><b>6,4</b><span>media 30 g</span></div><div><b>9</b><span>serie obiettivo</span></div><div><b>1.932</b><span>in tutto</span></div></div>
+  <div class="map" id="m2"></div><div class="m">intensità = quanto vicino all'obiettivo (5 gradini)</div></div>
+
+ <div class="k" style="--c:#2f9c8c"><div class="t">Contatore misurato · un campo (quantità o tempo)</div>
+  <div class="hd"><div><h3>Lettura</h3><div class="sub">pagine · obiettivo 150 a settimana</div></div><div class="act"><span class="in">20</span><span class="p">Registra</span></div></div>
+  <div class="st"><div><b>96</b><span>questa settimana</span></div><div><b>64%</b><span>obiettivo</span></div><div><b>21</b><span>media al giorno</span></div><div><b>3.410</b><span>in tutto</span></div></div>
+  <div class="map" id="m3"></div><div class="m">intensità = valore del giorno; l'obiettivo settimanale come barra sopra la settimana</div></div>
+
+ <div class="k" style="--c:#4f63c4"><div class="t">Contatore a serie · più campi, più volte al giorno</div>
+  <div class="hd"><div><h3>Palestra</h3><div class="sub">serie · ripetizioni × kg</div></div><div class="act"><span class="in">10</span>×<span class="in">40</span><span class="p">Aggiungi serie</span></div></div>
+  <div class="st"><div><b>4</b><span>serie oggi</span></div><div><b>1.600</b><span>volume oggi</span></div><div><b>3</b><span>giorni / settimana</span></div><div><b>212</b><span>sedute</span></div></div>
+  <div class="map" id="m4"></div><div class="m">intensità = volume del giorno; sotto, le serie del giorno come righe</div></div>
+
+ <div class="k" style="--c:#7a5bc4"><div class="t">Sessione · contatore con timer</div>
+  <div class="hd"><div><h3>Meditazione</h3><div class="sub">obiettivo 10 min</div></div><div class="act"><span class="p">▶ Inizia</span><span class="s">+ a mano</span></div></div>
+  <div class="st"><div><b>12 min</b><span>oggi</span></div><div><b>6</b><span>serie</span></div><div><b>9 min</b><span>media 30 g</span></div><div><b>41 h</b><span>in tutto</span></div></div>
+  <div class="map" id="m5"></div><div class="m">intensità = minuti; il timer che corre resta anche nella barra in basso</div></div>
+
+ <div class="k" style="--c:#c98a1e"><div class="t">Stato · una scala (1–5 con le etichette)</div>
+  <div class="hd"><div><h3>Umore</h3><div class="sub">come stai oggi?</div></div><div class="act"><span class="s">1</span><span class="s">2</span><span class="s">3</span><span class="p">4 · bene</span><span class="s">5</span></div></div>
+  <div class="st"><div><b>bene</b><span>oggi</span></div><div><b>3,6</b><span>media 30 g</span></div><div><b>↗</b><span>andamento</span></div><div><b>27/30</b><span>giorni segnati</span></div></div>
+  <div class="map" id="m6"></div><div class="m">ogni giorno il suo valore; mai "serie" se l'utente non la chiede</div></div>
+
+ <div class="k" style="--c:#5f9a3c"><div class="t">Astinenza · periodi, non registrazioni</div>
+  <div class="hd"><div><h3>Senza fumo</h3><div class="sub">dal 16 ottobre</div></div><div class="act"><span class="s">Ho ceduto…</span></div></div>
+  <div class="st"><div><b>12 g</b><span>adesso</span></div><div><b>41 g</b><span>il più lungo</span></div><div><b>3</b><span>ricadute in 90 g</span></div><div><b>212 g</b><span>liberi in tutto</span></div></div>
+  <div class="map" id="m7"></div><div class="m">i periodi come una fascia continua; una ricaduta è un taglio, non un giorno "rosso"</div></div>
+
+ <div class="k" style="--c:#a352a8"><div class="t">Diario · testo (anche con tempo, foto, tag)</div>
+  <div class="hd"><div><h3>Diario della sera</h3><div class="sub serif">«Stasera scrivo del lago…»</div></div><div class="act"><span class="p">Scrivi</span><span class="s">Nota veloce</span></div></div>
+  <div class="st"><div><b>5</b><span>voci questa settimana</span></div><div><b>9</b><span>serie</span></div><div><b>#lago</b><span>tag del mese</span></div><div><b>318</b><span>voci</span></div></div>
+  <div class="map" id="m8"></div><div class="m">giorni con una voce; clic sul giorno = le voci rese sotto (serif)</div></div>
+</div>
+<script>
+(function(){function f(id,c,fn){var e=document.getElementById(id);for(var i=0;i<30;i++){var d=document.createElement('i');var v=fn(i);d.style.height=(v<0?26:Math.max(4,v*26))+'px';
+ d.style.background=v===0?'#eeede9':'color-mix(in srgb,'+c+' '+Math.round(25+75*Math.abs(v))+'%,#fff)';e.appendChild(d);}}
+ var R=function(){return Math.random()};
+ f('m1','#c2405b',function(){return R()<.6?-1:0});
+ f('m2','#2f7fc1',function(){return Math.round(R()*4)/4});
+ f('m3','#2f9c8c',function(){return R()<.2?0:R()});
+ f('m4','#4f63c4',function(i){return i%7==1||i%7==3||i%7==5?.5+R()/2:0});
+ f('m5','#7a5bc4',function(){return R()<.15?0:.3+R()*.7});
+ f('m6','#c98a1e',function(){return (1+Math.floor(R()*5))/5});
+ f('m7','#5f9a3c',function(i){return i==9||i==17?0:-1});
+ f('m8','#a352a8',function(){return R()<.7?-1:0});})();
+</script>
+<p class="note">Lo schema resta uno solo (nome, un comando, quattro numeri, mappa, il giorno scelto): cambia cosa ci va dentro, e lo decide il tipo come fa già oggi (le viste QuickAdd e Today per tipo). Un campo Testo trasforma tutto in diario; l'astinenza vince su contatore e azione; più campi o più volte al giorno = righe sotto la mappa. Restano fuori da questo foglio i <b>gruppi</b> (la schermata di un gruppo) e le combinazioni di obiettivo/programma, che cambiano i numeri, non lo schema.</p>

@@ -1,0 +1,69 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .win{--bg:#fbfbfa;--pane:#fff;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#a3a29c;--line:#ecebe8;--chip:#ecebe8;--warn:#b45309;
+       font-family:Inter,sans-serif;font-size:14px;color:var(--ink);display:grid;grid-template-columns:210px 1fr;
+       border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;height:640px;background:var(--pane)}
+  .nav{background:var(--bg);border-right:1px solid var(--line);padding:16px 10px}
+  .nav h4{font-size:12px;color:var(--mut);font-weight:600;margin:14px 10px 6px}
+  .nav div{padding:7px 10px;border-radius:6px;color:var(--ink);display:flex;gap:9px;align-items:center}
+  .nav div.sel{background:var(--chip);font-weight:500}
+  .nav div.later{color:var(--fnt)}
+  .nav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;flex:none}
+  .pane{padding:22px 32px;overflow:auto}
+  .pane h1{font-size:20px;font-weight:600;margin:0 0 4px}
+  .pane .lead{color:var(--mut);font-size:13px;margin:0 0 18px}
+  .sec{font-size:13px;font-weight:600;margin:22px 0 4px;color:var(--ink)}
+  .r{display:flex;align-items:center;gap:24px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .r .t{flex:1}.r .t b{font-weight:500;display:block}.r .t small{color:var(--mut);font-size:12.5px;line-height:1.45;display:block;margin-top:2px}
+  .sw{width:34px;height:20px;border-radius:10px;background:var(--ink);position:relative;flex:none}
+  .sw:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:7px;background:#fff}
+  .sw.off{background:#d6d5d0}.sw.off:after{right:auto;left:3px}
+  .num{border:1px solid #d6d5d0;border-radius:6px;padding:5px 10px;width:52px;text-align:right;background:#fff}
+  .fld{border:1px solid #d6d5d0;border-radius:6px;padding:6px 10px;width:230px;color:var(--mut);background:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .btn{border:1px solid #d6d5d0;border-radius:6px;padding:6px 12px;background:#fff;font-weight:500;font-size:13px;white-space:nowrap}
+  .pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .warn{display:flex;gap:8px;align-items:flex-start;color:var(--warn);font-size:13px;background:#fdf6ec;border-radius:6px;padding:8px 10px;margin:10px 0 0}
+  .seg{display:flex;flex-direction:column;gap:6px}
+  .seg label{display:flex;gap:8px;align-items:center}
+  .dot{width:14px;height:14px;border-radius:7px;border:1.5px solid #a3a29c}.dot.on{border:4.5px solid var(--ink)}
+  .hist{font-size:13px;color:var(--mut);padding:10px 0}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:10px 2px 0;line-height:1.5}
+</style>
+
+<h2>Impostazioni a categorie</h2>
+<p class="subtitle">Categorie a sinistra come in Obsidian; a destra ogni riga è "cosa fa" a sinistra e il comando a destra. Contenuto vero della pagina "Dati e backup" di oggi, riordinato.</p>
+
+<div class="win">
+  <div class="nav">
+    <div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Generale</div>
+    <div><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>Aspetto</div>
+    <div><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6"/></svg>Diario e foto</div>
+    <div class="sel"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Dati e backup</div>
+    <div><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Sicurezza</div>
+    <h4>In arrivo</h4>
+    <div class="later"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 21v-5h5M21 3v5h-5"/></svg>Sincronizzazione</div>
+    <div class="later"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg>Plugin</div>
+    <div class="later"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/></svg>Assistente AI</div>
+  </div>
+  <div class="pane">
+    <h1>Dati e backup</h1>
+    <p class="lead">I tuoi dati restano su questo computer, cifrati. I backup sono file .recbak protetti da una passphrase tua.</p>
+
+    <div class="sec">Backup automatico</div>
+    <div class="r"><div class="t"><b>Backup automatico</b><small>Un backup cifrato a intervalli regolari, senza che tu debba pensarci.</small></div><div class="sw"></div></div>
+    <div class="r"><div class="t"><b>Ogni quanti giorni</b></div><div class="num">7</div></div>
+    <div class="r"><div class="t"><b>Backup da tenere</b><small>I più vecchi si cancellano da soli.</small></div><div class="num">8</div></div>
+    <div class="r"><div class="t"><b>Cartella</b></div><div class="fld">~/Documenti/Recordum/backup</div><div class="btn">Sfoglia…</div></div>
+    <div class="r"><div class="t"><b>Passphrase dei backup</b><small>Serve per ripristinare su un altro computer. Se la perdi, i backup non si aprono.</small></div><div class="btn">Imposta…</div></div>
+    <div class="warn">⚠&nbsp;Il backup automatico è acceso ma non parte finché non imposti una passphrase.</div>
+
+    <div class="sec">Adesso</div>
+    <div class="r"><div class="t"><b>Fai un backup</b><small>Salva subito una copia cifrata dove scegli tu.</small></div><div class="btn pri">Backup ora…</div></div>
+    <div class="r"><div class="t"><b>Ripristina</b><small>Sostituisce i dati di adesso con quelli di un backup. Prima ne fa una copia di sicurezza.</small></div><div class="btn">Ripristina…</div></div>
+
+    <div class="sec">Cronologia</div>
+    <div class="hist">Nessun backup ancora.</div>
+  </div>
+</div>
+<p class="note">Cosa cambia: niente "Salva" in fondo (ogni scelta vale subito, come in Obsidian; la passphrase si imposta in una finestrella sua, con la conferma); le foto vanno in "Diario e foto", "Dimentica su questo dispositivo" in "Sicurezza". "Generale" e "Aspetto" esistono già in WPF (lingua, formato, ora di inizio della giornata, tema): si portano qui; le tre "in arrivo" restano visibili ma spente fino a F6+.
+<br>Il simbolo ⚠ qui è un segnaposto: nell'app è un'icona Lucide.</p>

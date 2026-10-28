@@ -1,0 +1,170 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  .w{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px;line-height:1.4;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#c9c8c3;--line:#ecebe8;--fb:#d6d5d0}
+  h3.part{font-size:15px;margin:22px 0 8px}
+  .box{border:1px solid #d4d4d8;border-radius:10px;background:#fbfbfa;overflow:hidden}
+  svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;flex:none}
+  /* Home */
+  .home{display:grid;grid-template-columns:400px 1fr;min-height:400px}
+  .hl{background:#fbfbfa;border-right:1px solid var(--line);padding:12px 0;position:relative}
+  .hbar{display:flex;align-items:center;gap:8px;padding:0 14px 8px}.hbar h1{font-size:20px;margin:0}
+  .pri{margin-left:auto;background:var(--ink);color:#fff;border-radius:6px;padding:6px 11px;font-weight:500;display:flex;gap:6px;align-items:center}
+  .filt{display:flex;gap:6px;align-items:center;padding:0 14px 6px}
+  .seg{display:flex;gap:2px;font-size:12.5px;color:var(--mut)}.seg span{padding:3px 9px;border-radius:6px}.seg .s{background:#ecebe8;color:var(--ink);font-weight:500}
+  .tools{display:flex;gap:6px;align-items:center;padding:0 14px 8px}
+  .srch{flex:1;display:flex;gap:6px;align-items:center;border:1px solid var(--fb);border-radius:6px;padding:5px 8px;color:#a3a29c;background:#fff}
+  .tb{border:1px solid var(--fb);border-radius:6px;padding:5px 8px;display:flex;gap:5px;align-items:center;color:var(--mut);background:#fff;white-space:nowrap}
+  .tb.on{background:#ecebe8;color:var(--ink);border-color:transparent}
+  .days{display:flex;padding:0 14px 4px;font-size:11px;color:var(--mut)}.days .sp{flex:1}.days span{width:24px;text-align:center}.days .q{width:30px}
+  .row{display:flex;align-items:center;height:38px;margin:0 8px 4px;padding:0 4px 0 10px;border-radius:6px;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) 9%,#fff)}
+  .row .n{font-weight:500}.row .d{margin-left:auto;display:flex}.row .d span{width:24px;text-align:center;color:var(--fnt)}.row .d span.on{color:var(--c);font-weight:600}
+  .qa{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;margin-left:4px;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 40%,#fff);background:#fff}
+  .pin{color:var(--mut);margin-left:6px}
+  .menu{position:absolute;left:210px;top:170px;width:210px;background:#fff;border:1px solid #e4e3df;border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.12);padding:4px;z-index:2}
+  .menu div{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:5px}.menu div:hover{background:#f1f0ed}
+  .menu hr{border:0;border-top:1px solid var(--line);margin:4px}
+  .menu .dg{color:#b42318}
+  .menu small{margin-left:auto;color:#a3a29c}
+  .hr{display:flex;flex-direction:column}
+  .tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line)}
+  .tab{padding:7px 10px;border-radius:7px 7px 0 0;display:flex;gap:7px;align-items:center;color:var(--mut)}
+  .tab s{width:8px;height:8px;border-radius:4px;background:var(--c);text-decoration:none}
+  .tab.on{background:#fff;color:var(--ink);font-weight:500;border:1px solid var(--line);border-bottom-color:#fff;margin-bottom:-1px}
+  .tab .pn{color:var(--ink)}
+  .wsb{flex:1;background:#fff}
+  .timer{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);background:color-mix(in srgb,#7a5bc4 8%,#fff)}
+  .timer b{font-variant-numeric:tabular-nums;font-size:15px;color:#7a5bc4}.timer .seg2{color:var(--mut)}
+  .tbtn{border:1px solid var(--fb);border-radius:6px;padding:4px 9px;background:#fff;display:flex;gap:5px;align-items:center}
+  /* tipi */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .k{background:#fff;border:1px solid #e4e3df;border-radius:10px;padding:14px;border-top:3px solid var(--c)}
+  .k h4{margin:0 0 2px;font-size:16px;color:var(--c)}.k .sub{color:var(--mut);font-size:12px;margin-bottom:10px}
+  .f{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .in{border:1px solid var(--fb);border-radius:6px;padding:5px 8px;min-width:44px;text-align:right;background:#fff;font-variant-numeric:tabular-nums}
+  .lab{width:84px;color:var(--mut)}
+  .sw{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;border:1px solid var(--fb);color:var(--c)}
+  .sw.run{background:var(--c);color:#fff;border-color:var(--c)}
+  .p{background:var(--c);color:#fff;border-radius:7px;padding:6px 11px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+  .sr{display:grid;grid-template-columns:60px 1fr 1fr 22px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+  .sr .nm{color:var(--mut)}
+  .big{font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--c)}
+  .ctr{display:flex;gap:6px;margin-top:8px}
+  /* configura */
+  .cfg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cc{background:#fff;border:1px solid #e4e3df;border-radius:10px;padding:14px 16px}
+  .cc h5{font-size:12px;color:var(--mut);margin:12px 0 4px;font-weight:600}.cc h5:first-child{margin-top:0}
+  .r{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);gap:10px}.r span{color:var(--mut)}
+  .r .dot{width:14px;height:14px;border-radius:7px;background:var(--c);display:inline-block;vertical-align:-2px}
+  .prevrow{height:34px;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-weight:500;border-left:4px solid #2f7fc1;background:color-mix(in srgb,#2f7fc1 9%,#fff);margin:6px 0}
+  .prevrow i{margin-left:auto;font-style:normal;color:#2f7fc1;font-weight:600}
+  .warn{color:#b45309;background:#fdf6ec;border-radius:6px;padding:7px 9px;margin:6px 0;display:flex;gap:6px}
+  .later{color:#a3a29c}
+  /* backup */
+  .dlg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .dg{background:#fff;border:1px solid #d4d4d8;border-radius:10px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+  .dg h4{margin:0 0 4px;font-size:16px}.dg p{color:var(--mut);margin:0 0 12px}
+  .fl{margin-bottom:10px}.fl b{display:block;font-weight:500;margin-bottom:4px}.fl .in{text-align:left;width:auto;display:flex;justify-content:space-between}
+  .ft{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .btn{border:1px solid var(--fb);border-radius:6px;padding:6px 12px;font-weight:500;background:#fff}.btn.pr{background:var(--ink);color:#fff;border-color:var(--ink)}.btn.gh{border-color:transparent;color:var(--mut)}
+  .pv{border:1px solid var(--line);border-radius:8px;padding:10px;background:#fbfbfa}
+  .pv div{display:flex;justify-content:space-between;padding:3px 0}.pv span{color:var(--mut)}
+</style>
+<h2>Le funzioni rimesse al loro posto</h2>
+<p class="subtitle">Quattro parti: la Home completa, i comandi dei tipi più ricchi, Configura intero, le finestre del backup. Le icone sono Lucide.</p>
+<div class="w">
+
+<h3 class="part">1 · Home completa</h3>
+<div class="box"><div class="home">
+ <div class="hl">
+  <div class="hbar"><h1>Oggi</h1><span class="pri">+ Nuova <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></div>
+  <div class="filt"><div class="seg"><span class="s">Attive</span><span>Archiviate</span><span>Cestino</span></div></div>
+  <div class="tools">
+   <span class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Cerca</span>
+   <span class="tb on" title="Nascondi completate oggi"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><path d="m3 3 18 18"/></svg>fatte</span>
+   <span class="tb"><svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>Manuale</span>
+  </div>
+  <div class="days"><span class="sp"></span><span>mer</span><span>mar</span><span>lun</span><span>dom</span><span class="q"></span></div>
+  <div class="row" style="--c:#2f7fc1"><span class="n">Acqua</span><span class="pin"><svg viewBox="0 0 24 24"><path d="M12 17v5M9 3h6l-1 6 3 3H7l3-3z"/></svg></span><span class="d"><span class="on">5</span><span class="on">6</span><span>·</span><span class="on">4</span></span><span class="qa">+1</span></div>
+  <div class="row" style="--c:#c2405b"><span class="n">Corsa</span><span class="d"><span>·</span><span class="on">✓</span><span>·</span><span class="on">✓</span></span><span class="qa">✓</span></div>
+  <div class="row" style="--c:#c98a1e"><span class="n">Umore</span><span class="d"><span class="on">4</span><span class="on">3</span><span>·</span><span class="on">4</span></span><span class="qa">…</span></div>
+  <div class="row" style="--c:#7a5bc4"><span class="n">Meditazione</span><span class="d"><span>·</span><span class="on">12</span><span class="on">10</span><span class="on">15</span></span><span class="qa">▶</span></div>
+  <div class="menu">
+   <div><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Rinomina<small>F2</small></div>
+   <div><svg viewBox="0 0 24 24"><path d="M12 17v5M9 3h6l-1 6 3 3H7l3-3z"/></svg>Fissa in alto</div>
+   <div><svg viewBox="0 0 24 24"><path d="M12 17v5M9 3h6l-1 6 3 3H7l3-3z"/></svg>Fissa nel gruppo</div>
+   <hr><div><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/></svg>Archivia</div>
+   <div class="dg"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Sposta nel cestino<small>Canc</small></div>
+  </div>
+ </div>
+ <div class="hr">
+  <div class="tabs"><span class="tab on" style="--c:#c2405b"><s></s>Corsa<span class="pn" title="Fissata"><svg viewBox="0 0 24 24"><path d="M12 17v5M9 3h6l-1 6 3 3H7l3-3z"/></svg></span></span><span class="tab" style="--c:#7a5bc4"><s></s>Meditazione ×</span></div>
+  <div class="wsb"></div>
+  <div class="timer"><svg viewBox="0 0 24 24" style="color:#7a5bc4"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/></svg><b>08:42</b><span>Meditazione</span><span class="seg2">· lavoro 2 di 3</span>
+   <span style="margin-left:auto" class="tbtn"><svg viewBox="0 0 24 24"><path d="M10 4H6v16h4zM18 4h-4v16h4z"/></svg>Pausa</span><span class="tbtn"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>Ferma</span></div>
+ </div>
+</div></div>
+<p style="color:#52525b;margin:6px 2px">Il comando a destra di ogni riga è il "log rapido" del suo tipo (+1, ✓, la scala, ▶). Il menu della riga è quello di oggi con le icone; in Archivio e Cestino offre Ripristina ed Elimina definitivamente. "Fatte" è "Nascondi completate oggi". La barra del timer resta in basso, nel colore dell'abitudine che corre. La scheda fissata ha il fermaglio.</p>
+
+<h3 class="part">2 · I tipi con più comandi</h3>
+<div class="cards">
+ <div class="k" style="--c:#2f9c8c"><h4>Lettura</h4><div class="sub">misurato · pagine e tempo</div>
+  <div class="f"><span class="lab">Pagine</span><span class="in">20</span></div>
+  <div class="f"><span class="lab">Tempo</span><span class="in">00:24:10</span><span class="sw run" title="Ferma e compila il tempo"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></span></div>
+  <div class="f" style="margin-top:10px"><span class="p">Registra</span><span style="color:var(--mut)">per oggi ▾</span></div></div>
+ <div class="k" style="--c:#4f63c4"><h4>Palestra</h4><div class="sub">serie · ripetizioni × kg</div>
+  <div class="sr"><span class="nm">Panca</span><span class="in">10</span><span class="in">40</span><span>×</span></div>
+  <div class="sr"><span class="nm">Panca</span><span class="in">8</span><span class="in">45</span><span>×</span></div>
+  <div class="sr"><span class="nm">Serie 3</span><span class="in"></span><span class="in"></span><span>×</span></div>
+  <div class="f" style="margin-top:10px"><span class="btn">+ Serie</span><span class="p">Registra 2 serie</span></div></div>
+ <div class="k" style="--c:#7a5bc4"><h4>Meditazione</h4><div class="sub">sessione · 3 × (10 lavoro + 2 riposo)</div>
+  <div class="big">08:42</div><div style="color:var(--mut)">lavoro · segmento 2 di 3</div>
+  <div class="ctr"><span class="p"><svg viewBox="0 0 24 24"><path d="M10 4H6v16h4zM18 4h-4v16h4z"/></svg>Pausa</span><span class="btn">Segmento successivo</span><span class="btn">Ferma</span></div>
+  <div style="color:var(--mut);margin-top:8px">Fermo: "▶ Inizia" e "+ a mano"</div></div>
+</div>
+
+<h3 class="part">3 · Configura intero</h3>
+<div class="cfg" style="--c:#2f7fc1">
+ <div class="cc">
+  <h5>Chi è</h5>
+  <div class="r">Nome, icona e colore <span>Acqua <i class="dot"></i> ›</span></div>
+  <div class="r">Descrizione <span>facoltativa ›</span></div>
+  <div class="r">Colore del segno delle note <span><i class="dot" style="background:#c98a1e"></i> ›</span></div>
+  <h5>Come appare in Home</h5>
+  <div class="prevrow">Acqua<i>5 / 8</i></div>
+  <div class="r">Valore accanto al nome <span>oggi rispetto all'obiettivo ›</span></div>
+  <div class="r">Striscia dei giorni <span>valori ›</span></div>
+  <h5>Cosa registri</h5>
+  <div class="r">Campi <span>Bicchieri (unità) ›</span></div>
+  <div class="r">Gesto principale <span>+1 ›</span></div>
+  <div class="r">Più volte al giorno <span>sì ›</span></div>
+  <div class="r">Sessione a tempo <span>no · aggiungi ›</span></div>
+ </div>
+ <div class="cc">
+  <h5>Quando conta</h5>
+  <div class="r">Programma <span>Ogni giorno ›</span></div>
+  <div class="r">Serie <span>giornaliera, nessun recupero ›</span></div>
+  <div class="r">Obiettivo <span>8 al giorno ›</span></div>
+  <div class="r">Inizio della giornata <span>dal gruppo (5:00) ›</span></div>
+  <div class="warn">⚠ Cambiarlo rilegge tutto lo storico: un bicchiere delle 4:30 passa al giorno prima.</div>
+  <h5>Avanzate</h5>
+  <div class="r">Tolleranza della serie <span>0 minuti ›</span></div>
+  <div class="r">Obiettivo su giorni mobili <span>no ›</span></div>
+  <div class="r">Timer: segmenti, riposo, richiesta automatica <span>›</span></div>
+  <div class="r later">Condivisione con l'assistente AI <span>in arrivo</span></div>
+ </div>
+</div>
+
+<h3 class="part">4 · Le finestre del backup</h3>
+<div class="dlg">
+ <div class="dg"><h4>Fai un backup</h4><p>Una copia cifrata di tutti i dati, da conservare dove vuoi.</p>
+  <div class="fl"><b>Dove</b><span class="in">~/Documenti/Recordum/recordum-2026-10-28.recbak <span>Sfoglia…</span></span></div>
+  <div class="fl"><b>Passphrase del backup</b><span class="in">••••••••••••</span></div>
+  <div class="fl"><b>Ripetila</b><span class="in">••••••••••••</span></div>
+  <div class="ft"><span class="btn gh">Annulla</span><span class="btn pr">Crea backup</span></div></div>
+ <div class="dg"><h4>Ripristina un backup</h4><p>Prima guarda cosa contiene; i dati di adesso finiscono in una copia di sicurezza.</p>
+  <div class="fl"><b>File</b><span class="in">recordum-2026-10-21.recbak <span>Sfoglia…</span></span></div>
+  <div class="fl"><b>Passphrase</b><span class="in">••••••••••••</span></div>
+  <div class="pv"><div>Creato <span>21 ottobre 2026, 22:14</span></div><div>Da <span>Linux · Recordum 2.19</span></div><div>Contiene <span>14 abitudini · 1.208 registrazioni · 36 foto</span></div></div>
+  <div class="ft"><span class="btn gh">Annulla</span><span class="btn">Anteprima</span><span class="btn pr">Ripristina</span></div></div>
+</div>
+</div>

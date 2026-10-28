@@ -1,0 +1,54 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  .w{font-family:Inter,sans-serif;color:#1f1f1d;font-size:13px}
+  .scr{border:1px solid #d4d4d8;border-radius:10px;overflow:hidden;background:#fbfbfa;margin-bottom:16px}
+  .cap{font:600 12px Inter,sans-serif;padding:7px 12px;background:#52525b;color:#fff}
+  .top{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #ecebe8;background:#fff}
+  .top .h{color:#a352a8;font-weight:600}.top .d{color:#6b6a65}
+  .top .r{margin-left:auto;display:flex;gap:12px;align-items:center;color:#6b6a65}
+  .ib{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;border:1px solid transparent}
+  .ib.on{background:#f1f0ed}
+  .ib svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75}
+  .tb{display:flex;gap:2px;justify-content:center;padding:6px;border-bottom:1px solid #ecebe8;background:#fff;color:#52525b}
+  .tb span{min-width:30px;height:28px;border-radius:6px;display:grid;place-items:center;font-weight:500}
+  .tb .sep{width:1px;min-width:1px;background:#ecebe8;margin:4px 6px}
+  .page{background:#fff;padding:36px 0 30px}
+  .txt{max-width:640px;margin:0 auto;font-family:'Source Serif 4',serif;font-size:18px;line-height:1.65;color:#262624}
+  .txt h2{font-family:'Source Serif 4',serif;font-weight:600;font-size:26px;margin:0 0 14px;line-height:1.3}
+  .txt .tag{color:#a352a8}
+  .txt img,.ph{display:block;width:260px;height:150px;border-radius:6px;background:linear-gradient(135deg,#9fb8c9,#5d7f95);margin:14px 0}
+  .txt .cur{border-left:2px solid #1f1f1d;margin-left:1px}
+  .foot{display:flex;gap:16px;justify-content:center;color:#a3a29c;font-size:12px;padding:10px;border-top:1px solid #f1f0ed;background:#fff}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .mini .page{padding:20px 0}.mini .txt{font-size:15px;max-width:none;margin:0 18px}
+  .note{font:13px Inter,sans-serif;color:#52525b;margin:6px 2px 0;line-height:1.5}
+</style>
+<h2>Scrivere a tutta finestra</h2>
+<p class="subtitle">Il diario si apre nella sua colonna come oggi; un tasto lo porta a tutta finestra, un altro a schermo intero. La barra dell'editor si mostra o si nasconde.</p>
+<div class="w">
+ <div class="scr"><div class="cap">A tutta finestra · con la barra</div>
+  <div class="top"><span class="h">Diario della sera</span><span class="d">mercoledì 28 ottobre</span>
+   <div class="r"><span>bozza salvata</span>
+    <span class="ib on" title="Barra dell'editor"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+    <span class="ib" title="Schermo intero (F11)"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M21 8V3h-5M16 21h5v-5M3 16v5h5"/></svg></span>
+    <span class="ib" title="Torna alla colonna (Esc)"><svg viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg></span>
+    <span style="background:#1f1f1d;color:#fff;border-radius:6px;padding:6px 12px;font-weight:500">Salva</span></div></div>
+  <div class="tb"><span style="font-family:'Source Serif 4';font-weight:600">T</span><span style="font-family:'Source Serif 4';font-weight:600;font-size:11px">t</span><span class="sep"></span><span style="font-weight:700">G</span><span style="font-style:italic">C</span><span class="sep"></span><span>•</span><span>1.</span><span>❝</span><span class="sep"></span><span>#</span><span>🖼</span></div>
+  <div class="page"><div class="txt">
+   <h2>Una giornata al lago</h2>
+   Siamo partiti presto. L'acqua era <b>fredda</b>, il sole <i>caldo</i>, e per la prima volta da settimane non ho guardato il telefono fino a sera. <span class="tag">#lago</span>
+   <div class="ph"></div>
+   Domani vorrei tornarci da solo<span class="cur">&nbsp;</span>
+  </div></div>
+  <div class="foot"><span>164 parole</span><span>Esc per tornare alla colonna</span></div>
+ </div>
+ <div class="two">
+  <div class="scr mini"><div class="cap">Nella colonna · come oggi, più ordinato</div>
+   <div class="top"><span class="h">Diario</span><div class="r"><span class="ib" title="A tutta finestra"><svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></span></div></div>
+   <div class="page"><div class="txt">Siamo partiti presto. L'acqua era <b>fredda</b>…</div></div></div>
+  <div class="scr mini"><div class="cap">A schermo intero · senza la barra</div>
+   <div class="page" style="padding:40px 0;background:#fff"><div class="txt" style="max-width:420px;margin:0 auto">Siamo partiti presto. L'acqua era <b>fredda</b>, il sole <i>caldo</i>…</div></div>
+   <div class="foot"><span>la barra torna con Ctrl+Maiusc+B o muovendo il mouse in alto</span></div></div>
+ </div>
+</div>
+<p class="note">Il testo resta al centro su una riga di ~70 caratteri, in serif a 18 px con interlinea larga, a qualunque larghezza: allargare la finestra dà aria, non righe infinite. La barra contiene solo quello che l'editor sa già fare (titoli, grassetto, corsivo, elenchi, citazione, #tag, immagine). Le icone della barra qui sono segnaposto: nell'app sono Lucide.</p>
