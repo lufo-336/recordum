@@ -92,7 +92,7 @@
   - [ ] le tre scelte D10 in «Dati e backup»;
   - [ ] l'ora delle voci è l'ora locale;
   - [ ] nessuna immagine leggibile nella cartella dati;
-- **Prossimo**: (1) la review dell'intero branch D9 e il merge dell'autore (`git switch main`, poi
+- **Prossimo**: (1) il merge dell'autore di D9 (review dell'intero branch fatta, D9-2…4 chiusi, CI verde; `git switch main`, poi
   `git merge --ff-only d9-sqlite3mc && git push origin main`) — **prima** di aprire i dati veri con la build installata;
   (2) la checklist di F2d-1 su una **copia** dei dati veri (`--data-dir`), poi le altre; (3) `scripts/install-linux.sh` e il dogfooding. **Finché D9 e la prova sulla copia non sono fatte, la voce Recordum
   del menu apre la cartella dati vera: non avviarla.**
