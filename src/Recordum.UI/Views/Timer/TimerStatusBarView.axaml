@@ -24,7 +24,7 @@
               <TextBlock x:Name="RowName" Text="{CompiledBinding HabitName}" FontWeight="SemiBold"
                          FontSize="{StaticResource FontSize.Small}" Margin="0,0,6,0" VerticalAlignment="Center"/>
               <TextBlock x:Name="RowElapsed" Text="{CompiledBinding ElapsedDisplay}"
-                         FontFamily="Consolas,DejaVu Sans Mono,monospace" FontSize="11.5"
+                         FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum" FontSize="11.5"
                          Margin="0,0,6,0" VerticalAlignment="Center"/>
               <Button x:Name="RowPause" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0"
                       Command="{CompiledBinding PauseCommand}" IsVisible="{CompiledBinding !IsPaused}"

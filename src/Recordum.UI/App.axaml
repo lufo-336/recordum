@@ -16,6 +16,11 @@
     </ResourceDictionary>
   </Application.Resources>
   <Application.Styles>
+    <!-- Ogni finestra prende il font dell'app, anche una Window qualunque (quelle dei test: UX-P2). MainWindow e
+         RecordumWindow lo impostano già da sé; questo copre il resto. -->
+    <Style Selector=":is(Window)">
+      <Setter Property="FontFamily" Value="{DynamicResource Font.Default}"/>
+    </Style>
     <!-- FluentTheme.Palettes ritinge l'accento DI SISTEMA (SystemAccentColor e le sue 6 sfumature
          Light1-3/Dark1-3, che CheckBox/ComboBoxItem/ListBoxItem/ScrollBar/Slider Fluent usano per gli
          stati checked/selected/hover) sul Brush.Accent di Recordum invece del blu di Windows

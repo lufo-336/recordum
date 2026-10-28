@@ -68,7 +68,7 @@
               IsVisible="{CompiledBinding IsChronoRunning}"/>
       </Panel>
     </Button>
-    <TextBlock x:Name="ChronoDisplay" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="Consolas,DejaVu Sans Mono,monospace"
+    <TextBlock x:Name="ChronoDisplay" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum"
                Foreground="{DynamicResource Brush.Accent}" IsVisible="{CompiledBinding IsChronoRunning}"
                Text="{CompiledBinding #Root.Host.ChronoClock.Display}"/>
     <TextBlock Text="{CompiledBinding UnitLabel}" Margin="6,0,0,0" VerticalAlignment="Center"

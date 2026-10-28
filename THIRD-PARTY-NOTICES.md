@@ -53,6 +53,16 @@ MIT license text:
 > LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 > ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+## Inter — `Avalonia.Fonts.Inter` 12.1.2
+
+The interface typeface, shipped inside the package's assembly. SIL Open Font License 1.1 — Copyright (c) 2016 The Inter
+Project Authors (<https://github.com/rsms/inter>). The package itself is MIT, Copyright 2013-2026 © The AvaloniaUI Project.
+
+## Source Serif 4
+
+The serif for the user's own text and the brand, embedded in `src/Recordum.UI/Fonts/`. SIL Open Font License 1.1 —
+Copyright 2014–2023 Adobe (<http://www.adobe.com/>), with Reserved Font Name "Source"; the license text ships as `Fonts/OFL.txt`.
+
 ## SQLite
 
 Compiled into the SQLite3 Multiple Ciphers native libraries. Public domain. <https://sqlite.org/copyright.html>
