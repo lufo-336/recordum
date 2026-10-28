@@ -34,7 +34,7 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
         Photos.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(UnreferencedPhotos));
-            OnPropertyChanged(nameof(EditUnreferencedPhotos));
+            NotifyEditUnreferencedIfChanged();
         };
     }
 
@@ -87,9 +87,20 @@ public sealed partial class JournalEntryRowViewModel : ObservableObject
 
     partial void OnTextChanged(string value) => OnPropertyChanged(nameof(UnreferencedPhotos));
 
-    partial void OnEditDraftChanged(string value) => OnPropertyChanged(nameof(EditUnreferencedPhotos));
+    partial void OnEditDraftChanged(string value) => NotifyEditUnreferencedIfChanged();
 
-    partial void OnIsEditingChanged(bool value) => OnPropertyChanged(nameof(EditUnreferencedPhotos));
+    partial void OnIsEditingChanged(bool value) => NotifyEditUnreferencedIfChanged();
+
+    private List<Guid> _lastEditUnreferenced = [];
+
+    // Ogni battuta cambia EditDraft: si avvisa la view solo se l'insieme delle foto senza riferimento e' davvero cambiato.
+    private void NotifyEditUnreferencedIfChanged()
+    {
+        var now = EditUnreferencedPhotos.Select(p => p.Id).ToList();
+        if (now.SequenceEqual(_lastEditUnreferenced)) return;
+        _lastEditUnreferenced = now;
+        OnPropertyChanged(nameof(EditUnreferencedPhotos));
+    }
 
     /// <summary>Qualcosa e' cambiato rispetto a quando e' iniziata la modifica (serve a chiedere conferma prima di scartarla).</summary>
     internal bool HasChanges =>

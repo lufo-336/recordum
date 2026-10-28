@@ -345,4 +345,35 @@ public class JournalDraftTests
         sut.Day.Should().Be(new DateOnly(2026, 1, 1));
         sut.Draft.Should().Be("vecchia");
     }
+
+    // ---- Review minors ----
+
+    [Fact]
+    public async Task A_draft_stored_for_a_future_day_stays_on_today()
+    {
+        var settings = new FakeAppSettingService();
+        settings.Store[Key] = JsonSerializer.Serialize(new { text = "domani", tags = Array.Empty<string>(), day = "2026-01-05" });
+        var (sut, _, _) = Build(settings);
+
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+
+        sut.Day.Should().Be(new DateOnly(2026, 1, 1));
+        sut.Draft.Should().Be("domani");
+    }
+
+    [Fact]
+    public async Task A_draft_with_only_a_vanished_edit_does_not_move_the_day_and_the_next_write_drops_the_edit_part()
+    {
+        var settings = new FakeAppSettingService();
+        settings.Store[Key] = JsonSerializer.Serialize(new { text = "", tags = Array.Empty<string>(), editNoteId = Guid.NewGuid(), editText = "x", day = "2025-12-31" });
+        var (sut, _, _) = Build(settings);
+
+        await sut.LoadAsync(Node, DayBoundary.Utc, true);
+        sut.Day.Should().Be(new DateOnly(2026, 1, 1));
+        settings.SetCount.Should().Be(0);
+
+        sut.Draft = "nuova";
+        await sut.FlushDraftAsync();
+        JsonDocument.Parse(settings.Store[Key]).RootElement.GetProperty("editNoteId").ValueKind.Should().Be(JsonValueKind.Null);
+    }
 }

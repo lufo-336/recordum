@@ -307,14 +307,22 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
             System.Diagnostics.Debug.WriteLine($"JournalQuickEntryViewModel draft unreadable: {ex}");
         }
         if (dto is null) return;
-        // Una bozza con contenuto riapre sul giorno in cui era stata scritta (senza "day" = bozza di una versione
-        // vecchia: resta il giorno di oggi). _day si assegna senza SetDay: caricare non deve riscrivere la bozza.
-        var hasContent = !string.IsNullOrEmpty(dto.Text) || dto.Tags is { Count: > 0 } || dto.EditNoteId is not null;
-        if (hasContent && DateOnly.TryParseExact(dto.Day, DayFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var draftDay)
-            && draftDay != _day)
+        // La bozza riapre sul giorno in cui era stata scritta (senza "day" = versione vecchia: resta oggi), purche' non sia
+        // nel futuro (il calendario non lo ammette) e ci sia qualcosa da ripristinare li': testo o tag della voce nuova, o
+        // una modifica la cui voce e' fra quelle di quel giorno. _day si assegna senza SetDay: caricare non riscrive la bozza.
+        if (DateOnly.TryParseExact(dto.Day, DayFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var draftDay)
+            && draftDay != _day && draftDay <= Today())
         {
+            var previous = _day;
             _day = draftDay;
             await ReloadEntriesAsync(ct).ConfigureAwait(true);
+            var hasNew = !string.IsNullOrEmpty(dto.Text) || dto.Tags is { Count: > 0 };
+            var hasEdit = IsDiaryMode && dto.EditNoteId is { } eid && Entries.Any(r => r.Id == eid);
+            if (!hasNew && !hasEdit)
+            {
+                _day = previous;
+                await ReloadEntriesAsync(ct).ConfigureAwait(true);
+            }
         }
         _draftRestoring = true;
         try

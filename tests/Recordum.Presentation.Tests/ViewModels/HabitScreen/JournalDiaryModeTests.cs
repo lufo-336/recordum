@@ -416,4 +416,19 @@ public class JournalDiaryModeTests
 
         r.Diary.Edits.Should().ContainSingle().Which.Edit.RemovedPhotoIds.Should().Equal(ids);
     }
+
+    [Fact]
+    public async Task EditUnreferencedPhotos_is_not_notified_by_typing_that_leaves_the_set_unchanged()
+    {
+        var r = await BuildAsync();
+        var (row, _) = await SeedEntryAsync(r, "ciao", photos: 1);
+        await r.Sut.BeginEditCommand.ExecuteAsync(row);
+        var raised = 0;
+        row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(JournalEntryRowViewModel.EditUnreferencedPhotos)) raised++; };
+
+        row.EditDraft = "ciao a";
+        row.EditDraft = "ciao a tutti";
+
+        raised.Should().Be(0);
+    }
 }
