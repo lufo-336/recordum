@@ -2248,3 +2248,17 @@ Aperti, con le decisioni del controllore:
     senza selezione dopo Ctrl+B, Invio su CRLF e miniatura indecodificabile; tema scuro provato solo dal PNG;
   - test: `RecordsViewTests` imposta la cultura prima del `try`; firma di `CompletionListTests.JournalListAsync`;
   - storia: `ab77aa48` non compila da solo (rinomine senza contenuto; il commit dopo lo completa).
+
+## Onda D9 — SQLite3 Multiple Ciphers al posto del bundle SQLCipher (`D9-*`)
+
+Branch `d9-sqlite3mc`. Provider `SQLite3MC.PCLRaw.bundle` 2.6.1 (SQLite ≥ 3.50), formato dei file invariato (SQLCipher 4,
+dichiarato in `CipherPragmas`). Un database del bundle 4.5.2 congelato come fixture (`Fixtures/Cipher`) si apre con lo
+stesso contenuto; i `.recbak` di prima si ripristinano.
+
+- **D9-1 — un journal caldo del bundle di prima non si annulla** · `triaged` (deciso dall'autore il 2026-10-28) · Misurato:
+  SQLCipher calcola il checksum di una pagina del journal sul testo cifrato, SQLite3MC su quello in chiaro. Il primo record
+  non passa, SQLite lo prende per la fine del journal, non annulla niente e il database resta a metà (SQLITE_CORRUPT). MC
+  annulla correttamente i propri journal. Succede solo se la build di prima si è chiusa a metà di una scrittura e si
+  aggiorna prima di riaprirla; i dati veri arrivano dopo D9. Difesa: `scripts/install-linux.sh` rifiuta di aggiornare se
+  c'è `recordum.db-journal`; `LegacyCipherDatabaseTests.A_hot_journal_left_by_the_old_bundle_is_not_rolled_back` tiene la
+  misura (se diventa verde al contrario, MC ha imparato i journal vecchi e il controllo nello script si può togliere).

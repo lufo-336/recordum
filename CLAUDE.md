@@ -36,7 +36,7 @@ v1.0 in arrivo **su Avalonia** (Windows + Linux); WPF è congelata e si spegne a
 | Progetto | Ruolo |
 |---|---|
 | `Recordum.Core` | dominio e astrazioni (`IClock`, `DayBoundary`, contratti di sicurezza). C# puro. |
-| `Recordum.Data` | EF Core + SQLCipher, servizi, query, migrazioni, backup/restore. |
+| `Recordum.Data` | EF Core + SQLite3MC (formato SQLCipher 4), servizi, query, migrazioni, backup/restore. |
 | `Recordum.Plugins.Contracts` / `.Plugins` | contratti e host in-process dei plugin first-party. |
 | `Recordum.Presentation` | `net10.0`, **zero UI**: ViewModel (CommunityToolkit.Mvvm), `Strings`, servizi portabili, bootstrap (`AddRecordumCore`, `CoreInitializer`, `RecordumOptions`). Referenzia Data: i ViewModel usano i servizi di query direttamente. |
 | `Recordum.UI` | shell **Avalonia 12** — la v1.0. |
@@ -93,8 +93,11 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   i tentativi (una connessione in pool già chiavata ignora la chiave sbagliata).
 - Su Unix cartella dati 0700; i file in chiaro di backup/restore solo in `TempDirectory`, mai nella temp di sistema
   (`SystemTempGuardTests`). `--seed-demo` rifiuta la cartella dei dati veri.
-- Il bundle `SQLitePCLRaw.bundle_e_sqlcipher` 2.1.11 è deprecato e contiene SQLite 3.39.2: sostituirlo è la decisione D9.
-  La guardia di SEC-1 (`SqlCipherProviderGuardTests`) deve restare verde.
+- Provider: `SQLite3MC.PCLRaw.bundle` (D9), un solo bundle SQLitePCLRaw nel grafo (`.Sqlite.Core`, mai `.Sqlite`). Il
+  formato dei file resta **SQLCipher 4**: ogni chiave passa da `CipherPragmas` (senza, MC usa ChaCha20 e un DB di oggi
+  risponde 26 come una passphrase sbagliata). Niente `sqlcipher_export`: backup = `VACUUM INTO` + `rekey ''`. Un journal
+  caldo del bundle di prima MC non lo annulla (lo scarta): `install-linux.sh` rifiuta di aggiornare sopra un `-journal`.
+  La guardia di SEC-1 (`SqlCipherProviderGuardTests`: `sqlite3mc_version` c'è, SQLite ≥ 3.50) deve restare verde.
 - Prima di rendere pubblico qualcosa: `/security-review`.
 
 ## 7. Test

@@ -12,7 +12,7 @@ reused unchanged by future front-ends (mobile, web, sync).
 ```
 Recordum.WPF ──────────────► the Windows desktop app (Views + ViewModels + DI bootstrap)
      │
-     ├──► Recordum.Data ────► EF Core + SQLite/SQLCipher: DbContext, migrations, service impls
+     ├──► Recordum.Data ────► EF Core + SQLite3MC (SQLCipher 4 format): DbContext, migrations, service impls
      │        │
      │        └──► Recordum.Core ─► domain models + abstractions (interfaces, IClock). Pure C#.
      │
@@ -37,7 +37,8 @@ knowing immediately:
   implemented in `Recordum.Data`, consumed by ViewModels.
 
 ### Recordum.Data — persistence
-EF Core over SQLite, **encrypted with SQLCipher**. Highlights:
+EF Core over SQLite, **encrypted in SQLCipher 4 format via SQLite3 Multiple Ciphers** (the format is declared
+with every key in `Security/CipherPragmas`). Highlights:
 
 - **`RecordumDbContext`** with Fluent configurations. All cascade rules and indexes are declared
   **explicitly** — never left to EF defaults.

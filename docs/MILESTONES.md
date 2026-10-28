@@ -688,3 +688,17 @@ F2d2-6. Fatto: `scripts/install-linux.sh` (Release di `main` da `git archive`, `
 `app.prev` per tornare indietro), provato in una cartella di prova; composer della nota veloce spento durante una modifica,
 con comandi propri per la riga; × sulle foto senza riferimento in modifica nel diario; bozza che ricorda il suo giorno e
 riapre composer e calendario su quello. Con questo F2 è a codice completo: restano le checklist a schermo, il merge e D9.
+
+**Progresso 2026-10-28 (onda D9: SQLite3 Multiple Ciphers, `d9-sqlite3mc`, da mergiare).** Piano
+`2026-10-28-wave-d9-sqlite3mc`, da `main` (`de3deaf2`, la pila F1 → F2e mergiata), `e2a27759..`.
+*Cosa esiste ora*: `SQLite3MC.PCLRaw.bundle` 2.6.1 al posto di `bundle_e_sqlcipher` 2.1.11 (SQLite 3.39.2); il formato SQLCipher
+4 dichiarato prima di ogni chiave da `CipherPragmas`; backup con `VACUUM INTO` + `rekey ''`, restore con `rekey` sul file in
+chiaro in `TempDirectory`; guard di SEC-1 con la domanda nuova (`sqlite3mc_version`, SQLite ≥ 3.50), rosso contro
+`bundle_e_sqlite3`; un DB del bundle 4.5.2 congelato in `Fixtures/Cipher` che si apre con lo stesso contenuto;
+`THIRD-PARTY-NOTICES.md`.
+*Cosa ha insegnato*: il journal di rollback non è parte del "formato": SQLCipher calcola il checksum delle pagine del journal
+sul cifrato, MC sul chiaro, e un journal caldo del bundle di prima viene scartato in silenzio lasciando il DB a metà (D9-1).
+L'ha trovato la fixture del journal caldo, non la sonda. Le prestazioni, misurate alternando prima e dopo, sono uguali.
+*Non consegnato*: rollback dei journal vecchi (D9-1, deciso dall'autore: la difesa è in `install-linux.sh`); review dell'intero
+branch. Suite su Linux: Core 177, Data 651 (+2 generatori saltati), Presentation 1136, UI 454 (`Category!=Performance`),
+Plugins 66, ExportEngine 46.
