@@ -31,5 +31,6 @@
     <!-- Non "Backups/": la regola Backup*/ del .gitignore di Visual Studio la escluderebbe dal repository. -->
     <None Update="Fixtures/CrossMachine/*.recbak" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures/recbak/*.recbak" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/Cipher/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

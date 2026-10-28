@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -42,5 +43,22 @@ public static class RecbakReferenceSeed
         db.Notes.Add(new Note { Id = NoteId, HabitNodeId = DiaryId, BodyMd = NoteBody });
         db.AbstinencePeriods.Add(new AbstinencePeriod { Id = PeriodId, HabitNodeId = SmokeId, StartedAtMs = PeriodStartMs });
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>The known values <see cref="WriteAsync"/> leaves in a database, read back through <paramref name="db"/>.</summary>
+    public static async Task AssertKnownValuesAsync(RecordumDbContext db)
+    {
+        (await db.HabitNodes.OrderBy(h => h.Name).Select(h => new { h.Name, h.HabitType }).ToListAsync())
+            .Select(h => (h.Name, h.HabitType)).Should().Equal(
+                ("Diary", HabitType.Journal), ("Morning run", HabitType.Action),
+                ("No smoking", HabitType.Resistance), ("Water", HabitType.Counter));
+        var run = await db.Completions.OrderBy(c => c.CompletedAtMs).Where(c => c.HabitNodeId == RunId).ToListAsync();
+        run.Select(c => c.Id).Should().Equal(RunDone1, RunDone2);
+        run[0].Notes.Should().Be(RunNotes);
+        run[0].CompletedAt.Should().Be(Noon1);
+        (await db.Completions.SingleAsync(c => c.Id == WaterDone)).DurationSeconds.Should().Be(90);
+        (await db.Notes.SingleAsync(n => n.Id == NoteId)).BodyMd.Should().Be(NoteBody);
+        var period = await db.AbstinencePeriods.SingleAsync();
+        (period.StartedAtMs, period.EndedAtMs).Should().Be((PeriodStartMs, (long?)null));
     }
 }

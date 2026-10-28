@@ -440,6 +440,8 @@ FodyWeavers.xsd
 **/local.settings.json
 **/appsettings.Local.json
 *.db
+# Fixture D9: database del bundle SQLCipher vecchio, congelato
+!tests/Recordum.Data.Tests/Fixtures/Cipher/*.db
 *.db-shm
 *.db-wal
 node_modules/

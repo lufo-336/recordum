@@ -179,7 +179,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
     // ── Inner types ─────────────────────────────────────────────────────────
 
     /// <summary>Returns a COPY every time: <see cref="KeyMaterial.Dispose"/> zeroes the bytes, and callers dispose.</summary>
-    private sealed class FixedKeyProvider(byte[] key) : IDbKeyProvider
+    internal sealed class FixedKeyProvider(byte[] key) : IDbKeyProvider
     {
         public string ProviderId => "fixed";
 

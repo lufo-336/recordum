@@ -28,18 +28,7 @@ public class CrossPlatformRestoreTests
             await fixture.NewRestoreService().RestoreAsync(source, S.Passphrase, new RestoreOptions(SkipSafetySnapshot: true));
 
             await using var db = await fixture.DbFactory.CreateDbContextAsync();
-            (await db.HabitNodes.OrderBy(h => h.Name).Select(h => new { h.Name, h.HabitType }).ToListAsync())
-                .Select(h => (h.Name, h.HabitType)).Should().Equal(
-                    ("Diary", Core.Enums.HabitType.Journal), ("Morning run", Core.Enums.HabitType.Action),
-                    ("No smoking", Core.Enums.HabitType.Resistance), ("Water", Core.Enums.HabitType.Counter));
-            var run = await db.Completions.OrderBy(c => c.CompletedAtMs).Where(c => c.HabitNodeId == S.RunId).ToListAsync();
-            run.Select(c => c.Id).Should().Equal(S.RunDone1, S.RunDone2);
-            run[0].Notes.Should().Be(S.RunNotes);
-            run[0].CompletedAt.Should().Be(S.Noon1);
-            (await db.Completions.SingleAsync(c => c.Id == S.WaterDone)).DurationSeconds.Should().Be(90);
-            (await db.Notes.SingleAsync(n => n.Id == S.NoteId)).BodyMd.Should().Be(S.NoteBody);
-            var period = await db.AbstinencePeriods.SingleAsync();
-            (period.StartedAtMs, period.EndedAtMs).Should().Be((S.PeriodStartMs, (long?)null));
+            await S.AssertKnownValuesAsync(db);
         }
         finally { await fixture.DisposeAsync(); }
     }
