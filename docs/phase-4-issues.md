@@ -2271,3 +2271,57 @@ stesso contenuto; i `.recbak` di prima si ripristinano.
   shell di sviluppo saltava la cartella dei dati veri; ora le guarda tutte e due (provato in una cartella di prova).
 - **D9-4 — avvisi di licenza del nativo** · `fixed` (`sha2.c` BSD-3, rijndael LGPL con eccezione WxWindows, AEGIS, copyright
   della libreria) · resta `triaged`: `THIRD-PARTY-NOTICES.md` non viaggia ancora con `dotnet publish` (packaging, Onda 4).
+
+## Review UI/UX prima della checklist (`UX-*`, 2026-10-28)
+
+Fonti: i PNG headless della suite UI di oggi (chiaro e scuro), il codice delle viste e dei token, `PRODUCT.md` "Come si
+presenta", CLAUDE.md §11. Riferimenti scelti dall'autore: **Obsidian** (variabili CSS ufficiali: grigi acromatici a 12
+gradini, un solo accento, testo normale/attenuato/tenue, scala UI 12/13/15/20 px, testo dell'editor 16, interlinea 1,5) e
+**Loop Habit Tracker** (`iSoron/uhabits`: il colore dell'abitudine sta sul nome, sulle spunte e sui grafici, il resto è
+grigio; 20 colori Material 600–700 in chiaro, le tinte 200 in scuro; intestazione dei giorni sopra la griglia). Limiti: il
+render headless non è GNOME; mouse, scorrimento e movimento non si vedono; le schermate del dettaglio sono rese fuori da
+`MainWindow` e quindi in sans (v. UX-P2). PNG vecchi ignorati: `editor-*`, `livepreview-*`, `theme-*`, `frame-*`.
+
+Certi (visti in un'immagine e confermati nel codice), tutti `reported`:
+
+- **UX-1 — tutta l'interfaccia è in serif** · `Font.Default` = Source Serif 4 su `MainWindow` e `RecordumWindow` (eredità del
+  Palatino di WPF); `PRODUCT.md` lo riserva al diario e al marchio. Corpo 14, piccolo 12, titolo 15: un titolo si distingue
+  dal corpo di un punto.
+- **UX-2 — il colore dell'abitudine tinge l'intera riga della Home** · Oltre alla barra di 4 px, ogni riga ha il fondo
+  pastello (in scuro un fango scuro): un muro arcobaleno, contro "il colore identifica… e non decora". In Loop e Obsidian la
+  riga è neutra.
+- **UX-3 — neutri e accento sono i default di Tailwind** (`zinc` + `blue-500`): un grigio freddo, non "caldo", e un blu che
+  compete coi colori delle abitudini. Due soli livelli di testo: i segnaposto (cerca, `+ tag`, "Descrivi…") sono grigi ad
+  hoc a contrasto molto basso.
+- **UX-4 — la heatmap annuale usa i verdi di GitHub**, uguali per ogni abitudine (`Brush.Heatmap.Level*`, gli stessi hex) ·
+  `PRODUCT.md`: la heatmap è il colore dell'abitudine. `YearHeatmapControl` oggi non è montato da nessuna vista (arriva con F7).
+- **UX-5 — nessuna gerarchia dei pulsanti** · I secondari pieni di grigio sembrano disabilitati ("+ Registra", "Segna come
+  fatto", "Aggiungi foto", "Undo last", "+ New"); il primario è blu nel builder e nelle Impostazioni, del colore
+  dell'abitudine nel diario.
+- **UX-6 — la striscia dei giorni in Home non dice quali giorni sono** · Nessuna intestazione (Loop ha "gio 29, mer 28…");
+  le celle vuote a alfa 48/255 sul fondo tinto spariscono, in scuro quasi del tutto; il "×0" è minuscolo e pallido.
+- **UX-7 — nel dettaglio il nome dell'abitudine è piccolo** · Il titolo della schermata è un 15 px, meno visibile del
+  contenuto; in Loop il nome è la cosa più grande, nel colore dell'abitudine.
+- **UX-8 — doppioni** · "Segna come fatto" come casella in testa e come pulsante sotto; la scheda "Cronologia" e la
+  didascalia del pannello "Cronologia"; "+ Nota veloce" in testa con il composer già aperto sotto; "Recordum" nella barra del
+  titolo e nell'intestazione della Home.
+- **UX-9 — date in due formati nella stessa schermata** · "15/03/2026" accanto a "2026-03-15 12:00" (ISO grezzo nelle
+  Registrazioni).
+- **UX-10 — la Cronologia del diario mostra il Markdown grezzo** ("## Una giornata al lago", "**fredda**", "[foto]").
+- **UX-11 — i modelli predefiniti sono in inglese per un utente italiano** ("Daily journal", "Food diary"…): nomi e
+  descrizioni seminati dalle migrazioni, non localizzati.
+- **UX-12 — builder** · "Colore (hex)" espone l'esadecimale; "Lancia" per creare; la sezione "Dati d'esempio" è vuota; nella
+  riga Quantità la tendina non ha etichetta.
+- **UX-13 — "✎" nella scheda Diario** è un glifo Unicode, non un'icona Lucide (regola di §11).
+- **UX-14 — calendario** · Numeri del giorno di ~10 px nell'angolo; un giorno fuori mese e uno vuoto del mese si
+  distinguono appena; nel contatore il cerchio del valore copre il numero del giorno.
+- **UX-15 — campi senza cornice nelle Impostazioni** · Solo la riga sotto: i numeri ("7", "8") sembrano testo, i campi
+  passphrase vuoti sono invisibili.
+- (Già tracciato: **F2b-5**, "Nuova" sopra "Archiviate" nell'intestazione stretta, visibile anche in `configura-light`.)
+
+Da verificare a schermo:
+
+- **UX-P1 — inglese in Configura in italiano** ("Scheduling", "Streak mode", "Undo last", "0 today"): le chiavi italiane ci
+  sono; probabilmente la cultura del test (l'app imposta anche `DefaultThreadCurrentUICulture`). Guardarlo su GNOME.
+- **UX-P2 — le schermate del dettaglio nei test non usano il font dell'app** · Rese fuori da `MainWindow`, escono in sans:
+  i PNG non rappresentano la produzione. Se UX-1 cambia il font, i test vanno ospitati con i token veri.
