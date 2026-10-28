@@ -6,7 +6,7 @@
 
 ## Dove siamo — 2026-10-28
 
-- **Branch di lavoro**: `ux-review` (review UI/UX e spec della direzione visiva). La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: `ux1-foundations` (onda 1 della direzione visiva), in pila su `ux-review` (review UI/UX, spec e piano); nessuno dei due in `main`. La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
@@ -23,8 +23,8 @@
   dogfooding parte e resta su Avalonia. WPF rimane nel repository, congelata, solo come **riferimento di comportamento**
   per i porting di F3–F7 e perché la CI Windows continui a compilare e testare il codice condiviso; si tocca solo dove un
   contratto condiviso lo obbliga. Si cancella a F8, con i criteri della spec Avalonia §7.
-- **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); intestazione della Home
-  stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**). **F2c-9** (rekey e sblocco senza cancello) è `triaged`:
+- **Aperti**: rail (tranne Impostazioni), Ctrl+5 e i pulsanti di F6–F7 spenti (**F1-RAIL1**); **F2b-5** chiuso dall'onda 1
+  della direzione visiva. **F2c-9** (rekey e sblocco senza cancello) è `triaged`:
   nessun caso reale oggi; "cambia passphrase", quando arriverà, passa dal cancello.
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
   propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 fatta e in `main` il 2026-10-28**: SQLite3MC 2.6.1, formato SQLCipher 4 invariato, un DB del bundle di prima congelato come
@@ -96,7 +96,11 @@
   dell'abitudine con periodi, nota del giorno e Cronologia, il gruppo con le figlie segnabili. Si fa **in tre onde prima
   della checklist**; la colonna Note e la Panoramica del gruppo arrivano da F3 nell'onda 2. Finding `UX-*` in
   `docs/phase-4-issues.md`. Progetto separato, dopo: "Cosa dice il gruppo" (domande ed Esplora).
-- **Prossimo**: (1) **onda 1 della direzione** (fondamenta e Home), poi le onde 2 e 3; (2) la checklist di F2d-1 su una
+  **Onda 1 (fondamenta e Home) a codice completo** su `ux1-foundations` (piano `2026-10-28-ux-wave1-foundations-home`):
+  Inter e la scala, i token nuovi coi contrasti provati, la tinta e la variante "testo" del colore dell'abitudine, la
+  striscia coi valori e la heatmap nel colore, pulsanti e campi, la Home "Oggi" con l'intestazione dei giorni e il log
+  rapido, la barra a sinistra senza ☰, schede e timer tinti, lo sblocco. Review dell'intero branch in corso.
+- **Prossimo**: (1) review e merge dell'onda 1 della direzione (`ux-review` e `ux1-foundations`, due fast-forward), poi le onde 2 e 3; (2) la checklist di F2d-1 su una
   **copia** dei dati veri (`--data-dir`), poi le altre; (3) `scripts/install-linux.sh` (chiudere prima la build installata:
   con un `recordum.db-journal` lo script si ferma, D9-1) e il dogfooding, che aspetta la direzione (decisione dell'autore).
   **Finché la prova sulla copia non è fatta, la voce Recordum del menu apre la cartella dati vera: non avviarla.**

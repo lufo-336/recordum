@@ -67,7 +67,7 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 - **F2b-1** — l'orario di reset cambiato su un gruppo non arriva ai tab aperti dei figli · **F2b-2** — "Date fisse" dell'obiettivo
   non è salvabile su Avalonia (niente selettori di data) · **F2b-3** — il colore di una nota si scrive e pubblica
   a ogni `PointerMoved` · `reported` · **F2b-4** — le sezioni di Configura non occupavano la colonna · `fixed` ·
-  **F2b-5** — l'intestazione della Home stretta sovrappone "Nuova" e "Archiviate" · `reported`
+  **F2b-5** — l'intestazione della Home stretta sovrappone "Nuova" e "Archiviate" · `fixed` (direzione visiva, onda 1)
 - Esiti dei finding di F5 chiusi su Avalonia: **A8, A12, W2V-9, W2V-19, F1-5** `fixed`; **F1-RAIL1** in parte (Nuovo →
   Abitudine e stato vuoto riaccesi); **W2V-11** resta aperto; **W2V-16, W2V-18** da ricontrollare a schermo.
 
@@ -2050,7 +2050,7 @@ Nuovi, rimandati dalle review dell'onda:
   `configura-light.png`: ogni `Expander` costruito da `SectionTemplate` era allineato a sinistra e largo ~150 px in una
   colonna di ~580. Ora `HorizontalAlignment=Stretch`; `EditorScreenshotTests` misura che ogni sezione occupi la larghezza
   dell'host, rosso prima del fix.
-- **F2b-5 — nella Home stretta "Nuova" si sovrappone ad "Archiviate"** · `reported` · Visto negli stessi screenshot (colonna
+- **F2b-5 — nella Home stretta "Nuova" si sovrappone ad "Archiviate"** · `fixed` (direzione visiva, onda 1: nuova testa della Home, `HomeLayoutTests.Narrow_home_has_no_overlap` rosso prima) · Visto negli stessi screenshot (colonna
   Home da ~280 px): il pulsante "Nuova ▾" copre il chip "Archiviate" e la riga dei chip è tagliata. Non indagato.
 
 ## Onda F2c — Dati al sicuro (`F2c-*`)
@@ -2284,25 +2284,25 @@ render headless non è GNOME; mouse, scorrimento e movimento non si vedono; le s
 
 Certi (visti in un'immagine e confermati nel codice), tutti `reported`:
 
-- **UX-1 — tutta l'interfaccia è in serif** · `Font.Default` = Source Serif 4 su `MainWindow` e `RecordumWindow` (eredità del
+- **UX-1 — tutta l'interfaccia è in serif** · `fixed` (onda 1: Inter per l'interfaccia, Source Serif 4 per diario e marchio, scala 12/13/14/16/20) · `Font.Default` = Source Serif 4 su `MainWindow` e `RecordumWindow` (eredità del
   Palatino di WPF); `PRODUCT.md` lo riserva al diario e al marchio. Corpo 14, piccolo 12, titolo 15: un titolo si distingue
   dal corpo di un punto.
-- **UX-2 — il colore dell'abitudine tinge l'intera riga della Home** · Oltre alla barra di 4 px, ogni riga ha il fondo
+- **UX-2 — il colore dell'abitudine tinge l'intera riga della Home** · `fixed` (onda 1, nel modo deciso dall'autore: la tinta resta, dosata per tema (9 % / 16 %)) · Oltre alla barra di 4 px, ogni riga ha il fondo
   pastello (in scuro un fango scuro): un muro arcobaleno, contro "il colore identifica… e non decora". In Loop e Obsidian la
   riga è neutra.
-- **UX-3 — neutri e accento sono i default di Tailwind** (`zinc` + `blue-500`): un grigio freddo, non "caldo", e un blu che
+- **UX-3 — neutri e accento sono i default di Tailwind** · `fixed` (onda 1: neutri caldi, tre livelli di testo, l'inchiostro come accento) (`zinc` + `blue-500`): un grigio freddo, non "caldo", e un blu che
   compete coi colori delle abitudini. Due soli livelli di testo: i segnaposto (cerca, `+ tag`, "Descrivi…") sono grigi ad
   hoc a contrasto molto basso.
-- **UX-4 — la heatmap annuale usa i verdi di GitHub**, uguali per ogni abitudine (`Brush.Heatmap.Level*`, gli stessi hex) ·
+- **UX-4 — la heatmap annuale usa i verdi di GitHub** · `fixed` (onda 1: heatmap e mappa nel colore dell'abitudine; i verdi di GitHub vietati da un test), uguali per ogni abitudine (`Brush.Heatmap.Level*`, gli stessi hex) ·
   `PRODUCT.md`: la heatmap è il colore dell'abitudine. `YearHeatmapControl` oggi non è montato da nessuna vista (arriva con F7).
-- **UX-5 — nessuna gerarchia dei pulsanti** · I secondari pieni di grigio sembrano disabilitati ("+ Registra", "Segna come
+- **UX-5 — nessuna gerarchia dei pulsanti** · `fixed` (onda 1: contorno di base, primario a inchiostro, il colore dell'abitudine solo per registrare) · I secondari pieni di grigio sembrano disabilitati ("+ Registra", "Segna come
   fatto", "Aggiungi foto", "Undo last", "+ New"); il primario è blu nel builder e nelle Impostazioni, del colore
   dell'abitudine nel diario.
-- **UX-6 — la striscia dei giorni in Home non dice quali giorni sono** · Nessuna intestazione (Loop ha "gio 29, mer 28…");
+- **UX-6 — la striscia dei giorni in Home non dice quali giorni sono** · `fixed` (onda 1: intestazione dei giorni con oggi a destra, valori nella striscia) · Nessuna intestazione (Loop ha "gio 29, mer 28…");
   le celle vuote a alfa 48/255 sul fondo tinto spariscono, in scuro quasi del tutto; il "×0" è minuscolo e pallido.
 - **UX-7 — nel dettaglio il nome dell'abitudine è piccolo** · Il titolo della schermata è un 15 px, meno visibile del
   contenuto; in Loop il nome è la cosa più grande, nel colore dell'abitudine.
-- **UX-8 — doppioni** · "Segna come fatto" come casella in testa e come pulsante sotto; la scheda "Cronologia" e la
+- **UX-8 — doppioni** · `in-progress` (onda 1: il marchio una volta sola; i doppioni della schermata dell'abitudine sono dell'onda 2) · "Segna come fatto" come casella in testa e come pulsante sotto; la scheda "Cronologia" e la
   didascalia del pannello "Cronologia"; "+ Nota veloce" in testa con il composer già aperto sotto; "Recordum" nella barra del
   titolo e nell'intestazione della Home.
 - **UX-9 — date in due formati nella stessa schermata** · "15/03/2026" accanto a "2026-03-15 12:00" (ISO grezzo nelle
@@ -2312,16 +2312,16 @@ Certi (visti in un'immagine e confermati nel codice), tutti `reported`:
   descrizioni seminati dalle migrazioni, non localizzati.
 - **UX-12 — builder** · "Colore (hex)" espone l'esadecimale; "Lancia" per creare; la sezione "Dati d'esempio" è vuota; nella
   riga Quantità la tendina non ha etichetta.
-- **UX-13 — "✎" nella scheda Diario** è un glifo Unicode, non un'icona Lucide (regola di §11).
+- **UX-13 — "✎" nella scheda Diario** · `in-progress` (onda 1: icone Lucide in Home e cornice; "✎" del diario nell'onda 2) è un glifo Unicode, non un'icona Lucide (regola di §11).
 - **UX-14 — calendario** · Numeri del giorno di ~10 px nell'angolo; un giorno fuori mese e uno vuoto del mese si
   distinguono appena; nel contatore il cerchio del valore copre il numero del giorno.
-- **UX-15 — campi senza cornice nelle Impostazioni** · Solo la riga sotto: i numeri ("7", "8") sembrano testo, i campi
+- **UX-15 — campi senza cornice nelle Impostazioni** · `fixed` (onda 1: campi con la cornice piena) · Solo la riga sotto: i numeri ("7", "8") sembrano testo, i campi
   passphrase vuoti sono invisibili.
-- (Già tracciato: **F2b-5**, "Nuova" sopra "Archiviate" nell'intestazione stretta, visibile anche in `configura-light`.)
+- (Già tracciato: **F2b-5**, "Nuova" sopra "Archiviate" nell'intestazione stretta, visibile anche in `configura-light`. **Chiuso dall'onda 1**: `HomeLayoutTests.Narrow_home_has_no_overlap`, rosso sul layout di prima.)
 
 Da verificare a schermo:
 
 - **UX-P1 — inglese in Configura in italiano** ("Scheduling", "Streak mode", "Undo last", "0 today"): le chiavi italiane ci
   sono; probabilmente la cultura del test (l'app imposta anche `DefaultThreadCurrentUICulture`). Guardarlo su GNOME.
-- **UX-P2 — le schermate del dettaglio nei test non usano il font dell'app** · Rese fuori da `MainWindow`, escono in sans:
+- **UX-P2 — le schermate del dettaglio nei test non usano il font dell'app** · `fixed` (onda 1: ogni finestra prende Font.Default, anche quelle dei test) · Rese fuori da `MainWindow`, escono in sans:
   i PNG non rappresentano la produzione. Se UX-1 cambia il font, i test vanno ospitati con i token veri.

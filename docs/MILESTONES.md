@@ -702,3 +702,20 @@ L'ha trovato la fixture del journal caldo, non la sonda. Le prestazioni, misurat
 *Non consegnato*: rollback dei journal vecchi (D9-1, deciso dall'autore: la difesa è in `install-linux.sh`); review dell'intero
 branch. Suite su Linux: Core 177, Data 651 (+2 generatori saltati), Presentation 1136, UI 454 (`Category!=Performance`),
 Plugins 66, ExportEngine 46.
+
+**Progresso 2026-10-28 (direzione visiva: review, spec, onda 1 a codice completo).** Review UI/UX con Obsidian e Loop come
+riferimenti (`UX-1…15`), confronto dei font su PNG (Inter scelta dall'autore), brainstorm col companion visuale e spec
+`2026-10-28-ux-direction-design` approvata; piano dell'onda 1 eseguito su `ux1-foundations` (8 task).
+*Cosa esiste ora*: Inter per l'interfaccia e Source Serif 4 solo per diario e marchio; la scala 12/13/14/16/20; i neutri
+caldi con tre livelli di testo e l'inchiostro come accento (anche quello di Fluent), coi contrasti WCAG provati da un test;
+la tinta dell'abitudine come livello con un'opacità per tema e la variante "testo" a 4,5:1 per qualunque colore; la striscia
+della Home che scrive i valori (✓, 5, 1,2k) sotto un'intestazione dei giorni con oggi a destra, 4/7/14 giorni secondo la
+larghezza; heatmap e mappa nel colore dell'abitudine (i verdi di GitHub vietati da una guardia); pulsanti a contorno, campi
+con la cornice; la Home "Oggi" con la data, il log rapido con l'icona del tipo, i gruppi con "3 di 5"; la barra a sinistra
+col marchio una volta sola, senza ☰; schede col pallino del colore, timer tinto, sblocco col marchio e l'avviso.
+*Cosa ha insegnato*: i PNG vanno guardati, non solo prodotti: due difetti (nomi illeggibili a 280 px, campo nero a fuoco in
+scuro) li hanno trovati le immagini, non i test, e solo dopo sono diventati test. Un'opacità da un token tematico è il modo
+più semplice di avere una tinta che segue il tema a runtime. La macchina ha avuto due ondate di carico sul disco (suite da
+3 a 20 minuti) e una sospensione per memoria: si misura in alternanza prima/dopo, mai contro un numero del mattino.
+*Non consegnato*: le onde 2 e 3; ricarica della Home con 300 righe da ~120 a ~185 ms (budget 500 rispettato). Suite su Linux:
+Presentation 1154, UI 531 (`Category!=Performance`).
