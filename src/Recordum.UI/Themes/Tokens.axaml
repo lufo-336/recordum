@@ -34,6 +34,12 @@
          imbustato in Fonts/) è solo per il testo dell'utente e il marchio: Font.Serif. -->
     <FontFamily x:Key="Font.Default">avares://Avalonia.Fonts.Inter/Assets#Inter,Noto Sans,sans-serif</FontFamily>
 
+    <!-- I gradini della mappa e della heatmap (§4.3): il colore dell'abitudine a queste opacità sul pannello. -->
+    <x:Double x:Key="Opacity.Heat1">0.25</x:Double>
+    <x:Double x:Key="Opacity.Heat2">0.5</x:Double>
+    <x:Double x:Key="Opacity.Heat3">0.75</x:Double>
+    <x:Double x:Key="Opacity.Heat4">1</x:Double>
+
     <!-- Layout — stessi numeri di WPF Tokens.xaml (px WPF ~= DIP Avalonia, 1:1 a questa densità). -->
     <x:Double x:Key="Layout.RowHeight">36</x:Double>
     <x:Double x:Key="Layout.AccentBarWidth">4</x:Double>
@@ -45,6 +51,10 @@
     <ResourceDictionary.ThemeDictionaries>
 
       <ResourceDictionary x:Key="Light">
+        <!-- Il colore dell'abitudine (§4.3): la tinta è un livello col colore pieno e questa opacità sul pannello. -->
+        <x:Double x:Key="Opacity.RowTint">0.09</x:Double>
+        <x:Double x:Key="Opacity.RowTintSelected">0.16</x:Double>
+        <x:Double x:Key="Opacity.TimerTint">0.08</x:Double>
         <!-- Neutri caldi della direzione visiva (§4.2). Ruoli: Background = fondo della finestra; Pane = pannello
              (colonne, schede, finestrelle); Surface = barra a sinistra e zone secondarie; SurfaceElevated = popup e
              campi; Border = la riga leggera; FieldBorder = la cornice dei campi; Selection = segmento o chip scelto.
@@ -78,6 +88,10 @@
         </ResourceDictionary>
 
       <ResourceDictionary x:Key="Dark">
+        <!-- Il colore dell'abitudine (§4.3): la tinta è un livello col colore pieno e questa opacità sul pannello. -->
+        <x:Double x:Key="Opacity.RowTint">0.16</x:Double>
+        <x:Double x:Key="Opacity.RowTintSelected">0.26</x:Double>
+        <x:Double x:Key="Opacity.TimerTint">0.14</x:Double>
         <SolidColorBrush x:Key="Brush.Background"      Color="#FF1B1B1A"/>
         <SolidColorBrush x:Key="Brush.Pane"            Color="#FF222221"/>
         <SolidColorBrush x:Key="Brush.Surface"         Color="#FF181817"/>
