@@ -154,6 +154,8 @@ public partial class MainWindow : Window
     /// didascalia sarebbero doppioni: si nascondono. Si guarda il risultato, non il sistema.</summary>
     internal void ApplyChrome(bool extended)
     {
+        // Dove la barra la disegna il sistema (Linux, D7) la nostra non serve: senza ☰ e senza marchio sarebbe vuota.
+        TitleBar.IsVisible = extended;
         MinButton.IsVisible = extended;
         MaxButton.IsVisible = extended;
         CloseButton.IsVisible = extended;

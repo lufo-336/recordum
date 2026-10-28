@@ -10,6 +10,8 @@ using Recordum.Presentation.ViewModels.Startup;
 using Recordum.UI.Views.Startup;
 using Xunit;
 
+using Recordum.UI.Tests.Fixtures;
+
 namespace Recordum.UI.Tests.Startup;
 
 public class UnlockWindowTests
@@ -81,5 +83,18 @@ public class UnlockWindowTests
             line.Bounds.Y.Should().BeLessThan(Named<TextBox>(window, "PassphraseBox").Bounds.Y);
         }
         finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void Unlock_has_one_primary_button_and_the_warning()
+    {
+        using var culture = TestCulture.Pin();
+        var w = Show(canRemember: true, rejected: false);
+        w.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("primary")).Should().ContainSingle();
+        w.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t =>
+            t.Text == "Se dimentichi la passphrase, i dati non si possono recuperare: è il prezzo della cifratura.");
+        w.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Recordum")
+            .FontFamily.FamilyNames[0].Should().Be("Source Serif 4");
+        w.Close();
     }
 }

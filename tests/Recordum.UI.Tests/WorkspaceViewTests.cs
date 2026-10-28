@@ -28,60 +28,42 @@ public class WorkspaceViewTests
     }
 
     [AvaloniaFact]
-    public void The_ribbon_marks_the_active_workspace_and_lists_six_actions()
+    public void The_ribbon_marks_the_active_workspace_and_lists_four_entries()
     {
         var vm = ShellFixture.Shared.NewMainWindowViewModel();
         var ribbon = new WorkspaceRibbon();
         Show(ribbon, vm);
 
         var buttons = ribbon.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("rail")).ToArray();
-        buttons.Should().HaveCount(6, "il rail porta Home, Grafici, Backup, Esporta, Diagnostica, Impostazioni");
+        buttons.Should().HaveCount(4, "il rail porta Oggi, Diario, Statistiche, Impostazioni (direzione visiva §5)");
 
         var hosts = ribbon.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("activehost")).ToArray();
-        hosts.Should().HaveCount(2);
+        hosts.Should().HaveCount(3, "Oggi, Diario, Statistiche");
         hosts[0].Classes.Contains("active").Should().BeTrue("all'avvio il workspace attivo e' la Home");
-        hosts[1].Classes.Contains("active").Should().BeFalse();
+        hosts[2].Classes.Contains("active").Should().BeFalse();
 
         vm.CurrentWorkspace = AppWorkspace.Charts;
         Dispatcher.UIThread.RunJobs();
         hosts[0].Classes.Contains("active").Should().BeFalse();
-        hosts[1].Classes.Contains("active").Should().BeTrue("passando ai Grafici l'evidenza si sposta");
+        hosts[2].Classes.Contains("active").Should().BeTrue("passando ai Grafici l'evidenza si sposta");
     }
 
     [AvaloniaFact]
-    public void Only_the_home_button_is_visible_until_its_wave_turns_the_others_on()
+    public void Rail_has_today_diary_stats_settings()
     {
+        // Direzione visiva §5: Oggi, Diario e Statistiche (spenti, "in arrivo"), Impostazioni in basso. Backup, Esporta e
+        // Diagnostica non stanno più nella barra: i loro comandi vivono nelle Impostazioni (Dati e backup, Informazioni).
+        using var culture = TestCulture.Pin();
         var ribbon = new WorkspaceRibbon();
         Show(ribbon, ShellFixture.Shared.NewMainWindowViewModel());
 
-        var visible = ribbon.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("rail"))
-            .ToDictionary(b => b.Name!, b => b.IsVisible);
-        visible["HomeButton"].Should().BeTrue();
-        visible["SettingsButton"].Should().BeTrue("la finestra Impostazioni ridotta e' di F2c");
-        visible.Where(kv => kv.Key is not ("HomeButton" or "SettingsButton")).Should().OnlyContain(kv => !kv.Value,
-            "Grafici, Backup, Esporta e Diagnostica stanno dietro launcher/viste non ancora portati");
-    }
-
-    [AvaloniaFact]
-    public void The_backup_button_opens_a_flyout_whose_three_items_carry_live_commands()
-    {
-        var vm = ShellFixture.Shared.NewMainWindowViewModel();
-        var ribbon = new WorkspaceRibbon();
-        Show(ribbon, vm);
-
-        var button = ribbon.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "BackupButton");
-        var flyout = button.Flyout.Should().BeOfType<MenuFlyout>().Subject;
-
-        flyout.ShowAt(button);
-        Dispatcher.UIThread.RunJobs();
-
-        var items = flyout.Items.OfType<MenuItem>().ToArray();
-        items.Should().HaveCount(3);
-        items.Should().OnlyContain(i => i.Command != null,
-            "un MenuFlyout eredita il DataContext dal pulsante: se non lo facesse i Command sarebbero null");
-        items[0].Command.Should().BeSameAs(vm.BackupCreateCommand);
-        items[2].Command.Should().BeSameAs(vm.ShowBackupHistoryCommand);
-        flyout.Hide();
+        var buttons = ribbon.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("rail") && b.IsVisible).ToList();
+        buttons.Select(b => b.Name).Should().Equal("HomeButton", "DiaryButton", "ChartsButton", "SettingsButton");
+        buttons.Single(b => b.Name == "DiaryButton").IsEnabled.Should().BeFalse();
+        buttons.Single(b => b.Name == "ChartsButton").IsEnabled.Should().BeFalse();
+        ToolTip.GetTip(buttons.Single(b => b.Name == "DiaryButton")).Should().Be("Diario — in arrivo");
+        ToolTip.GetShowOnDisabled(buttons.Single(b => b.Name == "ChartsButton")).Should().BeTrue();
+        ribbon.GetVisualDescendants().OfType<TextBlock>().Should().ContainSingle(t => t.Text == "R", "il marchio in cima alla barra");
     }
 
     [AvaloniaFact]

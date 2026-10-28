@@ -189,6 +189,9 @@ public static class Strings
     public static string Home_Filter_Done => Get("Home.Filter.Done");
     public static string Home_Group_Progress => Get("Home.Group.Progress");
     public static string Home_NewMenu_Label => Get("Home.NewMenu.Label");
+    public static string Rail_Diary_ComingSoon => Get("Rail.Diary.ComingSoon");
+    public static string Rail_Stats_ComingSoon => Get("Rail.Stats.ComingSoon");
+    public static string Unlock_LostPassphrase => Get("Unlock.LostPassphrase");
 
     // Settings
     public static string Settings_Title => Get("Settings.Title");

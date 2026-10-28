@@ -4,7 +4,7 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              x:Class="Recordum.UI.Views.WorkspaceRibbon"
              x:DataType="vm:MainWindowViewModel"
-             Width="44">
+             Width="52">
 
   <UserControl.Styles>
     <!-- Bottone del rail: 32x32 piatto, tooltip a destra. Il default Fluent porta gia'
@@ -36,6 +36,14 @@
       <Setter Property="CornerRadius" Value="6"/>
       <Setter Property="Margin" Value="6,2"/>
     </Style>
+    <!-- Una voce non ancora pronta: si vede, spenta, e dice "in arrivo" al passaggio del mouse (§5). -->
+    <Style Selector="Button.rail:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.rail:disabled Path.railicon">
+      <Setter Property="Stroke" Value="{DynamicResource Brush.TextFaint}"/>
+    </Style>
     <Style Selector="Border.activehost.active">
       <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
     </Style>
@@ -47,74 +55,51 @@
     <DockPanel LastChildFill="False">
 
       <!-- Workspace (in alto) -->
-      <StackPanel DockPanel.Dock="Top" Margin="0,8,0,0">
+      <StackPanel DockPanel.Dock="Top" Margin="0,10,0,0">
+        <!-- Il marchio: una "R" serif, una volta sola nell'app (UX-8; prima stava nella barra del titolo). -->
+        <TextBlock Text="R" HorizontalAlignment="Center" Margin="0,0,0,10"
+                   FontFamily="{DynamicResource Font.Serif}" FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.Text}"/>
         <Border Classes="activehost" Classes.active="{Binding IsHomeWorkspace}">
           <Grid>
             <Rectangle Width="2" HorizontalAlignment="Left" RadiusX="1" RadiusY="1"
                        Fill="{DynamicResource Brush.Accent}"
                        IsVisible="{Binding IsHomeWorkspace}"/>
             <Button Name="HomeButton" Classes="rail" Command="{Binding ShowHomeCommand}"
-                    ToolTip.Tip="{x:Static res:Strings.Workspace_Home}"
-                    AutomationProperties.Name="{x:Static res:Strings.Workspace_Home}">
+                    ToolTip.Tip="{x:Static res:Strings.Home_Title_Today}"
+                    AutomationProperties.Name="{x:Static res:Strings.Home_Title_Today}">
               <Path Classes="railicon" Data="{StaticResource Icon.House}"/>
             </Button>
           </Grid>
         </Border>
-        <!-- Nascosto insieme al suo bottone: un Border visibile attorno a un bottone nascosto lascia 4px di vuoto nel rail. -->
-        <Border Classes="activehost" Classes.active="{Binding IsChartsWorkspace}" IsVisible="False">
+        <!-- Diario: la sezione arriva con F4; la voce c'è già, spenta. -->
+        <Border Classes="activehost">
+          <Button Name="DiaryButton" Classes="rail" IsEnabled="False"
+                  ToolTip.Tip="{x:Static res:Strings.Rail_Diary_ComingSoon}" ToolTip.ShowOnDisabled="True"
+                  AutomationProperties.Name="{x:Static res:Strings.Rail_Diary_ComingSoon}">
+            <Path Classes="railicon" Data="{StaticResource Icon.BookOpen}"/>
+          </Button>
+        </Border>
+        <Border Classes="activehost" Classes.active="{Binding IsChartsWorkspace}">
           <Grid>
             <Rectangle Width="2" HorizontalAlignment="Left" RadiusX="1" RadiusY="1"
                        Fill="{DynamicResource Brush.Accent}"
                        IsVisible="{Binding IsChartsWorkspace}"/>
-            <!-- Nascosto: ChartsView non e' portata, il workspace Grafici mostrerebbe il vuoto. Lo accende F7. -->
-            <Button Name="ChartsButton" Classes="rail" Command="{Binding ShowChartsCommand}" IsVisible="False"
-                    ToolTip.Tip="{x:Static res:Strings.Workspace_Charts}"
-                    AutomationProperties.Name="{x:Static res:Strings.Workspace_Charts}">
+            <!-- Spento: ChartsView non e' portata, il workspace Grafici mostrerebbe il vuoto. Lo accende F7. -->
+            <Button Name="ChartsButton" Classes="rail" Command="{Binding ShowChartsCommand}" IsEnabled="False"
+                    ToolTip.Tip="{x:Static res:Strings.Rail_Stats_ComingSoon}" ToolTip.ShowOnDisabled="True"
+                    AutomationProperties.Name="{x:Static res:Strings.Rail_Stats_ComingSoon}">
               <Path Classes="railicon" Data="{StaticResource Icon.BarChart3}"/>
             </Button>
           </Grid>
         </Border>
 
-        <!-- Nascosto: separa il workspace dalle azioni, che sono tutte nascoste (orfano visibile sotto la Home).
-             Lo accende F2 insieme al Backup. -->
-        <Rectangle Height="1" Margin="12,8" Fill="{DynamicResource Brush.Border}" IsVisible="False"/>
-
-        <!-- Azioni. Il menu Backup: in WPF serviva code-behind (un ContextMenu si apre solo col
-             tasto destro e non eredita il DataContext). Qui Button.Flyout apre col clic sinistro
-             ed eredita il DataContext dal pulsante: il code-behind sparisce. -->
-        <!-- Nascosto: il launcher e' Null. Lo accende F2 (launcher del backup). -->
-        <Button Name="BackupButton" Classes="rail" IsVisible="False"
-                ToolTip.Tip="{x:Static res:Strings.Workspace_Backup}"
-                AutomationProperties.Name="{x:Static res:Strings.Workspace_Backup}">
-          <Path Classes="railicon" Data="{StaticResource Icon.LifeBuoy}"/>
-          <Button.Flyout>
-            <MenuFlyout Placement="Right">
-              <MenuItem Header="{x:Static res:Strings.Backup_Menu_Create}"
-                        Command="{Binding BackupCreateCommand}"/>
-              <MenuItem Header="{x:Static res:Strings.Backup_Menu_Restore}"
-                        Command="{Binding BackupRestoreCommand}"/>
-              <Separator/>
-              <MenuItem Header="{x:Static res:Strings.Backup_Menu_History}"
-                        Command="{Binding ShowBackupHistoryCommand}"/>
-            </MenuFlyout>
-          </Button.Flyout>
-        </Button>
-        <!-- Nascosto: il launcher e' Null. Lo accende F6 (dialog di export). -->
-        <Button Name="ExportButton" Classes="rail" Command="{Binding ExportLibraryCommand}" IsVisible="False"
-                ToolTip.Tip="{x:Static res:Strings.Export_Library}"
-                AutomationProperties.Name="{x:Static res:Strings.Export_Library}">
-          <Path Classes="railicon" Data="{StaticResource Icon.Upload}"/>
-        </Button>
       </StackPanel>
 
       <!-- Sistema (in basso) -->
       <StackPanel DockPanel.Dock="Bottom" Margin="0,0,0,8">
-        <!-- Nascosto: lo accende F6. -->
-        <Button Name="DiagnosticButton" Classes="rail" Command="{Binding ShowDiagnosticInfoCommand}" IsVisible="False"
-                ToolTip.Tip="{x:Static res:Strings.Diagnostic_Menu_Open}"
-                AutomationProperties.Name="{x:Static res:Strings.Diagnostic_Menu_Open}">
-          <Path Classes="railicon" Data="{StaticResource Icon.CircleHelp}"/>
-        </Button>
+        <!-- Backup, Esporta e Diagnostica non stanno nella barra (direzione visiva §5): Impostazioni › Dati e backup e
+             Informazioni. I comandi restano nel ViewModel condiviso con WPF. -->
         <Button Name="SettingsButton" Classes="rail" Command="{Binding ShowSettingsCommand}"
                 ToolTip.Tip="{x:Static res:Strings.Settings_Title}"
                 AutomationProperties.Name="{x:Static res:Strings.Settings_Title}">

@@ -90,6 +90,9 @@
         <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="Brush.Pane"/>
+        <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="Brush.TextFaint"/>
+        <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="Brush.Border"/>
         <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Brush.TextFaint"/>
@@ -131,6 +134,9 @@
         <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="ButtonBackgroundDisabled" ResourceKey="Brush.Pane"/>
+        <StaticResource x:Key="ButtonForegroundDisabled" ResourceKey="Brush.TextFaint"/>
+        <StaticResource x:Key="ButtonBorderBrushDisabled" ResourceKey="Brush.Border"/>
         <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Brush.TextFaint"/>

@@ -18,6 +18,9 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
     public Guid HabitNodeId => Timer.HabitNodeId;
     public string HabitName { get; }
 
+    /// <summary>Il colore dell'abitudine che corre: la barra dei timer ne è tinta (direzione visiva §5). Null = nessuna tinta.</summary>
+    public string? ColorHex { get; }
+
     [ObservableProperty] private int _elapsedSeconds;
     [ObservableProperty] private bool _isPaused;
 
@@ -35,10 +38,11 @@ public sealed partial class ActiveTimerRowViewModel : ObservableObject
     /// <param name="onTimerGone">Chiamato quando il timer della riga non esiste più (per esempio cancellato
     /// con l'abitudine, senza evento): chi ospita la riga si ricarica invece di lasciare una riga morta.</param>
     public ActiveTimerRowViewModel(ActiveTimer timer, string habitName, IActiveTimerService timers, IClock clock,
-        Func<Task> onTimerGone)
+        Func<Task> onTimerGone, string? colorHex = null)
     {
         Timer = timer;
         HabitName = habitName;
+        ColorHex = colorHex;
         _timers = timers;
         _clock = clock;
         _onTimerGone = onTimerGone;

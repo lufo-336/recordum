@@ -1914,4 +1914,13 @@ Details: {0}</value>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>New</value>
   </data>
+  <data name="Rail.Diary.ComingSoon" xml:space="preserve">
+    <value>Diary — coming soon</value>
+  </data>
+  <data name="Rail.Stats.ComingSoon" xml:space="preserve">
+    <value>Statistics — coming soon</value>
+  </data>
+  <data name="Unlock.LostPassphrase" xml:space="preserve">
+    <value>If you forget the passphrase, your data cannot be recovered: that is the price of encryption.</value>
+  </data>
 </root>

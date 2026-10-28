@@ -86,6 +86,9 @@ public class MainWindowTests
         var (window, _) = await Open();
 
         window.ExtendClientAreaTitleBarHeightHint.Should().Be(36);
+        // Il caso Windows: la barra c'è solo dove la piattaforma estende l'area client (v. il test dei pulsanti).
+        window.ApplyChrome(extended: true);
+        Dispatcher.UIThread.RunJobs();
 
         var bar = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "TitleBar");
         WindowDecorationProperties.GetElementRole(bar).Should().Be(WindowDecorationsElementRole.TitleBar);
@@ -94,9 +97,6 @@ public class MainWindowTests
         Role(window, "MinButton").Should().Be(WindowDecorationsElementRole.MinimizeButton);
         Role(window, "MaxButton").Should().Be(WindowDecorationsElementRole.MaximizeButton);
         Role(window, "CloseButton").Should().Be(WindowDecorationsElementRole.CloseButton);
-        // Il ☰ non e' un pulsante di didascalia: se avesse un ruolo di sistema la piattaforma se lo
-        // prenderebbe e il comando non scatterebbe piu'.
-        Role(window, "RibbonToggle").Should().Be(WindowDecorationsElementRole.User);
 
         static WindowDecorationsElementRole Role(Visual root, string name)
             => WindowDecorationProperties.GetElementRole(
@@ -117,9 +117,10 @@ public class MainWindowTests
             window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == name)
                 .IsVisible.Should().Be(expectedVisible, $"{name} con extended={extended}");
 
-        // Il pulsante del rail vive nella nostra barra in ogni caso.
-        window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "RibbonToggle")
-            .IsVisible.Should().BeTrue();
+        // Dove la barra la disegna il sistema (Linux, D7) la nostra sparisce del tutto: senza ☰ e senza marchio sarebbe
+        // una striscia vuota di 36 px (direzione visiva §5).
+        window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "TitleBar")
+            .IsVisible.Should().Be(expectedVisible, $"la barra del titolo con extended={extended}");
     }
 
     [AvaloniaFact]
@@ -214,8 +215,8 @@ public class MainWindowTests
         Dispatcher.UIThread.RunJobs();
         ribbon.IsVisible.Should().BeFalse();
 
-        var toggle = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "RibbonToggle");
-        toggle.Command.Should().BeSameAs(vm.ToggleRibbonCommand);
+        // Il comando resta nel ViewModel condiviso (WPF); su Avalonia il ☰ è uscito con la direzione visiva.
+        window.GetVisualDescendants().OfType<Button>().Should().NotContain(b => b.Name == "RibbonToggle");
     }
 
     [AvaloniaFact]
@@ -306,4 +307,16 @@ public class MainWindowTests
         sidebar.Width.Should().Be(new GridLength(1, GridUnitType.Star));
     }
 
+
+    [AvaloniaFact]
+    public async Task The_brand_appears_once_in_the_rail_and_not_in_the_title_bar()
+    {
+        // UX-8: "R Recordum" nella barra del titolo e "Recordum" in testa alla Home erano doppioni.
+        var (window, _) = await Open();
+        window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text == "R").Should().ContainSingle()
+            .Which.FontFamily.FamilyNames[0].Should().Be("Source Serif 4");
+        window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "TitleBar")
+            .GetVisualDescendants().OfType<TextBlock>().Should().BeEmpty("nella barra del titolo restano solo i pulsanti");
+        window.Close();
+    }
 }

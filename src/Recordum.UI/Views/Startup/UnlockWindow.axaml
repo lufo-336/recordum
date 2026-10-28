@@ -10,7 +10,11 @@
         WindowStartupLocation="CenterScreen"
         FontFamily="{DynamicResource Font.Default}"
         Background="{DynamicResource Brush.Background}">
-  <StackPanel Margin="24" Spacing="12">
+  <StackPanel Margin="28,24" Spacing="12">
+    <!-- Il marchio in serif (direzione visiva §5), poi una frase su cosa succede e un solo pulsante. -->
+    <TextBlock Text="{x:Static res:Strings.AppTitle}" HorizontalAlignment="Center" Margin="0,0,0,4"
+               FontFamily="{DynamicResource Font.Serif}" FontSize="28" FontWeight="SemiBold"
+               Foreground="{DynamicResource Brush.Text}"/>
     <TextBlock Name="Heading"
                Text="{Binding Heading}"
                FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
@@ -56,5 +60,8 @@
             IsDefault="True"
             Command="{Binding SubmitCommand}"
             Content="{x:Static res:Strings.Unlock_Submit}"/>
+    <TextBlock Text="{x:Static res:Strings.Unlock_LostPassphrase}" TextWrapping="Wrap" Margin="0,4,0,0"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
   </StackPanel>
 </Window>

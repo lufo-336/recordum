@@ -59,31 +59,16 @@
     </Style>
   </Window.Styles>
 
-  <Grid Name="RootGrid" RowDefinitions="36,*,Auto">
+  <Grid Name="RootGrid" RowDefinitions="Auto,*,Auto">
 
     <!-- Barra del titolo -->
-    <Border Name="TitleBar" Grid.Row="0"
+    <Border Name="TitleBar" Grid.Row="0" Height="36"
             Background="{DynamicResource Brush.Surface}"
             BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}"
             chrome:WindowDecorationProperties.ElementRole="TitleBar">
       <Grid>
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,12,0">
-          <Button Name="RibbonToggle" Classes="caption" Width="32" Height="28" Margin="0,0,6,0"
-                  Command="{Binding ToggleRibbonCommand}"
-                  chrome:WindowDecorationProperties.ElementRole="User"
-                  ToolTip.Tip="{x:Static res:Strings.Workspace_ToggleRibbon}"
-                  AutomationProperties.Name="{x:Static res:Strings.Workspace_ToggleRibbon}">
-            <Path Classes="caption" Data="M4 6h16 M4 12h16 M4 18h16"/>
-          </Button>
-          <!-- Marchio: una "R" serif. Resta serif anche se l'utente sceglie il font di sistema. -->
-          <TextBlock Text="R" Margin="1,0,8,0" VerticalAlignment="Center"
-                     FontFamily="{DynamicResource Font.Serif}"
-                     FontSize="18" FontWeight="Bold"
-                     Foreground="{DynamicResource Brush.Text}"/>
-          <TextBlock Text="{x:Static res:Strings.AppTitle}" VerticalAlignment="Center"
-                     FontWeight="SemiBold" FontSize="12.5"
-                     Foreground="{DynamicResource Brush.TextMuted}"/>
-        </StackPanel>
+        <!-- Solo i pulsanti della finestra, dove la piattaforma lascia disegnare la barra a noi (Windows). Il ☰ e il
+             marchio sono usciti con la direzione visiva (§5): il marchio vive in cima alla barra a sinistra. -->
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
           <Button Name="MinButton" Classes="caption"
                   chrome:WindowDecorationProperties.ElementRole="MinimizeButton"

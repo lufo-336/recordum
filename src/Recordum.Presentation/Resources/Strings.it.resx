@@ -1888,4 +1888,13 @@
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>Nuova</value>
   </data>
+  <data name="Rail.Diary.ComingSoon" xml:space="preserve">
+    <value>Diario — in arrivo</value>
+  </data>
+  <data name="Rail.Stats.ComingSoon" xml:space="preserve">
+    <value>Statistiche — in arrivo</value>
+  </data>
+  <data name="Unlock.LostPassphrase" xml:space="preserve">
+    <value>Se dimentichi la passphrase, i dati non si possono recuperare: è il prezzo della cifratura.</value>
+  </data>
 </root>

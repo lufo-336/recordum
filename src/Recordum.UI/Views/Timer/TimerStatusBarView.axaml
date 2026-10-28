@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:Recordum.UI.Converters"
              xmlns:vm="using:Recordum.Presentation.ViewModels.Timer"
              xmlns:res="using:Recordum.Presentation.Resources"
              x:Class="Recordum.UI.Views.Timer.TimerStatusBarView"
@@ -17,14 +18,18 @@
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="vm:ActiveTimerRowViewModel">
-          <Border Margin="0,0,8,0" Padding="6,2" CornerRadius="3" BorderThickness="1"
+          <!-- La riga è tinta nel colore dell'abitudine che corre (§5): il livello di tinta come nelle righe della Home. -->
+          <Border Margin="0,0,8,0" CornerRadius="6" BorderThickness="1" ClipToBounds="True"
                   BorderBrush="{DynamicResource Brush.Border}"
-                  Background="{DynamicResource Brush.SurfaceElevated}">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                  Background="{DynamicResource Brush.Pane}">
+            <Panel>
+            <Border x:Name="RowTint" IsHitTestVisible="False" Opacity="{DynamicResource Opacity.TimerTint}"
+                    Background="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,3">
               <TextBlock x:Name="RowName" Text="{CompiledBinding HabitName}" FontWeight="SemiBold"
                          FontSize="{StaticResource FontSize.Small}" Margin="0,0,6,0" VerticalAlignment="Center"/>
-              <TextBlock x:Name="RowElapsed" Text="{CompiledBinding ElapsedDisplay}"
-                         FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum" FontSize="11.5"
+              <TextBlock x:Name="RowElapsed" Text="{CompiledBinding ElapsedDisplay}" FontWeight="SemiBold"
+                         FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum" FontSize="{StaticResource FontSize.Label}"
                          Margin="0,0,6,0" VerticalAlignment="Center"/>
               <Button x:Name="RowPause" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0"
                       Command="{CompiledBinding PauseCommand}" IsVisible="{CompiledBinding !IsPaused}"
@@ -48,6 +53,7 @@
                       StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Square}"/>
               </Button>
             </StackPanel>
+            </Panel>
           </Border>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

@@ -79,6 +79,10 @@ public class TimerStatusBarViewTests
         {
             Bar(window).IsVisible.Should().BeTrue();
             RowControl<TextBlock>(window, "RowElapsed", name).Text.Should().Be("02:05");
+            // Direzione visiva §5: la riga del timer è tinta nel colore dell'abitudine che corre.
+            var tint = RowControl<Border>(window, "RowTint", name);
+            ((Avalonia.Media.ISolidColorBrush)tint.Background!).Color.Should().Be(Avalonia.Media.Color.Parse("#0EA5E9"));
+            tint.Opacity.Should().BeApproximately(0.08, 0.001);
 
             Click(window, RowControl<Button>(window, "RowStop", name));
 

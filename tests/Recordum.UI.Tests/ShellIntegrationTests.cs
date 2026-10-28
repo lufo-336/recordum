@@ -70,6 +70,9 @@ public class ShellIntegrationTests(ITestOutputHelper output)
 
         var strip = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "TabStrip");
         strip.GetRealizedContainers().Should().ContainSingle();
+        // Direzione visiva §5: la scheda porta il pallino nel colore della sua abitudine.
+        var dot = strip.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>().Single(e => e.Name == "TabDot");
+        ((Avalonia.Media.ISolidColorBrush)dot.Fill!).Color.Should().Be(Avalonia.Media.Color.Parse(row.ColorHex));
 
         // E il guscio si riorganizza: la Home diventa barra laterale e compare il divisore.
         var grid = window.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "HomeWorkspace");
@@ -135,7 +138,7 @@ public class ShellIntegrationTests(ITestOutputHelper output)
         row.IsRenaming.Should().BeFalse("Esc nella casella annulla la rinomina");
         row.Name.Should().Be(original);
         // E se il fuoco esce adesso non c'e' piu' niente da salvare.
-        window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "RibbonToggle").Focus();
+        window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "SettingsButton").Focus();
         Dispatcher.UIThread.RunJobs();
         row.Name.Should().Be(original, "il nome scartato non deve essere salvato dal LostFocus");
     }
