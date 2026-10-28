@@ -57,8 +57,6 @@ public class CipherFixtureGenerator
                 Exec(conn, "BEGIN IMMEDIATE;");
                 Exec(conn, $"DELETE FROM completions WHERE habit_node_id = '{RecbakReferenceSeed.RunId}';");
                 Exec(conn, $"UPDATE habit_nodes SET name = 'HALF' WHERE id = '{RecbakReferenceSeed.RunId}';");
-                // Force spill of the dirty pages to the .db so the pair really is hot.
-                Exec(conn, "PRAGMA cache_spill = 1;");
                 Exec(conn, "CREATE TABLE spill_filler (x BLOB);");
                 for (var i = 0; i < 20; i++)
                     Exec(conn, "INSERT INTO spill_filler VALUES (randomblob(8000));");

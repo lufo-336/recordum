@@ -74,6 +74,18 @@ public sealed class LegacyCipherDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Without_its_journal_the_hot_journal_database_is_visibly_half_written()
+    {
+        // The .db alone: page 1 spilled with the schema entry of spill_filler, whose pages never made it. If this ever
+        // reads clean, the fixture is not hot and the rollback test below would prove nothing.
+        var db = CopyFixture(CipherFixture.HotJournal);
+        using var key = new KeyMaterial(CipherFixture.Key);
+        using var conn = SqlCipherConnectionFactory.Open(db, key);
+        var act = () => Scalar<long>(conn, "SELECT COUNT(*) FROM habit_nodes");
+        act.Should().Throw<SqliteException>().Which.SqliteErrorCode.Should().Be(11);   // SQLITE_CORRUPT: malformed schema
+    }
+
+    [Fact]
     public async Task A_hot_journal_left_by_the_old_bundle_is_rolled_back()
     {
         var db = CopyFixture(CipherFixture.HotJournal, "-journal");

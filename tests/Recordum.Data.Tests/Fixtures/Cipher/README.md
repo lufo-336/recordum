@@ -9,5 +9,7 @@ SQLite3 Multiple Ciphers. They prove that a user's existing database opens uncha
 - `sqlcipher-4.5.2-hot-journal.db` + `-journal`: a transaction left open (deleted completions, renamed a habit to `HALF`,
   created a filler table) whose pages spilled to the `.db`, copied while open: a crash mid-transaction.
 
+Generation must run on Linux: the generator moves a file that is still open, which Windows refuses.
+
 **Never regenerate after the provider swap**: the output would be a fixture of the new bundle and prove nothing. Generator
 (only against the old bundle): `RECORDUM_GENERATE_CIPHER_FIXTURE=<folder> dotnet test tests/Recordum.Data.Tests --filter "Category=FixtureGenerator&FullyQualifiedName~CipherFixtureGenerator"`.
