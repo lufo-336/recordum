@@ -78,6 +78,10 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// <summary>The fixed per-type strip visual (2.1-bis, spec wave-2 §1).</summary>
     public StripStyle StripVisual { get; }
 
+    /// <summary>Le celle della striscia da scrivere (direzione visiva §5), allineate a <see cref="StripCounts"/>: dal più
+    /// vecchio al più nuovo, oggi ultimo.</summary>
+    public ImmutableArray<StripCell> StripCells { get; }
+
     /// <summary>Per-cell intensity 0..1, same slice as <see cref="StripCounts"/>: Bars/Ramp =
     /// day value ÷ period max (from <see cref="HomeTreeRow.ValuesLast14Days"/>); Squares/Dots/Band
     /// = binary done/covered. The strip control renders shape from <see cref="StripVisual"/> +
@@ -189,6 +193,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         }
         StripCounts = SliceStrip(row, StripLength);
         StripFractions = ComputeStripFractions(row);
+        StripCells = ComputeStripCells(row);
         _keyFigureText = ComputeSynchronousKeyFigure(row);
         _isKeyFigureZero = KeyFigureKind == KeyFigureKind.CounterTotal && (row.TodayCounterTotal ?? 0m) == 0m;
 
@@ -206,6 +211,34 @@ public sealed partial class HomeRowViewModel : ObservableObject
             HomeStrip.Days7 => src14.Length >= 7 ? src14[^7..] : row.CompletionsLast7Days,
             _ => ImmutableArray<int>.Empty,
         };
+    }
+
+    /// <summary>The glyphs of the strip: a check mark for yes/no types (Squares, Dots, Band), the day's value for counters
+    /// and states (Bars, Ramp; a duration counter in minutes or hours), a middle dot for an empty day. Today is last.</summary>
+    private ImmutableArray<StripCell> ComputeStripCells(HomeTreeRow row)
+    {
+        if (StripCounts.IsDefaultOrEmpty) return ImmutableArray<StripCell>.Empty;
+        var n = StripCounts.Length;
+        var values = row.ValuesLast14Days.IsDefaultOrEmpty || row.ValuesLast14Days.Length < n
+            ? ImmutableArray<decimal?>.Empty : row.ValuesLast14Days[^n..];
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        var cells = ImmutableArray.CreateBuilder<StripCell>(n);
+        for (var i = 0; i < n; i++)
+        {
+            var count = StripCounts[i];
+            var value = values.IsEmpty ? null : values[i];
+            var on = count > 0 || value is not null;
+            string glyph;
+            if (!on) glyph = "·";
+            else if (StripVisual is StripStyle.Bars or StripStyle.Ramp)
+            {
+                var v = value ?? count;
+                glyph = row.TodayCounterIsDuration ? StripValueFormat.Duration(v, culture) : StripValueFormat.Compact(v, culture);
+            }
+            else glyph = "✓";
+            cells.Add(new StripCell(glyph, on, i == n - 1));
+        }
+        return cells.MoveToImmutable();
     }
 
     /// <summary>Per-cell 0..1 intensity aligned with <see cref="StripCounts"/>. Value-driven styles

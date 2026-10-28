@@ -115,10 +115,10 @@ public class ControlsScreenshotTests
 
     private static (YearHeatmapControl Sut, Window Window) ShowYear(ThemeVariant variant)
     {
-        // Il converter risolve contro la variante dell'APPLICAZIONE (v. IntensityStepToBrushConverter),
-        // quindi è lì che il test la imposta; il chiamante ripristina in finally.
+        // I gradini sono il colore dell'abitudine sul pannello (direzione visiva §4.3); la variante arriva al convertitore
+        // da quella della finestra, ma si imposta anche sull'applicazione per non dipendere dall'ordine dei test.
         Application.Current!.RequestedThemeVariant = variant;
-        var sut = new YearHeatmapControl { DataContext = NewYear() };
+        var sut = new YearHeatmapControl { DataContext = NewYear(), HabitColor = YearHabit };
         var window = new Window { Content = sut, Width = 760, Height = 140, RequestedThemeVariant = variant };
         window.Show();
         Pump();
@@ -128,10 +128,13 @@ public class ControlsScreenshotTests
     private static List<Border> Cells(YearHeatmapControl sut)
         => sut.GetVisualDescendants().OfType<Border>().Where(b => b.Width == 11 && b.Height == 11).ToList();
 
+    private const string YearHabit = "#2F7FC1";
+
+    // Cella vuota = Brush.Cell; poi il colore al 25/50/75/100 % sul Brush.Pane della variante.
     [AvaloniaTheory]
-    [InlineData("Light", new[] { "#EFEFF1", "#9BE9A8", "#40C463", "#30A14E", "#216E39" })]
-    [InlineData("Dark", new[] { "#27272A", "#0E4429", "#006D32", "#26A641", "#39D353" })]
-    public void Year_heatmap_realizes_371_cells_painted_with_five_distinct_theme_brushes(string variantName, string[] ramp)
+    [InlineData("Light", new[] { "#F4F3F1", "#CBDFF0", "#97BFE0", "#639FD0", "#2F7FC1" })]
+    [InlineData("Dark", new[] { "#2A2A28", "#253949", "#285071", "#2C6899", "#2F7FC1" })]
+    public void Year_heatmap_realizes_371_cells_painted_with_five_steps_of_the_habit_colour(string variantName, string[] ramp)
     {
         var variant = variantName == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
         try
@@ -194,17 +197,20 @@ public class ControlsScreenshotTests
     // ── Converter ───────────────────────────────────────────────────────────
 
     [AvaloniaFact]
-    public void Converter_maps_steps_0_to_4_to_five_distinct_brushes_and_everything_else_to_level0()
+    public void Converter_maps_steps_0_to_4_to_five_distinct_brushes_and_everything_else_to_the_empty_cell()
     {
-        var conv = new IntensityStepToBrushConverter();
-        object Get(object? v) => conv.Convert(v, typeof(IBrush), null, System.Globalization.CultureInfo.InvariantCulture);
+        var conv = new HeatLevelBrushConverter();
+        object? Get(object? step, string? hex = YearHabit) =>
+            conv.Convert([step, hex, ThemeVariant.Light], typeof(IBrush), null, System.Globalization.CultureInfo.InvariantCulture);
 
         var brushes = Enumerable.Range(0, 5).Select(i => Get(i)).ToList();
         brushes.Should().AllBeAssignableTo<ISolidColorBrush>();
         brushes.Cast<ISolidColorBrush>().Select(b => b.Color).Distinct().Should().HaveCount(5);
 
-        var level0 = ((ISolidColorBrush)brushes[0]).Color;
+        var empty = ((ISolidColorBrush)brushes[0]!).Color;
         foreach (var other in new object?[] { -1, 5, 99, null, "3", 2.0 })
-            ((ISolidColorBrush)Get(other)).Color.Should().Be(level0);
+            ((ISolidColorBrush)Get(other)!).Color.Should().Be(empty);
+        ((ISolidColorBrush)Get(3, "blu")!).Color.Should().Be(empty, "un colore rotto non inventa una mappa");
     }
+
 }

@@ -1,11 +1,15 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
+using Recordum.Presentation.ViewModels;
 using Recordum.UI.Controls;
+using Recordum.UI.Converters;
 using Xunit;
 
 namespace Recordum.UI.Tests;
@@ -37,5 +41,43 @@ public class HeatmapStripScreenshotTests
         strips.Should().OnlyContain(s => s.Bounds.Width > 0 && s.Bounds.Height > 0);
 
         ScreenshotProbeTests.Capture(window, $"heatmap-{variantName.ToLowerInvariant()}");
+    }
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Values_are_written_in_the_text_variant_and_empty_days_in_the_faint_text(string variantName)
+    {
+        var variant = variantName == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        var strip = new HeatmapStrip
+        {
+            AccentColor = "#C98A1E",
+            Values = [new StripCell("5", true, false), new StripCell("·", false, false), new StripCell("8", true, true)],
+        };
+        var window = new Window { Width = 200, Height = 40, RequestedThemeVariant = variant, Content = strip };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var texts = strip.GetVisualDescendants().OfType<TextBlock>().ToArray();
+        texts.Select(t => t.Text).Should().Equal("5", "·", "8");
+        var expected = ((ISolidColorBrush)HabitTextBrushConverter.BrushFor("#C98A1E", variant)).Color;
+        ((ISolidColorBrush)texts[0].Foreground!).Color.Should().Be(expected);
+        Application.Current!.TryGetResource("Brush.TextFaint", variant, out var faint).Should().BeTrue();
+        ((ISolidColorBrush)texts[1].Foreground!).Color.Should().Be(((ISolidColorBrush)faint!).Color);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Values_are_recoloured_when_the_theme_changes()
+    {
+        var strip = new HeatmapStrip { AccentColor = "#2F7FC1", Values = [new StripCell("5", true, true)] };
+        var window = new Window { Width = 200, Height = 40, RequestedThemeVariant = ThemeVariant.Light, Content = strip };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        Color Fore() => ((ISolidColorBrush)strip.GetVisualDescendants().OfType<TextBlock>().Single().Foreground!).Color;
+        var light = Fore();
+        window.RequestedThemeVariant = ThemeVariant.Dark;
+        Dispatcher.UIThread.RunJobs();
+        Fore().Should().NotBe(light).And.Be(((ISolidColorBrush)HabitTextBrushConverter.BrushFor("#2F7FC1", ThemeVariant.Dark)).Color);
+        window.Close();
     }
 }

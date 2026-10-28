@@ -5,6 +5,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Recordum.Core.HomeRow;
 
+using Recordum.Presentation.ViewModels;
+
 namespace Recordum.UI.Controls;
 
 /// <summary>
@@ -39,6 +41,16 @@ public partial class HeatmapStrip : UserControl
     public static readonly StyledProperty<string> AccentColorProperty =
         AvaloniaProperty.Register<HeatmapStrip, string>(nameof(AccentColor), "#3B82F6");
 
+    /// <summary>Le celle da scrivere (la striscia della Home): quando ci sono, la striscia è testo e non forme.</summary>
+    public static readonly StyledProperty<ImmutableArray<StripCell>> ValuesProperty =
+        AvaloniaProperty.Register<HeatmapStrip, ImmutableArray<StripCell>>(nameof(Values));
+
+    public ImmutableArray<StripCell> Values
+    {
+        get => GetValue(ValuesProperty);
+        set => SetValue(ValuesProperty, value);
+    }
+
     public ImmutableArray<int> Counts
     {
         get => GetValue(CountsProperty);
@@ -72,7 +84,10 @@ public partial class HeatmapStrip : UserControl
         FractionsProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         KindProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         AccentColorProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
+        ValuesProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
     }
+
+
 
     // Sorpresa della porting (dettaglio nel report, sezione "cosa ha sorpreso"): QUI andava
     // chiamato il metodo generato InitializeComponent(), non AvaloniaXamlLoader.Load(this) preso
@@ -87,6 +102,8 @@ public partial class HeatmapStrip : UserControl
     public HeatmapStrip()
     {
         InitializeComponent();
+        // La variante "testo" dei valori dipende dal tema: un cambio a runtime ridisegna la striscia (come StreakTimeline).
+        ActualThemeVariantChanged += (_, _) => { if (!Values.IsDefaultOrEmpty) Rebuild(); };
     }
 
     // Nessun record "Cell" bindabile: i valori calcolati diventano direttamente proprietà di
@@ -95,6 +112,12 @@ public partial class HeatmapStrip : UserControl
     {
         Cells.Children.Clear();
 
+        if (!Values.IsDefaultOrEmpty)
+        {
+            foreach (var text in BuildValueCells())
+                Cells.Children.Add(text);
+            return;
+        }
         if (!Fractions.IsDefaultOrEmpty)
         {
             foreach (var border in BuildStyledCells())
@@ -106,6 +129,32 @@ public partial class HeatmapStrip : UserControl
 
         foreach (var border in BuildLegacyCells())
             Cells.Children.Add(border);
+    }
+
+    /// <summary>Larghezza di una cella di valori: più stretta per le strisce da 14 giorni, che devono stare nella riga.</summary>
+    public static double ValueSlotWidth(int cellCount) => cellCount > 7 ? 18d : 24d;
+
+    // La striscia della Home (direzione visiva §5): i valori del giorno nella variante "testo" del colore dell'abitudine,
+    // i giorni vuoti nel testo tenue. Ogni cella è larga uguale, così oggi resta sotto "oggi" dell'intestazione.
+    private List<TextBlock> BuildValueCells()
+    {
+        var values = Values;
+        var slot = ValueSlotWidth(values.Length);
+        var on = Converters.HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
+        var off = Converters.HabitTextBrushConverter.Resource<IBrush>(
+            global::Avalonia.Application.Current!, "Brush.TextFaint", ActualThemeVariant) ?? Brushes.Gray;
+        var size = values.Length > 7 ? 12d : 13d;
+        return values.Select(cell => new TextBlock
+        {
+            Text = cell.Glyph,
+            Width = slot,
+            TextAlignment = TextAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            FontSize = size,
+            FontWeight = cell.On ? FontWeight.SemiBold : FontWeight.Normal,
+            FontFeatures = new FontFeatureCollection { FontFeature.Parse("+tnum") },
+            Foreground = cell.On ? on : off,
+        }).ToList();
     }
 
     private SolidColorBrush Accent(double alpha)

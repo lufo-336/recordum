@@ -3,10 +3,11 @@
              xmlns:vm="clr-namespace:Recordum.Presentation.ViewModels.HabitScreen;assembly=Recordum.Presentation"
              xmlns:vmd="clr-namespace:Recordum.Presentation.ViewModels.HabitScreen.Detail;assembly=Recordum.Presentation"
              xmlns:conv="clr-namespace:Recordum.UI.Converters"
+             xmlns:ctl="using:Recordum.UI.Controls"
              x:Class="Recordum.UI.Controls.YearHeatmapControl"
              x:DataType="vmd:YearHeatmapViewModel">
   <UserControl.Resources>
-    <conv:IntensityStepToBrushConverter x:Key="IntensityStepToBrush"/>
+    <conv:HeatLevelBrushConverter x:Key="HeatLevel"/>
   </UserControl.Resources>
   <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
     <ItemsControl x:Name="CellsHost" ItemsSource="{Binding Cells}">
@@ -17,11 +18,20 @@
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="vm:HeatmapCellViewModel">
+          <!-- Il gradino nel colore dell'abitudine sul pannello (direzione visiva §4.3); la variante del tema entra nel
+               MultiBinding, così un cambio di tema a runtime ricolora le celle. -->
           <Border Width="11" Height="11" Margin="1"
                   CornerRadius="2"
-                  Background="{Binding IntensityStep, Converter={StaticResource IntensityStepToBrush}}"
                   ToolTip.Tip="{Binding TooltipText}"
-                  ToolTip.ShowDelay="300"/>
+                  ToolTip.ShowDelay="300">
+            <Border.Background>
+              <MultiBinding Converter="{StaticResource HeatLevel}">
+                <Binding Path="IntensityStep"/>
+                <Binding Path="HabitColor" RelativeSource="{RelativeSource AncestorType=ctl:YearHeatmapControl}"/>
+                <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+              </MultiBinding>
+            </Border.Background>
+          </Border>
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>

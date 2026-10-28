@@ -15,5 +15,5 @@
     diretta: stessa forma finale, zero indirezione di binding per celle che non cambiano più una
     volta create. Vedi il report per il dettaglio.
     -->
-    <StackPanel x:Name="Cells" Orientation="Horizontal" Height="16"/>
+    <StackPanel x:Name="Cells" Orientation="Horizontal" MinHeight="16"/>
 </UserControl>

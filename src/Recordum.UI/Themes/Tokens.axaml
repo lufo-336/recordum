@@ -78,12 +78,6 @@
         <SolidColorBrush x:Key="Brush.Danger"          Color="#FFB42318"/>
         <SolidColorBrush x:Key="Brush.Warning"         Color="#FFB45309"/>
         <SolidColorBrush x:Key="Brush.WarningSurface"  Color="#FFFDF6EC"/>
-        <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FFEFEFF1"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level0"  Color="#FFEFEFF1"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level1"  Color="#FF9BE9A8"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF40C463"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level3"  Color="#FF30A14E"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level4"  Color="#FF216E39"/>
             <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
         </ResourceDictionary>
 
@@ -111,12 +105,6 @@
         <SolidColorBrush x:Key="Brush.Danger"          Color="#FFF97066"/>
         <SolidColorBrush x:Key="Brush.Warning"         Color="#FFF5B454"/>
         <SolidColorBrush x:Key="Brush.WarningSurface"  Color="#FF2E2418"/>
-        <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FF27272A"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level0"  Color="#FF27272A"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level1"  Color="#FF0E4429"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF006D32"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level3"  Color="#FF26A641"/>
-            <SolidColorBrush x:Key="Brush.Heatmap.Level4"  Color="#FF39D353"/>
             <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
         </ResourceDictionary>
 
