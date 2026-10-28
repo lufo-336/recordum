@@ -6,8 +6,7 @@
 
 ## Dove siamo — 2026-10-28
 
-- **Branch di lavoro**: `d9-sqlite3mc`, da `main`. La pila F1 → F2e (`avalonia-linux-slice` … `f2e-linux-launch`) è in
-  `main` dal 2026-10-28 (`de3deaf2`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: nessuno aperto. La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
@@ -28,8 +27,7 @@
   stretta che sovrappone "Nuova" e "Archiviate" (**F2b-5**). **F2c-9** (rekey e sblocco senza cancello) è `triaged`:
   nessun caso reale oggi; "cambia passphrase", quando arriverà, passa dal cancello.
 - **Passo 0** (messa in sicurezza): fatto, compreso il key store Linux (F2c). La sonda sul provider di cifratura (0.9)
-  propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 fatta il 2026-10-28**
-  (`d9-sqlite3mc`, da mergiare): SQLite3MC 2.6.1, formato SQLCipher 4 invariato, un DB del bundle di prima congelato come
+  propone SQLite3 Multiple Ciphers (`docs/design/2026-09-30-encryption-provider-probe.md`); **D9 fatta e in `main` il 2026-10-28**: SQLite3MC 2.6.1, formato SQLCipher 4 invariato, un DB del bundle di prima congelato come
   fixture si apre identico. Residuo **D9-1**: MC non annulla un journal caldo del bundle di prima, e
   `install-linux.sh` rifiuta di aggiornare sopra un `recordum.db-journal`.
 - **F2 si divide in sotto-onde**: **F2a**, **F2b**, **F2c** (fatte) → **F2d Diario**: F2d-1 (nota veloce con tag e foto D10) e F2d-2 (editor
@@ -92,10 +90,10 @@
   - [ ] le tre scelte D10 in «Dati e backup»;
   - [ ] l'ora delle voci è l'ora locale;
   - [ ] nessuna immagine leggibile nella cartella dati;
-- **Prossimo**: (1) il merge dell'autore di D9 (review dell'intero branch fatta, D9-2…4 chiusi, CI verde; `git switch main`, poi
-  `git merge --ff-only d9-sqlite3mc && git push origin main`) — **prima** di aprire i dati veri con la build installata;
-  (2) la checklist di F2d-1 su una **copia** dei dati veri (`--data-dir`), poi le altre; (3) `scripts/install-linux.sh` e il dogfooding. **Finché D9 e la prova sulla copia non sono fatte, la voce Recordum
-  del menu apre la cartella dati vera: non avviarla.**
+- **Prossimo**: (1) la checklist di F2d-1 su una **copia** dei dati veri (`--data-dir`), poi le altre; (2)
+  `scripts/install-linux.sh` (chiudere prima la build installata: con un `recordum.db-journal` lo script si ferma, D9-1) e
+  il dogfooding. **Finché la prova sulla copia non è fatta, la voce Recordum del menu apre la cartella dati vera: non
+  avviarla.**
 
 
 ## Il percorso
