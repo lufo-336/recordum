@@ -79,7 +79,21 @@
         <SolidColorBrush x:Key="Brush.Warning"         Color="#FFB45309"/>
         <SolidColorBrush x:Key="Brush.WarningSurface"  Color="#FFFDF6EC"/>
             <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
-        </ResourceDictionary>
+          <!-- I pulsanti di Fluent ridipinti coi token (§4.4): di base a contorno sul pannello, niente grigio pieno che
+             sembra disabilitato. Le classi nostre (primary, ghost, caption, rail…) sovrascrivono sopra. -->
+        <StaticResource x:Key="ButtonBackground" ResourceKey="Brush.Pane"/>
+        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="Brush.Surface"/>
+        <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ButtonForeground" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Brush.TextFaint"/>
+        <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Brush.TextFaint"/>
+        <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Brush.TextFaint"/>
+      </ResourceDictionary>
 
       <ResourceDictionary x:Key="Dark">
         <!-- Il colore dell'abitudine (§4.3): la tinta è un livello col colore pieno e questa opacità sul pannello. -->
@@ -106,7 +120,21 @@
         <SolidColorBrush x:Key="Brush.Warning"         Color="#FFF5B454"/>
         <SolidColorBrush x:Key="Brush.WarningSurface"  Color="#FF2E2418"/>
             <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
-        </ResourceDictionary>
+          <!-- I pulsanti di Fluent ridipinti coi token (§4.4): di base a contorno sul pannello, niente grigio pieno che
+             sembra disabilitato. Le classi nostre (primary, ghost, caption, rail…) sovrascrivono sopra. -->
+        <StaticResource x:Key="ButtonBackground" ResourceKey="Brush.Pane"/>
+        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="Brush.Surface"/>
+        <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="Brush.Selection"/>
+        <StaticResource x:Key="ButtonForeground" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="ButtonBorderBrush" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Brush.TextFaint"/>
+        <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Brush.TextFaint"/>
+        <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Brush.TextFaint"/>
+      </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>
 
