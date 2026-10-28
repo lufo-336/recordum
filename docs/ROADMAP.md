@@ -6,7 +6,7 @@
 
 ## Dove siamo — 2026-10-28
 
-- **Branch di lavoro**: nessuno aperto. La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: `ux-review` (review UI/UX e spec della direzione visiva). La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
@@ -90,10 +90,16 @@
   - [ ] le tre scelte D10 in «Dati e backup»;
   - [ ] l'ora delle voci è l'ora locale;
   - [ ] nessuna immagine leggibile nella cartella dati;
-- **Prossimo**: (1) la checklist di F2d-1 su una **copia** dei dati veri (`--data-dir`), poi le altre; (2)
-  `scripts/install-linux.sh` (chiudere prima la build installata: con un `recordum.db-journal` lo script si ferma, D9-1) e
-  il dogfooding. **Finché la prova sulla copia non è fatta, la voce Recordum del menu apre la cartella dati vera: non
-  avviarla.**
+- **Direzione visiva** (decisa dall'autore il 2026-10-28, spec `2026-10-28-ux-direction-design`, approvata; mockup in
+  `docs/design/2026-10-28-ux-mockups/`): Inter per l'interfaccia e Source Serif 4 per il diario, neutri caldi, la tinta
+  della riga dosata per tema, Impostazioni a categorie, creatore e Configura negli stessi cinque blocchi, schermata
+  dell'abitudine con periodi, nota del giorno e Cronologia, il gruppo con le figlie segnabili. Si fa **in tre onde prima
+  della checklist**; la colonna Note e la Panoramica del gruppo arrivano da F3 nell'onda 2. Finding `UX-*` in
+  `docs/phase-4-issues.md`. Progetto separato, dopo: "Cosa dice il gruppo" (domande ed Esplora).
+- **Prossimo**: (1) **onda 1 della direzione** (fondamenta e Home), poi le onde 2 e 3; (2) la checklist di F2d-1 su una
+  **copia** dei dati veri (`--data-dir`), poi le altre; (3) `scripts/install-linux.sh` (chiudere prima la build installata:
+  con un `recordum.db-journal` lo script si ferma, D9-1) e il dogfooding, che aspetta la direzione (decisione dell'autore).
+  **Finché la prova sulla copia non è fatta, la voce Recordum del menu apre la cartella dati vera: non avviarla.**
 
 
 ## Il percorso
@@ -107,7 +113,7 @@
    di R9 a schermo.
 4. **★ Dogfooding** · ☐ · su Windows e su Linux, senza promemoria, con i dati di sviluppo separati (`--data-dir`). Dura
    almeno quattro settimane; dopo due si rivede lo scope con i dati dell'uso vero.
-5. **F3 Dettaglio → F4 Diario → F5 Configura e builder → F6 Impostazioni ed export → F7 Grafici** · ☐ · ogni onda chiude
+5. **F3 Dettaglio (senza Panoramica e Note, arrivate con la direzione visiva) → F4 Diario → F5 Configura e builder → F6 Impostazioni ed export → F7 Grafici** · ☐ · ogni onda chiude
    con review di branch, CI verde, checklist del linguaggio visivo in chiaro e in scuro (PNG della CI), verifica a schermo
    su Windows e GNOME, merge in `main`.
 6. **F8 — WPF si spegne** · ☐ · criteri della spec Avalonia (§7).

@@ -1,6 +1,6 @@
 # Una direzione visiva per Recordum — design
 
-**Data**: 2026-10-28 · **Stato**: da approvare · **Branch**: `ux-review`
+**Data**: 2026-10-28 · **Stato**: approvata dall'autore il 2026-10-28 · **Branch**: `ux-review`
 **Brainstorm**: sessione con l'autore del 2026-10-28, con il companion visuale. I mockup approvati sono in
 `docs/design/2026-10-28-ux-mockups/` (HTML statici, si aprono nel browser). **Il testo di questo documento vince sui
 mockup**: alcuni mockup precedono decisioni prese dopo (ordine dei giorni, dimensioni, blocchi), e lo dicono le sezioni
