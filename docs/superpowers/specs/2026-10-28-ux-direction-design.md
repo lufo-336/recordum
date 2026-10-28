@@ -103,12 +103,16 @@ indicativi, il costruttore sceglie le chiavi; i valori sono quelli dei mockup):
 
 - **La riga resta tinta** (decisione dell'autore, che rivede UX-2): fondo = colore dell'abitudine mescolato al pannello al
   **9 %** in chiaro e al **16 %** in scuro, più la barra di 4 px. Angoli 6 px.
-- **I valori** (numeri, ✓ della striscia, della mappa, delle statistiche) sono nel colore dell'abitudine; **in scuro si
-  schiariscono** (colore al 70 % + bianco al 30 %), come in Loop, invece di scurirsi.
+- **I valori** (numeri, ✓ della striscia, della mappa, delle statistiche) sono nella **variante "testo"** del colore
+  dell'abitudine, calcolata nella UI: in chiaro il colore si scurisce, in scuro si schiarisce (come in Loop), **quanto basta
+  per 4,5:1 sulla sua tinta**. La palette, le tinte, le barre e la mappa restano nel colore scelto. Misurato dalla
+  verifica del costruttore: col colore pieno in chiaro solo 3 colori su 16 arrivano a 4,5:1; la variante vale per
+  qualunque colore, anche quelli liberi.
 - **Heatmap e mappa a 5 gradini nel colore dell'abitudine**: vuoto = cella neutra; poi 25 / 50 / 75 / 100 % del colore sul
   pannello. Escono i verdi di GitHub (`Brush.Heatmap.Level*`). Vale anche per `YearHeatmapControl`.
 - La regola vale per **qualunque** colore (anche quelli liberi e quelli dei modelli di oggi), non solo per la palette.
-- Una prova eseguibile (§11) controlla il contrasto dei valori sulla tinta per i 16 colori della palette, nei due temi.
+- Una prova eseguibile (§10) controlla il contrasto della variante "testo" sulla tinta per i 16 colori della palette e per
+  un campione di colori liberi, nei due temi.
 
 ### 4.4 Pulsanti, campi, icone
 
@@ -181,8 +185,10 @@ Mockup: `anteprima-home-v2.html`, `combinazioni.html`, `gruppo.html`, `inventari
    - a destra **un solo comando che registra** (§6.2), con sotto "annulla · per un altro giorno". Sostituisce la casella in
      testa e il pulsante sotto (UX-8). "Per un altro giorno" sceglie il giorno; anche un clic su un giorno della mappa lo fa;
    - **quattro numeri** (§6.2) sotto una riga sottile;
-   - i **pulsanti delle colonne**: Diario (solo diari), Cronologia, Dettaglio (se visibile oggi), Note, Configura — gli
-     stessi di oggi (`ToggleColumnCommand`), accesi/spenti.
+   - i **pulsanti delle colonne**: Diario (solo diari), Cronologia, **Note**, Configura; Dettaglio resta nascosto (F3).
+     Oggi su Avalonia Note e Dettaglio sono chip nascosti: **la colonna Note si porta in quest'onda** (decisione
+     dell'autore, 2026-10-28), sui ViewModel che esistono già in Presentation (`NotesViewModel`, `DayNoteViewModel`,
+     `NoteHistoryViewModel`), con WPF come riferimento di comportamento.
 2. **Colonne** come oggi (proporzioni salvate, larghezza minima, focus di una colonna con Esc): ognuna ha la sua testa con
    "a tutta finestra" e **×** per chiuderla. Via la didascalia che ripete il nome della scheda (UX-8).
 
@@ -194,7 +200,8 @@ Mockup: `anteprima-home-v2.html`, `combinazioni.html`, `gruppo.html`, `inventari
   completamento, come chiedeva F0-13); 3 mesi e anno = heatmap; tutto = una heatmap per anno. Colori e gradini della §4.3;
   il segno delle note resta sui giorni con note.
 - **Il giorno scelto**: le sue registrazioni (con × per eliminarne una) e **la nota dell'abitudine per quel giorno**, in
-  serif; se non c'è, un campo tratteggiato che invita a scriverla.
+  serif; se non c'è, un campo tratteggiato che invita a scriverla. È la stessa nota della colonna Note (`DayNoteViewModel`):
+  scriverla in un posto la mostra nell'altro.
 - **Cronologia**: le registrazioni del periodo, dalla più nuova, con l'ora e l'anteprima della nota; filtro "Tutto / Con
   note". Per i diari le voci si mostrano **rese** (titoli, grassetto, elenchi, foto come "[foto]" o miniatura), mai il
   Markdown grezzo (UX-10). Per l'astinenza, i periodi con "In corso".
@@ -203,7 +210,12 @@ Mockup: `anteprima-home-v2.html`, `combinazioni.html`, `gruppo.html`, `inventari
 
 Dalla grammatica di `HabitCompositionRules` e dalle viste QuickAdd/Today che esistono. I numeri sono quelli che il
 costruttore deve offrire; dove un numero non ha già una fonte nei servizi, si aggiunge una query in Data con i suoi test;
-quelli segnati *facoltativo* si tolgono se costano troppo.
+quelli segnati *facoltativo* si tolgono se costano troppo. **Dove il codice ha già una definizione, si riusa** (per
+esempio la percentuale "ultimi 30 giorni" di `ActionTodayView` e l'avanzamento di `GoalProgressCardViewModel`), così i
+numeri tornano con la striscia e con la mappa. Le percentuali sono sui giorni **previsti dal programma**, non sui giorni di
+calendario. "Volume" delle serie = la somma del primo campo quantità del giorno, col suo nome e la sua unità (niente
+prodotti fra campi: un contatore a serie può avere campi che non si moltiplicano); senza un campo quantità il numero non
+c'è e al suo posto va "serie in tutto".
 
 | Caso | Comando in testa | Quattro numeri | Mappa |
 |---|---|---|---|
@@ -218,11 +230,15 @@ quelli segnati *facoltativo* si tolgono se costano troppo.
 
 ### 6.3 Il gruppo
 
+Oggi su Avalonia un gruppo mostra solo la testa e i chip: la Panoramica era di F3. **Si porta in quest'onda** (decisione
+dell'autore, 2026-10-28) partendo da `PanoramicaViewModel` e dal `GoalProgressCardViewModel` che esistono già.
+
 - Testa: nome del gruppo nel suo colore; al posto del comando, **l'avanzamento di oggi** ("3 di 5" e una barra).
 - Numeri: giorni completi di fila · % 30 giorni · obiettivo del gruppo · la figlia più saltata *(facoltativo)*.
-- **Oggi**: le figlie come righe tinte, **ognuna col suo comando** (lo stesso della sua testa, in piccolo) — si segnano da
-  qui (comportamento nuovo; oggi un clic seleziona soltanto); un clic sul nome apre la figlia (`ChildSelected`, com'è); i
-  sottogruppi rientrati.
+- **Oggi**: le figlie come righe tinte, **ognuna col log rapido della Home** (lo stesso comando, `QuickActionHandlerSelector`)
+  — si segnano da qui (comportamento nuovo; oggi un clic seleziona soltanto). Per i tipi il cui comando è un modulo
+  (misurato, serie, sessione, diario) il log rapido apre la figlia, come in Home. Un clic sul nome apre la figlia
+  (`ChildSelected`, com'è); i sottogruppi rientrati.
 - **Insieme** (vista A, decisione dell'autore per quest'onda): ogni figlia è una riga di celle sugli **stessi giorni**,
   comandata dallo stesso selettore di periodo. Non calcola niente.
 - Mappa dell'anno: gradini = quante figlie quel giorno (pieno = tutte).
@@ -265,8 +281,8 @@ Mockup: `colore.html` (la B, più "Avanzate").
 - **Avanzate ›** apre il selettore libero (quadrato e barra della tonalità), le **sfumature**, i **preferiti** (con
   "+ aggiungi") e l'**esadecimale**.
 - Palette (chiaro; lo scuro segue la §4.3): `#C2405B` `#D0603A` `#C98A1E` `#9A9A2A` `#5F9A3C` `#2F9C8C` `#2F8FB0` `#2F7FC1`
-  `#4F63C4` `#7A5BC4` `#A352A8` `#C2508A` `#8A6A4F` `#6B7280` `#4B5563` `#9A8F80`. Il costruttore può ritoccarne qualcuno se
-  la prova di contrasto (§11) lo chiede.
+  `#4F63C4` `#7A5BC4` `#A352A8` `#C2508A` `#8A6A4F` `#6B7280` `#4B5563` `#9A8F80`. Non si ritoccano per il contrasto: ci pensa la
+  variante "testo" (§4.3).
 
 ### 7.2 Selettore dei modelli
 
@@ -278,7 +294,10 @@ Mockup: `modelli.html`.
 - **Usa questo modello** (inchiostro) crea l'abitudine così com'è; **Personalizza…** apre il creatore già riempito.
 - **I modelli ufficiali si traducono** (UX-11): nome e descrizione da `.resx` attraverso l'Id stabile del modello
   (`00000003-…-00NN`), senza toccare i dati seminati; anche il nome dell'abitudine creata da un modello ufficiale nasce
-  nella lingua dell'interfaccia. I modelli dell'utente restano come li ha scritti.
+  nella lingua dell'interfaccia. La traduzione copre **tutto il testo che l'utente vede** nel contenuto del modello: nomi
+  delle metriche, unità, nomi delle serie, segmenti, etichette delle scale seminate. Si fissa **alla creazione**, nella
+  lingua di quel momento: l'abitudine creata è dell'utente e non cambia se poi cambia lingua. I modelli dell'utente restano
+  come li ha scritti. `BuilderTemplateParityTests` copre anche i modelli tradotti.
 
 ### 7.3 Impostazioni a categorie
 
@@ -333,12 +352,15 @@ può provare qualcosa di finito dopo ognuna.
    tinte e dei valori (§4.3) e la heatmap; pulsanti, campi, icone, date; la Home (§5); la cornice: barra a sinistra, ☰ tolto
    (i suoi comandi spostati, quelli delle Impostazioni attivi dopo l'onda 3: fino ad allora restano raggiungibili da dove
    sono), schede, barra del timer, sblocco, schermate vuote; `UX-P2`.
-2. **Abitudine e gruppo** — §6 intera (testa, colonne, periodo, mappa, giorno, nota, Cronologia resa, gli 8 casi, il gruppo
-   con "Insieme"), Configura in cinque blocchi, la scelta del colore (§7.1).
+2. **Abitudine e gruppo** — §6 intera (testa, colonne, periodo, mappa, giorno, nota, Cronologia resa, gli 8 casi),
+   **la colonna Note** e **la schermata del gruppo** (Panoramica) portate da F3, con "Insieme"; Configura in cinque blocchi;
+   la scelta del colore (§7.1). È l'onda più grande: il piano può spezzarla in due (abitudine; gruppo e Note).
 3. **Le finestre interne** — creatore (§6.4), selettore dei modelli con la traduzione (§7.2), Impostazioni a categorie con
    Generale e Aspetto da WPF (§7.3), finestre del backup (§7.4), diario a tutta finestra e a schermo intero (§7.5).
 
-Poi la checklist a schermo di F2d-1 dell'autore, sulla versione finita; poi la spec di "Cosa dice il gruppo".
+Poi la checklist a schermo di F2d-1 dell'autore, sulla versione finita; poi la spec di "Cosa dice il gruppo". Il dogfooding
+parte dopo (decisione dell'autore: "il dogfooding può aspettare"); F3 perde la Panoramica e le Note, che arrivano qui, e la
+ROADMAP va aggiornata quando questa spec è approvata.
 
 ## 10. Obblighi di test
 
@@ -363,7 +385,8 @@ colore: 16 pronti + "Avanzate" con selettore libero, sfumature, preferiti, esade
 dell'abitudine come in `anteprima-home-v2` con le colonne apribili, la nota del giorno, la Cronologia · più periodi per mappa
 e Cronologia · il gruppo con le figlie segnabili e la vista "Insieme" · "Cosa dice il gruppo" (domande + Esplora) come
 progetto separato · diario a tutta finestra e a schermo intero con la barra dell'editor · selettore dei modelli · il ☰ tolto,
-i comandi nelle loro sezioni · **oggi a destra** nella striscia · titolo **"Oggi"**.
+i comandi nelle loro sezioni · **oggi a destra** nella striscia · titolo **"Oggi"** · **la colonna Note e la schermata del gruppo si portano adesso
+da F3**, il dogfooding aspetta.
 
 ## 12. Decisioni mie (da controllare leggendo)
 
@@ -377,6 +400,11 @@ i comandi nelle loro sezioni · **oggi a destra** nella striscia · titolo **"Og
 8. Il "facoltativo" su "andamento", "tag del mese" e "la più saltata".
 9. L'anteprima del ripristino mostra solo ciò che il manifest porta già.
 10. Valori dei colori "da tarare" in scuro (pericolo, avviso) lasciati al costruttore con la prova di contrasto.
+11. Il contrasto dei valori con la variante "testo" calcolata (§4.3), non ricolorando la palette.
+12. Nel gruppo, il log rapido della Home per ogni figlia (§6.3); i tipi a modulo aprono la figlia.
+13. Le definizioni dei numeri (§6.2): riuso di quelle esistenti, percentuali sui giorni previsti, "volume" = somma del primo
+    campo quantità.
+14. La traduzione dei modelli ufficiali copre tutto il loro testo e si fissa alla creazione (§7.2).
 
 ## Appendice A — Inventario delle funzioni di oggi (lista di controllo)
 
@@ -392,7 +420,8 @@ Estratto dalle viste Avalonia il 2026-10-28; la versione con "dove va" è `docs/
   calendario Settimana/Mese con ‹ ›; registrare per un altro giorno; elimina registrazione; azione (segna, %, "di solito
   verso le"); contatore a tocco (+1, annulla ultima); misurato (campi, cronometro); serie (aggiungi, rinomina, togli,
   registra N); stato (scala, "ultimo"); astinenza (inizio, ricaduta, periodi "in corso", tentativi in 90 g); timer (avvia,
-  pausa, riprendi, ferma, segmento successivo); note del giorno e segno sul calendario.
+  pausa, riprendi, ferma, segmento successivo); segno delle note sul calendario (la colonna Note
+  e la Panoramica del gruppo esistono in WPF e nei ViewModel condivisi, non ancora su Avalonia: si portano in quest'onda).
 - **Diario**: voce del giorno e nota veloce; foto (aggiungi, togli, non disponibile); tag (+ tag, togli); inserisci immagine;
   voci del giorno con modifica ed elimina; bozza.
 - **Configura**: nome, descrizione, colore (con preferiti), icona; riga in Home (valore chiave, striscia); metriche (aggiungi,
