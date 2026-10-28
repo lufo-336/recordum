@@ -143,10 +143,10 @@ public class CalendarNavigatorViewTests
             var empty = DayOf(view, new DateOnly(2026, 3, 10));
             w.RequestedThemeVariant = ThemeVariant.Light;
             Pump();
-            Near(Pixel(w, empty, 8, 8), "#E4E4E7").Should().BeTrue("sfondo chiaro della cella");
+            Near(Pixel(w, empty, 8, 8), "#ECEBE8").Should().BeTrue("sfondo chiaro della cella (Brush.Border)");
             w.RequestedThemeVariant = ThemeVariant.Dark;
             Pump();
-            Near(Pixel(w, empty, 8, 8), "#3F3F46").Should().BeTrue("la cella si ritinge senza riaprire la vista");
+            Near(Pixel(w, empty, 8, 8), "#2E2E2C").Should().BeTrue("la cella si ritinge senza riaprire la vista");
         }
         finally { w.Close(); }
     }

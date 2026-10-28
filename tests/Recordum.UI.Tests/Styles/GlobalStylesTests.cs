@@ -15,8 +15,8 @@ namespace Recordum.UI.Tests.Styles;
 public class GlobalStylesTests
 {
     [AvaloniaTheory]
-    [InlineData("Light", "#FF3B82F6")]
-    [InlineData("Dark", "#FF60A5FA")]
+    [InlineData("Light", "#FF1F1F1D")]
+    [InlineData("Dark", "#FFE6E5E1")]
     public void The_system_accent_follows_Brush_Accent_not_Windows_blue(string variant, string expectedHex)
     {
         var app = Application.Current!;
@@ -27,7 +27,7 @@ public class GlobalStylesTests
 
         accent.Should().Be(Color.Parse(expectedHex));
         ((ISolidColorBrush)token!).Color.Should().Be(Color.Parse(expectedHex),
-            "SystemAccentColor e Brush.Accent devono essere LO STESSO blu, non due blu simili per caso");
+            "SystemAccentColor e Brush.Accent devono essere LO STESSO inchiostro, non due colori simili per caso");
     }
 
     [AvaloniaFact]
@@ -40,7 +40,7 @@ public class GlobalStylesTests
 
         var found = Application.Current!.TryGetResource("CheckBoxCheckBackgroundFillChecked", ThemeVariant.Light, out var fill);
         found.Should().BeTrue("la chiave deve esistere nel tema Fluent");
-        ((ISolidColorBrush)fill!).Color.Should().Be(Color.Parse("#FF3B82F6"));
+        ((ISolidColorBrush)fill!).Color.Should().Be(Color.Parse("#FF1F1F1D"));   // l'inchiostro (direzione visiva §4.2)
     }
 
     [AvaloniaFact]

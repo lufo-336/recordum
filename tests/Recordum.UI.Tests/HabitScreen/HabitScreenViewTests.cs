@@ -161,12 +161,12 @@ public class HabitScreenViewTests
         Pump();
         var header = view.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "HabitName");
         var lightBg = Pixel(w, header, 340, 0);
-        Near(lightBg, "#F7F7F8").Should().BeTrue("sfondo chiaro");
+        Near(lightBg, "#F4F3F1").Should().BeTrue("sfondo chiaro (Brush.Surface)");
 
         w.RequestedThemeVariant = ThemeVariant.Dark;
         Pump();
         Near(Pixel(w, probe), Red).Should().BeTrue("l'accento resta il colore dell'abitudine");
-        Near(Pixel(w, header, 340, 0), "#18181B").Should().BeTrue("lo sfondo segue il tema");
+        Near(Pixel(w, header, 340, 0), "#181817").Should().BeTrue("lo sfondo segue il tema (Brush.Surface scuro)");
         w.Close();
     }
 

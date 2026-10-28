@@ -26,13 +26,13 @@
          stati checked/selected/hover) sul Brush.Accent di Recordum invece del blu di Windows
          (#0078D7 di default) — verificato: senza questo, TryGetResource("SystemAccentColor") resta
          Windows-blue anche con Tokens.axaml mergiato, perché i due sistemi di risorse sono separati.
-         Stessi hex di Brush.Accent in Tokens.axaml (Light #3B82F6 / Dark #60A5FA) duplicati qui: una
+         Stessi hex di Brush.Accent/Brush.Ink in Tokens.axaml (Light #1F1F1D / Dark #E6E5E1, l'inchiostro) duplicati qui: una
          ColorPaletteResources è un oggetto .NET valorizzato all'avvio, non può leggere una
          DynamicResource. -->
     <FluentTheme>
       <FluentTheme.Palettes>
-        <ColorPaletteResources x:Key="Light" Accent="#FF3B82F6"/>
-        <ColorPaletteResources x:Key="Dark" Accent="#FF60A5FA"/>
+        <ColorPaletteResources x:Key="Light" Accent="#FF1F1F1D"/>
+        <ColorPaletteResources x:Key="Dark" Accent="#FFE6E5E1"/>
       </FluentTheme.Palettes>
     </FluentTheme>
     <!-- Il template di AvaloniaEdit (DiaryEditor). Senza, il TextEditor non ha un template: area di testo 0x0, niente

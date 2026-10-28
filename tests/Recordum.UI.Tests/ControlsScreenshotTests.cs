@@ -90,7 +90,7 @@ public class ControlsScreenshotTests
 
         var fill = sut.GetVisualDescendants().OfType<Rectangle>().First().Fill;
         fill.Should().BeAssignableTo<ISolidColorBrush>()
-            .Which.Color.Should().Be(Color.Parse("#60A5FA"), "Brush.Accent scuro, non il #3B82F6 chiaro");
+            .Which.Color.Should().Be(Color.Parse("#E6E5E1"), "Brush.Accent scuro, non il #1F1F1D chiaro");
         ScreenshotProbeTests.Capture(window, "streak-timeline-dark");
     }
 
@@ -103,12 +103,12 @@ public class ControlsScreenshotTests
         Pump();
 
         Color FillColor() => ((ISolidColorBrush)sut.GetVisualDescendants().OfType<Rectangle>().First().Fill!).Color;
-        FillColor().Should().Be(Color.Parse("#3B82F6"));
+        FillColor().Should().Be(Color.Parse("#1F1F1D"));
 
         window.RequestedThemeVariant = ThemeVariant.Dark; // DOPO il primo disegno
         Pump();
 
-        FillColor().Should().Be(Color.Parse("#60A5FA"));
+        FillColor().Should().Be(Color.Parse("#E6E5E1"));
     }
 
     // ── Year heatmap ────────────────────────────────────────────────────────

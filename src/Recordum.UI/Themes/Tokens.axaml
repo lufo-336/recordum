@@ -41,21 +41,34 @@
     <x:Double x:Key="Layout.HeatmapCell">10</x:Double>
     <x:Double x:Key="Layout.HeatmapGap">2</x:Double>
 
-    <!-- Brush.* — identiche ai colori WPF (stessi hex), risolte per variante da Avalonia stesso. -->
+    <!-- Brush.* — risolte per variante da Avalonia stesso. Non sono più gli hex di WPF: la direzione visiva le ha cambiate. -->
     <ResourceDictionary.ThemeDictionaries>
 
-        <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="Brush.Background"      Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="Brush.Surface"         Color="#FFF7F7F8"/>
-            <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="Brush.Border"          Color="#FFE4E4E7"/>
-            <SolidColorBrush x:Key="Brush.Text"            Color="#FF18181B"/>
-            <SolidColorBrush x:Key="Brush.TextMuted"       Color="#FF71717A"/>
-            <SolidColorBrush x:Key="Brush.Accent"          Color="#FF3B82F6"/>
-            <SolidColorBrush x:Key="Brush.OnAccent"        Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="Brush.Success"         Color="#FF16A34A"/>
-            <SolidColorBrush x:Key="Brush.Danger"          Color="#FFDC2626"/>
-            <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FFEFEFF1"/>
+      <ResourceDictionary x:Key="Light">
+        <!-- Neutri caldi della direzione visiva (§4.2). Ruoli: Background = fondo della finestra; Pane = pannello
+             (colonne, schede, finestrelle); Surface = barra a sinistra e zone secondarie; SurfaceElevated = popup e
+             campi; Border = la riga leggera; FieldBorder = la cornice dei campi; Selection = segmento o chip scelto.
+             Accent = l'inchiostro: il colore dell'azione principale (l'unico colore sullo schermo resta l'abitudine). -->
+        <SolidColorBrush x:Key="Brush.Background"      Color="#FFFBFBFA"/>
+        <SolidColorBrush x:Key="Brush.Pane"            Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="Brush.Surface"         Color="#FFF4F3F1"/>
+        <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="Brush.Border"          Color="#FFECEBE8"/>
+        <SolidColorBrush x:Key="Brush.FieldBorder"     Color="#FFD6D5D0"/>
+        <SolidColorBrush x:Key="Brush.Selection"       Color="#FFECEBE8"/>
+        <SolidColorBrush x:Key="Brush.Text"            Color="#FF1F1F1D"/>
+        <SolidColorBrush x:Key="Brush.TextMuted"       Color="#FF6B6A65"/>
+        <SolidColorBrush x:Key="Brush.TextFaint"       Color="#FFA3A29C"/>
+        <SolidColorBrush x:Key="Brush.Ink"             Color="#FF1F1F1D"/>
+        <SolidColorBrush x:Key="Brush.OnInk"           Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="Brush.Accent"          Color="#FF1F1F1D"/>
+        <SolidColorBrush x:Key="Brush.OnAccent"        Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="Brush.Cell"            Color="#FFF4F3F1"/>
+        <SolidColorBrush x:Key="Brush.Success"         Color="#FF3F7A26"/>
+        <SolidColorBrush x:Key="Brush.Danger"          Color="#FFB42318"/>
+        <SolidColorBrush x:Key="Brush.Warning"         Color="#FFB45309"/>
+        <SolidColorBrush x:Key="Brush.WarningSurface"  Color="#FFFDF6EC"/>
+        <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FFEFEFF1"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level0"  Color="#FFEFEFF1"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level1"  Color="#FF9BE9A8"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF40C463"/>
@@ -64,18 +77,27 @@
             <SolidColorBrush x:Key="Brush.CaptionCloseHover" Color="#FFC42B1C"/>
         </ResourceDictionary>
 
-        <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="Brush.Background"      Color="#FF09090B"/>
-            <SolidColorBrush x:Key="Brush.Surface"         Color="#FF18181B"/>
-            <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FF27272A"/>
-            <SolidColorBrush x:Key="Brush.Border"          Color="#FF3F3F46"/>
-            <SolidColorBrush x:Key="Brush.Text"            Color="#FFFAFAFA"/>
-            <SolidColorBrush x:Key="Brush.TextMuted"       Color="#FFA1A1AA"/>
-            <SolidColorBrush x:Key="Brush.Accent"          Color="#FF60A5FA"/>
-            <SolidColorBrush x:Key="Brush.OnAccent"        Color="#FF09090B"/>
-            <SolidColorBrush x:Key="Brush.Success"         Color="#FF4ADE80"/>
-            <SolidColorBrush x:Key="Brush.Danger"          Color="#FFF87171"/>
-            <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FF27272A"/>
+      <ResourceDictionary x:Key="Dark">
+        <SolidColorBrush x:Key="Brush.Background"      Color="#FF1B1B1A"/>
+        <SolidColorBrush x:Key="Brush.Pane"            Color="#FF222221"/>
+        <SolidColorBrush x:Key="Brush.Surface"         Color="#FF181817"/>
+        <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FF2A2A28"/>
+        <SolidColorBrush x:Key="Brush.Border"          Color="#FF2E2E2C"/>
+        <SolidColorBrush x:Key="Brush.FieldBorder"     Color="#FF3A3A37"/>
+        <SolidColorBrush x:Key="Brush.Selection"       Color="#FF2E2E2C"/>
+        <SolidColorBrush x:Key="Brush.Text"            Color="#FFE6E5E1"/>
+        <SolidColorBrush x:Key="Brush.TextMuted"       Color="#FFA3A29C"/>
+        <SolidColorBrush x:Key="Brush.TextFaint"       Color="#FF6B6A65"/>
+        <SolidColorBrush x:Key="Brush.Ink"             Color="#FFE6E5E1"/>
+        <SolidColorBrush x:Key="Brush.OnInk"           Color="#FF1B1B1A"/>
+        <SolidColorBrush x:Key="Brush.Accent"          Color="#FFE6E5E1"/>
+        <SolidColorBrush x:Key="Brush.OnAccent"        Color="#FF1B1B1A"/>
+        <SolidColorBrush x:Key="Brush.Cell"            Color="#FF2A2A28"/>
+        <SolidColorBrush x:Key="Brush.Success"         Color="#FF7BC25A"/>
+        <SolidColorBrush x:Key="Brush.Danger"          Color="#FFF97066"/>
+        <SolidColorBrush x:Key="Brush.Warning"         Color="#FFF5B454"/>
+        <SolidColorBrush x:Key="Brush.WarningSurface"  Color="#FF2E2418"/>
+        <SolidColorBrush x:Key="Brush.HeatmapEmpty"    Color="#FF27272A"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level0"  Color="#FF27272A"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level1"  Color="#FF0E4429"/>
             <SolidColorBrush x:Key="Brush.Heatmap.Level2"  Color="#FF006D32"/>
