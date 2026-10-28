@@ -47,6 +47,27 @@ public class RestoreServiceRestoreTests
     }
 
     [Fact]
+    public async Task Encrypting_the_plaintext_dump_writes_no_journal_to_disk()
+    {
+        // The rekey of a plaintext file rewrites every page, and a rollback journal on disk would hold the originals in the
+        // clear, deleted without SecureWipe (D9 review, measured: all of them).
+        var fixture = await EncryptedDbFixture.SeedAsync();
+        try
+        {
+            var bk = await fixture.CreateBackupAsync(Pass);
+            var journals = new List<string>();
+            using var watcher = new FileSystemWatcher(fixture.Options.TempDirectory, "recordum-rs-*-journal") { EnableRaisingEvents = true };
+            watcher.Created += (_, e) => { lock (journals) journals.Add(e.Name!); };
+
+            await fixture.NewRestoreService().RestoreAsync(bk.Path, Pass, new RestoreOptions(SkipSafetySnapshot: true));
+
+            await Task.Delay(300);   // the watcher's events arrive on their own thread
+            lock (journals) journals.Should().BeEmpty();
+        }
+        finally { await fixture.DisposeAsync(); }
+    }
+
+    [Fact]
     public async Task Restore_with_SkipSafetySnapshot_does_not_create_pre_restore()
     {
         var fixture = await EncryptedDbFixture.SeedAsync();

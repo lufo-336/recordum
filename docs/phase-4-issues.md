@@ -2262,3 +2262,12 @@ stesso contenuto; i `.recbak` di prima si ripristinano.
   aggiorna prima di riaprirla; i dati veri arrivano dopo D9. Difesa: `scripts/install-linux.sh` rifiuta di aggiornare se
   c'è `recordum.db-journal`; `LegacyCipherDatabaseTests.A_hot_journal_left_by_the_old_bundle_is_not_rolled_back` tiene la
   misura (se diventa verde al contrario, MC ha imparato i journal vecchi e il controllo nello script si può togliere).
+- **D9-2 — il restore scriveva su disco un journal con tutte le pagine in chiaro** · `fixed` · Review dell'intero branch:
+  il `rekey` di un file in chiaro riscrive ogni pagina dentro una transazione, e il rollback journal riceveva gli originali in
+  chiaro (misurato: 500 marcatori su 500), cancellato poi senza `SecureWipe` nello spazio libero di `TempDirectory`. Prima di
+  D9 `sqlcipher_export` non lo faceva. Ora il journal del rekey sta in memoria (`journal_mode = MEMORY`);
+  `RestoreServiceRestoreTests.Encrypting_the_plaintext_dump_writes_no_journal_to_disk`, rosso prima.
+- **D9-3 — il controllo del journal in `install-linux.sh` guardava solo `RECORDUM_DATA_DIR` se c'era** · `fixed` · Da una
+  shell di sviluppo saltava la cartella dei dati veri; ora le guarda tutte e due (provato in una cartella di prova).
+- **D9-4 — avvisi di licenza del nativo** · `fixed` (`sha2.c` BSD-3, rijndael LGPL con eccezione WxWindows, AEGIS, copyright
+  della libreria) · resta `triaged`: `THIRD-PARTY-NOTICES.md` non viaggia ancora con `dotnet publish` (packaging, Onda 4).

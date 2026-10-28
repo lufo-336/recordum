@@ -160,12 +160,13 @@ public sealed class RestoreService(
     {
         // There is no sqlcipher_export: the plaintext dump is encrypted in place, in SQLCipher 4 format (D9 probe §2), and
         // only then moved to the destination. It stays in TempDirectory while it is plaintext; if anything fails, the
-        // caller shreds it there.
+        // caller shreds it there. The journal stays in memory: the rekey rewrites every page, and a journal on disk would
+        // hold all the plaintext originals, deleted without SecureWipe (D9 review, measured).
         await using (var conn = new SqliteConnection($"Data Source={plainSourcePath};Pooling=False"))
         {
             await conn.OpenAsync();
             await using var rekey = conn.CreateCommand();
-            rekey.CommandText = $"{CipherPragmas.Format} {CipherPragmas.Rekey(keyBytes)}";
+            rekey.CommandText = $"PRAGMA journal_mode = MEMORY; {CipherPragmas.Format} {CipherPragmas.Rekey(keyBytes)}";
             await rekey.ExecuteNonQueryAsync();
         }
         File.Move(plainSourcePath, destinationPath);

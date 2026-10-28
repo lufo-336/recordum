@@ -36,12 +36,14 @@ src="$cache/src"
 
 # Un journal rimasto da un crash a metà scrittura lo annulla solo la build che l'ha scritto: SQLite3MC (D9) non riconosce
 # quello del bundle SQLCipher di prima, lo scarta e lascia il database a metà (trappola misurata, docs/phase-4-issues.md).
-journal="${RECORDUM_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/Recordum}/recordum.db-journal"
-if [ -s "$journal" ]; then
-    echo "Interrotto: c'è $journal (Recordum è aperto, o si è chiuso a metà di una scrittura)." >&2
-    echo "Aprire e chiudere la build installata, che lo annulla, poi rilanciare." >&2
-    exit 1
-fi
+# La build installata usa la cartella di default; RECORDUM_DATA_DIR, se c'è, è quella di sviluppo: si guardano tutte e due.
+for dir in "${XDG_DATA_HOME:-$HOME/.local/share}/Recordum" ${RECORDUM_DATA_DIR:+"$RECORDUM_DATA_DIR"}; do
+    if [ -s "$dir/recordum.db-journal" ]; then
+        echo "Interrotto: c'è $dir/recordum.db-journal (Recordum è aperto, o si è chiuso a metà di una scrittura)." >&2
+        echo "Aprire e chiudere la build che usa quella cartella, che lo annulla, poi rilanciare." >&2
+        exit 1
+    fi
+done
 
 # Regola del dogfooding: un backup manuale prima di ogni build nuova.
 if [ -d "$app" ] && [ "$assume_yes" -eq 0 ]; then
