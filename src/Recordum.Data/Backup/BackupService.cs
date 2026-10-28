@@ -106,8 +106,9 @@ public sealed class BackupService(
 
     private async Task DumpDbAsync(string targetPath, CancellationToken ct)
     {
-        // Export plaintext copy using sqlcipher_export.
-        // Open the source DB directly (not via EF Core) to fully control the SQLCipher key pragma.
+        // Plaintext copy. VACUUM INTO keeps the source's cipher and key (D9 probe §2, trap 2: a backup that restores only
+        // on this machine), so the copy is then opened with the same key and decrypted in place.
+        // The source is opened directly (not via EF Core) to control the key pragmas.
         using var srcKey = await keyProvider.GetKeyAsync(ct).ConfigureAwait(false);
         var dbPath = paths.DatabasePath;
 
@@ -115,21 +116,27 @@ public sealed class BackupService(
         {
             try
             {
-                // Open the encrypted source directly
-                using var conn = Security.SqlCipherConnectionFactory.Open(dbPath, srcKey);
+                using (var conn = SqlCipherConnectionFactory.Open(dbPath, srcKey))
+                using (var vacuum = conn.CreateCommand())
+                {
+                    vacuum.CommandText = "VACUUM INTO @target";
+                    vacuum.Parameters.AddWithValue("@target", targetPath);
+                    await vacuum.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                }
 
-                // ATTACH the destination as plaintext (KEY '' = no encryption)
-                using var attach = conn.CreateCommand();
-                attach.CommandText = $"ATTACH DATABASE '{targetPath.Replace("'", "''")}' AS plaintext KEY ''";
-                await attach.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-
-                using var export = conn.CreateCommand();
-                export.CommandText = "SELECT sqlcipher_export('plaintext')";
-                await export.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-
-                using var detach = conn.CreateCommand();
-                detach.CommandText = "DETACH DATABASE plaintext";
-                await detach.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                using var copy = SqlCipherConnectionFactory.Open(targetPath, srcKey);
+                try
+                {
+                    using var rekey = copy.CreateCommand();
+                    rekey.CommandText = CipherPragmas.Rekey([]);
+                    await rekey.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                }
+                finally
+                {
+                    // Out of the pool: an idle pooled connection would keep the plaintext file open, and on Windows the
+                    // shredding in CreateAsync would silently fail to delete it.
+                    SqliteConnection.ClearPool(copy);
+                }
                 return;
             }
             catch (SqliteException ex) when (ex.SqliteErrorCode == 5 /* SQLITE_BUSY */ && attempt < 2)

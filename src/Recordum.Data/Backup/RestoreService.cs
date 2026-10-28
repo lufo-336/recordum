@@ -158,25 +158,17 @@ public sealed class RestoreService(
 
     private static async Task ReEncryptDbAsync(string plainSourcePath, string destinationPath, byte[] keyBytes)
     {
-        var hexKey = Convert.ToHexString(keyBytes);
-        await using var conn = new SqliteConnection($"Data Source={plainSourcePath}");
-        await conn.OpenAsync();
-        using (var attach = conn.CreateCommand())
+        // There is no sqlcipher_export: the plaintext dump is encrypted in place, in SQLCipher 4 format (D9 probe §2), and
+        // only then moved to the destination. It stays in TempDirectory while it is plaintext; if anything fails, the
+        // caller shreds it there.
+        await using (var conn = new SqliteConnection($"Data Source={plainSourcePath};Pooling=False"))
         {
-            attach.CommandText = $"ATTACH DATABASE @p AS enc KEY \"x'{hexKey}'\"";
-            attach.Parameters.AddWithValue("@p", destinationPath);
-            await attach.ExecuteNonQueryAsync();
+            await conn.OpenAsync();
+            await using var rekey = conn.CreateCommand();
+            rekey.CommandText = $"{CipherPragmas.Format} {CipherPragmas.Rekey(keyBytes)}";
+            await rekey.ExecuteNonQueryAsync();
         }
-        using (var export = conn.CreateCommand())
-        {
-            export.CommandText = "SELECT sqlcipher_export('enc')";
-            await export.ExecuteScalarAsync();
-        }
-        using (var detach = conn.CreateCommand())
-        {
-            detach.CommandText = "DETACH DATABASE enc";
-            await detach.ExecuteNonQueryAsync();
-        }
+        File.Move(plainSourcePath, destinationPath);
     }
 
     // CR2: the real schema version this build supports = the value the live (migrated) DB carries.

@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Data.Security;
 
 namespace Recordum.Data.Interceptors;
 
@@ -17,9 +18,9 @@ public sealed class SqlCipherKeyConnectionInterceptor(IDbKeyProvider keyProvider
         ArgumentNullException.ThrowIfNull(connection);
         using var key = await keyProvider.GetKeyAsync(cancellationToken);
         await using var cmd = connection.CreateCommand();
-        // PRAGMA key MUST be the first statement; busy_timeout makes a writer wait for a transient
+        // The key and its format (CipherPragmas) MUST come first; busy_timeout makes a writer wait for a transient
         // lock from another connection instead of failing instantly with SQLITE_BUSY. See B-dbLock.
-        cmd.CommandText = $"PRAGMA key = \"x'{Convert.ToHexString(key.RawKey)}'\"; PRAGMA busy_timeout = {BusyTimeoutMs};";
+        cmd.CommandText = $"{CipherPragmas.Key(key)} PRAGMA busy_timeout = {BusyTimeoutMs};";
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
@@ -28,7 +29,7 @@ public sealed class SqlCipherKeyConnectionInterceptor(IDbKeyProvider keyProvider
         ArgumentNullException.ThrowIfNull(connection);
         using var key = keyProvider.GetKeyAsync().AsTask().GetAwaiter().GetResult();
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"PRAGMA key = \"x'{Convert.ToHexString(key.RawKey)}'\"; PRAGMA busy_timeout = {BusyTimeoutMs};";
+        cmd.CommandText = $"{CipherPragmas.Key(key)} PRAGMA busy_timeout = {BusyTimeoutMs};";
         cmd.ExecuteNonQuery();
     }
 }

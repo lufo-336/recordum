@@ -15,9 +15,9 @@ public static class SqlCipherConnectionFactory
         var conn = new SqliteConnection($"Data Source={path}");
         conn.Open();
         using var cmd = conn.CreateCommand();
-        // PRAGMA key MUST be the first statement; busy_timeout makes a writer wait for a transient
+        // The key and its format (CipherPragmas) MUST come first; busy_timeout makes a writer wait for a transient
         // lock from another connection instead of failing instantly with SQLITE_BUSY. See B-dbLock.
-        cmd.CommandText = $"PRAGMA key = \"x'{Convert.ToHexString(key.RawKey)}'\"; PRAGMA busy_timeout = {BusyTimeoutMs};";
+        cmd.CommandText = $"{CipherPragmas.Key(key)} PRAGMA busy_timeout = {BusyTimeoutMs};";
         cmd.ExecuteNonQuery();
         return conn;
     }

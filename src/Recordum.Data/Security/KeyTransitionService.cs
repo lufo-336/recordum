@@ -43,7 +43,7 @@ public sealed partial class KeyTransitionService(
             using (var conn = SqlCipherConnectionFactory.Open(paths.DatabasePath, currentKey))
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"PRAGMA rekey = \"x'{Convert.ToHexString(newRaw)}'\";";
+                cmd.CommandText = CipherPragmas.Rekey(newRaw);
                 await cmd.ExecuteNonQueryAsync(ct);
             }
             SqliteConnection.ClearAllPools();
@@ -79,7 +79,7 @@ public sealed partial class KeyTransitionService(
             using (var conn = SqlCipherConnectionFactory.Open(paths.DatabasePath, currentKey))
             using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = $"PRAGMA rekey = \"x'{Convert.ToHexString(fresh)}'\";";
+                cmd.CommandText = CipherPragmas.Rekey(fresh);
                 await cmd.ExecuteNonQueryAsync(ct);
             }
             SqliteConnection.ClearAllPools();

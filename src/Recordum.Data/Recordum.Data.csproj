@@ -12,13 +12,14 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <!-- .Sqlite.Core, NON .Sqlite: il pacchetto completo tira dentro SQLitePCLRaw.bundle_e_sqlite3,
-         che spedisce un SQLitePCLRaw.batteries_v2.dll con lo STESSO nome di quello di
-         bundle_e_sqlcipher. Nell output ne sopravvive uno solo — vince la versione piu alta — e se
+         che spedisce un SQLitePCLRaw.batteries_v2.dll con lo STESSO nome di quello del bundle cifrato
+         (SQLite3MC.PCLRaw.bundle). Nell output ne sopravvive uno solo — vince la versione piu alta — e se
          vince e_sqlite3 il provider registrato e quello in chiaro: PRAGMA key diventa un no-op
-         silenzioso e il database viene scritto NON cifrato. .Sqlite.Core da lo stesso provider EF
-         senza portarsi dietro il bundle. -->
+         silenzioso e il database viene scritto NON cifrato (SEC-1). Un solo bundle SQLitePCLRaw nel
+         grafo; .Sqlite.Core da lo stesso provider EF senza portarsi dietro il bundle. Il formato dei
+         file resta SQLCipher 4: lo dichiara Security/CipherPragmas a ogni chiave (D9). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" />
+    <PackageReference Include="SQLite3MC.PCLRaw.bundle" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <PackageReference Include="SkiaSharp" />
