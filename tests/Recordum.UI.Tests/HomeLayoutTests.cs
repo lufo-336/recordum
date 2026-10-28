@@ -105,19 +105,25 @@ public class HomeLayoutTests
         var name = view.GetVisualDescendants().OfType<HabitRow>().Single()
             .GetVisualDescendants().OfType<TextBlock>().First(t => t.Text?.StartsWith("Un nome", StringComparison.Ordinal) == true);
         name.TextTrimming.Should().Be(TextTrimming.CharacterEllipsis);
+        name.Bounds.Width.Should().BeGreaterThan(90, "anche a 280 px il nome si legge");
         w.Close();
     }
 
     [AvaloniaFact]
-    public void A_wide_home_shows_fourteen_days_and_a_narrow_one_seven()
+    public void A_wide_home_shows_fourteen_days_a_middle_one_seven_and_a_narrow_one_four()
     {
         var (w, view, _) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
         view.FindControl<HeatmapStrip>("StripHeader")!.GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(14);
-        w.Width = 360;
+        w.Width = 460;
         for (var i = 0; i < 2; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
         view.FindControl<HeatmapStrip>("StripHeader")!.GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(7);
         view.GetVisualDescendants().OfType<HabitRow>().Single().GetVisualDescendants().OfType<HeatmapStrip>().Single()
             .GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(7);
+
+        // A 280 px (il minimo) sette colonne lasciavano al nome venti pixel: se ne vedono quattro (visto nel PNG).
+        w.Width = 280;
+        for (var i = 0; i < 2; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
+        view.FindControl<HeatmapStrip>("StripHeader")!.GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(4);
         w.Close();
     }
 

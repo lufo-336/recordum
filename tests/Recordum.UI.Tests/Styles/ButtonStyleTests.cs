@@ -76,6 +76,17 @@ public class ButtonStyleTests
         w.Close();
     }
 
+    [AvaloniaTheory]
+    [MemberData(nameof(Themes))]
+    public void A_focused_field_keeps_its_surface(string theme)
+    {
+        // Visto nel PNG dello sblocco: in scuro il campo a fuoco diventava nero (la chiave Fluent di prima).
+        Assert.True(Application.Current!.TryGetResource("TextControlBackgroundFocused", Variant(theme), out var focused));
+        Assert.Equal(Token("Brush.SurfaceElevated", Variant(theme)), ((ISolidColorBrush)focused!).Color);
+        Assert.True(Application.Current!.TryGetResource("TextControlBorderBrushFocused", Variant(theme), out var border));
+        Assert.Equal(Token("Brush.Ink", Variant(theme)), ((ISolidColorBrush)border!).Color);
+    }
+
     [AvaloniaFact]
     public void A_danger_menu_item_is_red()
     {

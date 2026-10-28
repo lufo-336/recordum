@@ -23,10 +23,11 @@ public partial class HomeView : UserControl
         DataContextChanged += (_, _) => WatchStripLength();
     }
 
-    // La Home dalla sua larghezza (direzione visiva §5): sotto i 640 px le strisce mostrano 7 giorni, sopra 14 (lo
-    // eredita ogni riga); sotto i 320 px la data accanto a "Oggi" si nasconde. L'intestazione dei giorni non è più
+    // La Home dalla sua larghezza (direzione visiva §5): 14 giorni da 640 px, 7 da 400, 4 sotto (lo eredita ogni riga;
+    // a 280 px sette colonne lasciavano al nome venti pixel); sotto i 320 px la data accanto a "Oggi" si nasconde. L'intestazione dei giorni non è più
     // lunga della striscia più lunga fra le righe.
     internal const double FourteenDaysFrom = 640;
+    internal const double SevenDaysFrom = 400;
     internal const double DateFrom = 320;
 
     private HomeViewModel? _watched;
@@ -48,7 +49,7 @@ public partial class HomeView : UserControl
     {
         var width = Bounds.Width;
         if (width <= 0) return;
-        var days = width >= FourteenDaysFrom ? 14 : 7;
+        var days = width >= FourteenDaysFrom ? 14 : width >= SevenDaysFrom ? 7 : 4;
         Controls.HeatmapStrip.SetVisibleDays(this, days);
         var longest = (DataContext as HomeViewModel)?.MaxVisibleStripLength ?? days;
         Controls.HeatmapStrip.SetVisibleDays(StripHeader, Math.Max(1, Math.Min(days, longest)));

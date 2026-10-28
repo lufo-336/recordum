@@ -96,6 +96,13 @@
         <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Brush.TextFaint"/>
+        <!-- I campi di Fluent coi token: in scuro il fondo a fuoco era nero (visto nel PNG dello sblocco). -->
+        <StaticResource x:Key="TextControlBackground" ResourceKey="Brush.SurfaceElevated"/>
+        <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="Brush.SurfaceElevated"/>
+        <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="Brush.SurfaceElevated"/>
+        <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Brush.Ink"/>
       </ResourceDictionary>
 
       <ResourceDictionary x:Key="Dark">
@@ -140,6 +147,13 @@
         <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="Brush.TextFaint"/>
         <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="Brush.TextFaint"/>
+        <!-- I campi di Fluent coi token: in scuro il fondo a fuoco era nero (visto nel PNG dello sblocco). -->
+        <StaticResource x:Key="TextControlBackground" ResourceKey="Brush.SurfaceElevated"/>
+        <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="Brush.SurfaceElevated"/>
+        <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="Brush.SurfaceElevated"/>
+        <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
+        <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Brush.Ink"/>
       </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>
