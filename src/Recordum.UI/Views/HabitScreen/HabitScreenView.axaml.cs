@@ -47,21 +47,32 @@ public partial class HabitScreenView : UserControl
     private void UpdateColumns()
     {
         if (_vm is not { } vm) return;
-        var both = vm.ShowCronologia && vm.ShowConfigura;
+        // La Cronologia ha larghezza in pixel (e la maniglia) solo quando la Configura le sta accanto.
+        var both = vm.ShowCronologia && vm.ShowConfigura && !vm.ShowNote;
         var defs = ColumnsGrid.ColumnDefinitions;
-        // Colonne: 0 Diario (solo diari), 1 Cronologia, 2 Configura. Diario e Configura si dividono il resto a stella.
-        defs[0].Width = vm.ShowDiario ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        // Colonne: 0 Diario (solo diari), 1 Cronologia, 2 Note, 3 Configura. Le altre si dividono il resto a stella.
+        static GridLength Star(bool open) => open ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        defs[0].Width = Star(vm.ShowDiario);
         defs[0].MinWidth = vm.ShowDiario ? 320 : 0;
-        defs[1].Width = !vm.ShowCronologia ? new GridLength(0)
-            : both ? new GridLength(vm.CronologiaWidth) : new GridLength(1, GridUnitType.Star);
+        defs[1].Width = both ? new GridLength(vm.CronologiaWidth) : Star(vm.ShowCronologia);
         defs[1].MinWidth = vm.ShowCronologia ? 320 : 0;
-        defs[2].Width = vm.ShowConfigura ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-        defs[2].MinWidth = vm.ShowConfigura ? 320 : 0;
+        defs[2].Width = Star(vm.ShowNote);
+        defs[2].MinWidth = vm.ShowNote ? 320 : 0;
+        defs[3].Width = Star(vm.ShowConfigura);
+        defs[3].MinWidth = vm.ShowConfigura ? 320 : 0;
         ColumnsGrid.MinWidth = both ? vm.CronologiaWidth + 320 * (vm.ShowDiario ? 2 : 1) : vm.OpenColumnsMinWidth;
         ColumnResizeThumb.IsVisible = both;
         if (vm.ShowCronologia && CronologiaHost.Child is null)
             CronologiaHost.Child = new CronologiaColumnView { DataContext = vm };
         else if (!vm.ShowCronologia) CronologiaHost.Child = null;
+        // Note: stessa regola; chiudendola, il testo non salvato si salva (mai perso).
+        if (vm.ShowNote && NoteHost.Child is null)
+            NoteHost.Child = new Notes.NotesColumnView { DataContext = vm.Notes };
+        else if (!vm.ShowNote && NoteHost.Child is not null)
+        {
+            vm.Notes.SavePending();
+            NoteHost.Child = null;
+        }
         // Configura: stessa regola (decisione 3). Il suo DataContext e' l'editor, che vive piu' della colonna.
         if (vm.ShowConfigura && ConfiguraHost.Child is null)
             ConfiguraHost.Child = new HabitEditor.EditorPane { DataContext = vm.Editor };
@@ -71,10 +82,12 @@ public partial class HabitScreenView : UserControl
     private void Rebind()
     {
         if (_vm is not null) _vm.PropertyChanged -= OnVmPropertyChanged;
+        if (NoteHost.Child is not null) _vm?.Notes.SavePending();
         _vm = DataContext as HabitScreenViewModel;
         if (_vm is not null) _vm.PropertyChanged += OnVmPropertyChanged;
         ApplyAccent();
         ConfiguraHost.Child = null;
+        NoteHost.Child = null;
         CronologiaHost.Child = null;   // un altro ViewModel: il corpo si ricostruisce col nuovo contesto
         UpdateColumns();
     }
@@ -84,7 +97,7 @@ public partial class HabitScreenView : UserControl
     {
         if (e.PropertyName == nameof(HabitScreenViewModel.Node)) ApplyAccent();
         if (e.PropertyName is nameof(HabitScreenViewModel.ShowCronologia) or nameof(HabitScreenViewModel.ShowConfigura)
-            or nameof(HabitScreenViewModel.ShowDiario)
+            or nameof(HabitScreenViewModel.ShowDiario) or nameof(HabitScreenViewModel.ShowNote)
             or nameof(HabitScreenViewModel.CronologiaWidth) or nameof(HabitScreenViewModel.ConfiguraWidth)
             or nameof(HabitScreenViewModel.OpenColumnsMinWidth)) UpdateColumns();
     }

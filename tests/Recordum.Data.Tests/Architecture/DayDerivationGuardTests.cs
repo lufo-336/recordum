@@ -31,6 +31,8 @@ public class DayDerivationGuardTests
             "presentazione: converte il DateTime del Calendar di \"per un altro giorno\", non un istante (onda 2a)",
         ["Recordum.UI/Views/HabitScreen/History/PeriodBarView.axaml.cs"] =
             "presentazione: converte i DateTime dei CalendarDatePicker di \"Dal… al…\", non un istante (onda 2a)",
+        ["Recordum.UI/Views/HabitScreen/Notes/NotesColumnView.axaml.cs"] =
+            "presentazione: converte i DateTime dei CalendarDatePicker di \"Dal… al…\" della colonna Note (onda 2a)",
     };
 
     [Fact]

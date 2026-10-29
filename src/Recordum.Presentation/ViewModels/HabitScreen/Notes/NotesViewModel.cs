@@ -115,10 +115,11 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
             _ => Guid.Empty,
         };
         if (habitId != _habitNodeId) return;
-        var keptSelection = SelectedNote?.Id;
-        await LoadAsync(_habitNodeId, _day).ConfigureAwait(true);
-        if (keptSelection is { } sel)
-            SelectedNote = Notes.FirstOrDefault(r => r.Id == sel);
+        // Si rilegge l'elenco tenendo la selezione e il testo non salvato (ApplyFilter): un salvataggio fatto altrove
+        // (la nota del giorno, un'altra nota) non svuota l'editor.
+        var list = await _notes.ListByHabitAsync(_habitNodeId).ConfigureAwait(true);
+        _all = list.ToList();
+        ApplyFilter();
     }
 
     private DayBoundary _day = DayBoundary.Utc;
@@ -161,10 +162,50 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
             });
         }
 
-        var keptSelection = SelectedNote?.Id;
-        Notes.Clear();
-        foreach (var n in filtered.OrderByDescending(n => n.UpdatedAtMs)) Notes.Add(new NoteRowViewModel(n, _day));
-        if (keptSelection is { } sel) SelectedNote = Notes.FirstOrDefault(r => r.Id == sel);
+        // Ricostruire l'elenco non è un cambio di nota: la selezione sopravvive e con lei il testo non salvato; se la nota
+        // esce dall'elenco, il testo si salva (mai perso).
+        var kept = SelectedNote;
+        var draft = IsDirty ? EditorMarkdown : null;
+        _rebuilding = true;
+        try
+        {
+            Notes.Clear();
+            foreach (var n in filtered.OrderByDescending(n => n.UpdatedAtMs)) Notes.Add(new NoteRowViewModel(n, _day));
+            SelectedNote = kept is null ? null : Notes.FirstOrDefault(r => r.Id == kept.Id);
+        }
+        finally { _rebuilding = false; }
+        if (draft is null) return;
+        if (SelectedNote is not null) EditorMarkdown = draft;
+        else SaveLeftNote(kept!, draft);
+    }
+
+    private bool _rebuilding;
+
+    /// <summary>Cambiare nota non perde il testo: la nota lasciata con modifiche si salva (non c'è una domanda da fare).</summary>
+    partial void OnSelectedNoteChanging(NoteRowViewModel? oldValue, NoteRowViewModel? newValue)
+    {
+        if (_rebuilding || oldValue is null || EditorMarkdown == oldValue.Note.BodyMd) return;
+        SaveLeftNote(oldValue, EditorMarkdown);
+    }
+
+    /// <summary>Salva le modifiche in sospeso della nota scelta (la colonna che si chiude). No-op senza modifiche.</summary>
+    public void SavePending()
+    {
+        if (IsDirty) SaveLeftNote(SelectedNote!, EditorMarkdown);
+    }
+
+    private async void SaveLeftNote(NoteRowViewModel row, string body)
+    {
+        try
+        {
+            // Dopo il cambio di nota, non dentro: il bus pubblica NoteUpdated in modo sincrono e la rilettura che ne segue
+            // vedrebbe ancora la vecchia selezione a metà del setter (misurato: la selezione finiva a null).
+            await Task.Yield();
+            await PersistAsync(row, body, CancellationToken.None).ConfigureAwait(true);
+        }
+#pragma warning disable CA1031 // fire-and-forget da un setter: l'errore si registra, non deve abbattere l'app
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"SaveLeftNote failed: {ex}"); }
+#pragma warning restore CA1031
     }
 
     partial void OnModeChanged(EntriesRecordsMode value) => ApplyFilter();
@@ -196,9 +237,13 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private async Task Save(CancellationToken ct)
     {
         if (SelectedNote is not { } row) return;
-        var newBody = EditorMarkdown;
-        await _notes.UpdateAsync(row.Id, n => n.BodyMd = newBody, ct).ConfigureAwait(true);
-        row.Note.BodyMd = newBody;
+        await PersistAsync(row, EditorMarkdown, ct).ConfigureAwait(true);
+    }
+
+    private async Task PersistAsync(NoteRowViewModel row, string body, CancellationToken ct)
+    {
+        await _notes.UpdateAsync(row.Id, n => n.BodyMd = body, ct).ConfigureAwait(true);
+        row.Note.BodyMd = body;
         row.Note.UpdatedAtMs = _clock.UtcNowMs;
         row.Refresh();
         OnPropertyChanged(nameof(IsDirty));
@@ -334,11 +379,17 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private async Task ConfirmDelete(CancellationToken ct)
     {
         if (SelectedNote is not { } row) { IsConfirmingDelete = false; return; }
+        // L'indice prima di attendere: l'evento NoteDeleted può far rileggere l'elenco (righe nuove) nel frattempo.
+        var idx = Notes.IndexOf(row);
         await _notes.DeleteAsync(row.Id, ct).ConfigureAwait(true);
         _all.RemoveAll(n => n.Id == row.Id);
-        var idx = Notes.IndexOf(row);
-        Notes.RemoveAt(idx);
-        SelectedNote = Notes.Count > 0 ? Notes[Math.Min(idx, Notes.Count - 1)] : null;
+        _rebuilding = true;   // la nota eliminata non si salva lasciandola
+        try
+        {
+            if (Notes.FirstOrDefault(r => r.Id == row.Id) is { } shown) Notes.Remove(shown);
+            SelectedNote = Notes.Count > 0 ? Notes[Math.Clamp(idx, 0, Notes.Count - 1)] : null;
+        }
+        finally { _rebuilding = false; }
         IsConfirmingDelete = false;
     }
 

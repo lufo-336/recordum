@@ -2103,4 +2103,13 @@ Details: {0}</value>
   <data name="History.Custom.To" xml:space="preserve">
     <value>to</value>
   </data>
+  <data name="Notes.Column.New" xml:space="preserve">
+    <value>New note</value>
+  </data>
+  <data name="Notes.Column.AddPhoto" xml:space="preserve">
+    <value>Add photo</value>
+  </data>
+  <data name="Notes.Column.Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
 </root>

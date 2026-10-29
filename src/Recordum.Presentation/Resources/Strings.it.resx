@@ -2077,4 +2077,13 @@
   <data name="History.Custom.To" xml:space="preserve">
     <value>al</value>
   </data>
+  <data name="Notes.Column.New" xml:space="preserve">
+    <value>Nuova nota</value>
+  </data>
+  <data name="Notes.Column.AddPhoto" xml:space="preserve">
+    <value>Allega foto</value>
+  </data>
+  <data name="Notes.Column.Back" xml:space="preserve">
+    <value>Indietro</value>
+  </data>
 </root>

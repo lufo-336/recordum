@@ -1,0 +1,222 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen.Notes"
+             xmlns:hvm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:enums="using:Recordum.Core.Enums"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:c="using:Recordum.UI.Controls"
+             xmlns:local="using:Recordum.UI.Views.HabitScreen.Notes"
+             x:Class="Recordum.UI.Views.HabitScreen.Notes.NotesColumnView"
+             x:DataType="vm:NotesViewModel">
+  <!-- La colonna Note (portata da NotesTabView di WPF): Giorno/Periodo, l'elenco, l'editor con gli allegati, Salva · versioni
+       · Elimina con la conferma sul posto; le versioni e il visore delle foto prendono tutta la colonna. -->
+  <UserControl.Styles>
+    <Style Selector="Path.note-icon">
+      <Setter Property="Width" Value="12"/>
+      <Setter Property="Height" Value="12"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="StrokeThickness" Value="1.6"/>
+      <Setter Property="StrokeLineCap" Value="Round"/>
+      <Setter Property="StrokeJoin" Value="Round"/>
+      <Setter Property="Stroke" Value="{DynamicResource Brush.Text}"/>
+    </Style>
+    <!-- La nota e la versione scelte: la tinta leggera dell'abitudine, non il blocco pieno dell'accento Fluent. -->
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.HabitTint}"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.HabitTint}"/>
+    </Style>
+    <Style Selector="TextBlock.meta">
+      <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <!-- Elenco ed editor. -->
+    <Grid x:Name="NotesPane" RowDefinitions="Auto,Auto,Auto,*" Margin="12,10,12,12" IsVisible="{CompiledBinding !IsShowingHistory}">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+        <RadioButton x:Name="DayMode" Classes="segment" GroupName="notes-mode" Content="{x:Static res:Strings.Records_Mode_Day}"
+                     IsChecked="{CompiledBinding Mode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:EntriesRecordsMode.Giorno}}"/>
+        <RadioButton Grid.Column="1" x:Name="PeriodMode" Classes="segment" GroupName="notes-mode" Content="{x:Static res:Strings.Records_Mode_Period}"
+                     IsChecked="{CompiledBinding Mode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:EntriesRecordsMode.Periodo}}"/>
+        <Button Grid.Column="3" x:Name="NewButton" Padding="8,3" Command="{CompiledBinding NewCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Path Classes="note-icon" Data="{StaticResource Icon.Plus}"/>
+            <TextBlock Text="{x:Static res:Strings.Notes_Column_New}"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <StackPanel Grid.Row="1" Spacing="6" Margin="0,8,0,0"
+                  IsVisible="{CompiledBinding Mode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:EntriesRecordsMode.Periodo}}">
+        <ComboBox x:Name="PeriodPicker" ItemsSource="{x:Static local:NotesColumnView.Periods}" SelectedItem="{CompiledBinding SelectedPeriod}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="enums:EntriesPeriod">
+              <TextBlock Text="{CompiledBinding Converter={x:Static local:NotesColumnView.PeriodLabel}}"/>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <WrapPanel x:Name="CustomRange" Orientation="Horizontal"
+                   IsVisible="{CompiledBinding SelectedPeriod, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:EntriesPeriod.Personalizzato}}">
+          <TextBlock Text="{x:Static res:Strings.Period_From}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+          <CalendarDatePicker x:Name="CustomFrom" Margin="0,0,8,4"
+                              SelectedDate="{CompiledBinding CustomFrom, Converter={x:Static local:NotesColumnView.DayToDate}}"/>
+          <TextBlock Text="{x:Static res:Strings.Period_To}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+          <CalendarDatePicker x:Name="CustomTo" Margin="0,0,0,4"
+                              SelectedDate="{CompiledBinding CustomTo, Converter={x:Static local:NotesColumnView.DayToDate}}"/>
+        </WrapPanel>
+      </StackPanel>
+
+      <ListBox Grid.Row="2" x:Name="NotesList" Margin="0,8,0,0" MaxHeight="240" Background="Transparent"
+               ItemsSource="{CompiledBinding Notes}" SelectedItem="{CompiledBinding SelectedNote}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:NoteRowViewModel">
+            <StackPanel Spacing="2" Margin="0,2">
+              <TextBlock Classes="meta">
+                <Run Text="{CompiledBinding CategoryLabel}"/>
+                <Run Text=" · "/>
+                <Run Text="{CompiledBinding AnchorDateDisplay, Mode=OneWay}"/>
+                <Run Text="{CompiledBinding CreatedAtTimeDisplay, Mode=OneWay}"/>
+              </TextBlock>
+              <TextBlock Classes="meta" Text="{CompiledBinding ModifiedAtDisplay}" IsVisible="{CompiledBinding WasModified}"/>
+              <TextBlock Text="{CompiledBinding Summary}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Brush.Text}"/>
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <TextBlock Grid.Row="3" x:Name="NoSelection" Margin="0,16,0,0" Classes="meta" TextWrapping="Wrap"
+                 Text="{x:Static res:Strings.Notes_EmptyHint}"
+                 IsVisible="{CompiledBinding SelectedNote, Converter={x:Static ObjectConverters.IsNull}}"/>
+
+      <DockPanel Grid.Row="3" x:Name="EditorPane" Margin="0,10,0,0"
+                 IsVisible="{CompiledBinding SelectedNote, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <!-- Salva (inchiostro) · versioni · Elimina, con la conferma sul posto. -->
+        <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
+          <Button x:Name="SaveButton" Classes="primary" Margin="0,0,6,4" Content="{x:Static res:Strings.Notes_Save}"
+                  Command="{CompiledBinding SaveCommand}"/>
+          <Button x:Name="HistoryButton" Margin="0,0,6,4" Content="{x:Static res:Strings.Notes_History}"
+                  Command="{CompiledBinding ShowHistoryCommand}" CommandParameter="{CompiledBinding SelectedNote}"/>
+          <Button x:Name="DeleteButton" Classes="ghost" Margin="0,0,6,4" Command="{CompiledBinding RequestDeleteCommand}"
+                  IsVisible="{CompiledBinding !IsConfirmingDelete}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Path Classes="note-icon" Data="{StaticResource Icon.Trash2}"/>
+              <TextBlock Text="{x:Static res:Strings.Notes_Delete}"/>
+            </StackPanel>
+          </Button>
+          <StackPanel x:Name="ConfirmDeleteRow" Orientation="Horizontal" Spacing="6" Margin="0,0,0,4"
+                      IsVisible="{CompiledBinding IsConfirmingDelete}">
+            <TextBlock Text="{x:Static res:Strings.Notes_ConfirmDelete}" VerticalAlignment="Center"/>
+            <Button x:Name="ConfirmDeleteButton" Content="{x:Static res:Strings.Notes_Confirm}"
+                    Command="{CompiledBinding ConfirmDeleteCommand}"/>
+            <Button x:Name="CancelDeleteButton" Classes="ghost" Content="{x:Static res:Strings.Notes_Cancel}"
+                    Command="{CompiledBinding CancelDeleteCommand}"/>
+          </StackPanel>
+        </WrapPanel>
+
+        <!-- Allegati: miniature (o il segnaposto), clic = visore, × per togliere. -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0" Spacing="6">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="meta" FontWeight="SemiBold" VerticalAlignment="Center" Text="{x:Static res:Strings.Notes_Attachments_Title}"/>
+            <Button Grid.Column="1" x:Name="AddAttachmentButton" Classes="ghost" Padding="6,2"
+                    Command="{CompiledBinding AddAttachmentCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Path Classes="note-icon" Data="{StaticResource Icon.Plus}"/>
+                <TextBlock Text="{x:Static res:Strings.Notes_Column_AddPhoto}"/>
+              </StackPanel>
+            </Button>
+          </Grid>
+          <ItemsControl x:Name="Attachments" ItemsSource="{CompiledBinding Attachments}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AttachmentViewModel">
+                <Panel Width="64" Height="64" Margin="0,0,6,6">
+                  <Button x:Name="ThumbnailButton" Padding="0" MinHeight="0" Width="64" Height="64" Cursor="Hand"
+                          Background="{DynamicResource Brush.Surface}" BorderThickness="0"
+                          Command="{CompiledBinding $parent[local:NotesColumnView].((vm:NotesViewModel)DataContext).OpenLightboxCommand}"
+                          CommandParameter="{CompiledBinding}"
+                          AutomationProperties.Name="{CompiledBinding Filename}">
+                    <Panel>
+                      <Border CornerRadius="4" ClipToBounds="True" IsVisible="{CompiledBinding !ShowsPlaceholder}">
+                        <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+                      </Border>
+                      <Path Data="{StaticResource Icon.ImageOff}" Width="24" Height="24" Stretch="Uniform"
+                            StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                            Stroke="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding ShowsPlaceholder}"
+                            ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"/>
+                    </Panel>
+                  </Button>
+                  <Button x:Name="RemoveAttachmentButton" Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0"
+                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Background="{DynamicResource Brush.SurfaceElevated}"
+                          Command="{CompiledBinding $parent[local:NotesColumnView].((vm:NotesViewModel)DataContext).DeleteAttachmentCommand}"
+                          CommandParameter="{CompiledBinding}"
+                          ToolTip.Tip="{x:Static res:Strings.Notes_Attachments_Delete}"
+                          AutomationProperties.Name="{x:Static res:Strings.Notes_Attachments_Delete}">
+                    <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
+                          StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
+                  </Button>
+                </Panel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <c:DiaryEditor x:Name="NoteEditor" MinHeight="160" Markdown="{CompiledBinding EditorMarkdown, Mode=TwoWay}"/>
+      </DockPanel>
+    </Grid>
+
+    <!-- Le versioni della nota: elenco, anteprima resa in sola lettura, Ripristina, Indietro. -->
+    <DockPanel x:Name="HistoryPane" Margin="12,10,12,12" IsVisible="{CompiledBinding IsShowingHistory}">
+      <Button DockPanel.Dock="Top" x:Name="HistoryBackButton" Classes="ghost" HorizontalAlignment="Left" Padding="6,2"
+              Command="{CompiledBinding HideHistoryCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <Path Classes="note-icon" Data="{StaticResource Icon.ChevronRight}" RenderTransform="scaleX(-1)" RenderTransformOrigin="50%,50%"/>
+          <TextBlock Text="{x:Static res:Strings.Notes_Column_Back}"/>
+        </StackPanel>
+      </Button>
+      <ListBox DockPanel.Dock="Top" x:Name="VersionsList" Margin="0,8,0,0" MaxHeight="200" Background="Transparent"
+               ItemsSource="{CompiledBinding History.Versions}" SelectedItem="{CompiledBinding History.SelectedVersion}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:NoteVersionRowViewModel">
+            <StackPanel Spacing="2" Margin="0,2">
+              <TextBlock Classes="meta" Text="{CompiledBinding TimestampDisplay}"/>
+              <TextBlock Text="{CompiledBinding Summary}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Brush.Text}"/>
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Button DockPanel.Dock="Bottom" x:Name="RestoreButton" Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0"
+              Content="{x:Static res:Strings.Notes_History_Restore}" Command="{CompiledBinding History.RestoreCommand}"/>
+      <c:DiaryEditor x:Name="VersionPreview" Margin="0,10,0,0" IsReadOnly="True"
+                     Markdown="{CompiledBinding History.PreviewMarkdown}"/>
+    </DockPanel>
+
+    <!-- Il visore: tutta la colonna, ‹ › fra le foto della nota, × ed Esc chiudono. -->
+    <Grid x:Name="Lightbox" Background="{DynamicResource Brush.Background}" IsVisible="{CompiledBinding IsLightboxOpen}"
+          ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,*">
+      <Button Grid.Column="2" x:Name="LightboxCloseButton" Classes="ghost" Width="28" Height="28" Padding="0" Margin="8"
+              Command="{CompiledBinding CloseLightboxCommand}"
+              ToolTip.Tip="{x:Static res:Strings.Notes_Lightbox_Close}" AutomationProperties.Name="{x:Static res:Strings.Notes_Lightbox_Close}">
+        <Path Classes="note-icon" Data="{StaticResource Icon.X}"/>
+      </Button>
+      <Button Grid.Row="1" x:Name="LightboxPreviousButton" Classes="ghost" Width="32" Height="32" Padding="0" Margin="4"
+              IsVisible="{CompiledBinding CanNavigateLightbox}" Command="{CompiledBinding LightboxPreviousCommand}"
+              ToolTip.Tip="{x:Static res:Strings.Notes_Lightbox_Previous}" AutomationProperties.Name="{x:Static res:Strings.Notes_Lightbox_Previous}">
+        <Path Classes="note-icon" Data="{StaticResource Icon.ChevronRight}" RenderTransform="scaleX(-1)" RenderTransformOrigin="50%,50%"/>
+      </Button>
+      <Image Grid.Row="1" Grid.Column="1" x:Name="LightboxImage" Stretch="Uniform" Margin="0,0,0,12"
+             Source="{CompiledBinding LightboxContent, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+      <Button Grid.Row="1" Grid.Column="2" x:Name="LightboxNextButton" Classes="ghost" Width="32" Height="32" Padding="0" Margin="4"
+              IsVisible="{CompiledBinding CanNavigateLightbox}" Command="{CompiledBinding LightboxNextCommand}"
+              ToolTip.Tip="{x:Static res:Strings.Notes_Lightbox_Next}" AutomationProperties.Name="{x:Static res:Strings.Notes_Lightbox_Next}">
+        <Path Classes="note-icon" Data="{StaticResource Icon.ChevronRight}"/>
+      </Button>
+    </Grid>
+  </Panel>
+</UserControl>

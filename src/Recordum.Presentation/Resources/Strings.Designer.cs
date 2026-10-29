@@ -741,6 +741,9 @@ public static class Strings
     public static string History_Day_Today => Get("History.Day.Today");
     public static string History_Custom_From => Get("History.Custom.From");
     public static string History_Custom_To => Get("History.Custom.To");
+    public static string Notes_Column_New => Get("Notes.Column.New");
+    public static string Notes_Column_AddPhoto => Get("Notes.Column.AddPhoto");
+    public static string Notes_Column_Back => Get("Notes.Column.Back");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
