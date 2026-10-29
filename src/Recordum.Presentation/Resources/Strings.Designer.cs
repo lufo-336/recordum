@@ -693,6 +693,20 @@ public static class Strings
     public static string Figures_EntriesWeek => Get("Figures.EntriesWeek");
     public static string Figures_Streak => Get("Figures.Streak");
     public static string Figures_Entries => Get("Figures.Entries");
+    public static string Figures_AvgPerDay => Get("Figures.AvgPerDay");
+    public static string Figures_GoalPct => Get("Figures.GoalPct");
+    public static string Figures_SetsToday => Get("Figures.SetsToday");
+    public static string Figures_VolumeToday => Get("Figures.VolumeToday");
+    public static string Figures_SetsTotal => Get("Figures.SetsTotal");
+    public static string Figures_DaysPerWeek => Get("Figures.DaysPerWeek");
+    public static string Figures_Sessions => Get("Figures.Sessions");
+    public static string Figures_Now => Get("Figures.Now");
+    public static string Figures_Longest => Get("Figures.Longest");
+    public static string Figures_Lapses90 => Get("Figures.Lapses90");
+    public static string Figures_CleanDays => Get("Figures.CleanDays");
+    public static string Figures_Value_Minutes => Get("Figures.Value.Minutes");
+    public static string Figures_Value_Hours => Get("Figures.Value.Hours");
+    public static string Figures_Value_Days => Get("Figures.Value.Days");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

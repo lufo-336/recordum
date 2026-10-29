@@ -1959,4 +1959,46 @@ Details: {0}</value>
   <data name="Figures.Entries" xml:space="preserve">
     <value>entries</value>
   </data>
+  <data name="Figures.AvgPerDay" xml:space="preserve">
+    <value>per day</value>
+  </data>
+  <data name="Figures.GoalPct" xml:space="preserve">
+    <value>of goal</value>
+  </data>
+  <data name="Figures.SetsToday" xml:space="preserve">
+    <value>sets today</value>
+  </data>
+  <data name="Figures.VolumeToday" xml:space="preserve">
+    <value>{0} today</value>
+  </data>
+  <data name="Figures.SetsTotal" xml:space="preserve">
+    <value>sets in total</value>
+  </data>
+  <data name="Figures.DaysPerWeek" xml:space="preserve">
+    <value>days a week</value>
+  </data>
+  <data name="Figures.Sessions" xml:space="preserve">
+    <value>sessions</value>
+  </data>
+  <data name="Figures.Now" xml:space="preserve">
+    <value>now</value>
+  </data>
+  <data name="Figures.Longest" xml:space="preserve">
+    <value>longest</value>
+  </data>
+  <data name="Figures.Lapses90" xml:space="preserve">
+    <value>lapses in 90 days</value>
+  </data>
+  <data name="Figures.CleanDays" xml:space="preserve">
+    <value>clean days in total</value>
+  </data>
+  <data name="Figures.Value.Minutes" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Figures.Value.Hours" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Figures.Value.Days" xml:space="preserve">
+    <value>{0} d</value>
+  </data>
 </root>

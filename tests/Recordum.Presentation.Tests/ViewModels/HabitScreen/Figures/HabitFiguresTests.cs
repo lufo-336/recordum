@@ -241,4 +241,165 @@ public sealed class HabitFiguresTests : IDisposable
 
         vm.UsualHour.Should().BeNull();
     }
+
+    // ---- Task 3: misurato, serie, sessione, astinenza ----
+
+    private MetricDefinition Metric(string name, MetricType type, int sort = 0)
+    {
+        var m = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = _id, Name = name, Type = type, SortOrder = sort };
+        _metrics.Store[m.Id] = m;
+        return m;
+    }
+
+    private void Record(DateTimeOffset at, int? durationSeconds = null, params (MetricDefinition Metric, decimal Value)[] values)
+    {
+        var c = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = _id, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+            DurationSeconds = durationSeconds,
+        };
+        foreach (var (m, v) in values)
+            c.Values.Add(new CompletionValue
+            {
+                MetricDefinitionId = m.Id,
+                ValueInteger = m.Type == MetricType.Integer ? (long)v : null,
+                ValueDecimal = m.Type == MetricType.Decimal ? v : null,
+                ValueSeconds = m.Type == MetricType.Seconds ? (int)v : null,
+            });
+        _completions.Store[c.Id] = c;
+    }
+
+    [Fact]
+    public async Task Measured_with_goal()
+    {
+        var pages = Metric("pagine", MetricType.Integer);
+        Record(new DateTimeOffset(2026, 10, 27, 20, 0, 0, TimeSpan.Zero), null, (pages, 60));
+        Record(new DateTimeOffset(2026, 10, 28, 9, 0, 0, TimeSpan.Zero), null, (pages, 36));
+        _completions.DailySumByKey[(_id, pages.Id)] = [new DailyValue(Today.AddDays(-1), 60), new DailyValue(Today, 36)];
+        _goals.Store[Guid.NewGuid()] = new Goal
+        {
+            HabitNodeId = _id, TargetValue = 150, MetricDefinitionId = pages.Id, PeriodType = GoalPeriodType.Rolling, RollingDays = 7,
+        };
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Measured, Boundary);
+
+        vm.Items[0].Value.Should().Be("96");
+        vm.Items[0].Caption.Should().Be("ultimi 7 giorni");
+        vm.Items[1].Value.Should().Be("64%");
+        vm.Items[1].Caption.Should().Be("obiettivo");
+        vm.Items[2].Caption.Should().Be("media al giorno");
+        vm.Items[3].Value.Should().Be("96");
+    }
+
+    [Fact]
+    public async Task Measured_without_goal()
+    {
+        var pages = Metric("pagine", MetricType.Integer);
+        _completions.DailySumByKey[(_id, pages.Id)] = [new DailyValue(Today, 20)];
+        _streaks.Runs.Add(new StreakRun(Today, Today, 1, IsCurrent: true));
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Measured, Boundary);
+
+        vm.Items.Select(f => f.Caption).Should().Equal("oggi", "serie attuale", "media al giorno", "in tutto");
+        vm.Items.Select(f => f.Value).Should().Equal("20", "1", "0,7", "20");
+    }
+
+    [Fact]
+    public async Task Measured_time_field_is_written_in_minutes()
+    {
+        var time = Metric("tempo", MetricType.Seconds);
+        _completions.DailySumByKey[(_id, time.Id)] = [new DailyValue(Today, 1500)];
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Measured, Boundary);
+
+        vm.Items[0].Value.Should().Be("25 min");
+    }
+
+    [Fact]
+    public async Task Series_volume_is_the_first_quantity_field()
+    {
+        var reps = Metric("ripetizioni", MetricType.Integer, 0);
+        var kg = Metric("kg", MetricType.Decimal, 1);
+        for (var i = 0; i < 4; i++)
+            Record(new DateTimeOffset(2026, 10, 28, 9, i, 0, TimeSpan.Zero), null, (reps, 10), (kg, 40));
+        Heat((Today, 4), (Today.AddDays(-2), 3), (new DateOnly(2026, 9, 1), 2));
+        _completions.DailySumByKey[(_id, reps.Id)] = [new DailyValue(Today, 40)];
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Series, Boundary);
+
+        vm.Items[0].Value.Should().Be("4");
+        vm.Items[1].Value.Should().Be("40");
+        vm.Items[1].Caption.Should().Be("ripetizioni oggi");
+        vm.Items[2].Value.Should().Be("0,5");   // 2 giorni negli ultimi 28 = 0,5 a settimana
+        vm.Items[3].Value.Should().Be("3");     // sedute = giorni con registrazioni
+    }
+
+    [Fact]
+    public async Task Series_without_quantity_shows_total_sets()
+    {
+        Metric("note", MetricType.Text);
+        Heat((Today, 2), (Today.AddDays(-1), 3));
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Series, Boundary);
+
+        vm.Items[1].Value.Should().Be("5");
+        vm.Items[1].Caption.Should().Be("serie in tutto");
+    }
+
+    [Fact]
+    public async Task Session_figures_in_minutes_and_hours()
+    {
+        var time = Metric("tempo", MetricType.Seconds);
+        // oggi: 10 min dal timer + 2 min a mano; ieri 600 min a mano.
+        Record(new DateTimeOffset(2026, 10, 28, 8, 0, 0, TimeSpan.Zero), 600);
+        Record(new DateTimeOffset(2026, 10, 28, 9, 0, 0, TimeSpan.Zero), null, (time, 120));
+        Record(new DateTimeOffset(2026, 10, 27, 9, 0, 0, TimeSpan.Zero), null, (time, 36000));
+        _streaks.Runs.Add(new StreakRun(Today.AddDays(-1), Today, 2, IsCurrent: true));
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Session, Boundary);
+
+        vm.Items.Select(f => f.Value).Should().Equal("12 min", "2", "20 min", "10 h");
+        vm.Items.Select(f => f.Caption).Should().Equal("oggi", "serie", "media 30 g", "in tutto");
+    }
+
+    private static long Ms(DateTimeOffset t) => t.ToUnixTimeMilliseconds();
+
+    [Fact]
+    public async Task Abstinence_figures()
+    {
+        var open = new DateTimeOffset(2026, 10, 16, 10, 0, 0, TimeSpan.Zero);
+        _abstinence.Periods[_id] =
+        [
+            new AbstinencePeriod { HabitNodeId = _id, StartedAtMs = Ms(new(2026, 5, 1, 10, 0, 0, TimeSpan.Zero)), EndedAtMs = Ms(new(2026, 5, 11, 10, 0, 0, TimeSpan.Zero)) },
+            new AbstinencePeriod { HabitNodeId = _id, StartedAtMs = Ms(new(2026, 9, 4, 10, 0, 0, TimeSpan.Zero)), EndedAtMs = Ms(new(2026, 10, 15, 10, 0, 0, TimeSpan.Zero)) },
+            new AbstinencePeriod { HabitNodeId = _id, StartedAtMs = Ms(open) },
+        ];
+        _abstinence.States[_id] = new AbstinenceState(AbstinenceStatus.Abstaining, Ms(open), null);
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Resistance), Daily(), HabitCase.Abstinence, Boundary);
+
+        vm.Items[0].Value.Should().StartWith("12");
+        vm.Items[1].Value.Should().Be("41 g");
+        vm.Items[2].Value.Should().Be("1");
+        vm.Items[3].Value.Should().Be("63 g");
+        vm.Items.Select(f => f.Caption).Should().Equal("adesso", "il più lungo", "ricadute in 90 g", "giorni liberi in tutto");
+        vm.UsualHour.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Abstinence_not_started()
+    {
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Resistance), Daily(), HabitCase.Abstinence, Boundary);
+
+        vm.Items[0].Value.Should().Be(Recordum.Presentation.Resources.Strings.Abstinence_NotStarted);
+        vm.Items.Skip(1).Select(f => f.Value).Should().Equal("0 g", "0", "0 g");
+    }
 }

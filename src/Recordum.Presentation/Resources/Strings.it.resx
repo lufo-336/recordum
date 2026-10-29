@@ -1933,4 +1933,46 @@
   <data name="Figures.Entries" xml:space="preserve">
     <value>voci</value>
   </data>
+  <data name="Figures.AvgPerDay" xml:space="preserve">
+    <value>media al giorno</value>
+  </data>
+  <data name="Figures.GoalPct" xml:space="preserve">
+    <value>obiettivo</value>
+  </data>
+  <data name="Figures.SetsToday" xml:space="preserve">
+    <value>serie oggi</value>
+  </data>
+  <data name="Figures.VolumeToday" xml:space="preserve">
+    <value>{0} oggi</value>
+  </data>
+  <data name="Figures.SetsTotal" xml:space="preserve">
+    <value>serie in tutto</value>
+  </data>
+  <data name="Figures.DaysPerWeek" xml:space="preserve">
+    <value>giorni a settimana</value>
+  </data>
+  <data name="Figures.Sessions" xml:space="preserve">
+    <value>sedute</value>
+  </data>
+  <data name="Figures.Now" xml:space="preserve">
+    <value>adesso</value>
+  </data>
+  <data name="Figures.Longest" xml:space="preserve">
+    <value>il più lungo</value>
+  </data>
+  <data name="Figures.Lapses90" xml:space="preserve">
+    <value>ricadute in 90 g</value>
+  </data>
+  <data name="Figures.CleanDays" xml:space="preserve">
+    <value>giorni liberi in tutto</value>
+  </data>
+  <data name="Figures.Value.Minutes" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="Figures.Value.Hours" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="Figures.Value.Days" xml:space="preserve">
+    <value>{0} g</value>
+  </data>
 </root>

@@ -79,12 +79,17 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
         var c = new Ctx(node, config, day, today, created);
 
         DailyTarget = null;
+        _liveClock?.Stop();
         Items = @case switch
         {
             HabitCase.Action => await ActionAsync(c, ct).ConfigureAwait(true),
             HabitCase.CounterTap => await CounterTapAsync(c, ct).ConfigureAwait(true),
             HabitCase.State => await StateAsync(c, ct).ConfigureAwait(true),
             HabitCase.Journal => await JournalAsync(c, ct).ConfigureAwait(true),
+            HabitCase.Measured => await MeasuredAsync(c, ct).ConfigureAwait(true),
+            HabitCase.Series => await SeriesAsync(c, ct).ConfigureAwait(true),
+            HabitCase.Session => await SessionAsync(c, ct).ConfigureAwait(true),
+            HabitCase.Abstinence => await AbstinenceAsync(c, ct).ConfigureAwait(true),
             _ => [],
         };
         UsualHour = @case == HabitCase.Abstinence ? null : await UsualHourAsync(c, ct).ConfigureAwait(true);
@@ -175,7 +180,141 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
         ];
     }
 
+    private async Task<ImmutableArray<HabitFigure>> MeasuredAsync(Ctx c, CancellationToken ct)
+    {
+        var metric = (await _metrics.ListByHabitAsync(c.Node.Id, ct).ConfigureAwait(true)).OrderBy(m => m.SortOrder).FirstOrDefault();
+        var sums = await SumsAsync(c, metric, ct).ConfigureAwait(true);
+        var isTime = metric?.Type == MetricType.Seconds;
+        var start = c.WindowStart(30);
+        var avg = sums.Where(kv => kv.Key >= start).Sum(kv => kv.Value) / c.WindowDays(30);
+        var tail = new HabitFigure[]
+        {
+            new(Amount(avg, isTime), Strings.Figures_AvgPerDay),
+            new(Amount(sums.Values.Sum(), isTime), Strings.Figures_Total),
+        };
+
+        var goal = new Detail.GoalProgressCardViewModel(_goals, _completions, _metrics, _refData, _clock);
+        await goal.LoadAsync(c.Node, c.Day, ct).ConfigureAwait(true);
+        if (!goal.IsEmpty)
+        {
+            var label = goal.PeriodLabel.Length > 0
+                ? char.ToLower(goal.PeriodLabel[0], CultureInfo.CurrentCulture) + goal.PeriodLabel[1..]
+                : goal.PeriodLabel;
+            return [new(Dec(goal.Actual), label),
+                    new(Pct((int)Math.Round(goal.PercentComplete * 100, MidpointRounding.AwayFromZero)), Strings.Figures_GoalPct),
+                    .. tail];
+        }
+        var (current, _) = await StreaksAsync(c, ct).ConfigureAwait(true);
+        return [new(Amount(sums.GetValueOrDefault(c.Today), isTime), Strings.Figures_Today),
+                new(Int(current), Strings.Figures_CurrentStreak),
+                .. tail];
+    }
+
+    private async Task<ImmutableArray<HabitFigure>> SeriesAsync(Ctx c, CancellationToken ct)
+    {
+        var counts = await CountsAsync(c, ct).ConfigureAwait(true);
+        // "Volume" = il primo campo quantità (intero o decimale, non una scala), mai un prodotto fra campi.
+        var quantity = (await _metrics.ListByHabitAsync(c.Node.Id, ct).ConfigureAwait(true))
+            .Where(m => m.Type is MetricType.Integer or MetricType.Decimal && m.ScaleTemplateId is null)
+            .OrderBy(m => m.SortOrder).FirstOrDefault();
+        HabitFigure second;
+        if (quantity is null)
+        {
+            second = new(Int(counts.Values.Sum()), Strings.Figures_SetsTotal);
+        }
+        else
+        {
+            var today = await _completions.GetDailySumAsync(c.Node.Id, quantity.Id, c.Today, c.Today, ct).ConfigureAwait(true);
+            second = new(Dec(today.Where(v => v.Date == c.Today).Sum(v => v.Sum)),
+                Fmt(Strings.Figures_VolumeToday, quantity.Name));
+        }
+        var start28 = c.WindowStart(28);
+        var days28 = counts.Keys.Count(d => d >= start28);
+        return
+        [
+            new(Int(counts.GetValueOrDefault(c.Today)), Strings.Figures_SetsToday),
+            second,
+            new(Dec(days28 * 7m / c.WindowDays(28)), Strings.Figures_DaysPerWeek),
+            new(Int(counts.Count), Strings.Figures_Sessions),
+        ];
+    }
+
+    private async Task<ImmutableArray<HabitFigure>> SessionAsync(Ctx c, CancellationToken ct)
+    {
+        // Il timer scrive la durata sulla registrazione (ActiveTimerService.StopAsync); "+ a mano" scrive il campo tempo.
+        // Una registrazione conta la sua durata, altrimenti il primo campo tempo.
+        var time = (await _metrics.ListByHabitAsync(c.Node.Id, ct).ConfigureAwait(true))
+            .Where(m => m.Type == MetricType.Seconds).OrderBy(m => m.SortOrder).FirstOrDefault();
+        var (from, toExclusive) = c.Day.RangeOf(c.Created, c.Today);
+        var list = await _completions.ListByHabitAsync(c.Node.Id, from, toExclusive.AddMilliseconds(-1), ct: ct).ConfigureAwait(true);
+        var seconds = list.GroupBy(x => c.Day.DayOf(x.CompletedAtMs)).ToDictionary(
+            g => g.Key,
+            g => (decimal)g.Sum(x => x.DurationSeconds
+                ?? x.Values.Where(v => time is not null && v.MetricDefinitionId == time.Id).Sum(v => v.ValueSeconds ?? 0)));
+        var (current, _) = await StreaksAsync(c, ct).ConfigureAwait(true);
+        var start = c.WindowStart(30);
+        var avg = seconds.Where(kv => kv.Key >= start).Sum(kv => kv.Value) / c.WindowDays(30);
+        return
+        [
+            new(Amount(seconds.GetValueOrDefault(c.Today), isTime: true), Strings.Figures_Today),
+            new(Int(current), Strings.Figures_Streak),
+            new(Amount(avg, isTime: true), Strings.Figures_Avg30),
+            new(Hours(seconds.Values.Sum()), Strings.Figures_Total),
+        ];
+    }
+
+    private LiveElapsedClock? _liveClock;
+
+    private async Task<ImmutableArray<HabitFigure>> AbstinenceAsync(Ctx c, CancellationToken ct)
+    {
+        var periods = await _abstinence.ListPeriodsAsync(c.Node.Id, c.Created, c.Today, ct).ConfigureAwait(true);
+        var nowMs = _clock.UtcNowMs;
+        double Days(AbstinencePeriod p) => ((p.EndedAtMs ?? nowMs) - p.StartedAtMs) / 86_400_000d;
+        var longest = periods.Count == 0 ? 0 : (int)Math.Floor(periods.Max(Days));
+        var clean = (int)Math.Floor(periods.Sum(Days));
+        var since = c.Today.AddDays(-89);
+        var lapses = periods.Count(p => p.EndedAtMs is { } e && c.Day.DayOf(e) >= since);
+
+        var state = await _abstinence.GetStateAsync(c.Node.Id, ct).ConfigureAwait(true);
+        string now;
+        if (state.Status == AbstinenceStatus.Abstaining && state.CurrentStartedAtMs is { } startedMs)
+        {
+            if (_liveClock is null)
+            {
+                _liveClock = new LiveElapsedClock(_clock, _ticks);
+                _liveClock.PropertyChanged += OnLiveClockChanged;
+            }
+            _liveClock.Start(startedMs);
+            now = _liveClock.Display;
+        }
+        else
+        {
+            now = Strings.Abstinence_NotStarted;
+        }
+        return
+        [
+            new(now, Strings.Figures_Now),
+            new(DaysText(longest), Strings.Figures_Longest),
+            new(Int(lapses), Strings.Figures_Lapses90),
+            new(DaysText(clean), Strings.Figures_CleanDays),
+        ];
+    }
+
+    /// <summary>L'orologio vivo dell'astinenza riscrive il primo numero a ogni secondo.</summary>
+    private void OnLiveClockChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(LiveElapsedClock.Display) || _liveClock is not { Display.Length: > 0 } clock) return;
+        if (Items.Length > 0 && Items[0].Caption == Strings.Figures_Now)
+            Items = Items.SetItem(0, Items[0] with { Value = clock.Display });
+    }
+
     // ---- fonti ----
+
+    private async Task<Dictionary<DateOnly, decimal>> SumsAsync(Ctx c, MetricDefinition? metric, CancellationToken ct)
+        => metric is null ? []
+            : (await _completions.GetDailySumAsync(c.Node.Id, metric.Id, c.Created, c.Today, ct).ConfigureAwait(true))
+                .Where(v => v.Date >= c.Created && v.Date <= c.Today)
+                .GroupBy(v => v.Date).ToDictionary(g => g.Key, g => g.Sum(v => v.Sum));
 
     /// <summary>Registrazioni per giorno dalla creazione a oggi (i giorni senza dati non ci sono).</summary>
     private async Task<Dictionary<DateOnly, int>> CountsAsync(Ctx c, CancellationToken ct)
@@ -237,8 +376,32 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
     // ---- formati ----
 
     private static string Int(int n) => n.ToString("N0", CultureInfo.CurrentCulture);
+
+    /// <summary>Una quantità, o un tempo in secondi scritto in minuti interi.</summary>
+    private static string Amount(decimal value, bool isTime) => isTime
+        ? Fmt(Strings.Figures_Value_Minutes, Int((int)Math.Round(value / 60m, MidpointRounding.AwayFromZero)))
+        : Dec(value);
+
+    /// <summary>Secondi in ore: una cifra decimale sotto le 10 ore, intere da lì.</summary>
+    private static string Hours(decimal seconds)
+    {
+        var h = seconds / 3600m;
+        var text = h < 10 ? Dec(h) : Int((int)Math.Round(h, MidpointRounding.AwayFromZero));
+        return Fmt(Strings.Figures_Value_Hours, text);
+    }
+
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI strings
+    private static string Fmt(string format, string arg) => string.Format(CultureInfo.CurrentCulture, format, arg);
+#pragma warning restore CA1863
+
+    private static string DaysText(int days) => Fmt(Strings.Figures_Value_Days, Int(days));
     private static string Pct(int p) => string.Create(CultureInfo.CurrentCulture, $"{p}%");
     private static string Dec(decimal d) => Math.Round(d, 1, MidpointRounding.AwayFromZero).ToString("#,0.#", CultureInfo.CurrentCulture);
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+        if (_liveClock is null) return;
+        _liveClock.PropertyChanged -= OnLiveClockChanged;
+        _liveClock.Dispose();
+    }
 }
