@@ -162,7 +162,7 @@ public class HabitScreenScreenshotTests(ITestOutputHelper output)
 
     // Lo ScrollViewer della heatmap era nascosto: il suo contenuto entra nell'albero visuale al primo layout dopo.
     private static bool Visible(Opened o, string name) =>
-        o.View.GetVisualDescendants().OfType<ItemsControl>().Any(x => x.Name == name && x.IsEffectivelyVisible && x.ItemCount > 0);
+        o.View.GetVisualDescendants().OfType<Control>().Any(x => x.Name == name && x.IsEffectivelyVisible && x.Bounds.Width > 0);
 
     private void Shoot(Opened o, string name) => output.WriteLine(ScreenshotProbeTests.Capture(o.Window, name));
 

@@ -2,6 +2,7 @@
              x:Class="Recordum.UI.Views.HabitScreen.Records.AbstinencePeriodListView"
              x:DataType="vm:AbstinencePeriodListViewModel">
   <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
+    <ItemsControl.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
     <ItemsControl.ItemTemplate>
       <DataTemplate x:DataType="vm:AbstinencePeriodRowViewModel">
         <Border Margin="0,0,0,8" Padding="12" CornerRadius="8" BorderThickness="1"

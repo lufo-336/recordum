@@ -97,6 +97,58 @@ public class CronologiaColumnTests
         Pump();
     }
 
+    private static List<HeatGrid> Heat(Opened o) =>
+        [.. o.Column.GetVisualDescendants().OfType<HeatGrid>().Where(g => g.IsEffectivelyVisible)];
+
+    [AvaloniaFact]
+    public async Task Heatmap_click_and_arrows_choose_the_day()
+    {
+        var o = await OpenAsync(seed: (sp, id) => Record(sp, id, Now.AddDays(-3)),
+            createdAt: new DateTimeOffset(2026, 1, 5, 12, 0, 0, TimeSpan.Zero));
+        Named<RadioButton>(o.Column, "YearPeriod").IsChecked = true;
+        await UntilAsync(() => Heat(o).Any(g => g.Name == "Weeks" && g.Bounds.Width > 0));
+        var grid = Named<HeatGrid>(o.Column, "Weeks");
+
+        // La cella del 25/10/2026 (domenica): colonna della sua settimana, riga 6.
+        var target = new DateOnly(2026, 10, 25);
+        var x = grid.Weeks!.ToList().FindIndex(w => w.Any(c => c.Date == target));
+        var y = grid.Weeks[x].ToList().FindIndex(c => c.Date == target);
+        var p = grid.TranslatePoint(new Point((x + 0.5) * (HeatGrid.Cell + HeatGrid.Gap), (y + 0.5) * (HeatGrid.Cell + HeatGrid.Gap)), o.Window)!.Value;
+        o.Window.MouseDown(p, MouseButton.Left);
+        o.Window.MouseUp(p, MouseButton.Left);
+        await UntilAsync(() => o.Vm.SelectedDay == target);
+        grid.Weeks[x][y].IsSelected.Should().BeTrue("la cella mostra la selezione");
+
+        o.Window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.None);
+        await UntilAsync(() => o.Vm.SelectedDay == target.AddDays(-7));
+        o.Window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+        await UntilAsync(() => o.Vm.SelectedDay == target.AddDays(-6));
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task A_long_period_list_is_virtualized_and_scrolls_to_the_oldest()
+    {
+        var o = await OpenAsync(seed: async (sp, id) =>
+        {
+            for (var d = 0; d < 300; d++) await Record(sp, id, Now.AddDays(-d).AddHours(-1));
+        }, createdAt: new DateTimeOffset(2025, 12, 1, 12, 0, 0, TimeSpan.Zero));
+        Named<RadioButton>(o.Column, "AllPeriod").IsChecked = true;
+        var rows = o.Vm.PeriodRecords.Records.Rows;
+        await UntilAsync(() => rows.Count == 300);
+        Pump();
+        bool Realized(Recordum.Presentation.ViewModels.HabitScreen.CompletionRowViewModel row) =>
+            Named<Border>(o.Column, "ListHost").GetVisualDescendants().OfType<Control>().Any(c => c.DataContext == row && c.Name == "DeleteButton");
+        Named<Border>(o.Column, "ListHost").GetVisualDescendants().OfType<Button>().Count(b => b.Name == "DeleteButton")
+            .Should().BeLessThan(100, "le righe fuori vista non si costruiscono");
+        Realized(rows[^1]).Should().BeFalse();
+
+        var scroll = o.Column.GetVisualDescendants().OfType<ScrollViewer>().First();
+        for (var i = 0; i < 20 && !Realized(rows[^1]); i++) { scroll.ScrollToEnd(); await Task.Delay(20); Pump(); }
+        Realized(rows[^1]).Should().BeTrue("in fondo alla colonna c'è la registrazione più vecchia");
+        o.Window.Close();
+    }
+
     private static Color Resource(Opened o, string key) =>
         ((ISolidColorBrush)Application.Current!.FindResource(o.Window.ActualThemeVariant, key)!).Color;
 
@@ -112,16 +164,14 @@ public class CronologiaColumnTests
 
         Named<RadioButton>(o.Column, "YearPeriod").IsChecked = true;
         // Lo ScrollViewer era nascosto: il suo contenuto entra nell'albero visuale al primo layout dopo.
-        await UntilAsync(() => o.Column.GetVisualDescendants().OfType<ItemsControl>().Any(c => c.Name == "Weeks" && c.ItemCount > 0));
+        await UntilAsync(() => Heat(o).Any(g => g.Name == "Weeks" && g.Bounds.Width > 0));
         Days(o).Should().BeEmpty();
-        var weeks = Named<ItemsControl>(o.Column, "Weeks");
-        weeks.ItemCount.Should().BeGreaterThanOrEqualTo(52, "l'anno è a colonne di settimana");
-        // Visto nei PNG: senza il template ogni settimana era il nome del suo tipo. Ogni colonna è un ItemsControl di giorni.
-        weeks.GetVisualDescendants().OfType<ItemsControl>().Count(c => c.ItemCount == 7).Should().BeGreaterThanOrEqualTo(50);
-        weeks.GetVisualDescendants().OfType<TextBlock>().Should().NotContain(t => t.Text != null && t.Text.Contains("HistoryDayCell"));
+        var weeks = Named<HeatGrid>(o.Column, "Weeks");
+        weeks.Weeks!.Count.Should().BeGreaterThanOrEqualTo(52, "l'anno è a colonne di settimana");
+        weeks.Bounds.Width.Should().Be(weeks.Weeks.Count * (HeatGrid.Cell + HeatGrid.Gap), "una colonna disegnata per settimana");
 
         Named<RadioButton>(o.Column, "AllPeriod").IsChecked = true;
-        await UntilAsync(() => Named<ItemsControl>(o.Column, "Years").IsVisible);
+        await UntilAsync(() => Named<ItemsControl>(o.Column, "Years").IsVisible && Heat(o).Any(g => g.Classes.Contains("year")));
         var years = Named<ItemsControl>(o.Column, "Years");
         years.ItemCount.Should().Be(2, "dati dal 2025 al 2026: un blocco per anno");
         ((HistoryYear)years.Items[0]!).Year.Should().Be(2026, "dal più recente");

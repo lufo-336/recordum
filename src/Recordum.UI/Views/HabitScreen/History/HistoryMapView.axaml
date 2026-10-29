@@ -10,23 +10,9 @@
        tooltip; la ricaduta è una tacca sulla cella piena; la nota è un punto nel suo colore. -->
   <UserControl.Resources>
     <conv:HeatLevelBrushConverter x:Key="HeatLevel"/>
-    <DataTemplate x:Key="HeatCell" x:DataType="hvm:HistoryDayCell">
-      <Button Classes="heat" Classes.selected="{CompiledBinding IsSelected}" IsEnabled="{CompiledBinding !IsFuture}"
-              Opacity="{CompiledBinding InRange, Converter={x:Static hv:HistoryMapView.InRangeOpacity}}" IsHitTestVisible="{CompiledBinding InRange}"
-              Command="{CompiledBinding #Root.((hvm:HistoryMapViewModel)DataContext).SelectCommand}" CommandParameter="{CompiledBinding}"
-              ToolTip.Tip="{CompiledBinding Value}">
-        <Button.Background>
-          <MultiBinding Converter="{StaticResource HeatLevel}">
-            <Binding Path="Step"/>
-            <Binding Path="HabitColor" ElementName="Root"/>
-            <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
-          </MultiBinding>
-        </Button.Background>
-      </Button>
-    </DataTemplate>
   </UserControl.Resources>
   <UserControl.Styles>
-    <Style Selector="Button.day, Button.heat">
+    <Style Selector="Button.day">
       <Setter Property="Padding" Value="0"/>
       <Setter Property="BorderThickness" Value="0"/>
       <Setter Property="BorderBrush" Value="Transparent"/>
@@ -51,17 +37,11 @@
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="BorderThickness" Value="1.5"/>
     </Style>
-    <Style Selector="Button.day.selected, Button.heat.selected">
+    <Style Selector="Button.day.selected">
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
       <Setter Property="BorderThickness" Value="2"/>
     </Style>
-    <Style Selector="Button.heat">
-      <Setter Property="Width" Value="11"/>
-      <Setter Property="Height" Value="11"/>
-      <Setter Property="Margin" Value="1"/>
-      <Setter Property="CornerRadius" Value="2"/>
-    </Style>
-    <Style Selector="Button.day:disabled, Button.heat:disabled"><Setter Property="Cursor" Value="Arrow"/></Style>
+    <Style Selector="Button.day:disabled"><Setter Property="Cursor" Value="Arrow"/></Style>
     <Style Selector="TextBlock.day-number">
       <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
       <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -120,9 +100,8 @@
     <!-- Tre mesi, anno, intervallo: una heatmap a colonne di settimana. -->
     <ScrollViewer x:Name="HeatmapBlock" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
                   IsVisible="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsHeatmapShape}}">
-      <ItemsControl x:Name="Weeks" ItemsSource="{CompiledBinding Weeks}">
-        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-      </ItemsControl>
+      <hv:HeatGrid x:Name="Weeks" Weeks="{CompiledBinding Weeks}" HabitColor="{Binding #Root.HabitColor}"
+                   SelectCommand="{CompiledBinding SelectCommand}"/>
     </ScrollViewer>
 
     <!-- Tutto: una heatmap per anno, dal più recente. -->
@@ -134,9 +113,8 @@
             <TextBlock Text="{CompiledBinding Year}" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
                        Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,4"/>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-              <ItemsControl Classes="year" ItemsSource="{CompiledBinding Weeks}" ItemTemplate="{CompiledBinding #Root.WeekColumn}">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-              </ItemsControl>
+              <hv:HeatGrid Classes="year" Weeks="{CompiledBinding Weeks}" HabitColor="{Binding #Root.HabitColor}"
+                           SelectCommand="{CompiledBinding #Root.((hvm:HistoryMapViewModel)DataContext).SelectCommand}"/>
             </ScrollViewer>
           </StackPanel>
         </DataTemplate>

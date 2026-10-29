@@ -74,5 +74,9 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}"/>
+  <!-- Virtualizzato: "Tutto" su tre anni sono ~1100 righe e costruirle tutte costava ~2 s (misurato, onda 2a Task 10).
+       Il pannello segue il viewport effettivo, quindi virtualizza anche dentro lo ScrollViewer della colonna. -->
+  <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
+    <ItemsControl.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+  </ItemsControl>
 </UserControl>
