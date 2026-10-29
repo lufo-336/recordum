@@ -41,6 +41,30 @@ public sealed partial class CompletionRowViewModel : ObservableObject
     public string? Notes => _overrideNotes ?? Completion.Notes;
     public string Display => ToWallTime(CompletedAt).ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
+    /// <summary>Il giorno della registrazione secondo il confine dell'abitudine, breve ("mer 28 ott").</summary>
+    public string DayLabel => _day.DayOf(Completion.CompletedAtMs).ToString("ddd d MMM", System.Globalization.CultureInfo.CurrentCulture);
+
+    /// <summary>L'ora di parete nel formato breve della cultura.</summary>
+    public string TimeLabel => ToWallTime(CompletedAt).ToString("t", System.Globalization.CultureInfo.CurrentCulture);
+
+    /// <summary>La prima riga non vuota della nota, senza i segni Markdown di titolo, elenco, citazione ed enfasi.</summary>
+    public string? Preview
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Notes)) return null;
+            foreach (var raw in Notes.Split('\n'))
+            {
+                var line = MarkdownLead().Replace(raw, string.Empty).Replace("**", string.Empty).Replace("__", string.Empty).Trim();
+                if (line.Length > 0) return line;
+            }
+            return null;
+        }
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\s*(#{1,6}|>|[-*+]|\d+\.)\s+")]
+    private static partial System.Text.RegularExpressions.Regex MarkdownLead();
+
     [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private string? _editedNotes;
     [ObservableProperty] private DateTime _editedDate;
@@ -112,8 +136,11 @@ public sealed partial class CompletionRowViewModel : ObservableObject
         Completion.CompletedAt = newDate;
         Completion.CompletedAtMs = newMs;
         OnPropertyChanged(nameof(Notes));
+        OnPropertyChanged(nameof(Preview));
         OnPropertyChanged(nameof(CompletedAt));
         OnPropertyChanged(nameof(Display));
+        OnPropertyChanged(nameof(DayLabel));
+        OnPropertyChanged(nameof(TimeLabel));
         IsEditing = false;
     }
 

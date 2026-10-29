@@ -494,6 +494,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>Completions recorded on the calendar-selected day, with readable field values (B12).
     /// Shown in the Abitudine tab; reloaded on day change and on completion events.</summary>
     public HabitRecordsViewModel Records { get; }
+
+    /// <summary>L'elenco della Cronologia: le registrazioni (o i periodi) del periodo scelto, dalla più nuova.
+    /// <see cref="Records"/> resta il giorno scelto.</summary>
+    public HabitRecordsViewModel PeriodRecords { get; }
     public TimerControlViewModel TimerControl { get; }
     public NotesViewModel Notes { get; }
 
@@ -554,7 +558,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             History.HistoryPeriod.All => History.MapShape.YearHeatmaps,
             _ => History.MapShape.Heatmap,
         };
-        return Map.LoadAsync(Period.From, Period.To, shape, _dayBoundary.Today(_clock), SelectedDay, ct);
+        return Task.WhenAll(
+            Map.LoadAsync(Period.From, Period.To, shape, _dayBoundary.Today(_clock), SelectedDay, ct),
+            PeriodRecords.ShowRangeAsync(Period.From, Period.To, ct));
     }
     public DayNoteViewModel DayNote { get; }
     public IEditorAvailability Availability { get; }
@@ -673,6 +679,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _periodList = new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock, ticks);
         _periodList.Changed += OnAbstinenceChanged;
         Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary, confirmationDialog), _periodList, clock);
+        PeriodRecords = new HabitRecordsViewModel(
+            new CompletionListViewModel(completions, metrics, refData, diary, confirmationDialog),
+            new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock, ticks), clock);
         TimerControl = new TimerControlViewModel(timers, configs, clock, ticks, events);
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, photoImporter, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);
@@ -808,6 +817,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         DayNote.SetContext(node.Id, node.HabitType == HabitType.Journal);
         Records.SetContext(node.Id, node.HabitType == HabitType.Journal,
+            isResistance: node.HabitType == HabitType.Resistance, seriesLabelsJson: config?.SeriesLabelsJson);
+        PeriodRecords.DayBoundary = _dayBoundary;
+        PeriodRecords.SetContext(node.Id, node.HabitType == HabitType.Journal,
             isResistance: node.HabitType == HabitType.Resistance, seriesLabelsJson: config?.SeriesLabelsJson);
         SelectedDay = Calendar.SelectedDate ?? today;
         Period.SetContext(_dayBoundary, _dayBoundary.DayOf(node.CreatedAt));
@@ -972,6 +984,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             };
             if (habitId != Node.Id) return;
             // Una voce del diario modificata pubblica solo NoteUpdated: la Cronologia si rilegge qui (I1).
+            // La nota del giorno è la stessa della colonna Note: si rilegge, ma mai sopra un testo non salvato.
+            if (DayNote.HasDate && !DayNote.CanSave) await DayNote.LoadDayAsync(SelectedDay).ConfigureAwait(true);
             if (CompletionList.IsJournal) await Task.WhenAll(Calendar.JumpAsync(), CompletionList.LoadAsync(Node.Id), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
             else await Task.WhenAll(Calendar.JumpAsync(), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
         }
@@ -1247,6 +1261,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             Calendar.RestoreSelection(journal.Day);
             return;
         }
+        // Il testo scritto nella nota del giorno non si perde cambiando giorno.
+        if (DayNote.CanSave) await DayNote.SaveCommand.ExecuteAsync(null).ConfigureAwait(true);
         SelectedDay = date;
         Map.SetSelected(date);
         if (Calendar.SelectedDate != date) Calendar.RestoreSelection(date);

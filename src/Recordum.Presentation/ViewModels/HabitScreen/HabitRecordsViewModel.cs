@@ -86,6 +86,16 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
         OnPropertyChanged(nameof(IsEmpty));
     }
 
+    /// <summary>Carica le registrazioni (o i periodi) di [from, to] senza toccare modalità e periodo: è il pannello
+    /// dell'elenco della Cronologia, comandato dal selettore di periodo della schermata.</summary>
+    public async Task ShowRangeAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        if (_nodeId is not { } id) return;
+        if (_isResistance) await Periods.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);
+        else await Records.LoadRangeAsync(id, from, to, ct).ConfigureAwait(true);
+        OnPropertyChanged(nameof(IsEmpty));
+    }
+
     /// <summary>Carica i completamenti del periodo selezionato (today da IClock, fuso locale).</summary>
     public async Task ApplyPeriodAsync(CancellationToken ct = default)
     {

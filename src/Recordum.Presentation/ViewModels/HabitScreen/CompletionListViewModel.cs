@@ -23,6 +23,19 @@ public sealed partial class CompletionListViewModel : ObservableObject
 
     public Guid? NodeId { get; private set; }
     public ObservableCollection<CompletionRowViewModel> Rows { get; } = [];
+    private readonly List<CompletionRowViewModel> _allRows = [];
+
+    /// <summary>"Con note": mostra solo le righe con un'anteprima, senza rileggere il database.</summary>
+    [ObservableProperty] private bool _onlyWithNotes;
+
+    partial void OnOnlyWithNotesChanged(bool value) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        Rows.Clear();
+        foreach (var r in _allRows)
+            if (!OnlyWithNotes || r.Preview is not null) Rows.Add(r);
+    }
     public int Take { get; init; } = 20;
 
     /// <summary>When true (journal habit), rows show the paired diary note body and delete the pair
@@ -77,7 +90,7 @@ public sealed partial class CompletionListViewModel : ObservableObject
 
     private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, CancellationToken ct)
     {
-        Rows.Clear();
+        _allRows.Clear();
         IReadOnlyDictionary<Guid, DiaryEntrySummary> entries = IsJournal
             ? await _diary.GetEntrySummariesByCompletionsAsync(list.Select(c => c.Id).ToList(), ct).ConfigureAwait(true)
             : new Dictionary<Guid, DiaryEntrySummary>();
@@ -91,8 +104,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
             Func<Guid, CancellationToken, Task>? del = IsJournal
                 ? (id, token) => _diary.DeleteEntryAsync(id, token).AsTask()
                 : null;
-            Rows.Add(new CompletionRowViewModel(c, _completions, c.Values,
-                onDeleted: row => Rows.Remove(row),
+            _allRows.Add(new CompletionRowViewModel(c, _completions, c.Values,
+                onDeleted: row => { _allRows.Remove(row); Rows.Remove(row); },
                 fieldDisplays: BuildFieldDisplays(c.Values, lookup, ParseLabels(SeriesLabelsJson)),
                 overrideNotes: overrideNotes,
                 deleteOverride: del,
@@ -101,6 +114,7 @@ public sealed partial class CompletionListViewModel : ObservableObject
                 confirm: _confirm,
                 tagChips: hasEntry ? TagChip.From(entry!.Tags) : []));
         }
+        ApplyFilter();
     }
 
     private async Task<Dictionary<Guid, MetricDisplay>> BuildLookupAsync(Guid habitNodeId, CancellationToken ct)
