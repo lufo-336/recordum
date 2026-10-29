@@ -2300,20 +2300,20 @@ Certi (visti in un'immagine e confermati nel codice), tutti `reported`:
   dell'abitudine nel diario.
 - **UX-6 — la striscia dei giorni in Home non dice quali giorni sono** · `fixed` (onda 1: intestazione dei giorni con oggi a destra, valori nella striscia) · Nessuna intestazione (Loop ha "gio 29, mer 28…");
   le celle vuote a alfa 48/255 sul fondo tinto spariscono, in scuro quasi del tutto; il "×0" è minuscolo e pallido.
-- **UX-7 — nel dettaglio il nome dell'abitudine è piccolo** · Il titolo della schermata è un 15 px, meno visibile del
+- **UX-7 — nel dettaglio il nome dell'abitudine è piccolo** · `fixed` (onda 2a: nome 20/600 nella variante "testo" del colore; `HabitHeadViewTests.Name_is_20_semibold_in_the_text_variant`) · Il titolo della schermata è un 15 px, meno visibile del
   contenuto; in Loop il nome è la cosa più grande, nel colore dell'abitudine.
-- **UX-8 — doppioni** · `in-progress` (onda 1: il marchio una volta sola; i doppioni della schermata dell'abitudine sono dell'onda 2) · "Segna come fatto" come casella in testa e come pulsante sotto; la scheda "Cronologia" e la
+- **UX-8 — doppioni** · `fixed` (onda 1: il marchio una volta sola; onda 2a: un solo comando in testa, niente fascia "Oggi" né barra dei chip, nessun quick-add nella Cronologia; `HabitHeadViewTests.There_is_no_today_strip_nor_chip_bar`, `Cronologia_has_no_quick_add`, `HeadCommandTests.There_is_no_recording_for_row`) · "Segna come fatto" come casella in testa e come pulsante sotto; la scheda "Cronologia" e la
   didascalia del pannello "Cronologia"; "+ Nota veloce" in testa con il composer già aperto sotto; "Recordum" nella barra del
   titolo e nell'intestazione della Home.
-- **UX-9 — date in due formati nella stessa schermata** · "15/03/2026" accanto a "2026-03-15 12:00" (ISO grezzo nelle
+- **UX-9 — date in due formati nella stessa schermata** · `fixed` (onda 2a: un formato solo, "mer 28 ott  09:00", nell'elenco del giorno e del periodo; `RecordsViewTests.The_rows_are_those_of_the_selected_day_and_change_with_it`) · "15/03/2026" accanto a "2026-03-15 12:00" (ISO grezzo nelle
   Registrazioni).
-- **UX-10 — la Cronologia del diario mostra il Markdown grezzo** ("## Una giornata al lago", "**fredda**", "[foto]").
+- **UX-10 — la Cronologia del diario mostra il Markdown grezzo** · `fixed` (onda 2a: la voce è resa da `DiaryEditor` in sola lettura; `CronologiaColumnTests.Journal_history_is_rendered`, `RecordsViewTests.A_diary_row_shows_its_tag_chips_and_the_photo_label`. Resta: le righe del diario nella Cronologia non mostrano le miniature delle foto, `DiaryEntrySummary` non le porta) · ("## Una giornata al lago", "**fredda**", "[foto]").
 - **UX-11 — i modelli predefiniti sono in inglese per un utente italiano** ("Daily journal", "Food diary"…): nomi e
   descrizioni seminati dalle migrazioni, non localizzati.
 - **UX-12 — builder** · "Colore (hex)" espone l'esadecimale; "Lancia" per creare; la sezione "Dati d'esempio" è vuota; nella
   riga Quantità la tendina non ha etichetta.
-- **UX-13 — "✎" nella scheda Diario** · `in-progress` (onda 1: icone Lucide in Home e cornice; "✎" del diario nell'onda 2) è un glifo Unicode, non un'icona Lucide (regola di §11).
-- **UX-14 — calendario** · Numeri del giorno di ~10 px nell'angolo; un giorno fuori mese e uno vuoto del mese si
+- **UX-13 — "✎" nella scheda Diario** · `fixed` (onda 1: icone Lucide in Home e cornice; onda 2a: i pulsanti delle colonne con icone Lucide; `HabitHeadViewTests.Column_buttons_use_lucide_icons`) è un glifo Unicode, non un'icona Lucide (regola di §11).
+- **UX-14 — calendario** · `fixed` (onda 2a: numeri a 12 px centrati, fuori mese in `Brush.TextFaint`, la selezione è un bordo e non copre il numero; `CronologiaColumnTests.Month_day_numbers_are_12px_and_centered`, `Out_of_month_differs_from_empty`, `Selected_is_not_completed`) · Numeri del giorno di ~10 px nell'angolo; un giorno fuori mese e uno vuoto del mese si
   distinguono appena; nel contatore il cerchio del valore copre il numero del giorno.
 - **UX-15 — campi senza cornice nelle Impostazioni** · `fixed` (onda 1: campi con la cornice piena) · Solo la riga sotto: i numeri ("7", "8") sembrano testo, i campi
   passphrase vuoti sono invisibili.
@@ -2325,3 +2325,15 @@ Da verificare a schermo:
   sono; probabilmente la cultura del test (l'app imposta anche `DefaultThreadCurrentUICulture`). Guardarlo su GNOME.
 - **UX-P2 — le schermate del dettaglio nei test non usano il font dell'app** · `fixed` (onda 1: ogni finestra prende Font.Default, anche quelle dei test) · Rese fuori da `MainWindow`, escono in sans:
   i PNG non rappresentano la produzione. Se UX-1 cambia il font, i test vanno ospitati con i token veri.
+
+Trovati nell'onda 2a (Task 10, PNG e misure; tutti `reported`, da decidere con l'autore):
+
+- **UX2A-1 — le registrazioni precedenti alla creazione non stanno in "Tutto" né nei numeri** · Si può registrare "per un
+  altro giorno" anche prima del giorno di creazione (nessun limite nel selettore), ed è il caso comune di chi crea
+  un'abitudine e recupera la settimana passata. "Tutto" parte dall'anno di creazione (`HistoryPeriodViewModel`), i numeri
+  dalla creazione per scelta della spec (§6.2, finestre "30/90 giorni"): una registrazione del 28 dicembre su un'abitudine
+  creata il 3 gennaio non compare nella mappa "Tutto" né in "in tutto". Da decidere: l'inizio è il primo dato o la creazione?
+- **UX2A-2 — il riepilogo nell'elenco della colonna Note è Markdown grezzo** ("Giornata 0: \*\*lenta\*\*…") · È la prima riga
+  di `NoteRowViewModel.Summary`, come in WPF; manca un helper Markdown → testo.
+- **UX2A-3 — `SerializedSecretStoreTests.A_pending_write_of_one_secret_does_not_hold_the_other` instabile su Windows** ·
+  Timeout al primo giro della CI di `8c561beb`, verde al rilancio senza modifiche: dipende dai tempi del runner condiviso.
