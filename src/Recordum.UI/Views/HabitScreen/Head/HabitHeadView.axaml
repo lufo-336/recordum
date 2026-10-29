@@ -132,8 +132,9 @@
                 </MultiBinding>
               </TextBlock.Foreground>
             </TextBlock>
-            <TextBlock Text="{CompiledBinding Caption}" FontSize="{DynamicResource FontSize.Small}"
-                       Foreground="{DynamicResource Brush.TextMuted}" TextTrimming="CharacterEllipsis"/>
+            <!-- La didascalia va a capo: a 480 px "giorni a settimana" diventava "giorni a settima…" (visto nei PNG). -->
+            <TextBlock x:Name="FigureCaption" Text="{CompiledBinding Caption}" FontSize="{DynamicResource FontSize.Small}"
+                       Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
           </StackPanel>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

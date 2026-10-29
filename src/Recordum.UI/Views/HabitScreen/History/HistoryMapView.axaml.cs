@@ -32,6 +32,10 @@ public partial class HistoryMapView : UserControl
             ItemTemplate = cell,
             ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel { Orientation = Orientation.Vertical }),
         }, supportsRecycling: false);
+        // Qui, non con un binding: WeekColumn nasce dopo InitializeComponent e senza notifica un binding lo leggeva null
+        // (l'anno mostrava "HistoryDayCell[]" al posto delle celle; visto nei PNG). Quello di "Tutto" sta in un template e
+        // si valuta dopo.
+        Weeks.ItemTemplate = WeekColumn;
     }
 
     /// <summary>I giorni brevi della cultura, dal lunedì.</summary>

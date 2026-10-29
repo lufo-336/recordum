@@ -114,7 +114,11 @@ public class CronologiaColumnTests
         // Lo ScrollViewer era nascosto: il suo contenuto entra nell'albero visuale al primo layout dopo.
         await UntilAsync(() => o.Column.GetVisualDescendants().OfType<ItemsControl>().Any(c => c.Name == "Weeks" && c.ItemCount > 0));
         Days(o).Should().BeEmpty();
-        Named<ItemsControl>(o.Column, "Weeks").ItemCount.Should().BeGreaterThanOrEqualTo(52, "l'anno è a colonne di settimana");
+        var weeks = Named<ItemsControl>(o.Column, "Weeks");
+        weeks.ItemCount.Should().BeGreaterThanOrEqualTo(52, "l'anno è a colonne di settimana");
+        // Visto nei PNG: senza il template ogni settimana era il nome del suo tipo. Ogni colonna è un ItemsControl di giorni.
+        weeks.GetVisualDescendants().OfType<ItemsControl>().Count(c => c.ItemCount == 7).Should().BeGreaterThanOrEqualTo(50);
+        weeks.GetVisualDescendants().OfType<TextBlock>().Should().NotContain(t => t.Text != null && t.Text.Contains("HistoryDayCell"));
 
         Named<RadioButton>(o.Column, "AllPeriod").IsChecked = true;
         await UntilAsync(() => Named<ItemsControl>(o.Column, "Years").IsVisible);

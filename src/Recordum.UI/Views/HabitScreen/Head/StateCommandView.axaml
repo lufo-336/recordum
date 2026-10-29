@@ -21,8 +21,9 @@
                     ToolTip.Tip="{CompiledBinding Label}" AutomationProperties.Name="{CompiledBinding Label}"
                     Command="{CompiledBinding $parent[ItemsControl].((qa:MeasuredQuickAddViewModel)DataContext).RecordStepCommand}"
                     CommandParameter="{CompiledBinding}"/>
-            <TextBlock Text="{CompiledBinding Label}" FontSize="{DynamicResource FontSize.Small}" Margin="0,3,0,0"
-                       Foreground="{DynamicResource Brush.TextMuted}" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+            <!-- Va a capo, non si tronca: "Very good" in 56 px diventava "Very go…" (visto nei PNG). -->
+            <TextBlock x:Name="StepLabel" Text="{CompiledBinding Label}" FontSize="{DynamicResource FontSize.Small}" Margin="0,3,0,0"
+                       Foreground="{DynamicResource Brush.TextMuted}" TextAlignment="Center" TextWrapping="Wrap"/>
           </StackPanel>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

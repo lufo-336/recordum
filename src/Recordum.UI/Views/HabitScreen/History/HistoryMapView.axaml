@@ -120,7 +120,7 @@
     <!-- Tre mesi, anno, intervallo: una heatmap a colonne di settimana. -->
     <ScrollViewer x:Name="HeatmapBlock" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
                   IsVisible="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsHeatmapShape}}">
-      <ItemsControl x:Name="Weeks" ItemsSource="{CompiledBinding Weeks}" ItemTemplate="{CompiledBinding #Root.WeekColumn}">
+      <ItemsControl x:Name="Weeks" ItemsSource="{CompiledBinding Weeks}">
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
       </ItemsControl>
     </ScrollViewer>
