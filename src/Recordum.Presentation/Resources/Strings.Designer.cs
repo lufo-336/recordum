@@ -732,6 +732,15 @@ public static class Strings
     public static string Head_Abstinence_LapseConfirm => Get("Head.Abstinence.LapseConfirm");
     public static string Head_Confirm => Get("Head.Confirm");
     public static string Head_Counter_Progress => Get("Head.Counter.Progress");
+    public static string History_Map => Get("History.Map");
+    public static string History_List => Get("History.List");
+    public static string History_Filter_All => Get("History.Filter.All");
+    public static string History_Filter_WithNotes => Get("History.Filter.WithNotes");
+    public static string History_List_Empty => Get("History.List.Empty");
+    public static string History_DayNote_Placeholder => Get("History.DayNote.Placeholder");
+    public static string History_Day_Today => Get("History.Day.Today");
+    public static string History_Custom_From => Get("History.Custom.From");
+    public static string History_Custom_To => Get("History.Custom.To");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

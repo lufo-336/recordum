@@ -86,7 +86,7 @@ public class QuickAddViewTests
 
     private static Button Day(Visual root, DateOnly d) =>
         root.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.Classes.Contains("day") && ((Recordum.Presentation.ViewModels.HabitScreen.Calendar.CalendarDayCellViewModel)b.DataContext!).Date == d);
+            .Single(b => b.Classes.Contains("day") && ((Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell)b.DataContext!).Date == d);
 
     [AvaloniaFact]
     public void Each_quick_add_type_gets_its_own_view()

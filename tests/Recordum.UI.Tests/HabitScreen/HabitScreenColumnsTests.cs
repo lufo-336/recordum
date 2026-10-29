@@ -100,18 +100,18 @@ public class HabitScreenColumnsTests
         var (vm, view, w, scope) = await OpenAsync(1200);
         try
         {
-            string[] hosts = ["CalendarHost", "RecordsHost"];
-            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "CalendarHost").Should().Be(1);
+            string[] hosts = ["Map", "RecordsHost"];
+            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "Map").Should().Be(1);
 
             vm.IsCronologiaOpen = false;
             PrivateDbHost.Pump();
             view.GetVisualDescendants().OfType<Control>().Where(c => c.Name is not null && hosts.Contains(c.Name))
                 .Should().BeEmpty("chiusa non costruisce niente, in nessun punto della view");
-            view.GetVisualDescendants().OfType<Recordum.UI.Views.HabitScreen.Calendar.CalendarNavigatorView>().Should().BeEmpty();
+            view.GetVisualDescendants().OfType<Recordum.UI.Views.HabitScreen.History.HistoryMapView>().Should().BeEmpty();
 
             vm.IsCronologiaOpen = true;
             PrivateDbHost.Pump();
-            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "CalendarHost").Should().Be(1);
+            view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "Map").Should().Be(1);
             view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "RecordsHost").Should().Be(1);
 
             // Il pannello di registrazione sta nella testa, una volta sola, qualunque cosa faccia la Cronologia.

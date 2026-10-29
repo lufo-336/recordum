@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             x:Class="Recordum.UI.Views.HabitScreen.History.PeriodListView"
+             x:DataType="vm:HabitScreenViewModel">
+  <!-- L'elenco del periodo: "giorno · anteprima · ora"; un diario mostra la voce resa; l'astinenza i periodi. -->
+  <StackPanel Spacing="6">
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock x:Name="ListTitle" Text="{x:Static res:Strings.History_List}" FontSize="{DynamicResource FontSize.Heading}"
+                 FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Center"/>
+      <StackPanel Grid.Column="1" x:Name="Filter" Orientation="Horizontal" IsVisible="{CompiledBinding Case, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter={x:Static vm:HabitCase.Abstinence}}">
+        <RadioButton Classes="segment" GroupName="history-filter" x:Name="FilterAll" Content="{x:Static res:Strings.History_Filter_All}"
+                     IsChecked="{CompiledBinding !PeriodRecords.Records.OnlyWithNotes, Mode=OneWay}"/>
+        <RadioButton Classes="segment" GroupName="history-filter" x:Name="FilterWithNotes" Content="{x:Static res:Strings.History_Filter_WithNotes}"
+                     IsChecked="{CompiledBinding PeriodRecords.Records.OnlyWithNotes, Mode=TwoWay}"/>
+      </StackPanel>
+    </Grid>
+    <TextBlock x:Name="ListEmpty" Text="{x:Static res:Strings.History_List_Empty}" FontSize="{DynamicResource FontSize.Small}"
+               Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding PeriodRecords.IsEmpty}"/>
+    <Border x:Name="ListHost"/>
+  </StackPanel>
+</UserControl>

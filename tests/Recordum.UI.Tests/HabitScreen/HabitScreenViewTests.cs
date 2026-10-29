@@ -209,8 +209,8 @@ public class HabitScreenViewTests
         chip.IsChecked = wasOpen;
         Pump();
         column.IsVisible.Should().Be(wasOpen);
-        foreach (var n in new[] { "CalendarHost", "RecordsHost" })
-            view.GetVisualDescendants().OfType<Border>().Should().Contain(b => b.Name == n);
+        foreach (var n in new[] { "Map", "RecordsHost" })
+            view.GetVisualDescendants().OfType<Control>().Should().Contain(b => b.Name == n);
         w.Close();
     }
 

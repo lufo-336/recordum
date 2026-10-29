@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             x:Class="Recordum.UI.Views.HabitScreen.History.DayBlockView"
+             x:DataType="vm:HabitScreenViewModel">
+  <!-- Il giorno scelto (direzione visiva §6.1): il titolo, le registrazioni con ora e ×, la nota del giorno. Per un diario
+       la nota resta nascosta: la scrittura sta nella colonna Diario. -->
+  <UserControl.Styles>
+    <!-- Nel giorno scelto il giorno di ogni riga è ripetuto: resta l'ora. -->
+    <Style Selector="TextBlock.day-label"><Setter Property="IsVisible" Value="False"/></Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="6">
+    <Panel>
+      <TextBlock x:Name="DayHeading" FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
+                 Foreground="{DynamicResource Brush.Text}" Text="{CompiledBinding SelectedDayLabel}"
+                 IsVisible="{CompiledBinding !IsSelectedDayToday}"/>
+      <TextBlock x:Name="DayHeadingToday" FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
+                 Foreground="{DynamicResource Brush.Text}"
+                 Text="{CompiledBinding SelectedDayLabel, StringFormat={x:Static res:Strings.History_Day_Today}}"
+                 IsVisible="{CompiledBinding IsSelectedDayToday}"/>
+    </Panel>
+    <TextBlock x:Name="RecordsEmpty" Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}" FontSize="{DynamicResource FontSize.Small}"
+               Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding Records.IsEmpty}"/>
+    <Border x:Name="RecordsHost"/>
+    <StackPanel x:Name="DayNoteBlock" Spacing="6" Margin="0,4,0,0" IsVisible="{CompiledBinding !IsJournal}">
+      <!-- La cornice tratteggiata: un Rectangle sotto la casella senza bordo (Border non tratteggia). -->
+      <Panel>
+        <Rectangle Stroke="{DynamicResource Brush.FieldBorder}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="6" RadiusY="6"/>
+        <TextBox x:Name="DayNoteBox" Text="{CompiledBinding DayNote.Text, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+                 MinHeight="64" FontFamily="{DynamicResource Font.Serif}" FontSize="{DynamicResource FontSize.Body}"
+                 Background="Transparent" BorderThickness="0"
+                 PlaceholderText="{x:Static res:Strings.History_DayNote_Placeholder}"/>
+      </Panel>
+      <Button x:Name="DayNoteSaveButton" Classes="primary" HorizontalAlignment="Right"
+              Content="{x:Static res:Strings.HabitScreen_DayNote_Save}" Command="{CompiledBinding DayNote.SaveCommand}"
+              IsVisible="{CompiledBinding DayNote.CanSave}"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

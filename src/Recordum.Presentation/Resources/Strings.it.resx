@@ -2050,4 +2050,31 @@
   <data name="Head.Counter.Progress" xml:space="preserve">
     <value>{0}/{1:0.##}</value>
   </data>
+  <data name="History.Map" xml:space="preserve">
+    <value>Mappa</value>
+  </data>
+  <data name="History.List" xml:space="preserve">
+    <value>Cronologia</value>
+  </data>
+  <data name="History.Filter.All" xml:space="preserve">
+    <value>Tutto</value>
+  </data>
+  <data name="History.Filter.WithNotes" xml:space="preserve">
+    <value>Con note</value>
+  </data>
+  <data name="History.List.Empty" xml:space="preserve">
+    <value>Niente registrato in questo periodo.</value>
+  </data>
+  <data name="History.DayNote.Placeholder" xml:space="preserve">
+    <value>Scrivi una nota per questo giorno…</value>
+  </data>
+  <data name="History.Day.Today" xml:space="preserve">
+    <value>{0} · oggi</value>
+  </data>
+  <data name="History.Custom.From" xml:space="preserve">
+    <value>Dal</value>
+  </data>
+  <data name="History.Custom.To" xml:space="preserve">
+    <value>al</value>
+  </data>
 </root>

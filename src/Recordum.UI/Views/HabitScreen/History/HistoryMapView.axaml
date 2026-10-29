@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hvm="using:Recordum.Presentation.ViewModels.HabitScreen.History"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:hv="using:Recordum.UI.Views.HabitScreen.History"
+             x:Name="Root"
+             x:Class="Recordum.UI.Views.HabitScreen.History.HistoryMapView"
+             x:DataType="hvm:HistoryMapViewModel">
+  <!-- La mappa cambia forma col periodo (direzione visiva §6.1). Il gradino nel colore dell'abitudine sul pannello
+       (HeatLevelBrushConverter, §4.3); la selezione è un bordo d'inchiostro, non un riempimento (F0-13); il valore solo nel
+       tooltip; la ricaduta è una tacca sulla cella piena; la nota è un punto nel suo colore. -->
+  <UserControl.Resources>
+    <conv:HeatLevelBrushConverter x:Key="HeatLevel"/>
+    <DataTemplate x:Key="HeatCell" x:DataType="hvm:HistoryDayCell">
+      <Button Classes="heat" Classes.selected="{CompiledBinding IsSelected}" IsEnabled="{CompiledBinding !IsFuture}"
+              Opacity="{CompiledBinding InRange, Converter={x:Static hv:HistoryMapView.InRangeOpacity}}" IsHitTestVisible="{CompiledBinding InRange}"
+              Command="{CompiledBinding #Root.((hvm:HistoryMapViewModel)DataContext).SelectCommand}" CommandParameter="{CompiledBinding}"
+              ToolTip.Tip="{CompiledBinding Value}">
+        <Button.Background>
+          <MultiBinding Converter="{StaticResource HeatLevel}">
+            <Binding Path="Step"/>
+            <Binding Path="HabitColor" ElementName="Root"/>
+            <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+          </MultiBinding>
+        </Button.Background>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.day, Button.heat">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Content="{TemplateBinding Content}"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.day">
+      <Setter Property="Height" Value="36"/>
+      <Setter Property="Margin" Value="2"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ItemsControl.week Button.day"><Setter Property="Height" Value="44"/></Style>
+    <Style Selector="Button.day.today">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="BorderThickness" Value="1.5"/>
+    </Style>
+    <Style Selector="Button.day.selected, Button.heat.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+    <Style Selector="Button.heat">
+      <Setter Property="Width" Value="11"/>
+      <Setter Property="Height" Value="11"/>
+      <Setter Property="Margin" Value="1"/>
+      <Setter Property="CornerRadius" Value="2"/>
+    </Style>
+    <Style Selector="Button.day:disabled, Button.heat:disabled"><Setter Property="Cursor" Value="Arrow"/></Style>
+    <Style Selector="TextBlock.day-number">
+      <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    </Style>
+    <Style Selector="TextBlock.day-number.outside"><Setter Property="Foreground" Value="{DynamicResource Brush.TextFaint}"/></Style>
+  </UserControl.Styles>
+
+  <StackPanel>
+    <!-- Settimana e mese: una griglia di 7 colonne, il giorno breve sopra. -->
+    <StackPanel x:Name="DaysBlock" IsVisible="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsDaysShape}}">
+      <ItemsControl x:Name="WeekdayHeaders" ItemsSource="{x:Static hv:HistoryMapView.WeekdayNames}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <TextBlock Text="{CompiledBinding}" TextAlignment="Center" FontSize="{DynamicResource FontSize.Small}"
+                       Foreground="{DynamicResource Brush.TextMuted}"/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl x:Name="Days" ItemsSource="{CompiledBinding Cells}" Margin="0,4,0,0"
+                    Classes.week="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsWeekShape}}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="hvm:HistoryDayCell">
+            <Button Classes="day" Classes.today="{CompiledBinding IsToday}" Classes.selected="{CompiledBinding IsSelected}"
+                    IsEnabled="{CompiledBinding !IsFuture}" HorizontalAlignment="Stretch"
+                    Command="{CompiledBinding #Root.((hvm:HistoryMapViewModel)DataContext).SelectCommand}" CommandParameter="{CompiledBinding}"
+                    ToolTip.Tip="{CompiledBinding Value}">
+              <Panel>
+                <!-- Fuori dal mese: solo il numero attenuato, nessuna cella. -->
+                <Border x:Name="CellBackground" CornerRadius="5" IsVisible="{CompiledBinding InRange}">
+                  <Border.Background>
+                    <MultiBinding Converter="{StaticResource HeatLevel}">
+                      <Binding Path="Step"/>
+                      <Binding Path="HabitColor" ElementName="Root"/>
+                      <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+                    </MultiBinding>
+                  </Border.Background>
+                </Border>
+                <Border x:Name="LapseNotch" Width="2" Margin="0,6" HorizontalAlignment="Center"
+                        Background="{DynamicResource Brush.Background}" IsVisible="{CompiledBinding IsLapse}"/>
+                <TextBlock x:Name="DayNumber" Classes="day-number" Classes.outside="{CompiledBinding !InRange}"
+                           Text="{CompiledBinding DayNumber}"/>
+                <Ellipse x:Name="NoteDot" Width="5" Height="5" Margin="0,4,4,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                         IsVisible="{CompiledBinding HasNote}"
+                         Fill="{Binding #Root.NoteColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+              </Panel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+    <!-- Tre mesi, anno, intervallo: una heatmap a colonne di settimana. -->
+    <ScrollViewer x:Name="HeatmapBlock" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                  IsVisible="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsHeatmapShape}}">
+      <ItemsControl x:Name="Weeks" ItemsSource="{CompiledBinding Weeks}" ItemTemplate="{CompiledBinding #Root.WeekColumn}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <!-- Tutto: una heatmap per anno, dal più recente. -->
+    <ItemsControl x:Name="Years" ItemsSource="{CompiledBinding Years}"
+                  IsVisible="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsYearsShape}}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="hvm:HistoryYear">
+          <StackPanel Margin="0,0,0,10">
+            <TextBlock Text="{CompiledBinding Year}" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,4"/>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl Classes="year" ItemsSource="{CompiledBinding Weeks}" ItemTemplate="{CompiledBinding #Root.WeekColumn}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

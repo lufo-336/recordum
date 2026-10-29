@@ -2,23 +2,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
              xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:hist="using:Recordum.UI.Views.HabitScreen.History"
              xmlns:local="using:Recordum.UI.Views.HabitScreen"
-             xmlns:calendar="using:Recordum.UI.Views.HabitScreen.Calendar"
              x:Class="Recordum.UI.Views.HabitScreen.CronologiaColumnView"
              x:DataType="vm:HabitScreenViewModel">
-  <!-- Corpo della colonna Cronologia: lo costruisce HabitScreenView solo a colonna aperta (decisione 3). -->
+  <!-- Corpo della colonna Cronologia (direzione visiva §6.1): il periodo, la mappa, il giorno scelto con la sua nota,
+       l'elenco del periodo. Lo costruisce HabitScreenView solo a colonna aperta (decisione 3). Nessuna didascalia ripete
+       il nome della colonna (UX-8). -->
   <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel>
-      <Border x:Name="CalendarHost">
-        <calendar:CalendarNavigatorView DataContext="{CompiledBinding Calendar}"/>
-      </Border>
-      <StackPanel Margin="12,4,12,12">
-        <TextBlock Text="{x:Static res:Strings.HabitScreen_Records}" FontWeight="SemiBold"
-                   Foreground="{DynamicResource Brush.Text}" Margin="0,0,0,6"/>
-        <TextBlock x:Name="RecordsEmpty" Text="{x:Static res:Strings.HabitScreen_DayRecords_Empty}" FontSize="12"
-                   Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding Records.IsEmpty}"/>
-        <Border x:Name="RecordsHost"/>
+    <StackPanel Margin="12,8,12,16" Spacing="14">
+      <hist:PeriodBarView x:Name="PeriodBar" DataContext="{CompiledBinding Period}"/>
+      <StackPanel Spacing="6">
+        <TextBlock Text="{x:Static res:Strings.History_Map}" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.TextMuted}"/>
+        <hist:HistoryMapView x:Name="Map" DataContext="{CompiledBinding Map}" HabitColor="{CompiledBinding $parent[local:CronologiaColumnView].((vm:HabitScreenViewModel)DataContext).Node.Color}"
+                             NoteColor="{CompiledBinding $parent[local:CronologiaColumnView].((vm:HabitScreenViewModel)DataContext).Calendar.NoteColorHex}"/>
       </StackPanel>
+      <hist:DayBlockView x:Name="DayBlock"/>
+      <hist:PeriodListView x:Name="PeriodList"/>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

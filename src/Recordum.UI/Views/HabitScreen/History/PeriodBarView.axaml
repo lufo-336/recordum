@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:hvm="using:Recordum.Presentation.ViewModels.HabitScreen.History"
+             xmlns:conv="using:Recordum.UI.Converters"
+             x:Class="Recordum.UI.Views.HabitScreen.History.PeriodBarView"
+             x:DataType="hvm:HistoryPeriodViewModel">
+  <!-- Il periodo che comanda mappa ed elenco (direzione visiva §6.1): cinque periodi, ‹ etichetta ›, "Dal… al…", "Oggi". -->
+  <StackPanel Spacing="6">
+    <WrapPanel x:Name="Periods" Orientation="Horizontal">
+      <RadioButton Classes="segment" GroupName="period" x:Name="WeekPeriod" Content="{x:Static res:Strings.History_Period_Week}"
+                   IsChecked="{CompiledBinding Period, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:HistoryPeriod.Week}}"/>
+      <RadioButton Classes="segment" GroupName="period" x:Name="MonthPeriod" Content="{x:Static res:Strings.History_Period_Month}"
+                   IsChecked="{CompiledBinding Period, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:HistoryPeriod.Month}}"/>
+      <RadioButton Classes="segment" GroupName="period" x:Name="ThreeMonthsPeriod" Content="{x:Static res:Strings.History_Period_ThreeMonths}"
+                   IsChecked="{CompiledBinding Period, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:HistoryPeriod.ThreeMonths}}"/>
+      <RadioButton Classes="segment" GroupName="period" x:Name="YearPeriod" Content="{x:Static res:Strings.History_Period_Year}"
+                   IsChecked="{CompiledBinding Period, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:HistoryPeriod.Year}}"/>
+      <RadioButton Classes="segment" GroupName="period" x:Name="AllPeriod" Content="{x:Static res:Strings.History_Period_All}"
+                   IsChecked="{CompiledBinding Period, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:HistoryPeriod.All}}"/>
+    </WrapPanel>
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+      <Button x:Name="PreviousButton" Width="28" Height="28" Padding="0" Command="{CompiledBinding PreviousCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.Calendar_Previous}" ToolTip.Tip="{x:Static res:Strings.Calendar_Previous}">
+        <Path Data="{StaticResource Icon.ChevronRight}" Width="12" Height="12" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}"
+              StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round" RenderTransform="scaleX(-1)" RenderTransformOrigin="50%,50%"/>
+      </Button>
+      <TextBlock Grid.Column="1" x:Name="PeriodLabel" Text="{CompiledBinding Label}" Margin="8,0" VerticalAlignment="Center"
+                 FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" TextTrimming="CharacterEllipsis"/>
+      <Button Grid.Column="2" x:Name="NextButton" Width="28" Height="28" Padding="0" Command="{CompiledBinding NextCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.Calendar_Next}" ToolTip.Tip="{x:Static res:Strings.Calendar_Next}">
+        <Path Data="{StaticResource Icon.ChevronRight}" Width="12" Height="12" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}"
+              StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+      </Button>
+      <Button Grid.Column="3" x:Name="CustomButton" Classes="ghost" Margin="6,0,0,0" Padding="6,2"
+              Content="{x:Static res:Strings.History_Period_Custom}">
+        <Button.Flyout>
+          <Flyout Placement="BottomEdgeAlignedRight">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{x:Static res:Strings.History_Custom_From}" VerticalAlignment="Center"/>
+                <CalendarDatePicker x:Name="CustomFrom"/>
+                <TextBlock Text="{x:Static res:Strings.History_Custom_To}" VerticalAlignment="Center"/>
+                <CalendarDatePicker x:Name="CustomTo"/>
+              </StackPanel>
+              <Button x:Name="ApplyCustomButton" Classes="primary" HorizontalAlignment="Right"
+                      Content="{x:Static res:Strings.Head_Confirm}" Click="OnApplyCustom"/>
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+      <Button Grid.Column="4" x:Name="TodayButton" Classes="ghost" Padding="6,2" Content="{x:Static res:Strings.History_Period_Today}"
+              Command="{CompiledBinding TodayCommand}"/>
+    </Grid>
+  </StackPanel>
+</UserControl>

@@ -82,7 +82,7 @@ public class RecordsViewTests
 
     private static Button Day(Visual root, DateOnly d) =>
         root.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.Classes.Contains("day") && ((CalendarDayCellViewModel)b.DataContext!).Date == d);
+            .Single(b => b.Classes.Contains("day") && ((Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell)b.DataContext!).Date == d);
 
     private static Border RecordsHost(Opened o) => o.View.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "RecordsHost");
 
@@ -103,12 +103,14 @@ public class RecordsViewTests
         var o = await OpenAsync(HabitType.Action, SeedTwoDays);
         try
         {
-            await UntilAsync(() => Lines(o).Contains("2026-03-15 12:00"));
-            Lines(o).Should().NotContain("2026-03-14 12:00");
+            // La riga dice il giorno (nascosto nel giorno scelto, ma c'è) e l'ora: "dom 15 mar" · "12:00".
+            static string D(int day) => new DateOnly(2026, 3, day).ToString("ddd d MMM", System.Globalization.CultureInfo.CurrentCulture);
+            await UntilAsync(() => Lines(o).Contains(D(15)));
+            Lines(o).Should().NotContain(D(14));
 
             Click(o.Window, Day(o.View, new DateOnly(2026, 3, 14)));
-            await UntilAsync(() => Lines(o).Contains("2026-03-14 12:00"));
-            Lines(o).Should().NotContain("2026-03-15 12:00");
+            await UntilAsync(() => Lines(o).Contains(D(14)));
+            Lines(o).Should().NotContain(D(15));
         }
         finally { o.Window.Close(); }
     }
@@ -136,7 +138,10 @@ public class RecordsViewTests
             chips.Select(b => ((TextBlock)b.Child!).Text).Should().Equal("fiato", "sera");
             chips[0].Classes.Should().Contain("inline").And.NotContain("property");
             chips[1].Classes.Should().Contain("property").And.NotContain("inline");
-            Lines(o).Should().Contain(t => t.Contains(label, StringComparison.Ordinal) && !t.Contains("photo:", StringComparison.Ordinal));
+            // La voce è resa (UX-10): il testo sta nell'editor in sola lettura, con l'etichetta della foto al posto del link.
+            var entry = RecordsHost(o).GetVisualDescendants().OfType<Recordum.UI.Controls.DiaryEditor>().Single();
+            entry.IsReadOnly.Should().BeTrue();
+            entry.Markdown.Should().Contain(label).And.NotContain("photo:");
         }
         finally { o.Window.Close(); Recordum.Presentation.Resources.Strings.Culture = previous; }
     }

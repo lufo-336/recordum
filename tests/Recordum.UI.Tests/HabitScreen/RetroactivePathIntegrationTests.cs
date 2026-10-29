@@ -78,14 +78,14 @@ public class RetroactivePathIntegrationTests
         return new Opened(window, vm, id, view);
     }
 
-    private static CalendarDayCellViewModel Cell(Opened o, DateOnly d) =>
+    private static Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell Cell(Opened o, DateOnly d) =>
         o.View.GetVisualDescendants().OfType<Button>()
-            .Where(b => b.Classes.Contains("day")).Select(b => (CalendarDayCellViewModel)b.DataContext!)
+            .Where(b => b.Classes.Contains("day")).Select(b => (Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell)b.DataContext!)
             .Single(c => c.Date == d);
 
     private static Button DayButton(Opened o, DateOnly d) =>
         o.View.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.Classes.Contains("day") && ((CalendarDayCellViewModel)b.DataContext!).Date == d);
+            .Single(b => b.Classes.Contains("day") && ((Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell)b.DataContext!).Date == d);
 
     private static HomeRowViewModel Row(Opened o) => o.Vm.Home.Rows.Single(r => r.HabitNodeId == o.Id);
 
@@ -107,8 +107,8 @@ public class RetroactivePathIntegrationTests
             saved.IsRetroactive.Should().BeTrue();
             saved.CompletedAt.Should().Be(new DateTime(2026, 3, 14, 12, 0, 0, DateTimeKind.Utc), "NoonOf(D-1)");
 
-            await UntilAsync(() => Cell(o, yesterday).TintStep > 0);
-            Cell(o, D).TintStep.Should().Be(0, "la registrazione di ieri non finisce su oggi");
+            await UntilAsync(() => Cell(o, yesterday).Step > 0);
+            Cell(o, D).Step.Should().Be(0, "la registrazione di ieri non finisce su oggi");
 
             // D-1 e D sono dentro la striscia di 7 giorni (ultimo = oggi): la riga Home la mostra al penultimo posto.
             await UntilAsync(() => Row(o).CompletionsLast7Days.Sum() == 1);

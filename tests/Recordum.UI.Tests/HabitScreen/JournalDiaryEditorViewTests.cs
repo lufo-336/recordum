@@ -170,7 +170,7 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
 
     private static Button DayCell(Avalonia.Visual view, DateOnly date) =>
         view.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.Classes.Contains("day") && ((CalendarDayCellViewModel)b.DataContext!).Date == date);
+            .Single(b => b.Classes.Contains("day") && ((Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell)b.DataContext!).Date == date);
 
     // ---- 7.1 ----
 
@@ -391,7 +391,7 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         vm.IsCronologiaOpen = true;
         PrivateDbHost.Pump();
         var day = view.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.Classes.Contains("day") && ((CalendarDayCellViewModel)b.DataContext!).Date == yesterday);
+            .Single(b => b.Classes.Contains("day") && ((Recordum.Presentation.ViewModels.HabitScreen.History.HistoryDayCell)b.DataContext!).Date == yesterday);
         ClickAt(window, day);
         await WaitAsync(() => Rendered(view).Count == 1 && Rendered(view)[0].Markdown.StartsWith("Ieri al lago", StringComparison.Ordinal)
             && Rendered(view)[0].GetVisualDescendants().OfType<Image>().Any(i => i.Source != null));
@@ -439,7 +439,11 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
 
         Click(Find<Button>(view, "DiarioCloseButton"));
         vm.IsDiarioOpen.Should().BeFalse();
-        view.GetVisualDescendants().OfType<DiaryEditor>().Should().BeEmpty("colonna chiusa: nessun editor nell'intera view");
+        // Nessun editor che scrive in tutta la view; quelli rimasti sono le voci rese della Cronologia (onda 2a, UX-10).
+        view.GetVisualDescendants().OfType<DiaryEditor>().Where(e => !e.IsReadOnly).Should().BeEmpty("colonna chiusa: nessun editor che scrive");
+        view.GetVisualDescendants().OfType<DiaryEditor>()
+            .Where(e => e.FindAncestorOfType<Recordum.UI.Views.HabitScreen.CronologiaColumnView>(false) is null)
+            .Should().BeEmpty("fuori dalla Cronologia nessun editor, nemmeno nascosto");
         view.GetVisualDescendants().OfType<JournalDiaryView>().Should().BeEmpty();
         view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().BeEmpty();
         view.GetVisualDescendants().OfType<TagEditorView>().Should().BeEmpty();

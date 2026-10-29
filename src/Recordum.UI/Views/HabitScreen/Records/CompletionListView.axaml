@@ -1,47 +1,78 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:res="using:Recordum.Presentation.Resources" xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen" xmlns:jvm="using:Recordum.Presentation.ViewModels.HabitScreen.Journal"
+             xmlns:c="using:Recordum.UI.Controls"
              x:Class="Recordum.UI.Views.HabitScreen.Records.CompletionListView"
              x:DataType="vm:CompletionListViewModel">
-  <!-- Nessun pulsante di modifica (decisione 9 di F2a): in WPF il ✎ accendeva IsEditing e non si vedeva nulla. -->
-  <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
-    <ItemsControl.ItemTemplate>
-      <DataTemplate x:DataType="vm:CompletionRowViewModel">
-        <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}" Padding="0,6">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0">
-              <TextBlock Text="{CompiledBinding Display}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
-              <ItemsControl ItemsSource="{CompiledBinding FieldDisplays}" IsVisible="{CompiledBinding HasFieldDisplays}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="x:String">
-                    <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Text}"/>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <TextBlock Text="{CompiledBinding Notes}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"
-                         IsVisible="{CompiledBinding Notes, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-              <ItemsControl x:Name="TagChipList" ItemsSource="{CompiledBinding TagChips}" IsVisible="{CompiledBinding HasTagChips}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="jvm:TagChip">
-                    <Border Classes="tag-chip" Classes.property="{CompiledBinding IsProperty}" Classes.inline="{CompiledBinding !IsProperty}">
-                      <TextBlock Text="{CompiledBinding Name}" FontSize="{DynamicResource FontSize.Small}"/>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-            <Button Grid.Column="1" x:Name="DeleteButton" Width="28" Height="28" Padding="0" VerticalAlignment="Top"
-                    Background="Transparent" BorderThickness="0"
-                    Command="{CompiledBinding DeleteCommand}"
-                    AutomationProperties.Name="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}"
-                    ToolTip.Tip="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}">
-              <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform"
-                    Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
-            </Button>
-          </Grid>
-        </Border>
-      </DataTemplate>
-    </ItemsControl.ItemTemplate>
-  </ItemsControl>
+  <!-- Una riga: "giorno · ora", i campi, l'anteprima della nota (UX-9), i tag, ×. Un diario mostra la voce resa (UX-10): è
+       un modello a parte, così le righe degli altri tipi non costruiscono un editor nascosto. Nessun pulsante di modifica
+       (decisione 9 di F2a). -->
+  <UserControl.Resources>
+    <DataTemplate x:Key="Head" x:DataType="vm:CompletionRowViewModel">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Classes="day-label" Text="{CompiledBinding DayLabel}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+        <TextBlock Text="{CompiledBinding TimeLabel}" FontFeatures="+tnum" Foreground="{DynamicResource Brush.TextMuted}"/>
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="Tags" x:DataType="vm:CompletionRowViewModel">
+      <ItemsControl x:Name="TagChipList" ItemsSource="{CompiledBinding TagChips}" IsVisible="{CompiledBinding HasTagChips}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="jvm:TagChip">
+            <Border Classes="tag-chip" Classes.property="{CompiledBinding IsProperty}" Classes.inline="{CompiledBinding !IsProperty}">
+              <TextBlock Text="{CompiledBinding Name}" FontSize="{DynamicResource FontSize.Small}"/>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </DataTemplate>
+    <DataTemplate x:Key="Delete" x:DataType="vm:CompletionRowViewModel">
+      <Button x:Name="DeleteButton" Width="28" Height="28" Padding="0" VerticalAlignment="Top"
+              Background="Transparent" BorderThickness="0"
+              Command="{CompiledBinding DeleteCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}"
+              ToolTip.Tip="{x:Static res:Strings.Abstinence_DeleteConfirm_Title}">
+        <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform"
+              Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+      </Button>
+    </DataTemplate>
+
+    <DataTemplate x:Key="PlainRow" x:DataType="vm:CompletionRowViewModel">
+      <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}" Padding="0,6">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="2">
+            <ContentPresenter Content="{CompiledBinding}" ContentTemplate="{StaticResource Head}"/>
+            <ItemsControl ItemsSource="{CompiledBinding FieldDisplays}" IsVisible="{CompiledBinding HasFieldDisplays}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Text}"/>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="Preview" Text="{CompiledBinding Preview}" Foreground="{DynamicResource Brush.TextMuted}"
+                       TextTrimming="CharacterEllipsis"
+                       IsVisible="{CompiledBinding Preview, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            <ContentPresenter Content="{CompiledBinding}" ContentTemplate="{StaticResource Tags}"/>
+          </StackPanel>
+          <ContentPresenter Grid.Column="1" Content="{CompiledBinding}" ContentTemplate="{StaticResource Delete}"/>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="JournalRow" x:DataType="vm:CompletionRowViewModel">
+      <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}" Padding="0,6">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="2">
+            <ContentPresenter Content="{CompiledBinding}" ContentTemplate="{StaticResource Head}"/>
+            <!-- Il margine negativo annulla il Padding dell'editor: il testo si allinea all'ora (come JournalDiaryView). -->
+            <c:DiaryEditor x:Name="Entry" IsReadOnly="True" Margin="-10,-8" Markdown="{CompiledBinding Notes, Mode=OneWay}"/>
+            <ContentPresenter Content="{CompiledBinding}" ContentTemplate="{StaticResource Tags}"/>
+          </StackPanel>
+          <ContentPresenter Grid.Column="1" Content="{CompiledBinding}" ContentTemplate="{StaticResource Delete}"/>
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}"/>
 </UserControl>
