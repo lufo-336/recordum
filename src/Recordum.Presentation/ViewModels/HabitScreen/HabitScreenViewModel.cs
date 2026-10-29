@@ -530,6 +530,32 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public bool ShowTodayStrip => HasNode && !IsGroupNode;
 
     public CalendarNavigatorViewModel Calendar { get; }
+
+    /// <summary>Il periodo che comanda mappa e Cronologia (spec direzione visiva §6.1).</summary>
+    public History.HistoryPeriodViewModel Period { get; }
+
+    /// <summary>La mappa della Cronologia, che cambia forma col periodo.</summary>
+    public History.HistoryMapViewModel Map { get; }
+
+    private async void OnPeriodChanged(object? sender, EventArgs e)
+    {
+        try { await ReloadHistoryAsync(CancellationToken.None).ConfigureAwait(true); }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnPeriodChanged failed: {ex}"); }
+    }
+
+    /// <summary>Ricarica ciò che segue il periodo: la mappa (e, dal Task 5, l'elenco del periodo).</summary>
+    private Task ReloadHistoryAsync(CancellationToken ct)
+    {
+        if (Node is null) return Task.CompletedTask;
+        var shape = Period.Period switch
+        {
+            History.HistoryPeriod.Week => History.MapShape.Week,
+            History.HistoryPeriod.Month => History.MapShape.Month,
+            History.HistoryPeriod.All => History.MapShape.YearHeatmaps,
+            _ => History.MapShape.Heatmap,
+        };
+        return Map.LoadAsync(Period.From, Period.To, shape, _dayBoundary.Today(_clock), SelectedDay, ct);
+    }
     public DayNoteViewModel DayNote { get; }
     public IEditorAvailability Availability { get; }
 
@@ -660,6 +686,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         TodayStrip.ActionRequested += OnTodayStripAction;
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
         Calendar.SelectedDateChanged += OnCalendarDateSelected;
+        Period = new History.HistoryPeriodViewModel(clock);
+        Period.Changed += OnPeriodChanged;
+        Map = new History.HistoryMapViewModel(LoadMarkersAsync);
+        Map.DaySelected += OnCalendarDateSelected;
         DayNote = new DayNoteViewModel(noteService, clock);
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.CompletionRecorded, OnCompletionEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.CompletionUpdated, OnCompletionEvent));
@@ -673,6 +703,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Calendar.SelectedDateChanged -= OnCalendarDateSelected;
+        Period.Changed -= OnPeriodChanged;
+        Map.DaySelected -= OnCalendarDateSelected;
         Figures.Dispose();
         _periodList.Changed -= OnAbstinenceChanged;
         TodayStrip.Changed -= OnAbstinenceChanged;
@@ -778,6 +810,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Records.SetContext(node.Id, node.HabitType == HabitType.Journal,
             isResistance: node.HabitType == HabitType.Resistance, seriesLabelsJson: config?.SeriesLabelsJson);
         SelectedDay = Calendar.SelectedDate ?? today;
+        Period.SetContext(_dayBoundary, _dayBoundary.DayOf(node.CreatedAt));
+        await ReloadHistoryAsync(ct).ConfigureAwait(true);
+        if (generation != _loadGeneration) return;
         if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync(ct).ConfigureAwait(true);
         await RefreshUndoAsync(ct).ConfigureAwait(true);
         if (Calendar.SelectedDate is { } sel)
@@ -883,6 +918,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 Records.ReloadAsync(),
                 TodayStrip.LoadAsync(Node, _dayBoundary),
                 Calendar.JumpAsync(),
+                ReloadHistoryAsync(CancellationToken.None),
             };
             // The tap quick-add counts the day in a local field it bumps per tap, so a completion
             // deleted from the records list would leave it reading high (W23-VF1). Re-read from the DB.
@@ -911,6 +947,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             {
                 Detail.LoadAsync(Node, _dayBoundary, CancellationToken.None),
                 Calendar.JumpAsync(),
+                ReloadHistoryAsync(CancellationToken.None),
                 Records.ReloadAsync(),
                 TodayStrip.LoadAsync(Node, _dayBoundary),
                 LoadFiguresAsync(CancellationToken.None),
@@ -935,8 +972,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             };
             if (habitId != Node.Id) return;
             // Una voce del diario modificata pubblica solo NoteUpdated: la Cronologia si rilegge qui (I1).
-            if (CompletionList.IsJournal) await Task.WhenAll(Calendar.JumpAsync(), CompletionList.LoadAsync(Node.Id)).ConfigureAwait(true);
-            else await Calendar.JumpAsync().ConfigureAwait(true);
+            if (CompletionList.IsJournal) await Task.WhenAll(Calendar.JumpAsync(), CompletionList.LoadAsync(Node.Id), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
+            else await Task.WhenAll(Calendar.JumpAsync(), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnNoteEvent failed: {ex}"); }
     }
@@ -961,7 +998,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             Node = refreshed;
             OnPropertyChanged(nameof(Name));
             Calendar.CompletedColorHex = refreshed.Color;
-            await Calendar.JumpAsync().ConfigureAwait(true);
+            await Task.WhenAll(Calendar.JumpAsync(), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
 
             // A config write (HabitConfigService publishes HabitUpdated) can re-shape the open screen: a "repeatable"
             // flip rebuilds the registration module, a timer change re-reads the Cronologia stopwatch. Both only when
@@ -1211,6 +1248,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             return;
         }
         SelectedDay = date;
+        Map.SetSelected(date);
         if (Calendar.SelectedDate != date) Calendar.RestoreSelection(date);
         if (QuickAdd is not null)
             QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);

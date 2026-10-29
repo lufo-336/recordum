@@ -1975,4 +1975,25 @@
   <data name="Figures.Value.Days" xml:space="preserve">
     <value>{0} g</value>
   </data>
+  <data name="History.Period.Week" xml:space="preserve">
+    <value>Settimana</value>
+  </data>
+  <data name="History.Period.Month" xml:space="preserve">
+    <value>Mese</value>
+  </data>
+  <data name="History.Period.ThreeMonths" xml:space="preserve">
+    <value>3 mesi</value>
+  </data>
+  <data name="History.Period.Year" xml:space="preserve">
+    <value>Anno</value>
+  </data>
+  <data name="History.Period.All" xml:space="preserve">
+    <value>Tutto</value>
+  </data>
+  <data name="History.Period.Custom" xml:space="preserve">
+    <value>Dal… al…</value>
+  </data>
+  <data name="History.Period.Today" xml:space="preserve">
+    <value>Oggi</value>
+  </data>
 </root>

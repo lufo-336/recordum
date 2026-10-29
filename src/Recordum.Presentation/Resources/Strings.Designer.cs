@@ -707,6 +707,13 @@ public static class Strings
     public static string Figures_Value_Minutes => Get("Figures.Value.Minutes");
     public static string Figures_Value_Hours => Get("Figures.Value.Hours");
     public static string Figures_Value_Days => Get("Figures.Value.Days");
+    public static string History_Period_Week => Get("History.Period.Week");
+    public static string History_Period_Month => Get("History.Period.Month");
+    public static string History_Period_ThreeMonths => Get("History.Period.ThreeMonths");
+    public static string History_Period_Year => Get("History.Period.Year");
+    public static string History_Period_All => Get("History.Period.All");
+    public static string History_Period_Custom => Get("History.Period.Custom");
+    public static string History_Period_Today => Get("History.Period.Today");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
