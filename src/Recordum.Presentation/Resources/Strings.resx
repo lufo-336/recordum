@@ -1923,4 +1923,40 @@ Details: {0}</value>
   <data name="Unlock.LostPassphrase" xml:space="preserve">
     <value>If you forget the passphrase, your data cannot be recovered: that is the price of encryption.</value>
   </data>
+  <data name="Figures.CurrentStreak" xml:space="preserve">
+    <value>current streak</value>
+  </data>
+  <data name="Figures.BestStreak" xml:space="preserve">
+    <value>best streak</value>
+  </data>
+  <data name="Figures.Pct30" xml:space="preserve">
+    <value>last 30 days</value>
+  </data>
+  <data name="Figures.Total" xml:space="preserve">
+    <value>in total</value>
+  </data>
+  <data name="Figures.Today" xml:space="preserve">
+    <value>today</value>
+  </data>
+  <data name="Figures.Avg30" xml:space="preserve">
+    <value>30-day average</value>
+  </data>
+  <data name="Figures.GoalStreak" xml:space="preserve">
+    <value>goal streak</value>
+  </data>
+  <data name="Figures.Trend" xml:space="preserve">
+    <value>trend</value>
+  </data>
+  <data name="Figures.DaysMarked" xml:space="preserve">
+    <value>days marked</value>
+  </data>
+  <data name="Figures.EntriesWeek" xml:space="preserve">
+    <value>entries this week</value>
+  </data>
+  <data name="Figures.Streak" xml:space="preserve">
+    <value>streak</value>
+  </data>
+  <data name="Figures.Entries" xml:space="preserve">
+    <value>entries</value>
+  </data>
 </root>

@@ -473,6 +473,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public bool IsSelectedDayToday => SelectedDay == _dayBoundary.Today(_clock);
 
     private bool _selectedDayHasRecords;
+    private HabitConfig? _config;
+
+    private Task LoadFiguresAsync(CancellationToken ct)
+        => Node is { } node && Case is { } @case
+            ? Figures.LoadAsync(node, _config, @case, _dayBoundary, ct)
+            : Task.CompletedTask;
 
     /// <summary>"annulla" sotto il comando: il giorno scelto ha almeno una registrazione. Spento per astinenza (i periodi
     /// non sono registrazioni) e diario (la voce si toglie dalla Cronologia).</summary>
@@ -503,6 +509,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>The always-visible per-type "Oggi" strip above the columns (Onda 2.2). Loaded per
     /// subject; only shown for a habit (not a group).</summary>
     public TodayStripViewModel TodayStrip { get; }
+
+    /// <summary>I quattro numeri della testa (spec direzione visiva §6.2).</summary>
+    public Figures.HabitFiguresViewModel Figures { get; }
 
     /// <summary>Il confine di giornata dell abitudine corrente, risolto UNA volta da LoadAsync e
     /// distribuito ai pannelli (spec R9 §3.3). Prima ogni pannello se lo ricalcolava, con tre formule
@@ -643,6 +652,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
         TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock, ticks);
+        Figures = new Figures.HabitFiguresViewModel(completions, streaks, abstinence, metrics, refData, goals, hourly, clock, ticks: ticks);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
         // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
         TodayStrip.Changed += OnAbstinenceChanged;
@@ -663,6 +673,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Calendar.SelectedDateChanged -= OnCalendarDateSelected;
+        Figures.Dispose();
         _periodList.Changed -= OnAbstinenceChanged;
         TodayStrip.Changed -= OnAbstinenceChanged;
         TodayStrip.ActionRequested -= OnTodayStripAction;
@@ -734,6 +745,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Case = node.NodeType == NodeType.Group ? null
             : HabitCases.Resolve(node.HabitType ?? HabitType.Action, config,
                 (await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true)).Count);
+        if (generation != _loadGeneration) return;
+        _config = config;
+        await LoadFiguresAsync(ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
 
         var listTask = CompletionList.LoadAsync(node.Id, ct);
@@ -875,6 +889,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (QuickAdd is CounterTapQuickAddViewModel tap) reloads.Add(tap.LoadDayAsync());
             if (QuickAdd is ActionQuickAddViewModel action) reloads.Add(action.LoadDayAsync());
             reloads.Add(RefreshUndoAsync(CancellationToken.None));
+            reloads.Add(LoadFiguresAsync(CancellationToken.None));
             // Una voce cancellata dalla Cronologia non deve restare nella colonna Diario (M4).
             if (JournalQuickEntry is { } journal && IsJournal) reloads.Add(journal.RefreshEntriesAsync());
             await Task.WhenAll(reloads).ConfigureAwait(true);
@@ -898,6 +913,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 Calendar.JumpAsync(),
                 Records.ReloadAsync(),
                 TodayStrip.LoadAsync(Node, _dayBoundary),
+                LoadFiguresAsync(CancellationToken.None),
             };
             if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync(_dayBoundary));
             await Task.WhenAll(reloads).ConfigureAwait(true);
@@ -956,6 +972,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (Node is null || Node.Id != refreshed.Id) return;
             if (refreshed.NodeType != NodeType.Group)
                 Case = HabitCases.Resolve(refreshed.HabitType ?? HabitType.Action, cfg, defs.Count);
+            _config = cfg;
+            await LoadFiguresAsync(CancellationToken.None).ConfigureAwait(true);
             if (QuickAdd is not null && QuickAddShape(cfg, defs) != _quickAddShape)
                 await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
             var segmentsChanged = !segs.Select(x => (x.Id, x.Name, x.IsRest)).SequenceEqual(TimerControl.Segments.Select(x => (x.Id, x.Name, x.IsRest)));

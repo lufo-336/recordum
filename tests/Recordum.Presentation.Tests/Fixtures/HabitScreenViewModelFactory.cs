@@ -84,10 +84,11 @@ public static class HabitScreenViewModelFactory
             new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs,
             new FakeResetTimeResolver(boundary));
 
-        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence);
+        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus);
     }
 }
 
 public sealed record HabitScreenRig(
     HabitScreenViewModel Vm, FakeHabitNodeService Nodes, FakeCompletionService Completions, FakeNoteService Notes,
-    FakeHabitConfigService Configs, FakeMetricDefinitionService Metrics, FakeClock Clock, FakeAbstinenceService Abstinence);
+    FakeHabitConfigService Configs, FakeMetricDefinitionService Metrics, FakeClock Clock, FakeAbstinenceService Abstinence,
+    FakeEventBus Bus);

@@ -681,6 +681,18 @@ public static class Strings
     public static string Diario_Photo_Label => Get("Diario.Photo.Label");
     public static string Diario_QuickEntry_Tags => Get("Diario.QuickEntry.Tags");
 
+    public static string Figures_CurrentStreak => Get("Figures.CurrentStreak");
+    public static string Figures_BestStreak => Get("Figures.BestStreak");
+    public static string Figures_Pct30 => Get("Figures.Pct30");
+    public static string Figures_Total => Get("Figures.Total");
+    public static string Figures_Today => Get("Figures.Today");
+    public static string Figures_Avg30 => Get("Figures.Avg30");
+    public static string Figures_GoalStreak => Get("Figures.GoalStreak");
+    public static string Figures_Trend => Get("Figures.Trend");
+    public static string Figures_DaysMarked => Get("Figures.DaysMarked");
+    public static string Figures_EntriesWeek => Get("Figures.EntriesWeek");
+    public static string Figures_Streak => Get("Figures.Streak");
+    public static string Figures_Entries => Get("Figures.Entries");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

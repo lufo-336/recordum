@@ -1897,4 +1897,40 @@
   <data name="Unlock.LostPassphrase" xml:space="preserve">
     <value>Se dimentichi la passphrase, i dati non si possono recuperare: è il prezzo della cifratura.</value>
   </data>
+  <data name="Figures.CurrentStreak" xml:space="preserve">
+    <value>serie attuale</value>
+  </data>
+  <data name="Figures.BestStreak" xml:space="preserve">
+    <value>serie migliore</value>
+  </data>
+  <data name="Figures.Pct30" xml:space="preserve">
+    <value>30 giorni</value>
+  </data>
+  <data name="Figures.Total" xml:space="preserve">
+    <value>in tutto</value>
+  </data>
+  <data name="Figures.Today" xml:space="preserve">
+    <value>oggi</value>
+  </data>
+  <data name="Figures.Avg30" xml:space="preserve">
+    <value>media 30 g</value>
+  </data>
+  <data name="Figures.GoalStreak" xml:space="preserve">
+    <value>serie obiettivo</value>
+  </data>
+  <data name="Figures.Trend" xml:space="preserve">
+    <value>andamento</value>
+  </data>
+  <data name="Figures.DaysMarked" xml:space="preserve">
+    <value>giorni segnati</value>
+  </data>
+  <data name="Figures.EntriesWeek" xml:space="preserve">
+    <value>voci della settimana</value>
+  </data>
+  <data name="Figures.Streak" xml:space="preserve">
+    <value>serie</value>
+  </data>
+  <data name="Figures.Entries" xml:space="preserve">
+    <value>voci</value>
+  </data>
 </root>
