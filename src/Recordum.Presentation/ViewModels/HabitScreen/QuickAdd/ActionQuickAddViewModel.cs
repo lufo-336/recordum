@@ -40,7 +40,7 @@ public sealed partial class ActionQuickAddViewModel(ICompletionService completio
     private async Task<IReadOnlyList<Completion>> ListDayAsync(CancellationToken ct)
     {
         // RangeOf è semiaperta, il filtro del servizio inclusivo al millisecondo: -1 ms.
-        var (from, toExclusive) = DayBoundary.RangeOf(DateOnly.FromDateTime(CompletionDate.Date));
+        var (from, toExclusive) = DayBoundary.RangeOf(CompletionDay);
         return await Completions.ListByHabitAsync(Node!.Id, from, toExclusive.AddMilliseconds(-1), ct: ct).ConfigureAwait(true);
     }
 

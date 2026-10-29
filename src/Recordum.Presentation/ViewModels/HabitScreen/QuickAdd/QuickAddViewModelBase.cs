@@ -44,6 +44,9 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
 
     public abstract Task SaveAsync(CancellationToken ct = default);
 
+    /// <summary>Il giorno di <see cref="CompletionDate"/>: un giorno scelto dall'utente, non un istante da bucketizzare.</summary>
+    protected DateOnly CompletionDay => DateOnly.FromDateTime(CompletionDate.Date);
+
     /// <summary>Shows a localized message for an unexpected save failure and traces the real exception,
     /// so a raw EF/SQLite message (e.g. "UNIQUE constraint failed") never leaks into the UI (CR21).</summary>
     protected void SetUnexpectedError(Exception ex)

@@ -27,6 +27,10 @@ public class DayDerivationGuardTests
             "CompletionDate è il giorno che l'utente ha scelto sul picker, non un istante da bucketizzare",
         ["Recordum.Presentation/ViewModels/HabitScreen/QuickAdd/JournalQuickAddViewModel.cs"] =
             "CompletionDate.Date è già un giorno di dominio scelto dall'utente, non un istante (A49)",
+        ["Recordum.UI/Views/HabitScreen/Head/HabitHeadView.axaml.cs"] =
+            "presentazione: converte il DateTime del Calendar di \"per un altro giorno\", non un istante (onda 2a)",
+        ["Recordum.UI/Views/HabitScreen/History/PeriodBarView.axaml.cs"] =
+            "presentazione: converte i DateTime dei CalendarDatePicker di \"Dal… al…\", non un istante (onda 2a)",
     };
 
     [Fact]

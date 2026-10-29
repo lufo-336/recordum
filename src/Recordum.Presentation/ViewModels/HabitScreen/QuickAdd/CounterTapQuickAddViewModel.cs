@@ -65,7 +65,7 @@ public sealed partial class CounterTapQuickAddViewModel(ICompletionService compl
     /// semiaperta, il filtro del servizio inclusivo al millisecondo: -1 ms.</summary>
     private (DateTimeOffset From, DateTimeOffset To) DayWindowUtc()
     {
-        var (from, toExclusive) = DayBoundary.RangeOf(DateOnly.FromDateTime(CompletionDate.Date));
+        var (from, toExclusive) = DayBoundary.RangeOf(CompletionDay);
         return (from, toExclusive.AddMilliseconds(-1));
     }
 }
