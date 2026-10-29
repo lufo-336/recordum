@@ -144,6 +144,34 @@ public class ShellIntegrationTests(ITestOutputHelper output)
     }
 
     [AvaloniaFact]
+    public async Task Esc_closes_the_photo_viewer_before_any_column()
+    {
+        // Onda 2a, Task 10: il gestore in tunnel della finestra vede Esc prima della colonna Note. Senza la sua regola,
+        // Esc col visore aperto chiudeva la colonna Note (l'ultima aperta) e lasciava il visore aperto dentro.
+        var window = await OpenSeededAsync();
+        var vm = (MainWindowViewModel)window.DataContext!;
+        vm.Home.SelectedRow = vm.Home.Rows.First(r => !r.IsGroup);
+        for (var i = 0; i < 100 && vm.Workspace.ActiveSubjectTab?.Screen is null; i++)
+        {
+            await Task.Delay(20);
+            Dispatcher.UIThread.RunJobs();
+        }
+        var screen = vm.Workspace.ActiveSubjectTab!.Screen!;
+        screen.IsNoteOpen = true;
+        screen.Notes.IsLightboxOpen = true;
+        Dispatcher.UIThread.RunJobs();
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        screen.Notes.IsLightboxOpen.Should().BeFalse("Esc chiude il visore");
+        screen.IsNoteOpen.Should().BeTrue("e non la colonna sotto");
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        screen.IsNoteOpen.Should().BeFalse("il secondo Esc chiude l'ultima colonna, come prima");
+    }
+
+    [AvaloniaFact]
     public async Task The_home_load_stays_within_a_generous_budget_and_the_number_is_printed()
     {
         await ShellFixture.Shared.SeedAsync();   // fuori dalla misura: semina una volta sola

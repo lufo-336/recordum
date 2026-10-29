@@ -206,7 +206,9 @@ public partial class MainWindow : Window
         // colonna aperta.
         if (e.Key == Key.Escape && _viewModel.Workspace.ActiveSubjectTab?.Screen is { } screen)
         {
-            if (screen.IsFocusActive) screen.ExitFocusCommand.Execute(null);
+            // Il visore delle foto della colonna Note si chiude per primo: non è una colonna, e sotto c'è la colonna Note.
+            if (screen.ShowNote && screen.Notes.IsLightboxOpen) screen.Notes.CloseLightboxCommand.Execute(null);
+            else if (screen.IsFocusActive) screen.ExitFocusCommand.Execute(null);
             else screen.CloseLastColumn();
             e.Handled = true;
             return;

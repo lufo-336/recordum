@@ -193,9 +193,8 @@ public class NotesColumnTests
         Click(o.Window, Named<Button>(o.Column, "LightboxNextButton"));
         o.Vm.Notes.LightboxAttachment.Should().NotBeSameAs(first, "› passa alla foto dopo");
 
-        o.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
-        Pump();
-        viewer.IsVisible.Should().BeFalse("Esc chiude il visore");
+        Click(o.Window, Named<Button>(o.Column, "LightboxCloseButton"));
+        viewer.IsVisible.Should().BeFalse("× chiude il visore (Esc: ShellIntegrationTests, lo gestisce MainWindow)");
         o.Window.Close();
     }
 
