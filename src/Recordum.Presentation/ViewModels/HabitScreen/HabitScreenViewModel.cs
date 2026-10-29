@@ -461,6 +461,25 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private HabitNode? _node;
 
+    /// <summary>Il caso dell'abitudine (spec direzione visiva §6.2): null per un gruppo o senza soggetto.</summary>
+    [ObservableProperty] private HabitCase? _case;
+
+    /// <summary>Il giorno su cui registra il comando in testa: oggi, oppure quello scelto con "per un altro giorno" o con
+    /// un clic sulla mappa. Un soggetto nuovo riparte da oggi.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSelectedDayToday))]
+    private DateOnly _selectedDay;
+
+    public bool IsSelectedDayToday => SelectedDay == _dayBoundary.Today(_clock);
+
+    private bool _selectedDayHasRecords;
+
+    /// <summary>"annulla" sotto il comando: il giorno scelto ha almeno una registrazione. Spento per astinenza (i periodi
+    /// non sono registrazioni) e diario (la voce si toglie dalla Cronologia).</summary>
+    public bool CanUndoLast => _selectedDayHasRecords && Case is not (HabitCase.Abstinence or HabitCase.Journal) && Node is not null;
+
+    partial void OnCaseChanged(HabitCase? value) => NotifyUndo();
+
     public bool HasNode => Node is not null;
     public string Name => Node?.Name ?? string.Empty;
 
@@ -671,6 +690,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             Node = null;
             QuickAdd = null;
+            Case = null;
             OnPropertyChanged(nameof(HasNode));
             OnPropertyChanged(nameof(Name));
             return;
@@ -711,6 +731,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var config = await _configs.GetAsync(node.Id, ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
         CompletionList.SeriesLabelsJson = config?.SeriesLabelsJson;
+        Case = node.NodeType == NodeType.Group ? null
+            : HabitCases.Resolve(node.HabitType ?? HabitType.Action, config,
+                (await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true)).Count);
+        if (generation != _loadGeneration) return;
 
         var listTask = CompletionList.LoadAsync(node.Id, ct);
         var quickAddTask = BuildQuickAddAsync(node, ct);
@@ -739,6 +763,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         DayNote.SetContext(node.Id, node.HabitType == HabitType.Journal);
         Records.SetContext(node.Id, node.HabitType == HabitType.Journal,
             isResistance: node.HabitType == HabitType.Resistance, seriesLabelsJson: config?.SeriesLabelsJson);
+        SelectedDay = Calendar.SelectedDate ?? today;
+        if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync(ct).ConfigureAwait(true);
+        await RefreshUndoAsync(ct).ConfigureAwait(true);
         if (Calendar.SelectedDate is { } sel)
         {
             Notes.SetCalendarDay(sel);
@@ -846,6 +873,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // The tap quick-add counts the day in a local field it bumps per tap, so a completion
             // deleted from the records list would leave it reading high (W23-VF1). Re-read from the DB.
             if (QuickAdd is CounterTapQuickAddViewModel tap) reloads.Add(tap.LoadDayAsync());
+            if (QuickAdd is ActionQuickAddViewModel action) reloads.Add(action.LoadDayAsync());
+            reloads.Add(RefreshUndoAsync(CancellationToken.None));
             // Una voce cancellata dalla Cronologia non deve restare nella colonna Diario (M4).
             if (JournalQuickEntry is { } journal && IsJournal) reloads.Add(journal.RefreshEntriesAsync());
             await Task.WhenAll(reloads).ConfigureAwait(true);
@@ -925,6 +954,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             var defs = await _metrics.ListByHabitAsync(refreshed.Id).ConfigureAwait(true);
             var segs = cfg?.TimerMode == TimerMode.Session ? await _configs.ListSegmentsAsync(refreshed.Id).ConfigureAwait(true) : [];
             if (Node is null || Node.Id != refreshed.Id) return;
+            if (refreshed.NodeType != NodeType.Group)
+                Case = HabitCases.Resolve(refreshed.HabitType ?? HabitType.Action, cfg, defs.Count);
             if (QuickAdd is not null && QuickAddShape(cfg, defs) != _quickAddShape)
                 await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
             var segmentsChanged = !segs.Select(x => (x.Id, x.Name, x.IsRest)).SequenceEqual(TimerControl.Segments.Select(x => (x.Id, x.Name, x.IsRest)));
@@ -1144,28 +1175,74 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private async void OnCalendarDateSelected(object? sender, DateOnly date)
     {
-        try
-        {
-            // Una modifica aperta nel diario con cambiamenti chiede prima di sparire col giorno (Ruling 6): "No" lascia
-            // tutto sul giorno di prima, calendario compreso.
-            if (JournalQuickEntry is { } journal && date != journal.Day
-                && !await journal.ConfirmDayChangeAsync().ConfigureAwait(true))
-            {
-                Calendar.RestoreSelection(journal.Day);
-                return;
-            }
-            if (QuickAdd is not null)
-                QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
-            // The tap quick-add's count belongs to the day it was loaded for: without this it kept
-            // showing the previous day's total, and the next tap incremented from there (W23-VF1).
-            if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
-            Notes.SetCalendarDay(date);
-            JournalQuickEntry?.SetDay(date);
-            await DayNote.LoadDayAsync(date).ConfigureAwait(true);
-            await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
-            if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);
-        }
+        try { await SelectDayAsync(date).ConfigureAwait(true); }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCalendarDateSelected failed: {ex}"); }
+    }
+
+    /// <summary>Sceglie il giorno su cui registrare e che mostrano il giorno della Cronologia, la nota del giorno e le
+    /// registrazioni. Lo chiamano il calendario di WPF, la mappa e "per un altro giorno"; il calendario resta allineato
+    /// senza rialzare il suo evento.</summary>
+    public async Task SelectDayAsync(DateOnly date)
+    {
+        // Una modifica aperta nel diario con cambiamenti chiede prima di sparire col giorno (Ruling 6): "No" lascia
+        // tutto sul giorno di prima, calendario compreso.
+        if (JournalQuickEntry is { } journal && date != journal.Day
+            && !await journal.ConfirmDayChangeAsync().ConfigureAwait(true))
+        {
+            Calendar.RestoreSelection(journal.Day);
+            return;
+        }
+        SelectedDay = date;
+        if (Calendar.SelectedDate != date) Calendar.RestoreSelection(date);
+        if (QuickAdd is not null)
+            QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
+        // The tap quick-add's count belongs to the day it was loaded for: without this it kept
+        // showing the previous day's total, and the next tap incremented from there (W23-VF1).
+        if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
+        if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync().ConfigureAwait(true);
+        Notes.SetCalendarDay(date);
+        JournalQuickEntry?.SetDay(date);
+        await DayNote.LoadDayAsync(date).ConfigureAwait(true);
+        await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
+        if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);
+        await RefreshUndoAsync(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private Task BackToTodayAsync() => SelectDayAsync(_dayBoundary.Today(_clock));
+
+    /// <summary>"annulla": cancella la registrazione più recente del giorno scelto (l'evento del bus ricarica il resto).</summary>
+    [RelayCommand(CanExecute = nameof(CanUndoLast))]
+    private async Task UndoLastAsync()
+    {
+        // AsyncRelayCommand.ExecuteAsync non consulta CanExecute: la guardia sta anche qui.
+        if (!CanUndoLast) return;
+        var newest = (await ListSelectedDayAsync(CancellationToken.None).ConfigureAwait(true))
+            .OrderByDescending(c => c.CompletedAtMs).FirstOrDefault();
+        if (newest is not null) await _completions.DeleteAsync(newest.Id).ConfigureAwait(true);
+        if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
+        if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync().ConfigureAwait(true);
+        await RefreshUndoAsync(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private async Task<IReadOnlyList<Completion>> ListSelectedDayAsync(CancellationToken ct)
+    {
+        if (Node is null) return [];
+        // RangeOf è semiaperta, il filtro del servizio inclusivo al millisecondo: -1 ms.
+        var (from, toExclusive) = _dayBoundary.RangeOf(SelectedDay);
+        return await _completions.ListByHabitAsync(Node.Id, from, toExclusive.AddMilliseconds(-1), ct: ct).ConfigureAwait(true);
+    }
+
+    private async Task RefreshUndoAsync(CancellationToken ct)
+    {
+        _selectedDayHasRecords = (await ListSelectedDayAsync(ct).ConfigureAwait(true)).Count > 0;
+        NotifyUndo();
+    }
+
+    private void NotifyUndo()
+    {
+        OnPropertyChanged(nameof(CanUndoLast));
+        UndoLastCommand.NotifyCanExecuteChanged();
     }
 
     private async Task PushDaySummaryAsync(DateOnly date, CancellationToken ct)

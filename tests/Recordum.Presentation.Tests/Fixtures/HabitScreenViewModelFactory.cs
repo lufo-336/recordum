@@ -1,4 +1,5 @@
 using Recordum.Core.Services;
+using Recordum.Core.Time;
 using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels.HabitEditor;
@@ -46,6 +47,19 @@ public static class HabitScreenViewModelFactory
         out FakeNoteService notes, out FakeHabitConfigService configs,
         FakeAppSettingService settings, FakeHabitUiPrefsService uiPrefs)
     {
+        var rig = BuildRig(settings, uiPrefs, new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero), null);
+        notes = rig.Notes;
+        configs = rig.Configs;
+        return (rig.Vm, rig.Nodes);
+    }
+
+    /// <summary>Lo schermo con tutti i suoi finti a portata di mano: orologio e confine scelti dal test.</summary>
+    public static HabitScreenRig CreateRig(DateTimeOffset now, DayBoundary? boundary = null)
+        => BuildRig(new FakeAppSettingService(), new FakeHabitUiPrefsService(), now, boundary);
+
+    private static HabitScreenRig BuildRig(
+        FakeAppSettingService settings, FakeHabitUiPrefsService uiPrefs, DateTimeOffset now, DayBoundary? boundary)
+    {
         var nodes = new FakeHabitNodeService();
         var completions = new FakeCompletionService();
         var timers = new FakeActiveTimerService();
@@ -53,7 +67,8 @@ public static class HabitScreenViewModelFactory
         var configService = new FakeHabitConfigService();
         var noteService = new FakeNoteService();
         var goals = new FakeGoalService();
-        var clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
+        var abstinence = new FakeAbstinenceService();
+        var clock = new FakeClock(now, boundary?.TimeZone);
         var bus = new FakeEventBus();
         var editor = new HabitEditorViewModel(
             nodes, configService, goals, metrics, new FakeNotificationService(), new FakeTagService(),
@@ -64,12 +79,15 @@ public static class HabitScreenViewModelFactory
             nodes, completions, timers, metrics, new FakeReferenceData(), configService,
             noteService, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
-            new FakeAbstinenceService(), clock, bus, new FakeEditorAvailability(), settings, editor,
+            abstinence, clock, bus, new FakeEditorAvailability(), settings, editor,
             new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
-            new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs, new FakeResetTimeResolver());
+            new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs,
+            new FakeResetTimeResolver(boundary));
 
-        notes = noteService;
-        configs = configService;
-        return (vm, nodes);
+        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence);
     }
 }
+
+public sealed record HabitScreenRig(
+    HabitScreenViewModel Vm, FakeHabitNodeService Nodes, FakeCompletionService Completions, FakeNoteService Notes,
+    FakeHabitConfigService Configs, FakeMetricDefinitionService Metrics, FakeClock Clock, FakeAbstinenceService Abstinence);
