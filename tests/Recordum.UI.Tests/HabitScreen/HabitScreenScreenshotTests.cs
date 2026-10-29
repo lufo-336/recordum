@@ -77,9 +77,8 @@ public class HabitScreenScreenshotTests(ITestOutputHelper output)
         {
             output.WriteLine(ScreenshotProbeTests.Capture(w, $"habit-{type.ToString().ToLowerInvariant()}-{variant.ToLowerInvariant()}"));
 
-            view.GetVisualDescendants().OfType<TodayStripView>().Single().IsVisible.Should().BeTrue();
-            view.GetVisualDescendants().OfType<Control>().Count(c => c is ActionTodayView or CounterTodayView
-                or ResistanceTodayView or StateTodayView).Should().Be(1, "la fascia del tipo");
+            view.GetVisualDescendants().OfType<Recordum.UI.Views.HabitScreen.Head.HabitHeadView>().Single().IsVisible.Should().BeTrue();
+            view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "CommandHost").Child.Should().NotBeNull("il comando del tipo");
             view.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "HabitName").Text.Should().Be($"Esempio {type}");
             if (type != HabitType.Resistance)
                 vm.Calendar.Cells.Count(c => c.TintStep > 0).Should().BeGreaterThan(3, "il calendario mostra i giorni registrati");

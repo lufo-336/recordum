@@ -51,11 +51,11 @@ public class MetricCellTests
         return new Opened(scope, vm, view, w, id);
     }
 
-    /// <summary>Cerca dentro il pannello di registrazione della Cronologia: la fascia Oggi ha controlli omonimi.</summary>
+    /// <summary>Cerca dentro il comando della testa, dove sta il pannello di registrazione.</summary>
     private static T Named<T>(HabitScreenView view, string name) where T : Control =>
-        Named<T>((Visual)view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "QuickAddHost"), name);
+        Named<T>((Visual)view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "CommandHost"), name);
 
-    private static Border Quick(HabitScreenView view) => view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "QuickAddHost");
+    private static Border Quick(HabitScreenView view) => view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "CommandHost");
 
     private static T Named<T>(Visual root, string name) where T : Control =>
         root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);

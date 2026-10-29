@@ -468,9 +468,19 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// un clic sulla mappa. Un soggetto nuovo riparte da oggi.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSelectedDayToday))]
+    [NotifyPropertyChangedFor(nameof(SelectedDayLabel))]
     private DateOnly _selectedDay;
 
-    public bool IsSelectedDayToday => SelectedDay == _dayBoundary.Today(_clock);
+    /// <summary>Il giorno scelto per esteso ("lunedì 27 ottobre"), per la riga "per …" sotto il comando.</summary>
+    public string SelectedDayLabel => SelectedDay.ToString("dddd d MMMM", System.Globalization.CultureInfo.CurrentCulture);
+
+    /// <summary>Il programma in una riga sotto il nome ("Ogni giorno").</summary>
+    [ObservableProperty] private string _scheduleLabel = string.Empty;
+
+    public bool IsSelectedDayToday => SelectedDay == CurrentDay;
+
+    /// <summary>Oggi secondo il confine dell'abitudine (il limite del selettore "per un altro giorno").</summary>
+    public DateOnly CurrentDay => _dayBoundary.Today(_clock);
 
     private bool _selectedDayHasRecords;
     private HabitConfig? _config;
@@ -788,6 +798,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 (await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true)).Count);
         if (generation != _loadGeneration) return;
         _config = config;
+        ScheduleLabel = ScheduleText.Describe(config, System.Globalization.CultureInfo.CurrentUICulture);
         await LoadFiguresAsync(ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
 
@@ -1024,6 +1035,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             if (refreshed.NodeType != NodeType.Group)
                 Case = HabitCases.Resolve(refreshed.HabitType ?? HabitType.Action, cfg, defs.Count);
             _config = cfg;
+            ScheduleLabel = ScheduleText.Describe(cfg, System.Globalization.CultureInfo.CurrentUICulture);
             await LoadFiguresAsync(CancellationToken.None).ConfigureAwait(true);
             if (QuickAdd is not null && QuickAddShape(cfg, defs) != _quickAddShape)
                 await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);

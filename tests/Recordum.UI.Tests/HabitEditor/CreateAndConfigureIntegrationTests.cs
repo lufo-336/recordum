@@ -157,8 +157,7 @@ public class CreateAndConfigureIntegrationTests
             (await scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>().ListByHabitAsync(id))
                 .Should().ContainSingle().Which.UnitOfMeasureId.Should().Be(created.Id);
 
-            await UntilAsync(() => window.GetVisualDescendants().OfType<Button>().Any(b => b.Name == "RecordButton"));
-            Find<Button>(window, "RecordButton").Command!.Execute(null);   // "+ Registra" apre il modulo
+            // Il modulo di registrazione sta nella testa della schermata (direzione visiva §6.1), già aperto.
             await UntilAsync(() => window.GetVisualDescendants().OfType<MetricCellView>().Any());
             window.GetVisualDescendants().OfType<MetricCellView>().Single()
                 .GetVisualDescendants().OfType<TextBlock>()

@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -96,7 +97,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         Find<Border>(view, "DiarioColumn").IsVisible.Should().BeTrue();
         view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().ContainSingle();
         Find<TextBox>(view, "DraftBox").IsEffectivelyVisible.Should().BeTrue();
-        Find<CheckBox>(view, "ChipDiario").IsVisible.Should().BeTrue("da F2d-2 il chip Diario c'e' per i diari (spec 5.2)");
+        Find<ToggleButton>(view, "ChipDiario").IsVisible.Should().BeTrue("da F2d-2 il chip Diario c'e' per i diari (spec 5.2)");
     }
 
     [AvaloniaFact]
@@ -424,7 +425,7 @@ public sealed class JournalQuickEntryViewTests(ITestOutputHelper output) : IDisp
         vm.QuickEntryForDiario.Should().BeNull();
         view.GetVisualDescendants().OfType<JournalQuickEntryView>().Should().BeEmpty("nell'intera view");
         view.GetVisualDescendants().OfType<TagEditorView>().Should().BeEmpty();
-        Find<CheckBox>(view, "ChipDiario").IsVisible.Should().BeFalse();
+        Find<ToggleButton>(view, "ChipDiario").IsVisible.Should().BeFalse();
     }
 
     [AvaloniaTheory]

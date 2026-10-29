@@ -102,19 +102,16 @@ public partial class HabitScreenView : UserControl
         "CheckBoxCheckBackgroundStrokeCheckedPointerOver",
     ];
 
-    /// <summary>Le risorse non hanno DataContext: a ogni cambio di colore si riscrivono qui. Brush.Accent
-    /// per i nostri controlli, le chiavi Fluent per gli altri. Senza colore valido si tolgono e torna
-    /// l'accento dell'app. Ogni pennello eredita l'opacita' di quello del tema (la selezione di lista e'
-    /// una tinta, non un blocco pieno).</summary>
+    /// <summary>Le risorse non hanno DataContext: a ogni cambio di colore si riscrivono qui le chiavi Fluent. Senza
+    /// colore valido si tolgono e torna l'accento dell'app. Ogni pennello eredita l'opacita' di quello del tema (la
+    /// selezione di lista e' una tinta, non un blocco pieno). Brush.Accent non si tocca: resta l'inchiostro.</summary>
     private void ApplyAccent()
     {
         if (_vm?.Node?.Color is not { } hex || !Color.TryParse(hex, out var c))
         {
-            Resources.Remove("Brush.Accent");
             foreach (var k in FluentAccentKeys) Resources.Remove(k);
             return;
         }
-        Resources["Brush.Accent"] = new SolidColorBrush(c);
         var theme = ActualThemeVariant;
         foreach (var k in FluentAccentKeys)
         {

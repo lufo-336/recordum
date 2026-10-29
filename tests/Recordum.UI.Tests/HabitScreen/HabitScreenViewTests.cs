@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
@@ -113,7 +114,6 @@ public class HabitScreenViewTests
         // ApplyAccent fa tornare il pixel al blu dell'app.
         var probes = new (string Key, Func<Color> Read)[]
         {
-            ("Brush.Accent", () => Pixel(w, probe)),
             ("CheckBoxCheckBackgroundFillChecked", () => Check(box, null)),
             ("CheckBoxCheckBackgroundFillCheckedPointerOver", () => Check(box, ":pointerover")),
             ("CheckBoxCheckBackgroundFillCheckedPressed", () => Check(box, ":pressed")),
@@ -143,6 +143,7 @@ public class HabitScreenViewTests
 
         foreach (var (key, read) in probes)
             Matches(key, read(), Red).Should().BeTrue($"{key} dentro la schermata e' il colore dell'abitudine (letto: {read()})");
+        Near(Pixel(w, probe), Red).Should().BeFalse("Brush.Accent resta l'inchiostro: il colore dell'abitudine e' solo per registrare");
 
         await vm.LoadAsync(amber);   // stesso tab, altra abitudine: la view non si ricostruisce
         Pump();
@@ -165,7 +166,7 @@ public class HabitScreenViewTests
 
         w.RequestedThemeVariant = ThemeVariant.Dark;
         Pump();
-        Near(Pixel(w, probe), Red).Should().BeTrue("l'accento resta il colore dell'abitudine");
+        Near(Pixel(w, probe), "#E6E5E1").Should().BeTrue("Brush.Accent resta l'inchiostro anche in scuro");
         Near(Pixel(w, header, 340, 0), "#181817").Should().BeTrue("lo sfondo segue il tema (Brush.Surface scuro)");
         w.Close();
     }
@@ -180,13 +181,13 @@ public class HabitScreenViewTests
     }
 
     [AvaloniaFact]
-    public async Task Only_the_cronologia_and_configura_chips_are_visible_in_f2b()
+    public async Task The_column_buttons_are_cronologia_note_configura()
     {
         var id = await CreateHabitAsync("Chip", Red);
         var (_, view, w) = await OpenAsync(id);
-        var chips = view.GetVisualDescendants().OfType<CheckBox>().Where(c => c.Classes.Contains("segment")).ToList();
-        chips.Should().HaveCount(5);
-        chips.Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipCronologia", "ChipConfigura");
+        var chips = view.GetVisualDescendants().OfType<ToggleButton>().Where(c => c.Classes.Contains("column")).ToList();
+        chips.Should().HaveCount(4);
+        chips.Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipCronologia", "ChipNote", "ChipConfigura");
         view.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "ExportButton").IsVisible.Should().BeFalse();
         w.Close();
     }
@@ -196,7 +197,7 @@ public class HabitScreenViewTests
     {
         var id = await CreateHabitAsync("Colonna", Red);
         var (vm, view, w) = await OpenAsync(id);
-        var chip = view.GetVisualDescendants().OfType<CheckBox>().Single(c => c.Name == "ChipCronologia");
+        var chip = view.GetVisualDescendants().OfType<ToggleButton>().Single(c => c.Name == "ChipCronologia");
         var column = view.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "CronologiaColumn");
 
         var wasOpen = vm.IsCronologiaOpen;
@@ -208,7 +209,7 @@ public class HabitScreenViewTests
         chip.IsChecked = wasOpen;
         Pump();
         column.IsVisible.Should().Be(wasOpen);
-        foreach (var n in new[] { "TodayHost", "CalendarHost", "QuickAddHost", "TimerHost", "RecordsHost" })
+        foreach (var n in new[] { "CalendarHost", "RecordsHost" })
             view.GetVisualDescendants().OfType<Border>().Should().Contain(b => b.Name == n);
         w.Close();
     }
@@ -218,7 +219,7 @@ public class HabitScreenViewTests
     {
         var id = await CreateHabitAsync("Gruppo", Amber, NodeType.Group);
         var (_, view, w) = await OpenAsync(id);
-        view.GetVisualDescendants().OfType<CheckBox>().Where(c => c.IsVisible).Select(c => c.Name).Should().Equal("ChipConfigura");
+        view.GetVisualDescendants().OfType<ToggleButton>().Where(c => c.IsVisible && c.Classes.Contains("column")).Select(c => c.Name).Should().Equal("ChipConfigura");
         view.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "HabitName").Text.Should().Be("Gruppo");
         w.Close();
     }

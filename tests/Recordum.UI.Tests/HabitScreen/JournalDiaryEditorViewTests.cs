@@ -414,7 +414,7 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
     public async Task The_diario_chip_is_visible_for_a_diary_and_absent_for_an_action()
     {
         var (vm, view, _) = await OpenAsync(await CreateAsync(HabitType.Journal, "Sera-76"));
-        var chip = Find<CheckBox>(view, "ChipDiario");
+        var chip = Find<ToggleButton>(view, "ChipDiario");
         chip.IsEffectivelyVisible.Should().BeTrue();
         vm.IsDiarioOpen = false;
         PrivateDbHost.Pump();
@@ -424,7 +424,7 @@ public sealed class JournalDiaryEditorViewTests(ITestOutputHelper output) : IDis
         vm.IsDiarioOpen.Should().BeTrue("il chip apre la colonna");
 
         var (_, action, _) = await OpenAsync(await CreateAsync(HabitType.Action, "Azione-76"));
-        Find<CheckBox>(action, "ChipDiario").IsVisible.Should().BeFalse();
+        Find<ToggleButton>(action, "ChipDiario").IsVisible.Should().BeFalse();
     }
 
     // ---- 7.7 ----

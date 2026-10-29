@@ -73,7 +73,7 @@ public class HabitScreenColumnsTests
         var (vm, view, w, scope) = await OpenAsync(1200);
         try
         {
-            var chip = Named<CheckBox>(view, "ChipConfigura");
+            var chip = Named<ToggleButton>(view, "ChipConfigura");
             chip.IsVisible.Should().BeTrue("il chip Configura e' acceso in F2b");
             Named<Border>(view, "ConfiguraColumn").IsVisible.Should().BeFalse();
             Named<Border>(view, "ConfiguraHost").Child.Should().BeNull();
@@ -100,7 +100,7 @@ public class HabitScreenColumnsTests
         var (vm, view, w, scope) = await OpenAsync(1200);
         try
         {
-            string[] hosts = ["CalendarHost", "QuickAddHost", "TimerHost", "RecordsHost"];
+            string[] hosts = ["CalendarHost", "RecordsHost"];
             view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "CalendarHost").Should().Be(1);
 
             vm.IsCronologiaOpen = false;
@@ -114,6 +114,8 @@ public class HabitScreenColumnsTests
             view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "CalendarHost").Should().Be(1);
             view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "RecordsHost").Should().Be(1);
 
+            // Il pannello di registrazione sta nella testa, una volta sola, qualunque cosa faccia la Cronologia.
+            Named<Border>(view, "CronologiaColumn").GetVisualDescendants().OfType<Button>().Should().NotContain(b => b.Name == "SaveButton");
             var save = Named<Button>(view, "SaveButton");
             var p = save.TranslatePoint(new Point(save.Bounds.Width / 2, save.Bounds.Height / 2), w)!.Value;
             w.MouseDown(p, MouseButton.Left); w.MouseUp(p, MouseButton.Left);
@@ -224,7 +226,7 @@ public class HabitScreenColumnsTests
 
             Named<Border>(view, "CronologiaColumn").IsVisible.Should().BeFalse();
             Named<Border>(view, "ConfiguraColumn").IsVisible.Should().BeTrue();
-            Named<StackPanel>(view, "ChipBar").IsVisible.Should().BeFalse();
+            Named<WrapPanel>(view, "ColumnButtons").IsVisible.Should().BeFalse();
             var exit = Named<Button>(view, "ExitFocusButton");
             exit.IsVisible.Should().BeTrue();
             var scroll = Named<ScrollViewer>(view, "ColumnsScroll");
@@ -233,7 +235,7 @@ public class HabitScreenColumnsTests
             exit.Command!.Execute(exit.CommandParameter);
             PrivateDbHost.Pump();
             Named<Border>(view, "CronologiaColumn").IsVisible.Should().BeTrue();
-            Named<StackPanel>(view, "ChipBar").IsVisible.Should().BeTrue();
+            Named<WrapPanel>(view, "ColumnButtons").IsVisible.Should().BeTrue();
         }
         finally { w.Close(); scope.Dispose(); }
     }

@@ -12,10 +12,6 @@
       <Border x:Name="CalendarHost">
         <calendar:CalendarNavigatorView DataContext="{CompiledBinding Calendar}"/>
       </Border>
-      <Border x:Name="QuickAddHost"/>
-      <Border x:Name="TimerHost">
-        <local:TimerControlView DataContext="{CompiledBinding TimerControl}"/>
-      </Border>
       <StackPanel Margin="12,4,12,12">
         <TextBlock Text="{x:Static res:Strings.HabitScreen_Records}" FontWeight="SemiBold"
                    Foreground="{DynamicResource Brush.Text}" Margin="0,0,0,6"/>

@@ -1996,4 +1996,34 @@
   <data name="History.Period.Today" xml:space="preserve">
     <value>Oggi</value>
   </data>
+  <data name="Schedule.Daily" xml:space="preserve">
+    <value>Ogni giorno</value>
+  </data>
+  <data name="Schedule.WeeklyX" xml:space="preserve">
+    <value>{0} volte a settimana</value>
+  </data>
+  <data name="Schedule.EveryXDays" xml:space="preserve">
+    <value>Ogni {0} giorni</value>
+  </data>
+  <data name="Schedule.Monthly" xml:space="preserve">
+    <value>Ogni mese</value>
+  </data>
+  <data name="Head.UsualHour" xml:space="preserve">
+    <value>di solito verso le {0}</value>
+  </data>
+  <data name="Head.Undo" xml:space="preserve">
+    <value>annulla</value>
+  </data>
+  <data name="Head.OtherDay" xml:space="preserve">
+    <value>per un altro giorno</value>
+  </data>
+  <data name="Head.RecordingFor" xml:space="preserve">
+    <value>per {0}</value>
+  </data>
+  <data name="Head.BackToToday" xml:space="preserve">
+    <value>torna a oggi</value>
+  </data>
+  <data name="HabitScreen.Column.Diary" xml:space="preserve">
+    <value>Diario</value>
+  </data>
 </root>

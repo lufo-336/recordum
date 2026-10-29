@@ -4,16 +4,16 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:local="using:Recordum.UI.Views.HabitScreen"
-             xmlns:today="using:Recordum.UI.Views.HabitScreen.Today"
+             xmlns:head="using:Recordum.UI.Views.HabitScreen.Head"
              xmlns:journal="using:Recordum.UI.Views.HabitScreen.Journal"
              xmlns:calendar="using:Recordum.UI.Views.HabitScreen.Calendar"
              x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
              x:DataType="vm:HabitScreenViewModel"
              Background="{DynamicResource Brush.Surface}">
 
-  <!-- L'accento della schermata e' il colore dell'abitudine: Brush.Accent e le chiavi Fluent
-       che il tema legge (FluentAccentKeys) le imposta il code-behind nelle risorse di questa view
-       (le risorse non hanno DataContext). -->
+  <!-- I controlli Fluent della schermata (slider, spunte, selezioni, fuoco dei campi) prendono il colore dell'abitudine:
+       le chiavi (FluentAccentKeys) le imposta il code-behind nelle risorse di questa view. Brush.Accent resta
+       l'inchiostro: il colore dell'abitudine è solo per il comando che registra (direzione visiva §4.4). -->
   <UserControl.Styles>
     <!-- Pulsanti d'intestazione di colonna: solo icona (Lucide), tinta spenta. -->
     <Style Selector="Button.column-icon">
@@ -58,52 +58,8 @@
     <Border Grid.Row="0" Height="3"
             Background="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
 
-    <Border Grid.Row="1" Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Path x:Name="IconPath" Width="22" Height="22" Margin="0,0,8,0" Stretch="Uniform"
-                VerticalAlignment="Center" StrokeThickness="1.6"
-                StrokeLineCap="Round" StrokeJoin="Round"
-                Stroke="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"
-                Data="{CompiledBinding Node.Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
-                IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-          <TextBlock x:Name="HabitName" Text="{CompiledBinding Name}"
-                     FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
-                     VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
-        </StackPanel>
-        <!-- Export arriva con F6 (come in F1-RAIL1: statico, l'onda e' nel commento). -->
-        <Button Grid.Column="1" x:Name="ExportButton" IsVisible="False" Padding="10,4"
-                Content="{x:Static res:Strings.Export_Button}"/>
-      </Grid>
-    </Border>
-
-    <!-- Fascia "Oggi" (Task 2). Un gruppo non ne ha; il diario ha il suo pulsante (F2d-1). -->
-    <Border Grid.Row="2" x:Name="TodayHost" IsVisible="{CompiledBinding ShowTodayStrip}">
-      <today:TodayStripView DataContext="{CompiledBinding TodayStrip}"/>
-    </Border>
-
-    <!-- Chip delle colonne. Panoramica (F3), Dettaglio (F3) e Note (F3) non sono ancora
-         portate: statici e nascosti (decisione 2); Configura e' di F2b (decisione 3). Un gruppo in F2a mostra
-         intestazione e chip senza colonne: la Panoramica e' di F3. -->
-    <StackPanel Grid.Row="3" x:Name="ChipBar" Orientation="Horizontal" Margin="12,8,12,4"
-                IsVisible="{CompiledBinding ShowChipBar}">
-      <!-- Il chip Diario c'e' per i diari (F2d-2, spec 5.2); per gli altri tipi la colonna non esiste. -->
-      <CheckBox Classes="segment" x:Name="ChipDiario" Margin="0,0,4,0"
-                Content="{x:Static res:Strings.HabitScreen_Column_Diario}"
-                IsChecked="{CompiledBinding IsDiarioOpen, Mode=TwoWay}"
-                IsVisible="{CompiledBinding IsJournal}"/>
-      <CheckBox Classes="segment" x:Name="ChipCronologia"
-                Content="{x:Static res:Strings.HabitScreen_Column_Cronologia}"
-                IsChecked="{CompiledBinding IsCronologiaOpen, Mode=TwoWay}"
-                IsVisible="{CompiledBinding !IsGroupNode}"/>
-      <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
-                Content="{x:Static res:Strings.HabitScreen_Tab_Detail}"/>
-      <CheckBox Classes="segment" Margin="4,0,0,0" IsVisible="False"
-                Content="{x:Static res:Strings.HabitScreen_Tab_Notes}"/>
-      <CheckBox Classes="segment" x:Name="ChipConfigura" Margin="4,0,0,0"
-                Content="{x:Static res:Strings.HabitScreen_Configure}"
-                IsChecked="{CompiledBinding IsConfiguraOpen, Mode=TwoWay}"/>
-    </StackPanel>
+    <!-- La testa (direzione visiva §6.1): nome, un comando, i numeri, i pulsanti delle colonne. -->
+    <head:HabitHeadView Grid.Row="1" x:Name="Head"/>
 
     <!-- In modalita' focus la barra dei chip lascia il posto al ritorno (spec 3.6). -->
     <Button Grid.Row="3" x:Name="ExitFocusButton" HorizontalAlignment="Left" Margin="12,8,12,4" Padding="8,3"
@@ -126,7 +82,7 @@
           <DockPanel>
             <Grid DockPanel.Dock="Top" Height="30" ColumnDefinitions="*,Auto,Auto" Background="{DynamicResource Brush.Surface}">
               <TextBlock Margin="12,0" VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
-                         Text="{x:Static res:Strings.HabitScreen_Column_Diario}" Foreground="{DynamicResource Brush.TextMuted}"/>
+                         Text="{x:Static res:Strings.HabitScreen_Column_Diary}" Foreground="{DynamicResource Brush.TextMuted}"/>
               <Button Grid.Column="1" x:Name="DiarioFocusButton" Classes="column-icon"
                       Command="{CompiledBinding ToggleFocusCommand}" CommandParameter="{x:Static vm:HabitColumn.Diario}"
                       ToolTip.Tip="{x:Static res:Strings.HabitScreen_Focus}"

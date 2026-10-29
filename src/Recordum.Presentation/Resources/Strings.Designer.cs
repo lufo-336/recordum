@@ -714,6 +714,16 @@ public static class Strings
     public static string History_Period_All => Get("History.Period.All");
     public static string History_Period_Custom => Get("History.Period.Custom");
     public static string History_Period_Today => Get("History.Period.Today");
+    public static string Schedule_Daily => Get("Schedule.Daily");
+    public static string Schedule_WeeklyX => Get("Schedule.WeeklyX");
+    public static string Schedule_EveryXDays => Get("Schedule.EveryXDays");
+    public static string Schedule_Monthly => Get("Schedule.Monthly");
+    public static string Head_UsualHour => Get("Head.UsualHour");
+    public static string Head_Undo => Get("Head.Undo");
+    public static string Head_OtherDay => Get("Head.OtherDay");
+    public static string Head_RecordingFor => Get("Head.RecordingFor");
+    public static string Head_BackToToday => Get("Head.BackToToday");
+    public static string HabitScreen_Column_Diary => Get("HabitScreen.Column.Diary");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

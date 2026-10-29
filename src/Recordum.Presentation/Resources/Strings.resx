@@ -2022,4 +2022,34 @@ Details: {0}</value>
   <data name="History.Period.Today" xml:space="preserve">
     <value>Today</value>
   </data>
+  <data name="Schedule.Daily" xml:space="preserve">
+    <value>Every day</value>
+  </data>
+  <data name="Schedule.WeeklyX" xml:space="preserve">
+    <value>{0} times a week</value>
+  </data>
+  <data name="Schedule.EveryXDays" xml:space="preserve">
+    <value>Every {0} days</value>
+  </data>
+  <data name="Schedule.Monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="Head.UsualHour" xml:space="preserve">
+    <value>usually around {0}</value>
+  </data>
+  <data name="Head.Undo" xml:space="preserve">
+    <value>undo</value>
+  </data>
+  <data name="Head.OtherDay" xml:space="preserve">
+    <value>for another day</value>
+  </data>
+  <data name="Head.RecordingFor" xml:space="preserve">
+    <value>for {0}</value>
+  </data>
+  <data name="Head.BackToToday" xml:space="preserve">
+    <value>back to today</value>
+  </data>
+  <data name="HabitScreen.Column.Diary" xml:space="preserve">
+    <value>Diary</value>
+  </data>
 </root>
