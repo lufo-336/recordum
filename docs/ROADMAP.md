@@ -4,7 +4,7 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-28
+## Dove siamo — 2026-10-29
 
 - **Branch di lavoro**: `ux2-habit-screen`, da `main` (`c2887bd1`, 2026-10-28): onda 2 della direzione visiva, ancora senza piano. L'onda 1 è in `main`; i suoi branch (`ux-review`, `ux1-foundations`) sono cancellati, in locale e su GitHub. Gli unici branch sono `main` e questo. La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
@@ -108,8 +108,9 @@
 - **Prossimo — si riprende da qui**: (1) **scrivere il piano dell'onda 2** (schermata dell'abitudine e del gruppo, spec §6
   e §7.1: testa con un solo comando e i quattro numeri per tipo, colonne apribili, selettore di periodo per mappa e
   Cronologia, giorno scelto con la nota, Cronologia resa, gli 8 casi, Configura in cinque blocchi, la scelta del colore con
-  "Avanzate", e da F3 la colonna Note e la Panoramica del gruppo con "Insieme"); decidere con l'autore se un piano solo o
-  due (abitudine; gruppo e Note), poi eseguirlo in nativo come l'onda 1; poi l'onda 3; (2) la checklist di F2d-1 su una
+  "Avanzate", e da F3 la colonna Note e la Panoramica del gruppo con "Insieme"); **deciso il 2026-10-29: due piani** — **2a** schermata
+  dell'abitudine e colonna Note (`docs/superpowers/plans/2026-10-29-ux-wave2a-habit-screen.md`, scritto, da approvare ed
+  eseguire), poi **2b** gruppo (Panoramica, "Insieme"), Configura in cinque blocchi e scelta del colore; poi l'onda 3; (2) la checklist di F2d-1 su una
   **copia** dei dati veri (`--data-dir`), poi le altre; (3) `scripts/install-linux.sh` (chiudere prima la build installata:
   con un `recordum.db-journal` lo script si ferma, D9-1) e il dogfooding, che aspetta la direzione (decisione dell'autore).
   **Finché la prova sulla copia non è fatta, la voce Recordum del menu apre la cartella dati vera: non avviarla.**
