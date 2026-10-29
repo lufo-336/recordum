@@ -100,7 +100,14 @@
       </ToggleButton>
       <ComboBox x:Name="SortBox" Grid.Column="2" VerticalAlignment="Center"
                 ItemsSource="{CompiledBinding AvailableSorts}"
-                SelectedItem="{CompiledBinding SortOption}"/>
+                SelectedItem="{CompiledBinding SortOption}">
+        <!-- L'etichetta tradotta, non il nome dell'enum ("Manual" in un'app in italiano; visto nei PNG, onda 2a). -->
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:HomeSort">
+            <TextBlock Text="{CompiledBinding Converter={x:Static v:HomeView.SortLabel}}"/>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
     </Grid>
 
     <!-- L'intestazione dei giorni (UX-6): oggi a destra, sopra la colonna di oggi di ogni striscia. Il margine a destra è

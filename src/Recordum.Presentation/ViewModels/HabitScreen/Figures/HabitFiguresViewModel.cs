@@ -63,7 +63,7 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
     }
 
     /// <summary>Il contesto di un caricamento: oggi, il giorno di creazione e la finestra dei 30 giorni.</summary>
-    private sealed record Ctx(HabitNode Node, HabitConfig? Config, DayBoundary Day, DateOnly Today, DateOnly Created)
+    private sealed record Ctx(HabitNode Node, HabitConfig? Config, DayBoundary Day, DateOnly Today, DateOnly Created, int Generation)
     {
         public DateOnly WindowStart(int days) => Max(Today.AddDays(-(days - 1)), Created);
         public int WindowDays(int days) => Today.DayNumber - WindowStart(days).DayNumber + 1;
@@ -76,11 +76,13 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
         var today = day.Today(_clock);
         var created = day.DayOf(node.CreatedAt);
         if (created > today) created = today;
-        var c = new Ctx(node, config, day, today, created);
+        // Un ricaricamento partito da un evento sull'abitudine di prima può finire dopo quello della nuova: vince l'ultimo.
+        var generation = ++_generation;
+        var c = new Ctx(node, config, day, today, created, generation);
 
         DailyTarget = null;
         _liveClock?.Stop();
-        Items = @case switch
+        var items = @case switch
         {
             HabitCase.Action => await ActionAsync(c, ct).ConfigureAwait(true),
             HabitCase.CounterTap => await CounterTapAsync(c, ct).ConfigureAwait(true),
@@ -92,8 +94,14 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
             HabitCase.Abstinence => await AbstinenceAsync(c, ct).ConfigureAwait(true),
             _ => [],
         };
-        UsualHour = @case == HabitCase.Abstinence ? null : await UsualHourAsync(c, ct).ConfigureAwait(true);
+        var usual = @case == HabitCase.Abstinence ? null : await UsualHourAsync(c, ct).ConfigureAwait(true);
+        if (generation != _generation) return;
+        Items = items;
+        UsualHour = usual;
     }
+
+    private int _generation;
+    private bool IsCurrent(Ctx c) => c.Generation == _generation;
 
     // ---- casi ----
 
@@ -125,7 +133,7 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
         var counts = await CountsAsync(c, ct).ConfigureAwait(true);
         var (current, _) = await StreaksAsync(c, ct).ConfigureAwait(true);
         var goal = await _goals.GetActiveAsync(c.Node.Id, ct).ConfigureAwait(true);
-        DailyTarget = goal is { PeriodType: GoalPeriodType.Rolling } && (goal.RollingDays ?? 1) <= 1 ? goal.TargetValue : null;
+        if (IsCurrent(c)) DailyTarget = goal is { PeriodType: GoalPeriodType.Rolling } && (goal.RollingDays ?? 1) <= 1 ? goal.TargetValue : null;
         var window = WindowSum(c, counts, 30);
         return
         [
@@ -277,7 +285,7 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
 
         var state = await _abstinence.GetStateAsync(c.Node.Id, ct).ConfigureAwait(true);
         string now;
-        if (state.Status == AbstinenceStatus.Abstaining && state.CurrentStartedAtMs is { } startedMs)
+        if (state.Status == AbstinenceStatus.Abstaining && state.CurrentStartedAtMs is { } startedMs && IsCurrent(c))
         {
             if (_liveClock is null)
             {

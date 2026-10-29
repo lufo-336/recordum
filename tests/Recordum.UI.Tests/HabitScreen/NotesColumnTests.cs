@@ -317,6 +317,36 @@ public class NotesColumnTests
     }
 
     [AvaloniaFact]
+    public async Task A_note_event_keeps_the_viewer_open()
+    {
+        // Review dell'onda 2a: la rilettura per un evento riassegnava la nota scelta (riga nuova, stesso id) e chiudeva il
+        // visore; salvare la nota del giorno con il visore aperto lo chiudeva.
+        var o = await OpenAsync(async (sp, id) =>
+        {
+            var noteId = await SeedNote(sp, id, "con la foto");
+            var png = JournalFixtures.WritePng(160, 120);
+            try
+            {
+                var photo = await sp.GetRequiredService<IPhotoImporter>().ImportAsync(png, CancellationToken.None);
+                await sp.GetRequiredService<IAttachmentService>().AddAsync(noteId, photo, CancellationToken.None);
+            }
+            finally { File.Delete(png); }
+        });
+        Click(o.Window, await RowAsync(o, "con la foto"));
+        await UntilAsync(() => o.Vm.Notes.Attachments.Count == 1);
+        o.Vm.Notes.OpenLightboxCommand.Execute(o.Vm.Notes.Attachments[0]);
+        Pump();
+
+        o.Vm.DayNote.Text = "una nota del giorno";
+        await o.Vm.DayNote.SaveCommand.ExecuteAsync(null);
+        await RowAsync(o, "una nota del giorno");
+
+        o.Vm.Notes.IsLightboxOpen.Should().BeTrue("un salvataggio altrove non chiude il visore");
+        o.Vm.Notes.Attachments.Should().ContainSingle();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task Closing_the_column_saves_the_draft()
     {
         Guid noteId = default;

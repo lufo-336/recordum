@@ -268,6 +268,34 @@ public class HeadCommandTests
     }
 
     [AvaloniaFact]
+    public async Task A_case_without_its_quick_add_builds_no_command()
+    {
+        // Review dell'onda 2a: LoadAsync assegna il caso prima di ricostruire il quick-add; per un attimo la testa
+        // costruiva il comando del caso nuovo sopra il quick-add dell'abitudine di prima (binding compilati in errore).
+        var o = await OpenAsync(HabitType.Action);
+        o.Vm.QuickAdd.Should().BeOfType<ActionQuickAddViewModel>();
+        foreach (var other in new[] { HabitCase.CounterTap, HabitCase.State, HabitCase.Abstinence, HabitCase.Measured, HabitCase.Series })
+        {
+            o.Vm.Case = other;
+            HeadCommandTemplate.Build(o.Vm).Should().BeNull($"{other} sopra un quick-add d'azione");
+        }
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Session_without_fields_keeps_the_manual_tap()
+    {
+        // Review dell'onda 2a: un contatore col timer e senza campi ha il quick-add a tocco, che QuickAddTemplate non
+        // costruisce: "+ a mano" spariva e si poteva registrare solo col cronometro (su main c'erano +1 e annulla).
+        var o = await OpenAsync(HabitType.Counter, (sp, id) =>
+            sp.GetRequiredService<IHabitConfigService>().UpsertAsync(id, c => { c.HasIntegratedTimer = true; c.TimerMode = TimerMode.Stopwatch; }).AsTask());
+        o.Vm.Case.Should().Be(HabitCase.Session);
+        Named<ToggleButton>(o.Command, "ManualButton").IsVisible.Should().BeTrue();
+        Named<Border>(o.Command, "ManualHost").Child.Should().BeOfType<CounterTapCommandView>();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task There_is_no_recording_for_row()
     {
         foreach (var setup in new Func<IServiceProvider, Guid, Task>[]

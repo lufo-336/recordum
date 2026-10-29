@@ -737,6 +737,7 @@ public static class Strings
     public static string History_Filter_All => Get("History.Filter.All");
     public static string History_Filter_WithNotes => Get("History.Filter.WithNotes");
     public static string History_List_Empty => Get("History.List.Empty");
+    public static string History_List_NoNotes => Get("History.List.NoNotes");
     public static string History_DayNote_Placeholder => Get("History.DayNote.Placeholder");
     public static string History_Day_Today => Get("History.Day.Today");
     public static string History_Custom_From => Get("History.Custom.From");

@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows.Input;
 using Avalonia;
@@ -46,19 +47,50 @@ public sealed class HeatGrid : Control
         base.OnPropertyChanged(change);
         if (change.Property == WeeksProperty)
         {
-            Subscribe(change.OldValue as IReadOnlyList<IReadOnlyList<HistoryDayCell>>, false);
-            Subscribe(change.NewValue as IReadOnlyList<IReadOnlyList<HistoryDayCell>>, true);
+            Hook(change.OldValue, false);
+            if (_attached) Hook(change.NewValue, true);
         }
         else if (change.Property == ThemeVariantScope.ActualThemeVariantProperty) InvalidateVisual();
     }
 
-    // I marcatori arrivano dopo le celle e la selezione cambia: ogni cella ridisegna la griglia.
-    private void Subscribe(IReadOnlyList<IReadOnlyList<HistoryDayCell>>? weeks, bool on)
+    // Agganciata solo a schermo: Weeks del ViewModel vive quanto la schermata e terrebbe in vita una griglia buttata.
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        if (weeks is null) return;
-        foreach (var c in weeks.SelectMany(w => w))
-            if (on) c.PropertyChanged += OnCellChanged;
-            else c.PropertyChanged -= OnCellChanged;
+        base.OnAttachedToVisualTree(e);
+        _attached = true;
+        Hook(Weeks, true);
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _attached = false;
+        Hook(Weeks, false);
+    }
+
+    private readonly List<HistoryDayCell> _cells = [];
+    private bool _attached;
+
+    // La collezione è la stessa a ogni caricamento (svuotata e riempita): si ascolta anche lei, non solo la proprietà.
+    private void Hook(object? weeks, bool on)
+    {
+        if (weeks is INotifyCollectionChanged incc)
+            if (on) incc.CollectionChanged += OnWeeksChanged;
+            else incc.CollectionChanged -= OnWeeksChanged;
+        Resubscribe(on ? weeks as IReadOnlyList<IReadOnlyList<HistoryDayCell>> : null);
+    }
+
+    private void OnWeeksChanged(object? sender, NotifyCollectionChangedEventArgs e) => Resubscribe(Weeks);
+
+    // I marcatori arrivano dopo le celle e la selezione cambia: ogni cella ridisegna la griglia.
+    private void Resubscribe(IReadOnlyList<IReadOnlyList<HistoryDayCell>>? weeks)
+    {
+        foreach (var c in _cells) c.PropertyChanged -= OnCellChanged;
+        _cells.Clear();
+        if (weeks is not null) _cells.AddRange(weeks.SelectMany(w => w));
+        foreach (var c in _cells) c.PropertyChanged += OnCellChanged;
+        InvalidateMeasure();
+        InvalidateVisual();
     }
 
     private void OnCellChanged(object? sender, PropertyChangedEventArgs e) => InvalidateVisual();

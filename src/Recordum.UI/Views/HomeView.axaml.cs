@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Data.Converters;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
 using Recordum.UI.Behaviors;
 
@@ -10,6 +12,13 @@ namespace Recordum.UI.Views;
 
 public partial class HomeView : UserControl
 {
+    public static readonly FuncValueConverter<HomeSort, string> SortLabel = new(s => s switch
+    {
+        HomeSort.Name => Strings.Home_Filter_Sort_Name,
+        HomeSort.LastCompletion => Strings.Home_Filter_Sort_LastCompletion,
+        _ => Strings.Home_Filter_Sort_Manual,
+    });
+
     private Point? _pressPoint;
     // Il TopLevel va tenuto da parte: allo stacco GetTopLevel(this) è già null e il gestore resterebbe appeso.
     private TopLevel? _top;

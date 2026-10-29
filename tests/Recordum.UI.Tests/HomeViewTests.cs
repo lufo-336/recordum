@@ -55,6 +55,17 @@ public class HomeViewTests
     }
 
     [AvaloniaFact]
+    public void The_sort_box_shows_translated_labels_not_enum_names()
+    {
+        using var culture = Fixtures.TestCulture.Pin();
+        var (w, view, _, _) = Show(Guid.NewGuid());
+        var box = view.GetVisualDescendants().OfType<ComboBox>().Single(b => b.Name == "SortBox");
+        box.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible)
+            .Should().Contain(t => t.Text == "Manuale").And.NotContain(t => t.Text == "Manual");
+        w.Close();
+    }
+
+    [AvaloniaFact]
     public void The_new_menu_shows_both_the_habit_item_and_the_group_item()
     {
         // F1 review I4 lo spense (il selettore non c'era); F2b lo ha riacceso con il selettore vero.

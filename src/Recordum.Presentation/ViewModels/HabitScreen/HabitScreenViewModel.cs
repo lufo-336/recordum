@@ -746,6 +746,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     public async Task LoadAsync(Guid? habitNodeId, CancellationToken ct = default)
     {
+        // Un clic su un'altra abitudine non perde il testo del blocco del giorno: si salva sulla sua (contesto ancora vecchio).
+        if (DayNote.CanSave) await DayNote.SaveCommand.ExecuteAsync(null).ConfigureAwait(true);
         var generation = ++_loadGeneration;
 
         if (habitNodeId is null)

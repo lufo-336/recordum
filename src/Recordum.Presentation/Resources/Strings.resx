@@ -2112,4 +2112,7 @@ Details: {0}</value>
   <data name="Notes.Column.Back" xml:space="preserve">
     <value>Back</value>
   </data>
+  <data name="History.List.NoNotes" xml:space="preserve">
+    <value>No notes in this period.</value>
+  </data>
 </root>

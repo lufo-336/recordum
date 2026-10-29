@@ -174,9 +174,16 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
             SelectedNote = kept is null ? null : Notes.FirstOrDefault(r => r.Id == kept.Id);
         }
         finally { _rebuilding = false; }
-        if (draft is null) return;
-        if (SelectedNote is not null) EditorMarkdown = draft;
-        else SaveLeftNote(kept!, draft);
+        if (kept is not null && SelectedNote?.Id == kept.Id)
+        {
+            // La stessa nota (riga nuova, stesso id): allegati e visore restano, l'editor prende la bozza o il testo salvato.
+            EditorMarkdown = draft ?? SelectedNote.Note.BodyMd;
+            OnPropertyChanged(nameof(IsDirty));
+            SaveCommand.NotifyCanExecuteChanged();
+            return;
+        }
+        ApplySelection(SelectedNote);
+        if (draft is not null) SaveLeftNote(kept!, draft);
     }
 
     private bool _rebuilding;
@@ -251,6 +258,11 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     }
 
     partial void OnSelectedNoteChanged(NoteRowViewModel? value)
+    {
+        if (!_rebuilding) ApplySelection(value);   // a elenco ricostruito ci pensa ApplyFilter (o ConfirmDelete)
+    }
+
+    private void ApplySelection(NoteRowViewModel? value)
     {
         EditorMarkdown = value?.Note.BodyMd ?? string.Empty;
         OnPropertyChanged(nameof(IsDirty));
@@ -390,6 +402,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
             SelectedNote = Notes.Count > 0 ? Notes[Math.Clamp(idx, 0, Notes.Count - 1)] : null;
         }
         finally { _rebuilding = false; }
+        ApplySelection(SelectedNote);
         IsConfirmingDelete = false;
     }
 

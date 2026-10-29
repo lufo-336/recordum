@@ -16,7 +16,24 @@
       </StackPanel>
     </Grid>
     <TextBlock x:Name="ListEmpty" Text="{x:Static res:Strings.History_List_Empty}" FontSize="{DynamicResource FontSize.Small}"
-               Foreground="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding PeriodRecords.IsEmpty}"/>
+               Foreground="{DynamicResource Brush.TextMuted}">
+      <TextBlock.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Path="PeriodRecords.IsEmpty"/>
+          <Binding Path="!PeriodRecords.Records.OnlyWithNotes"/>
+        </MultiBinding>
+      </TextBlock.IsVisible>
+    </TextBlock>
+    <!-- Con "Con note" e nessuna nota: le registrazioni ci sono, "niente registrato" sarebbe falso. -->
+    <TextBlock x:Name="ListNoNotes" Text="{x:Static res:Strings.History_List_NoNotes}" FontSize="{DynamicResource FontSize.Small}"
+               Foreground="{DynamicResource Brush.TextMuted}">
+      <TextBlock.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Path="PeriodRecords.IsEmpty"/>
+          <Binding Path="PeriodRecords.Records.OnlyWithNotes"/>
+        </MultiBinding>
+      </TextBlock.IsVisible>
+    </TextBlock>
     <Border x:Name="ListHost"/>
   </StackPanel>
 </UserControl>

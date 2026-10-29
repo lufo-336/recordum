@@ -62,6 +62,8 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
         _clock = clock;
         // Keep IsEmpty in sync when the period list changes (rows added/removed via delete).
         periods.Changed += (_, _) => OnPropertyChanged(nameof(IsEmpty));
+        // ...e quando cambiano le righe: il filtro "con note" le toglie senza ricaricare.
+        records.Rows.CollectionChanged += (_, _) => OnPropertyChanged(nameof(IsEmpty));
     }
 
     public void SetContext(Guid nodeId, bool isJournal, bool isResistance = false, string? seriesLabelsJson = null)

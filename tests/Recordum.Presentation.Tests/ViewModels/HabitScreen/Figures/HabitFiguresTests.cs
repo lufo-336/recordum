@@ -62,6 +62,25 @@ public sealed class HabitFiguresTests : IDisposable
     private static string[] Values(HabitFiguresViewModel vm) => vm.Items.Select(f => f.Value).ToArray();
 
     [Fact]
+    public async Task A_superseded_load_does_not_overwrite_the_newer_figures()
+    {
+        // Review dell'onda 2a: un ricaricamento partito per l'abitudine di prima e finito dopo mostrava i suoi numeri.
+        Heat(Days(Today.AddDays(-2), Today).ToArray());
+        var vm = Vm();
+        var gate = new TaskCompletionSource();
+        _completions.ListGate = gate.Task;
+        var older = vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Session, Boundary);
+        _completions.ListGate = null;
+        await vm.LoadAsync(Node(HabitType.Action), Daily(), HabitCase.Action, Boundary);
+        var newer = Values(vm);
+        gate.SetResult();
+        await older;
+
+        Values(vm).Should().Equal(newer);
+        vm.Items.Select(f => f.Caption).Should().Contain("30 giorni", "restano i numeri dell'azione");
+    }
+
+    [Fact]
     public async Task Action_figures()
     {
         // 19 dei 30 giorni fatti → 63%; 148 giorni in tutto; serie attuale 4, migliore 12.

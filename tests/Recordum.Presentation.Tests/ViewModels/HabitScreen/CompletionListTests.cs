@@ -35,6 +35,30 @@ public class CompletionListViewModelTests
     }
 
     [Fact]
+    public async Task A_superseded_range_load_does_not_overwrite_the_newer_one()
+    {
+        // Review dell'onda 2a: ‹ › rapidi. Il caricamento di prima, finito dopo, sostituiva le righe del periodo nuovo.
+        var cs = new FakeCompletionService();
+        var (a, b) = (Guid.NewGuid(), Guid.NewGuid());
+        foreach (var id in new[] { a, b })
+        {
+            var ts = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+            var c = new Completion { Id = Guid.NewGuid(), HabitNodeId = id, CompletedAt = ts, CompletedAtMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds() };
+            cs.Store[c.Id] = c;
+        }
+        var sut = new CompletionListViewModel(cs, new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeDiaryService());
+        var gate = new TaskCompletionSource();
+        cs.ListGate = gate.Task;
+        var older = sut.LoadRangeAsync(a, null, null);
+        cs.ListGate = null;
+        await sut.LoadRangeAsync(b, null, null);
+        gate.SetResult();
+        await older;
+
+        sut.Rows.Should().ContainSingle().Which.Completion.HabitNodeId.Should().Be(b);
+    }
+
+    [Fact]
     public async Task The_list_hands_its_day_boundary_to_the_rows()
     {
         var cs = new FakeCompletionService();

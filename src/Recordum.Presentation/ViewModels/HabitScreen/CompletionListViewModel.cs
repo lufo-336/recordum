@@ -64,16 +64,18 @@ public sealed partial class CompletionListViewModel : ObservableObject
 
     public async Task LoadAsync(Guid habitNodeId, CancellationToken ct = default)
     {
+        var generation = ++_generation;
         NodeId = habitNodeId;
         var list = await _completions.ListByHabitAsync(habitNodeId, take: Take, ct: ct).ConfigureAwait(true);
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
-        await PopulateAsync(list, lookup, ct).ConfigureAwait(true);
+        await PopulateAsync(list, lookup, generation, ct).ConfigureAwait(true);
     }
 
     /// <summary>Loads the completions in [from, to] (inclusive; null bound = unbounded that side), each
     /// with readable per-field values. Powers both the day panel (from==to) and the period list.</summary>
     public async Task LoadRangeAsync(Guid habitNodeId, DateOnly? from, DateOnly? to, CancellationToken ct = default)
     {
+        var generation = ++_generation;
         NodeId = habitNodeId;
         // RangeOf e' semiaperta, il filtro del servizio e' inclusivo al millisecondo: il tetto e'
         // l'ultimo millisecondo del giorno, non il primo istante di quello dopo.
@@ -81,19 +83,23 @@ public sealed partial class CompletionListViewModel : ObservableObject
         var toTs = to is { } t ? DayBoundary.RangeOf(t).ToExclusive.AddMilliseconds(-1) : (DateTimeOffset?)null;
         var list = await _completions.ListByHabitAsync(habitNodeId, fromTs, toTs, ct: ct).ConfigureAwait(true);
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
-        await PopulateAsync(list, lookup, ct).ConfigureAwait(true);
+        await PopulateAsync(list, lookup, generation, ct).ConfigureAwait(true);
     }
 
     /// <summary>Loads the completions recorded on a single day. Thin wrapper over <see cref="LoadRangeAsync"/>.</summary>
     public Task LoadDayAsync(Guid habitNodeId, DateOnly date, CancellationToken ct = default)
         => LoadRangeAsync(habitNodeId, date, date, ct);
 
-    private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, CancellationToken ct)
+    private int _generation;
+
+    // ‹ › rapidi o un cambio di abitudine: vince l'ultimo caricamento, quelli superati non toccano le righe.
+    private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, int generation, CancellationToken ct)
     {
-        _allRows.Clear();
         IReadOnlyDictionary<Guid, DiaryEntrySummary> entries = IsJournal
             ? await _diary.GetEntrySummariesByCompletionsAsync(list.Select(c => c.Id).ToList(), ct).ConfigureAwait(true)
             : new Dictionary<Guid, DiaryEntrySummary>();
+        if (generation != _generation) return;
+        _allRows.Clear();
         foreach (var c in list.OrderByDescending(c => c.CompletedAtMs))
         {
             var hasEntry = entries.TryGetValue(c.Id, out var entry);

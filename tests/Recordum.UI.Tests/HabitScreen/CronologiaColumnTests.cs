@@ -126,6 +126,92 @@ public class CronologiaColumnTests
         o.Window.Close();
     }
 
+    /// <summary>Pixel della griglia nel colore dell'abitudine (#2F8FB0: il blu stacca dal rosso; le celle vuote sono neutre).</summary>
+    private static int HabitPixels(Opened o, Control grid)
+    {
+        Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Pump();
+        using var frame = o.Window.CaptureRenderedFrame()!;
+        using var fb = frame.Lock();
+        var r = grid.Bounds.Translate(grid.TranslatePoint(new Point(0, 0), o.Window)!.Value - grid.Bounds.Position);
+        var bytes = new byte[fb.RowBytes * fb.Size.Height];
+        System.Runtime.InteropServices.Marshal.Copy(fb.Address, bytes, 0, bytes.Length);
+        var n = 0;
+        for (var y = (int)r.Top; y < (int)r.Bottom; y++)
+            for (var x = (int)r.Left; x < (int)r.Right; x++)
+            {
+                var i = y * fb.RowBytes + x * 4;   // Bgra o Rgba: conta solo che blu e rosso si stacchino
+                if (Math.Abs(bytes[i] - bytes[i + 2]) > 30) n++;
+            }
+        return n;
+    }
+
+    [AvaloniaFact]
+    public async Task The_heatmap_redraws_when_the_period_steps()
+    {
+        // Review dell'onda 2a: Map.Weeks è la stessa collezione svuotata e riempita; HeatGrid ascoltava solo il cambio di
+        // proprietà e dopo ‹ disegnava ancora l'anno di prima (e il clic sceglieva un giorno diverso da quello visto).
+        var o = await OpenAsync(seed: async (sp, id) =>
+        {
+            for (var d = 0; d < 20; d++) await Record(sp, id, Now.AddDays(-d).AddHours(-1));
+        }, createdAt: new DateTimeOffset(2025, 1, 5, 12, 0, 0, TimeSpan.Zero));
+        Named<RadioButton>(o.Column, "YearPeriod").IsChecked = true;
+        await UntilAsync(() => Heat(o).Any(g => g.Name == "Weeks" && g.Bounds.Width > 0));
+        var grid = Named<HeatGrid>(o.Column, "Weeks");
+        await UntilAsync(() => HabitPixels(o, grid) > 0);
+
+        Click(o.Window, Named<Button>(o.Column, "PreviousButton"));
+        await UntilAsync(() => o.Vm.Period.From.Year == 2025 && o.Vm.Map.Weeks.Count > 0);
+        await UntilAsync(() => HabitPixels(o, grid) == 0);
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Changing_habit_saves_the_day_note()
+    {
+        // Review dell'onda 2a: il blocco del giorno scritto e non salvato si azzerava cliccando un'altra abitudine.
+        var o = await OpenAsync();
+        var box = Named<TextBox>(o.Column, "DayNoteBox");
+        box.Text = "scritta e non salvata";
+        Pump();
+        var other = await o.Scope.ServiceProvider.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = $"Altra {Guid.NewGuid():N}", Color = Color,
+        });
+        await o.Vm.LoadAsync(other);
+        Pump();
+        var notes = await o.Scope.ServiceProvider.GetRequiredService<INoteService>().ListByHabitAsync(o.Id);
+        notes.Should().ContainSingle().Which.BodyMd.Should().Be("scritta e non salvata");
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task A_closed_cronologia_is_collected()
+    {
+        // Review dell'onda 2a: DayBlockView e PeriodListView restavano iscritte ai Records della schermata, che vive più della
+        // colonna: ogni chiusura lasciava in memoria l'albero intero (mappa, elenco).
+        var o = await OpenAsync(seed: (sp, id) => Record(sp, id, Now.AddHours(-1)));
+        var weak = Detach(o);
+        for (var i = 0; i < 5 && weak.IsAlive; i++)
+        {
+            await Task.Delay(20);
+            Pump();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        weak.IsAlive.Should().BeFalse("chiusa la colonna, la sua vista non è più raggiungibile");
+        o.Window.Close();
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference Detach(Opened o)
+    {
+        var weak = new WeakReference(o.Column);
+        o.Vm.IsCronologiaOpen = false;
+        Pump();
+        return weak;
+    }
+
     [AvaloniaFact]
     public async Task A_long_period_list_is_virtualized_and_scrolls_to_the_oldest()
     {
@@ -293,6 +379,22 @@ public class CronologiaColumnTests
         Named<RadioButton>(o.Column, "FilterAll").IsChecked = true;
         Pump();
         rows.Should().HaveCount(2);
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task With_notes_and_none_says_so()
+    {
+        // Review dell'onda 2a: "Con note" senza note lasciava l'elenco bianco (IsEmpty non era notificato).
+        var o = await OpenAsync(seed: (sp, id) => Record(sp, id, Now.AddDays(-2)));
+        await UntilAsync(() => o.Vm.PeriodRecords.Records.Rows.Count == 1);
+        Named<RadioButton>(o.Column, "FilterWithNotes").IsChecked = true;
+        Pump();
+        Named<TextBlock>(o.Column, "ListNoNotes").IsEffectivelyVisible.Should().BeTrue();
+        Named<TextBlock>(o.Column, "ListEmpty").IsEffectivelyVisible.Should().BeFalse("le registrazioni ci sono, senza note");
+        Named<RadioButton>(o.Column, "FilterAll").IsChecked = true;
+        Pump();
+        Named<TextBlock>(o.Column, "ListNoNotes").IsEffectivelyVisible.Should().BeFalse();
         o.Window.Close();
     }
 
