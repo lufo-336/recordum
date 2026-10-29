@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.Today;
 using Recordum.UI.Views.HabitScreen.QuickAdd;
-using Recordum.UI.Views.HabitScreen.Today;
 
 namespace Recordum.UI.Views.HabitScreen.Head;
 
@@ -13,25 +12,26 @@ public static class HeadCommandTemplate
     public static Control? Build(HabitScreenViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-        Control? view;
-        object? context;
-        switch (vm.Case)
+        var quickAdd = vm.QuickAdd;
+        (Control? view, object? context) = vm.Case switch
         {
-            case HabitCase.Session:
-                (view, context) = (new TimerControlView(), vm.TimerControl);
-                break;
-            case HabitCase.Journal:
-                context = vm.TodayStrip.Content as JournalTodayContent;
-                view = context is null ? null : new JournalTodayView();
-                break;
-            case null:
-                return null;
-            default:
-                context = vm.QuickAdd;
-                view = QuickAddTemplate.Instance.Build(vm.QuickAdd);
-                break;
-        }
+            HabitCase.Action => (new ActionCommandView(), quickAdd),
+            HabitCase.CounterTap => (new CounterTapCommandView(), quickAdd),
+            HabitCase.State => (new StateCommandView(), quickAdd),
+            HabitCase.Abstinence => (new AbstinenceCommandView(), quickAdd),
+            HabitCase.Measured or HabitCase.Series => (QuickAddTemplate.Instance.Build(quickAdd), quickAdd),
+            HabitCase.Session => (new SessionCommandView(Manual(quickAdd)), vm.TimerControl),
+            HabitCase.Journal when vm.TodayStrip.Content is JournalTodayContent journal => (new JournalCommandView(), journal),
+            _ => ((Control?)null, (object?)null),
+        };
         if (view is not null) view.DataContext = context;
+        return view;
+    }
+
+    private static Control? Manual(object? quickAdd)
+    {
+        var view = QuickAddTemplate.Instance.Build(quickAdd);
+        if (view is not null) view.DataContext = quickAdd;
         return view;
     }
 }

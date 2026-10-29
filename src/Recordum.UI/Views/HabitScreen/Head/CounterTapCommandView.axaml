@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
+             xmlns:head="using:Recordum.UI.Views.HabitScreen.Head"
+             x:Class="Recordum.UI.Views.HabitScreen.Head.CounterTapCommandView"
+             x:DataType="qa:CounterTapQuickAddViewModel">
+  <!-- Contatore a tocco: − toglie l'ultima del giorno scelto, +1 registra; "5/8" solo con l'obiettivo giornaliero. -->
+  <StackPanel HorizontalAlignment="Right">
+    <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBlock x:Name="Progress" VerticalAlignment="Center" Margin="0,0,4,0" FontWeight="SemiBold" FontFeatures="+tnum"
+                 Foreground="{DynamicResource Brush.HabitText}"
+                 IsVisible="{CompiledBinding $parent[head:HabitHeadView].((vm:HabitScreenViewModel)DataContext).Figures.DailyTarget, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock.Text>
+          <MultiBinding StringFormat="{x:Static res:Strings.Head_Counter_Progress}">
+            <Binding Path="DayCount"/>
+            <Binding Path="$parent[head:HabitHeadView].((vm:HabitScreenViewModel)DataContext).Figures.DailyTarget"/>
+          </MultiBinding>
+        </TextBlock.Text>
+      </TextBlock>
+      <Button x:Name="MinusButton" Content="−" Padding="12,6" Command="{CompiledBinding UndoLastCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_UndoLast}"/>
+      <Button x:Name="RecordButton" Classes="record" Content="+1" Command="{CompiledBinding TapCommand}"/>
+    </StackPanel>
+    <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap" MaxWidth="280"
+               Text="{CompiledBinding ErrorMessage}"
+               IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+  </StackPanel>
+</UserControl>

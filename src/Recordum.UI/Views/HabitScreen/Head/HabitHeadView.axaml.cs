@@ -68,9 +68,7 @@ public partial class HabitHeadView : UserControl
 
     private void RebuildCommand()
     {
-        var view = _vm is null ? null : HeadCommandTemplate.Build(_vm);
-        if (view is not null && CommandHost.Child?.GetType() == view.GetType() && CommandHost.Child.DataContext == view.DataContext) return;
-        CommandHost.Child = view;
+        CommandHost.Child = _vm is null ? null : HeadCommandTemplate.Build(_vm);
     }
 
     private void PrepareCalendar()

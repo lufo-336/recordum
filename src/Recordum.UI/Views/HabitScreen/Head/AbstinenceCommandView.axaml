@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
+             x:Class="Recordum.UI.Views.HabitScreen.Head.AbstinenceCommandView"
+             x:DataType="qa:AbstinenceQuickAddViewModel">
+  <!-- Astinenza: "Ho ceduto…" chiede prima di chiudere il periodo; senza periodo aperto "Inizio". -->
+  <StackPanel HorizontalAlignment="Right">
+    <Button x:Name="LapseButton" Classes="record danger" Content="{x:Static res:Strings.Head_Abstinence_Lapse}"
+            IsVisible="{CompiledBinding CanLapse}">
+      <Button.Flyout>
+        <Flyout Placement="BottomEdgeAlignedRight">
+          <StackPanel MaxWidth="280" Spacing="10">
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text}"
+                       Text="{x:Static res:Strings.Head_Abstinence_LapseConfirm}"/>
+            <Button x:Name="ConfirmLapseButton" Classes="primary" HorizontalAlignment="Right"
+                    Content="{x:Static res:Strings.Head_Confirm}" Click="OnConfirmLapse"/>
+          </StackPanel>
+        </Flyout>
+      </Button.Flyout>
+    </Button>
+    <Button x:Name="StartButton" Classes="record" Content="{x:Static res:Strings.Abstinence_Start}"
+            Command="{CompiledBinding StartCommand}" IsVisible="{CompiledBinding CanStart}"/>
+  </StackPanel>
+</UserControl>

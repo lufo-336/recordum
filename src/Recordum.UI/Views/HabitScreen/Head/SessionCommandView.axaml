@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:hs="using:Recordum.UI.Views.HabitScreen"
+             x:Class="Recordum.UI.Views.HabitScreen.Head.SessionCommandView"
+             x:DataType="vm:TimerControlViewModel">
+  <!-- Sessione: il cronometro; da fermo anche "+ a mano", che apre sotto le celle del quick-add. -->
+  <StackPanel HorizontalAlignment="Right">
+    <hs:TimerControlView x:Name="Timer" HorizontalAlignment="Right"/>
+    <StackPanel x:Name="ManualRow" HorizontalAlignment="Right" IsVisible="{CompiledBinding !IsActive}">
+      <ToggleButton x:Name="ManualButton" HorizontalAlignment="Right" Margin="0,4,0,0" Padding="10,3"
+                    Content="{x:Static res:Strings.Head_Session_Manual}"/>
+      <Border x:Name="ManualHost" IsVisible="{Binding #ManualButton.IsChecked}"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

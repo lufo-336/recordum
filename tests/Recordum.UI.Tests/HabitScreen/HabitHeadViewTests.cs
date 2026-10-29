@@ -125,14 +125,14 @@ public class HabitHeadViewTests
     }
 
     [AvaloniaTheory]
-    [InlineData(HabitCase.Action, typeof(ActionQuickAddView))]
-    [InlineData(HabitCase.CounterTap, typeof(CounterTapQuickAddView))]
+    [InlineData(HabitCase.Action, typeof(ActionCommandView))]
+    [InlineData(HabitCase.CounterTap, typeof(CounterTapCommandView))]
     [InlineData(HabitCase.Measured, typeof(SeriesQuickAddView))]
     [InlineData(HabitCase.Series, typeof(SeriesQuickAddView))]
-    [InlineData(HabitCase.Session, typeof(TimerControlView))]
-    [InlineData(HabitCase.State, typeof(MeasuredQuickAddView))]
-    [InlineData(HabitCase.Abstinence, typeof(AbstinenceQuickAddView))]
-    [InlineData(HabitCase.Journal, typeof(JournalTodayView))]
+    [InlineData(HabitCase.Session, typeof(SessionCommandView))]
+    [InlineData(HabitCase.State, typeof(StateCommandView))]
+    [InlineData(HabitCase.Abstinence, typeof(AbstinenceCommandView))]
+    [InlineData(HabitCase.Journal, typeof(JournalCommandView))]
     public async Task One_command_per_case(HabitCase @case, Type expected)
     {
         var o = await OpenAsync(@case);
@@ -185,7 +185,7 @@ public class HabitHeadViewTests
         o.Vm.IsCronologiaOpen = true;
         PrivateDbHost.Pump();
         var column = Named<Border>(o.View, "CronologiaColumn");
-        column.GetVisualDescendants().OfType<ActionQuickAddView>().Should().BeEmpty();
+        column.GetVisualDescendants().OfType<ActionCommandView>().Should().BeEmpty();
         column.GetVisualDescendants().OfType<TimerControlView>().Should().BeEmpty();
         o.Window.Close();
     }

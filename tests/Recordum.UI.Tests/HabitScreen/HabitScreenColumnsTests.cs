@@ -115,8 +115,8 @@ public class HabitScreenColumnsTests
             view.GetVisualDescendants().OfType<Control>().Count(c => c.Name is "RecordsHost").Should().Be(1);
 
             // Il pannello di registrazione sta nella testa, una volta sola, qualunque cosa faccia la Cronologia.
-            Named<Border>(view, "CronologiaColumn").GetVisualDescendants().OfType<Button>().Should().NotContain(b => b.Name == "SaveButton");
-            var save = Named<Button>(view, "SaveButton");
+            Named<Border>(view, "CronologiaColumn").GetVisualDescendants().OfType<Button>().Should().NotContain(b => b.Name == "RecordButton");
+            var save = Named<Control>(view, "RecordButton");
             var p = save.TranslatePoint(new Point(save.Bounds.Width / 2, save.Bounds.Height / 2), w)!.Value;
             w.MouseDown(p, MouseButton.Left); w.MouseUp(p, MouseButton.Left);
             var cs = scope.ServiceProvider.GetRequiredService<ICompletionService>();

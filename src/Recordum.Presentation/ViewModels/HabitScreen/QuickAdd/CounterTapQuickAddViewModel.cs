@@ -39,8 +39,9 @@ public sealed partial class CounterTapQuickAddViewModel(ICompletionService compl
             {
                 HabitNodeId = Node.Id, CompletedAt = ts, CompletedAtMs = ms, IsRetroactive = retro,
             }, ct: ct).ConfigureAwait(true);
-            DayCount++;
-            UndoLastCommand.NotifyCanExecuteChanged();
+            // Si rilegge, non si incrementa: l'evento CompletionRecorded fa già rileggere lo schermo, e un ++ dopo la
+            // sua rilettura contava due volte la stessa registrazione.
+            await LoadDayAsync(ct).ConfigureAwait(true);
         }
         catch (Exception ex) { SetUnexpectedError(ex); }
         finally { IsSaving = false; }
@@ -55,15 +56,16 @@ public sealed partial class CounterTapQuickAddViewModel(ICompletionService compl
         var newest = list.OrderByDescending(c => c.CompletedAtMs).FirstOrDefault();
         if (newest is null) return;
         await Completions.DeleteAsync(newest.Id, ct).ConfigureAwait(true);
-        DayCount = Math.Max(0, DayCount - 1);
-        UndoLastCommand.NotifyCanExecuteChanged();
+        await LoadDayAsync(ct).ConfigureAwait(true);
     }
 
     private bool CanUndo() => DayCount > 0;
 
+    /// <summary>Il giorno di <see cref="QuickAddViewModelBase.CompletionDate"/> nel confine dell'abitudine. RangeOf è
+    /// semiaperta, il filtro del servizio inclusivo al millisecondo: -1 ms.</summary>
     private (DateTimeOffset From, DateTimeOffset To) DayWindowUtc()
     {
-        var day = DateTime.SpecifyKind(CompletionDate.Date, DateTimeKind.Utc);
-        return (new DateTimeOffset(day), new DateTimeOffset(day.AddDays(1)));
+        var (from, toExclusive) = DayBoundary.RangeOf(DateOnly.FromDateTime(CompletionDate.Date));
+        return (from, toExclusive.AddMilliseconds(-1));
     }
 }

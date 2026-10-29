@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
+             xmlns:head="using:Recordum.UI.Views.HabitScreen.Head"
+             x:Class="Recordum.UI.Views.HabitScreen.Head.ActionCommandView"
+             x:DataType="qa:ActionQuickAddViewModel">
+  <!-- Azione: un interruttore sul giorno scelto. Spuntato = il giorno ha una registrazione; un clic la toglie. -->
+  <StackPanel HorizontalAlignment="Right">
+    <ToggleButton x:Name="RecordButton" Classes="record" IsChecked="{CompiledBinding IsDone, Mode=OneWay}"
+                  Command="{CompiledBinding ToggleCommand}">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Path Classes="record-glyph" Data="{StaticResource Icon.Check}"/>
+        <Panel>
+          <TextBlock Text="{x:Static res:Strings.Head_Action_DoneToday}"
+                     IsVisible="{CompiledBinding $parent[head:HabitHeadView].((vm:HabitScreenViewModel)DataContext).IsSelectedDayToday}"/>
+          <TextBlock Text="{x:Static res:Strings.Head_Action_Done}"
+                     IsVisible="{CompiledBinding !$parent[head:HabitHeadView].((vm:HabitScreenViewModel)DataContext).IsSelectedDayToday}"/>
+        </Panel>
+      </StackPanel>
+    </ToggleButton>
+    <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap" MaxWidth="280"
+               Text="{CompiledBinding ErrorMessage}"
+               IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+  </StackPanel>
+</UserControl>

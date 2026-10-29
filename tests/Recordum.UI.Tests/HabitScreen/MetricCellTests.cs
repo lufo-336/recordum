@@ -216,14 +216,21 @@ public class MetricCellTests
                 HabitNodeId = id, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scales[0].Id,
                 LabelsJson = "[\"Awful\",\"Poor\",\"Fair\",\"Good\",\"Great\"]",   // etichette diverse dai numeri
             });
+            // Una seconda cella: con la scala sola la testa mostrerebbe i gradini (HeadCommandTests), non il cursore.
+            await scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition
+            {
+                HabitNodeId = id, Name = "Why", Type = MetricType.Text, SortOrder = 1,
+            });
         });
         try
         {
-            var slider = Named<Slider>(o.View, "ScaleSlider");
+            // Ogni cella porta i controlli (nascosti) degli altri tipi: si prende quello visibile.
+            var slider = o.View.GetVisualDescendants().OfType<Slider>().Single(s => s.Name == "ScaleSlider" && s.IsEffectivelyVisible);
             slider.Maximum.Should().Be(4);
             slider.Value = 2;   // il terzo passo
             Pump();
-            Named<TextBlock>(o.View, "ScaleCaption").Text.Should().Be("Fair");
+            o.View.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ScaleCaption" && t.IsEffectivelyVisible)
+                .Text.Should().Be("Fair");
             Click(o.Window, Named<Button>(o.View, "SaveButton"));
             await UntilAsync(() => o.SavedValuesAsync().GetAwaiter().GetResult().Count == 1);
             (await o.SavedValuesAsync()).Single().ValueInteger.Should().Be(3, "il passo 3 salva l'intero 3, non l'etichetta ne' l'indice");

@@ -23,8 +23,29 @@ public sealed partial class MeasuredQuickAddViewModel(
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;
 
-    [ObservableProperty] private SeriesRowViewModel _row = new(Array.Empty<MetricDefinition>());
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Steps), nameof(HasSteps))]
+    private SeriesRowViewModel _row = new(Array.Empty<MetricDefinition>());
     [ObservableProperty] private string? _notes;
+
+    private const int MaxSteps = 10;
+
+    /// <summary>I gradini del comando in testa (direzione visiva §6.2): solo con una cella scala sola e al più
+    /// <see cref="MaxSteps"/> gradini; altrimenti vuoto e la testa mostra le celle con "Registra".</summary>
+    public IReadOnlyList<ScalePoint> Steps =>
+        Row.Cells is [{ Kind: MetricInputKind.Scale, StepCount: > 0 and <= MaxSteps } cell] ? cell.ScalePoints : [];
+
+    public bool HasSteps => Steps.Count > 0;
+
+    /// <summary>Un clic su un gradino registra quel valore per il giorno scelto.</summary>
+    [RelayCommand]
+    private Task RecordStep(ScalePoint? step, CancellationToken ct)
+    {
+        var index = step is null ? -1 : Steps.ToList().IndexOf(step);
+        if (index < 0) return Task.CompletedTask;
+        Row.Cells[0].SelectedScaleIndex = index;
+        return SaveAsync(ct);
+    }
 
     // _timers, ChronoRunning and ToggleChrono live in SeriesQuickAddViewModelBase (CR21).
 

@@ -99,7 +99,7 @@ public class RetroactivePathIntegrationTests
             var yesterday = D.AddDays(-1);
             Cell(o, D).IsToday.Should().BeTrue("per il confine delle 04:00 oggi e' ancora il 15");
             Click(o.Window, DayButton(o, yesterday));
-            Click(o.Window, o.View.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "SaveButton"));
+            Click(o.Window, o.View.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "RecordButton"));
 
             var cs = Host.Provider.CreateScope().ServiceProvider.GetRequiredService<ICompletionService>();
             await UntilAsync(() => cs.ListByHabitAsync(o.Id).AsTask().GetAwaiter().GetResult().Count == 1);

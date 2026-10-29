@@ -2052,4 +2052,28 @@ Details: {0}</value>
   <data name="HabitScreen.Column.Diary" xml:space="preserve">
     <value>Diary</value>
   </data>
+  <data name="Head.Action.DoneToday" xml:space="preserve">
+    <value>Done today</value>
+  </data>
+  <data name="Head.Action.Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Head.Session.Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Head.Session.Manual" xml:space="preserve">
+    <value>+ by hand</value>
+  </data>
+  <data name="Head.Abstinence.Lapse" xml:space="preserve">
+    <value>I gave in…</value>
+  </data>
+  <data name="Head.Abstinence.LapseConfirm" xml:space="preserve">
+    <value>Record a lapse now? The current period ends here.</value>
+  </data>
+  <data name="Head.Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Head.Counter.Progress" xml:space="preserve">
+    <value>{0}/{1:0.##}</value>
+  </data>
 </root>

@@ -5,13 +5,7 @@
              x:Name="Root"
              x:Class="Recordum.UI.Views.HabitScreen.QuickAdd.MeasuredQuickAddView"
              x:DataType="qa:MeasuredQuickAddViewModel">
-  <StackPanel Margin="12">
-    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-      <TextBlock Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
-                 Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-      <TextBlock x:Name="ForDate" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
-                 Text="{CompiledBinding CompletionDate, StringFormat=d}"/>
-    </StackPanel>
+  <StackPanel>
     <ItemsControl x:Name="Cells" ItemsSource="{CompiledBinding Row.Cells}" Margin="0,0,0,8">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="qa:SeriesCellViewModel">
@@ -19,8 +13,8 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <Button x:Name="SaveButton" Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
-            Command="{CompiledBinding SaveCommand}" HorizontalAlignment="Left" Padding="12,6"/>
+    <Button x:Name="SaveButton" Classes="record" Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+            Command="{CompiledBinding SaveCommand}" HorizontalAlignment="Right"/>
     <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
                Text="{CompiledBinding ErrorMessage}"
                IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>

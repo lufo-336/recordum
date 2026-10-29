@@ -2026,4 +2026,28 @@
   <data name="HabitScreen.Column.Diary" xml:space="preserve">
     <value>Diario</value>
   </data>
+  <data name="Head.Action.DoneToday" xml:space="preserve">
+    <value>Fatto oggi</value>
+  </data>
+  <data name="Head.Action.Done" xml:space="preserve">
+    <value>Fatto</value>
+  </data>
+  <data name="Head.Session.Start" xml:space="preserve">
+    <value>Inizia</value>
+  </data>
+  <data name="Head.Session.Manual" xml:space="preserve">
+    <value>+ a mano</value>
+  </data>
+  <data name="Head.Abstinence.Lapse" xml:space="preserve">
+    <value>Ho ceduto…</value>
+  </data>
+  <data name="Head.Abstinence.LapseConfirm" xml:space="preserve">
+    <value>Registrare una ricaduta adesso? Il periodo in corso finisce qui.</value>
+  </data>
+  <data name="Head.Confirm" xml:space="preserve">
+    <value>Conferma</value>
+  </data>
+  <data name="Head.Counter.Progress" xml:space="preserve">
+    <value>{0}/{1:0.##}</value>
+  </data>
 </root>

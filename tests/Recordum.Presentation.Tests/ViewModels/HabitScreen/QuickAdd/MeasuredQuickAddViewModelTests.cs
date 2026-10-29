@@ -142,3 +142,49 @@ public class MeasuredQuickAddViewModelTests
         sut.ErrorMessage.Should().BeNullOrEmpty();
     }
 }
+
+/// <summary>Il comando dello stato in testa (direzione visiva §6.2): con una sola cella scala e al più 10 gradini, un
+/// gradino per etichetta e un clic registra quel valore; altrimenti le celle e "Registra".</summary>
+public class MeasuredQuickAddStepsTests
+{
+    private static async Task<(MeasuredQuickAddViewModel Sut, FakeCompletionService Cs)> BuildAsync(int maxValue, bool secondMetric = false)
+    {
+        var node = Guid.NewGuid();
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "s", Name = "s", MinValue = 1, MaxValue = maxValue };
+        rd.Scales.Add(scale);
+        await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Umore", Type = MetricType.Integer, SortOrder = 0, ScaleTemplateId = scale.Id });
+        if (secondMetric)
+            await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Note", Type = MetricType.Text, SortOrder = 1 });
+        var sut = new MeasuredQuickAddViewModel(cs, ms, rd, new FakeClock(), new FakeActiveTimerService())
+        {
+            Node = new HabitNode { Id = node, HabitType = HabitType.State },
+        };
+        await sut.LoadMetricsAsync();
+        return (sut, cs);
+    }
+
+    [Fact]
+    public async Task A_single_scale_of_five_has_five_steps_and_a_click_records_that_value()
+    {
+        var (sut, cs) = await BuildAsync(5);
+        sut.Steps.Should().HaveCount(5);
+        sut.HasSteps.Should().BeTrue();
+
+        await sut.RecordStepCommand.ExecuteAsync(sut.Steps[2]);
+
+        cs.LastValues.Should().ContainSingle().Which.ValueInteger.Should().Be(3);
+    }
+
+    [Theory]
+    [InlineData(10, false, true)]
+    [InlineData(11, false, false)]
+    [InlineData(5, true, false)]
+    public async Task Steps_only_for_one_scale_cell_of_at_most_ten(int max, bool secondMetric, bool expected)
+    {
+        var (sut, _) = await BuildAsync(max, secondMetric);
+        sut.HasSteps.Should().Be(expected);
+    }
+}

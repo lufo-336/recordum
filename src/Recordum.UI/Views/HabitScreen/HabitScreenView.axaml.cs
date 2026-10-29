@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.UI.Converters;
 
 namespace Recordum.UI.Views.HabitScreen;
 
@@ -19,6 +20,7 @@ public partial class HabitScreenView : UserControl
         ColumnResizeThumb.DragDelta += OnColumnResizeDelta;
         ColumnResizeThumb.DragCompleted += (_, _) => { if (_vm is { } vm) _ = vm.PersistColumnWidthsAsync(); };
         ColumnResizeThumb.DoubleTapped += OnColumnResizeReset;
+        ActualThemeVariantChanged += (_, _) => ApplyAccent();   // la variante "testo" dipende dal tema
     }
 
     // ---- colonne: larghezza (pixel della Cronologia, resto alla Configura), MinWidth e maniglia dal ViewModel ----
@@ -102,6 +104,8 @@ public partial class HabitScreenView : UserControl
         "CheckBoxCheckBackgroundStrokeCheckedPointerOver",
     ];
 
+    private static readonly string[] HabitKeys = ["Brush.Habit", "Brush.HabitText", "Brush.HabitTint"];
+
     /// <summary>Le risorse non hanno DataContext: a ogni cambio di colore si riscrivono qui le chiavi Fluent. Senza
     /// colore valido si tolgono e torna l'accento dell'app. Ogni pennello eredita l'opacita' di quello del tema (la
     /// selezione di lista e' una tinta, non un blocco pieno). Brush.Accent non si tocca: resta l'inchiostro.</summary>
@@ -109,10 +113,15 @@ public partial class HabitScreenView : UserControl
     {
         if (_vm?.Node?.Color is not { } hex || !Color.TryParse(hex, out var c))
         {
-            foreach (var k in FluentAccentKeys) Resources.Remove(k);
+            foreach (var k in FluentAccentKeys.Concat(HabitKeys)) Resources.Remove(k);
             return;
         }
         var theme = ActualThemeVariant;
+        // Il comando che registra (Button.record): il colore pieno, la sua variante "testo" e la tinta di riga.
+        var tint = Application.Current!.TryGetResource("Opacity.RowTint", theme, out var t) && t is double d ? d : 0.09;
+        Resources["Brush.Habit"] = new SolidColorBrush(c);
+        Resources["Brush.HabitText"] = HabitTextBrushConverter.BrushFor(hex, theme);
+        Resources["Brush.HabitTint"] = new SolidColorBrush(c, tint);
         foreach (var k in FluentAccentKeys)
         {
             var opacity = Application.Current!.TryGetResource(k, theme, out var v) && v is ISolidColorBrush b

@@ -33,6 +33,9 @@ public sealed partial class TimerControlViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private int? _segmentIndex;
 
     public TimerMode? Mode => _config?.TimerMode;
+
+    /// <summary>Un timer a segmenti (<see cref="TimerMode.Session"/>): solo qui c'è "Segmento successivo".</summary>
+    public bool IsSegmented => Mode == TimerMode.Session;
     public string ElapsedDisplay
     {
         get
@@ -104,6 +107,7 @@ public sealed partial class TimerControlViewModel : ObservableObject, IDisposabl
         _node = node;
         _config = config;
         IsApplicable = config?.HasIntegratedTimer == true && config.TimerMode is not null;
+        OnPropertyChanged(nameof(IsSegmented));
         Segments.Clear();
         if (node is not null && config?.TimerMode == TimerMode.Session)
         {

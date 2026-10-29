@@ -96,9 +96,7 @@ public class QuickAddViewTests
         t.Match(new object()).Should().BeFalse();
         t.Build(new object()).Should().BeNull("un ViewModel sconosciuto non costruisce niente");
         t.Build(null).Should().BeNull();
-        t.Build(new ActionQuickAddViewModel(cs, Clock)).Should().BeOfType<ActionQuickAddView>();
-        t.Build(new CounterTapQuickAddViewModel(cs, Clock)).Should().BeOfType<CounterTapQuickAddView>();
-        t.Build(new AbstinenceQuickAddViewModel(cs, Host.Provider.CreateScope().ServiceProvider.GetRequiredService<IAbstinenceService>(), Clock, null)).Should().BeOfType<AbstinenceQuickAddView>();
+        t.Build(new ActionQuickAddViewModel(cs, Clock)).Should().BeNull("azione, tocco e astinenza hanno il loro comando in testa");
         t.Build(RuntimeHelpers.GetUninitializedObject(typeof(MeasuredQuickAddViewModel))).Should().BeOfType<MeasuredQuickAddView>();
         t.Build(RuntimeHelpers.GetUninitializedObject(typeof(CounterSeriesQuickAddViewModel))).Should().BeOfType<SeriesQuickAddView>();
     }
@@ -110,8 +108,7 @@ public class QuickAddViewTests
         try
         {
             // Un contatore senza metriche e' il contatore a tap.
-            Named<Button>(o.View, "TapButton").Should().NotBeNull();
-            Named<TextBlock>(o.View, "Count").Text.Should().NotBeNullOrEmpty();
+            Named<Border>(o.View, "CommandHost").Child.Should().BeOfType<Recordum.UI.Views.HabitScreen.Head.CounterTapCommandView>();
         }
         finally { o.Window.Close(); }
     }
@@ -124,7 +121,7 @@ public class QuickAddViewTests
         {
             var yesterday = new DateOnly(2026, 3, 14);
             Click(o.Window, Day(o.View, yesterday));
-            Click(o.Window, Named<Button>(o.View, "SaveButton"));
+            Click(o.Window, Named<Control>(o.View, "RecordButton"));
             await UntilAsync(() => Holder.Recorded.Count == 1);
             var retro = Holder.Recorded[0];
             retro.HabitNodeId.Should().Be(o.Id);
@@ -135,7 +132,7 @@ public class QuickAddViewTests
             // Il caso del parametro muto: con oggi selezionato la risposta e' l'altra.
             Click(o.Window, Day(o.View, new DateOnly(2026, 3, 15)));
             await UntilAsync(() => !((ActionQuickAddViewModel)o.Vm.QuickAdd!).IsSaving);
-            Click(o.Window, Named<Button>(o.View, "SaveButton"));
+            Click(o.Window, Named<Control>(o.View, "RecordButton"));
             await UntilAsync(() => Holder.Recorded.Count == 2);
             Holder.Recorded[1].IsRetroactive.Should().BeFalse();
             Holder.Recorded[1].CompletedAtMs.Should().Be(Noon.ToUnixTimeMilliseconds(), "l'ora dell'orologio finto");
@@ -151,7 +148,7 @@ public class QuickAddViewTests
         {
             var gate = new TaskCompletionSource();
             Holder.Gate = gate.Task;
-            var save = Named<Button>(o.View, "SaveButton");
+            var save = Named<Control>(o.View, "RecordButton");
             Click(o.Window, save);
             Click(o.Window, save);
             gate.SetResult();
@@ -172,7 +169,7 @@ public class QuickAddViewTests
             var gate = new TaskCompletionSource();
             Holder.Gate = gate.Task;
             var first = (ActionQuickAddViewModel)o.Vm.QuickAdd!;
-            Click(o.Window, Named<Button>(o.View, "SaveButton"));
+            Click(o.Window, Named<Control>(o.View, "RecordButton"));
             first.IsSaving.Should().BeTrue("il salvataggio e' in volo");
 
             await o.Vm.LoadAsync(second);

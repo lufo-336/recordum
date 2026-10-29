@@ -26,7 +26,8 @@
       blu pieno con spunta bianca di WPF senza un ControlTemplate.
     - ScrollViewer / ScrollBar: Classe A. Barra sottile piatta di serie.
     - Button di base (nessuna classe): Classe A. `Button.primary`/`Button.ghost` (RecordumStyles.axaml,
-      sonda F0) restano gli UNICI stili Button — un Button senza classe usa il chrome Fluent com'è.
+      sonda F0) e `record` (qui sotto, il comando che registra) sono gli unici stili Button — un Button senza classe
+      usa il chrome Fluent com'è.
     - ListBoxItem: Classe A per la selezione (tinta d'accento, angoli arrotondati già di serie); un
       solo Setter esplicito sotto per l'angolo, non perché serva a schermo ma per lo stesso principio
       con cui WPF teneva `Recordum.HabitBlock` a `CornerRadius=6`: un numero nostro, non un default
@@ -150,6 +151,55 @@
     </Style>
     <Style Selector="ToggleButton.pill:focus-visible">
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+
+    <!-- Il comando che registra (direzione visiva §4.4, §6.2): bordo e testo nella variante "testo" del colore
+         dell'abitudine su una tinta di riga; "fatto" (ToggleButton spuntato) è pieno nel colore. I pennelli Brush.Habit*
+         li scrive la schermata dell'abitudine. Fluent ridipinge il ContentPresenter negli stati: lì si ripete. -->
+    <Style Selector=":is(Button).record">
+      <Setter Property="Background" Value="{DynamicResource Brush.HabitTint}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HabitText}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.HabitText}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Padding" Value="14,6"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector=":is(Button).record:pointerover /template/ ContentPresenter#PART_ContentPresenter, :is(Button).record:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.HabitTint}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.HabitText}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.HabitText}"/>
+      <Setter Property="Opacity" Value="0.9"/>
+    </Style>
+    <Style Selector="ToggleButton.record:checked">
+      <Setter Property="Background" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+    </Style>
+    <Style Selector="ToggleButton.record:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+    </Style>
+    <!-- "Ho ceduto…": lo stesso comando nel colore del pericolo. -->
+    <Style Selector="Button.record.danger">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}"/>
+    </Style>
+    <Style Selector="Button.record.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.record.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Danger}"/>
+    </Style>
+    <Style Selector="Path.record-glyph">
+      <Setter Property="Width" Value="14"/>
+      <Setter Property="Height" Value="14"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="StrokeThickness" Value="1.8"/>
+      <Setter Property="StrokeLineCap" Value="Round"/>
+      <Setter Property="StrokeJoin" Value="Round"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}"/>
     </Style>
 
 </Styles>

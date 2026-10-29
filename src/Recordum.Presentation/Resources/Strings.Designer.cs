@@ -724,6 +724,14 @@ public static class Strings
     public static string Head_RecordingFor => Get("Head.RecordingFor");
     public static string Head_BackToToday => Get("Head.BackToToday");
     public static string HabitScreen_Column_Diary => Get("HabitScreen.Column.Diary");
+    public static string Head_Action_DoneToday => Get("Head.Action.DoneToday");
+    public static string Head_Action_Done => Get("Head.Action.Done");
+    public static string Head_Session_Start => Get("Head.Session.Start");
+    public static string Head_Session_Manual => Get("Head.Session.Manual");
+    public static string Head_Abstinence_Lapse => Get("Head.Abstinence.Lapse");
+    public static string Head_Abstinence_LapseConfirm => Get("Head.Abstinence.LapseConfirm");
+    public static string Head_Confirm => Get("Head.Confirm");
+    public static string Head_Counter_Progress => Get("Head.Counter.Progress");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

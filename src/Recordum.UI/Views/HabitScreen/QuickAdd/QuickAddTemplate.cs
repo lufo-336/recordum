@@ -4,7 +4,8 @@ using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
 namespace Recordum.UI.Views.HabitScreen.QuickAdd;
 
-/// <summary>Sceglie il pannello di registrazione dal tipo del ViewModel e costruisce SOLO quello. Il diario non arriva qui (decisione 3 di F2a).</summary>
+/// <summary>Le celle di registrazione dal tipo del ViewModel, costruendo SOLO quella view: il misurato e le serie in testa,
+/// "+ a mano" della sessione. Gli altri casi hanno il loro comando (Head/HeadCommandTemplate).</summary>
 public sealed class QuickAddTemplate : IDataTemplate
 {
     public static QuickAddTemplate Instance { get; } = new();
@@ -13,9 +14,6 @@ public sealed class QuickAddTemplate : IDataTemplate
 
     public Control? Build(object? param) => param switch
     {
-        ActionQuickAddViewModel => new ActionQuickAddView(),
-        CounterTapQuickAddViewModel => new CounterTapQuickAddView(),
-        AbstinenceQuickAddViewModel => new AbstinenceQuickAddView(),
         MeasuredQuickAddViewModel => new MeasuredQuickAddView(),
         CounterSeriesQuickAddViewModel => new SeriesQuickAddView(),
         _ => null,

@@ -103,6 +103,11 @@
         <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Brush.Ink"/>
+        <!-- Il colore dell'abitudine per il comando che registra (Button.record): la schermata dell'abitudine li
+             riscrive nelle sue risorse (HabitScreenView.ApplyAccent); fuori di lì valgono questi. -->
+        <StaticResource x:Key="Brush.Habit" ResourceKey="Brush.Ink"/>
+        <StaticResource x:Key="Brush.HabitText" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="Brush.HabitTint" ResourceKey="Brush.Selection"/>
         <!-- La selezione del testo: un tono neutro col testo normale sopra (non l'inchiostro: review I-1). -->
         <SolidColorBrush x:Key="Brush.TextSelection" Color="#FFD8D5CC"/>
         <!-- Gli stati che Fluent ricava dall'accento, riportati sui token (review I-2, I-3): la spunta sopra l'inchiostro,
@@ -172,6 +177,11 @@
         <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="Brush.FieldBorder"/>
         <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Brush.Ink"/>
+        <!-- Il colore dell'abitudine per il comando che registra (Button.record): la schermata dell'abitudine li
+             riscrive nelle sue risorse (HabitScreenView.ApplyAccent); fuori di lì valgono questi. -->
+        <StaticResource x:Key="Brush.Habit" ResourceKey="Brush.Ink"/>
+        <StaticResource x:Key="Brush.HabitText" ResourceKey="Brush.Text"/>
+        <StaticResource x:Key="Brush.HabitTint" ResourceKey="Brush.Selection"/>
         <!-- La selezione del testo: un tono neutro col testo normale sopra (non l'inchiostro: review I-1). -->
         <SolidColorBrush x:Key="Brush.TextSelection" Color="#FF57554F"/>
         <!-- Gli stati che Fluent ricava dall'accento, riportati sui token (review I-2, I-3): la spunta sopra l'inchiostro,

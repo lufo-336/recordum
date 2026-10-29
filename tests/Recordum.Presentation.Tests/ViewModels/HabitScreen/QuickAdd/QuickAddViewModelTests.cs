@@ -477,6 +477,30 @@ public class CounterTapQuickAddViewModelTests
         vm.DayCount.Should().Be(1);
         completions.DeleteCalls.Single().Should().Be(second); // l'ultima registrata
     }
+
+    [Fact]
+    public async Task Before_the_reset_the_count_is_on_the_day_of_the_boundary()
+    {
+        // 28/10 alle 03:00 UTC con reset alle 05:00: il giorno è il 27, e le registrazioni di adesso ci appartengono. La
+        // finestra a mezzanotte UTC del 27 non le vedeva: il conteggio tornava 0 e "−" non trovava niente da togliere.
+        var cs = new FakeCompletionService();
+        var clock = new FakeClock(new DateTimeOffset(2026, 10, 28, 3, 0, 0, TimeSpan.Zero));
+        var day = new DayBoundary(TimeZoneInfo.Utc, new TimeOnly(5, 0));
+        var vm = new CounterTapQuickAddViewModel(cs, clock)
+        {
+            Node = new HabitNode { Id = Guid.NewGuid(), HabitType = HabitType.Counter },
+            DayBoundary = day,
+            CompletionDate = day.Today(clock).ToDateTime(TimeOnly.MinValue),
+        };
+
+        await vm.TapCommand.ExecuteAsync(null);
+        await vm.TapCommand.ExecuteAsync(null);
+        await vm.LoadDayAsync();
+        vm.DayCount.Should().Be(2);
+
+        await vm.UndoLastCommand.ExecuteAsync(null);
+        cs.DeleteCalls.Should().ContainSingle();
+    }
 }
 
 public class SeriesRowViewModelTests

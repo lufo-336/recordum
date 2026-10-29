@@ -6,20 +6,21 @@
              x:Class="Recordum.UI.Views.HabitScreen.TimerControlView"
              x:DataType="vm:TimerControlViewModel">
 
-  <!-- Cronometro di sessione della Cronologia. Si vede solo se l'abitudine ha un timer integrato. -->
-  <Border x:Name="Root" Padding="12,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}"
-          IsVisible="{CompiledBinding IsApplicable}">
+  <!-- Il cronometro del comando in testa (direzione visiva §6.2): da fermo "Inizia"; mentre corre il tempo nella variante
+       "testo" del colore, Pausa/Riprendi, Segmento successivo (solo a segmenti), Ferma. -->
+  <Border x:Name="Root" IsVisible="{CompiledBinding IsApplicable}">
     <StackPanel>
-      <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-        <TextBlock x:Name="Elapsed" Text="{CompiledBinding ElapsedDisplay}"
-                   FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum" FontSize="{DynamicResource FontSize.Heading}"
-                   VerticalAlignment="Center" Margin="0,0,12,0"/>
-        <Button x:Name="StartButton" Width="30" Height="30" Padding="0" Margin="0,0,6,0"
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <TextBlock x:Name="Elapsed" Text="{CompiledBinding ElapsedDisplay}" IsVisible="{CompiledBinding IsActive}"
+                   FontFeatures="+tnum" FontSize="{DynamicResource FontSize.Title}" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Brush.HabitText}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+        <Button x:Name="StartButton" Classes="record"
                 Command="{CompiledBinding StartCommand}" IsVisible="{CompiledBinding !IsActive}"
-                ToolTip.Tip="{x:Static res:Strings.HabitScreen_Timer_Start}"
                 AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Timer_Start}">
-          <Path Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.Accent}" StrokeThickness="1.6"
-                StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Play}"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Path Classes="record-glyph" Data="{StaticResource Icon.Play}"/>
+            <TextBlock Text="{x:Static res:Strings.Head_Session_Start}"/>
+          </StackPanel>
         </Button>
         <StackPanel Orientation="Horizontal" IsVisible="{CompiledBinding IsActive}">
           <Button x:Name="PauseButton" Width="30" Height="30" Padding="0" Margin="0,0,6,0"
@@ -44,11 +45,12 @@
                   StrokeLineCap="Round" StrokeJoin="Round" Data="{StaticResource Icon.Square}"/>
           </Button>
           <Button x:Name="NextSegmentButton" Padding="10,4" VerticalAlignment="Center"
-                  Command="{CompiledBinding NextSegmentCommand}"
+                  Command="{CompiledBinding NextSegmentCommand}" IsVisible="{CompiledBinding IsSegmented}"
                   Content="{x:Static res:Strings.HabitScreen_Timer_NextSegment}"/>
         </StackPanel>
       </StackPanel>
-      <ItemsControl ItemsSource="{CompiledBinding Segments}">
+      <ItemsControl ItemsSource="{CompiledBinding Segments}" Margin="0,6,0,0" HorizontalAlignment="Right"
+                    IsVisible="{CompiledBinding IsSegmented}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>

@@ -16,13 +16,7 @@
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     </Style>
   </UserControl.Styles>
-  <StackPanel Margin="12">
-    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-      <TextBlock Text="{x:Static res:Strings.Abitudine_QuickAdd_RecordingFor}"
-                 Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-      <TextBlock x:Name="ForDate" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"
-                 Text="{CompiledBinding CompletionDate, StringFormat=d}"/>
-    </StackPanel>
+  <StackPanel>
     <!-- Chip delle serie (solo ripetibile): nominati, rinominabili in linea, uno selezionato alla volta. -->
     <StackPanel x:Name="ChipBar" Orientation="Horizontal" Margin="0,0,0,8" IsVisible="{CompiledBinding IsRepeatable}">
       <ItemsControl x:Name="Chips" ItemsSource="{CompiledBinding Chips}">
@@ -93,7 +87,7 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <Button x:Name="SaveButton" Command="{CompiledBinding SaveCommand}" HorizontalAlignment="Left" Padding="12,6">
+    <Button x:Name="SaveButton" Classes="record" Command="{CompiledBinding SaveCommand}" HorizontalAlignment="Right">
       <Panel>
         <TextBlock x:Name="SaveLabel" Text="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
                    IsVisible="{CompiledBinding !IsRepeatable}"/>
