@@ -723,3 +723,28 @@ giorno dell'app e strisce col giorno dell'abitudine, tempo del timer 13/600 inve
 fatale senza marchio serif, avviso sulla passphrase doppio al primo avvio, `HeatmapStrip` ricostruita fino a 4 volte per
 riga, `YearHeatmapControl.HabitColor` da legare quando l'onda 2 ospita il controllo. Onda 1 in `main` (`c2887bd1`). Suite su Linux:
 Presentation 1166, UI 540 (`Category!=Performance`), dopo la review dell'intero branch e la sua onda di correzioni.
+
+**Progresso 2026-10-29 (direzione visiva, onda 2a: la schermata dell'abitudine, a codice completo).** Piano
+`2026-10-29-ux-wave2a-habit-screen` eseguito su `ux2-habit-screen` (10 task), review dell'intero branch con un'onda di
+correzioni.
+*Cosa esiste ora*: la testa dell'abitudine col nome 20/600 nella variante "testo", un solo comando che registra nel colore
+dell'abitudine per ciascuno degli otto casi (azione, tocco, misurato, serie, sessione, stato, astinenza, diario), quattro
+numeri sui giorni previsti dal programma, "per un altro giorno"; la fascia "Oggi" e la barra dei chip sostituite. Colonne
+Diario · Cronologia · Note · Configura, con ×, "a tutta finestra" e Esc. La Cronologia: cinque periodi con ‹ › e "Dal… al…",
+mappa che cambia forma (mese a griglia; tre mesi, anno e "Tutto" come heatmap disegnata da `HeatGrid`), il giorno scelto con
+la sua nota, l'elenco del periodo reso (il diario non è più Markdown grezzo) e virtualizzato. La colonna Note portata da WPF:
+elenco, editor, versioni, elimina sul posto, allegati e visore; il testo non salvato non si perde (cambio di nota, eventi,
+chiusura, cambio di abitudine).
+*Cosa ha insegnato*: i PNG hanno trovato quattro difetti che i test non vedevano (heatmap dell'anno col nome del tipo al
+posto delle celle per un binding letto prima che la proprietà esistesse, due etichette troncate, il visore che Esc non
+chiudeva perché MainWindow prende Esc in tunnel); un test di prestazioni nuovo ne ha trovato un quinto: "Tutto" su tre anni
+a ~3,7 s, di cui ~2,3 s per 1500 celle-pulsante e ~1,5 s per 1100 righe costruite tutte, ora ~0,35 s. Misurare per parti
+prima di correggere: il primo sospetto (le celle) era metà del costo. Il bus degli eventi pubblica in modo sincrono:
+un salvataggio dentro un setter rientra nella rilettura prima che il setter finisca. Le misure si fanno a macchina ferma:
+un giro con una build in parallelo raddoppiava i tempi della Home.
+*Prestazioni (locale, alternando due volte primo commit del branch e HEAD)*: Home 300 righe a caldo 308/338 ms prima,
+151/170 ms dopo; tab con un anno 182/153 ms prima, 179/283 ms dopo; tre anni giornalieri (test nuovo) `LoadAsync` a caldo
+197/315 ms, "Tutto" 323/344 ms. I test di prestazioni di Data non stampano numeri.
+*Non consegnato*: UX2A-1 (le registrazioni precedenti alla creazione fuori da "Tutto" e dai numeri: decisione dell'autore),
+UX2A-2…9 (minori nel tracker), le miniature delle foto nelle righe del diario della Cronologia, `TodayStripView` Avalonia
+non più usata. Suite su Linux: Presentation 1261, UI 604 (`Category!=Performance`), Data 652 (+2 saltati).

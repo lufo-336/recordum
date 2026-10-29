@@ -2321,8 +2321,10 @@ Certi (visti in un'immagine e confermati nel codice), tutti `reported`:
 
 Da verificare a schermo:
 
-- **UX-P1 — inglese in Configura in italiano** ("Scheduling", "Streak mode", "Undo last", "0 today"): le chiavi italiane ci
-  sono; probabilmente la cultura del test (l'app imposta anche `DefaultThreadCurrentUICulture`). Guardarlo su GNOME.
+- **UX-P1 — inglese in Configura in italiano** · `fixed` (onda 2a: era la cultura del test; `TestCulture.Pin` fissa anche
+  `DefaultThreadCurrent(UI)Culture` come `CultureSetup`, e `configura-light` esce in italiano. Trovato accanto un difetto
+  vero: l'ordinamento della Home mostrava il nome dell'enum, ora l'etichetta; `HomeViewTests.The_sort_box_shows_translated_labels_not_enum_names`) ·
+  ("Scheduling", "Streak mode", "Undo last", "0 today"): le chiavi italiane ci sono.
 - **UX-P2 — le schermate del dettaglio nei test non usano il font dell'app** · `fixed` (onda 1: ogni finestra prende Font.Default, anche quelle dei test) · Rese fuori da `MainWindow`, escono in sans:
   i PNG non rappresentano la produzione. Se UX-1 cambia il font, i test vanno ospitati con i token veri.
 
@@ -2337,3 +2339,16 @@ Trovati nell'onda 2a (Task 10, PNG e misure; tutti `reported`, da decidere con l
   di `NoteRowViewModel.Summary`, come in WPF; manca un helper Markdown → testo.
 - **UX2A-3 — `SerializedSecretStoreTests.A_pending_write_of_one_secret_does_not_hold_the_other` instabile su Windows** ·
   Timeout al primo giro della CI di `8c561beb`, verde al rilancio senza modifiche: dipende dai tempi del runner condiviso.
+- Minori della review dell'intero branch, rimandati (`reported`):
+  - **UX2A-4** — percentuale "30 giorni" per "N volte a settimana": `ScheduleEvaluator` conta ogni giorno come previsto
+    (chi fa 3 su 3 vede ~43%); servirebbero le settimane riuscite sulle settimane della finestra.
+  - **UX2A-5** — contatore a tocco senza obiettivo: il conteggio del giorno scelto non compare in testa (prima "oggi: N");
+    il "−" è un glifo (manca `Icon.Minus`).
+  - **UX2A-6** — astinenza in testa: non mostra `ErrorMessage` né "ricaduta il …" (`RelapsedOnDisplay`).
+  - **UX2A-7** — `HeatGrid` è un solo controllo: nessun nome di automazione per giorno e nessun indicatore di fuoco da
+    tastiera (le frecce funzionano).
+  - **UX2A-8** — cambi di comportamento condivisi con WPF fuori dall'elenco del piano: `CounterTapQuickAddViewModel` rilegge
+    invece di ±1 con la finestra da `DayBoundary` (correzione); `OnHabitUpdated` non ricarica `PeriodRecords` (dopo un
+    cambio delle etichette di serie l'elenco del periodo resta vecchio fino al prossimo evento).
+  - **UX2A-9** — `ActionCommandView`: `IsChecked` OneWay su un `ToggleButton` con comando; se il comando non cambia nulla
+    (guardia `IsSaving`) lo stato visivo può divergere da `IsDone` (plausibile, non riprodotto).

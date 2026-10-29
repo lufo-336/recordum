@@ -6,7 +6,16 @@
 
 ## Dove siamo — 2026-10-29
 
-- **Branch di lavoro**: `ux2-habit-screen`, da `main` (`c2887bd1`, 2026-10-28): onda 2 della direzione visiva, ancora senza piano. L'onda 1 è in `main`; i suoi branch (`ux-review`, `ux1-foundations`) sono cancellati, in locale e su GitHub. Gli unici branch sono `main` e questo. La pila F1 → F2e e D9 sono in `main` dal 2026-10-28 (`7ae9c64d`). I test di prestazioni non girano in CI (oscillano sui runner condivisi).
+- **Branch di lavoro**: `ux2-habit-screen`, da `main` (`c2887bd1`, 2026-10-28): **onda 2a della direzione visiva a codice
+  completo** (piano `docs/superpowers/plans/2026-10-29-ux-wave2a-habit-screen.md`, 10 task), review dell'intero branch fatta
+  con un'onda di correzioni, CI verde. La schermata dell'abitudine ha la testa (nome 20/600, un comando che registra nel
+  colore dell'abitudine per ciascuno degli otto casi, quattro numeri, "per un altro giorno"), le colonne Diario ·
+  Cronologia · Note · Configura (la Note portata da WPF), la Cronologia con cinque periodi, mappa che cambia forma
+  (heatmap disegnata), il giorno con la sua nota e l'elenco virtualizzato. **Prossimo: l'autore guarda i PNG (artefatti
+  della CI) e fa il merge in `main`; poi il piano 2b** (gruppo con Panoramica e "Insieme", Configura in cinque blocchi,
+  scelta del colore). Decisioni aperte dell'onda: **UX2A-1** (le registrazioni prima della creazione restano fuori da
+  "Tutto" e dai numeri) e i minori UX2A-2…9 nel tracker. I test di prestazioni non girano in CI (oscillano sui runner
+  condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
