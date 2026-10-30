@@ -488,6 +488,20 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>I numeri della testa di un gruppo; null dove l'host non fornisce <see cref="IGroupHistoryQueryService"/> (WPF).</summary>
     public Figures.GroupFiguresViewModel? GroupFigures { get; }
 
+    /// <summary>Sotto il nome di un gruppo: quante abitudini contiene e a che ora comincia la sua giornata (quella del gruppo).</summary>
+#pragma warning disable CA1863 // CompositeFormat non vale la pena per una stringa a bassa frequenza
+    public string GroupSubtitle => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        Resources.Strings.Group_Head_Subtitle, Panoramica.TotalChildren, _dayBoundary.ResetTime.ToString("t", System.Globalization.CultureInfo.CurrentCulture));
+
+    /// <summary>"3 di 5": il numero grande in testa al gruppo.</summary>
+    public string GroupProgressCount => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        Resources.Strings.Home_Group_Progress, Panoramica.CompletedToday, Panoramica.TotalChildren);
+
+    /// <summary>"3 di 5 fatte oggi" per la testa del gruppo.</summary>
+    public string GroupProgressLabel => string.Format(System.Globalization.CultureInfo.CurrentCulture,
+        Resources.Strings.Group_Progress_Today, Panoramica.CompletedToday, Panoramica.TotalChildren);
+#pragma warning restore CA1863
+
     private Task LoadFiguresAsync(CancellationToken ct)
         => Node is { } node && Case is { } @case
             ? Figures.LoadAsync(node, _config, @case, _dayBoundary, ct)
@@ -730,6 +744,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 uiPrefs, streaks, quickActions, resetTimes, ticks)
             : new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
         TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock, ticks);
+        Panoramica.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(PanoramicaViewModel.TotalChildren) or nameof(PanoramicaViewModel.CompletedToday))
+            {
+                OnPropertyChanged(nameof(GroupSubtitle));
+                OnPropertyChanged(nameof(GroupProgressCount));
+                OnPropertyChanged(nameof(GroupProgressLabel));
+            }
+        };
         GroupFigures = groupHistory is null ? null : new Figures.GroupFiguresViewModel(groupHistory, clock);
         Figures = new Figures.HabitFiguresViewModel(completions, streaks, abstinence, metrics, refData, goals, hourly, clock, ticks: ticks);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
@@ -817,6 +840,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // istanza, quella della Cronologia, e va servita a parte.
         Records.DayBoundary = _dayBoundary;
         CompletionList.DayBoundary = _dayBoundary;
+        OnPropertyChanged(nameof(GroupSubtitle));
         if (generation != _loadGeneration) return;
 
         if (node.NodeType == NodeType.Group)

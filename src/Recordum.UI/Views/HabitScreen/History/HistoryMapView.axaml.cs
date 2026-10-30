@@ -20,6 +20,12 @@ public partial class HistoryMapView : UserControl
     /// <summary>Il colore del segno delle note (<c>NoteMarkerColor</c>).</summary>
     public string? NoteColor { get => GetValue(NoteColorProperty); set => SetValue(NoteColorProperty, value); }
 
+    public static readonly StyledProperty<bool> SelectableProperty =
+        AvaloniaProperty.Register<HistoryMapView, bool>(nameof(Selectable), true);
+
+    /// <summary>False per la mappa di un gruppo: i giorni non sono scelte (niente mano, niente fuoco).</summary>
+    public bool Selectable { get => GetValue(SelectableProperty); set => SetValue(SelectableProperty, value); }
+
     public HistoryMapView() => InitializeComponent();
 
     /// <summary>I giorni brevi della cultura, dal lunedì.</summary>

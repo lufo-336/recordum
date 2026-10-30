@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:head="using:Recordum.UI.Views.HabitScreen.Head"
+             x:Class="Recordum.UI.Views.HabitScreen.Group.GroupHeadView"
+             x:DataType="vm:HabitScreenViewModel">
+  <!-- La testa di un gruppo (onda 2b): nome, quante abitudini e l'avanzamento di oggi al posto del comando (un gruppo non
+       registra), i numeri, i pulsanti delle colonne. Stesso stile dei pulsanti di colonna della testa dell'abitudine. -->
+  <UserControl.Resources>
+    <conv:HabitTextBrushConverter x:Key="HabitText"/>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <StyleInclude Source="/Views/HabitScreen/Head/ColumnButtonStyles.axaml"/>
+  </UserControl.Styles>
+
+  <StackPanel Margin="16,12,16,6">
+    <Grid x:Name="TopGrid" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+      <StackPanel x:Name="NameBlock" Grid.Column="0" VerticalAlignment="Top" Margin="0,0,16,0">
+        <StackPanel Orientation="Horizontal">
+          <Path x:Name="IconPath" Width="20" Height="20" Margin="0,0,8,0" Stretch="Uniform" VerticalAlignment="Center"
+                StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                Data="{CompiledBinding Node.Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
+                IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Stroke="{Binding #HabitName.Foreground}"/>
+          <TextBlock x:Name="HabitName" Text="{CompiledBinding Name}" FontSize="{DynamicResource FontSize.Title}"
+                     FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+            <TextBlock.Foreground>
+              <MultiBinding Converter="{StaticResource HabitText}">
+                <Binding Path="Node.Color"/>
+                <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+              </MultiBinding>
+            </TextBlock.Foreground>
+          </TextBlock>
+        </StackPanel>
+        <TextBlock x:Name="Subtitle" Margin="0,2,0,0" Text="{CompiledBinding GroupSubtitle}" TextWrapping="Wrap"
+                   FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+      </StackPanel>
+
+      <!-- L'avanzamento di oggi: dove un'abitudine ha il comando che registra, un gruppo ha il suo conto. -->
+      <StackPanel x:Name="Progress" Grid.Column="1" Width="150" HorizontalAlignment="Right" VerticalAlignment="Top">
+        <TextBlock x:Name="ProgressCount" Text="{CompiledBinding GroupProgressCount}" FontSize="{DynamicResource FontSize.Title}"
+                   FontWeight="SemiBold" FontFeatures="+tnum" HorizontalAlignment="Right">
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource HabitText}">
+              <Binding Path="Node.Color"/>
+              <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+        <TextBlock x:Name="ProgressCaption" Text="{CompiledBinding GroupProgressLabel}" FontSize="{DynamicResource FontSize.Small}"
+                   Foreground="{DynamicResource Brush.TextMuted}" HorizontalAlignment="Right" TextWrapping="Wrap"/>
+        <ProgressBar x:Name="ProgressBar" Margin="0,6,0,0" Height="6" MinHeight="6" MinWidth="0" Minimum="0" Maximum="1"
+                     Value="{CompiledBinding Panoramica.TodayFraction}" CornerRadius="3"
+                     Background="{DynamicResource Brush.Border}"
+                     Foreground="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+      </StackPanel>
+    </Grid>
+
+    <head:FiguresView x:Name="Figures" Margin="0,12,0,0" Items="{CompiledBinding GroupFigures.Items}" HabitColor="{CompiledBinding Node.Color}"/>
+
+    <WrapPanel x:Name="ColumnButtons" Orientation="Horizontal" Margin="0,10,0,0" IsVisible="{CompiledBinding ShowChipBar}">
+      <ToggleButton x:Name="ChipPanoramica" Classes="column" IsChecked="{CompiledBinding IsPanoramicaOpen, Mode=TwoWay}">
+        <StackPanel Orientation="Horizontal">
+          <Path Classes="column-glyph" Data="{StaticResource Icon.LayoutList}"/>
+          <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Panoramica}"/>
+        </StackPanel>
+      </ToggleButton>
+      <ToggleButton x:Name="ChipNote" Classes="column" IsChecked="{CompiledBinding IsNoteOpen, Mode=TwoWay}">
+        <StackPanel Orientation="Horizontal">
+          <Path Classes="column-glyph" Data="{StaticResource Icon.BookOpen}"/>
+          <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Notes}"/>
+        </StackPanel>
+      </ToggleButton>
+      <ToggleButton x:Name="ChipConfigura" Classes="column" IsChecked="{CompiledBinding IsConfiguraOpen, Mode=TwoWay}">
+        <StackPanel Orientation="Horizontal">
+          <Path Classes="column-glyph" Data="{StaticResource Icon.SlidersHorizontal}"/>
+          <TextBlock Text="{x:Static res:Strings.HabitScreen_Configure}"/>
+        </StackPanel>
+      </ToggleButton>
+    </WrapPanel>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fig="using:Recordum.Presentation.ViewModels.HabitScreen.Figures"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:head="using:Recordum.UI.Views.HabitScreen.Head"
+             x:Name="Root"
+             x:Class="Recordum.UI.Views.HabitScreen.Head.FiguresView">
+  <!-- I numeri della testa (abitudine e gruppo): cifra nel colore (variante "testo"), didascalia attenuata a capo. -->
+  <UserControl.Resources>
+    <conv:HabitTextBrushConverter x:Key="HabitText"/>
+  </UserControl.Resources>
+  <ItemsControl x:Name="Figures" ItemsSource="{Binding #Root.Items}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <UniformGrid Columns="4"/>
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="fig:HabitFigure">
+        <StackPanel Margin="0,0,12,4">
+          <TextBlock Text="{CompiledBinding Value}" FontSize="{DynamicResource FontSize.Title}" FontWeight="SemiBold"
+                     FontFeatures="+tnum" TextTrimming="CharacterEllipsis">
+            <TextBlock.Foreground>
+              <MultiBinding Converter="{StaticResource HabitText}">
+                <Binding Path="HabitColor" RelativeSource="{RelativeSource AncestorType=head:FiguresView}"/>
+                <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+              </MultiBinding>
+            </TextBlock.Foreground>
+          </TextBlock>
+          <!-- La didascalia va a capo: a 480 px "giorni a settimana" diventava "giorni a settima…" (visto nei PNG). -->
+          <TextBlock x:Name="FigureCaption" Text="{CompiledBinding Caption}" FontSize="{DynamicResource FontSize.Small}"
+                     Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
+        </StackPanel>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

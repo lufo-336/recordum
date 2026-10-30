@@ -292,6 +292,10 @@ public sealed partial class PanoramicaViewModel : ObservableObject, IDisposable
             boundaries.TryGetValue(r.HabitNodeId, out var b) ? b : appDay))).ConfigureAwait(true);
     }
 
+    /// <summary>Il clic su una riga della colonna (le righe sono quelle della Home): apre la figlia.</summary>
+    [RelayCommand]
+    private void SelectRow(HomeRowViewModel row) => ChildSelected?.Invoke(this, row.HabitNodeId);
+
     [RelayCommand]
     private void SelectChild(PanoramicaChildRow row) => ChildSelected?.Invoke(this, row.HabitNodeId);
 }

@@ -215,12 +215,13 @@ public class HabitScreenViewTests
     }
 
     [AvaloniaFact]
-    public async Task A_group_shows_the_header_and_only_the_configura_chip()
+    public async Task A_group_shows_its_own_header_with_overview_notes_and_configura()
     {
         var id = await CreateHabitAsync("Gruppo", Amber, NodeType.Group);
         var (_, view, w) = await OpenAsync(id);
-        view.GetVisualDescendants().OfType<ToggleButton>().Where(c => c.IsVisible && c.Classes.Contains("column")).Select(c => c.Name).Should().Equal("ChipConfigura");
-        view.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "HabitName").Text.Should().Be("Gruppo");
+        view.GetVisualDescendants().OfType<ToggleButton>().Where(c => c.IsEffectivelyVisible && c.Classes.Contains("column")).Select(c => c.Name)
+            .Should().Equal("ChipPanoramica", "ChipNote", "ChipConfigura");
+        view.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "HabitName" && t.IsEffectivelyVisible).Text.Should().Be("Gruppo");
         w.Close();
     }
 }

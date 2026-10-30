@@ -27,6 +27,13 @@ public sealed class HeatGrid : Control
     public static readonly StyledProperty<ICommand?> SelectCommandProperty =
         AvaloniaProperty.Register<HeatGrid, ICommand?>(nameof(SelectCommand));
 
+    /// <summary>False per la mappa di un gruppo: scegliere un giorno non fa niente, quindi la griglia non lo promette
+    /// (niente mano, niente fuoco, niente frecce).</summary>
+    public static readonly StyledProperty<bool> SelectableProperty =
+        AvaloniaProperty.Register<HeatGrid, bool>(nameof(Selectable), true);
+
+    public bool Selectable { get => GetValue(SelectableProperty); set => SetValue(SelectableProperty, value); }
+
     public IReadOnlyList<IReadOnlyList<HistoryDayCell>>? Weeks { get => GetValue(WeeksProperty); set => SetValue(WeeksProperty, value); }
     public string? HabitColor { get => GetValue(HabitColorProperty); set => SetValue(HabitColorProperty, value); }
     public ICommand? SelectCommand { get => GetValue(SelectCommandProperty); set => SetValue(SelectCommandProperty, value); }
@@ -51,6 +58,11 @@ public sealed class HeatGrid : Control
             if (_attached) Hook(change.NewValue, true);
         }
         else if (change.Property == ThemeVariantScope.ActualThemeVariantProperty) InvalidateVisual();
+        else if (change.Property == SelectableProperty)
+        {
+            Focusable = Selectable;
+            Cursor = Selectable ? new Cursor(StandardCursorType.Hand) : null;
+        }
     }
 
     // Agganciata solo a schermo: Weeks del ViewModel vive quanto la schermata e terrebbe in vita una griglia buttata.
@@ -126,7 +138,7 @@ public sealed class HeatGrid : Control
 
     private void Choose(HistoryDayCell? cell)
     {
-        if (cell is null || cell.IsFuture || SelectCommand?.CanExecute(cell) != true) return;
+        if (!Selectable || cell is null || cell.IsFuture || SelectCommand?.CanExecute(cell) != true) return;
         SelectCommand.Execute(cell);
     }
 
@@ -149,7 +161,7 @@ public sealed class HeatGrid : Control
     {
         base.OnKeyDown(e);
         var step = e.Key switch { Key.Left => -7, Key.Right => 7, Key.Up => -1, Key.Down => 1, _ => 0 };
-        if (step == 0 || Weeks is not { } weeks) return;
+        if (step == 0 || !Selectable || Weeks is not { } weeks) return;
         var cells = weeks.SelectMany(w => w).Where(c => c.InRange).ToList();
         if (cells.Count == 0) return;
         var from = cells.FirstOrDefault(c => c.IsSelected)?.Date ?? cells[^1].Date;

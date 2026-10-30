@@ -42,6 +42,10 @@
       <Setter Property="BorderThickness" Value="2"/>
     </Style>
     <Style Selector="Button.day:disabled"><Setter Property="Cursor" Value="Arrow"/></Style>
+    <Style Selector="Button.day.fixed">
+      <Setter Property="Cursor" Value="Arrow"/>
+      <Setter Property="Focusable" Value="False"/>
+    </Style>
     <Style Selector="TextBlock.day-number">
       <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
       <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -68,7 +72,7 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="hvm:HistoryDayCell">
-            <Button Classes="day" Classes.today="{CompiledBinding IsToday}" Classes.selected="{CompiledBinding IsSelected}"
+            <Button Classes="day" Classes.fixed="{Binding !#Root.Selectable}" Classes.today="{CompiledBinding IsToday}" Classes.selected="{CompiledBinding IsSelected}"
                     IsEnabled="{CompiledBinding !IsFuture}" HorizontalAlignment="Stretch"
                     Command="{CompiledBinding #Root.((hvm:HistoryMapViewModel)DataContext).SelectCommand}" CommandParameter="{CompiledBinding}"
                     ToolTip.Tip="{CompiledBinding Value}">
@@ -100,7 +104,7 @@
     <!-- Tre mesi, anno, intervallo: una heatmap a colonne di settimana. -->
     <ScrollViewer x:Name="HeatmapBlock" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
                   IsVisible="{CompiledBinding Shape, Converter={x:Static hv:HistoryMapView.IsHeatmapShape}}">
-      <hv:HeatGrid x:Name="Weeks" Weeks="{CompiledBinding Weeks}" HabitColor="{Binding #Root.HabitColor}"
+      <hv:HeatGrid x:Name="Weeks" Selectable="{Binding #Root.Selectable}" Weeks="{CompiledBinding Weeks}" HabitColor="{Binding #Root.HabitColor}"
                    SelectCommand="{CompiledBinding SelectCommand}"/>
     </ScrollViewer>
 
@@ -113,7 +117,7 @@
             <TextBlock Text="{CompiledBinding Year}" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
                        Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,4"/>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-              <hv:HeatGrid Classes="year" Weeks="{CompiledBinding Weeks}" HabitColor="{Binding #Root.HabitColor}"
+              <hv:HeatGrid Classes="year" Selectable="{Binding #Root.Selectable}" Weeks="{CompiledBinding Weeks}" HabitColor="{Binding #Root.HabitColor}"
                            SelectCommand="{CompiledBinding #Root.((hvm:HistoryMapViewModel)DataContext).SelectCommand}"/>
             </ScrollViewer>
           </StackPanel>

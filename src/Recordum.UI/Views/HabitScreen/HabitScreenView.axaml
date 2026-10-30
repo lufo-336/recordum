@@ -5,6 +5,7 @@
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:local="using:Recordum.UI.Views.HabitScreen"
              xmlns:head="using:Recordum.UI.Views.HabitScreen.Head"
+             xmlns:group="using:Recordum.UI.Views.HabitScreen.Group"
              xmlns:journal="using:Recordum.UI.Views.HabitScreen.Journal"
                           x:Class="Recordum.UI.Views.HabitScreen.HabitScreenView"
              x:DataType="vm:HabitScreenViewModel"
@@ -58,7 +59,9 @@
             Background="{CompiledBinding Node.Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
 
     <!-- La testa (direzione visiva §6.1): nome, un comando, i numeri, i pulsanti delle colonne. -->
-    <head:HabitHeadView Grid.Row="1" x:Name="Head"/>
+    <head:HabitHeadView Grid.Row="1" x:Name="Head" IsVisible="{CompiledBinding !IsGroupNode}"/>
+    <!-- Un gruppo non registra: la sua testa ha l'avanzamento di oggi dove l'abitudine ha il comando. -->
+    <group:GroupHeadView Grid.Row="1" x:Name="GroupHead" IsVisible="{CompiledBinding IsGroupNode}"/>
 
     <!-- In modalita' focus la barra dei chip lascia il posto al ritorno (spec 3.6). -->
     <Button Grid.Row="3" x:Name="ExitFocusButton" HorizontalAlignment="Left" Margin="12,8,12,4" Padding="8,3"
@@ -72,9 +75,35 @@
          code-behind (UpdateColumns) dal ViewModel. -->
     <ScrollViewer Grid.Row="4" x:Name="ColumnsScroll" Margin="12,4,12,12"
                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-      <Grid x:Name="ColumnsGrid" ColumnDefinitions="0,0,0,0"
+      <Grid x:Name="ColumnsGrid" ColumnDefinitions="0,0,0,0,0"
             Width="{Binding #ColumnsScroll.Viewport.Width}">
-        <Border x:Name="DiarioColumn" Grid.Column="0"
+        <Border x:Name="PanoramicaColumn" Grid.Column="0"
+                Background="{DynamicResource Brush.Background}"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
+                IsVisible="{CompiledBinding ShowPanoramica}">
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" Height="30" ColumnDefinitions="*,Auto,Auto" Background="{DynamicResource Brush.Surface}">
+              <TextBlock Margin="12,0" VerticalAlignment="Center" FontSize="{DynamicResource FontSize.Small}" FontWeight="SemiBold"
+                         Text="{x:Static res:Strings.HabitScreen_Column_Panoramica}" Foreground="{DynamicResource Brush.TextMuted}"/>
+              <Button Grid.Column="1" x:Name="PanoramicaFocusButton" Classes="column-icon"
+                      Command="{CompiledBinding ToggleFocusCommand}" CommandParameter="{x:Static vm:HabitColumn.Panoramica}"
+                      ToolTip.Tip="{x:Static res:Strings.HabitScreen_Focus}"
+                      AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Focus}">
+                <Path Data="{StaticResource Icon.Maximize2}" Classes="column-icon"/>
+              </Button>
+              <Button Grid.Column="2" x:Name="PanoramicaCloseButton" Classes="column-icon"
+                      Command="{CompiledBinding ToggleColumnCommand}" CommandParameter="{x:Static vm:HabitColumn.Panoramica}"
+                      ToolTip.Tip="{x:Static res:Strings.HabitScreen_Close}"
+                      AutomationProperties.Name="{x:Static res:Strings.HabitScreen_Close}">
+                <Path Data="{StaticResource Icon.X}" Classes="column-icon"/>
+              </Button>
+            </Grid>
+            <!-- PanoramicaColumnView, costruita da UpdateColumns solo a colonna aperta. -->
+            <Border x:Name="PanoramicaHost"/>
+          </DockPanel>
+        </Border>
+
+        <Border x:Name="DiarioColumn" Grid.Column="1"
                 Background="{DynamicResource Brush.Background}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
                 IsVisible="{CompiledBinding ShowDiario}">
@@ -106,7 +135,7 @@
           </DockPanel>
         </Border>
 
-        <Border x:Name="CronologiaColumn" Grid.Column="1"
+        <Border x:Name="CronologiaColumn" Grid.Column="2"
                 Background="{DynamicResource Brush.Background}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6"
                 IsVisible="{CompiledBinding ShowCronologia}">
@@ -133,7 +162,7 @@
           </Grid>
         </Border>
 
-        <Border x:Name="NoteColumn" Grid.Column="2"
+        <Border x:Name="NoteColumn" Grid.Column="3"
                 Background="{DynamicResource Brush.Background}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,1,1" CornerRadius="6"
                 IsVisible="{CompiledBinding ShowNote}">
@@ -159,7 +188,7 @@
           </DockPanel>
         </Border>
 
-        <Border x:Name="ConfiguraColumn" Grid.Column="3"
+        <Border x:Name="ConfiguraColumn" Grid.Column="4"
                 Background="{DynamicResource Brush.Background}"
                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,1,1" CornerRadius="6"
                 IsVisible="{CompiledBinding ShowConfigura}">
@@ -188,7 +217,7 @@
         </Border>
 
         <!-- Un'unica maniglia sul confine Cronologia|Configura (solo con quelle due affiancate). -->
-        <Thumb x:Name="ColumnResizeThumb" Grid.Column="1" Classes="column-resize" HorizontalAlignment="Right"
+        <Thumb x:Name="ColumnResizeThumb" Grid.Column="2" Classes="column-resize" HorizontalAlignment="Right"
                IsVisible="False" ZIndex="1"/>
       </Grid>
     </ScrollViewer>

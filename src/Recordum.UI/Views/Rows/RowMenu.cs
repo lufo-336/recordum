@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace Recordum.UI.Views.Rows;
 
@@ -11,6 +12,8 @@ internal static class RowMenu
         host.ContextRequested += (_, e) =>
         {
             if (host.ContextMenu is not null) return;
+            // Nella colonna Panoramica di un gruppo le righe non hanno menu: lo dà la Home.
+            if (owner.FindAncestorOfType<HabitScreen.Group.PanoramicaColumnView>() is not null) { e.Handled = true; return; }
             host.ContextMenu = (ContextMenu)owner.Resources["RowMenu"]!;
             host.ContextMenu.Open(host);
             e.Handled = true;

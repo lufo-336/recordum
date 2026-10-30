@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:rows="using:Recordum.UI.Views.Rows"
+             xmlns:hist="using:Recordum.UI.Views.HabitScreen.History"
+             xmlns:grp="using:Recordum.UI.Views.HabitScreen.Group"
+             x:Class="Recordum.UI.Views.HabitScreen.Group.PanoramicaColumnView"
+             x:DataType="vm:HabitScreenViewModel">
+  <!-- Il corpo della colonna Panoramica di un gruppo: Oggi (le righe sono quelle della Home, si registra da qui),
+       Insieme (una riga per figlia sul periodo) e la mappa del gruppo. Lo costruisce HabitScreenView solo a colonna aperta. -->
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12,8,12,16" Spacing="16">
+      <StackPanel Spacing="6">
+        <TextBlock x:Name="TodayTitle" Text="{x:Static res:Strings.Group_Section_Today}" FontSize="{DynamicResource FontSize.Label}"
+                   FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+        <ItemsControl x:Name="TodayRows" ItemsSource="{CompiledBinding Panoramica.Rows}"
+                      ItemTemplate="{x:Static rows:HomeRowTemplate.Instance}"
+                      IsVisible="{CompiledBinding Panoramica.HasChildren}"/>
+        <TextBlock x:Name="EmptyText" Text="{x:Static res:Strings.HabitScreen_Panoramica_Empty}" TextWrapping="Wrap"
+                   FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"
+                   IsVisible="{CompiledBinding !Panoramica.HasChildren}"/>
+      </StackPanel>
+
+      <StackPanel x:Name="TogetherSection" Spacing="8" IsVisible="{CompiledBinding Panoramica.HasChildren}">
+        <TextBlock Text="{x:Static res:Strings.Group_Section_Together}" FontSize="{DynamicResource FontSize.Label}"
+                   FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+        <hist:PeriodBarView x:Name="PeriodBar" DataContext="{CompiledBinding Period}"/>
+        <grp:TogetherGrid x:Name="Together" Rows="{CompiledBinding Panoramica.Together.Rows}"/>
+      </StackPanel>
+
+      <StackPanel x:Name="MapSection" Spacing="6" IsVisible="{CompiledBinding Panoramica.HasChildren}">
+        <TextBlock x:Name="MapTitle" Text="{CompiledBinding Period.Label}" FontSize="{DynamicResource FontSize.Label}"
+                   FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+        <hist:HistoryMapView x:Name="Map" Selectable="False" DataContext="{CompiledBinding Panoramica.Map}"
+                             HabitColor="{CompiledBinding $parent[grp:PanoramicaColumnView].((vm:HabitScreenViewModel)DataContext).Node.Color}"/>
+        <TextBlock x:Name="MapLegend" Text="{x:Static res:Strings.Group_Map_Legend}" TextWrapping="Wrap"
+                   FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -42,7 +42,7 @@ public partial class HabitHeadView : UserControl
         CommandHost.HorizontalAlignment = CommandBlock.HorizontalAlignment;
         CommandBlock.Margin = stacked ? new Thickness(0, 10, 0, 0) : default;
         NameBlock.Margin = stacked ? default : new Thickness(0, 0, 16, 0);
-        if (Figures.ItemsPanelRoot is UniformGrid grid) grid.Columns = width < TwoFiguresBelow ? 2 : 4;
+        FiguresHost.Columns = width < TwoFiguresBelow ? 2 : 4;
     }
 
     private void Rebind()

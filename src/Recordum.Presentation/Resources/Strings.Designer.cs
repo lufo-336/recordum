@@ -749,6 +749,10 @@ public static class Strings
     public static string Group_Figures_Goal => Get("Group.Figures.Goal");
     public static string Group_Figures_MostSkipped => Get("Group.Figures.MostSkipped");
     public static string Group_Progress_Today => Get("Group.Progress.Today");
+    public static string Group_Head_Subtitle => Get("Group.Head.Subtitle");
+    public static string Group_Section_Today => Get("Group.Section.Today");
+    public static string Group_Section_Together => Get("Group.Section.Together");
+    public static string Group_Map_Legend => Get("Group.Map.Legend");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
