@@ -346,7 +346,7 @@
     <value>Nuova abitudine</value>
   </data>
   <data name="HabitBuilder.SaveAsTemplate" xml:space="preserve">
-    <value>Salva come template</value>
+    <value>Salva come modello</value>
   </data>
   <data name="HabitBuilder.Launch" xml:space="preserve">
     <value>Lancia</value>

@@ -1,15 +1,18 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor"
+             xmlns:local="using:Recordum.UI.Views.HabitEditor"
              x:Class="Recordum.UI.Views.HabitEditor.ConfigRow"
              x:DataType="vm:SectionViewModelBase">
-  <!-- Una voce di Configura (spec 6.4): la riga chiusa dice titolo e riassunto; un clic (o Invio/Spazio, e' un Button) apre il
+  <!-- Una voce di Configura (spec 6.4): la riga chiusa dice titolo e riassunto; un clic (o Invio/Spazio, e' un ToggleButton) apre il
        contenuto sotto, sul posto. Il contenuto si costruisce alla prima apertura (CLAUDE.md 8: niente template statico che
        costruisce anche da chiuso) e resta fino alla chiusura della colonna. Il DataContext e' quello di Root, non del
        controllo: Section arriva da un binding sul DataContext dell'editor, che non va toccato. -->
   <StackPanel x:Name="Root">
-    <Button x:Name="Header" Classes="configrow" Click="OnHeaderClick"
-            AutomationProperties.Name="{CompiledBinding Title}">
+    <!-- Un ToggleButton, legato a IsOpen: lo stato aperto/chiuso arriva alle tecnologie assistive. -->
+    <ToggleButton x:Name="Header" Classes="configrow"
+                  IsChecked="{CompiledBinding $parent[local:ConfigRow].IsOpen, Mode=TwoWay}"
+                  AutomationProperties.Name="{CompiledBinding Title}">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
         <TextBlock x:Name="TitleText" Grid.Column="0" Text="{CompiledBinding Title}" VerticalAlignment="Center"
                    FontSize="{StaticResource FontSize.Label}" FontWeight="Medium" Foreground="{DynamicResource Brush.Text}"/>
@@ -23,7 +26,7 @@
               Data="{StaticResource Icon.ChevronRight}" Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.75"
               StrokeLineCap="Round" StrokeJoin="Round"/>
       </Grid>
-    </Button>
+    </ToggleButton>
     <Border x:Name="ContentHost" Padding="12,4,4,12" IsVisible="False"/>
   </StackPanel>
 </UserControl>

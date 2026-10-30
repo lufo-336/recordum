@@ -56,7 +56,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
 
     private static readonly string[] ScalesOnly = ["ScaleBox", "PreviewBorder", "LabelsBox"];
 
-    private static readonly string[] BlocksWithBoxes = ["RecordBlock", "WhenBlock"];
+    private static readonly string[] BlocksWithBoxes = ["RecordBlock", "WhenBlock", "AdvancedRows"];
 
     private static async Task<T> InScope<T>(Func<IServiceProvider, Task<T>> f)
     {
@@ -134,6 +134,24 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
     }
 
     [AvaloniaFact]
+    public async Task A_closed_column_leaves_the_pane_unhooked_from_the_editor()
+    {
+        var (o, pane, editor) = await OpenTypeAsync(HabitType.Action);
+        try
+        {
+            var label = Named<TextBlock>(pane, "TypeLabel");
+            var before = label.Text;
+            o.Vm.Workspace.ActiveSubjectTab!.Screen.IsConfiguraOpen = false;
+            PrivateDbHost.Pump();
+            pane.IsAttachedToVisualTree().Should().BeFalse();
+            editor.SelectedHabitType = HabitType.Counter;   // l'editor vive piu' della colonna
+            PrivateDbHost.Pump();
+            label.Text.Should().Be(before, "il pane staccato non ascolta piu' l'editor: nessun pane appeso al ViewModel");
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task Five_blocks_in_order()
     {
         using var _ = TestCulture.Pin();
@@ -175,6 +193,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
 
             row.IsOpen.Should().BeTrue();
             editor.Scheduling.IsExpanded.Should().BeTrue("lo stato aperto e' quello della sezione");
+            header.Should().BeOfType<ToggleButton>().Which.IsChecked.Should().Be(true, "lo stato aperto arriva alle tecnologie assistive");
             var host = Named<Border>(row, "ContentHost");
             var panel = (Panel)header.Parent!;
             panel.Children.IndexOf(host).Should().Be(panel.Children.IndexOf(header) + 1, "il contenuto sta subito sotto la sua riga");
@@ -201,6 +220,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             var built = pane.GetVisualDescendants().OfType<SchedulingSectionView>().Single();
             Click(o, header);
             built.IsEffectivelyVisible.Should().BeFalse("chiusa");
+            ((ToggleButton)header).IsChecked.Should().Be(false);
             pane.GetVisualDescendants().OfType<SchedulingSectionView>().Should().ContainSingle().Which.Should().BeSameAs(built, "tenuto fino alla chiusura della colonna");
             Click(o, header);
             built.IsEffectivelyVisible.Should().BeTrue();
@@ -234,6 +254,13 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             streak.GetVisualDescendants().OfType<TextBox>().Should().NotContain(t => t.Name == "ToleranceBox", "la tolleranza e' uscita");
             streak.GetVisualDescendants().OfType<ToggleButton>().Should().BeEmpty("niente piu' interruttore 'Avanzate' dentro la sezione");
             pane.GetVisualDescendants().OfType<TextBox>().Where(t => t.Name == "ToleranceBox").Should().ContainSingle();
+            // Spec 6.4 blocco 5: i segmenti del timer sono una cosa avanzata.
+            Row(pane, editor.Timer).IsOpen = true;
+            PrivateDbHost.Pump();
+            pane.GetVisualDescendants().OfType<TimerSectionView>().Single().GetVisualDescendants().OfType<Control>()
+                .Select(c => c.Name).Should().NotContain(["SegmentsList", "AddSegmentButton"]);
+            pane.GetVisualDescendants().OfType<TimerAdvancedView>().Single().GetVisualDescendants().OfType<Control>()
+                .Select(c => c.Name).Should().Contain(["SegmentsList", "AddSegmentButton"]);
         }
         finally { o.Window.Close(); }
     }
@@ -313,6 +340,10 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             preview.IsEffectivelyVisible.Should().BeTrue();
             preview.Model.Should().NotBeNull().And.BeSameAs(editor.HomeRow.Preview);
             Named<TextBlock>(preview, "NameText").Text.Should().Be(editor.Name);
+            // Revisione: un'abitudine vera non mostra numeri inventati; resta la forma della striscia, a celle vuote.
+            Named<TextBlock>(preview, "KeyFigureText").IsVisible.Should().BeFalse("nessun valore accanto al nome");
+            var strip = Named<HeatmapStrip>(preview, "HomeStrip");
+            strip.Fractions.Should().HaveCount(7).And.OnlyContain(f => f == 0);
             var tint = Named<Border>(preview, "Tint");
             tint.IsEffectivelyVisible.Should().BeTrue();
             tint.Background.Should().BeAssignableTo<ISolidColorBrush>().Which.Color.Should().Be(Color.Parse("#E11D48"));
@@ -333,7 +364,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             OpenEverything(pane);
             var boxes = BlocksWithBoxes.SelectMany(b => Named<StackPanel>(pane, b).GetVisualDescendants())
                 .OfType<ToggleButton>().Where(t => t is CheckBox or ToggleSwitch && t.IsEffectivelyVisible).ToList();
-            boxes.Select(b => b.Name).Should().Contain(["RepeatableBox", "IntegratedBox", "SegmentRestBox"]);
+            boxes.Select(b => b.Name).Should().Contain(["RepeatableBox", "IntegratedBox", "SegmentRestBox", "AutoPromptBox"]);
             foreach (var box in boxes)
             {
                 var parent = box.Parent.Should().BeAssignableTo<Panel>($"{box.Name} sta in un pannello").Subject;
@@ -399,7 +430,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             // Il PNG la mostrava incorniciata come un pulsante spento: e' una riga come le altre, senza bordo.
             save.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First().BorderBrush
                 .Should().BeAssignableTo<ISolidColorBrush>().Which.Color.A.Should().Be(0);
-            save.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).Should().Contain(Strings.Editor_Summary_ComingSoon);
+            save.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).Should().Contain(["Salva come modello", Strings.Editor_Summary_ComingSoon]);
 
             // Le sezioni che un gruppo vedeva e che non stanno nei suoi blocchi: in Avanzate, mai tolte.
             Named<ToggleButton>(pane, "AdvancedToggle").IsChecked = true;

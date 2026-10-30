@@ -258,12 +258,32 @@ public class SectionSummaryTests : IDisposable
         sut.Preview.Color.Should().Be("#112233");
     }
 
-    [Fact]
-    public async Task Home_row_preview_follows_the_key_figure()
+    // Revisione del Task 6: in Configura l'abitudine e' vera, quindi l'anteprima non inventa numeri (anti-obiettivo della
+    // spec: "numeri che sembrano scoperte senza dati dietro"). Resta la forma della striscia scelta, a celle vuote.
+    [Theory]
+    [InlineData(HabitType.Action)]
+    [InlineData(HabitType.Counter)]
+    [InlineData(HabitType.Resistance)]
+    [InlineData(HabitType.Journal)]
+    [InlineData(HabitType.State)]
+    public async Task Home_row_preview_has_the_strip_shape_but_no_invented_value(HabitType type)
     {
         var sut = new HomeRowSectionViewModel(new FakeHabitUiPrefsService(), null);
-        await sut.LoadAsync(Habit(HabitType.Action));
-        sut.SelectedKeyFigure = sut.KeyFigureOptions.First(o => o.Kind == KeyFigureKind.DoneToday);
-        sut.Preview!.KeyFigure.Should().Be("✓");
+        await sut.LoadAsync(Habit(type));
+        foreach (var kf in sut.KeyFigureOptions)
+        {
+            sut.SelectedKeyFigure = kf;
+            sut.Preview!.KeyFigure.Should().BeNull($"nessun valore per {kf.Kind}");
+        }
+        foreach (var strip in sut.StripOptions)
+        {
+            sut.SelectedStrip = strip;
+            var expected = strip.Strip switch { HomeStrip.Days14 => 14, HomeStrip.Days7 => 7, _ => 0 };
+            sut.Preview!.Fractions.Should().HaveCount(expected);
+            sut.Preview.Fractions.Where(f => f != 0).Should().BeEmpty("celle vuote");
+            sut.Preview.Counts.Should().HaveCount(expected);
+            sut.Preview.Counts.Where(c => c != 0).Should().BeEmpty("celle vuote");
+            sut.Preview.StripStyle.Should().Be(HomeRowPresentation.ResolveStripStyle(type), "la forma resta quella del tipo");
+        }
     }
 }

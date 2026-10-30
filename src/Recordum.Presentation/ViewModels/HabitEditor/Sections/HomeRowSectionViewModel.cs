@@ -46,7 +46,7 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
     {
         if (_type is not { } type || SelectedKeyFigure is null || SelectedStrip is null) { Preview = null; return; }
         Preview = SamplePreviewFactory.HomeRowFor(type, SelectedKeyFigure.Kind, SelectedStrip.Strip,
-            _identity.Name, _identity.Color, _identity.Icon);
+            _identity.Name, _identity.Color, _identity.Icon, sample: false);   // un'abitudine vera: nessun numero inventato
     }
 
     private readonly IHabitUiPrefsService _uiPrefs = uiPrefs;

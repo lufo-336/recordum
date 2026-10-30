@@ -35,17 +35,19 @@ public sealed class SamplePreviewFactory(IClock clock)
         HomeRowFor(input.Type, HomeRowPresentation.ResolveKeyFigure(input.Type, null),
             HomeRowPresentation.ResolveStrip(input.Type, null), input.Name, input.Color, input.Icon, input.Fields);
 
-    /// <summary>La riga Home di campione con valore e striscia <b>scelti</b> (Configura: anteprima viva). Stessa
-    /// logica del builder, che passa i suoi default; senza campi il valore del contatore e' senza unita'.</summary>
+    /// <summary>La riga Home con valore e striscia <b>scelti</b> (Configura: anteprima viva). Stessa logica del builder,
+    /// che passa i suoi default; senza campi il valore del contatore e' senza unita'. Con <paramref name="sample"/> falso
+    /// (Configura: l'abitudine e' vera) niente numeri inventati: la forma della striscia scelta, a celle vuote, e nessun
+    /// valore accanto al nome.</summary>
     public static HomeRowPreviewModel HomeRowFor(HabitType type, KeyFigureKind keyFigure, HomeStrip strip,
-        string name, string color, string? icon) =>
-        HomeRowFor(type, keyFigure, strip, name, color, icon, []);
+        string name, string color, string? icon, bool sample = true) =>
+        HomeRowFor(type, sample ? keyFigure : KeyFigureKind.None, strip, name, color, icon, [], sample);
 
     private static HomeRowPreviewModel HomeRowFor(HabitType type, KeyFigureKind keyFigure, HomeStrip strip,
-        string name, string color, string? icon, IReadOnlyList<PreviewField> fields)
+        string name, string color, string? icon, IReadOnlyList<PreviewField> fields, bool sample = true)
     {
         var length = strip switch { HomeStrip.Days14 => 14, HomeStrip.Days7 => 7, _ => 0 };
-        var counts = Enumerable.Range(0, length).Select(i => DayPattern[i % DayPattern.Length]).ToImmutableArray();
+        var counts = Enumerable.Range(0, length).Select(i => sample ? DayPattern[i % DayPattern.Length] : 0).ToImmutableArray();
         // Bars and Ramp read Fractions; the others read Counts. Filling both keeps the strip honest
         // whichever style the type resolves to.
         var fractions = counts.Select(c => c == 0 ? 0d : 0.4 + (0.2 * (c % 3))).ToImmutableArray();

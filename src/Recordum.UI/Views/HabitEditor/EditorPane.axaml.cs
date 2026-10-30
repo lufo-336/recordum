@@ -46,11 +46,25 @@ public partial class EditorPane : UserControl
         AdvancedChevron.RenderTransform = AdvancedRows.IsVisible ? new RotateTransform(90) : null;
     }
 
+    // L'editor vive piu' della colonna: il pane lo ascolta solo finche' e' nell'albero, o ogni apertura di Configura
+    // lascerebbe un pane intero appeso al ViewModel (come ConfigRow).
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        Rebind();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (_vm is not null) _vm.PropertyChanged -= OnVmChanged;
+    }
+
     private void Rebind()
     {
         if (_vm is not null) _vm.PropertyChanged -= OnVmChanged;
         _vm = DataContext as HabitEditorViewModel;
-        if (_vm is not null) _vm.PropertyChanged += OnVmChanged;
+        if (_vm is not null && VisualRoot is not null) _vm.PropertyChanged += OnVmChanged;
         UpdateType();
     }
 

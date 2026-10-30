@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using Avalonia.Media;
 using Recordum.Presentation.ViewModels.HabitEditor;
 
@@ -38,8 +37,6 @@ public partial class ConfigRow : UserControl
         Root.DataContext = null;
         IsVisible = false;
     }
-
-    private void OnHeaderClick(object? sender, RoutedEventArgs e) => IsOpen = !IsOpen;
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {

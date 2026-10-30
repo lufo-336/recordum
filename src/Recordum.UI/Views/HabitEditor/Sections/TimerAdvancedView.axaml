@@ -4,9 +4,32 @@
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
              x:Class="Recordum.UI.Views.HabitEditor.Sections.TimerAdvancedView"
              x:DataType="vm:TimerSectionViewModel">
-  <!-- La parte "Avanzate" del timer (spec 6.4, blocco 5): richiesta automatica e riposo, usciti da TimerSectionView. -->
+  <!-- La parte "Avanzate" del timer (spec 6.4, blocco 5): i segmenti, la richiesta automatica e il riposo, usciti da TimerSectionView. -->
   <StackPanel Spacing="4">
-    <CheckBox x:Name="AutoPromptBox" Content="{x:Static res:Strings.Editor_Field_AutoPrompt}" IsChecked="{CompiledBinding TimerAutoPrompt, Mode=TwoWay}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Segments}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <ItemsControl x:Name="SegmentsList" ItemsSource="{CompiledBinding Segments}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:SegmentRowViewModel">
+          <!-- Spec 6.4.2, ogni casella con la sua riga: il riposo va sotto il nome, con la spiegazione. -->
+          <Grid Margin="0,2,0,6" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" x:Name="SegmentNameBox" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,0">
+              <CheckBox x:Name="SegmentRestBox" Content="{x:Static res:Strings.Editor_Field_Rest}" IsChecked="{CompiledBinding IsRest, Mode=TwoWay}"/>
+              <TextBlock Classes="help" Text="{x:Static res:Strings.Editor_Help_Timer_Rest}"/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="icononly" Margin="4,0,0,0"
+                    Command="{CompiledBinding $parent[ItemsControl].((vm:TimerSectionViewModel)DataContext).RemoveSegmentCommand}"
+                    CommandParameter="{CompiledBinding}"
+                    AutomationProperties.Name="{x:Static res:Strings.Notes_Delete}" ToolTip.Tip="{x:Static res:Strings.Notes_Delete}">
+              <Path Data="{StaticResource Icon.Trash2}" Width="14" Height="14" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                    StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Button>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Button x:Name="AddSegmentButton" Content="{x:Static res:Strings.Editor_Action_AddSegment}" Command="{CompiledBinding AddSegmentCommand}" HorizontalAlignment="Left"/>
+    <CheckBox x:Name="AutoPromptBox" Margin="0,8,0,0" Content="{x:Static res:Strings.Editor_Field_AutoPrompt}" IsChecked="{CompiledBinding TimerAutoPrompt, Mode=TwoWay}"/>
     <TextBlock Classes="help" Text="{x:Static res:Strings.Editor_Help_Timer_AutoPrompt}"/>
     <TextBlock Text="{x:Static res:Strings.Editor_Field_RestTimerSeconds}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
     <TextBox x:Name="RestBox" HorizontalAlignment="Left" MinWidth="120"
