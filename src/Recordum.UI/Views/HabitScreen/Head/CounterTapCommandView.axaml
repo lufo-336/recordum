@@ -18,8 +18,15 @@
           </MultiBinding>
         </TextBlock.Text>
       </TextBlock>
-      <Button x:Name="MinusButton" Content="−" Padding="12,6" Command="{CompiledBinding UndoLastCommand}"
-              AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_UndoLast}"/>
+      <!-- Senza obiettivo il conto del giorno scelto sta comunque in testa (UX2A-5): il numero, senza "/N". -->
+      <TextBlock x:Name="DayCountText" VerticalAlignment="Center" Margin="0,0,4,0" FontWeight="SemiBold" FontFeatures="+tnum"
+                 Foreground="{DynamicResource Brush.HabitText}"
+                 Text="{CompiledBinding DayCount}"
+                 IsVisible="{CompiledBinding $parent[head:HabitHeadView].((vm:HabitScreenViewModel)DataContext).Figures.DailyTarget, Converter={x:Static ObjectConverters.IsNull}}"/>
+      <Button x:Name="MinusButton" Padding="12,6" Command="{CompiledBinding UndoLastCommand}"
+              AutomationProperties.Name="{x:Static res:Strings.HabitScreen_QuickAdd_UndoLast}">
+        <Path Classes="record-glyph" Data="{StaticResource Icon.Minus}"/>
+      </Button>
       <Button x:Name="RecordButton" Classes="record" Content="+1" Command="{CompiledBinding TapCommand}"/>
     </StackPanel>
     <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap" MaxWidth="280"

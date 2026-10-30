@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Recordum.UI.Tests.Icons;
 
-/// <summary>Il catalogo delle 72 icone Lucide (Themes/Icons.axaml). Tre cose diverse possono andare
+/// <summary>Il catalogo delle 73 icone Lucide (Themes/Icons.axaml). Tre cose diverse possono andare
 /// storte e ognuna ha il proprio test: le chiavi (WPF le chiede per nome, una mancante è un Path
 /// vuoto muto), il parsing (una stringa malformata esplode alla prima richiesta, non al caricamento),
 /// e il SIGNIFICATO dei tratti (una stringa che si legge senza errori ma disegna la cosa sbagliata).</summary>
@@ -31,6 +31,8 @@ public class IconCatalogTests
         "Icon.Check", "Icon.EyeOff", "Icon.ArrowUpDown", "Icon.Archive", "Icon.Pencil", "Icon.RotateCcw",
         // Onda 2b: la colonna Panoramica del gruppo.
         "Icon.LayoutList",
+        // Onda 2b, Task 8: il "−" del contatore a tocco non e' piu' un glifo di testo.
+        "Icon.Minus",
     ];
 
     /// <summary>Le stringhe dei path così come stanno nel file (incorporato nell'assembly di test, v. il
@@ -51,11 +53,11 @@ public class IconCatalogTests
         [.. PathGeometry.Parse(RawPaths()[key]).Figures!];
 
     [Fact]
-    public void The_catalog_holds_exactly_the_72_expected_keys()
+    public void The_catalog_holds_exactly_the_73_expected_keys()
     {
         var keys = RawPaths().Keys;
 
-        ExpectedKeys.Should().HaveCount(72);
+        ExpectedKeys.Should().HaveCount(73);
         keys.Should().BeEquivalentTo(ExpectedKeys, "una chiave in meno è un'icona d'abitudine che sparisce; "
             + "una in più è un'icona che nessun test guarda");
     }

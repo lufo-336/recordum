@@ -20,5 +20,14 @@
     </Button>
     <Button x:Name="StartButton" Classes="record" Content="{x:Static res:Strings.Abstinence_Start}"
             Command="{CompiledBinding StartCommand}" IsVisible="{CompiledBinding CanStart}"/>
+    <!-- Dopo una ricaduta "Inizia" e' il comando che registra (Button.record): dimenticare di ripartire costa la serie del
+         gruppo, e il giorno della ricaduta sta li' accanto. -->
+    <TextBlock x:Name="Relapsed" Margin="0,6,0,0" HorizontalAlignment="Right" FontSize="{StaticResource FontSize.Small}"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               Text="{CompiledBinding RelapsedOnDisplay}"
+               IsVisible="{CompiledBinding RelapsedOnDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+    <TextBlock x:Name="Error" Margin="0,6,0,0" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap" MaxWidth="280"
+               Text="{CompiledBinding ErrorMessage}"
+               IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
   </StackPanel>
 </UserControl>

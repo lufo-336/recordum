@@ -120,6 +120,29 @@ public class HeadCommandTests
     }
 
     [AvaloniaFact]
+    public async Task Action_button_follows_IsDone_when_the_command_changes_nothing()
+    {
+        // UX2A-9: con la guardia IsSaving il clic non cambia nulla, ma il ToggleButton si invertiva da solo.
+        var o = await OpenAsync(HabitType.Action);
+        var action = (ActionQuickAddViewModel)o.Vm.QuickAdd!;
+        var record = Named<ToggleButton>(o.Command, "RecordButton");
+        record.IsChecked.Should().BeFalse();
+
+        action.IsSaving = true;
+        Click(o.Window, record);
+        Pump();
+        action.IsDone.Should().BeFalse();
+        record.IsChecked.Should().BeFalse("il comando non ha cambiato nulla: il pulsante non mente");
+        (await ListAsync(o)).Should().BeEmpty();
+
+        action.IsSaving = false;
+        Click(o.Window, record);
+        await UntilAsync(() => record.IsChecked == true);
+        action.IsDone.Should().BeTrue();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task CounterTap_plus_and_minus()
     {
         var o = await OpenAsync(HabitType.Counter, async (sp, id) =>
@@ -142,6 +165,7 @@ public class HeadCommandTests
         var progress = Named<TextBlock>(o.Command, "Progress");
         progress.IsVisible.Should().BeTrue();
         progress.Text.Should().Be("1/8");
+        Named<TextBlock>(o.Command, "DayCountText").IsVisible.Should().BeFalse("con l'obiettivo c'e' \"1/8\", non anche il numero nudo");
         o.Window.Close();
     }
 
@@ -150,6 +174,27 @@ public class HeadCommandTests
     {
         var o = await OpenAsync(HabitType.Counter);
         Named<TextBlock>(o.Command, "Progress").IsVisible.Should().BeFalse();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task CounterTap_without_a_goal_still_shows_the_count_of_the_chosen_day()
+    {
+        // UX2A-5: prima c'era "oggi: N"; senza obiettivo il conto del giorno scelto spariva dalla testa.
+        var o = await OpenAsync(HabitType.Counter);
+        var tap = (CounterTapQuickAddViewModel)o.Vm.QuickAdd!;
+        var count = Named<TextBlock>(o.Command, "DayCountText");
+        count.IsVisible.Should().BeTrue();
+        count.Text.Should().Be("0");
+
+        Click(o.Window, Named<Button>(o.Command, "RecordButton"));
+        await UntilAsync(() => tap.DayCount == 1 && !tap.IsSaving);
+        Pump();
+        count.Text.Should().Be("1");
+
+        // Il "−" e' un'icona Lucide, non un glifo di testo.
+        var minus = Named<Button>(o.Command, "MinusButton");
+        minus.Content.Should().BeOfType<Avalonia.Controls.Shapes.Path>().Which.Classes.Should().Contain("record-glyph");
         o.Window.Close();
     }
 
@@ -195,6 +240,47 @@ public class HeadCommandTests
         confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await UntilAsync(() => !ab.CanLapse);
         flyout.IsOpen.Should().BeFalse();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task After_a_lapse_start_is_the_record_command()
+    {
+        // UX2A-6: dopo una ricaduta si riparte con "Inizia" — dimenticarlo costa la serie del gruppo — e il giorno
+        // della ricaduta sta accanto.
+        using var _ = TestCulture.Pin();
+        var o = await OpenAsync(HabitType.Resistance);
+        var ab = (AbstinenceQuickAddViewModel)o.Vm.QuickAdd!;
+        Click(o.Window, Named<Button>(o.Command, "StartButton"));
+        await UntilAsync(() => ab.CanLapse);
+        var lapse = Named<Button>(o.Command, "LapseButton");
+        Click(o.Window, lapse);
+        var confirm = ((Control)((Flyout)lapse.Flyout!).Content!).GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "ConfirmLapseButton");
+        confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await UntilAsync(() => !ab.CanLapse);
+        Pump();
+
+        var start = Named<Button>(o.Command, "StartButton");
+        start.IsEffectivelyVisible.Should().BeTrue();
+        start.Classes.Should().Contain("record");
+        lapse.IsEffectivelyVisible.Should().BeFalse();
+        var relapsed = Named<TextBlock>(o.Command, "Relapsed");
+        relapsed.IsEffectivelyVisible.Should().BeTrue();
+        relapsed.Text.Should().Be(ab.RelapsedOnDisplay).And.NotBeEmpty();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Abstinence_command_shows_the_error_message()
+    {
+        var o = await OpenAsync(HabitType.Resistance);
+        var ab = (AbstinenceQuickAddViewModel)o.Vm.QuickAdd!;
+        var error = Named<TextBlock>(o.Command, "Error");
+        error.IsVisible.Should().BeFalse();
+        ab.ErrorMessage = "non salvato";
+        Pump();
+        error.IsVisible.Should().BeTrue();
+        error.Text.Should().Be("non salvato");
         o.Window.Close();
     }
 
