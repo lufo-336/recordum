@@ -122,6 +122,8 @@ public sealed class BootstrapSmokeTests : IDisposable
         using var scope = _services.CreateScope();
         var habits = scope.ServiceProvider.GetRequiredService<IHabitNodeService>();
         var query = scope.ServiceProvider.GetRequiredService<IHabitTreeQueryService>();
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IGroupHistoryQueryService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IHabitStartQueryService>());
         await habits.CreateAsync(new HabitNode
         {
             NodeType = NodeType.Habit,

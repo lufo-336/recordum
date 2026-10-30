@@ -107,6 +107,9 @@ public static class RecordumServiceCollectionExtensions
         services.AddScoped<IStreakService, StreakService>();
         services.AddScoped<IPurgeService, PurgeService>();
         services.AddScoped<IHabitTreeQueryService, HabitTreeQueryService>();
+        services.AddScoped<GroupHistoryQueryService>();
+        services.AddScoped<IGroupHistoryQueryService>(sp => sp.GetRequiredService<GroupHistoryQueryService>());
+        services.AddScoped<IHabitStartQueryService>(sp => sp.GetRequiredService<GroupHistoryQueryService>());
         services.AddScoped<IKeyTransitionService, KeyTransitionService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
         services.AddScoped<IPhotoImporter, SkiaPhotoImporter>();

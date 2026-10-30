@@ -77,6 +77,8 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         Assert.Contains(typeof(HabitScreenViewModel), resolved);
         Assert.Contains(typeof(HabitEditorViewModel), resolved);
         Assert.Contains(typeof(HabitBuilderViewModel), resolved);
+        Assert.Contains(typeof(IGroupHistoryQueryService), resolved);
+        Assert.Contains(typeof(IHabitStartQueryService), resolved);
     }
 
     [Fact]
