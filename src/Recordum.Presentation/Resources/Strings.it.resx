@@ -1597,6 +1597,12 @@
   <data name="Editor.Field.Days" xml:space="preserve">
     <value>Giorni</value>
   </data>
+  <data name="ColorPicker.Advanced" xml:space="preserve">
+    <value>Avanzate</value>
+  </data>
+  <data name="ColorPicker.Preview" xml:space="preserve">
+    <value>Come appare</value>
+  </data>
   <data name="ColorPicker.Recent" xml:space="preserve">
     <value>Recenti</value>
   </data>

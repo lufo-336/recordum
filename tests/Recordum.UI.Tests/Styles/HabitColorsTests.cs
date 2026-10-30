@@ -13,12 +13,8 @@ namespace Recordum.UI.Tests.Styles;
 /// 4,5:1 sulla sua tinta per qualunque colore.</summary>
 public class HabitColorsTests
 {
-    // La palette della spec §7.1.
-    public static TheoryData<string> Palette => new()
-    {
-        "#C2405B", "#D0603A", "#C98A1E", "#9A9A2A", "#5F9A3C", "#2F9C8C", "#2F8FB0", "#2F7FC1",
-        "#4F63C4", "#7A5BC4", "#A352A8", "#C2508A", "#8A6A4F", "#6B7280", "#4B5563", "#9A8F80",
-    };
+    // La palette della spec §7.1: una sola fonte, il controllo.
+    public static TheoryData<string> Palette => new(Recordum.UI.Controls.ColorSwatchPicker.Palette);
 
     public static TheoryData<string> Extremes => new() { "#FFFFFF", "#000000", "#FFFF00", "#00FFFF", "#808080" };
 

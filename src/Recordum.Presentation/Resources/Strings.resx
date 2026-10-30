@@ -1623,6 +1623,12 @@ Details: {0}</value>
   <data name="Editor.Field.Days" xml:space="preserve">
     <value>Days</value>
   </data>
+  <data name="ColorPicker.Advanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="ColorPicker.Preview" xml:space="preserve">
+    <value>How it looks</value>
+  </data>
   <data name="ColorPicker.Recent" xml:space="preserve">
     <value>Recent</value>
   </data>

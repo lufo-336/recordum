@@ -11,30 +11,30 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
+using Avalonia.Styling;
+using Recordum.Core.Enums;
+using Recordum.Core.HomeRow;
+using Recordum.Presentation.ViewModels.HabitBuilder.Preview;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 
 namespace Recordum.UI.Controls;
 
-/// <summary>Porting di <c>Views/ColorSwatchPicker.xaml(.cs)</c>: tessera-trigger che apre un pannello con
-/// il selettore HSV, la rampa di tonalità, la palette curata, i colori recenti, i preferiti e un campo
-/// esadecimale. <see cref="Color"/> è "#RRGGBB" two-way; un esadecimale scritto a mano si valida e uno non
+/// <summary>Tessera-trigger che apre un riquadro: sedici colori pronti, i recenti, "Come appare" (chiaro e scuro) e,
+/// dietro "Avanzate", selettore libero, tonalità, preferiti ed esadecimale. <see cref="Color"/> è "#RRGGBB" two-way; un esadecimale scritto a mano si valida e uno non
 /// valido non arriva mai alla proprietà (il campo torna al valore corrente).</summary>
 public partial class ColorSwatchPicker : UserControl
 {
+    /// <summary>I sedici colori pronti della spec §7.1 (§4.3): l'unica fonte, la leggono anche i test di contrasto.</summary>
     public static readonly ImmutableArray<string> Palette = ImmutableArray.Create(
-        "#fca5a5", "#ef4444", "#b91c1c",   // red
-        "#fdba74", "#f97316", "#c2410c",   // orange
-        "#fcd34d", "#f59e0b", "#b45309",   // amber
-        "#bef264", "#84cc16", "#4d7c0f",   // lime
-        "#6ee7b7", "#10b981", "#047857",   // emerald
-        "#67e8f9", "#06b6d4", "#0e7490",   // cyan
-        "#93c5fd", "#3b82f6", "#1d4ed8",   // blue
-        "#a5b4fc", "#6366f1", "#4338ca",   // indigo
-        "#c4b5fd", "#8b5cf6", "#6d28d9",   // violet
-        "#f0abfc", "#d946ef", "#a21caf",   // fuchsia
-        "#f9a8d4", "#ec4899", "#be185d",   // pink
-        "#cbd5e1", "#94a3b8", "#475569");  // slate (neutrals)
+        "#C2405B", "#D0603A", "#C98A1E", "#9A9A2A", "#5F9A3C", "#2F9C8C", "#2F8FB0", "#2F7FC1",
+        "#4F63C4", "#7A5BC4", "#A352A8", "#C2508A", "#8A6A4F", "#6B7280", "#4B5563", "#9A8F80");
+
+    /// <summary>Il nome dell'abitudine per "Come appare"; null = niente anteprima (il segno delle note non ne ha).</summary>
+    public static readonly StyledProperty<string?> PreviewNameProperty =
+        AvaloniaProperty.Register<ColorSwatchPicker, string?>(nameof(PreviewName));
+
+    public string? PreviewName { get => GetValue(PreviewNameProperty); set => SetValue(PreviewNameProperty, value); }
 
     public static readonly StyledProperty<string> ColorProperty =
         AvaloniaProperty.Register<ColorSwatchPicker, string>(nameof(Color), "#808080", defaultBindingMode: BindingMode.TwoWay);
@@ -59,15 +59,23 @@ public partial class ColorSwatchPicker : UserControl
 
     private static readonly Regex HexRx = new("^#?[0-9A-Fa-f]{6}$", RegexOptions.Compiled);
 
+    private const double Gap = 8;
+
     private readonly Flyout _flyout = new() { Placement = PlacementMode.BottomEdgeAlignedLeft };
     private readonly HsvColorPicker _hsv = new() { HorizontalAlignment = HorizontalAlignment.Center };
     private readonly WrapPanel _shades = new();
-    private readonly WrapPanel _paletteGrid = new();
-    private readonly TextBlock _recentLabel = new() { Text = Strings.ColorPicker_Recent, Margin = new Thickness(0, 8, 0, 2) };
-    private readonly WrapPanel _recent = new();
+    private readonly WrapPanel _paletteGrid = new() { Name = "PaletteGrid", ItemSpacing = Gap, LineSpacing = Gap };
+    private readonly TextBlock _recentLabel = Label(Strings.ColorPicker_Recent, new Thickness(0, 14, 0, 6));
+    private readonly WrapPanel _recent = new() { Name = "RecentGrid", ItemSpacing = Gap, LineSpacing = Gap };
     private readonly WrapPanel _favorites = new();
     private readonly TextBox _hex = new() { Name = "HexBox", Width = 84, MaxLength = 7, FontFamily = new FontFamily("Consolas, DejaVu Sans Mono, monospace") };
     private readonly Border _preview = new() { Width = 24, Height = 24, Margin = new Thickness(8, 0, 0, 0), CornerRadius = new CornerRadius(5) };
+    private readonly StackPanel _previewSection = new() { Name = "PreviewSection", Margin = new Thickness(0, 14, 0, 0), Spacing = 6, IsVisible = false };
+    private readonly RowPreview _previewLight = new() { Variant = ThemeVariant.Light };
+    private readonly RowPreview _previewDark = new() { Variant = ThemeVariant.Dark };
+    private readonly StackPanel _advanced = new() { Name = "AdvancedPanel", IsVisible = false };
+    private readonly Button _advancedToggle = new() { Name = "AdvancedToggle" };
+    private readonly Avalonia.Controls.Shapes.Path _chevron = new() { Width = 12, Height = 12, Stretch = Stretch.Uniform, StrokeThickness = 1.5, StrokeLineCap = PenLineCap.Round, StrokeJoin = PenLineJoin.Round };
 
     public ColorSwatchPicker()
     {
@@ -75,7 +83,8 @@ public partial class ColorSwatchPicker : UserControl
         AutomationProperties.SetName(Trigger, Strings.HabitBuilder_Color);
         ToolTip.SetTip(Trigger, Strings.HabitBuilder_Color);
         _flyout.Content = BuildPanel();
-        _flyout.Opened += (_, _) => _hex.Focus();
+        _flyout.Opening += (_, _) => SyncAdvanced();
+        _flyout.Opened += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(FocusSelected);
         Trigger.Flyout = _flyout;
         Refresh();
     }
@@ -87,7 +96,28 @@ public partial class ColorSwatchPicker : UserControl
             if (e.Property == HsvColorPicker.ColorProperty && e.NewValue is string c) Color = c;
         };
 
-        foreach (var hex in Palette) _paletteGrid.Children.Add(Swatch(hex));
+        foreach (var hex in Palette) _paletteGrid.Children.Add(Swatch(hex, 28, radius: 14, margin: new Thickness(0)));
+
+        // Come appare: la stessa riga della Home in chiaro e in scuro, con un valore di campione.
+        var previewRows = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = Gap };
+        Grid.SetColumn(_previewDark, 1);
+        previewRows.Children.Add(_previewLight);
+        previewRows.Children.Add(_previewDark);
+        _previewSection.Children.Add(Label(Strings.ColorPicker_Preview));
+        _previewSection.Children.Add(previewRows);
+
+        // Avanzate ›: una riga che apre, sotto e nello stesso riquadro, tutto ciò che non serve a chi sceglie un colore pronto.
+        _chevron.SetResourceReference(Avalonia.Controls.Shapes.Shape.StrokeProperty, "Brush.TextMuted");
+        var toggleLabel = new TextBlock { Text = Strings.ColorPicker_Advanced, VerticalAlignment = VerticalAlignment.Center };
+        toggleLabel.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
+        toggleLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize.Small");
+        _advancedToggle.Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { toggleLabel, _chevron } };
+        _advancedToggle.Background = Brushes.Transparent;
+        _advancedToggle.BorderThickness = new Thickness(0);
+        _advancedToggle.Padding = new Thickness(0, 4);
+        _advancedToggle.Margin = new Thickness(0, 10, 0, 0);
+        AutomationProperties.SetName(_advancedToggle, Strings.ColorPicker_Advanced);
+        _advancedToggle.Click += (_, _) => SetAdvanced(!_advanced.IsVisible);
 
         var add = new Button { Name = "AddFavorite", Content = Strings.ColorPicker_AddFavorite, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(4, 0), HorizontalAlignment = HorizontalAlignment.Right };
         add.SetResourceReference(TemplatedControl.ForegroundProperty, "Brush.Accent");
@@ -109,31 +139,55 @@ public partial class ColorSwatchPicker : UserControl
         _preview.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
         _preview.BorderThickness = new Thickness(1);
 
-        _recentLabel.SetResourceReference(TextBlock.ForegroundProperty, "Brush.TextMuted");
-        _recentLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize.Small");
+        _recentLabel.IsVisible = _recent.IsVisible = false;
 
-        var panel = new StackPanel
+        _advanced.Children.Add(new Border { Margin = new Thickness(0, 6, 0, 0), Child = _hsv });
+        _advanced.Children.Add(Label(Strings.ColorPicker_Shades, new Thickness(0, 12, 0, 4)));
+        _advanced.Children.Add(_shades);
+        _advanced.Children.Add(favHeader);
+        _advanced.Children.Add(_favorites);
+        _advanced.Children.Add(new StackPanel
         {
-            Width = 232,
-            Children =
-            {
-                _hsv,
-                Label(Strings.ColorPicker_Shades, new Thickness(0, 12, 0, 4)),
-                _shades,
-                new Border { Margin = new Thickness(0, 12, 0, 0), Child = _paletteGrid },
-                _recentLabel,
-                _recent,
-                favHeader,
-                _favorites,
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 10, 0, 0),
-                    Children = { hash, _hex, _preview },
-                },
-            },
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 10, 0, 0),
+            Children = { hash, _hex, _preview },
+        });
+
+        return new StackPanel
+        {
+            Width = 8 * 28 + 7 * Gap,
+            Children = { _paletteGrid, _recentLabel, _recent, _previewSection, _advancedToggle, _advanced },
         };
-        return panel;
+    }
+
+    private void SetAdvanced(bool open)
+    {
+        _advanced.IsVisible = open;
+        _chevron.Data = Application.Current?.TryFindResource(open ? "Icon.ChevronDown" : "Icon.ChevronRight", out var g) == true ? g as Geometry : null;
+    }
+
+    // Avanzate è chiusa, salvo che il colore corrente non sia né nella palette né fra i recenti: chi ha un colore
+    // libero lo vede subito. Mentre il riquadro è aperto non si muove da solo (trascinare nel selettore cambia Color).
+    private void SyncAdvanced()
+    {
+        if (_flyout.IsOpen) return;
+        var known = Palette.Contains(Color, StringComparer.OrdinalIgnoreCase)
+                    || (RecentColors ?? []).Contains(Color, StringComparer.OrdinalIgnoreCase);
+        SetAdvanced(!known);
+    }
+
+    private void FocusSelected()
+    {
+        var swatches = _paletteGrid.Children.Concat(_recent.Children).OfType<Button>().ToList();
+        (swatches.FirstOrDefault(b => b.Classes.Contains("selected")) ?? swatches.FirstOrDefault())?.Focus();
+    }
+
+    private void UpdatePreview()
+    {
+        _previewSection.IsVisible = PreviewName is not null;
+        if (PreviewName is null) return;
+        var model = SamplePreviewFactory.HomeRowFor(HabitType.Action, KeyFigureKind.DoneToday, HomeStrip.None, PreviewName, Color, null);
+        _previewLight.Model = _previewDark.Model = model;
     }
 
     private static TextBlock Label(string text, Thickness? margin = null)
@@ -148,6 +202,7 @@ public partial class ColorSwatchPicker : UserControl
     {
         base.OnPropertyChanged(change);
         if (change.Property == ColorProperty) Refresh();
+        else if (change.Property == PreviewNameProperty) UpdatePreview();
         else if (change.Property == RecentColorsProperty)
         {
             Watch(change.OldValue as INotifyCollectionChanged, change.NewValue as INotifyCollectionChanged, OnRecentChanged);
@@ -176,11 +231,15 @@ public partial class ColorSwatchPicker : UserControl
         _preview.Background = Brush(Color);
         if (!string.Equals(_hsv.Color, Color, StringComparison.OrdinalIgnoreCase)) _hsv.Color = Color;
         _hex.Text = Color.TrimStart('#');
+        _hex.Classes.Set("invalid", false);
+        _hex.ClearValue(TemplatedControl.BorderBrushProperty);
 
         _shades.Children.Clear();
-        foreach (var c in ShadeRamp.For(Color)) _shades.Children.Add(Swatch(c, width: 232.0 / 7, height: 22, radius: 0, margin: default));
+        foreach (var c in ShadeRamp.For(Color)) _shades.Children.Add(Swatch(c, width: 224.0 / 7, height: 22, radius: 0, margin: new Thickness(0)));
 
         foreach (var s in AllSwatches()) Mark(s);
+        UpdatePreview();
+        SyncAdvanced();
     }
 
     private IEnumerable<Button> AllSwatches() =>
@@ -190,7 +249,8 @@ public partial class ColorSwatchPicker : UserControl
     private void FillRecent()
     {
         _recent.Children.Clear();
-        foreach (var c in RecentColors ?? []) _recent.Children.Add(Swatch(c));
+        foreach (var c in RecentColors ?? []) _recent.Children.Add(Swatch(c, 24, radius: 12, margin: new Thickness(0)));
+        SyncAdvanced();
         var any = _recent.Children.Count > 0;
         _recent.IsVisible = _recentLabel.IsVisible = any;
     }
@@ -228,24 +288,26 @@ public partial class ColorSwatchPicker : UserControl
             ToolTip.SetTip(remove, Strings.ColorPicker_RemoveFavorite);
             var captured = c;
             remove.Click += (_, _) => { if (RemoveFavoriteCommand is { } cmd && cmd.CanExecute(captured)) cmd.Execute(captured); };
-            _favorites.Children.Add(new Grid { Margin = new Thickness(2), Children = { Swatch(c, margin: default), remove } });
+            _favorites.Children.Add(new Grid { Margin = new Thickness(2), Children = { Swatch(c, margin: new Thickness(0)), remove } });
         }
     }
 
-    private Button Swatch(string hex, double width = 20, double height = 20, double radius = 4, Thickness? margin = null)
+    private Button Swatch(string hex, double width = 20, double height = 0, double radius = 4, Thickness? margin = null)
     {
-        var inner = new Border { Background = Brush(hex), CornerRadius = new CornerRadius(radius), BorderThickness = new Thickness(1) };
+        // Esterno = l'anello (2 px di vuoto + 2 px di inchiostro quando scelto), interno = il colore.
+        var fill = new Border { Background = Brush(hex), CornerRadius = new CornerRadius(radius) };
+        var ring = new Border { Child = fill, CornerRadius = new CornerRadius(radius > 0 ? radius : 0), Background = Brushes.Transparent };
         var b = new Button
         {
             Tag = "swatch",
             Width = width,
-            Height = height,
+            Height = height == 0 ? width : height,
             MinHeight = 0,
             Padding = new Thickness(0),
             Margin = margin ?? new Thickness(2),
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
-            Content = inner,
+            Content = ring,
             Cursor = new Cursor(StandardCursorType.Hand),
         };
         AutomationProperties.SetName(b, hex);
@@ -258,18 +320,35 @@ public partial class ColorSwatchPicker : UserControl
     // bordo al passaggio del mouse, un Border dentro il contenuto no.
     private void Mark(Button b)
     {
-        var inner = (Border)b.Content!;
+        var ring = (Border)b.Content!;
         var on = string.Equals(AutomationProperties.GetName(b), Color, StringComparison.OrdinalIgnoreCase);
         b.Classes.Set("selected", on);
-        inner.BorderThickness = new Thickness(on ? 2 : 1);
-        inner.SetResourceReference(Border.BorderBrushProperty, on ? "Brush.Accent" : "Brush.Border");
+        ring.BorderThickness = new Thickness(on ? 2 : 0);
+        ring.Padding = new Thickness(on ? 2 : 0);
+        if (on) ring.SetResourceReference(Border.BorderBrushProperty, "Brush.Ink");
+        else ring.ClearValue(Border.BorderBrushProperty);
+        // il colore chiaro su fondo chiaro ha bisogno di un filo: una tessera non scelta ha un bordo sottile
+        var fill = (Border)ring.Child!;
+        fill.BorderThickness = new Thickness(on ? 0 : 1);
+        fill.SetResourceReference(Border.BorderBrushProperty, "Brush.Border");
     }
 
     private void CommitHex()
     {
         var text = (_hex.Text ?? string.Empty).Trim();
-        if (HexRx.IsMatch(text)) Color = "#" + text.TrimStart('#').ToUpperInvariant();
-        _hex.Text = Color.TrimStart('#'); // valido: normalizzato; non valido: torna al valore corrente
+        if (HexRx.IsMatch(text))
+        {
+            Color = "#" + text.TrimStart('#').ToUpperInvariant();
+            _hex.Text = Color.TrimStart('#');
+            _hex.Classes.Set("invalid", false);
+            _hex.ClearValue(TemplatedControl.BorderBrushProperty);
+        }
+        else
+        {
+            // Non valido: Color non cambia, il testo resta com'è e la casella lo dice con la cornice d'errore.
+            _hex.Classes.Set("invalid", true);
+            _hex.SetResourceReference(TemplatedControl.BorderBrushProperty, "Brush.Danger");
+        }
     }
 
     private static IBrush Brush(string hex) =>

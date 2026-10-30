@@ -80,7 +80,7 @@
           <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
             <StackPanel Grid.Column="0" Margin="0,0,12,0">
               <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_Color}"/>
-              <ctl:ColorSwatchPicker x:Name="ColorPicker" HorizontalAlignment="Left" Color="{CompiledBinding Color, Mode=TwoWay}"
+              <ctl:ColorSwatchPicker x:Name="ColorPicker" HorizontalAlignment="Left" Color="{CompiledBinding Color, Mode=TwoWay}" PreviewName="{CompiledBinding Name}"
                                      RecentColors="{CompiledBinding RecentColors}" FavoriteColors="{CompiledBinding FavoriteColors}"
                                      AddFavoriteCommand="{CompiledBinding AddFavoriteCommand}"
                                      RemoveFavoriteCommand="{CompiledBinding RemoveFavoriteCommand}"/>

@@ -592,6 +592,8 @@ public static class Strings
     public static string Diagnostic_NotGitCheckout => Get("Diagnostic.NotGitCheckout");
 
     // Color picker
+    public static string ColorPicker_Advanced => Get("ColorPicker.Advanced");
+    public static string ColorPicker_Preview => Get("ColorPicker.Preview");
     public static string ColorPicker_Recent => Get("ColorPicker.Recent");
     public static string ColorPicker_Shades => Get("ColorPicker.Shades");
     public static string ColorPicker_Favorites => Get("ColorPicker.Favorites");
