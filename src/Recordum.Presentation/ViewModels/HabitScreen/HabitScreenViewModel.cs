@@ -493,6 +493,17 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             ? Figures.LoadAsync(node, _config, @case, _dayBoundary, ct)
             : Task.CompletedTask;
 
+    /// <summary>Un evento su una figlia: rilegge il conto e l'obiettivo (Panoramica), poi i numeri che li leggono.
+    /// Se nel frattempo si è cambiato soggetto, i numeri nuovi non si scrivono sopra.</summary>
+    private async Task ReloadGroupAsync()
+    {
+        if (Node is not { NodeType: NodeType.Group } group) return;
+        var generation = _loadGeneration;
+        await Panoramica.LoadAsync(group, _dayBoundary, CancellationToken.None).ConfigureAwait(true);
+        if (generation != _loadGeneration || Node?.Id != group.Id) return;
+        await LoadGroupFiguresAsync(CancellationToken.None).ConfigureAwait(true);
+    }
+
     /// <summary>Dopo <c>Panoramica.LoadAsync</c>, che carica l'obiettivo del gruppo che il terzo numero legge.</summary>
     private Task LoadGroupFiguresAsync(CancellationToken ct)
         => GroupFigures is { } gf && Node is { NodeType: NodeType.Group } group
@@ -945,7 +956,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             if (Node is null) return;
             // Una registrazione di una figlia sposta i numeri del gruppo che si sta guardando.
-            if (IsGroupNode) { await LoadGroupFiguresAsync(CancellationToken.None).ConfigureAwait(true); return; }
+            if (IsGroupNode) { await ReloadGroupAsync().ConfigureAwait(true); return; }
             var habitId = envelope.Payload switch
             {
                 CompletionRecordedPayload r => r.HabitNodeId,
@@ -985,7 +996,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         try
         {
             if (Node is null) return;
-            if (IsGroupNode) { await LoadGroupFiguresAsync(CancellationToken.None).ConfigureAwait(true); return; }
+            if (IsGroupNode) { await ReloadGroupAsync().ConfigureAwait(true); return; }
             var reloads = new List<Task>
             {
                 Detail.LoadAsync(Node, _dayBoundary, CancellationToken.None),

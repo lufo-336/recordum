@@ -71,6 +71,7 @@ public static class HabitScreenViewModelFactory
         var abstinence = new FakeAbstinenceService();
         var clock = new FakeClock(now, boundary?.TimeZone);
         var bus = new FakeEventBus();
+        var tree = new FakeHabitTreeQueryService();
         var editor = new HabitEditorViewModel(
             nodes, configService, goals, metrics, new FakeNotificationService(), new FakeTagService(),
             settings, new FakeReferenceData(), new RecentColorStore(settings), new FavoriteColorStore(settings),
@@ -81,15 +82,15 @@ public static class HabitScreenViewModelFactory
             noteService, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, bus, new FakeEditorAvailability(), settings, editor,
-            new FakeHabitTreeQueryService(), new FakeDiaryService(), new FakeConfirmationDialog(),
+            tree, new FakeDiaryService(), new FakeConfirmationDialog(),
             new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs,
             new FakeResetTimeResolver(boundary), groupHistory: groupHistory);
 
-        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus);
+        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus, tree, goals);
     }
 }
 
 public sealed record HabitScreenRig(
     HabitScreenViewModel Vm, FakeHabitNodeService Nodes, FakeCompletionService Completions, FakeNoteService Notes,
     FakeHabitConfigService Configs, FakeMetricDefinitionService Metrics, FakeClock Clock, FakeAbstinenceService Abstinence,
-    FakeEventBus Bus);
+    FakeEventBus Bus, FakeHabitTreeQueryService Tree, FakeGoalService Goals);
