@@ -40,7 +40,9 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
   d'inizio scelta dall'utente non serve: per un periodo qualunque c'è "Dal… al…". Archiviate e nel cestino fuori.
   I sottogruppi non sono figlie: le loro abitudini sì, a ogni profondità (come "3 di 5" in Home).
 - **Fatto, per un'astinenza** = giorno pulito: coperto da un periodo, escluso il giorno della ricaduta; il periodo aperto
-  copre fino a oggi. Per ogni altro tipo: almeno una registrazione quel giorno.
+  copre fino a oggi; dopo una ricaduta non ripresa nessun giorno è pulito finché non si preme "Inizia" (nessuna ripartenza
+  automatica: CM-5, al dogfooding). Un'astinenza **mai iniziata** non conta: niente giorni previsti, fuori da "x di y".
+  Per ogni altro tipo: almeno una registrazione quel giorno. (Decisione dell'autore del 2026-10-30.)
 - WPF non si tocca e deve compilare. Comportamenti condivisi cambiati **solo** qui: Task 2 (il conto "x di y" di
   `HomeViewModel.ApplyGroupProgress` e di `PanoramicaViewModel` conta l'astinenza in corso come fatta). Ogni altro cambio
   in Presentation è additivo.
@@ -102,7 +104,7 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
   04:30 del 28 → `Done` contiene il 27); `Scheduled_respects_the_schedule` (lun-mer-ven: in una settimana tre giorni);
   `Scheduled_starts_at_creation` (creata il 23, nessuna registrazione prima: niente prima del 23);
   `Starts_at_the_oldest_of_creation_and_first_record` (creata il 23 con una registrazione "per un altro giorno" il 18 →
-  `StartsOn` 18, previsti dal 18; lo stesso per `GetStartDayAsync`); `Abstinence_starts_at_its_first_period`; `Future_days_are_neither`;
+  `StartsOn` 18, previsti dal 18; lo stesso per `GetStartDayAsync`); `Abstinence_starts_at_its_first_period`; `Never_started_abstinence_has_nothing_scheduled`; `Future_days_are_neither`;
   `Abstinence_clean_days_exclude_the_lapse_day` (periodo dal 10 chiuso da una ricaduta il 15, nuovo periodo aperto dal 15:
   il giorno della ricaduta **non** è pulito anche se un periodo nuovo comincia quel giorno; 10–14 e 16–28 sì).
 - [ ] **Step 2: rosso visto** (`dotnet test tests/Recordum.Data.Tests --filter "FullyQualifiedName~GroupHistoryQueryServiceTests"`, contare i test).
@@ -124,7 +126,8 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
 **Interfaces:**
 - Consumes: `IGroupHistoryQueryService` (Task 1), `HabitFigure` (2a), `PanoramicaViewModel.Goal` (`GoalProgressCardViewModel`).
 - Produces: `public static class GroupProgress { public static bool IsDoneToday(HomeTreeRow row); public static (int Done, int Total) Count(ILookup<Guid?, HomeTreeRow> byParent, Guid groupId); }`
-  — `IsDoneToday` = `IsCompletedToday` oppure (`HabitType == Resistance` e `AbstinenceStatus == Abstaining`). La usano
+  — `IsDoneToday` = `IsCompletedToday` oppure (`HabitType == Resistance` e `AbstinenceStatus == Abstaining`); `Count` lascia fuori dal totale
+  un'astinenza `NotStarted`. La usano
   `HomeViewModel` e `PanoramicaViewModel`: i due "x di y" non possono divergere.
 - Produces: `GroupFiguresViewModel(IGroupHistoryQueryService history, IClock clock)`;
   `[ObservableProperty] ImmutableArray<HabitFigure> Items` (2–4 elementi);
@@ -148,7 +151,8 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
   e `Most_skipped_absent_when_nothing_missed`; `Empty_group_has_no_nan` (nessuna figlia: niente `NaN`, `Items` con "0" e "0%").
   `GroupProgressTests`: `Abstaining_child_counts_as_done_in_home_and_group` (un'azione fatta, un'astinenza in corso, una non
   fatta → "2 di 3" sia in `HomeRowViewModel.GroupProgressText` sia in `PanoramicaViewModel.TodayLabel`; **rosso prima**:
-  oggi dice "1 di 3"); `Relapsed_child_is_not_done`.
+  oggi dice "1 di 3"); `Relapsed_child_is_not_done`; `Never_started_abstinence_is_out_of_the_total` ("1 di 1", non
+  "1 di 2").
 - [ ] **Step 2: rosso visto.** **Step 3: implementare.** **Step 4: verdi + Presentation intera + build WPF.**
 - [ ] **Step 5: commit** `feat(presentation): l'avanzamento e i numeri del gruppo; l'astinenza in corso conta come fatta`.
 
@@ -412,7 +416,8 @@ nel report.
   primo avvio.
 - [ ] **Step 3: la testa di 2a**: UX2A-5 (il conteggio del giorno scelto in testa anche senza obiettivo, "−" con un
   `Icon.Minus` Lucide nuovo in `Icons.axaml` e in `IconCatalogTests`); UX2A-6 (l'astinenza in testa mostra `ErrorMessage` e
-  "ricaduta il …" da `RelapsedOnDisplay`); UX2A-8 (`OnHabitUpdated` ricarica anche `PeriodRecords`); UX2A-9 (`ActionCommandView`:
+  "ricaduta il …" da `RelapsedOnDisplay`; dopo una ricaduta "Inizia" è il comando che registra, in `Button.record`,
+  perché dimenticare di ripartire costa la serie del gruppo — test `After_a_lapse_start_is_the_record_command`); UX2A-8 (`OnHabitUpdated` ricarica anche `PeriodRecords`); UX2A-9 (`ActionCommandView`:
   lo stato del `ToggleButton` torna a `IsDone` anche quando il comando non cambia nulla — test con la guardia `IsSaving`).
 - [ ] **Step 4: verdi + suite UI e Presentation.** **Step 5: commit** `fix(ui): i minori delle onde 1 e 2a su righe, cornice e testa`.
 
@@ -459,9 +464,8 @@ nel report.
 - **UX2A-1**: l'inizio è il più vecchio fra creazione e prima registrazione (Global Constraints; Task 1 e Task 8, Step 1-ter).
 - Giorno dell'abitudine indietro rispetto all'intestazione della Home: "reset 5:00" nella riga (Task 8, Step 1-bis).
 
-## Aperta
-
-- **L'astinenza in un gruppo** (decisione mia 1): da discutere con l'autore prima del Task 1.
+- **Astinenza in un gruppo**: fatta = giorno pulito; mai iniziata fuori dai conti; dopo una ricaduta si riparte solo con
+  "Inizia". Ripartire da soli resta una questione di modello (CM-5 nel tracker), per il dogfooding.
 
 ## Fuori da 2b
 

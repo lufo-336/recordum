@@ -88,7 +88,8 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 **Le decide il dogfooding — questioni di modello**
 - **CM-1** — "ripetibile" inerte sui tap-counter · **CM-2** — Sonno: totale o sessioni · **CM-3** — durata e unità
   separate (in parte risolta: l'unità è obbligatoria) · **CM-4** — più metriche durata e più cronometri (`active_timer` è
-  UNIQUE per abitudine) · **W23-VF8** — il badge del calendario conta le occorrenze, il totale somma
+  UNIQUE per abitudine) · **W23-VF8** — il badge del calendario conta le occorrenze, il totale somma · **CM-5** — ripartire
+  da soli dopo una ricaduta
 
 **Verso il pubblico — dopo F8**
 - **F0-14** — le notifiche si configurano ma nessun motore le fa scattare (E14)
@@ -1236,6 +1237,13 @@ adjudicano preferibilmente col dogfooding, E21):
   "unità obbligatoria" del 2026-08-07 ha tamponato per le metriche nuove, non risolto il modello).
 - **CM-4 — Più metriche durata / più cronometri** · `active_timer` ha UNIQUE su `habit_node_id`: il secondo
   cronometro simultaneo sulla stessa abitudine è strutturalmente impossibile oggi.
+- **CM-5 — Dopo una ricaduta, ripartire da soli?** (2026-10-30, discussione col piano 2b) · Oggi "Ho ceduto…"
+  chiude il periodo e non ne apre un altro: si resta in "ricaduta" finché non si preme "Inizia" (scelta di U9, che lascia
+  i periodi usabili come intervalli). In un gruppo, con la regola "fatta = giorno pulito", una ricaduta non ripresa rende
+  incompleti tutti i giorni finché non si riparte. Ripartire da soli per tutti romperebbe l'uso a intervalli: semmai una
+  scelta dell'abitudine, se l'uso vero la chiede. Nella stessa decisione: se serve un "cronometro generico" e dove
+  (un'astinenza usata così, o la sessione con più cronometri di CM-4). Per misurare il tempo di lettura oggi c'è il
+  contatore a sessione. `reported`, la decide il dogfooding.
 
 **Gotcha ambiente scoperto durante la verifica pre-merge (2026-08-11):**
 
