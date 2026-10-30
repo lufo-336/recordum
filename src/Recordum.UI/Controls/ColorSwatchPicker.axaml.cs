@@ -60,6 +60,7 @@ public partial class ColorSwatchPicker : UserControl
     private static readonly Regex HexRx = new("^#?[0-9A-Fa-f]{6}$", RegexOptions.Compiled);
 
     private const double Gap = 8;
+    private const double PanelWidth = 8 * 28 + 7 * Gap;
 
     private readonly Flyout _flyout = new() { Placement = PlacementMode.BottomEdgeAlignedLeft };
     private readonly HsvColorPicker _hsv = new() { HorizontalAlignment = HorizontalAlignment.Center };
@@ -83,7 +84,7 @@ public partial class ColorSwatchPicker : UserControl
         AutomationProperties.SetName(Trigger, Strings.HabitBuilder_Color);
         ToolTip.SetTip(Trigger, Strings.HabitBuilder_Color);
         _flyout.Content = BuildPanel();
-        _flyout.Opening += (_, _) => SyncAdvanced();
+        _flyout.Opening += (_, _) => { SyncAdvanced(); _hex.Text = Color.TrimStart('#'); _hex.Classes.Set("invalid", false); };
         _flyout.Opened += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(FocusSelected);
         Trigger.Flyout = _flyout;
         Refresh();
@@ -155,7 +156,7 @@ public partial class ColorSwatchPicker : UserControl
 
         return new StackPanel
         {
-            Width = 8 * 28 + 7 * Gap,
+            Width = PanelWidth,
             Children = { _paletteGrid, _recentLabel, _recent, _previewSection, _advancedToggle, _advanced },
         };
     }
@@ -232,10 +233,9 @@ public partial class ColorSwatchPicker : UserControl
         if (!string.Equals(_hsv.Color, Color, StringComparison.OrdinalIgnoreCase)) _hsv.Color = Color;
         _hex.Text = Color.TrimStart('#');
         _hex.Classes.Set("invalid", false);
-        _hex.ClearValue(TemplatedControl.BorderBrushProperty);
 
         _shades.Children.Clear();
-        foreach (var c in ShadeRamp.For(Color)) _shades.Children.Add(Swatch(c, width: 224.0 / 7, height: 22, radius: 0, margin: new Thickness(0)));
+        foreach (var c in ShadeRamp.For(Color)) _shades.Children.Add(Swatch(c, width: PanelWidth / 7, height: 22, radius: 0, margin: new Thickness(0)));
 
         foreach (var s in AllSwatches()) Mark(s);
         UpdatePreview();
@@ -341,13 +341,11 @@ public partial class ColorSwatchPicker : UserControl
             Color = "#" + text.TrimStart('#').ToUpperInvariant();
             _hex.Text = Color.TrimStart('#');
             _hex.Classes.Set("invalid", false);
-            _hex.ClearValue(TemplatedControl.BorderBrushProperty);
         }
         else
         {
             // Non valido: Color non cambia, il testo resta com'è e la casella lo dice con la cornice d'errore.
             _hex.Classes.Set("invalid", true);
-            _hex.SetResourceReference(TemplatedControl.BorderBrushProperty, "Brush.Danger");
         }
     }
 

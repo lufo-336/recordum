@@ -367,27 +367,82 @@ public class ColorPickerTests
         finally { w.Close(); }
     }
 
+    private static IBrush? Frame(TextBox t) => t.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_BorderElement").BorderBrush;
+
+    private static Color Solid(IBrush? b) => ((ISolidColorBrush)b!).Color;
+
+    private static void Show(ColorSwatchPicker picker)
+    {
+        var trigger = picker.GetVisualDescendants().OfType<Button>().First(b => b.Flyout is not null);
+        ((Flyout)trigger.Flyout!).ShowAt(trigger);
+        Pump();
+    }
+
     [AvaloniaFact]
-    public void Invalid_hex_keeps_the_colour_and_shows_the_error_frame()
+    public void Invalid_hex_keeps_the_colour_and_the_frame_is_danger_even_while_focused()
     {
         var picker = new ColorSwatchPicker { Color = "#808080" };
         var w = Host(picker);
         try
         {
-            var trigger = picker.GetVisualDescendants().OfType<Button>().First(b => b.Flyout is not null);
-            ((Flyout)trigger.Flyout!).ShowAt(trigger); // il riferimento a una risorsa si risolve solo nell'albero
-            Pump();
+            Show(picker);
             var hex = In<TextBox>(PanelOf(picker), "HexBox");
+            hex.Focus();
+            Pump();
+            var focusFrame = Solid(Frame(hex));
+            var danger = Solid((IBrush)Danger(hex)!);
+            focusFrame.Should().NotBe(danger);
             hex.Text = "12345";
             Enter(hex);
+            Pump();
             picker.Color.Should().Be("#808080");
+            hex.IsFocused.Should().BeTrue();
             hex.Classes.Should().Contain("invalid");
-            ((ISolidColorBrush)hex.BorderBrush!).Color.Should().Be(((ISolidColorBrush)Danger(hex).Should().BeAssignableTo<ISolidColorBrush>().Subject).Color);
+            Solid(Frame(hex)).Should().Be(danger);
 
             hex.Text = "12345A";
             Enter(hex);
+            Pump();
             picker.Color.Should().Be("#12345A");
             hex.Classes.Should().NotContain("invalid");
+            Solid(Frame(hex)).Should().Be(focusFrame, "valido: torna la cornice di fuoco");
+        }
+        finally { w.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void Reopening_resets_a_stale_invalid_hex()
+    {
+        var picker = new ColorSwatchPicker { Color = "#808080" };
+        var w = Host(picker);
+        try
+        {
+            Show(picker);
+            var hex = In<TextBox>(PanelOf(picker), "HexBox");
+            hex.Text = "zz";
+            Enter(hex);
+            hex.Classes.Should().Contain("invalid");
+            var flyout = (Flyout)picker.GetVisualDescendants().OfType<Button>().First(b => b.Flyout is not null).Flyout!;
+            flyout.Hide();
+            Pump();
+            Show(picker);
+            hex.Text.Should().Be("808080");
+            hex.Classes.Should().NotContain("invalid");
+        }
+        finally { w.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void The_shade_ramp_spans_the_panel_width()
+    {
+        var picker = new ColorSwatchPicker { Color = "#123456" };
+        var w = Host(picker);
+        try
+        {
+            Show(picker);
+            var panel = PanelOf(picker);
+            var shades = panel.GetLogicalDescendants().OfType<WrapPanel>().Single(p => p.Children.Count == 7);
+            shades.Children.Sum(c => c.Bounds.Width).Should().BeApproximately(8 * 28 + 7 * 8, 0.5);
         }
         finally { w.Close(); }
     }

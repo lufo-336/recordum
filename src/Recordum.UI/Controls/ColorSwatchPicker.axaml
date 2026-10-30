@@ -4,6 +4,18 @@
     <!-- Il trigger mostra il colore corrente; il Flyout (costruito in code-behind: tessere da elenchi che
          cambiano, nessun template con binding, come HeatmapStrip) porta HSV, tonalità, palette, recenti,
          preferiti ed esadecimale. Il contagocce di WPF non c'è: IScreenColorPicker è Windows-only. -->
+    <UserControl.Styles>
+        <!-- Esadecimale non valido: la cornice d'errore vince anche col fuoco e il passaggio del mouse (Fluent li ridisegna). -->
+        <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+        </Style>
+        <Style Selector="TextBox.invalid:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+        </Style>
+        <Style Selector="TextBox.invalid:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+        </Style>
+    </UserControl.Styles>
     <Button x:Name="Trigger" Width="28" Height="28" Padding="0" CornerRadius="4"
             Background="Transparent" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
         <Border x:Name="TriggerSwatch" CornerRadius="3"/>
