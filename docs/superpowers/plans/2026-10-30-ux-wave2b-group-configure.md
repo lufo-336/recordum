@@ -34,7 +34,10 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
 - **Il giorno si chiede a `DayBoundary`**: il giorno di una registrazione è quello della **figlia** (batch
   `IResetTimeResolver.GetDayBoundariesAsync`), il "oggi" della schermata del gruppo è quello del **gruppo**
   (`_dayBoundary` di `HabitScreenViewModel`). Mai `DateOnly.FromDateTime(clock.UtcNow…)`.
-- Una figlia **conta da quando esiste**: nessun giorno prima della sua creazione è previsto. Archiviate e nel cestino fuori.
+- **L'inizio di un'abitudine** (UX2A-1, decisione dell'autore del 2026-10-30) è il **più vecchio** fra il giorno di creazione e il
+  giorno della prima registrazione (per un'astinenza: l'inizio del primo periodo). Vale per l'abitudine sola (mappa "Tutto",
+  "in tutto", finestre "30/90 giorni" di 2a) e per le figlie di un gruppo; nessun giorno prima dell'inizio è previsto. Una data
+  d'inizio scelta dall'utente non serve: per un periodo qualunque c'è "Dal… al…". Archiviate e nel cestino fuori.
   I sottogruppi non sono figlie: le loro abitudini sì, a ogni profondità (come "3 di 5" in Home).
 - **Fatto, per un'astinenza** = giorno pulito: coperto da un periodo, escluso il giorno della ricaduta; il periodo aperto
   copre fino a oggi. Per ogni altro tipo: almeno una registrazione quel giorno.
@@ -83,6 +86,10 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
 - Produces:
   `public sealed record GroupChildHistory(Guid HabitNodeId, string Name, string ColorHex, HabitType Type, int Depth, DateOnly CreatedOn, ImmutableHashSet<DateOnly> Scheduled, ImmutableHashSet<DateOnly> Done);`
   `public interface IGroupHistoryQueryService { ValueTask<IReadOnlyList<GroupChildHistory>> GetAsync(Guid groupId, DateOnly from, DateOnly to, CancellationToken ct = default); }`
+  (`CreatedOn` porta **l'inizio** dei Global Constraints, non il solo giorno di creazione: chiamarlo `StartsOn`.)
+- Produces: `public interface IHabitStartQueryService { ValueTask<DateOnly> GetStartDayAsync(Guid habitNodeId, CancellationToken ct = default); }`
+  — la regola dell'inizio scritta **una volta**, nel confine dell'abitudine; `GroupHistoryQueryService` usa la stessa funzione
+  (in batch) e il Task 8 la usa per l'abitudine sola. Registrata come l'altra.
 - Regole: figlie = abitudini discendenti non archiviate e non cancellate, in ordine d'albero (`SortOrder`, depth-first; `Depth`
   0 = figlia diretta). Confini in batch (`GetDayBoundariesAsync`), una volta. `Scheduled` = giorni da `max(from, CreatedOn)` a
   `min(to, oggi della figlia)` previsti da `ScheduleEvaluator` (un'astinenza: ogni giorno). `Done` = per l'astinenza i giorni
@@ -93,7 +100,9 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
   `Subgroup_children_are_included_with_depth` (A, poi sottogruppo con B: due righe, B con `Depth` 1);
   `Archived_and_deleted_children_are_out`; `Done_days_use_each_childs_boundary` (figlia con reset 05:00, registrazione alle
   04:30 del 28 → `Done` contiene il 27); `Scheduled_respects_the_schedule` (lun-mer-ven: in una settimana tre giorni);
-  `Scheduled_starts_at_creation` (creata il 23: niente prima); `Future_days_are_neither`;
+  `Scheduled_starts_at_creation` (creata il 23, nessuna registrazione prima: niente prima del 23);
+  `Starts_at_the_oldest_of_creation_and_first_record` (creata il 23 con una registrazione "per un altro giorno" il 18 →
+  `StartsOn` 18, previsti dal 18; lo stesso per `GetStartDayAsync`); `Abstinence_starts_at_its_first_period`; `Future_days_are_neither`;
   `Abstinence_clean_days_exclude_the_lapse_day` (periodo dal 10 chiuso da una ricaduta il 15, nuovo periodo aperto dal 15:
   il giorno della ricaduta **non** è pulito anche se un periodo nuovo comincia quel giorno; 10–14 e 16–28 sì).
 - [ ] **Step 2: rosso visto** (`dotnet test tests/Recordum.Data.Tests --filter "FullyQualifiedName~GroupHistoryQueryServiceTests"`, contare i test).
@@ -120,13 +129,13 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
 - Produces: `GroupFiguresViewModel(IGroupHistoryQueryService history, IClock clock)`;
   `[ObservableProperty] ImmutableArray<HabitFigure> Items` (2–4 elementi);
   `Task LoadAsync(HabitNode group, DayBoundary day, GoalProgressCardViewModel goal, CancellationToken ct = default)` — una
-  chiamata alla query, da `CreatedOn` del gruppo a oggi. Un giorno è **completo** quando ogni figlia prevista quel giorno è
+  chiamata alla query, dal più vecchio fra la creazione del gruppo e lo `StartsOn` delle figlie, a oggi. Un giorno è **completo** quando ogni figlia prevista quel giorno è
   fatta; un giorno senza figlie previste non conta.
 
 | # | Valore | Didascalia |
 |---|---|---|
 | 1 | giorni completi di fila: da oggi indietro; un giorno senza figlie previste si salta; oggi incompleto non interrompe (la giornata è aperta), un giorno passato incompleto sì | `Group.Figures.CompleteRun` complete days in a row / giorni completi di fila |
-| 2 | % 30 g: giorni completi ÷ giorni con almeno una figlia prevista, finestra da `max(oggi − 29, creazione del gruppo)`; oggi con la stessa regola di `Action` in `HabitFiguresViewModel` (leggerla e riusarla) | `Figures.Pct30` (esiste) |
+| 2 | % 30 g: giorni completi ÷ giorni con almeno una figlia prevista, finestra da `max(oggi − 29, inizio del gruppo)`; oggi con la stessa regola di `Action` in `HabitFiguresViewModel` (leggerla e riusarla) | `Figures.Pct30` (esiste) |
 | 3 | obiettivo del gruppo, solo se `!goal.IsEmpty`: "{Actual} di {Target}" coi numeri della cultura | `goal.Name`, o `Group.Figures.Goal` group goal / obiettivo del gruppo se vuoto |
 | 4 | la più saltata (*facoltativo*, spec §12.8): la figlia con più giorni previsti e non fatti nella finestra, oggi escluso; assente se nessuna ne ha | `Group.Figures.MostSkipped` most skipped / la più saltata |
 
@@ -134,7 +143,7 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
 
 - [ ] **Step 1: test rossi** (`it-IT`, clock 28/10/2026 10:00, query finta): `Complete_run_counts_back_from_today`
   (completi 23–27, oggi a metà → 5); `A_day_without_scheduled_children_is_skipped`;
-  `Complete_days_ignore_days_before_a_child_existed` (B creata il 25: il 20 conta come completo con la sola A);
+  `Complete_days_ignore_days_before_a_child_existed` (B con `StartsOn` 25: il 20 conta come completo con la sola A);
   `Pct30_is_on_days_with_something_scheduled`; `Goal_figure_only_with_a_goal`; `Most_skipped_is_the_child_with_most_misses`
   e `Most_skipped_absent_when_nothing_missed`; `Empty_group_has_no_nan` (nessuna figlia: niente `NaN`, `Items` con "0" e "0%").
   `GroupProgressTests`: `Abstaining_child_counts_as_done_in_home_and_group` (un'azione fatta, un'astinenza in corso, una non
@@ -166,7 +175,7 @@ dell'onda 3), §7.1, §9 (onda 2), §10, Appendice A ("Configura"; "Home" per le
 - Produces: `public sealed record TogetherRow(Guid HabitNodeId, string Name, string ColorHex, int Depth, IReadOnlyList<HistoryDayCell> Cells);`
   `TogetherViewModel(IGroupHistoryQueryService history)`: `ObservableCollection<TogetherRow> Rows`;
   `Task LoadAsync(Guid groupId, DateOnly from, DateOnly to, DateOnly today, CancellationToken ct)` — una cella per giorno
-  del periodo: `Step` 4 se fatta, 0 se prevista e non fatta, `InRange` falso se non prevista (prima della creazione, giorno
+  del periodo: `Step` 4 se fatta, 0 se prevista e non fatta, `InRange` falso se non prevista (prima dell'inizio, giorno
   libero del programma), `IsFuture` dopo oggi. Non calcola altro (spec §6.3). Per "Tutto" e "Anno" le celle sono molte:
   la view le disegna (Task 4), il ViewModel non le riduce.
 - Produces: `PanoramicaViewModel.Map : HistoryMapViewModel` con un `CalendarMarkerProvider` dalla query: per giorno
@@ -381,9 +390,23 @@ nel report.
 - [ ] **Step 1: la riga** (Home e figlie del gruppo): variante "testo" sulla riga **selezionata** a ≥ 4,5:1 sul suo fondo
   (oggi ~4,1:1: calcolarla sul fondo della selezione, non sulla tinta; test di contrasto come `HabitColorsTests`); `HeatmapStrip`
   costruita **una volta** per riga (oggi fino a 4: contare le ricostruzioni con un contatore interno di test e ridurle
-  rimandando la ricostruzione a fine `ApplyTemplate`/`Arrange`); l'intestazione dei giorni col giorno dell'app e le strisce
-  col giorno dell'abitudine: decidere nel report (una riga d'avviso? strisce col giorno dell'app?) e **chiedere all'autore**
-  prima di cambiare il modello.
+  rimandando la ricostruzione a fine `ApplyTemplate`/`Arrange`).
+- [ ] **Step 1-bis: il giorno dell'abitudine indietro rispetto a quello dell'app** (decisione dell'autore del 2026-10-30,
+  opzione C): le strisce restano nel giorno dell'abitudine; nella riga (Home e figlie del gruppo) in cui il giorno
+  dell'abitudine è **prima** del giorno dell'app compare, subito a sinistra della striscia, `Home.Row.ResetPending` "reset {0}"
+  ("reset 5:00", 12, `Brush.TextFaint`, ora nel formato breve della cultura) col tooltip `Home.Row.ResetPending.Tip` "For
+  this habit the day ends at {0}: the last box is still yesterday." / "Per questa abitudine la giornata finisce alle {0}:
+  l'ultima casella è ancora ieri."; sparisce al reset dell'abitudine, col ticker che la Home ha già (`HomeClockTicker`), senza
+  ricaricare. Su `HomeRowViewModel` (additivo): `bool IsDayBehindApp`, `string? ResetPendingText`; il reset effettivo
+  dell'abitudine viene da `HomeTreeRow` se lo porta già (le strisce lo usano: verificarlo), altrimenti si aggiunge
+  `TimeOnly EffectiveResetTime` a `HomeTreeRow` (additivo, default dell'app). Test: `Row_shows_reset_while_its_day_lags`
+  (reset dell'app 00:00, dell'abitudine 05:00: alle 02:00 "reset 5:00" visibile; alle 06:00 nascosto, dopo un tick);
+  `Same_reset_never_shows_it`.
+- [ ] **Step 1-ter: UX2A-1 per l'abitudine sola**: `HabitScreenViewModel` prende `IHabitStartQueryService?` (parametro
+  opzionale in fondo; null = la creazione, com'è per WPF) e passa l'inizio a `HistoryPeriodViewModel.SetContext` e a
+  `HabitFiguresViewModel` al posto del giorno di creazione. Test, **rossi prima**: `All_includes_records_before_creation`
+  (creata il 3/1/2026, registrata il 28/12/2025 → "Tutto" ha due anni, il 28/12 ha `Step` > 0);
+  `Total_counts_records_before_creation`; `Pct30_window_starts_at_the_first_record`.
 - [ ] **Step 2: la cornice**: icona di "fatte" accesa con un contrasto da controllo attivo (≥ 3:1); il tempo del timer 15/600
   nella variante "testo" (oggi 13/600); il marchio in serif nell'errore fatale; l'avviso sulla passphrase **una** volta al
   primo avvio.
@@ -431,10 +454,14 @@ nel report.
 7. Il colore del segno delle note e i tag stanno in **Chi è** (la spec mette il primo lì; i tag non li nomina).
 8. I **Preferiti** restano (spec §7.1), dentro Avanzate; il mockup B li toglieva.
 
-## Decisioni aperte per l'autore (non bloccano il piano)
+## Decise dall'autore il 2026-10-30
 
-- **UX2A-1** — l'inizio di "Tutto" e dei numeri: creazione o primo dato. Vale anche per i numeri del gruppo (qui: creazione).
-- L'intestazione dei giorni della Home (giorno dell'app) contro le strisce (giorno dell'abitudine): Task 8, Step 1.
+- **UX2A-1**: l'inizio è il più vecchio fra creazione e prima registrazione (Global Constraints; Task 1 e Task 8, Step 1-ter).
+- Giorno dell'abitudine indietro rispetto all'intestazione della Home: "reset 5:00" nella riga (Task 8, Step 1-bis).
+
+## Aperta
+
+- **L'astinenza in un gruppo** (decisione mia 1): da discutere con l'autore prima del Task 1.
 
 ## Fuori da 2b
 
