@@ -23,6 +23,16 @@ public abstract partial class SectionViewModelBase : ObservableObject
     [ObservableProperty] private string? _errorMessage;
     [ObservableProperty] private bool _showAdvanced;
 
+    /// <summary>La voce in una riga, nella cultura corrente, per la riga chiusa di Configura. Mai "—": una voce
+    /// senza valore dice cosa manca. Vuota = la riga non ha riassunto.</summary>
+    public virtual string Summary => string.Empty;
+
+    /// <summary>Vero se la sezione ha un livello "Avanzate" dietro il suo contenuto principale.</summary>
+    public virtual bool HasAdvanced => false;
+
+    /// <summary>Alza il cambio di <see cref="Summary"/>: ogni sezione lo chiama dopo il caricamento e dopo ogni modifica.</summary>
+    protected void NotifySummary() => OnPropertyChanged(nameof(Summary));
+
     /// <summary>
     /// Runs the given persistence delegate and translates outcome into status transitions.
     /// Internal so tests can drive it directly; sections call it from their own OnXxxChanged partials.

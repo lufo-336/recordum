@@ -10,14 +10,38 @@ public sealed partial class StreakSectionViewModel(IHabitConfigService configs) 
 {
     public override string Title => Strings.Editor_Section_Streak;
 
+    public override bool HasAdvanced => true;
+
+    public override string Summary
+    {
+        get
+        {
+            var mode = StreakMode switch
+            {
+                StreakMode.Weekly => Strings.HabitBuilder_StreakMode_Weekly,
+                StreakMode.Occurrences => Strings.HabitBuilder_StreakMode_Occurrences,
+                StreakMode.Both => Strings.HabitBuilder_StreakMode_Both,
+                _ => Strings.HabitBuilder_StreakMode_Daily,
+            };
+            var recovery = StreakRecovery switch
+            {
+                StreakRecovery.GraceDay => Strings.HabitBuilder_Recovery_GraceDay,
+                StreakRecovery.Manual => Strings.HabitBuilder_Recovery_Manual,
+                StreakRecovery.Retroactive => Strings.HabitBuilder_Recovery_Retroactive,
+                _ => null,
+            };
+            return recovery is null ? mode : $"{mode} · {recovery}";
+        }
+    }
+
     private const int MaxToleranceMinutes = 1440;
 
     private readonly IHabitConfigService _configs = configs;
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private StreakMode _streakMode = StreakMode.Daily;
-    [ObservableProperty] private StreakRecovery _streakRecovery = StreakRecovery.None;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private StreakMode _streakMode = StreakMode.Daily;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private StreakRecovery _streakRecovery = StreakRecovery.None;
     [ObservableProperty] private int? _streakToleranceMinutes;
 
     public Task LoadAsync(HabitNode node, HabitConfig? cfg)

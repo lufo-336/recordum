@@ -7,6 +7,7 @@ using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.ViewModels.HabitBuilder.Preview;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 
@@ -20,6 +21,34 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
 {
     public override string Title => Strings.Editor_Section_HomeRow;
 
+    /// <summary>L'etichetta del valore accanto al nome, poi quella della striscia.</summary>
+    public override string Summary => (SelectedKeyFigure, SelectedStrip) switch
+    {
+        ({ } kf, { } strip) => $"{kf.Label} · {strip.Label}",
+        ({ } kf, null) => kf.Label,
+        _ => string.Empty,
+    };
+
+    /// <summary>La riga Home di campione con le scelte correnti; null finche' la sezione non e' caricata.</summary>
+    [ObservableProperty] private HomeRowPreviewModel? _preview;
+
+    private HabitType? _type;
+    private (string Name, string Color, string? Icon) _identity = (string.Empty, "#888888", null);
+
+    /// <summary>Nome, colore e icona dell'editor (li passa <c>HabitEditorViewModel</c>): la riga di campione li mostra.</summary>
+    public void SetIdentity(string name, string color, string? icon)
+    {
+        _identity = (name, color, icon);
+        RebuildPreview();
+    }
+
+    private void RebuildPreview()
+    {
+        if (_type is not { } type || SelectedKeyFigure is null || SelectedStrip is null) { Preview = null; return; }
+        Preview = SamplePreviewFactory.HomeRowFor(type, SelectedKeyFigure.Kind, SelectedStrip.Strip,
+            _identity.Name, _identity.Color, _identity.Icon);
+    }
+
     private readonly IHabitUiPrefsService _uiPrefs = uiPrefs;
     private bool _loading;
     internal Guid NodeId { get; private set; }
@@ -27,8 +56,8 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
     public ObservableCollection<KeyFigureOption> KeyFigureOptions { get; } = new();
     public ObservableCollection<StripOption> StripOptions { get; } = new();
 
-    [ObservableProperty] private KeyFigureOption? _selectedKeyFigure;
-    [ObservableProperty] private StripOption? _selectedStrip;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private KeyFigureOption? _selectedKeyFigure;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private StripOption? _selectedStrip;
 
     public override bool IsApplicable(NodeType node, HabitType? habit)
         => node == NodeType.Habit && habit is not null;
@@ -41,6 +70,7 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
             NodeId = node.Id;
             var prefs = await _uiPrefs.GetAsync(node.Id).ConfigureAwait(true);
             var type = node.HabitType ?? HabitType.Action;
+            _type = type;
 
             KeyFigureOptions.Clear();
             foreach (var kind in HomeRowPresentation.AllowedKeyFigures(type))
@@ -55,10 +85,12 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
             SelectedStrip = StripOptions.FirstOrDefault(o => o.Strip == resolvedStrip);
         }
         finally { _loading = false; }
+        RebuildPreview();
     }
 
     partial void OnSelectedKeyFigureChanged(KeyFigureOption? value)
     {
+        RebuildPreview();
         if (_loading || NodeId == Guid.Empty || value is null) return;
         _ = ApplyAsync(async () =>
         {
@@ -69,6 +101,7 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
 
     partial void OnSelectedStripChanged(StripOption? value)
     {
+        RebuildPreview();
         if (_loading || NodeId == Guid.Empty || value is null) return;
         _ = ApplyAsync(async () =>
         {

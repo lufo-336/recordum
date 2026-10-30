@@ -10,6 +10,15 @@ public sealed partial class TagsSectionViewModel(ITagService tags) : SectionView
 {
     public override string Title => Strings.Editor_Section_Tags;
 
+    public override string Summary
+    {
+        get
+        {
+            var names = AvailableTags.Where(c => c.IsSelected).Select(c => c.Name).ToArray();
+            return names.Length == 0 ? Strings.Editor_Summary_NoTags : string.Join(", ", names);
+        }
+    }
+
     private readonly ITagService _tags = tags;
     internal Guid NodeId { get; private set; }
 
@@ -25,6 +34,7 @@ public sealed partial class TagsSectionViewModel(ITagService tags) : SectionView
         var attachedIds = new HashSet<Guid>(attached.Select(t => t.Id));
         foreach (var t in allTags)
             AvailableTags.Add(new TagChipViewModel(t.Id, t.Name, attachedIds.Contains(t.Id)));
+        NotifySummary();
     }
 
     [RelayCommand]
@@ -32,6 +42,7 @@ public sealed partial class TagsSectionViewModel(ITagService tags) : SectionView
     {
         if (chip is null || NodeId == Guid.Empty) return;
         chip.IsSelected = !chip.IsSelected;
+        NotifySummary();
         var selectedIds = AvailableTags
             .Where(c => c.IsSelected)
             .Select(c => c.Id)

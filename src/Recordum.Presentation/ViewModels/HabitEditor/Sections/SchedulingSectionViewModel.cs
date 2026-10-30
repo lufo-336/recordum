@@ -1,16 +1,31 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.ViewModels.HabitScreen;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 
 public sealed partial class SchedulingSectionViewModel(IHabitConfigService configs) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_Scheduling;
+
+    public override string Summary
+    {
+        get
+        {
+            var text = ScheduleText.Describe(new HabitConfig
+            {
+                ScheduleType = ScheduleType, ScheduleDaysJson = ScheduleDaysJson,
+                ScheduleWeeklyTarget = ScheduleWeeklyTarget, ScheduleEveryXDays = ScheduleEveryXDays,
+            }, CultureInfo.CurrentCulture);
+            return string.IsNullOrEmpty(text) ? Strings.Editor_Summary_Custom : text;
+        }
+    }
 
     // Ordered day keys matching ScheduleEvaluator's 3-letter convention.
     private static readonly (string Key, string Label)[] DayDefinitions =
@@ -23,10 +38,10 @@ public sealed partial class SchedulingSectionViewModel(IHabitConfigService confi
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private ScheduleType _scheduleType = ScheduleType.Daily;
-    [ObservableProperty] private string? _scheduleDaysJson;
-    [ObservableProperty] private int? _scheduleWeeklyTarget;
-    [ObservableProperty] private int? _scheduleEveryXDays;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private ScheduleType _scheduleType = ScheduleType.Daily;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private string? _scheduleDaysJson;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private int? _scheduleWeeklyTarget;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private int? _scheduleEveryXDays;
     [ObservableProperty] private string? _scheduleMonthlyDaysJson;
 
     /// <summary>

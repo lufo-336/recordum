@@ -13,11 +13,22 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
 {
     public override string Title => Strings.Editor_Section_Metrics;
 
+    public override string Summary => Metrics.Count == 0
+        ? Strings.Editor_Summary_NoFields
+        : string.Join(", ", Metrics.Select(m => m.Name));
+
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;
     internal Guid NodeId { get; private set; }
 
     public ObservableCollection<MetricRowViewModel> Metrics { get; } = new();
+
+    private void Track(MetricRowViewModel row)
+    {
+        row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MetricRowViewModel.Name)) NotifySummary(); };
+        Metrics.Add(row);
+        NotifySummary();
+    }
     public ObservableCollection<UnitOfMeasure> AvailableUnits { get; } = new();
 
     public async Task LoadAsync(HabitNode node)
@@ -28,6 +39,7 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
         // property change it might still receive from a stale binding during teardown.
         foreach (var row in Metrics) row.Detach();
         Metrics.Clear();
+        NotifySummary();
         AvailableUnits.Clear();
         foreach (var u in await _refData.ListUnitsAsync()) AvailableUnits.Add(u);
 
@@ -36,7 +48,7 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
         // collection on the next load can never coerce a live row's SelectedValue to null (4d01f9c).
         var units = AvailableUnits.ToList();
         foreach (var m in (await _metrics.ListByHabitAsync(node.Id)).OrderBy(m => m.SortOrder))
-            Metrics.Add(new MetricRowViewModel(m, _metrics, units));
+            Track(new MetricRowViewModel(m, _metrics, units));
     }
 
     public override bool IsApplicable(NodeType node, HabitType? habit) =>
@@ -55,7 +67,7 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
             SortOrder = Metrics.Count,
         };
         await ApplyAsync(() => _metrics.CreateAsync(draft).AsTask());
-        Metrics.Add(new MetricRowViewModel(draft, _metrics, AvailableUnits.ToList()));
+        Track(new MetricRowViewModel(draft, _metrics, AvailableUnits.ToList()));
     }
 
     [RelayCommand]
@@ -64,6 +76,7 @@ public sealed partial class MetricsSectionViewModel(IMetricDefinitionService met
         if (row is null) return;
         await ApplyAsync(() => _metrics.DeleteAsync(row.Id).AsTask());
         Metrics.Remove(row);
+        NotifySummary();
     }
 }
 

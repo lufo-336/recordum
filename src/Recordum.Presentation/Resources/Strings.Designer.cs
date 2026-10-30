@@ -753,6 +753,16 @@ public static class Strings
     public static string Group_Section_Today => Get("Group.Section.Today");
     public static string Group_Section_Together => Get("Group.Section.Together");
     public static string Group_Map_Legend => Get("Group.Map.Legend");
+    public static string Editor_Summary_Custom => Get("Editor.Summary.Custom");
+    public static string Editor_Summary_NoGoal => Get("Editor.Summary.NoGoal");
+    public static string Editor_Summary_Inherited => Get("Editor.Summary.Inherited");
+    public static string Editor_Summary_InheritedBare => Get("Editor.Summary.InheritedBare");
+    public static string Editor_Summary_NoFields => Get("Editor.Summary.NoFields");
+    public static string Editor_Summary_Off => Get("Editor.Summary.Off");
+    public static string Editor_Summary_NoTags => Get("Editor.Summary.NoTags");
+    public static string Editor_Summary_ComingSoon => Get("Editor.Summary.ComingSoon");
+    public static string Editor_Summary_MultiplePerDay => Get("Editor.Summary.MultiplePerDay");
+    public static string Editor_Summary_OncePerDay => Get("Editor.Summary.OncePerDay");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

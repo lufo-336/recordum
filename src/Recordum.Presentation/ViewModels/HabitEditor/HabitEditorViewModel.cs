@@ -95,7 +95,8 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IFavoriteColorStore favoriteColors,
         IScreenColorPicker screenPicker,
         IHabitUiPrefsService uiPrefs,
-        IEventBus? events = null)
+        IEventBus? events = null,
+        IResetTimeResolver? resetTimes = null)
     {
         ArgumentNullException.ThrowIfNull(nodes);
         ArgumentNullException.ThrowIfNull(configs);
@@ -121,7 +122,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Tags = new TagsSectionViewModel(tags);
         AiSharing = new AiSharingSectionViewModel(nodes);
         DataSource = new DataSourceSectionViewModel(appSettings);
-        ResetTime = new ResetTimeSectionViewModel(nodes);
+        ResetTime = new ResetTimeSectionViewModel(nodes, resetTimes);
         HomeRow = new HomeRowSectionViewModel(uiPrefs, events);
 
         Sections = new SectionViewModelBase[]
@@ -240,6 +241,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
             await Notes.LoadAsync(node, cfg);
             await Tags.LoadAsync(node);
             await HomeRow.LoadAsync(node);
+            HomeRow.SetIdentity(Name, Color, Icon);
             await AiSharing.LoadAsync(node);
             await DataSource.LoadAsync(node, cfg);
             await ResetTime.LoadAsync(node);
@@ -266,6 +268,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     partial void OnNameChanged(string value)
     {
+        HomeRow.SetIdentity(value, Color, Icon);
         if (_loading || Node is null) return;
         var trimmed = value?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(trimmed))
@@ -297,6 +300,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     partial void OnColorChanged(string value)
     {
+        HomeRow.SetIdentity(Name, value, Icon);
         if (_loading || Node is null) return;
         if (string.IsNullOrEmpty(value) || !HexColorPattern.IsMatch(value))
         {
@@ -310,6 +314,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
 
     partial void OnIconChanged(string? value)
     {
+        HomeRow.SetIdentity(Name, Color, value);
         if (_loading || Node is null) return;
         _ = ApplyHeaderAsync(() => _nodes.UpdateAsync(Node.Id, n => n.Icon = value).AsTask());
     }

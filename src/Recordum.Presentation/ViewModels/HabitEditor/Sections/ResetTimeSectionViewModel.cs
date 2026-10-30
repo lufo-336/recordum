@@ -1,3 +1,4 @@
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI strings
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
@@ -6,17 +7,43 @@ using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 
-public sealed partial class ResetTimeSectionViewModel(IHabitNodeService nodes) : SectionViewModelBase
+public sealed partial class ResetTimeSectionViewModel(IHabitNodeService nodes, IResetTimeResolver? resolver = null) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_ResetTime;
 
     private readonly IHabitNodeService _nodes = nodes;
+    private readonly IResetTimeResolver? _resolver = resolver;
+    private string? _inheritedText;
+
+    /// <summary>"5:00" se l'orario e' proprio; altrimenti quello che l'abitudine eredita (gruppo o app).</summary>
+    public override string Summary
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(ResetTimeText))
+                return TimeOnly.TryParseExact(ResetTimeText, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var own)
+                    ? Hm(own) : ResetTimeText;
+            return _inheritedText is null
+                ? Strings.Editor_Summary_InheritedBare
+                : string.Format(CultureInfo.CurrentCulture, Strings.Editor_Summary_Inherited, _inheritedText);
+        }
+    }
+
+    private static string Hm(TimeOnly t) => t.ToString("H:mm", CultureInfo.InvariantCulture);
+
+    private async Task RefreshInheritedAsync()
+    {
+        _inheritedText = _resolver is null || NodeId == Guid.Empty
+            ? null
+            : Hm(await _resolver.GetEffectiveResetTimeAsync(NodeId).ConfigureAwait(true));
+        NotifySummary();
+    }
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private string _resetTimeText = string.Empty;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private string _resetTimeText = string.Empty;
 
-    public Task LoadAsync(HabitNode node)
+    public async Task LoadAsync(HabitNode node)
     {
         _loading = true;
         try
@@ -25,7 +52,7 @@ public sealed partial class ResetTimeSectionViewModel(IHabitNodeService nodes) :
             ResetTimeText = node.ResetTime?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty;
         }
         finally { _loading = false; }
-        return Task.CompletedTask;
+        await RefreshInheritedAsync().ConfigureAwait(true);
     }
 
     partial void OnResetTimeTextChanged(string value)
@@ -33,7 +60,11 @@ public sealed partial class ResetTimeSectionViewModel(IHabitNodeService nodes) :
         if (_loading || NodeId == Guid.Empty) return;
         if (string.IsNullOrWhiteSpace(value))
         {
-            _ = ApplyAsync(() => _nodes.UpdateAsync(NodeId, n => n.ResetTime = null).AsTask());
+            _ = ApplyAsync(async () =>
+            {
+                await _nodes.UpdateAsync(NodeId, n => n.ResetTime = null).ConfigureAwait(true);
+                await RefreshInheritedAsync().ConfigureAwait(true);
+            });
             return;
         }
         if (!TimeOnly.TryParseExact(value, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))

@@ -10,6 +10,8 @@ public sealed partial class AiSharingSectionViewModel(IHabitNodeService nodes) :
 {
     public override string Title => Strings.Editor_Section_AiSharing;
 
+    public override string Summary => Strings.Editor_Summary_ComingSoon;
+
     private readonly IHabitNodeService _nodes = nodes;
     private bool _loading;
     internal Guid NodeId { get; private set; }

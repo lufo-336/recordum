@@ -31,37 +31,49 @@ public sealed class SamplePreviewFactory(IClock clock)
         return new BuilderPreviewModel(BuildHomeRow(input), BuildToday(input), BuildRecording(input));
     }
 
-    private static HomeRowPreviewModel BuildHomeRow(BuilderPreviewInput input)
+    private static HomeRowPreviewModel BuildHomeRow(BuilderPreviewInput input) =>
+        HomeRowFor(input.Type, HomeRowPresentation.ResolveKeyFigure(input.Type, null),
+            HomeRowPresentation.ResolveStrip(input.Type, null), input.Name, input.Color, input.Icon, input.Fields);
+
+    /// <summary>La riga Home di campione con valore e striscia <b>scelti</b> (Configura: anteprima viva). Stessa
+    /// logica del builder, che passa i suoi default; senza campi il valore del contatore e' senza unita'.</summary>
+    public static HomeRowPreviewModel HomeRowFor(HabitType type, KeyFigureKind keyFigure, HomeStrip strip,
+        string name, string color, string? icon) =>
+        HomeRowFor(type, keyFigure, strip, name, color, icon, []);
+
+    private static HomeRowPreviewModel HomeRowFor(HabitType type, KeyFigureKind keyFigure, HomeStrip strip,
+        string name, string color, string? icon, IReadOnlyList<PreviewField> fields)
     {
-        var length = HomeRowPresentation.ResolveStrip(input.Type, null) == HomeStrip.Days14 ? 14 : 7;
+        var length = strip switch { HomeStrip.Days14 => 14, HomeStrip.Days7 => 7, _ => 0 };
         var counts = Enumerable.Range(0, length).Select(i => DayPattern[i % DayPattern.Length]).ToImmutableArray();
         // Bars and Ramp read Fractions; the others read Counts. Filling both keeps the strip honest
         // whichever style the type resolves to.
         var fractions = counts.Select(c => c == 0 ? 0d : 0.4 + (0.2 * (c % 3))).ToImmutableArray();
         return new HomeRowPreviewModel(
-            Name: string.IsNullOrWhiteSpace(input.Name) ? Resources.Strings.HabitBuilder_Preview_UnnamedHabit : input.Name,
-            Color: input.Color,
-            Icon: input.Icon,
-            KeyFigure: KeyFigureText(input),
-            StripStyle: HomeRowPresentation.ResolveStripStyle(input.Type),
+            Name: string.IsNullOrWhiteSpace(name) ? Resources.Strings.HabitBuilder_Preview_UnnamedHabit : name,
+            Color: color,
+            Icon: icon,
+            KeyFigure: KeyFigureText(keyFigure, fields),
+            StripStyle: HomeRowPresentation.ResolveStripStyle(type),
             Counts: counts,
             Fractions: fractions);
     }
 
-    private static string? KeyFigureText(BuilderPreviewInput input) =>
-        HomeRowPresentation.ResolveKeyFigure(input.Type, null) switch
+    private static string? KeyFigureText(KeyFigureKind kind, IReadOnlyList<PreviewField> fields) =>
+        kind switch
         {
             KeyFigureKind.Streak => SampleStreak.ToString(CultureInfo.CurrentCulture),
             KeyFigureKind.DoneToday => "✓",
-            KeyFigureKind.CounterTotal => FormatSample(FirstMeasured(input)),
+            KeyFigureKind.CounterTotal => FormatSample(FirstMeasured(fields)),
             KeyFigureKind.LiveClock => SampleCleanStreak,
-            KeyFigureKind.StateValue => SampleStep(FirstMeasured(input)),
+            KeyFigureKind.StateValue => SampleStep(FirstMeasured(fields)),
             KeyFigureKind.JournalToday => "1",
+            KeyFigureKind.JournalEntriesWeek => "3",
             _ => null,
         };
 
-    private static PreviewField? FirstMeasured(BuilderPreviewInput input) =>
-        input.Fields.FirstOrDefault(f => f.Nature != FieldNature.Text);
+    private static PreviewField? FirstMeasured(IReadOnlyList<PreviewField> fields) =>
+        fields.FirstOrDefault(f => f.Nature != FieldNature.Text);
 
     /// <summary>The sample value with the field's real unit — including a unit staged in this very
     /// session, which is the point: the preview shows what the user will actually read.</summary>
@@ -96,20 +108,20 @@ public sealed class SamplePreviewFactory(IClock clock)
                 {
                     TodayTotal = SampleValue,
                     TodayTotalDisplay = SampleValue.ToString("0.##", CultureInfo.CurrentCulture),
-                    UnitCode = FirstMeasured(input)?.UnitCode,
+                    UnitCode = FirstMeasured(input.Fields)?.UnitCode,
                     HasGoal = input.GoalTarget is > 0,
                     GoalFraction = input.GoalTarget is { } t and > 0 ? Math.Min(1d, (double)(SampleValue / t)) : 0d,
                 };
                 return counter;
             case HabitType.State:
-                var labels = FirstMeasured(input)?.ScaleLabels ?? [];
+                var labels = FirstMeasured(input.Fields)?.ScaleLabels ?? [];
                 return new StateTodayContent(new SampleServices.NoCompletions(), new SampleServices.NoMetrics(),
                     new SampleServices.NoReferenceData(), _clock)
                 {
                     Min = 1,
                     Max = Math.Max(2, labels.Count),
                     SliderValue = 2,
-                    CurrentLabel = SampleStep(FirstMeasured(input)),
+                    CurrentLabel = SampleStep(FirstMeasured(input.Fields)),
                 };
             case HabitType.Resistance:
                 var resistance = new ResistanceTodayContent(new SampleServices.NoAbstinence(), _clock, NullTickSourceFactory.Instance)

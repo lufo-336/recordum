@@ -2139,4 +2139,34 @@ Details: {0}</value>
   <data name="Group.Map.Legend" xml:space="preserve">
     <value>intensity = how many children that day; full = all</value>
   </data>
+  <data name="Editor.Summary.Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Editor.Summary.NoGoal" xml:space="preserve">
+    <value>No goal</value>
+  </data>
+  <data name="Editor.Summary.Inherited" xml:space="preserve">
+    <value>{0} (inherited)</value>
+  </data>
+  <data name="Editor.Summary.InheritedBare" xml:space="preserve">
+    <value>Inherited</value>
+  </data>
+  <data name="Editor.Summary.NoFields" xml:space="preserve">
+    <value>No fields</value>
+  </data>
+  <data name="Editor.Summary.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Editor.Summary.NoTags" xml:space="preserve">
+    <value>No tags</value>
+  </data>
+  <data name="Editor.Summary.ComingSoon" xml:space="preserve">
+    <value>Coming soon</value>
+  </data>
+  <data name="Editor.Summary.MultiplePerDay" xml:space="preserve">
+    <value>Several times a day</value>
+  </data>
+  <data name="Editor.Summary.OncePerDay" xml:space="preserve">
+    <value>Once a day</value>
+  </data>
 </root>

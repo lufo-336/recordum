@@ -12,13 +12,31 @@ public sealed partial class TimerSectionViewModel(IHabitConfigService configs) :
 {
     public override string Title => Strings.Editor_Section_Timer;
 
+    public override bool HasAdvanced => true;
+
+    public override string Summary
+    {
+        get
+        {
+            if (!HasIntegratedTimer) return Strings.Editor_Summary_Off;
+            var mode = TimerMode switch
+            {
+                Recordum.Core.Enums.TimerMode.Countdown => Strings.Editor_TimerMode_Countdown,
+                Recordum.Core.Enums.TimerMode.Primary => Strings.Editor_TimerMode_Primary,
+                Recordum.Core.Enums.TimerMode.Session => Strings.Editor_TimerMode_Session,
+                _ => Strings.Editor_TimerMode_Stopwatch,
+            };
+            return TimerTargetSeconds is int secs and > 0 ? $"{mode} · {Recordum.Presentation.Formatting.DurationFormat.Format(secs)}" : mode;
+        }
+    }
+
     private readonly IHabitConfigService _configs = configs;
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private bool _hasIntegratedTimer;
-    [ObservableProperty] private TimerMode? _timerMode;
-    [ObservableProperty] private int? _timerTargetSeconds;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private bool _hasIntegratedTimer;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private TimerMode? _timerMode;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private int? _timerTargetSeconds;
     [ObservableProperty] private bool _timerAutoPrompt;
     [ObservableProperty] private int? _restTimerSeconds;
     [ObservableProperty] private bool _sessionBaseTimer;

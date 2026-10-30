@@ -1,3 +1,5 @@
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI strings
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
@@ -10,16 +12,37 @@ public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionVi
 {
     public override string Title => Strings.Editor_Section_Goal;
 
+    public override bool HasAdvanced => true;
+
+    // ponytail: niente unita' nel riassunto: il Goal non la porta (sta sulla metrica) e la sezione non la conosce.
+    public override string Summary
+    {
+        get
+        {
+            if (TargetValue <= 0 && string.IsNullOrWhiteSpace(GoalName)) return Strings.Editor_Summary_NoGoal;
+            var culture = CultureInfo.CurrentCulture;
+            var period = PeriodType switch
+            {
+                GoalPeriodType.Rolling => string.Format(culture, Strings.Detail_GoalCard_Period_LastNDays, RollingDays ?? 0),
+                GoalPeriodType.Fixed => PeriodStart is { } s && PeriodEnd is { } e
+                    ? string.Create(culture, $"{s:d} – {e:d}") : Strings.Editor_GoalPeriod_Fixed,
+                _ => Strings.Editor_GoalPeriod_Open,
+            };
+            var tail = string.Create(culture, $"{TargetValue:0.##} {period}");
+            return string.IsNullOrWhiteSpace(GoalName) ? tail : $"{GoalName} · {tail}";
+        }
+    }
+
     private readonly IGoalService _goals = goals;
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private string _goalName = string.Empty;
-    [ObservableProperty] private decimal _targetValue;
-    [ObservableProperty] private GoalPeriodType _periodType = GoalPeriodType.Open;
-    [ObservableProperty] private DateOnly? _periodStart;
-    [ObservableProperty] private DateOnly? _periodEnd;
-    [ObservableProperty] private int? _rollingDays;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private string _goalName = string.Empty;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private decimal _targetValue;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private GoalPeriodType _periodType = GoalPeriodType.Open;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private DateOnly? _periodStart;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private DateOnly? _periodEnd;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private int? _rollingDays;
 
     public async Task LoadAsync(HabitNode node)
     {

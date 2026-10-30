@@ -15,15 +15,20 @@ public sealed partial class RegistrationSectionViewModel(
 {
     public override string Title => Strings.Editor_Section_Registration;
 
+    public override string Summary =>
+        ShowJournalGesture ? SelectedGesture?.Label ?? string.Empty
+        : ShowRepeatable ? (Repeatable ? Strings.Editor_Summary_MultiplePerDay : Strings.Editor_Summary_OncePerDay)
+        : string.Empty;
+
     private readonly IHabitConfigService _configs = configs;
     private readonly IHabitUiPrefsService _uiPrefs = uiPrefs;
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
-    [ObservableProperty] private bool _repeatable;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private bool _repeatable;
     [ObservableProperty] private bool _showRepeatable;
     [ObservableProperty] private bool _showJournalGesture;
-    [ObservableProperty] private JournalGestureOption? _selectedGesture;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Summary))] private JournalGestureOption? _selectedGesture;
 
     /// <summary>Lista fissa: non e' mai svuotata, quindi non puo' innescare la coercizione-a-null
     /// che ha causato i bug 4d01f9c / 1d96967.</summary>
@@ -54,6 +59,7 @@ public sealed partial class RegistrationSectionViewModel(
             SelectedGesture = GestureOptions.First(o => o.Gesture == gesture);
         }
         finally { _loading = false; }
+        NotifySummary();
     }
 
     partial void OnRepeatableChanged(bool value)
