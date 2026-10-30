@@ -4,7 +4,7 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-10-29
+## Dove siamo — 2026-10-30
 
 - **Branch di lavoro**: `ux2-habit-screen`, da `main` (`c2887bd1`, 2026-10-28): **onda 2a della direzione visiva a codice
   completo** (piano `docs/superpowers/plans/2026-10-29-ux-wave2a-habit-screen.md`, 10 task), review dell'intero branch fatta
@@ -14,9 +14,18 @@
   (heatmap disegnata), il giorno con la sua nota e l'elenco virtualizzato. **Prossimo: l'autore guarda i PNG (artefatti
   della CI) e fa il merge in `main`; poi il piano 2b** (gruppo con Panoramica e "Insieme", Configura in cinque blocchi,
   scelta del colore): **scritto il 2026-10-30**, `docs/superpowers/plans/2026-10-30-ux-wave2b-group-configure.md` (9 task),
-  branch `ux2b-group-configure` impilato su `ux2-habit-screen`, da approvare ed eseguire. Decisioni aperte dell'onda: **UX2A-1** (le registrazioni prima della creazione restano fuori da
-  "Tutto" e dai numeri) e i minori UX2A-2…9 nel tracker. I test di prestazioni non girano in CI (oscillano sui runner
-  condivisi).
+  branch `ux2b-group-configure` impilato su `ux2-habit-screen`, **in esecuzione** (subagent-driven). Al 2026-10-30, testa
+  `40c5f8e3`: **Task 1–7 completi**, ognuno con la sua review (query delle figlie; "x di y" e numeri del gruppo con
+  l'astinenza in corso fatta; figlie come righe della Home, "Insieme" e mappa; la schermata del gruppo; i riassunti di
+  Configura; Configura in cinque blocchi e la Configura del gruppo; la scelta del colore). **Task 8 a codice completo ma
+  senza review** (fermato dall'autore): 4 commit `518a9e11..40c5f8e3` (UX2A-1 per l'abitudine sola, UX2A-8, "reset 5:00"
+  nella riga, striscia costruita una volta, cornice, UX2A-5/6/9); la suite intera non è stata rieseguita dopo l'ultimo.
+  **Si riprende da qui**: review del Task 8 (pacchetto `3108cd98..HEAD`), poi il Task 9 (PNG, inventario, prestazioni,
+  documenti, review dell'intero branch, CI). Ledger e rulings in `.superpowers/sdd/2026-10-30-ux-wave2b-group-configure/`
+  (solo su Fedora, non versionato). Decise dall'autore il 2026-10-30: **UX2A-1** (l'inizio è il più vecchio fra creazione e
+  prima registrazione), "reset 5:00" nella riga quando il giorno dell'abitudine è indietro, astinenza nel gruppo fatta nei
+  giorni puliti (mai iniziata fuori dai conti; ripartire dopo una ricaduta resta **CM-5**). I test di prestazioni non
+  girano in CI (oscillano sui runner condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
