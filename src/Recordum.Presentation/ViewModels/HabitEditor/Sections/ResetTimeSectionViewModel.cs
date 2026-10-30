@@ -33,9 +33,13 @@ public sealed partial class ResetTimeSectionViewModel(IHabitNodeService nodes, I
 
     private async Task RefreshInheritedAsync()
     {
-        _inheritedText = _resolver is null || NodeId == Guid.Empty
-            ? null
-            : Hm(await _resolver.GetEffectiveResetTimeAsync(NodeId).ConfigureAwait(true));
+        _inheritedText = null;
+        if (_resolver is not null && NodeId != Guid.Empty)
+        {
+            // Un riassunto non deve far fallire il caricamento dell'editor: se il resolver cade, resta "Ereditato".
+            try { _inheritedText = Hm(await _resolver.GetEffectiveResetTimeAsync(NodeId).ConfigureAwait(true)); }
+            catch (Exception) { _inheritedText = null; }
+        }
         NotifySummary();
     }
     private bool _loading;

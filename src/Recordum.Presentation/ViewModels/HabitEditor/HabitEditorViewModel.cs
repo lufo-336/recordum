@@ -116,7 +116,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Metrics = new MetricsSectionViewModel(metrics, refData);
         Scales = new ScalesSectionViewModel(metrics, refData);
         Registration = new RegistrationSectionViewModel(configs, uiPrefs);
-        Goal = new GoalSectionViewModel(goals);
+        Goal = new GoalSectionViewModel(goals, metrics, refData);
         Notifications = new NotificationsSectionViewModel(notifications);
         Notes = new NotesSectionViewModel(configs, recentColors, favoriteColors, _screenPicker);
         Tags = new TagsSectionViewModel(tags);

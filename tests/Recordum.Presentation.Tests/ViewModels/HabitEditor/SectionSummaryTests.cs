@@ -92,6 +92,45 @@ public class SectionSummaryTests : IDisposable
     }
 
     [Fact]
+    public async Task Goal_summary_includes_the_metric_unit_and_no_dangling_space_without()
+    {
+        var node = Habit();
+        var refData = new FakeReferenceData();
+        var unit = refData.Units[0];
+        var metrics = new FakeMetricDefinitionService();
+        var metricId = Guid.NewGuid();
+        await metrics.CreateAsync(new MetricDefinition { Id = metricId, HabitNodeId = node.Id, Name = "Acqua", UnitOfMeasureId = unit.Id });
+        var goals = new FakeGoalService();
+        await goals.UpsertActiveAsync(node.Id, g => { g.Name = "Bere"; g.TargetValue = 2m; g.PeriodType = GoalPeriodType.Open; g.MetricDefinitionId = metricId; });
+        var sut = new GoalSectionViewModel(goals, metrics, refData);
+        await sut.LoadAsync(node);
+        var label = string.IsNullOrEmpty(unit.Symbol) ? unit.Name : unit.Symbol;
+        sut.Summary.Should().Be($"Bere · 2 {label} Aperto");
+
+        var bare = new FakeGoalService();
+        await bare.UpsertActiveAsync(node.Id, g => { g.Name = "Bere"; g.TargetValue = 2m; g.PeriodType = GoalPeriodType.Open; });
+        var noMetric = new GoalSectionViewModel(bare, metrics, refData);
+        await noMetric.LoadAsync(node);
+        noMetric.Summary.Should().Be("Bere · 2 Aperto");
+    }
+
+    [Fact]
+    public async Task Reset_time_load_survives_a_throwing_resolver()
+    {
+        var sut = new ResetTimeSectionViewModel(new FakeHabitNodeService(), new ThrowingResolver());
+        await sut.LoadAsync(Habit());
+        sut.Summary.Should().Be("Ereditato");
+    }
+
+    private sealed class ThrowingResolver : Recordum.Core.Abstractions.Services.IResetTimeResolver
+    {
+        public ValueTask<TimeOnly> GetEffectiveResetTimeAsync(Guid id, CancellationToken ct = default) => throw new InvalidOperationException("boom");
+        public ValueTask<Recordum.Core.Time.DayBoundary> GetDayBoundaryAsync(Guid id, CancellationToken ct = default) => throw new InvalidOperationException();
+        public ValueTask<IReadOnlyDictionary<Guid, Recordum.Core.Time.DayBoundary>> GetDayBoundariesAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) => throw new InvalidOperationException();
+        public ValueTask<Recordum.Core.Time.DayBoundary> GetAppDayBoundaryAsync(CancellationToken ct = default) => throw new InvalidOperationException();
+    }
+
+    [Fact]
     public async Task Reset_time_shows_own_value()
     {
         var sut = new ResetTimeSectionViewModel(new FakeHabitNodeService());

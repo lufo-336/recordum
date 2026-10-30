@@ -8,13 +8,12 @@ using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 
-public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionViewModelBase
+public sealed partial class GoalSectionViewModel(IGoalService goals, IMetricDefinitionService? metrics = null, IReferenceDataQueryService? refData = null) : SectionViewModelBase
 {
     public override string Title => Strings.Editor_Section_Goal;
 
     public override bool HasAdvanced => true;
 
-    // ponytail: niente unita' nel riassunto: il Goal non la porta (sta sulla metrica) e la sezione non la conosce.
     public override string Summary
     {
         get
@@ -28,12 +27,13 @@ public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionVi
                     ? string.Create(culture, $"{s:d} – {e:d}") : Strings.Editor_GoalPeriod_Fixed,
                 _ => Strings.Editor_GoalPeriod_Open,
             };
-            var tail = string.Create(culture, $"{TargetValue:0.##} {period}");
+            var tail = string.Create(culture, $"{TargetValue:0.##} {(_unit is null ? "" : _unit + " ")}{period}");
             return string.IsNullOrWhiteSpace(GoalName) ? tail : $"{GoalName} · {tail}";
         }
     }
 
     private readonly IGoalService _goals = goals;
+    private string? _unit;
     private bool _loading;
     internal Guid NodeId { get; private set; }
 
@@ -57,8 +57,20 @@ public sealed partial class GoalSectionViewModel(IGoalService goals) : SectionVi
             PeriodStart = active?.PeriodStart;
             PeriodEnd = active?.PeriodEnd;
             RollingDays = active?.RollingDays;
+            _unit = await ResolveUnitAsync(node.Id, active?.MetricDefinitionId);
         }
         finally { _loading = false; }
+        NotifySummary();
+    }
+
+    // L'unita' sta sulla metrica dell'obiettivo: senza metrica o senza unita' il riassunto la omette.
+    private async Task<string?> ResolveUnitAsync(Guid nodeId, Guid? metricId)
+    {
+        if (metricId is null || metrics is null || refData is null) return null;
+        var metric = (await metrics.ListByHabitAsync(nodeId)).FirstOrDefault(m => m.Id == metricId);
+        if (metric?.UnitOfMeasureId is not { } unitId) return null;
+        var unit = (await refData.ListUnitsAsync()).FirstOrDefault(u => u.Id == unitId);
+        return unit is null ? null : string.IsNullOrEmpty(unit.Symbol) ? unit.Name : unit.Symbol;
     }
 
     // Ogni modifica scrive l'obiettivo intero dal suo stato in memoria: un Goal nuovo nasce con il periodo di default
