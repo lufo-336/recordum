@@ -7,6 +7,7 @@
   <StackPanel Spacing="4">
     <CheckBox x:Name="RepeatableBox" Content="{x:Static res:Strings.Editor_Registration_Repeatable}"
               IsChecked="{CompiledBinding Repeatable, Mode=TwoWay}" IsVisible="{CompiledBinding ShowRepeatable}"/>
+    <TextBlock Classes="help" Text="{x:Static res:Strings.Editor_Help_Registration_Repeatable}" IsVisible="{CompiledBinding ShowRepeatable}"/>
     <StackPanel Spacing="4" IsVisible="{CompiledBinding ShowJournalGesture}">
       <TextBlock Text="{x:Static res:Strings.Editor_Registration_JournalGesture}" Foreground="{DynamicResource Brush.TextMuted}"/>
       <ComboBox x:Name="GestureBox" ItemsSource="{CompiledBinding GestureOptions}" SelectedItem="{CompiledBinding SelectedGesture, Mode=TwoWay}"

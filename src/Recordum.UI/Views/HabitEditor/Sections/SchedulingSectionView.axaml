@@ -20,7 +20,7 @@
 
     <StackPanel Spacing="4" IsVisible="{CompiledBinding ScheduleType, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScheduleType.SpecificDays}}">
       <TextBlock Text="{x:Static res:Strings.Editor_Field_Days}" Foreground="{DynamicResource Brush.TextMuted}"/>
-      <ItemsControl ItemsSource="{CompiledBinding DayOptions}">
+      <ItemsControl x:Name="DaysList" ItemsSource="{CompiledBinding DayOptions}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>

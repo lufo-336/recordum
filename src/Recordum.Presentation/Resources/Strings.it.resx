@@ -1378,7 +1378,7 @@
     <value>(non un checkout git)</value>
   </data>
   <data name="Editor.Section.Scheduling" xml:space="preserve">
-    <value>Pianificazione</value>
+    <value>Programma</value>
   </data>
   <data name="Editor.Section.Streak" xml:space="preserve">
     <value>Streak</value>
@@ -2142,5 +2142,41 @@
   </data>
   <data name="Editor.Summary.OncePerDay" xml:space="preserve">
     <value>Una volta al giorno</value>
+  </data>
+  <data name="Editor.Block.Identity" xml:space="preserve">
+    <value>Chi è</value>
+  </data>
+  <data name="Editor.Block.Record" xml:space="preserve">
+    <value>Cosa registri</value>
+  </data>
+  <data name="Editor.Block.When" xml:space="preserve">
+    <value>Quando conta</value>
+  </data>
+  <data name="Editor.Block.Home" xml:space="preserve">
+    <value>Come appare in Home</value>
+  </data>
+  <data name="Editor.Block.Advanced" xml:space="preserve">
+    <value>Avanzate</value>
+  </data>
+  <data name="Editor.Block.ForChildren" xml:space="preserve">
+    <value>Per le figlie</value>
+  </data>
+  <data name="Editor.Block.Content" xml:space="preserve">
+    <value>Contenuto</value>
+  </data>
+  <data name="Editor.Group.ReorderHint" xml:space="preserve">
+    <value>Riordina e sposta le abitudini dalla Home.</value>
+  </data>
+  <data name="Editor.Help.Registration.Repeatable" xml:space="preserve">
+    <value>Un giorno può avere più voci separate (la notte e il pisolino, due corse), ognuna nella sua serie.</value>
+  </data>
+  <data name="Editor.Help.Timer.Integrated" xml:space="preserve">
+    <value>Mostra un cronometro nella schermata dell'abitudine, da avviare e fermare mentre la fai.</value>
+  </data>
+  <data name="Editor.Help.Timer.Rest" xml:space="preserve">
+    <value>Un segmento di riposo è la pausa fra i segmenti di lavoro.</value>
+  </data>
+  <data name="Editor.Help.Timer.AutoPrompt" xml:space="preserve">
+    <value>In arrivo: per ora non ha effetto.</value>
   </data>
 </root>

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,6 +54,7 @@ public class ContentSectionsTests
         var pane = await OpenConfiguraAsync(o);
         var section = pick(o.Vm.Workspace.ActiveSubjectTab!.Screen.Editor);
         section.IsVisible.Should().BeTrue("la sezione si applica a questo tipo");
+        Named<ToggleButton>(pane, "AdvancedToggle").IsChecked = true;   // la condivisione AI sta nel blocco Avanzate, chiuso
         section.IsExpanded = true;
         PrivateDbHost.Pump();
         return (o, pane, section, pane.GetVisualDescendants().OfType<TView>().Single());
@@ -268,6 +270,8 @@ public class ContentSectionsTests
                 var sections = editor.Sections.Where(sec => sec.IsVisible).ToList();
                 sections.Should().HaveCountGreaterThan(8);
                 foreach (var sec in sections) sec.IsExpanded = true;
+                Named<ToggleButton>(pane, "AdvancedToggle").IsChecked = true;   // e le parti avanzate (onda 2b)
+                foreach (var row in pane.GetLogicalDescendants().OfType<ConfigRow>().Where(r => r.Part == SectionPart.Advanced)) row.IsOpen = true;
                 if (type == HabitType.Counter) await editor.Timer.AddSegmentCommand.ExecuteAsync(null);
                 PrivateDbHost.Pump();
                 o.Window.UpdateLayout();

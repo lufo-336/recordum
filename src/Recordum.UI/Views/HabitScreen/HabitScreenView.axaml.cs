@@ -80,7 +80,7 @@ public partial class HabitScreenView : UserControl
         }
         // Configura: stessa regola (decisione 3). Il suo DataContext e' l'editor, che vive piu' della colonna.
         if (vm.ShowConfigura && ConfiguraHost.Child is null)
-            ConfiguraHost.Child = new HabitEditor.EditorPane { DataContext = vm.Editor };
+            ConfiguraHost.Child = new HabitEditor.EditorPane { DataContext = vm.Editor, Group = vm.Panoramica };   // il Contenuto di un gruppo
         else if (!vm.ShowConfigura) ConfiguraHost.Child = null;
     }
 

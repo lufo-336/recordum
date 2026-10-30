@@ -2169,4 +2169,40 @@ Details: {0}</value>
   <data name="Editor.Summary.OncePerDay" xml:space="preserve">
     <value>Once a day</value>
   </data>
+  <data name="Editor.Block.Identity" xml:space="preserve">
+    <value>Who it is</value>
+  </data>
+  <data name="Editor.Block.Record" xml:space="preserve">
+    <value>What you record</value>
+  </data>
+  <data name="Editor.Block.When" xml:space="preserve">
+    <value>When it counts</value>
+  </data>
+  <data name="Editor.Block.Home" xml:space="preserve">
+    <value>How it looks in Home</value>
+  </data>
+  <data name="Editor.Block.Advanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="Editor.Block.ForChildren" xml:space="preserve">
+    <value>For its habits</value>
+  </data>
+  <data name="Editor.Block.Content" xml:space="preserve">
+    <value>Contents</value>
+  </data>
+  <data name="Editor.Group.ReorderHint" xml:space="preserve">
+    <value>Reorder and move habits from Home.</value>
+  </data>
+  <data name="Editor.Help.Registration.Repeatable" xml:space="preserve">
+    <value>A day can hold several separate entries (a night and a nap, two runs), each in its own series.</value>
+  </data>
+  <data name="Editor.Help.Timer.Integrated" xml:space="preserve">
+    <value>Shows a timer on the habit's screen, to start and stop while you do it.</value>
+  </data>
+  <data name="Editor.Help.Timer.Rest" xml:space="preserve">
+    <value>A rest segment is the pause between the work segments.</value>
+  </data>
+  <data name="Editor.Help.Timer.AutoPrompt" xml:space="preserve">
+    <value>Coming soon: it has no effect yet.</value>
+  </data>
 </root>

@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:pvm="using:Recordum.Presentation.ViewModels"
+             xmlns:hs="using:Recordum.Presentation.ViewModels.HabitScreen"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:local="using:Recordum.UI.Views.HabitEditor"
+             x:Class="Recordum.UI.Views.HabitEditor.GroupContentView"
+             x:DataType="hs:PanoramicaViewModel">
+  <!-- Il blocco "Contenuto" della Configura di un gruppo (spec 6.3): le figlie dirette e i sottogruppi, dalle righe della
+       Panoramica (le stesse della Home, nello stesso ordine). Un clic apre la figlia. Spostare e riordinare restano in Home. -->
+  <StackPanel Spacing="2">
+    <TextBlock Classes="help" Text="{x:Static res:Strings.HabitScreen_Panoramica_Empty}"
+               IsVisible="{CompiledBinding !HasChildren}"/>
+    <ItemsControl x:Name="ChildrenList" ItemsSource="{CompiledBinding Rows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="pvm:HomeRowViewModel">
+          <Button Classes="configrow" IsVisible="{CompiledBinding IndentLevel, Converter={x:Static local:GroupContentView.IsTopLevel}}"
+                  Command="{CompiledBinding $parent[ItemsControl].((hs:PanoramicaViewModel)DataContext).SelectRowCommand}"
+                  CommandParameter="{CompiledBinding}" AutomationProperties.Name="{CompiledBinding Name}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                       Fill="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+              <TextBlock Text="{CompiledBinding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                         FontSize="{StaticResource FontSize.Label}" Foreground="{DynamicResource Brush.Text}"/>
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock Classes="help" Margin="8,4,0,0" Text="{x:Static res:Strings.Editor_Group_ReorderHint}"/>
+  </StackPanel>
+</UserControl>

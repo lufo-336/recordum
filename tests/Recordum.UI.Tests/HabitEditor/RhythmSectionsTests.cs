@@ -116,10 +116,11 @@ public class RhythmSectionsTests
             s.ErrorMessage.Should().NotBeNullOrEmpty();
             (await GoalAsync(o.Id))!.PeriodType.Should().Be(GoalPeriodType.Open, "la combinazione rifiutata non e' salvata");
 
-            // I giorni arrivano dopo: ora la combinazione e' valida e il periodo si salva (stato in memoria == DB).
-            s.ShowAdvanced = true;
+            // I giorni arrivano dopo (la parte "Avanzate" dell'obiettivo): ora la combinazione e' valida e il periodo si salva.
+            Named<ToggleButton>(o.Window, "AdvancedToggle").IsChecked = true;
+            o.Window.GetVisualDescendants().OfType<ConfigRow>().Single(r => r.Section == s && r.Part == SectionPart.Advanced).IsOpen = true;
             PrivateDbHost.Pump();
-            TypeInto(o, Named<TextBox>(v, "RollingDaysBox"), "10");
+            TypeInto(o, Named<TextBox>(o.Window.GetVisualDescendants().OfType<GoalAdvancedView>().Single(), "RollingDaysBox"), "10");
             await UntilAsync(() => GoalAsync(o.Id).GetAwaiter().GetResult() is { PeriodType: GoalPeriodType.Rolling, RollingDays: 10 });
             s.Status.Should().Be(EditorStatus.Saved);
         }
@@ -222,10 +223,10 @@ public class RhythmSectionsTests
         {
             var editor = o.Vm.Workspace.ActiveSubjectTab!.Screen.Editor;
             foreach (SectionViewModelBase sec in new SectionViewModelBase[] { editor.Scheduling, editor.Streak, editor.Goal, editor.ResetTime, editor.Registration, editor.HomeRow })
-                new SectionTemplate().Build(sec).Should().NotBeNull(sec.Title);
+                SectionContent.Has(sec, SectionPart.Main).Should().BeTrue(sec.Title);
             editor.Registration.IsVisible.Should().BeFalse("un'azione non ha registrazione");
-            pane.GetVisualDescendants().OfType<Expander>().Where(e => e.IsVisible)
-                .Select(e => e.Header).Should().NotContain(editor.Registration.Title);
+            pane.GetVisualDescendants().OfType<ConfigRow>().Where(r => r.IsVisible)
+                .Select(r => r.Section).Should().NotContain(editor.Registration);
         }
         finally { o.Window.Close(); }
     }

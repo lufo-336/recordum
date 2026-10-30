@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
+             x:Class="Recordum.UI.Views.HabitEditor.Sections.GoalAdvancedView"
+             x:DataType="vm:GoalSectionViewModel">
+  <!-- La parte "Avanzate" dell obiettivo (spec 6.4, blocco 5): i giorni mobili, usciti da GoalSectionView. -->
+  <StackPanel Spacing="4">
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_RollingDays}" Foreground="{DynamicResource Brush.TextMuted}"/>
+    <TextBox x:Name="RollingDaysBox" HorizontalAlignment="Left" MinWidth="120"
+             Text="{CompiledBinding RollingDays, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+  </StackPanel>
+</UserControl>

@@ -10,6 +10,7 @@
              x:DataType="vm:TimerSectionViewModel">
   <StackPanel Spacing="4">
     <CheckBox x:Name="IntegratedBox" Content="{x:Static res:Strings.Editor_Field_IntegratedTimer}" IsChecked="{CompiledBinding HasIntegratedTimer, Mode=TwoWay}"/>
+    <TextBlock Classes="help" Text="{x:Static res:Strings.Editor_Help_Timer_Integrated}"/>
     <TextBlock Text="{x:Static res:Strings.Editor_Field_TimerMode}" Foreground="{DynamicResource Brush.TextMuted}"/>
     <ComboBox x:Name="ModeBox" HorizontalAlignment="Stretch" ItemsSource="{x:Static s:TimerSectionView.Modes}"
               SelectedItem="{CompiledBinding TimerMode, Mode=TwoWay}">
@@ -26,10 +27,14 @@
     <ItemsControl x:Name="SegmentsList" ItemsSource="{CompiledBinding Segments}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="vm:SegmentRowViewModel">
-          <Grid Margin="0,2" ColumnDefinitions="*,Auto,Auto">
-            <TextBox Grid.Column="0" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-            <CheckBox Grid.Column="1" Content="{x:Static res:Strings.Editor_Field_Rest}" IsChecked="{CompiledBinding IsRest, Mode=TwoWay}" Margin="6,0" VerticalAlignment="Center"/>
-            <Button Grid.Column="2" Classes="icononly"
+          <!-- Spec 6.4.2, ogni casella con la sua riga: il riposo va sotto il nome, con la spiegazione. -->
+          <Grid Margin="0,2,0,6" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" x:Name="SegmentNameBox" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,0">
+              <CheckBox x:Name="SegmentRestBox" Content="{x:Static res:Strings.Editor_Field_Rest}" IsChecked="{CompiledBinding IsRest, Mode=TwoWay}"/>
+              <TextBlock Classes="help" Text="{x:Static res:Strings.Editor_Help_Timer_Rest}"/>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="icononly" Margin="4,0,0,0"
                     Command="{CompiledBinding $parent[ItemsControl].((vm:TimerSectionViewModel)DataContext).RemoveSegmentCommand}"
                     CommandParameter="{CompiledBinding}"
                     AutomationProperties.Name="{x:Static res:Strings.Notes_Delete}" ToolTip.Tip="{x:Static res:Strings.Notes_Delete}">
@@ -40,14 +45,6 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <Button Content="{x:Static res:Strings.Editor_Action_AddSegment}" Command="{CompiledBinding AddSegmentCommand}" HorizontalAlignment="Left"/>
-    <ToggleButton Classes="pill" Content="{x:Static res:Strings.Editor_Field_Advanced}" IsChecked="{CompiledBinding ShowAdvanced, Mode=TwoWay}"
-                  HorizontalAlignment="Left" Margin="0,4,0,0"/>
-    <StackPanel Spacing="4" IsVisible="{CompiledBinding ShowAdvanced}">
-      <CheckBox Content="{x:Static res:Strings.Editor_Field_AutoPrompt}" IsChecked="{CompiledBinding TimerAutoPrompt, Mode=TwoWay}"/>
-      <TextBlock Text="{x:Static res:Strings.Editor_Field_RestTimerSeconds}" Foreground="{DynamicResource Brush.TextMuted}"/>
-      <TextBox x:Name="RestBox" HorizontalAlignment="Left" MinWidth="120"
-               Text="{CompiledBinding RestTimerSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-    </StackPanel>
+    <Button x:Name="AddSegmentButton" Content="{x:Static res:Strings.Editor_Action_AddSegment}" Command="{CompiledBinding AddSegmentCommand}" HorizontalAlignment="Left"/>
   </StackPanel>
 </UserControl>

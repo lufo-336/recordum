@@ -2,50 +2,126 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor"
              xmlns:res="using:Recordum.Presentation.Resources"
-             xmlns:conv="using:Recordum.UI.Converters"
              xmlns:ctl="using:Recordum.UI.Controls"
              xmlns:local="using:Recordum.UI.Views.HabitEditor"
              x:Class="Recordum.UI.Views.HabitEditor.EditorPane"
              x:DataType="vm:HabitEditorViewModel">
-  <!-- Testata sempre visibile (nome, descrizione, tipo, colore, icona), sezioni scorrevoli, stato in fondo FUORI dallo
-       scorrimento (A12: l'autosalvataggio si percepisce anche con le sezioni aperte). Il tipo e' un'etichetta: non
-       si cambia dopo la creazione (F0-11). Nome e descrizione si scrivono alla perdita del fuoco; misurato (test 6.4):
-       se la colonna sparisce col fuoco ancora nella casella, Avalonia consegna comunque il testo in sospeso. -->
-  <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}">
-      <StackPanel Spacing="8">
-        <TextBox x:Name="NameBox" Text="{CompiledBinding Name, UpdateSourceTrigger=LostFocus}"
-                 AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_Name}"
-                 FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
-                 BorderThickness="0" Background="Transparent"/>
-        <TextBox x:Name="DescriptionBox" Text="{CompiledBinding Description, UpdateSourceTrigger=LostFocus}"
-                 PlaceholderText="{x:Static res:Strings.Editor_DescriptionPlaceholder}"
-                 AcceptsReturn="True" TextWrapping="Wrap" BorderThickness="0" Background="Transparent"/>
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Border Padding="8,3" VerticalAlignment="Center" CornerRadius="4" Background="{DynamicResource Brush.SurfaceElevated}">
-            <TextBlock x:Name="TypeLabel" FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
-          </Border>
-          <ctl:ColorSwatchPicker x:Name="ColorPicker" Color="{CompiledBinding Color, Mode=TwoWay}"
-                                 RecentColors="{CompiledBinding RecentColors}"
-                                 FavoriteColors="{CompiledBinding FavoriteColors}"
-                                 AddFavoriteCommand="{CompiledBinding AddFavoriteCommand}"
-                                 RemoveFavoriteCommand="{CompiledBinding RemoveFavoriteCommand}"/>
-          <ctl:IconPicker x:Name="IconPickerControl" Icon="{CompiledBinding Icon, Mode=TwoWay}"/>
-        </StackPanel>
-      </StackPanel>
-    </Border>
+  <!-- Configura nei blocchi di spec 6.4: Chi e' · Cosa registri · Quando conta · Come appare in Home · Avanzate (chiuso). Per un
+       gruppo: Chi e' · Per le figlie · Contenuto · Salva come modello · Avanzate. Ogni voce e' una ConfigRow (riga col riassunto
+       che si apre sul posto). Le righe che compaiono in due blocchi (Tag, Obiettivo, Inizio della giornata) ricevono la sezione
+       dal code-behind, in un blocco solo per volta: due view della stessa sezione non esistono mai insieme. Lo stato in fondo
+       resta FUORI dallo scorrimento (A12). Il tipo e' un'etichetta: non si cambia dopo la creazione (F0-11). Nome e
+       descrizione si scrivono alla perdita del fuoco; misurato (test 6.4): se la colonna sparisce col fuoco ancora nella
+       casella, Avalonia consegna comunque il testo in sospeso. Nessuna azione in inchiostro: si salva da solo. -->
+  <UserControl.Styles>
+    <Style Selector="StackPanel.blockpanel">
+      <Setter Property="Spacing" Value="2"/>
+      <Setter Property="Margin" Value="0,0,0,20"/>
+    </Style>
+    <Style Selector="StackPanel.blockpanel > TextBlock.block">
+      <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+  </UserControl.Styles>
 
-    <ScrollViewer Grid.Row="1" x:Name="SectionsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer Grid.Row="0" x:Name="SectionsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
       <StackPanel x:Name="SectionsStack" Margin="12">
-        <ItemsControl x:Name="SectionsHost" ItemsSource="{CompiledBinding Sections}">
-          <ItemsControl.ItemTemplate>
-            <local:SectionTemplate/>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+
+        <!-- 1. Chi e' -->
+        <StackPanel x:Name="IdentityBlock" Classes="blockpanel">
+          <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_Identity}"/>
+          <StackPanel Spacing="8" Margin="0,0,0,4">
+            <TextBox x:Name="NameBox" Text="{CompiledBinding Name, UpdateSourceTrigger=LostFocus}"
+                     AutomationProperties.Name="{x:Static res:Strings.HabitBuilder_Name}"
+                     FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold"/>
+            <TextBox x:Name="DescriptionBox" Text="{CompiledBinding Description, UpdateSourceTrigger=LostFocus}"
+                     PlaceholderText="{x:Static res:Strings.Editor_DescriptionPlaceholder}"
+                     AcceptsReturn="True" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Padding="8,3" VerticalAlignment="Center" CornerRadius="4" Background="{DynamicResource Brush.SurfaceElevated}">
+                <TextBlock x:Name="TypeLabel" FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
+              </Border>
+              <ctl:ColorSwatchPicker x:Name="ColorPicker" Color="{CompiledBinding Color, Mode=TwoWay}"
+                                     RecentColors="{CompiledBinding RecentColors}"
+                                     FavoriteColors="{CompiledBinding FavoriteColors}"
+                                     AddFavoriteCommand="{CompiledBinding AddFavoriteCommand}"
+                                     RemoveFavoriteCommand="{CompiledBinding RemoveFavoriteCommand}"/>
+              <ctl:IconPicker x:Name="IconPickerControl" Icon="{CompiledBinding Icon, Mode=TwoWay}"/>
+            </StackPanel>
+          </StackPanel>
+          <local:ConfigRow Section="{CompiledBinding Notes}"/>
+          <local:ConfigRow x:Name="IdentityTagsRow"/>
+        </StackPanel>
+
+        <!-- 2. Cosa registri -->
+        <StackPanel x:Name="RecordBlock" Classes="blockpanel">
+          <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_Record}"/>
+          <local:ConfigRow Section="{CompiledBinding Metrics}"/>
+          <local:ConfigRow Section="{CompiledBinding Scales}"/>
+          <local:ConfigRow Section="{CompiledBinding Registration}"/>
+          <local:ConfigRow Section="{CompiledBinding Timer}"/>
+        </StackPanel>
+
+        <!-- 3. Quando conta -->
+        <StackPanel x:Name="WhenBlock" Classes="blockpanel">
+          <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_When}"/>
+          <local:ConfigRow Section="{CompiledBinding Scheduling}"/>
+          <local:ConfigRow Section="{CompiledBinding Streak}"/>
+          <local:ConfigRow x:Name="WhenGoalRow"/>
+          <local:ConfigRow x:Name="WhenResetRow" Warning="{x:Static res:Strings.Editor_ResetTime_Warning}"/>
+        </StackPanel>
+
+        <!-- Gruppo 2. Per le figlie -->
+        <StackPanel x:Name="ForChildrenBlock" Classes="blockpanel">
+          <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_ForChildren}"/>
+          <local:ConfigRow x:Name="ChildrenResetRow" Warning="{x:Static res:Strings.Editor_ResetTime_Warning}"/>
+          <local:ConfigRow x:Name="ChildrenGoalRow"/>
+        </StackPanel>
+
+        <!-- 4. Come appare in Home -->
+        <StackPanel x:Name="HomeBlock" Classes="blockpanel">
+          <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_Home}"/>
+          <ctl:RowPreview Model="{CompiledBinding HomeRow.Preview}" Margin="0,0,0,4"/>
+          <local:ConfigRow Section="{CompiledBinding HomeRow}"/>
+        </StackPanel>
+
+        <!-- Gruppo 3. Contenuto, 4. Salva come modello (in arrivo: spento, dice perche') -->
+        <StackPanel x:Name="ContentBlock" Classes="blockpanel">
+          <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_Content}"/>
+          <local:GroupContentView x:Name="GroupContent"/>
+        </StackPanel>
+        <Button x:Name="SaveTemplateRow" Classes="configrow" IsEnabled="False" Margin="0,0,0,20">
+          <Grid ColumnDefinitions="Auto,*">
+            <TextBlock Text="{x:Static res:Strings.HabitBuilder_SaveAsTemplate}" VerticalAlignment="Center"
+                       FontSize="{StaticResource FontSize.Label}" FontWeight="Medium" Foreground="{DynamicResource Brush.TextMuted}"/>
+            <TextBlock Grid.Column="1" Text="{x:Static res:Strings.Editor_Summary_ComingSoon}" HorizontalAlignment="Right"
+                       VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{DynamicResource Brush.TextMuted}"/>
+          </Grid>
+        </Button>
+
+        <!-- 5. Avanzate: chiuso di default. Il titolo e' la riga che apre il blocco. -->
+        <StackPanel x:Name="AdvancedBlock" Classes="blockpanel">
+          <ToggleButton x:Name="AdvancedToggle" Classes="configrow" Padding="0" Margin="0,0,0,2"
+                        AutomationProperties.Name="{x:Static res:Strings.Editor_Block_Advanced}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="block" Text="{x:Static res:Strings.Editor_Block_Advanced}" VerticalAlignment="Center"/>
+              <Path x:Name="AdvancedChevron" Grid.Column="1" Width="14" Height="14" Margin="8,0" Stretch="Uniform"
+                    VerticalAlignment="Center" Data="{StaticResource Icon.ChevronRight}" Stroke="{DynamicResource Brush.TextMuted}"
+                    StrokeThickness="1.75" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Grid>
+          </ToggleButton>
+          <StackPanel x:Name="AdvancedRows" Spacing="2" IsVisible="False">
+            <local:ConfigRow Section="{CompiledBinding Streak}" Part="Advanced"/>
+            <local:ConfigRow Section="{CompiledBinding Goal}" Part="Advanced"/>
+            <local:ConfigRow Section="{CompiledBinding Timer}" Part="Advanced"/>
+            <local:ConfigRow Section="{CompiledBinding AiSharing}"/>
+            <local:ConfigRow x:Name="AdvancedTagsRow"/>
+          </StackPanel>
+        </StackPanel>
       </StackPanel>
     </ScrollViewer>
 
-    <Border Grid.Row="2" Padding="12,8" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.Border}">
+    <Border Grid.Row="1" Padding="12,8" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.Border}">
       <TextBlock x:Name="StatusText" Text="{CompiledBinding StatusText}" MinHeight="16"
                  FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
     </Border>

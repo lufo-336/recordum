@@ -31,6 +31,7 @@ public class EditorScreenshotTests(ITestOutputHelper output)
             var pane = await OpenConfiguraAsync(o);
             var editor = o.Vm.Workspace.ActiveSubjectTab!.Screen.Editor;
             var visible = editor.Sections.Where(s => s.IsVisible).ToList();
+            Named<Avalonia.Controls.Primitives.ToggleButton>(pane, "AdvancedToggle").IsChecked = true;
             foreach (var s in visible) s.IsExpanded = true;
             PrivateDbHost.Pump();
             await Task.Delay(100);
@@ -40,11 +41,10 @@ public class EditorScreenshotTests(ITestOutputHelper output)
             o.Window.ActualThemeVariant.Should().Be(variant == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light);
             visible.Count.Should().BeGreaterThanOrEqualTo(8, "un contatore applica la maggior parte delle sezioni");
             var stack = Named<StackPanel>(pane, "SectionsStack");
-            var expanders = stack.GetVisualDescendants().OfType<Expander>().Where(e => e.DataContext is Recordum.Presentation.ViewModels.HabitEditor.SectionViewModelBase && e.IsEffectivelyVisible).ToList();
-            expanders.Should().HaveCountGreaterThanOrEqualTo(11, "dodici sezioni, la sezione Scale non si disegna per un contatore");
-            expanders.Should().OnlyContain(e => e.IsExpanded && e.Bounds.Height > 40, "ogni sezione e' aperta e disegnata");
-            var host = Named<ItemsControl>(pane, "SectionsHost");
-            expanders.Should().OnlyContain(e => e.Bounds.Width >= host.Bounds.Width - 1, "ogni sezione occupa la larghezza della colonna, non quella del suo contenuto");
+            var rows = stack.GetVisualDescendants().OfType<ConfigRow>().Where(r => r.Part == SectionPart.Main && r.IsEffectivelyVisible).ToList();
+            rows.Should().HaveCountGreaterThanOrEqualTo(11, "dodici sezioni, la sezione Scale non si disegna per un contatore");
+            rows.Should().OnlyContain(r => r.IsOpen && r.Bounds.Height > 40, "ogni sezione e' aperta e disegnata");
+            rows.Should().OnlyContain(r => r.Bounds.Width >= stack.Bounds.Width - 1, "ogni sezione occupa la larghezza della colonna, non quella del suo contenuto");
         }
         finally { o.Window.Close(); }
     }

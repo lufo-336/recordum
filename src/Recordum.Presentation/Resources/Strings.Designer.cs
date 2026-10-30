@@ -763,6 +763,18 @@ public static class Strings
     public static string Editor_Summary_ComingSoon => Get("Editor.Summary.ComingSoon");
     public static string Editor_Summary_MultiplePerDay => Get("Editor.Summary.MultiplePerDay");
     public static string Editor_Summary_OncePerDay => Get("Editor.Summary.OncePerDay");
+    public static string Editor_Block_Identity => Get("Editor.Block.Identity");
+    public static string Editor_Block_Record => Get("Editor.Block.Record");
+    public static string Editor_Block_When => Get("Editor.Block.When");
+    public static string Editor_Block_Home => Get("Editor.Block.Home");
+    public static string Editor_Block_Advanced => Get("Editor.Block.Advanced");
+    public static string Editor_Block_ForChildren => Get("Editor.Block.ForChildren");
+    public static string Editor_Block_Content => Get("Editor.Block.Content");
+    public static string Editor_Group_ReorderHint => Get("Editor.Group.ReorderHint");
+    public static string Editor_Help_Registration_Repeatable => Get("Editor.Help.Registration.Repeatable");
+    public static string Editor_Help_Timer_Integrated => Get("Editor.Help.Timer.Integrated");
+    public static string Editor_Help_Timer_Rest => Get("Editor.Help.Timer.Rest");
+    public static string Editor_Help_Timer_AutoPrompt => Get("Editor.Help.Timer.AutoPrompt");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

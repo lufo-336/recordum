@@ -100,4 +100,42 @@
         <Setter Property="Background" Value="Transparent"/>
     </Style>
 
+    <!-- Configura (spec 6.4): il titolo di un blocco (16/600), la riga che spiega una casella (12 attenuata, §6.4.2) e la riga
+         di una voce, 40 px a tutta larghezza, senza riempimento: non sembra un pulsante, si apre col clic. -->
+    <Style Selector="TextBlock.block">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Heading}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    </Style>
+    <Style Selector="TextBlock.help">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    <Style Selector=":is(Button).configrow">
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector=":is(Button).configrow:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+    </Style>
+    <Style Selector="ToggleButton.configrow:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ToggleButton.configrow:checked:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+    </Style>
+    <!-- Spenta = una riga attenuata, non un pulsante disabilitato con la cornice (il :disabled di Fluent la ridisegna). -->
+    <Style Selector=":is(Button).configrow:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+
 </Styles>

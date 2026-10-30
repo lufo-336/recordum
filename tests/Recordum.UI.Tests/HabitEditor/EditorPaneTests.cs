@@ -257,9 +257,10 @@ public class EditorPaneTests
             var editor = o.Vm.Workspace.ActiveSubjectTab!.Screen.Editor;
             editor.Sections.Should().Contain(editor.Notifications, "la sezione esiste nel ViewModel");
             editor.Sections.Should().NotContain(s => s is DataSourceSectionViewModel, "R2: DataSource non e' in Sections e non ha view");
-            new SectionTemplate().Build(editor.Notifications).Should().BeNull();
-            pane.GetVisualDescendants().OfType<Expander>()
-                .Should().NotContain(e => Equals(e.Header, editor.Notifications.Title));
+            SectionContent.Build(editor.Notifications, SectionPart.Main).Should().BeNull();
+            SectionContent.Build(editor.Notifications, SectionPart.Advanced).Should().BeNull();
+            pane.GetVisualDescendants().OfType<ConfigRow>()
+                .Should().NotContain(r => ReferenceEquals(r.Section, editor.Notifications));
         }
         finally { o.Window.Close(); }
     }

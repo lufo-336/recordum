@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:Recordum.Presentation.ViewModels.HabitBuilder.Preview"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Controls.RowPreview"
+             x:DataType="pvm:HomeRowPreviewModel">
+  <!-- La riga della Home di un'abitudine, disegnata da un HomeRowPreviewModel (barra, icona, nome, valore, la HeatmapStrip vera)
+       con la tinta della riga (Opacity.RowTint, come in Home). La usano il creatore e Configura; Theme la mostra in un tema
+       diverso da quello corrente (ThemeVariantScope). Il DataContext e' quello di Card, non del controllo: Model arriva da un
+       binding sul DataContext di chi la ospita. -->
+  <ThemeVariantScope x:Name="Scope">
+    <Border x:Name="Card" CornerRadius="6" BorderThickness="1" ClipToBounds="True" IsVisible="False"
+            BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.SurfaceElevated}">
+      <Panel>
+        <Border x:Name="Tint" IsHitTestVisible="False" Opacity="{DynamicResource Opacity.RowTint}"
+                Background="{CompiledBinding Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+        <Grid x:Name="HomeRowGrid" Margin="10" ColumnDefinitions="Auto,*,Auto,Auto">
+          <Rectangle Grid.Column="0" Width="{StaticResource Layout.AccentBarWidth}" Margin="0,0,10,0"
+                     Fill="{CompiledBinding Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+          <!-- Una griglia, non uno StackPanel orizzontale: il nome lungo si accorcia invece di uscire dalla colonna (A8). -->
+          <Grid Grid.Column="1" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+            <Path x:Name="IconPath" Width="16" Height="16" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center"
+                  Stroke="{CompiledBinding Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                  StrokeThickness="1.5" StrokeLineCap="Round" StrokeJoin="Round"
+                  Data="{CompiledBinding Icon, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"
+                  IsVisible="{Binding #IconPath.Data, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            <TextBlock x:Name="NameText" Grid.Column="1" Text="{CompiledBinding Name}" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" Foreground="{DynamicResource Brush.Text}"/>
+          </Grid>
+          <TextBlock x:Name="KeyFigureText" Grid.Column="2" Margin="8,0" VerticalAlignment="Center"
+                     FontSize="{StaticResource FontSize.Small}" FontWeight="SemiBold"
+                     Foreground="{CompiledBinding Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"
+                     Text="{CompiledBinding KeyFigure}"
+                     IsVisible="{CompiledBinding KeyFigure, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+          <ctl:HeatmapStrip x:Name="HomeStrip" Grid.Column="3" VerticalAlignment="Center"
+                            Kind="{CompiledBinding StripStyle}" Fractions="{CompiledBinding Fractions}" AccentColor="{CompiledBinding Color}"/>
+        </Grid>
+      </Panel>
+    </Border>
+  </ThemeVariantScope>
+</UserControl>
