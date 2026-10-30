@@ -145,6 +145,9 @@ public class CompositionTests
         Dispatcher.UIThread.RunJobs();
         creating.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "ConfirmBlock")
             .IsVisible.Should().BeTrue();
+        // L'avviso "non si recupera" una volta sola al primo avvio: il Hint, non anche il piede.
+        creating.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "HintText").IsVisible.Should().BeTrue();
+        creating.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "LostPassphraseText").IsVisible.Should().BeFalse();
         creating.Close();
 
         var entering = new UnlockWindow(new UnlockViewModel(service, DbUnlockState.NeedsPassphrase, canRememberOnDevice: true, storedKeyRejected: false));
@@ -152,6 +155,7 @@ public class CompositionTests
         Dispatcher.UIThread.RunJobs();
         entering.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "ConfirmBlock")
             .IsVisible.Should().BeFalse();
+        entering.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "LostPassphraseText").IsVisible.Should().BeTrue();
         entering.Close();
     }
 
@@ -194,6 +198,9 @@ public class CompositionTests
         var path = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "LogPathText");
         path.IsVisible.Should().BeTrue();
         path.Text.Should().Be("/tmp/recordum.log");
+        var brand = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "Brand");
+        brand.Text.Should().Be("Recordum");
+        brand.FontFamily.FamilyNames[0].Should().Be("Source Serif 4");
         window.Close();
     }
 

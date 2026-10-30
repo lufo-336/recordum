@@ -9,6 +9,10 @@
         FontFamily="{DynamicResource Font.Default}"
         Background="{DynamicResource Brush.Background}">
   <StackPanel Margin="24" Spacing="16">
+    <!-- Il marchio in serif, come nello sblocco (direzione visiva §5): anche l'errore fatale e' la stessa app. -->
+    <TextBlock Name="Brand" Text="{x:Static res:Strings.AppTitle}"
+               FontFamily="{DynamicResource Font.Serif}" FontSize="28" FontWeight="SemiBold"
+               Foreground="{DynamicResource Brush.Text}"/>
     <TextBlock Text="{x:Static res:Strings.StartupErrorTitle}"
                FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
                Foreground="{DynamicResource Brush.Text}"/>

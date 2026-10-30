@@ -60,7 +60,9 @@
             IsDefault="True"
             Command="{Binding SubmitCommand}"
             Content="{x:Static res:Strings.Unlock_Submit}"/>
-    <TextBlock Text="{x:Static res:Strings.Unlock_LostPassphrase}" TextWrapping="Wrap" Margin="0,4,0,0"
+    <!-- Alla creazione l'avvertenza e' gia' nel Hint sopra: dirla due volte e' rumore. Agli avvii dopo, e' l'unica. -->
+    <TextBlock Name="LostPassphraseText" Text="{x:Static res:Strings.Unlock_LostPassphrase}" TextWrapping="Wrap" Margin="0,4,0,0"
+               IsVisible="{Binding !RequiresConfirmation}"
                Foreground="{DynamicResource Brush.TextMuted}"
                FontSize="{DynamicResource FontSize.Small}"/>
   </StackPanel>

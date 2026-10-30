@@ -78,7 +78,17 @@ public class TimerStatusBarViewTests
         try
         {
             Bar(window).IsVisible.Should().BeTrue();
-            RowControl<TextBlock>(window, "RowElapsed", name).Text.Should().Be("02:05");
+            var elapsed = RowControl<TextBlock>(window, "RowElapsed", name);
+            elapsed.Text.Should().Be("02:05");
+            // Il tempo e' la cifra della barra: 15/600 nella variante "testo" del colore (cornice, Task 8).
+            elapsed.FontSize.Should().Be(15);
+            elapsed.FontWeight.Should().Be(Avalonia.Media.FontWeight.SemiBold);
+            var text = ((Avalonia.Media.ISolidColorBrush)elapsed.Foreground!).Color;
+            text.Should().Be(((Avalonia.Media.ISolidColorBrush)Recordum.UI.Converters.HabitTextBrushConverter.BrushFor("#0EA5E9", window.ActualThemeVariant)).Color);
+            window.TryFindResource("Brush.Pane", window.ActualThemeVariant, out var paneBrush).Should().BeTrue();
+            var pane = ((Avalonia.Media.ISolidColorBrush)paneBrush!).Color;
+            Recordum.UI.Theming.HabitColors.Contrast(text, Recordum.UI.Theming.HabitColors.Blend(Avalonia.Media.Color.Parse("#0EA5E9"), 0.08, pane))
+                .Should().BeGreaterThanOrEqualTo(4.5);
             // Direzione visiva §5: la riga del timer è tinta nel colore dell'abitudine che corre.
             var tint = RowControl<Border>(window, "RowTint", name);
             ((Avalonia.Media.ISolidColorBrush)tint.Background!).Color.Should().Be(Avalonia.Media.Color.Parse("#0EA5E9"));

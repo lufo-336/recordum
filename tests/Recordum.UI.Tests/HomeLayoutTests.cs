@@ -63,6 +63,27 @@ public class HomeLayoutTests
         w.Close();
     }
 
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void The_done_filter_icon_reads_as_an_active_control_when_on(string variant)
+    {
+        // Misurato: con l'icona attenuata su Brush.Accent il contrasto stava sotto i 3:1 di un controllo attivo.
+        var (w, view, _) = Show(900, Row("Acqua"));
+        w.RequestedThemeVariant = variant == "Dark" ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+        var toggle = view.FindControl<Avalonia.Controls.Primitives.ToggleButton>("DoneToggle")!;
+        var icon = toggle.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single();
+        foreach (var on in new[] { false, true })
+        {
+            toggle.IsChecked = on;
+            for (var i = 0; i < 2; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
+            var fill = ((ISolidColorBrush)toggle.Background!).Color;
+            var stroke = ((ISolidColorBrush)icon.Stroke!).Color;
+            Recordum.UI.Theming.HabitColors.Contrast(stroke, fill).Should().BeGreaterThanOrEqualTo(3, $"{variant}, acceso={on}");
+        }
+        w.Close();
+    }
+
     [AvaloniaFact]
     public void Today_column_is_aligned_across_strip_lengths()
     {

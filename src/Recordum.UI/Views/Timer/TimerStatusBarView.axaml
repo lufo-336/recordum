@@ -6,6 +6,10 @@
              x:Class="Recordum.UI.Views.Timer.TimerStatusBarView"
              x:DataType="vm:TimerStatusBarViewModel">
 
+  <UserControl.Resources>
+    <conv:HabitTextBrushConverter x:Key="HabitText"/>
+  </UserControl.Resources>
+
   <!-- Barra di stato dei timer: compare solo mentre ci sono righe; il battito sta nel ViewModel. -->
   <Border x:Name="Bar" IsVisible="{CompiledBinding IsVisible}"
           BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.Border}"
@@ -28,9 +32,17 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,3">
               <TextBlock x:Name="RowName" Text="{CompiledBinding HabitName}" FontWeight="SemiBold"
                          FontSize="{StaticResource FontSize.Small}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+              <!-- Il tempo e' la cifra della barra: 15/600 nella variante "testo" del colore dell'abitudine (non 13). -->
               <TextBlock x:Name="RowElapsed" Text="{CompiledBinding ElapsedDisplay}" FontWeight="SemiBold"
-                         FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum" FontSize="{StaticResource FontSize.Label}"
-                         Margin="0,0,6,0" VerticalAlignment="Center"/>
+                         FontFamily="{DynamicResource Font.Default}" FontFeatures="+tnum" FontSize="15"
+                         Margin="0,0,6,0" VerticalAlignment="Center">
+                <TextBlock.Foreground>
+                  <MultiBinding Converter="{StaticResource HabitText}">
+                    <Binding Path="ColorHex"/>
+                    <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+                  </MultiBinding>
+                </TextBlock.Foreground>
+              </TextBlock>
               <Button x:Name="RowPause" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0"
                       Command="{CompiledBinding PauseCommand}" IsVisible="{CompiledBinding !IsPaused}"
                       ToolTip.Tip="{x:Static res:Strings.HabitScreen_Timer_Pause}"

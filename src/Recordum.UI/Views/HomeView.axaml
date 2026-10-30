@@ -10,6 +10,16 @@
              x:Class="Recordum.UI.Views.HomeView"
              x:DataType="vm:HomeViewModel"
              Background="{DynamicResource Brush.Background}">
+  <UserControl.Styles>
+    <!-- L'icona di "fatte": attenuata da spenta, nel colore del testo sul pieno (Brush.OnAccent) da accesa — su Brush.Accent
+         l'attenuato stava sotto i 3:1 di un controllo attivo. Uno stile e non un attributo: il valore locale vincerebbe. -->
+    <Style Selector="ToggleButton#DoneToggle Path">
+      <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <Style Selector="ToggleButton#DoneToggle:checked Path">
+      <Setter Property="Stroke" Value="{DynamicResource Brush.OnAccent}"/>
+    </Style>
+  </UserControl.Styles>
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
     <!-- La testa (direzione visiva §5): "Oggi" col giorno dell'app, e l'unico pulsante primario della Home. Sotto i 320 px
@@ -92,7 +102,7 @@
                     IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}">
         <StackPanel Orientation="Horizontal" Spacing="5">
           <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
-                Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"
                 Data="{StaticResource Icon.EyeOff}"/>
           <TextBlock Text="{x:Static res:Strings.Home_Filter_Done}" VerticalAlignment="Center"
                      FontSize="{StaticResource FontSize.Label}"/>
