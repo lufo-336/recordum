@@ -14,15 +14,18 @@ public sealed class TogetherViewModel(IGroupHistoryQueryService? history)
     public ObservableCollection<TogetherRow> Rows { get; } = [];
 
     /// <summary>Celle: gradino 4 se fatta, 0 se prevista e non fatta; fuori periodo di vita (non prevista) <c>InRange</c> falso;
-    /// dopo <paramref name="today"/> <c>IsFuture</c>.</summary>
-    public async Task LoadAsync(Guid groupId, DateOnly from, DateOnly to, DateOnly today, CancellationToken ct = default)
+    /// dopo <paramref name="today"/> <c>IsFuture</c>. <paramref name="order"/>: gli id nell'ordine delle righe.</summary>
+    public async Task LoadAsync(Guid groupId, DateOnly from, DateOnly to, DateOnly today,
+        IReadOnlyList<Guid>? order = null, CancellationToken ct = default)
     {
         var generation = ++_generation;
         if (history is null) { Rows.Clear(); return; }
         var children = await history.GetAsync(groupId, from, to, ct).ConfigureAwait(true);
         if (generation != _generation) return; // un caricamento più nuovo ha vinto
 
-        var rows = children.Select(c =>
+        // Un solo ordine nella colonna: quello delle righe della Home (chi non c'è in <order> resta in coda, nell'ordine della query).
+        var rank = order?.Select((id, i) => (id, i)).ToDictionary(x => x.id, x => x.i);
+        var rows = children.OrderBy(c => rank is not null && rank.TryGetValue(c.HabitNodeId, out var r) ? r : int.MaxValue).Select(c =>
         {
             var cells = new List<HistoryDayCell>();
             for (var d = from; d <= to; d = d.AddDays(1))

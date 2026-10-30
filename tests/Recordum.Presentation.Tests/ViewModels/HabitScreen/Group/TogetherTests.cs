@@ -153,6 +153,45 @@ public sealed class TogetherTests : IDisposable
         await WaitUntilAsync(() => rig.Vm.Panoramica.Together.Rows.Count == 1 && rig.Vm.Panoramica.Together.Rows[0].Cells.Count == 7);
     }
 
+    [Fact]
+    public async Task A_completion_on_an_unscheduled_day_shows_as_done_and_in_range()
+    {
+        Child("a", 1, Set(27), Set(26));
+        var vm = new TogetherViewModel(_history);
+
+        await vm.LoadAsync(Guid.NewGuid(), D(26), D(27), Today, default);
+
+        vm.Rows[0].Cells[0].Step.Should().Be(4);
+        vm.Rows[0].Cells[0].InRange.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Together_follows_the_order_of_the_rows_with_a_pin_and_equal_sort_orders()
+    {
+        var rig = HabitScreenViewModelFactory.CreateRig(new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero), groupHistory: _history);
+        var group = Guid.NewGuid();
+        rig.Nodes.Store[group] = new HabitNode { Id = group, NodeType = NodeType.Group, Name = "G", CreatedAt = new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc) };
+        rig.Tree.HomeRows.Add(Tree(group, null, "G", null, PinScope.None));
+        var ids = new Dictionary<string, Guid>();
+        // La query le dà per SortOrder (qui in ordine a, b, c); la Home mette prima la fissata e rompe i pari per nome.
+        foreach (var (name, pin) in new[] { ("zeta", PinScope.None), ("beta", PinScope.None), ("pinned", PinScope.Local) })
+        {
+            ids[name] = Guid.NewGuid();
+            rig.Tree.HomeRows.Add(Tree(ids[name], group, name, HabitType.Action, pin));
+            _history.Children.Add(new GroupChildHistory(ids[name], name, "#112233", HabitType.Action, 0, D(1), Set(27), Set()));
+        }
+
+        await rig.Vm.LoadAsync(group);
+
+        var expected = rig.Vm.Panoramica.Rows.Select(r => r.Name).ToList();
+        expected.Should().Equal("pinned", "beta", "zeta");
+        rig.Vm.Panoramica.Together.Rows.Select(r => r.Name).Should().Equal(expected);
+    }
+
+    private static HomeTreeRow Tree(Guid id, Guid? parent, string name, HabitType? type, PinScope pin)
+        => new(id, parent, name, "#112233", type, null, 0, false, pin, 0, false,
+            ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty);
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         var until = DateTime.UtcNow.AddSeconds(5);

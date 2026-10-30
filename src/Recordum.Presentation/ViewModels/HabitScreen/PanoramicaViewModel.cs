@@ -177,7 +177,7 @@ public sealed partial class PanoramicaViewModel : ObservableObject, IDisposable
         => _history is null
             ? Task.CompletedTask
             : Task.WhenAll(
-                Together.LoadAsync(_groupId, from, to, today, ct),
+                Together.LoadAsync(_groupId, from, to, today, Rows.Select(r => r.HabitNodeId).ToList(), ct),
                 Map.LoadAsync(from, to, shape, today, null, ct));
 
     /// <summary>Il confine con cui è stato fatto l'ultimo caricamento. Serve al test di I1: senza
