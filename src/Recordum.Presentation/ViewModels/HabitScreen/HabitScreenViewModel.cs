@@ -500,7 +500,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private Task LoadFiguresAsync(CancellationToken ct)
         => Node is { } node && Case is { } @case
-            ? Figures.LoadAsync(node, _config, @case, _dayBoundary, ct)
+            ? Figures.LoadAsync(node, _config, @case, _dayBoundary, _startDay, ct)
             : Task.CompletedTask;
 
     /// <summary>Un evento su una figlia: rilegge il conto e l'obiettivo (Panoramica), poi i numeri che li leggono.
@@ -579,6 +579,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     public History.HistoryPeriodViewModel Period { get; }
 
     private bool _periodForGroup;
+
+    // UX2A-1: l'inizio dell'abitudine sola e' il piu' vecchio fra creazione e prima registrazione. Null = la creazione (WPF).
+    private readonly IHabitStartQueryService? _starts;
+    private DateOnly? _startDay;
+    internal bool HasStartQuery => _starts is not null;
 
     /// <summary>La mappa della Cronologia, che cambia forma col periodo.</summary>
     public History.HistoryMapViewModel Map { get; }
@@ -678,8 +683,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         ITickSourceFactory? ticks = null,
         IGroupHistoryQueryService? groupHistory = null,
         IPurgeService? purge = null,
-        Quick.QuickActionHandlerSelector? quickActions = null)
+        Quick.QuickActionHandlerSelector? quickActions = null,
+        IHabitStartQueryService? starts = null)
     {
+        _starts = starts;
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(uiPrefs);
         ArgumentNullException.ThrowIfNull(editor);
@@ -858,6 +865,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 (await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true)).Count);
         if (generation != _loadGeneration) return;
         _config = config;
+        _startDay = node.NodeType != NodeType.Group && _starts is not null
+            ? await _starts.GetStartDayAsync(node.Id, ct).ConfigureAwait(true) : null;
+        if (generation != _loadGeneration) return;
         ScheduleLabel = ScheduleText.Describe(config, System.Globalization.CultureInfo.CurrentUICulture);
         await LoadFiguresAsync(ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
@@ -896,7 +906,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Il periodo di partenza: Anno per un gruppo (la mappa dell'anno), Mese per un'abitudine; passando da un tipo
         // all'altro riparte dal suo; fra soggetti dello stesso tipo resta la scelta dell'utente.
         var isGroup = node.NodeType == NodeType.Group;
-        Period.SetContext(_dayBoundary, _dayBoundary.DayOf(node.CreatedAt),
+        Period.SetContext(_dayBoundary, _startDay ?? _dayBoundary.DayOf(node.CreatedAt),
             isGroup == _periodForGroup ? null : isGroup ? History.HistoryPeriod.Year : History.HistoryPeriod.Month);
         _periodForGroup = isGroup;
         await ReloadHistoryAsync(ct).ConfigureAwait(true);
@@ -1114,8 +1124,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // Obiettivo, unita', etichette di scala, ritmo e streak vivono nella fascia Oggi e nelle liste della
             // Cronologia: si rileggono, senza toccare il giorno scelto ne' i valori digitati nel quick-add.
             CompletionList.SeriesLabelsJson = cfg?.SeriesLabelsJson;
+            // UX2A-8: l'elenco del periodo (Cronologia) porta le stesse etichette: senza, restava vecchio fino al prossimo evento.
+            PeriodRecords.Records.SeriesLabelsJson = cfg?.SeriesLabelsJson;
             await Task.WhenAll(TodayStrip.LoadAsync(refreshed, _dayBoundary), CompletionList.LoadAsync(refreshed.Id),
-                Records.ReloadAsync()).ConfigureAwait(true);
+                Records.ReloadAsync(), PeriodRecords.ShowRangeAsync(Period.From, Period.To)).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitUpdatedEvent failed: {ex}"); }
     }

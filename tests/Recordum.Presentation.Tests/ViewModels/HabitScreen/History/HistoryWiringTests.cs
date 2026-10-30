@@ -65,4 +65,27 @@ public class HistoryWiringTests
         await rig.Vm.SelectDayAsync(new DateOnly(2026, 10, 3));
         rig.Vm.Map.Cells.Single(c => c.IsSelected).Date.Should().Be(new DateOnly(2026, 10, 3));
     }
+
+    [Fact]
+    public async Task All_includes_records_before_creation()
+    {
+        // UX2A-1: creata il 3/1/2026, registrata il 28/12/2025: "Tutto" parte dal 2025 e il 28/12 ha un colore.
+        var starts = new FakeHabitStartQueryService { Start = new DateOnly(2025, 12, 28) };
+        var rig = HabitScreenViewModelFactory.CreateRig(new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero), starts: starts);
+        var id = Guid.NewGuid();
+        rig.Nodes.Store[id] = new HabitNode
+        {
+            Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "corsa",
+            CreatedAt = new DateTime(2026, 1, 3, 12, 0, 0, DateTimeKind.Utc),
+        };
+        rig.Completions.MagnitudeByHabit[id] = [new Recordum.Core.Abstractions.Services.Dtos.DailyMagnitude(new DateOnly(2025, 12, 28), 1m)];
+        await rig.Vm.LoadAsync(id);
+
+        rig.Vm.Period.Period = HistoryPeriod.All;
+        await Task.Delay(50);
+
+        rig.Vm.Map.Years.Select(y => y.Year).Should().Equal(2026, 2025);
+        rig.Vm.Map.Years.Single(y => y.Year == 2025).Weeks.SelectMany(w => w)
+            .Single(c => c.Date == new DateOnly(2025, 12, 28)).Step.Should().BeGreaterThan(0);
+    }
 }

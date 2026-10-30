@@ -80,7 +80,9 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         Assert.Contains(typeof(IGroupHistoryQueryService), resolved);
         Assert.Contains(typeof(IHabitStartQueryService), resolved);
         // Il parametro opzionale compila anche se nessuno lo fornisce: la funzione resterebbe spenta, in silenzio.
-        Assert.NotNull(scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>().GroupFigures);
+        var screen = scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>();
+        Assert.NotNull(screen.GroupFigures);
+        Assert.True(screen.HasStartQuery, "UX2A-1: senza IHabitStartQueryService la schermata riparte dalla creazione");
     }
 
     [Fact]

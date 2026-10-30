@@ -70,11 +70,11 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
         public static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
     }
 
-    public async Task LoadAsync(HabitNode node, HabitConfig? config, HabitCase @case, DayBoundary day, CancellationToken ct = default)
+    public async Task LoadAsync(HabitNode node, HabitConfig? config, HabitCase @case, DayBoundary day, DateOnly? start = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(node);
         var today = day.Today(_clock);
-        var created = day.DayOf(node.CreatedAt);
+        var created = start ?? day.DayOf(node.CreatedAt);
         if (created > today) created = today;
         // Un ricaricamento partito da un evento sull'abitudine di prima può finire dopo quello della nuova: vince l'ultimo.
         var generation = ++_generation;

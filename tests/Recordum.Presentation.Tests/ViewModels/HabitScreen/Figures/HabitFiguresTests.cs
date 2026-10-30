@@ -98,6 +98,32 @@ public sealed class HabitFiguresTests : IDisposable
     }
 
     [Fact]
+    public async Task Total_counts_records_before_creation()
+    {
+        // UX2A-1: creata il 3/1/2026, ma registrata dal 28/12/2025: l'inizio e' il piu' vecchio dei due.
+        Heat(Days(new DateOnly(2025, 12, 28), new DateOnly(2025, 12, 30)).ToArray());
+        var node = Node(HabitType.Action, new DateTime(2026, 1, 3, 12, 0, 0, DateTimeKind.Utc));
+
+        var vm = Vm();
+        await vm.LoadAsync(node, Daily(), HabitCase.Action, Boundary, new DateOnly(2025, 12, 28));
+
+        vm.Items[3].Value.Should().Be("3");
+    }
+
+    [Fact]
+    public async Task Pct30_window_starts_at_the_first_record()
+    {
+        // Creata 2 giorni fa, ma la prima registrazione e' di 10 giorni fa: la finestra e' di 11 giorni, 6 fatti = 55%.
+        Heat(Days(Today.AddDays(-10), Today.AddDays(-6)).Append((Today, 1)).ToArray());
+        var node = Node(HabitType.Action, new DateTime(2026, 10, 26, 12, 0, 0, DateTimeKind.Utc));
+
+        var vm = Vm();
+        await vm.LoadAsync(node, Daily(), HabitCase.Action, Boundary, Today.AddDays(-10));
+
+        vm.Items[2].Value.Should().Be("55%");
+    }
+
+    [Fact]
     public async Task Action_pct_counts_only_scheduled_days()
     {
         Heat(Days(Today.AddDays(-29), Today).Where(d => d.Item1.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Wednesday or DayOfWeek.Friday).ToArray());

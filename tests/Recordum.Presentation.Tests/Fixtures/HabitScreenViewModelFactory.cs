@@ -58,12 +58,12 @@ public static class HabitScreenViewModelFactory
 
     /// <summary>Lo schermo con tutti i suoi finti a portata di mano: orologio e confine scelti dal test.</summary>
     public static HabitScreenRig CreateRig(DateTimeOffset now, DayBoundary? boundary = null, IGroupHistoryQueryService? groupHistory = null,
-        QuickActionHandlerSelector? quickActions = null, ITickSourceFactory? ticks = null)
-        => BuildRig(new FakeAppSettingService(), new FakeHabitUiPrefsService(), now, boundary, groupHistory, quickActions, ticks);
+        QuickActionHandlerSelector? quickActions = null, ITickSourceFactory? ticks = null, IHabitStartQueryService? starts = null)
+        => BuildRig(new FakeAppSettingService(), new FakeHabitUiPrefsService(), now, boundary, groupHistory, quickActions, ticks, starts);
 
     private static HabitScreenRig BuildRig(
         FakeAppSettingService settings, FakeHabitUiPrefsService uiPrefs, DateTimeOffset now, DayBoundary? boundary, IGroupHistoryQueryService? groupHistory = null,
-        QuickActionHandlerSelector? quickActions = null, ITickSourceFactory? ticks = null)
+        QuickActionHandlerSelector? quickActions = null, ITickSourceFactory? ticks = null, IHabitStartQueryService? starts = null)
     {
         var nodes = new FakeHabitNodeService();
         var completions = new FakeCompletionService();
@@ -88,7 +88,7 @@ public static class HabitScreenViewModelFactory
             abstinence, clock, bus, new FakeEditorAvailability(), settings, editor,
             tree, new FakeDiaryService(), new FakeConfirmationDialog(),
             new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs,
-            new FakeResetTimeResolver(boundary), ticks, groupHistory, new FakePurgeService(), quickActions);
+            new FakeResetTimeResolver(boundary), ticks, groupHistory, new FakePurgeService(), quickActions, starts);
 
         return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus, tree, goals);
     }

@@ -66,6 +66,21 @@ public sealed class HistoryListTests : IDisposable
     }
 
     [Fact]
+    public async Task A_config_change_reloads_the_period_list_with_the_new_series_labels()
+    {
+        // UX2A-8: dopo un cambio delle etichette di serie l'elenco del periodo restava vecchio.
+        var (rig, id) = await LoadAsync(HabitType.Counter, (r, i) => Add(r, i, new DateTimeOffset(2026, 10, 28, 7, 0, 0, TimeSpan.Zero)));
+        var before = rig.Vm.PeriodRecords.Records.Rows.Single();
+        rig.Configs.Store[id] = new HabitConfig { HabitNodeId = id, SeriesLabelsJson = "[\"a\",\"b\"]" };
+
+        rig.Bus.Publish(new Recordum.Plugins.Contracts.Events.HabitUpdatedPayload(id));
+        await Task.Delay(100);
+
+        rig.Vm.PeriodRecords.Records.SeriesLabelsJson.Should().Be("[\"a\",\"b\"]");
+        rig.Vm.PeriodRecords.Records.Rows.Single().Should().NotBeSameAs(before, "l'elenco e' stato riletto");
+    }
+
+    [Fact]
     public async Task Rows_have_day_and_time_labels()
     {
         var (rig, _) = await LoadAsync(HabitType.Action, (r, id) =>
