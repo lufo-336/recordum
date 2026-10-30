@@ -79,6 +79,8 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         Assert.Contains(typeof(HabitBuilderViewModel), resolved);
         Assert.Contains(typeof(IGroupHistoryQueryService), resolved);
         Assert.Contains(typeof(IHabitStartQueryService), resolved);
+        // Il parametro opzionale compila anche se nessuno lo fornisce: la funzione resterebbe spenta, in silenzio.
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>().GroupFigures);
     }
 
     [Fact]

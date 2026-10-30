@@ -21,11 +21,16 @@ public sealed partial class PanoramicaViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TodayLabel))]
+    [NotifyPropertyChangedFor(nameof(TodayFraction))]
     private int _totalChildren;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TodayLabel))]
+    [NotifyPropertyChangedFor(nameof(TodayFraction))]
     private int _completedToday;
+
+    /// <summary>La frazione di oggi (0–1) per la barra in testa; 0 senza abitudini.</summary>
+    public double TodayFraction => TotalChildren == 0 ? 0 : (double)CompletedToday / TotalChildren;
 
     /// <summary>True when the rollup has any row (habit OR subgroup) — drives the empty-state.</summary>
     public bool HasChildren => Children.Count > 0;
@@ -64,11 +69,10 @@ public sealed partial class PanoramicaViewModel : ObservableObject
         var rows = await _tree.GetHomeTreeAsync(ct).ConfigureAwait(true);
         var byParent = rows.ToLookup(r => r.ParentId);
         Children.Clear();
-        var habitCount = 0;
-        var completedCount = 0;
+        var (completedCount, habitCount) = GroupProgress.Count(rows.Where(r => !r.IsArchived).ToLookup(r => r.ParentId), group.Id);
 
         // Hierarchical rollup: subgroups appear as their own (indented) rows, habits beneath
-        // them. The today counter still counts habits only.
+        // them. The today counter comes from GroupProgress.
         void Walk(Guid parentId, int indent)
         {
             foreach (var child in byParent[parentId])
@@ -83,10 +87,8 @@ public sealed partial class PanoramicaViewModel : ObservableObject
                 else
                 {
                     Children.Add(new PanoramicaChildRow(
-                        child.HabitNodeId, child.Name, child.ColorHex, child.IsCompletedToday,
+                        child.HabitNodeId, child.Name, child.ColorHex, GroupProgress.IsDoneToday(child),
                         child.CompletionsLast7Days, Indent: indent));
-                    habitCount++;
-                    if (child.IsCompletedToday) completedCount++;
                 }
             }
         }

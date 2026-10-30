@@ -745,6 +745,10 @@ public static class Strings
     public static string Notes_Column_New => Get("Notes.Column.New");
     public static string Notes_Column_AddPhoto => Get("Notes.Column.AddPhoto");
     public static string Notes_Column_Back => Get("Notes.Column.Back");
+    public static string Group_Figures_CompleteRun => Get("Group.Figures.CompleteRun");
+    public static string Group_Figures_Goal => Get("Group.Figures.Goal");
+    public static string Group_Figures_MostSkipped => Get("Group.Figures.MostSkipped");
+    public static string Group_Progress_Today => Get("Group.Progress.Today");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

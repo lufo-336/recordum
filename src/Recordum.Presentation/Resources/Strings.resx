@@ -2115,4 +2115,16 @@ Details: {0}</value>
   <data name="History.List.NoNotes" xml:space="preserve">
     <value>No notes in this period.</value>
   </data>
+  <data name="Group.Figures.CompleteRun" xml:space="preserve">
+    <value>complete days in a row</value>
+  </data>
+  <data name="Group.Figures.Goal" xml:space="preserve">
+    <value>group goal</value>
+  </data>
+  <data name="Group.Figures.MostSkipped" xml:space="preserve">
+    <value>most skipped</value>
+  </data>
+  <data name="Group.Progress.Today" xml:space="preserve">
+    <value>{0} of {1} done today</value>
+  </data>
 </root>

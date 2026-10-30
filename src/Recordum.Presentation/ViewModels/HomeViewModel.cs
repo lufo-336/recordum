@@ -513,27 +513,9 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     {
         var live = _lastFetched.Where(r => !r.IsArchived).ToList();
         var byParent = live.ToLookup(r => r.ParentId);
-        (int Done, int Total) Count(Guid groupId)
-        {
-            int done = 0, total = 0;
-            foreach (var child in byParent[groupId])
-            {
-                if (child.HabitType is null)
-                {
-                    var (d, t) = Count(child.HabitNodeId);
-                    done += d; total += t;
-                }
-                else
-                {
-                    total++;
-                    if (child.IsCompletedToday) done++;
-                }
-            }
-            return (done, total);
-        }
         foreach (var vm in Rows.Where(r => r.IsGroup))
         {
-            var (done, total) = Count(vm.HabitNodeId);
+            var (done, total) = GroupProgress.Count(byParent, vm.HabitNodeId);
             vm.SetGroupProgress(done, total);
         }
     }

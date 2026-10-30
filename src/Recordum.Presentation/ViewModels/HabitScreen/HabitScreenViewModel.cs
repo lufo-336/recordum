@@ -485,9 +485,18 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private bool _selectedDayHasRecords;
     private HabitConfig? _config;
 
+    /// <summary>I numeri della testa di un gruppo; null dove l'host non fornisce <see cref="IGroupHistoryQueryService"/> (WPF).</summary>
+    public Figures.GroupFiguresViewModel? GroupFigures { get; }
+
     private Task LoadFiguresAsync(CancellationToken ct)
         => Node is { } node && Case is { } @case
             ? Figures.LoadAsync(node, _config, @case, _dayBoundary, ct)
+            : Task.CompletedTask;
+
+    /// <summary>Dopo <c>Panoramica.LoadAsync</c>, che carica l'obiettivo del gruppo che il terzo numero legge.</summary>
+    private Task LoadGroupFiguresAsync(CancellationToken ct)
+        => GroupFigures is { } gf && Node is { NodeType: NodeType.Group } group
+            ? gf.LoadAsync(group, _dayBoundary, Panoramica.Goal, ct)
             : Task.CompletedTask;
 
     /// <summary>"annulla" sotto il comando: il giorno scelto ha almeno una registrazione. Spento per astinenza (i periodi
@@ -639,7 +648,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IOpenFileDialog openFileDialog,
         IHabitUiPrefsService uiPrefs,
         IResetTimeResolver resetTimes,
-        ITickSourceFactory? ticks = null)
+        ITickSourceFactory? ticks = null,
+        IGroupHistoryQueryService? groupHistory = null)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(uiPrefs);
@@ -697,6 +707,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);
         Panoramica = new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
         TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock, ticks);
+        GroupFigures = groupHistory is null ? null : new Figures.GroupFiguresViewModel(groupHistory, clock);
         Figures = new Figures.HabitFiguresViewModel(completions, streaks, abstinence, metrics, refData, goals, hourly, clock, ticks: ticks);
         // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
         // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
@@ -785,7 +796,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (generation != _loadGeneration) return;
 
         if (node.NodeType == NodeType.Group)
+        {
             await Panoramica.LoadAsync(node, _dayBoundary, ct).ConfigureAwait(true);
+            if (generation != _loadGeneration) return;
+            await LoadGroupFiguresAsync(ct).ConfigureAwait(true);
+        }
 
         // Journal Cronologia shows the paired diary note body + deletes the pair via IDiaryService.
         CompletionList.IsJournal = node.HabitType == HabitType.Journal;
@@ -929,6 +944,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         try
         {
             if (Node is null) return;
+            // Una registrazione di una figlia sposta i numeri del gruppo che si sta guardando.
+            if (IsGroupNode) { await LoadGroupFiguresAsync(CancellationToken.None).ConfigureAwait(true); return; }
             var habitId = envelope.Payload switch
             {
                 CompletionRecordedPayload r => r.HabitNodeId,
@@ -968,6 +985,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         try
         {
             if (Node is null) return;
+            if (IsGroupNode) { await LoadGroupFiguresAsync(CancellationToken.None).ConfigureAwait(true); return; }
             var reloads = new List<Task>
             {
                 Detail.LoadAsync(Node, _dayBoundary, CancellationToken.None),
