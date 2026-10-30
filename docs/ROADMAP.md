@@ -13,7 +13,8 @@
   Cronologia · Note · Configura (la Note portata da WPF), la Cronologia con cinque periodi, mappa che cambia forma
   (heatmap disegnata), il giorno con la sua nota e l'elenco virtualizzato. **Prossimo: l'autore guarda i PNG (artefatti
   della CI) e fa il merge in `main`; poi il piano 2b** (gruppo con Panoramica e "Insieme", Configura in cinque blocchi,
-  scelta del colore). Decisioni aperte dell'onda: **UX2A-1** (le registrazioni prima della creazione restano fuori da
+  scelta del colore): **scritto il 2026-10-30**, `docs/superpowers/plans/2026-10-30-ux-wave2b-group-configure.md` (9 task),
+  branch `ux2b-group-configure` impilato su `ux2-habit-screen`, da approvare ed eseguire. Decisioni aperte dell'onda: **UX2A-1** (le registrazioni prima della creazione restano fuori da
   "Tutto" e dai numeri) e i minori UX2A-2…9 nel tracker. I test di prestazioni non girano in CI (oscillano sui runner
   condivisi).
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
