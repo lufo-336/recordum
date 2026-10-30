@@ -1,4 +1,6 @@
+using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Presentation.ViewModels.Quick;
 using Recordum.Core.Services;
 using Recordum.Core.Time;
 using Recordum.Presentation.Bootstrap;
@@ -55,11 +57,13 @@ public static class HabitScreenViewModelFactory
     }
 
     /// <summary>Lo schermo con tutti i suoi finti a portata di mano: orologio e confine scelti dal test.</summary>
-    public static HabitScreenRig CreateRig(DateTimeOffset now, DayBoundary? boundary = null, IGroupHistoryQueryService? groupHistory = null)
-        => BuildRig(new FakeAppSettingService(), new FakeHabitUiPrefsService(), now, boundary, groupHistory);
+    public static HabitScreenRig CreateRig(DateTimeOffset now, DayBoundary? boundary = null, IGroupHistoryQueryService? groupHistory = null,
+        QuickActionHandlerSelector? quickActions = null, ITickSourceFactory? ticks = null)
+        => BuildRig(new FakeAppSettingService(), new FakeHabitUiPrefsService(), now, boundary, groupHistory, quickActions, ticks);
 
     private static HabitScreenRig BuildRig(
-        FakeAppSettingService settings, FakeHabitUiPrefsService uiPrefs, DateTimeOffset now, DayBoundary? boundary, IGroupHistoryQueryService? groupHistory = null)
+        FakeAppSettingService settings, FakeHabitUiPrefsService uiPrefs, DateTimeOffset now, DayBoundary? boundary, IGroupHistoryQueryService? groupHistory = null,
+        QuickActionHandlerSelector? quickActions = null, ITickSourceFactory? ticks = null)
     {
         var nodes = new FakeHabitNodeService();
         var completions = new FakeCompletionService();
@@ -84,7 +88,7 @@ public static class HabitScreenViewModelFactory
             abstinence, clock, bus, new FakeEditorAvailability(), settings, editor,
             tree, new FakeDiaryService(), new FakeConfirmationDialog(),
             new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs,
-            new FakeResetTimeResolver(boundary), groupHistory: groupHistory);
+            new FakeResetTimeResolver(boundary), ticks, groupHistory, new FakePurgeService(), quickActions);
 
         return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus, tree, goals);
     }

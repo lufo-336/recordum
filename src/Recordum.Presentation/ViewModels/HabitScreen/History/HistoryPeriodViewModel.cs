@@ -35,12 +35,13 @@ public sealed partial class HistoryPeriodViewModel : ObservableObject
 
     /// <summary>Un soggetto nuovo: riparte dal periodo che contiene oggi. Non alza <see cref="Changed"/>: chi carica il
     /// soggetto ricarica da sé.</summary>
-    public void SetContext(DayBoundary day, DateOnly habitCreated)
+    public void SetContext(DayBoundary day, DateOnly habitCreated, HistoryPeriod? reset = null)
     {
         _day = day;
         _created = habitCreated;
         _anchor = CurrentDay;
-        if (Period == HistoryPeriod.Custom) SetPeriodSilently(HistoryPeriod.Month);
+        if (reset is { } forced) SetPeriodSilently(forced);
+        else if (Period == HistoryPeriod.Custom) SetPeriodSilently(HistoryPeriod.Month);
         Recompute();
     }
 

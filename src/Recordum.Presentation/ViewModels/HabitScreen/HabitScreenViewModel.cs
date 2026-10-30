@@ -501,7 +501,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var generation = _loadGeneration;
         await Panoramica.LoadAsync(group, _dayBoundary, CancellationToken.None).ConfigureAwait(true);
         if (generation != _loadGeneration || Node?.Id != group.Id) return;
-        await LoadGroupFiguresAsync(CancellationToken.None).ConfigureAwait(true);
+        await Task.WhenAll(LoadGroupFiguresAsync(CancellationToken.None), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
     }
 
     /// <summary>Dopo <c>Panoramica.LoadAsync</c>, che carica l'obiettivo del gruppo che il terzo numero legge.</summary>
@@ -568,6 +568,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>Il periodo che comanda mappa e Cronologia (spec direzione visiva §6.1).</summary>
     public History.HistoryPeriodViewModel Period { get; }
 
+    private bool _periodForGroup;
+
     /// <summary>La mappa della Cronologia, che cambia forma col periodo.</summary>
     public History.HistoryMapViewModel Map { get; }
 
@@ -588,8 +590,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             History.HistoryPeriod.All => History.MapShape.YearHeatmaps,
             _ => History.MapShape.Heatmap,
         };
+        var today = _dayBoundary.Today(_clock);
+        // Un gruppo: "Insieme" e la mappa del gruppo seguono lo stesso periodo.
+        if (Node.NodeType == NodeType.Group)
+            return Panoramica.LoadHistoryAsync(Period.From, Period.To, shape, today, ct);
         return Task.WhenAll(
-            Map.LoadAsync(Period.From, Period.To, shape, _dayBoundary.Today(_clock), SelectedDay, ct),
+            Map.LoadAsync(Period.From, Period.To, shape, today, SelectedDay, ct),
             PeriodRecords.ShowRangeAsync(Period.From, Period.To, ct));
     }
     public DayNoteViewModel DayNote { get; }
@@ -660,7 +666,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         IHabitUiPrefsService uiPrefs,
         IResetTimeResolver resetTimes,
         ITickSourceFactory? ticks = null,
-        IGroupHistoryQueryService? groupHistory = null)
+        IGroupHistoryQueryService? groupHistory = null,
+        IPurgeService? purge = null,
+        Quick.QuickActionHandlerSelector? quickActions = null)
     {
         ArgumentNullException.ThrowIfNull(appSettings);
         ArgumentNullException.ThrowIfNull(uiPrefs);
@@ -716,7 +724,11 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         TimerControl = new TimerControlViewModel(timers, configs, clock, ticks, events);
         Notes = new NotesViewModel(noteService, events, clock, availability, attachments, photoImporter, openFileDialog, confirmationDialog);
         Detail = new DetailViewModel(goals, streaks, trend, hourly, completions, metrics, refData, ramp, configs, abstinence, clock, events, ticks);
-        Panoramica = new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
+        // Le figlie segnabili come nella Home: servono la query dei giorni del gruppo e il servizio di cestino delle righe.
+        Panoramica = groupHistory is not null && purge is not null
+            ? new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock, nodes, purge, groupHistory,
+                uiPrefs, streaks, quickActions, resetTimes, ticks)
+            : new PanoramicaViewModel(tree, goals, completions, metrics, refData, clock);
         TodayStrip = new TodayStripViewModel(abstinence, completions, streaks, hourly, metrics, refData, goals, uiPrefs, clock, ticks);
         GroupFigures = groupHistory is null ? null : new Figures.GroupFiguresViewModel(groupHistory, clock);
         Figures = new Figures.HabitFiguresViewModel(completions, streaks, abstinence, metrics, refData, goals, hourly, clock, ticks: ticks);
@@ -747,6 +759,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Period.Changed -= OnPeriodChanged;
         Map.DaySelected -= OnCalendarDateSelected;
         Figures.Dispose();
+        Panoramica.Dispose();
         _periodList.Changed -= OnAbstinenceChanged;
         TodayStrip.Changed -= OnAbstinenceChanged;
         TodayStrip.ActionRequested -= OnTodayStripAction;
@@ -861,7 +874,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         PeriodRecords.SetContext(node.Id, node.HabitType == HabitType.Journal,
             isResistance: node.HabitType == HabitType.Resistance, seriesLabelsJson: config?.SeriesLabelsJson);
         SelectedDay = Calendar.SelectedDate ?? today;
-        Period.SetContext(_dayBoundary, _dayBoundary.DayOf(node.CreatedAt));
+        // Il periodo di partenza: Anno per un gruppo (la mappa dell'anno), Mese per un'abitudine; passando da un tipo
+        // all'altro riparte dal suo; fra soggetti dello stesso tipo resta la scelta dell'utente.
+        var isGroup = node.NodeType == NodeType.Group;
+        Period.SetContext(_dayBoundary, _dayBoundary.DayOf(node.CreatedAt),
+            isGroup == _periodForGroup ? null : isGroup ? History.HistoryPeriod.Year : History.HistoryPeriod.Month);
+        _periodForGroup = isGroup;
         await ReloadHistoryAsync(ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
         if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync(ct).ConfigureAwait(true);
