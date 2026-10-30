@@ -106,12 +106,21 @@
                    ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"
                    IsVisible="{CompiledBinding ShowKeyFigure}"/>
 
-        <ctl:HeatmapStrip Grid.Column="3" Margin="0,0,8,0" VerticalAlignment="Center"
-                          Kind="{CompiledBinding StripVisual}"
-                          Fractions="{CompiledBinding StripFractions}"
-                          Values="{CompiledBinding StripCells}"
-                          AccentColor="{CompiledBinding ColorHex}"
-                          ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
+        <!-- "reset 5:00": il giorno di questa abitudine finisce piu' tardi di quello dell'app, l'ultima casella e' ancora ieri. -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock x:Name="ResetPending" Margin="0,0,8,0" VerticalAlignment="Center"
+                     FontSize="{StaticResource FontSize.Small}"
+                     Foreground="{DynamicResource Brush.TextFaint}"
+                     Text="{CompiledBinding ResetPendingText}"
+                     ToolTip.Tip="{CompiledBinding ResetPendingTip}"
+                     IsVisible="{CompiledBinding IsDayBehindApp}"/>
+          <ctl:HeatmapStrip Margin="0,0,8,0" VerticalAlignment="Center"
+                            Kind="{CompiledBinding StripVisual}"
+                            Fractions="{CompiledBinding StripFractions}"
+                            Values="{CompiledBinding StripCells}"
+                            AccentColor="{CompiledBinding ColorHex}"
+                            ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
+        </StackPanel>
 
         <Button Grid.Column="4" Classes="quicklog" Margin="0,0,7,0" VerticalAlignment="Center"
                 ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"

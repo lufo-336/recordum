@@ -1891,6 +1891,12 @@
   <data name="Home.Group.Progress" xml:space="preserve">
     <value>{0} di {1}</value>
   </data>
+  <data name="Home.Row.ResetPending" xml:space="preserve">
+    <value>reset {0}</value>
+  </data>
+  <data name="Home.Row.ResetPending.Tip" xml:space="preserve">
+    <value>Per questa abitudine la giornata finisce alle {0}: l'ultima casella è ancora ieri.</value>
+  </data>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>Nuova</value>
   </data>

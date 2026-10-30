@@ -350,7 +350,9 @@ public sealed class HabitTreeQueryService(
                     Icon: r.Icon,
                     SortOrder: r.SortOrder,
                     ValuesLast14Days: values14,
-                    TodayCounterIsDuration: todayCounterIsDuration);
+                    TodayCounterIsDuration: todayCounterIsDuration,
+                    HabitDay: r.HabitType is null ? null : DayOf(r.Id).Boundary,
+                    AppDay: r.HabitType is null ? null : appDay);
             })
             .ToList();
     }

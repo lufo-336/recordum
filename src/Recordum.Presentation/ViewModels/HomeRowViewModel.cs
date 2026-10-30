@@ -202,6 +202,9 @@ public sealed partial class HomeRowViewModel : ObservableObject
         CompletionsLast7Days = row.CompletionsLast7Days;
         LastCompletionAt = row.LastCompletionAt;
         IsCompletedToday = row.IsCompletedToday;
+        _habitDay = row.HabitDay;
+        _appDay = row.AppDay;
+        RefreshDayLag();
         AbstinenceOpenSinceMs = row.AbstinenceOpenSinceMs;
         IndentLevel = indentLevel;
         _name = row.Name;
@@ -328,6 +331,35 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (AbstinenceOpenSinceMs is not { } sinceMs || _clock is null) return string.Empty;
         var elapsed = _clock.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(sinceMs);
         return DurationFormat.FormatStopwatch(elapsed);
+    }
+
+    private readonly DayBoundary? _habitDay, _appDay;
+
+    /// <summary>Vero se il giorno di questa abitudine finisce più tardi di quello dell'app: solo allora la riga può dire "reset"
+    /// e vale la pena registrarla al battito.</summary>
+    public bool TracksDayLag => _habitDay is { } h && _appDay is { } a && h.ResetTime > a.ResetTime;
+
+    /// <summary>Vero finché il giorno dell'abitudine è prima di quello dell'app: l'ultima casella è ancora ieri.</summary>
+    [ObservableProperty] private bool _isDayBehindApp;
+
+#pragma warning disable CA1863 // stringa localizzata che cambia con la cultura
+    /// <summary>"reset 5:00" mentre <see cref="IsDayBehindApp"/>, altrimenti null.</summary>
+    public string? ResetPendingText => IsDayBehindApp ? string.Format(CultureInfo.CurrentCulture, Resources.Strings.Home_Row_ResetPending, ResetTimeText) : null;
+
+    public string? ResetPendingTip => IsDayBehindApp ? string.Format(CultureInfo.CurrentCulture, Resources.Strings.Home_Row_ResetPending_Tip, ResetTimeText) : null;
+
+#pragma warning restore CA1863
+
+    private string ResetTimeText => (_habitDay?.ResetTime ?? default).ToString("t", CultureInfo.CurrentCulture);
+
+    /// <summary>Rilegge se il giorno dell'abitudine è ancora indietro. Chiamata dal battito della Home, senza ricaricare.</summary>
+    public void RefreshDayLag()
+    {
+        var behind = TracksDayLag && _clock is not null && _habitDay!.Today(_clock) < _appDay!.Today(_clock);
+        if (behind == IsDayBehindApp) return;
+        IsDayBehindApp = behind;
+        OnPropertyChanged(nameof(ResetPendingText));
+        OnPropertyChanged(nameof(ResetPendingTip));
     }
 
     /// <summary>Recomputes the live abstinence clock text. Called by the shared Home ticker each second.</summary>

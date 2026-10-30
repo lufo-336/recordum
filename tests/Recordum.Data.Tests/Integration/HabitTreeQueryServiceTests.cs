@@ -43,6 +43,20 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task Rows_carry_the_habit_day_and_the_app_day()
+    {
+        // La riga dice "reset 5:00" quando il giorno dell'abitudine e' indietro: servono i due confini.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 19, 2, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var id = await AddHabitAsync(fx, "late", new TimeOnly(5, 0));
+
+        var row = (await new HabitTreeQueryService(fx.Factory, fx.Clock, fx.ResetTimes).GetHomeTreeAsync()).Single(r => r.HabitNodeId == id);
+
+        row.HabitDay!.ResetTime.Should().Be(new TimeOnly(5, 0));
+        row.AppDay!.ResetTime.Should().NotBe(new TimeOnly(5, 0));
+    }
+
+    [Fact]
     public async Task Two_habits_with_different_resets_get_different_strips_from_the_same_completion_time()
     {
         // Stessa registrazione (22:30Z del 18 = 19 alle 00:30 locali), due abitudini: una senza

@@ -126,10 +126,34 @@ public partial class HeatmapStrip : UserControl
         ActualThemeVariantChanged += (_, _) => { if (!Values.IsDefaultOrEmpty) Rebuild(); };
     }
 
+    /// <summary>Quante volte le celle sono state ricostruite (solo per i test: lo scopo e' non farle ricostruire a vuoto).</summary>
+    internal int RebuildCount { get; private set; }
+
     // Nessun record "Cell" bindabile: i valori calcolati diventano direttamente proprietà di
     // Border, non passano da un DataTemplate (vedi commento in HeatmapStrip.axaml).
+    // I binding impostano Kind, Fractions, Values e AccentColor uno dopo l'altro: ricostruire a ogni proprieta' le
+    // disegnava fino a cinque volte. Le proprieta' segnano la striscia da rifare, la misura la rifa' una volta.
+    private bool _dirty = true;
+
     private void Rebuild()
     {
+        _dirty = true;
+        InvalidateMeasure();
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (_dirty)
+        {
+            _dirty = false;
+            BuildCells();
+        }
+        return base.MeasureOverride(availableSize);
+    }
+
+    private void BuildCells()
+    {
+        RebuildCount++;
         Cells.Children.Clear();
 
         if (!Values.IsDefaultOrEmpty)

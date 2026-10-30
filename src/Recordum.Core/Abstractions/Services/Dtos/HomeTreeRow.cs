@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
+using Recordum.Core.Time;
 
 namespace Recordum.Core.Abstractions.Services.Dtos;
 
@@ -35,4 +36,8 @@ public sealed record HomeTreeRow(
     // True when the counter's primary metric is a duration (Seconds). Paired with a null/non-time
     // TodayCounterUnitCode it means TodayCounterTotal is still RAW SECONDS — the presentation layer
     // renders those as h:mm:ss so the row agrees with the records list instead of printing "720".
-    bool TodayCounterIsDuration = false);
+    bool TodayCounterIsDuration = false,
+    // Il giorno dell'abitudine e quello dell'app (cascata reset: abitudine -> gruppi -> app). Null = non risolti
+    // (gruppi, fixture): la riga non dice mai "reset".
+    DayBoundary? HabitDay = null,
+    DayBoundary? AppDay = null);

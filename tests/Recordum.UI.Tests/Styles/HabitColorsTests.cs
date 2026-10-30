@@ -40,6 +40,35 @@ public class HabitColorsTests
     [MemberData(nameof(Extremes))]
     public void Text_variant_reaches_4_5_for_extreme_colours(string hex) => ReadsOnItsTint(hex);
 
+    public static TheoryData<string, bool> PaletteByTheme
+    {
+        get
+        {
+            var data = new TheoryData<string, bool>();
+            foreach (var hex in Recordum.UI.Controls.ColorSwatchPicker.Palette.Concat(new[] { "#FFFFFF", "#000000", "#FFFF00", "#00FFFF", "#808080" }))
+                foreach (var dark in new[] { false, true }) data.Add(hex, dark);
+            return data;
+        }
+    }
+
+    [AvaloniaTheory]
+    [MemberData(nameof(PaletteByTheme))]
+    public void The_value_brush_reads_on_the_selected_row_as_well_as_on_the_plain_one(string hex, bool dark)
+    {
+        // La riga selezionata ha una tinta piu' forte (Opacity.RowTintSelected): la variante "testo" deve reggere 4,5:1 anche li'.
+        var variant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+        var app = global::Avalonia.Application.Current!;
+        var pane = ((ISolidColorBrush)HabitTextBrushConverter.Resource<ISolidColorBrush>(app, "Brush.Pane", variant)!).Color;
+        var text = ((ISolidColorBrush)HabitTextBrushConverter.BrushFor(hex, variant)).Color;
+        var habit = Color.Parse(hex);
+        foreach (var token in new[] { "Opacity.RowTint", "Opacity.RowTintSelected" })
+        {
+            var tint = (double)HabitTextBrushConverter.Resource<object>(app, token, variant)!;
+            var ratio = HabitColors.Contrast(text, HabitColors.Blend(habit, tint, pane));
+            Assert.True(ratio >= 4.5, $"{hex} {(dark ? "scuro" : "chiaro")} su {token}: {ratio:0.00}");
+        }
+    }
+
     [Fact]
     public void The_raw_colour_is_not_enough()
     {

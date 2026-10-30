@@ -28,7 +28,10 @@ public sealed class HabitTextBrushConverter : IMultiValueConverter
             return Resource<IBrush>(app, "Brush.Text", variant) ?? Brushes.Black;
 
         var pane = (Resource<ISolidColorBrush>(app, "Brush.Pane", variant) ?? Brushes.White).Color;
-        var tint = Resource<object>(app, "Opacity.RowTint", variant) is double d ? d : 0.09;
+        // La riga selezionata ha la tinta piu' forte: la variante regge 4,5:1 anche li' (e, essendo piu' scura/chiara,
+        // anche sulla tinta normale), cosi' la striscia non cambia colore a ogni selezione.
+        var tint = Math.Max(Resource<object>(app, "Opacity.RowTint", variant) is double d ? d : 0.09,
+                            Resource<object>(app, "Opacity.RowTintSelected", variant) is double s ? s : 0.16);
         return new ImmutableSolidColorBrush(HabitColors.TextVariant(habit, pane, tint, variant == ThemeVariant.Dark));
     }
 

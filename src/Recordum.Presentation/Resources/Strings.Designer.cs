@@ -188,6 +188,8 @@ public static class Strings
     public static string Home_StripHeader_Today => Get("Home.StripHeader.Today");
     public static string Home_Filter_Done => Get("Home.Filter.Done");
     public static string Home_Group_Progress => Get("Home.Group.Progress");
+    public static string Home_Row_ResetPending => Get("Home.Row.ResetPending");
+    public static string Home_Row_ResetPending_Tip => Get("Home.Row.ResetPending.Tip");
     public static string Home_NewMenu_Label => Get("Home.NewMenu.Label");
     public static string Rail_Diary_ComingSoon => Get("Rail.Diary.ComingSoon");
     public static string Rail_Stats_ComingSoon => Get("Rail.Stats.ComingSoon");

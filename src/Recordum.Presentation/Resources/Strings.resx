@@ -1917,6 +1917,12 @@ Details: {0}</value>
   <data name="Home.Group.Progress" xml:space="preserve">
     <value>{0} of {1}</value>
   </data>
+  <data name="Home.Row.ResetPending" xml:space="preserve">
+    <value>reset {0}</value>
+  </data>
+  <data name="Home.Row.ResetPending.Tip" xml:space="preserve">
+    <value>For this habit the day ends at {0}: the last box is still yesterday.</value>
+  </data>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>New</value>
   </data>

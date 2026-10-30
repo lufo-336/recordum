@@ -265,6 +265,7 @@ public sealed partial class PanoramicaViewModel : ObservableObject, IDisposable
             var vm = new HomeRowViewModel(row, level, _nodes, _purge, p, _streaks, _clock) { CurrentTab = HomeTab.Active };
             if (_quickActions is not null) vm.AttachQuickActionSelector(_quickActions);
             if (vm.IsResistanceClock) _clockTicker.Register(vm.RefreshClock);
+            if (vm.TracksDayLag) _clockTicker.Register(vm.RefreshDayLag);
             vm.Changed += OnRowChanged;
             vm.QuickActionExecuted += OnRowQuickActionExecuted;
             Rows.Add(vm);
