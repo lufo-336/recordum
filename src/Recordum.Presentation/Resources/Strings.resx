@@ -2124,8 +2124,8 @@ Details: {0}</value>
   <data name="Group.Figures.MostSkipped" xml:space="preserve">
     <value>most skipped</value>
   </data>
-  <data name="Group.Progress.Today" xml:space="preserve">
-    <value>{0} of {1} done today</value>
+  <data name="Group.Progress.Caption" xml:space="preserve">
+    <value>done today</value>
   </data>
   <data name="Group.Head.Subtitle" xml:space="preserve">
     <value>{0} habits · the day starts at {1}</value>

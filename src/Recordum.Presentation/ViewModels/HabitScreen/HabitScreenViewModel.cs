@@ -496,10 +496,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>"3 di 5": il numero grande in testa al gruppo.</summary>
     public string GroupProgressCount => string.Format(System.Globalization.CultureInfo.CurrentCulture,
         Resources.Strings.Home_Group_Progress, Panoramica.CompletedToday, Panoramica.TotalChildren);
-
-    /// <summary>"3 di 5 fatte oggi" per la testa del gruppo.</summary>
-    public string GroupProgressLabel => string.Format(System.Globalization.CultureInfo.CurrentCulture,
-        Resources.Strings.Group_Progress_Today, Panoramica.CompletedToday, Panoramica.TotalChildren);
 #pragma warning restore CA1863
 
     private Task LoadFiguresAsync(CancellationToken ct)
@@ -750,7 +746,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             {
                 OnPropertyChanged(nameof(GroupSubtitle));
                 OnPropertyChanged(nameof(GroupProgressCount));
-                OnPropertyChanged(nameof(GroupProgressLabel));
             }
         };
         GroupFigures = groupHistory is null ? null : new Figures.GroupFiguresViewModel(groupHistory, clock);

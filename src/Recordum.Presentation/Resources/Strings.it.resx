@@ -2098,8 +2098,8 @@
   <data name="Group.Figures.MostSkipped" xml:space="preserve">
     <value>la più saltata</value>
   </data>
-  <data name="Group.Progress.Today" xml:space="preserve">
-    <value>{0} di {1} fatte oggi</value>
+  <data name="Group.Progress.Caption" xml:space="preserve">
+    <value>fatte oggi</value>
   </data>
   <data name="Group.Head.Subtitle" xml:space="preserve">
     <value>{0} abitudini · la giornata comincia alle {1}</value>

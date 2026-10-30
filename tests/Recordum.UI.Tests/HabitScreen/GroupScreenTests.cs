@@ -115,7 +115,7 @@ public class GroupScreenTests(ITestOutputHelper output)
         using var culture = TestCulture.Pin();
         using var o = await OpenAsync();
         Named<TextBlock>(o.Head, "ProgressCount").Text.Should().Be("1 di 2");
-        Named<TextBlock>(o.Head, "ProgressCaption").Text.Should().Be("1 di 2 fatte oggi");
+        Named<TextBlock>(o.Head, "ProgressCaption").Text.Should().Be("fatte oggi");
         var bar = Named<ProgressBar>(o.Head, "ProgressBar");
         var fill = bar.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Indicator");
         bar.Bounds.Width.Should().BeInRange(50, 150.5, "la barra sta nel blocco di 150 px, non oltre il margine");
@@ -219,6 +219,36 @@ public class GroupScreenTests(ITestOutputHelper output)
         await UntilAsync(() => grid.Rows![0].Cells.Count == 365);
         grid.ShowHeader.Should().BeFalse();
         grid.CellSize.Should().BeLessThan(TogetherGrid.MaxCell);
+    }
+
+    [AvaloniaFact]
+    public async Task Together_cells_never_shrink_below_4px()
+    {
+        using var o = await OpenAsync(rich: true, width: 460);
+        var grid = Named<TogetherGrid>(o.Column, "Together");
+        await UntilAsync(() => grid.Days == 365);
+        grid.CellSize.Should().BeGreaterThanOrEqualTo(4, "(460-140)/365 sarebbe 0,9 px: si scorre, non si rimpicciolisce");
+        var cells = grid.Scroll.Content as Control;
+        cells!.Bounds.Width.Should().BeGreaterThanOrEqualTo(365 * 4);
+        Shoot(o, "group-together-year-narrow-light");
+        o.Window.RequestedThemeVariant = ThemeVariant.Dark;
+        Pump();
+        Shoot(o, "group-together-year-narrow-dark");
+    }
+
+    [AvaloniaFact]
+    public async Task Together_long_periods_scroll_to_today()
+    {
+        using var o = await OpenAsync(rich: true);
+        var grid = Named<TogetherGrid>(o.Column, "Together");
+        await UntilAsync(() => grid.Days == 365);
+        await UntilAsync(() => grid.Scroll.Extent.Width > grid.Scroll.Viewport.Width);
+        await UntilAsync(() => grid.Scroll.Offset.X > 0);
+        var pitch = grid.CellSize + grid.CellGap;
+        var today = grid.Rows![0].Cells.ToList().FindIndex(c => c.IsToday);
+        var x = today * pitch;
+        x.Should().BeInRange(grid.Scroll.Offset.X, grid.Scroll.Offset.X + grid.Scroll.Viewport.Width - grid.CellSize, "oggi sta nella finestra");
+        ((today + 1) * pitch).Should().BeApproximately(grid.Scroll.Offset.X + grid.Scroll.Viewport.Width, pitch + 1, "oggi è all'estremo destro");
     }
 
     [AvaloniaFact]

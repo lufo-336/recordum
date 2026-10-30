@@ -49,7 +49,7 @@
             </MultiBinding>
           </TextBlock.Foreground>
         </TextBlock>
-        <TextBlock x:Name="ProgressCaption" Text="{CompiledBinding GroupProgressLabel}" FontSize="{DynamicResource FontSize.Small}"
+        <TextBlock x:Name="ProgressCaption" Text="{x:Static res:Strings.Group_Progress_Caption}" FontSize="{DynamicResource FontSize.Small}"
                    Foreground="{DynamicResource Brush.TextMuted}" HorizontalAlignment="Right" TextWrapping="Wrap"/>
         <ProgressBar x:Name="ProgressBar" Margin="0,6,0,0" Height="6" MinHeight="6" MinWidth="0" Minimum="0" Maximum="1"
                      Value="{CompiledBinding Panoramica.TodayFraction}" CornerRadius="3"

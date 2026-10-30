@@ -748,7 +748,7 @@ public static class Strings
     public static string Group_Figures_CompleteRun => Get("Group.Figures.CompleteRun");
     public static string Group_Figures_Goal => Get("Group.Figures.Goal");
     public static string Group_Figures_MostSkipped => Get("Group.Figures.MostSkipped");
-    public static string Group_Progress_Today => Get("Group.Progress.Today");
+    public static string Group_Progress_Caption => Get("Group.Progress.Caption");
     public static string Group_Head_Subtitle => Get("Group.Head.Subtitle");
     public static string Group_Section_Today => Get("Group.Section.Today");
     public static string Group_Section_Together => Get("Group.Section.Together");
