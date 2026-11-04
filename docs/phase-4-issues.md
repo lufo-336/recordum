@@ -2353,6 +2353,7 @@ Trovati nell'onda 2a (Task 10, PNG e misure; `reported` salvo dove detto — UX2
   di `NoteRowViewModel.Summary`, come in WPF; manca un helper Markdown → testo.
 - **UX2A-3 — `SerializedSecretStoreTests.A_pending_write_of_one_secret_does_not_hold_the_other` instabile su Windows** ·
   Timeout al primo giro della CI di `8c561beb`, verde al rilancio senza modifiche: dipende dai tempi del runner condiviso.
+  Il 2026-11-04 la CI Windows è caduta due volte di seguito su questa classe (`99933042`: `A_forget_waits_for_a_late_remember_and_the_key_ends_up_forgotten`, `WriteEntered.Wait` di 5 s; `35d4a013`: questo test), senza modifiche in `Security`: l'instabilità riguarda l'intera classe, non un solo test.
 - Minori della review dell'intero branch, rimandati (`reported`):
   - **UX2A-4** — percentuale "30 giorni" per "N volte a settimana": `ScheduleEvaluator` conta ogni giorno come previsto
     (chi fa 3 su 3 vede ~43%); servirebbero le settimane riuscite sulle settimane della finestra.
@@ -2411,6 +2412,11 @@ Dalla review dell'intero branch (corretti nell'onda di correzioni, test rossi pr
 - **UX2B-8 — ogni registrazione, ovunque, ricaricava ogni gruppo aperto** · `fixed` · solo un evento di una discendente
   (registrazione, astinenza, `HabitUpdated`) rilegge il gruppo; una figlia rinominata o ricolorata ora si vede
   (`An_event_for_a_habit_outside_the_group_does_not_reload_it`, `A_childs_rename_shows_in_the_open_group`).
+- **UX2B-9 — un'astinenza sola aperta nella sua scheda resta vecchia se la si inizia o la si ricade altrove** · `reported` ·
+  precedente a 2b: la schermata di un'abitudine non ascolta `AbstinenceStarted`/`AbstinenceLapsed`/`AbstinencePeriodDeleted` del bus
+  (`OnAbstinenceChanged` parte solo da sorgenti interne alla schermata; il gestore aggiunto con UX2B-5 vale solo per i gruppi).
+  Orologio e stato Inizia/Ricaduta della scheda restano vecchi, e un secondo clic lì registra l'azione opposta. Rimedio: instradare
+  l'evento con `HabitNodeId == Node.Id` in `OnAbstinenceChanged`, evitando la doppia ricarica dalle sorgenti interne.
 - Minori della review dell'intero branch, rimandati (`reported`):
   - **UX2B-M16** — il chevron di un sottogruppo nella colonna del gruppo non fa niente (`PanoramicaViewModel.RebuildRows`, `GroupRow.axaml:47`).
   - **UX2B-M17** — le righe si ricostruiscono a ogni ricarica: fuoco e posizione da tastiera nella colonna del gruppo si perdono dopo ogni registrazione rapida.
@@ -2421,4 +2427,4 @@ Dalla review dell'intero branch (corretti nell'onda di correzioni, test rossi pr
   - **UX2B-M22** — due stringhe italiane esistenti cambiate ("Salva come template" → "modello", "Pianificazione" → "Programma"): cambiano anche le etichette di WPF.
   - **UX2B-M23** — mappa del gruppo in Settimana/Mese: i pulsanti dei giorni eseguono ancora `SelectCommand` (senza effetto).
   - **UX2B-M24** — dalla review del Task 9: `TogetherGrid.HeaderLabel` `[..1]` su un nome di giorno vuoto o una coppia surrogata; il `Close` di `OpenOnceAsync` del test di prestazioni non sta in un `finally`; "Insieme" in Settimana è un blocco di ~50 px in un pannello di ~950.
-  - **UX2B-M25** — dopo UX2B-8: `MoveAsync` non pubblica eventi, quindi un'abitudine spostata nel gruppo dalla Home mentre il gruppo è aperto non c'è finché non lo si riapre (prima ci entrava alla sua prima registrazione, perché ogni registrazione ricaricava).
+  - **UX2B-M25** — dopo UX2B-8: `MoveAsync` non pubblica eventi, quindi un'abitudine spostata nel gruppo dalla Home mentre il gruppo è aperto non c'è finché non lo si riapre (prima ci entrava alla sua prima registrazione, perché ogni registrazione ricaricava). Vale anche per un'abitudine riattivata dall'archivio dalla Home. Rimedi: un evento di spostamento in Data, oppure, per un id sconosciuto, risalire al genitore e ricaricare se sta sotto il gruppo.
