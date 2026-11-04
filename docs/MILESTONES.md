@@ -769,6 +769,12 @@ scuro uscivano su nero); il gruppo vuoto con numeri senza dati e la mappa strett
 caldo, "Tutto" 288–351 ms. Due righe della tabella sono **più alte dopo**: tab con un anno 345–486 ms contro 277–368, tre
 anni `LoadAsync` 384–645 ms contro 268–487. La macchina era rumorosa (i giri si muovono del doppio sullo stesso lato), quindi
 non è detto che sia una regressione, ma nemmeno che non lo sia: **prima del merge serve una nuova misura a macchina ferma**.
+*Misura a macchina ferma (2026-11-04, dopo l'onda di correzioni)*: build server spento, worktree di `c0fc1306` contro `083597ef`,
+tre giri alternati, solo i test di prestazioni UI (a caldo, ms, prima → dopo): Home 300 righe 132/291/165 → 144/314/137,
+ricarica 131/283/221 → 171/274/137; tre anni `LoadAsync` 344/431/251 → 274/460/354; "Tutto" 568/604/573 → 544/538/596: nessuno
+scarto. Tab con un anno 280/380/259 → 341/589/295: **più alto in tutti e tre i giri** (+36…+61 ms nei giri tranquilli), coerente
+con la lettura dell'inizio aggiunta da UX2A-1; budget 5 s, accettato. Gruppo di 12 × tre anni: `LoadAsync` + Anno 514–703 ms,
+"Tutto" 310–325 ms. Nodi visuali della Home 512 → 538.
 Data: i quattro test di prestazioni verdi prima e dopo.
 *Non consegnato*: "Salva come modello" del gruppo (in arrivo: un modello di gruppo è un formato nuovo), UX2B-2…4 e i minori
 UX2B-M1…M25 nel tracker. Dopo l'onda di correzioni della review dell'intero branch (UX2B-5…8: il gruppo segue
