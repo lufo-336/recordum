@@ -748,3 +748,24 @@ un giro con una build in parallelo raddoppiava i tempi della Home.
 *Non consegnato*: UX2A-1 (le registrazioni precedenti alla creazione fuori da "Tutto" e dai numeri: decisione dell'autore),
 UX2A-2…9 (minori nel tracker), le miniature delle foto nelle righe del diario della Cronologia, `TodayStripView` Avalonia
 non più usata. Suite su Linux: Presentation 1261, UI 604 (`Category!=Performance`), Data 652 (+2 saltati).
+
+**Progresso 2026-11-04 (direzione visiva, onda 2b: gruppo, Configura in cinque blocchi, scelta del colore, a codice
+completo).** Piano `2026-10-30-ux-wave2b-group-configure` eseguito su `ux2b-group-configure` (9 task, ognuno con la sua
+review), impilato su 2a.
+*Cosa esiste ora*: la schermata del gruppo con l'avanzamento del giorno e i numeri del gruppo (serie di giorni completi,
+30 giorni, obiettivo, la più saltata); le figlie come righe della Home, segnabili dal gruppo; "Insieme", una riga per figlia
+nel periodo scelto (una cella per giorno, mai sotto i 4 px: si scorre, aperto su oggi); la mappa dell'anno del gruppo. Le
+figlie di un gruppo hanno i giorni previsti e fatti da una query nuova di Data; l'inizio di un'abitudine è il più vecchio
+fra creazione e prima registrazione (UX2A-1); un'astinenza è fatta nei giorni puliti. Configura in cinque blocchi (Chi è,
+Cosa registri, Quando conta, Come appare in Home, Avanzate) con le righe-riassunto; la Configura del gruppo (Per le figlie,
+Contenuto). La scelta del colore di §7.1. Chiusi UX2A-1, 5, 6, 8, 9.
+*Cosa ha insegnato*: i PNG del Task 9 hanno trovato le iniziali della Settimana di "Insieme" accavallate (UX2B-1, tre
+lettere su una cella di 14 px) e due finestre di test senza lo sfondo dell'app (il selettore del colore e il creatore in
+scuro uscivano su nero); il gruppo vuoto con numeri senza dati e la mappa stretta aperta a gennaio vanno all'autore
+(UX2B-2, 3). Le misure in parallelo a un compilatore residente (`VBCSCompiler`) oscillano del doppio: prima
+`dotnet build-server shutdown`.
+*Prestazioni (locale, alternando primo commit del branch e HEAD)*: Home 300 righe a caldo 116–329 ms prima, 147–286 ms dopo
+(rumore, nessuno scarto chiaro; budget 500); gruppo di 12 figlie con tre anni (test nuovo) `LoadAsync` + Anno 572–841 ms a
+caldo, "Tutto" 288–351 ms. Data: i quattro test di prestazioni verdi prima e dopo.
+*Non consegnato*: "Salva come modello" del gruppo (in arrivo: un modello di gruppo è un formato nuovo), UX2B-2…4 e i minori
+UX2B-M1…M15 nel tracker. Suite su Linux: Presentation 1330, UI 701 (`Category!=Performance`), Data 664 (+2 saltati, all'ultima esecuzione intera, `40c5f8e3`).

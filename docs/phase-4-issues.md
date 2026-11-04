@@ -55,6 +55,9 @@ un giorno (`fixed`: la bozza ricorda il giorno) · **F2d2-7** gesto Nota veloce 
 su Avalonia fino a F6 · **F2d2-9** un editor completo per voce, senza virtualizzazione · **F2d2-10** "Aggiungi foto" della nota
 veloce durante una modifica · **F2d2-11** minori rimandati.
 
+**Direzione visiva, onde 2a e 2b (sezioni in fondo)** — UX2A-1, 5, 6, 8, 9 `fixed` in 2b; restano UX2A-2, 3, 4, 7. Nuovi di
+2b: **UX2B-1** (`fixed`), **UX2B-2…4** e i minori **UX2B-M1…M15** · `reported`.
+
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
 - **F2a-1** — un gruppo in F2a ha l'intestazione ma né chip né colonne (la Panoramica è F3) · **F2a-2** — vista Anno e menu di
@@ -2338,7 +2341,7 @@ Da verificare a schermo:
 
 Trovati nell'onda 2a (Task 10, PNG e misure; tutti `reported`, da decidere con l'autore):
 
-- **UX2A-1 — le registrazioni precedenti alla creazione non stanno in "Tutto" né nei numeri** · Si può registrare "per un
+- **UX2A-1 — le registrazioni precedenti alla creazione non stanno in "Tutto" né nei numeri** · `fixed` (onda 2b: l'inizio è il più vecchio fra creazione e prima registrazione, decisione dell'autore del 2026-10-30; `HistoryWiringTests.All_includes_records_before_creation`, `HabitFiguresTests.Total_counts_records_before_creation`, `Pct30_window_starts_at_the_first_record`) · Si può registrare "per un
   altro giorno" anche prima del giorno di creazione (nessun limite nel selettore), ed è il caso comune di chi crea
   un'abitudine e recupera la settimana passata. "Tutto" parte dall'anno di creazione (`HistoryPeriodViewModel`), i numeri
   dalla creazione per scelta della spec (§6.2, finestre "30/90 giorni"): una registrazione del 28 dicembre su un'abitudine
@@ -2350,13 +2353,44 @@ Trovati nell'onda 2a (Task 10, PNG e misure; tutti `reported`, da decidere con l
 - Minori della review dell'intero branch, rimandati (`reported`):
   - **UX2A-4** — percentuale "30 giorni" per "N volte a settimana": `ScheduleEvaluator` conta ogni giorno come previsto
     (chi fa 3 su 3 vede ~43%); servirebbero le settimane riuscite sulle settimane della finestra.
-  - **UX2A-5** — contatore a tocco senza obiettivo: il conteggio del giorno scelto non compare in testa (prima "oggi: N");
+  - **UX2A-5** — `fixed` (onda 2b; `HeadCommandTests.CounterTap_without_a_goal_still_shows_the_count_of_the_chosen_day`) — contatore a tocco senza obiettivo: il conteggio del giorno scelto non compare in testa (prima "oggi: N");
     il "−" è un glifo (manca `Icon.Minus`).
-  - **UX2A-6** — astinenza in testa: non mostra `ErrorMessage` né "ricaduta il …" (`RelapsedOnDisplay`).
+  - **UX2A-6** — `fixed` (onda 2b; `HeadCommandTests.After_a_lapse_start_is_the_record_command`, `Abstinence_command_shows_the_error_message`) — astinenza in testa: non mostra `ErrorMessage` né "ricaduta il …" (`RelapsedOnDisplay`).
   - **UX2A-7** — `HeatGrid` è un solo controllo: nessun nome di automazione per giorno e nessun indicatore di fuoco da
     tastiera (le frecce funzionano).
-  - **UX2A-8** — cambi di comportamento condivisi con WPF fuori dall'elenco del piano: `CounterTapQuickAddViewModel` rilegge
+  - **UX2A-8** — `fixed` (onda 2b; `HistoryListTests.A_config_change_reloads_the_period_list_with_the_new_series_labels`) — cambi di comportamento condivisi con WPF fuori dall'elenco del piano: `CounterTapQuickAddViewModel` rilegge
     invece di ±1 con la finestra da `DayBoundary` (correzione); `OnHabitUpdated` non ricarica `PeriodRecords` (dopo un
     cambio delle etichette di serie l'elenco del periodo resta vecchio fino al prossimo evento).
-  - **UX2A-9** — `ActionCommandView`: `IsChecked` OneWay su un `ToggleButton` con comando; se il comando non cambia nulla
+  - **UX2A-9** — `fixed` (onda 2b; `HeadCommandTests.Action_button_follows_IsDone_when_the_command_changes_nothing`) — `ActionCommandView`: `IsChecked` OneWay su un `ToggleButton` con comando; se il comando non cambia nulla
     (guardia `IsSaving`) lo stato visivo può divergere da `IsDone` (plausibile, non riprodotto).
+
+## Onda 2b — gruppo, Configura in cinque blocchi, scelta del colore (`UX2B-*`)
+
+Trovati nel Task 9 (PNG in chiaro e in scuro, inventario, misure; tutti `reported` salvo dove detto):
+
+- **UX2B-1 — in "Insieme" Settimana le iniziali dei giorni si accavallavano** ("lunmamergiovensabdom": tre lettere a 10 px
+  su una cella di 14) · `fixed` (l'iniziale sola; `GroupScreenTests.Week_header_labels_fit_their_cell`, rosso prima).
+- **UX2B-2 — il gruppo vuoto mostra numeri senza dati** ("0 giorni completi di fila", "0%" su 30 giorni) accanto a "Nessuna
+  abitudine in questo gruppo" (`group-brief-empty-*.png`): l'anti-obiettivo della spec dice di non farlo; da decidere se i
+  numeri spariscono a gruppo vuoto.
+- **UX2B-3 — a 480 px la mappa dell'anno del gruppo si apre a gennaio**: i giorni con dati (ottobre) sono fuori vista,
+  oltre lo scorrimento (`group-brief-narrow-*.png`); "Insieme" invece si apre su oggi. La mappa è quella di 2a
+  (`HistoryMapView`), vale anche per l'abitudine sola.
+- **UX2B-4 — l'obiettivo del gruppo in testa non dice il periodo**: WPF mostrava "Attuale / Obiettivo" col periodo
+  (`Goal.PeriodLabel`); il numero della testa porta solo il nome (come dice il piano).
+- Minori delle review per task, rimandati:
+  - **UX2B-M1** — regola del giorno pulito duplicata fra `GroupHistoryQueryService` e `AbstinenceService` (manca un test di parità o un helper comune).
+  - **UX2B-M2** — `GroupHistoryQueryService`: la lambda di `ScheduledRules` ricostruita per ogni giorno con un parametro inutile; una seconda query per `SortOrder`; `WalkDepth` senza guardia contro i cicli.
+  - **UX2B-M3** — i giorni previsti usano l'`HabitConfig` di oggi: cambiare il programma riscrive lo storico del gruppo.
+  - **UX2B-M4** — mancano test per un sottogruppo archiviato, per l'ordine con il sottogruppo per primo, per un'astinenza con orario di reset.
+  - **UX2B-M5** — il commento di `GroupFigures` dice che WPF riceve null, ma la DI comune registra il servizio anche per WPF.
+  - **UX2B-M6** — il test del cablaggio copre `OnCompletionEvent`, non `OnAbstinenceChanged`, per la Panoramica del gruppo.
+  - **UX2B-M7** — `Changed` dal menu di una riga ricarica le righe ma non Insieme, mappa e numeri (latente: nel gruppo la riga non ha menu); un `Goal.LoadAsync` vecchio può scrivere dopo un caricamento nuovo.
+  - **UX2B-M8** — barra di avanzamento su `Brush.Border` invece di `Brush.Cell`; titolo della mappa = etichetta del periodo (doppione); la soppressione del menu passa da `FindAncestorOfType`; `Icon.LayoutList` non confrontato con Lucide.
+  - **UX2B-M9** — `TogetherGrid`: `ScrollToToday` riaccodato a ogni cambio di misura annulla uno scorrimento a mano; la barra orizzontale copre l'ultima riga; `Cells.Render` disegna tutti i giorni × righe senza ritaglio (misurato: 12 figlie × "Tutto" su tre anni ≈ 0,34 s, nel budget).
+  - **UX2B-M10** — riassunto dell'orario di reset: "Ereditato" vecchio o nudo per un attimo dopo aver svuotato il campo; `catch (Exception)` in `RefreshInheritedAsync` inghiotte anche l'annullamento; `ResolveUnitAsync` di `GoalSection` senza la stessa guardia.
+  - **UX2B-M11** — `HabitBuilder.Recovery.GraceDay` non tradotto in italiano ("Grace day", preesistente); nessun test raggiunge il campione `JournalEntriesWeek` di `HomeRowFor`.
+  - **UX2B-M12** — Configura: `AiSharing` aperto da fuori resta nascosto finché Avanzate è chiusa (nessun chiamante oggi); nessun test che riaprire la colonna ri-aggancia `EditorPane`; la striscia vuota dell'anteprima si vede appena in scuro.
+  - **UX2B-M13** — scelta del colore: `FocusSelected` ignora preferiti e tonalità; un nome vuoto dà un'anteprima senza nome; i cerchi hanno per nome solo l'esadecimale e nessuno stato "scelto" per l'automazione.
+  - **UX2B-M14** — `TimerStatusBarView`: `FontSize=15` letterale fuori scala (dal piano), da fare token; il test "fatte" non spuntato di `HomeLayoutTests` misura su uno sfondo forse trasparente; la variante "testo" di `HabitTextBrushConverter` ora tarata sulla tinta della riga scelta ovunque.
+  - **UX2B-M15** — test: `Task.Delay(50/100)` in `HistoryWiringTests`/`HistoryListTests`; `FakeHabitStartQueryService` torna 0001-01-01 senza `Start`; `HeatmapStrip` costruisce in `MeasureOverride` (chi legge `Cells` prima del layout la trova vuota).
