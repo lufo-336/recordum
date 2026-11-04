@@ -56,7 +56,8 @@ su Avalonia fino a F6 · **F2d2-9** un editor completo per voce, senza virtualiz
 veloce durante una modifica · **F2d2-11** minori rimandati.
 
 **Direzione visiva, onde 2a e 2b (sezioni in fondo)** — UX2A-1, 5, 6, 8, 9 `fixed` in 2b; restano UX2A-2, 3, 4, 7. Nuovi di
-2b: **UX2B-1** (`fixed`), **UX2B-2…4** e i minori **UX2B-M1…M15** · `reported`.
+2b: **UX2B-1**, **UX2B-5…8** (dalla review dell'intero branch) `fixed`; **UX2B-2…4** e i minori **UX2B-M1…M25** ·
+`reported` (salvo M5, M6, M11 per metà, `fixed`).
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2339,13 +2340,15 @@ Da verificare a schermo:
 - **UX-P2 — le schermate del dettaglio nei test non usano il font dell'app** · `fixed` (onda 1: ogni finestra prende Font.Default, anche quelle dei test) · Rese fuori da `MainWindow`, escono in sans:
   i PNG non rappresentano la produzione. Se UX-1 cambia il font, i test vanno ospitati con i token veri.
 
-Trovati nell'onda 2a (Task 10, PNG e misure; tutti `reported`, da decidere con l'autore):
+Trovati nell'onda 2a (Task 10, PNG e misure; `reported` salvo dove detto — UX2A-1, 5, 6, 8, 9 chiusi in 2b):
 
 - **UX2A-1 — le registrazioni precedenti alla creazione non stanno in "Tutto" né nei numeri** · `fixed` (onda 2b: l'inizio è il più vecchio fra creazione e prima registrazione, decisione dell'autore del 2026-10-30; `HistoryWiringTests.All_includes_records_before_creation`, `HabitFiguresTests.Total_counts_records_before_creation`, `Pct30_window_starts_at_the_first_record`) · Si può registrare "per un
   altro giorno" anche prima del giorno di creazione (nessun limite nel selettore), ed è il caso comune di chi crea
   un'abitudine e recupera la settimana passata. "Tutto" parte dall'anno di creazione (`HistoryPeriodViewModel`), i numeri
   dalla creazione per scelta della spec (§6.2, finestre "30/90 giorni"): una registrazione del 28 dicembre su un'abitudine
-  creata il 3 gennaio non compare nella mappa "Tutto" né in "in tutto". Da decidere: l'inizio è il primo dato o la creazione?
+  creata il 3 gennaio non compare nella mappa "Tutto" né in "in tutto". Deciso (autore, 2026-10-30): l'inizio è il più
+  vecchio fra creazione e prima registrazione (per un'astinenza, l'inizio del primo periodo); per un gruppo, il più vecchio
+  fra la sua creazione e l'inizio delle figlie con giorni previsti (UX2B-7).
 - **UX2A-2 — il riepilogo nell'elenco della colonna Note è Markdown grezzo** ("Giornata 0: \*\*lenta\*\*…") · È la prima riga
   di `NoteRowViewModel.Summary`, come in WPF; manca un helper Markdown → testo.
 - **UX2A-3 — `SerializedSecretStoreTests.A_pending_write_of_one_secret_does_not_hold_the_other` instabile su Windows** ·
@@ -2383,14 +2386,39 @@ Trovati nel Task 9 (PNG in chiaro e in scuro, inventario, misure; tutti `reporte
   - **UX2B-M2** — `GroupHistoryQueryService`: la lambda di `ScheduledRules` ricostruita per ogni giorno con un parametro inutile; una seconda query per `SortOrder`; `WalkDepth` senza guardia contro i cicli.
   - **UX2B-M3** — i giorni previsti usano l'`HabitConfig` di oggi: cambiare il programma riscrive lo storico del gruppo.
   - **UX2B-M4** — mancano test per un sottogruppo archiviato, per l'ordine con il sottogruppo per primo, per un'astinenza con orario di reset.
-  - **UX2B-M5** — il commento di `GroupFigures` dice che WPF riceve null, ma la DI comune registra il servizio anche per WPF.
-  - **UX2B-M6** — il test del cablaggio copre `OnCompletionEvent`, non `OnAbstinenceChanged`, per la Panoramica del gruppo.
+  - **UX2B-M5** — `fixed` (onda di correzioni) — il commento di `GroupFigures` dice che WPF riceve null, ma la DI comune registra il servizio anche per WPF.
+  - **UX2B-M6** — `fixed` (con UX2B-5; `HabitScreenFiguresWiringTests.A_childs_abstinence_change_reloads_the_group`) — il test del cablaggio copre `OnCompletionEvent`, non `OnAbstinenceChanged`, per la Panoramica del gruppo.
   - **UX2B-M7** — `Changed` dal menu di una riga ricarica le righe ma non Insieme, mappa e numeri (latente: nel gruppo la riga non ha menu); un `Goal.LoadAsync` vecchio può scrivere dopo un caricamento nuovo.
   - **UX2B-M8** — barra di avanzamento su `Brush.Border` invece di `Brush.Cell`; titolo della mappa = etichetta del periodo (doppione); la soppressione del menu passa da `FindAncestorOfType`; `Icon.LayoutList` non confrontato con Lucide.
   - **UX2B-M9** — `TogetherGrid`: `ScrollToToday` riaccodato a ogni cambio di misura annulla uno scorrimento a mano; la barra orizzontale copre l'ultima riga; `Cells.Render` disegna tutti i giorni × righe senza ritaglio (misurato: 12 figlie × "Tutto" su tre anni ≈ 0,34 s, nel budget).
   - **UX2B-M10** — riassunto dell'orario di reset: "Ereditato" vecchio o nudo per un attimo dopo aver svuotato il campo; `catch (Exception)` in `RefreshInheritedAsync` inghiotte anche l'annullamento; `ResolveUnitAsync` di `GoalSection` senza la stessa guardia.
-  - **UX2B-M11** — `HabitBuilder.Recovery.GraceDay` non tradotto in italiano ("Grace day", preesistente); nessun test raggiunge il campione `JournalEntriesWeek` di `HomeRowFor`.
+  - **UX2B-M11** — `HabitBuilder.Recovery.GraceDay` non tradotto in italiano ("Grace day", preesistente; `fixed`: "Giorno di grazia", `SectionSummaryTests`); nessun test raggiunge il campione `JournalEntriesWeek` di `HomeRowFor`.
   - **UX2B-M12** — Configura: `AiSharing` aperto da fuori resta nascosto finché Avanzate è chiusa (nessun chiamante oggi); nessun test che riaprire la colonna ri-aggancia `EditorPane`; la striscia vuota dell'anteprima si vede appena in scuro.
   - **UX2B-M13** — scelta del colore: `FocusSelected` ignora preferiti e tonalità; un nome vuoto dà un'anteprima senza nome; i cerchi hanno per nome solo l'esadecimale e nessuno stato "scelto" per l'automazione.
   - **UX2B-M14** — `TimerStatusBarView`: `FontSize=15` letterale fuori scala (dal piano), da fare token; il test "fatte" non spuntato di `HomeLayoutTests` misura su uno sfondo forse trasparente; la variante "testo" di `HabitTextBrushConverter` ora tarata sulla tinta della riga scelta ovunque.
   - **UX2B-M15** — test: `Task.Delay(50/100)` in `HistoryWiringTests`/`HistoryListTests`; `FakeHabitStartQueryService` torna 0001-01-01 senza `Start`; `HeatmapStrip` costruisce in `MeasureOverride` (chi legge `Cells` prima del layout la trova vuota).
+
+Dalla review dell'intero branch (corretti nell'onda di correzioni, test rossi prima in `HabitScreenFiguresWiringTests`):
+
+- **UX2B-5 — il gruppo non seguiva Inizia/Ricaduta di una figlia** · `fixed` · la schermata ascoltava solo registrazioni,
+  note e `HabitUpdated`; un'astinenza segnata dalla riga del gruppo, dalla Home o da un'altra scheda lasciava vecchi riga,
+  "x di y", Insieme, mappa e numeri (e un secondo clic scriveva un periodo o una ricaduta non voluti). Ora ascolta
+  `AbstinenceStarted`/`Lapsed`/`PeriodDeleted` (`A_childs_abstinence_change_reloads_the_group`).
+- **UX2B-6 — cambiare l'obiettivo del gruppo lasciava vecchio il numero in testa** · `fixed` · `HabitUpdated` del gruppo
+  ora rilegge Panoramica e numeri (`Editing_the_groups_goal_refreshes_the_head_goal_figure`).
+- **UX2B-7 — "Tutto" su un gruppo partiva dall'anno di creazione del gruppo** · `fixed` · ora dall'inizio del gruppo
+  (Ruling 4), lo stesso calcolato da `GroupFiguresViewModel` (`All_on_a_group_starts_at_the_oldest_childs_start`).
+- **UX2B-8 — ogni registrazione, ovunque, ricaricava ogni gruppo aperto** · `fixed` · solo un evento di una discendente
+  (registrazione, astinenza, `HabitUpdated`) rilegge il gruppo; una figlia rinominata o ricolorata ora si vede
+  (`An_event_for_a_habit_outside_the_group_does_not_reload_it`, `A_childs_rename_shows_in_the_open_group`).
+- Minori della review dell'intero branch, rimandati (`reported`):
+  - **UX2B-M16** — il chevron di un sottogruppo nella colonna del gruppo non fa niente (`PanoramicaViewModel.RebuildRows`, `GroupRow.axaml:47`).
+  - **UX2B-M17** — le righe si ricostruiscono a ogni ricarica: fuoco e posizione da tastiera nella colonna del gruppo si perdono dopo ogni registrazione rapida.
+  - **UX2B-M18** — `Group.Head.Subtitle` usa `TotalChildren` (senza le astinenze mai iniziate): "2 abitudini" con tre righe; manca il singolare.
+  - **UX2B-M19** — l'inizio dell'abitudine sola (e del gruppo) si legge una volta in `LoadAsync`: una registrazione retroattiva prima dell'inizio non allarga "Tutto" e i numeri finché non si riapre.
+  - **UX2B-M20** — ricaduta e ripartenza nello stesso giorno: `GroupProgress.IsDoneToday` lo conta fatto, la query esclude il giorno della ricaduta.
+  - **UX2B-M21** — fase di "ogni X giorni": la query del gruppo si ancora a `StartsOn`, aggregatore delle serie e numeri dell'abitudine a creazione/inizio: possono differire quando la prima registrazione precede la creazione.
+  - **UX2B-M22** — due stringhe italiane esistenti cambiate ("Salva come template" → "modello", "Pianificazione" → "Programma"): cambiano anche le etichette di WPF.
+  - **UX2B-M23** — mappa del gruppo in Settimana/Mese: i pulsanti dei giorni eseguono ancora `SelectCommand` (senza effetto).
+  - **UX2B-M24** — dalla review del Task 9: `TogetherGrid.HeaderLabel` `[..1]` su un nome di giorno vuoto o una coppia surrogata; il `Close` di `OpenOnceAsync` del test di prestazioni non sta in un `finally`; "Insieme" in Settimana è un blocco di ~50 px in un pannello di ~950.
+  - **UX2B-M25** — dopo UX2B-8: `MoveAsync` non pubblica eventi, quindi un'abitudine spostata nel gruppo dalla Home mentre il gruppo è aperto non c'è finché non lo si riapre (prima ci entrava alla sua prima registrazione, perché ogni registrazione ricaricava).

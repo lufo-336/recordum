@@ -15,7 +15,10 @@
   pronti, recenti, anteprima chiaro/scuro, il resto in Avanzate); UX2A-1, 5, 6, 8, 9 chiusi; "reset 5:00" nella riga. Il
   Task 9 ha guardato i PNG in chiaro e in scuro (un difetto trovato e corretto: UX2B-1), misurato (gruppo di 12 figlie con
   tre anni: `LoadAsync` + Anno ≈ 0,6–0,8 s a caldo, "Tutto" ≈ 0,3 s) e fatto l'inventario di Configura (nessuna voce
-  persa). **Prossimo**: review dell'intero branch con un'onda di correzioni e CI verde; poi l'autore guarda i PNG (artefatti
+  persa). Due misure sono più alte dopo (tab con un anno, tre anni `LoadAsync`) su una macchina rumorosa: **una misura a
+  macchina ferma resta da fare prima del merge** (`docs/MILESTONES.md`). Review dell'intero branch fatta, con un'onda di
+  correzioni (UX2B-5…8: il gruppo segue Inizia/Ricaduta delle figlie, l'obiettivo e i rinomi, "Tutto" dall'inizio del
+  gruppo, ricarica solo per le discendenti). **Prossimo**: CI verde; poi l'autore guarda i PNG (artefatti
   della CI) e fa il merge di 2a e 2b in `main`; poi **il piano dell'onda 3** (creatore nei cinque blocchi, selettore dei
   modelli con la traduzione, Impostazioni a categorie, finestre del backup, diario a tutta finestra). Finding nuovi nel
   tracker, sezione "Onda 2b" (`UX2B-*`). Ledger in `.superpowers/sdd/2026-10-30-ux-wave2b-group-configure/` (solo su

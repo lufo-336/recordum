@@ -766,6 +766,11 @@ scuro uscivano su nero); il gruppo vuoto con numeri senza dati e la mappa strett
 `dotnet build-server shutdown`.
 *Prestazioni (locale, alternando primo commit del branch e HEAD)*: Home 300 righe a caldo 116–329 ms prima, 147–286 ms dopo
 (rumore, nessuno scarto chiaro; budget 500); gruppo di 12 figlie con tre anni (test nuovo) `LoadAsync` + Anno 572–841 ms a
-caldo, "Tutto" 288–351 ms. Data: i quattro test di prestazioni verdi prima e dopo.
+caldo, "Tutto" 288–351 ms. Due righe della tabella sono **più alte dopo**: tab con un anno 345–486 ms contro 277–368, tre
+anni `LoadAsync` 384–645 ms contro 268–487. La macchina era rumorosa (i giri si muovono del doppio sullo stesso lato), quindi
+non è detto che sia una regressione, ma nemmeno che non lo sia: **prima del merge serve una nuova misura a macchina ferma**.
+Data: i quattro test di prestazioni verdi prima e dopo.
 *Non consegnato*: "Salva come modello" del gruppo (in arrivo: un modello di gruppo è un formato nuovo), UX2B-2…4 e i minori
-UX2B-M1…M15 nel tracker. Suite su Linux: Presentation 1330, UI 701 (`Category!=Performance`), Data 664 (+2 saltati, all'ultima esecuzione intera, `40c5f8e3`).
+UX2B-M1…M25 nel tracker. Dopo l'onda di correzioni della review dell'intero branch (UX2B-5…8: il gruppo segue
+Inizia/Ricaduta delle figlie, l'obiettivo e i rinomi, "Tutto" dall'inizio del gruppo, ricarica solo per le discendenti):
+suite su Linux Presentation 1337, UI 701 (`Category!=Performance`), Data 664 (+2 saltati, non toccata, `40c5f8e3`).
