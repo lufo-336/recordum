@@ -10,6 +10,7 @@ using Recordum.Core.Models;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views.HabitScreen;
+using Recordum.UI.Views.HabitScreen.Group;
 using Xunit;
 
 namespace Recordum.UI.Tests.HabitScreen;
@@ -123,6 +124,82 @@ public class HabitScreenPerformanceTests(ITestOutputHelper output)
         var cold = await OpenOnceAsync();
         var warm = await OpenOnceAsync();
         output.WriteLine($"Tre anni giornalieri: LoadAsync freddo {cold.Load} ms, caldo {warm.Load} ms; " +
+                         $"\"Tutto\" freddo {cold.All} ms, caldo {warm.All} ms");
+        warm.Load.Should().BeLessThan(5000);
+        warm.All.Should().BeLessThan(5000);
+    }
+
+    /// <summary>Onda 2b, Task 9: un gruppo di 12 figlie con tre anni di registrazioni giornaliere ciascuna (13 140). Si misura
+    /// LoadAsync con la Panoramica aperta fino a "Insieme" in Anno (il periodo del gruppo) e alla mappa disegnati, poi il
+    /// passaggio a "Tutto" (Insieme disegna tutti i giorni per tutte le righe, senza ritaglio). Riferimento: la schermata
+    /// dell'abitudine con tre anni, ~0,35 s per "Tutto".</summary>
+    [AvaloniaFact]
+    public async Task A_group_of_twelve_with_three_years_each_is_measured()
+    {
+        var now = Host.Clock.Now;
+        using var seedScope = Host.Provider.CreateScope();
+        var s = seedScope.ServiceProvider;
+        Host.Clock.Now = now.AddDays(-3 * 365);
+        var nodes = s.GetRequiredService<IHabitNodeService>();
+        var group = await nodes.CreateAsync(new HabitNode { NodeType = NodeType.Group, Name = "Dodici", Color = "#2F8FB0" });
+        var children = new List<Guid>();
+        for (var c = 0; c < 12; c++)
+            children.Add(await nodes.CreateAsync(new HabitNode
+            {
+                NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = $"Figlia {c}", Color = "#2F8FB0", ParentId = group,
+            }));
+        Host.Clock.Now = now;
+        await using (var db = await s.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Recordum.Data.RecordumDbContext>>()
+                         .CreateDbContextAsync())
+        {
+            foreach (var (child, c) in children.Select((x, i) => (x, i)))
+                for (var d = 0; d < 3 * 365; d++)
+                {
+                    if ((d + c) % 4 == 0) continue;   // giorni vuoti diversi per figlia: la mappa ha gradini
+                    var at = now.AddDays(-d).AddHours(-1);
+                    db.Completions.Add(new Completion
+                    {
+                        Id = Guid.NewGuid(), HabitNodeId = child, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds(),
+                    });
+                }
+            await db.SaveChangesAsync();
+        }
+
+        async Task<(long Load, long All)> OpenOnceAsync()
+        {
+            using var scope = Host.Provider.CreateScope();
+            var vm = scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>();
+            var view = new HabitScreenView { DataContext = vm };
+            var w = new Window { Width = 1000, Height = 1200, Content = view };
+            w.Show();
+            vm.IsPanoramicaOpen = true;
+            TogetherGrid Grid() => view.GetVisualDescendants().OfType<TogetherGrid>().Single(g => g.Name == "Together");
+            bool Drawn(int days) => vm.Panoramica.Together.Rows.Count == 12 && (days > 365 ? vm.Panoramica.Map.Years.Count >= 3 : vm.Panoramica.Map.Weeks.Count > 0)
+                && view.GetVisualDescendants().OfType<TogetherGrid>().Any(g => g.Days >= days && g.Bounds.Height > 0);
+            var watch = Stopwatch.StartNew();
+            await vm.LoadAsync(group);
+            var awaited = watch.ElapsedMilliseconds;
+            for (var i = 0; i < 600 && !Drawn(365); i++) { await Task.Delay(5); PrivateDbHost.Pump(); }
+            PrivateDbHost.Pump();
+            var load = watch.ElapsedMilliseconds;
+            output.WriteLine($"  LoadAsync atteso {awaited} ms, poi Insieme e mappa disegnati a {load} ms");
+            Drawn(365).Should().BeTrue("Insieme in Anno e la mappa");
+            vm.Period.Period.Should().Be(Recordum.Presentation.ViewModels.HabitScreen.History.HistoryPeriod.Year);
+
+            watch.Restart();
+            vm.Period.Period = Recordum.Presentation.ViewModels.HabitScreen.History.HistoryPeriod.All;
+            for (var i = 0; i < 600 && !Drawn(3 * 365); i++) { await Task.Delay(5); PrivateDbHost.Pump(); }
+            PrivateDbHost.Pump();
+            var all = watch.ElapsedMilliseconds;
+            Drawn(3 * 365).Should().BeTrue("tre anni in Insieme e nella mappa");
+            Grid().Rows!.Should().OnlyContain(r => r.Cells.Count >= 3 * 365);
+            w.Close();
+            return (load, all);
+        }
+
+        var cold = await OpenOnceAsync();
+        var warm = await OpenOnceAsync();
+        output.WriteLine($"Gruppo di 12 x tre anni: LoadAsync+Anno freddo {cold.Load} ms, caldo {warm.Load} ms; " +
                          $"\"Tutto\" freddo {cold.All} ms, caldo {warm.All} ms");
         warm.Load.Should().BeLessThan(5000);
         warm.All.Should().BeLessThan(5000);

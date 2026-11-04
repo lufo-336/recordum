@@ -69,7 +69,10 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
         var vm = scope.ServiceProvider.GetRequiredService<HabitBuilderViewModel>();
         await vm.InitializeAsync();
         var view = new HabitBuilderView { DataContext = vm };
-        var w = new Window { Width = 1100, Height = 900, Content = view, RequestedThemeVariant = Theme(variant) };
+        // Lo sfondo della finestra vera (RecordumWindow): senza, il PNG in scuro usciva su nero puro.
+        var frame = new Border { Child = view };
+        frame[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Brush.Background");
+        var w = new Window { Width = 1100, Height = 900, Content = frame, RequestedThemeVariant = Theme(variant) };
         try
         {
             vm.Name = "Acqua";
@@ -86,6 +89,9 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
             var pane = host.Child.Should().BeOfType<BuilderPreviewPane>().Subject;
             pane.IsEffectivelyVisible.Should().BeTrue();
             pane.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t => t.Text == "Acqua", "l'anteprima porta il nome scritto");
+            var row = pane.GetVisualDescendants().OfType<Recordum.UI.Controls.RowPreview>().Should().ContainSingle("la riga d'anteprima nuova (2b)").Subject;
+            row.Model.Should().BeSameAs(vm.Preview!.HomeRow);
+            row.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "Tint").IsEffectivelyVisible.Should().BeTrue();
             view.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "NameBox").Text.Should().Be("Acqua");
         }
         finally { w.Close(); }

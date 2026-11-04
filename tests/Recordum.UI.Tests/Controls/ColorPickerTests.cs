@@ -468,6 +468,7 @@ public class ColorPickerTests
     [AvaloniaFact]
     public void Screenshots_of_the_picker()
     {
+        using var culture = Recordum.UI.Tests.Fixtures.TestCulture.Pin();
         foreach (var (variant, open) in new[] { (ThemeVariant.Light, false), (ThemeVariant.Light, true), (ThemeVariant.Dark, false), (ThemeVariant.Dark, true) })
         {
             var recent = new System.Collections.ObjectModel.ObservableCollection<string> { "#2F7FC1", "#123456" };
@@ -476,7 +477,10 @@ public class ColorPickerTests
             var host = Host(picker);
             var panel = PanelOf(picker);
             ((Flyout)picker.GetVisualDescendants().OfType<Button>().First(b => b.Flyout is not null).Flyout!).Content = null;
-            var win = new Window { Width = 340, Height = open ? 760 : 420, RequestedThemeVariant = variant, Content = new Border { Padding = new Thickness(16), Child = panel } };
+            // Lo sfondo della finestra vera (RecordumWindow): senza, il PNG in scuro usciva su nero puro.
+            var frame = new Border { Padding = new Thickness(16), Child = panel };
+            frame[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Brush.Background");
+            var win = new Window { Width = 340, Height = open ? 760 : 420, RequestedThemeVariant = variant, Content = frame };
             win.Show();
             Pump();
             In<Control>(panel, "AdvancedPanel").IsVisible.Should().Be(open);

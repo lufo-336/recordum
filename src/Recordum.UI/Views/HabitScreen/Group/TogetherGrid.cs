@@ -119,6 +119,12 @@ public sealed class TogetherGrid : Grid
         Scroll.Offset = new Vector(Math.Clamp(x, 0, max), 0);
     }
 
+    /// <summary>L'etichetta sopra una colonna: in settimana il nome più corto del giorno (in italiano "lun", "mar": tre
+    /// lettere che su una cella di 14 px si toccavano), qui ridotto all'iniziale; in mese il numero.</summary>
+    internal static string HeaderLabel(DateOnly d, bool week) => week
+        ? CultureInfo.CurrentCulture.DateTimeFormat.GetShortestDayName(d.DayOfWeek)[..1].ToUpper(CultureInfo.CurrentCulture)
+        : d.Day.ToString(CultureInfo.CurrentCulture);
+
     private double RowHeight => Math.Max(RowMin, CellSize + CellGap);
     private double Top => ShowHeader ? HeaderHeight : 0;
     private double TotalHeight => Top + RowCount * RowHeight;
@@ -180,9 +186,7 @@ public sealed class TogetherGrid : Grid
                     // Settimana: l'iniziale del giorno sopra ogni cella; mese: il numero ogni cinque giorni.
                     var d = days[i].Date;
                     if (!week && d.Day != 1 && d.Day % 5 != 0) continue;
-                    var label = week ? CultureInfo.CurrentCulture.DateTimeFormat.GetShortestDayName(d.DayOfWeek)
-                                     : d.Day.ToString(CultureInfo.CurrentCulture);
-                    var t = new FormattedText(label, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, 10, muted);
+                    var t = new FormattedText(HeaderLabel(d, week), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, 10, muted);
                     context.DrawText(t, new Point(i * pitch + (side - t.Width) / 2, 2));
                 }
             }

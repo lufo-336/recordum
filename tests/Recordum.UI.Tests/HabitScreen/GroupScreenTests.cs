@@ -41,7 +41,10 @@ public class GroupScreenTests(ITestOutputHelper output)
 
     /// <summary>Gruppo con due azioni A e B (A fatta oggi se <paramref name="aDone"/>); con <paramref name="rich"/> anche un
     /// sottogruppo S con uno stato C dentro.</summary>
-    private static async Task<Opened> OpenAsync(bool aDone = true, bool rich = false, bool empty = false, double width = 1000)
+    /// <remarks>Con <paramref name="brief"/> il gruppo dei PNG del Task 9: A fatta oggi (e nei giorni prima), un sottogruppo con
+    /// "Lettura" dentro, un'astinenza in corso da dieci giorni; niente B.</remarks>
+    private static async Task<Opened> OpenAsync(bool aDone = true, bool rich = false, bool empty = false, double width = 1000,
+        bool brief = false, ThemeVariant? theme = null)
     {
         Host.Clock.Now = Now;
         var scope = Host.Provider.CreateScope();
@@ -57,7 +60,23 @@ public class GroupScreenTests(ITestOutputHelper output)
         if (!empty)
         {
             a = await Make("Acqua", NodeType.Habit, HabitType.Action, group);
-            b = await Make("Stretching", NodeType.Habit, HabitType.Action, group);
+            if (brief)
+            {
+                var s = await Make("Sera", NodeType.Group, null, group);
+                b = await Make("Lettura", NodeType.Habit, HabitType.Action, s);
+                c = await Make("Zucchero", NodeType.Habit, HabitType.Resistance, group);
+                Host.Clock.Now = Now.AddDays(-10);
+                await sp.GetRequiredService<IAbstinenceService>().StartAsync(c.Value);
+                Host.Clock.Now = Now;
+                foreach (var d in new[] { 2, 3, 5, 8, 9, 13 })
+                {
+                    var at = Now.AddDays(-d);
+                    await sp.GetRequiredService<ICompletionService>().RecordAsync(new Completion
+                    { HabitNodeId = d % 2 == 0 ? a : b, CompletedAt = at.UtcDateTime, CompletedAtMs = at.ToUnixTimeMilliseconds() });
+                }
+            }
+            else
+                b = await Make("Stretching", NodeType.Habit, HabitType.Action, group);
             if (rich)
             {
                 var s = await Make("Sera", NodeType.Group, null, group);
@@ -71,7 +90,7 @@ public class GroupScreenTests(ITestOutputHelper output)
         await vm.LoadAsync(group);
         vm.IsPanoramicaOpen = true;
         var view = new HabitScreenView { DataContext = vm };
-        var w = new Window { Width = width, Height = 1500, Content = view, RequestedThemeVariant = ThemeVariant.Light };
+        var w = new Window { Width = width, Height = 1500, Content = view, RequestedThemeVariant = theme ?? ThemeVariant.Light };
         w.Show();
         Pump();
         var o = new Opened(scope, vm, view, w, group, a, b, c);
@@ -293,5 +312,67 @@ public class GroupScreenTests(ITestOutputHelper output)
                 R(parts[i]).Intersects(R(parts[j])).Should().BeFalse($"{parts[i].Name} e {parts[j].Name} non si sovrappongono");
         R(parts[2]).Right.Should().BeLessThanOrEqualTo(480 + 0.5);
         Shoot(o, "group-head-narrow-light");
+    }
+
+    /// <summary>Task 9: le schermate del gruppo in chiaro e in scuro, ognuna con la sua asserzione. Il gruppo ha tre figlie: una
+    /// fatta oggi, un sottogruppo (la sua abitudine conta), un'astinenza in corso (conta come fatta: giorno pulito).</summary>
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task Group_screens_render_in_both_themes(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var theme = variant == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        var v = variant.ToLowerInvariant();
+        using (var o = await OpenAsync(brief: true, theme: theme))
+        {
+            o.Window.ActualThemeVariant.Should().Be(theme);
+            Named<TextBlock>(o.Head, "ProgressCount").Text.Should().Be("2 di 3", "Acqua fatta e l'astinenza pulita; Lettura no");
+            o.Column.GetVisualDescendants().OfType<HabitRow>().Count().Should().Be(3);
+            o.Column.GetVisualDescendants().OfType<GroupRow>().Count().Should().Be(1);
+            Shoot(o, $"group-brief-overview-{v}");
+
+            var grid = Named<TogetherGrid>(o.Column, "Together");
+            await UntilAsync(() => grid.RowCount == 3);
+            foreach (var (radio, days, name) in new[] { ("WeekPeriod", 7, "week"), ("MonthPeriod", 31, "month"), ("YearPeriod", 365, "year") })
+            {
+                Named<RadioButton>(o.Column, radio).IsChecked = true;
+                await UntilAsync(() => grid.Rows![0].Cells.Count == days);
+                grid.Rows!.Should().HaveCount(3).And.OnlyContain(r => r.Cells.Count == days);
+                grid.Bounds.Height.Should().BeGreaterThan(3 * TogetherGrid.RowMin - 1);
+                grid.BringIntoView();
+                Shoot(o, $"group-brief-together-{name}-{v}");
+            }
+        }
+
+        using (var e = await OpenAsync(empty: true, theme: theme))
+        {
+            Named<TextBlock>(e.Column, "EmptyText").IsEffectivelyVisible.Should().BeTrue();
+            Named<TextBlock>(e.Head, "ProgressCount").Text.Should().Be("0 di 0");
+            Shoot(e, $"group-brief-empty-{v}");
+        }
+
+        using (var n = await OpenAsync(brief: true, width: 480, theme: theme))
+        {
+            var head = n.Head;
+            head.TranslatePoint(new Point(head.Bounds.Width, 0), n.Window)!.Value.X.Should().BeLessThanOrEqualTo(480 + 0.5);
+            Named<TogetherGrid>(n.Column, "Together").CellSize.Should().BeGreaterThanOrEqualTo(4);
+            Shoot(n, $"group-brief-narrow-{v}");
+        }
+    }
+
+    /// <summary>Il PNG della Settimana mostrava "lunmamergiovensabdom": tre lettere a 10 px non stanno su una cella di 14.</summary>
+    [AvaloniaFact]
+    public void Week_header_labels_fit_their_cell()
+    {
+        using var culture = TestCulture.Pin();
+        var typeface = new Avalonia.Media.Typeface(Avalonia.Media.FontFamily.Default);
+        for (var d = new DateOnly(2026, 10, 26); d < new DateOnly(2026, 11, 2); d = d.AddDays(1))
+        {
+            var label = TogetherGrid.HeaderLabel(d, week: true);
+            var t = new Avalonia.Media.FormattedText(label, System.Globalization.CultureInfo.CurrentCulture,
+                Avalonia.Media.FlowDirection.LeftToRight, typeface, 10, Avalonia.Media.Brushes.Black);
+            t.Width.Should().BeLessThanOrEqualTo(TogetherGrid.MaxCell, $"'{label}' sta sulla sua cella");
+        }
     }
 }
