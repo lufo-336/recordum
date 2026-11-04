@@ -481,7 +481,7 @@
     <value>Nessuno</value>
   </data>
   <data name="HabitBuilder.Recovery.GraceDay" xml:space="preserve">
-    <value>Grace day</value>
+    <value>Giorno di grazia</value>
   </data>
   <data name="HabitBuilder.Recovery.Manual" xml:space="preserve">
     <value>Manuale</value>

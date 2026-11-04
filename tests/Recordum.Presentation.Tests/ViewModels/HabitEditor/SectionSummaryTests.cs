@@ -70,7 +70,7 @@ public class SectionSummaryTests : IDisposable
         sut.Summary.Should().Be("Settimanale");
 
         await sut.LoadAsync(Habit(), new HabitConfig { StreakMode = StreakMode.Daily, StreakRecovery = StreakRecovery.GraceDay });
-        sut.Summary.Should().Be("Giornaliera · Grace day");
+        sut.Summary.Should().Be("Giornaliera · Giorno di grazia");
         sut.HasAdvanced.Should().BeTrue();
     }
 
