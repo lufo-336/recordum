@@ -18,11 +18,11 @@
   persa). Due misure sono più alte dopo (tab con un anno, tre anni `LoadAsync`) su una macchina rumorosa: **una misura a
   macchina ferma resta da fare prima del merge** (`docs/MILESTONES.md`). Review dell'intero branch fatta, con un'onda di
   correzioni (UX2B-5…8: il gruppo segue Inizia/Ricaduta delle figlie, l'obiettivo e i rinomi, "Tutto" dall'inizio del
-  gruppo, ricarica solo per le discendenti). **Prossimo**: CI verde; poi l'autore guarda i PNG (artefatti
-  della CI) e fa il merge di 2a e 2b in `main`; poi **il piano dell'onda 3** (creatore nei cinque blocchi, selettore dei
+  gruppo, ricarica solo per le discendenti). CI verde su Linux e Windows a `35d4a013` (Windows al rilancio: `SerializedSecretStoreTests` instabile,
+  UX2A-3). Aperto UX2B-9 (astinenza sola vecchia se cambiata altrove, precedente a 2b). **Prossimo**: la misura a
+  macchina ferma; poi l'autore guarda i PNG (artefatti della CI) e fa il merge di 2a e 2b in `main`; poi **il piano dell'onda 3** (creatore nei cinque blocchi, selettore dei
   modelli con la traduzione, Impostazioni a categorie, finestre del backup, diario a tutta finestra). Finding nuovi nel
-  tracker, sezione "Onda 2b" (`UX2B-*`). Ledger in `.superpowers/sdd/2026-10-30-ux-wave2b-group-configure/` (solo su
-  Fedora). Ripartire dopo una ricaduta resta **CM-5**, al dogfooding. I test di prestazioni non girano in CI.
+  tracker, sezione "Onda 2b" (`UX2B-*`). Ripartire dopo una ricaduta resta **CM-5**, al dogfooding. I test di prestazioni non girano in CI.
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
