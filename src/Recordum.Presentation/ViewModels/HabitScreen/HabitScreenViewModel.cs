@@ -485,7 +485,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private bool _selectedDayHasRecords;
     private HabitConfig? _config;
 
-    /// <summary>I numeri della testa di un gruppo; null dove l'host non fornisce <see cref="IGroupHistoryQueryService"/> (WPF).</summary>
+    /// <summary>I numeri della testa di un gruppo; null solo dove l'host non fornisce <see cref="IGroupHistoryQueryService"/>
+    /// (la DI di core lo fornisce a entrambe le shell, WPF compresa).</summary>
     public Figures.GroupFiguresViewModel? GroupFigures { get; }
 
     /// <summary>Sotto il nome di un gruppo: quante abitudini contiene e a che ora comincia la sua giornata (quella del gruppo).</summary>
@@ -580,7 +581,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private bool _periodForGroup;
 
-    // UX2A-1: l'inizio dell'abitudine sola e' il piu' vecchio fra creazione e prima registrazione. Null = la creazione (WPF).
+    // UX2A-1: l'inizio dell'abitudine sola e' il piu' vecchio fra creazione e prima registrazione; per un gruppo, quello di
+    // GroupFiguresViewModel. Null = la creazione (host senza i servizi).
     private readonly IHabitStartQueryService? _starts;
     private DateOnly? _startDay;
     internal bool HasStartQuery => _starts is not null;
@@ -776,6 +778,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.HabitUpdated, OnHabitUpdatedEvent));
+        // Inizia/Ricaduta di una figlia (dalla riga del gruppo, dalla Home, da un'altra scheda) non scrive registrazioni.
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.AbstinenceStarted, OnAbstinenceEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.AbstinenceLapsed, OnAbstinenceEvent));
+        _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.AbstinencePeriodDeleted, OnAbstinenceEvent));
     }
 
     public void Dispose()
@@ -865,8 +871,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 (await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true)).Count);
         if (generation != _loadGeneration) return;
         _config = config;
-        _startDay = node.NodeType != NodeType.Group && _starts is not null
-            ? await _starts.GetStartDayAsync(node.Id, ct).ConfigureAwait(true) : null;
+        // Un gruppo (Ruling 4): il suo inizio l'ha già calcolato GroupFiguresViewModel, caricato sopra.
+        _startDay = node.NodeType == NodeType.Group ? GroupFigures?.StartDay
+            : _starts is not null ? await _starts.GetStartDayAsync(node.Id, ct).ConfigureAwait(true) : null;
         if (generation != _loadGeneration) return;
         ScheduleLabel = ScheduleText.Describe(config, System.Globalization.CultureInfo.CurrentUICulture);
         await LoadFiguresAsync(ct).ConfigureAwait(true);
@@ -1002,8 +1009,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         try
         {
             if (Node is null) return;
-            // Una registrazione di una figlia sposta i numeri del gruppo che si sta guardando.
-            if (IsGroupNode) { await ReloadGroupAsync().ConfigureAwait(true); return; }
             var habitId = envelope.Payload switch
             {
                 CompletionRecordedPayload r => r.HabitNodeId,
@@ -1011,6 +1016,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
                 CompletionDeletedPayload d => d.HabitNodeId,
                 _ => Guid.Empty,
             };
+            // Una registrazione di una figlia sposta i numeri del gruppo che si sta guardando.
+            if (IsGroupNode) { await ReloadGroupIfDescendantAsync(habitId).ConfigureAwait(true); return; }
             if (habitId != Node.Id) return;
             var reloads = new List<Task>
             {
@@ -1059,6 +1066,21 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceChanged failed: {ex}"); }
     }
 
+    // Sull'abitudine sola le sorgenti della schermata alzano già OnAbstinenceChanged; qui serve al gruppo.
+    private async void OnAbstinenceEvent(EventEnvelope envelope)
+    {
+        try
+        {
+            if (IsGroupNode && envelope.Payload is AbstinenceChangedPayload a)
+                await ReloadGroupIfDescendantAsync(a.HabitNodeId).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceEvent failed: {ex}"); }
+    }
+
+    /// <summary>Solo un evento di un'abitudine (o sottogruppo) del gruppo lo rilegge: su un gruppo grande costa.</summary>
+    private Task ReloadGroupIfDescendantAsync(Guid habitId)
+        => Panoramica.Contains(habitId) ? ReloadGroupAsync() : Task.CompletedTask;
+
     private async void OnNoteEvent(EventEnvelope envelope)
     {
         try
@@ -1087,7 +1109,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     {
         try
         {
-            if (Node is null || envelope.Payload is not HabitUpdatedPayload p || p.HabitNodeId != Node.Id) return;
+            if (Node is null || envelope.Payload is not HabitUpdatedPayload p) return;
+            // Una figlia rinominata o ricolorata: la colonna e "Insieme" del gruppo aperto la mostrano.
+            if (p.HabitNodeId != Node.Id)
+            {
+                if (IsGroupNode) await ReloadGroupIfDescendantAsync(p.HabitNodeId).ConfigureAwait(true);
+                return;
+            }
             var refreshed = await _nodes.GetAsync(Node.Id).ConfigureAwait(true);
             if (refreshed is null || Node is null || refreshed.Id != Node.Id) return;
             // reset_time non e' versionato (CLAUDE.md §5): cambiarlo sposta il confine del giorno di tutta la
@@ -1101,7 +1129,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             Node = refreshed;
             OnPropertyChanged(nameof(Name));
             Calendar.CompletedColorHex = refreshed.Color;
-            await Task.WhenAll(Calendar.JumpAsync(), ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
+            // Un gruppo: l'obiettivo (GoalService pubblica HabitUpdated del gruppo) sta nella Panoramica e nei numeri della testa.
+            await Task.WhenAll(Calendar.JumpAsync(),
+                IsGroupNode ? ReloadGroupAsync() : ReloadHistoryAsync(CancellationToken.None)).ConfigureAwait(true);
 
             // A config write (HabitConfigService publishes HabitUpdated) can re-shape the open screen: a "repeatable"
             // flip rebuilds the registration module, a timer change re-reads the Cronologia stopwatch. Both only when

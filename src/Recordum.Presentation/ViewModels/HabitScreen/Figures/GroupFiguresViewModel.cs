@@ -20,6 +20,10 @@ public sealed partial class GroupFiguresViewModel(IGroupHistoryQueryService hist
 
     [ObservableProperty] private ImmutableArray<HabitFigure> _items = [];
 
+    /// <summary>L'inizio del gruppo (Ruling 4) dell'ultimo caricamento: il più vecchio fra la creazione del gruppo e
+    /// l'inizio delle figlie con giorni previsti. La schermata lo usa per "Tutto".</summary>
+    public DateOnly? StartDay { get; private set; }
+
     public async Task LoadAsync(HabitNode group, DayBoundary day, GoalProgressCardViewModel goal, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(group);
@@ -72,7 +76,9 @@ public sealed partial class GroupFiguresViewModel(IGroupHistoryQueryService hist
             .Where(x => x.Misses > 0).OrderByDescending(x => x.Misses).FirstOrDefault();
         if (skipped.Child is { } worst) figures.Add(new(worst.Name, Strings.Group_Figures_MostSkipped));
 
-        if (generation == _generation) Items = [.. figures];
+        if (generation != _generation) return;
+        StartDay = created;
+        Items = [.. figures];
     }
 
 #pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI strings

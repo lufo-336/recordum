@@ -38,7 +38,7 @@ public sealed partial class PanoramicaViewModel : ObservableObject, IDisposable
     private Guid _groupId;
 
     /// <summary>Le figlie come righe della Home (stesso comando di registrazione rapida), in ordine d'albero, senza archiviate.
-    /// Vuote dove l'host non fornisce i servizi (WPF).</summary>
+    /// Vuote solo con il costruttore spoglio (senza i servizi della Home); la DI di core li fornisce a entrambe le shell, WPF compresa.</summary>
     public ObservableCollection<HomeRowViewModel> Rows { get; } = [];
 
     /// <summary>"Insieme": una riga per figlia, una cella per giorno del periodo.</summary>
@@ -124,6 +124,12 @@ public sealed partial class PanoramicaViewModel : ObservableObject, IDisposable
     }
 
     internal HomeClockTicker ClockTicker => _clockTicker;
+
+    /// <summary>Costruita coi servizi della Home (righe, "Insieme", mappa). Lo legge il test di composizione.</summary>
+    internal bool HasHomeServices => _nodes is not null && _purge is not null && _history is not null;
+
+    /// <summary>Un'abitudine o un sottogruppo dentro il gruppo caricato, a ogni profondità (archiviate escluse).</summary>
+    internal bool Contains(Guid habitNodeId) => Children.Any(c => c.HabitNodeId == habitNodeId);
 
     public void Dispose()
     {

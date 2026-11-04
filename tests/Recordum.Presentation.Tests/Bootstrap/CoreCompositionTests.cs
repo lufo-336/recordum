@@ -83,6 +83,9 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         var screen = scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>();
         Assert.NotNull(screen.GroupFigures);
         Assert.True(screen.HasStartQuery, "UX2A-1: senza IHabitStartQueryService la schermata riparte dalla creazione");
+        // La Panoramica piena (righe segnabili, "Insieme", mappa) vuole IPurgeService e IGroupHistoryQueryService insieme:
+        // senza uno dei due si costruisce quella spoglia e la colonna del gruppo resta vuota, in silenzio.
+        Assert.True(screen.Panoramica.HasHomeServices, "senza IPurgeService o IGroupHistoryQueryService la colonna del gruppo è vuota");
     }
 
     [Fact]
