@@ -86,6 +86,9 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         // La Panoramica piena (righe segnabili, "Insieme", mappa) vuole IPurgeService e IGroupHistoryQueryService insieme:
         // senza uno dei due si costruisce quella spoglia e la colonna del gruppo resta vuota, in silenzio.
         Assert.True(screen.Panoramica.HasHomeServices, "senza IPurgeService o IGroupHistoryQueryService la colonna del gruppo è vuota");
+        // Senza il creatore "Usa questo modello" ripiega su InstantiateAsync e il dettaglio della scheda resta vuoto (3a, task 6).
+        Assert.True(scope.ServiceProvider.GetRequiredService<HabitTemplatePickerViewModel>().HasBuilderFactory,
+            "il selettore dei modelli vuole Func<HabitBuilderViewModel> dalla DI");
     }
 
     [Fact]

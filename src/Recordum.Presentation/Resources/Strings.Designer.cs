@@ -246,6 +246,17 @@ public static class Strings
     public static string HabitTemplatePicker_PredefinedTemplates => Get("HabitTemplatePicker.PredefinedTemplates");
     public static string HabitTemplatePicker_Rename => Get("HabitTemplatePicker.Rename");
     public static string HabitTemplatePicker_Delete => Get("HabitTemplatePicker.Delete");
+    public static string HabitTemplatePicker_Scratch => Get("HabitTemplatePicker.Scratch");
+    public static string HabitTemplatePicker_Scratch_Description => Get("HabitTemplatePicker.Scratch.Description");
+    public static string HabitTemplatePicker_Templates => Get("HabitTemplatePicker.Templates");
+    public static string HabitTemplatePicker_Section_Yours => Get("HabitTemplatePicker.Section.Yours");
+    public static string HabitTemplatePicker_Search => Get("HabitTemplatePicker.Search");
+    public static string HabitTemplatePicker_NoResults => Get("HabitTemplatePicker.NoResults");
+    public static string HabitTemplatePicker_Use => Get("HabitTemplatePicker.Use");
+    public static string HabitTemplatePicker_Customize => Get("HabitTemplatePicker.Customize");
+    public static string HabitTemplatePicker_DetailEmpty => Get("HabitTemplatePicker.DetailEmpty");
+    public static string HabitTemplatePicker_Contents => Get("HabitTemplatePicker.Contents");
+    public static string HabitTemplatePicker_CardMenu => Get("HabitTemplatePicker.CardMenu");
 
     // Habit Builder (block-first composer)
     public static string HabitBuilder_Title => Get("HabitBuilder.Title");

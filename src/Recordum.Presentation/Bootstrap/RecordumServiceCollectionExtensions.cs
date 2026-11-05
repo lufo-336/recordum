@@ -158,6 +158,9 @@ public static class RecordumServiceCollectionExtensions
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();
         services.AddTransient<HabitBuilderViewModel>();
+        // Il selettore dei modelli crea e descrive passando da un creatore nuovo: risolto dallo scope di chi lo chiede (il
+        // creatore usa servizi con scope), mai dalla radice.
+        services.AddTransient<Func<HabitBuilderViewModel>>(sp => () => sp.GetRequiredService<HabitBuilderViewModel>());
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();
         services.AddTransient<HabitScreenViewModel>();

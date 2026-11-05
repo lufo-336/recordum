@@ -424,6 +424,18 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         if (GoalBrick is { PeriodType: GoalPeriodType.Rolling, RollingDays: not > 0 }) AdvancedOpen = true;
     }
 
+    /// <summary>Quanto serve alla scheda di un modello nel selettore, letto dal payload senza caricare un creatore: il colore,
+    /// il tipo che il modello dichiara, se si registra piu' volte al giorno e il gesto del diario. Le stesse regole di
+    /// <see cref="LoadTemplateAsync"/> (repeatable alla radice per i modelli di prima della 2.4).</summary>
+    internal static (string? Color, HabitType Type, bool Repeatable, JournalPrimaryGesture Gesture) DescribeTemplate(string? payloadJson)
+    {
+        var payload = ParseTemplatePayload(payloadJson);
+        return (payload.Node?.Color,
+            ParseEnum(payload.Node?.HabitType, HabitType.Action),
+            payload.Config?.Repeatable ?? payload.RepeatableLegacy ?? false,
+            ParseEnum(payload.UiPrefs?.JournalGesture, JournalPrimaryGesture.Diary));
+    }
+
     private static string[] DaysOf(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return [];
@@ -479,7 +491,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     }
 
     /// <summary>The derived type in the word Home uses ("counter", "journal"…), for the line under the name.</summary>
-    public string DerivedTypeWord => DerivedType switch
+    public string DerivedTypeWord => TypeWord(DerivedType);
+
+    internal static string TypeWord(HabitType type) => type switch
     {
         HabitType.Counter => Strings.Home_HabitType_Counter,
         HabitType.Resistance => Strings.Home_HabitType_Resistance,

@@ -2479,4 +2479,37 @@
   <data name="HabitBuilder.Segment.IsBreak" xml:space="preserve">
     <value>È una pausa</value>
   </data>
+  <data name="HabitTemplatePicker.Scratch" xml:space="preserve">
+    <value>Da zero</value>
+  </data>
+  <data name="HabitTemplatePicker.Scratch.Description" xml:space="preserve">
+    <value>Componi tu i pezzi</value>
+  </data>
+  <data name="HabitTemplatePicker.Templates" xml:space="preserve">
+    <value>Modelli</value>
+  </data>
+  <data name="HabitTemplatePicker.Section.Yours" xml:space="preserve">
+    <value>I tuoi modelli</value>
+  </data>
+  <data name="HabitTemplatePicker.Search" xml:space="preserve">
+    <value>Cerca un modello…</value>
+  </data>
+  <data name="HabitTemplatePicker.NoResults" xml:space="preserve">
+    <value>Nessun modello corrisponde alla ricerca.</value>
+  </data>
+  <data name="HabitTemplatePicker.Use" xml:space="preserve">
+    <value>Usa questo modello</value>
+  </data>
+  <data name="HabitTemplatePicker.Customize" xml:space="preserve">
+    <value>Personalizza…</value>
+  </data>
+  <data name="HabitTemplatePicker.DetailEmpty" xml:space="preserve">
+    <value>Scegli un modello per vedere cosa contiene.</value>
+  </data>
+  <data name="HabitTemplatePicker.Contents" xml:space="preserve">
+    <value>Cosa contiene</value>
+  </data>
+  <data name="HabitTemplatePicker.CardMenu" xml:space="preserve">
+    <value>Azioni del modello</value>
+  </data>
 </root>

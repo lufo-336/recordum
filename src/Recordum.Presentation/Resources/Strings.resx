@@ -2505,4 +2505,37 @@ Details: {0}</value>
   <data name="HabitBuilder.Segment.IsBreak" xml:space="preserve">
     <value>It's a break</value>
   </data>
+  <data name="HabitTemplatePicker.Scratch" xml:space="preserve">
+    <value>From scratch</value>
+  </data>
+  <data name="HabitTemplatePicker.Scratch.Description" xml:space="preserve">
+    <value>Put the pieces together yourself</value>
+  </data>
+  <data name="HabitTemplatePicker.Templates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="HabitTemplatePicker.Section.Yours" xml:space="preserve">
+    <value>Your templates</value>
+  </data>
+  <data name="HabitTemplatePicker.Search" xml:space="preserve">
+    <value>Search templates…</value>
+  </data>
+  <data name="HabitTemplatePicker.NoResults" xml:space="preserve">
+    <value>No template matches the search.</value>
+  </data>
+  <data name="HabitTemplatePicker.Use" xml:space="preserve">
+    <value>Use this template</value>
+  </data>
+  <data name="HabitTemplatePicker.Customize" xml:space="preserve">
+    <value>Customize…</value>
+  </data>
+  <data name="HabitTemplatePicker.DetailEmpty" xml:space="preserve">
+    <value>Choose a template to see what it holds.</value>
+  </data>
+  <data name="HabitTemplatePicker.Contents" xml:space="preserve">
+    <value>What it holds</value>
+  </data>
+  <data name="HabitTemplatePicker.CardMenu" xml:space="preserve">
+    <value>Template actions</value>
+  </data>
 </root>

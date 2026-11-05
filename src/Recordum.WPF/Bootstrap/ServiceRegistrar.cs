@@ -168,6 +168,9 @@ public static class ServiceRegistrar
         services.AddTransient<HabitTemplatePickerViewModel>();
         services.AddSingleton<IHabitTemplatePickerLauncher, WpfHabitTemplatePickerLauncher>();
         services.AddTransient<HabitBuilderViewModel>();
+        // Il selettore dei modelli crea e descrive passando da un creatore nuovo: risolto dallo scope di chi lo chiede (il
+        // creatore usa servizi con scope), mai dalla radice.
+        services.AddTransient<Func<HabitBuilderViewModel>>(sp => () => sp.GetRequiredService<HabitBuilderViewModel>());
         services.AddSingleton<IHabitBuilderLauncher, WpfHabitBuilderLauncher>();
         services.AddTransient<TimerStatusBarViewModel>();
         services.AddTransient<TimerRecoveryService>();

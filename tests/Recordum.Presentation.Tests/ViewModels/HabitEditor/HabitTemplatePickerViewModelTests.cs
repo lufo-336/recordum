@@ -1,7 +1,11 @@
+using System.Globalization;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Data.SeedData;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels.HabitBuilder;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.HabitEditor;
 using Recordum.Presentation.Resources;
@@ -190,5 +194,255 @@ public class HabitTemplatePickerViewModelTests
 
         sut.CreatedHabitNodeId.Should().NotBeNull();
         _templates.InstantiateCalls.Should().HaveCount(1);
+    }
+}
+
+/// <summary>Il selettore dei modelli di spec §7.2 (3a, task 6): ricerca sul testo tradotto, il dettaglio della scheda scelta
+/// letto da un creatore caricato col modello, "Usa questo modello" che crea passando dal creatore (una volta sola) e
+/// "Personalizza…" che lo chiede aperto. Cultura fissata: i testi dei modelli ufficiali sono tradotti per Id.</summary>
+[Collection(ProcessGlobalCultureCollection.Name)]
+public sealed class HabitTemplatePickerTemplateTests : IDisposable
+{
+    private readonly CultureInfo? _strings = Strings.Culture;
+    private readonly CultureInfo _current = CultureInfo.CurrentCulture;
+    private readonly CultureInfo _ui = CultureInfo.CurrentUICulture;
+    private readonly FakeHabitTemplateService _templates = new();
+    private readonly GatedComposed _composed = new();
+    private readonly FakeAppSettingService _settings = new();
+
+    public HabitTemplatePickerTemplateTests()
+    {
+        foreach (var t in HabitTemplateSeed.All) _templates.Store[t.Id] = t;
+    }
+
+    public void Dispose()
+    {
+        Strings.Culture = _strings;
+        CultureInfo.CurrentCulture = _current;
+        CultureInfo.CurrentUICulture = _ui;
+    }
+
+    private static void Pin(string name)
+    {
+        var c = CultureInfo.GetCultureInfo(name);
+        Strings.Culture = c;
+        CultureInfo.CurrentCulture = c;
+        CultureInfo.CurrentUICulture = c;
+    }
+
+    private static readonly Guid Sleep = Guid.Parse("00000003-0000-0000-0000-000000000005");
+    private static readonly Guid FoodDiary = Guid.Parse("00000003-0000-0000-0000-000000000008");
+
+    private HabitBuilderViewModel NewBuilder(IHabitTemplateService? templates = null) =>
+        new(_composed, templates ?? _templates, new SeedReferenceData(), new FakeClock(), new RecentColorStore(_settings),
+            new FavoriteColorStore(_settings), new FakeScreenColorPicker());
+
+    private async Task<HabitTemplatePickerViewModel> LoadedAsync(Guid? parentId = null, IHabitTemplateService? detailTemplates = null)
+    {
+        var sut = new HabitTemplatePickerViewModel(_templates, new FakeHabitNodeService(), new FakeConfirmationDialog(),
+            () => NewBuilder(detailTemplates));
+        await sut.LoadAsync(parentId);
+        return sut;
+    }
+
+    private static PickerOption Card(HabitTemplatePickerViewModel sut, Guid id) =>
+        sut.VisibleOfficial.Concat(sut.VisibleCustom).Single(o => o.TemplateId == id);
+
+    [Fact]
+    public async Task Search_ignores_case_and_accents_on_translated_text()
+    {
+        Pin("it-IT");
+        var sut = await LoadedAsync();
+
+        sut.SearchText = "diario";
+        sut.VisibleOfficial.Select(o => o.Name).Should().Contain("Diario del cibo").And.NotContain("Monitor del sonno");
+
+        sut.SearchText = "umóre";
+        sut.VisibleOfficial.Select(o => o.Name).Should().Equal("Monitor dell'umore");
+        sut.NoResults.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Empty_search_result_says_so()
+    {
+        Pin("en-US");
+        var sut = await LoadedAsync();
+        sut.NoResults.Should().BeFalse("senza ricerca si vedono tutti");
+
+        sut.SearchText = "zzzz";
+        sut.VisibleOfficial.Should().BeEmpty();
+        sut.VisibleCustom.Should().BeEmpty();
+        sut.NoResults.Should().BeTrue();
+
+        sut.SearchText = "";
+        sut.VisibleOfficial.Should().HaveCount(8);
+        sut.NoResults.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_selected_card_hidden_by_the_search_is_deselected()
+    {
+        Pin("en-US");
+        var sut = await LoadedAsync();
+        sut.Selected = Card(sut, Sleep);
+
+        sut.SearchText = "zzzz";
+
+        sut.Selected.Should().BeNull("una scheda che non si vede non si usa");
+        sut.UseSelectedCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Cards_carry_the_translated_name_the_colour_and_the_type_line()
+    {
+        Pin("it-IT");
+        var sut = await LoadedAsync();
+
+        var food = Card(sut, FoodDiary);
+        food.Name.Should().Be("Diario del cibo");
+        food.Description.Should().StartWith("Annota ogni pasto");
+        food.Color.Should().Be("#e67e22");
+        food.TypeLine.Should().Be("journal · più volte al giorno");
+        Card(sut, Sleep).TypeLine.Should().Be("contatore · più volte al giorno");
+        Card(sut, Guid.Parse("00000003-0000-0000-0000-000000000006")).TypeLine.Should().Be("resistenza");
+    }
+
+    [Fact]
+    public async Task Use_creates_once_even_on_double_click()
+    {
+        Pin("en-US");
+        var sut = await LoadedAsync();
+        sut.Selected = Card(sut, Sleep);
+        _composed.Gate = new TaskCompletionSource();
+
+        var first = sut.UseSelectedCommand.ExecuteAsync(null);
+        var second = sut.UseSelectedCommand.ExecuteAsync(null);
+        _composed.Gate.SetResult();
+        await Task.WhenAll(first, second);
+
+        _composed.Requests.Should().ContainSingle();
+        sut.CreatedHabitNodeId.Should().Be(_composed.Requests[0].Node.Id);
+    }
+
+    [Fact]
+    public async Task Use_creates_the_translated_habit()
+    {
+        Pin("it-IT");
+        var parent = Guid.NewGuid();
+        var sut = await LoadedAsync(parent);
+        sut.Selected = Card(sut, Sleep);
+
+        await sut.UseSelectedCommand.ExecuteAsync(null);
+
+        var request = _composed.Requests.Should().ContainSingle().Subject;
+        request.Node.Name.Should().Be("Monitor del sonno");
+        request.Node.ParentId.Should().Be(parent);
+        request.Metrics.Select(m => m.Name).Should().Equal("Ore dormite", "Qualità del sonno");
+        sut.CreatedHabitNodeId.Should().Be(request.Node.Id);
+        sut.CustomizeTemplateRequested.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Customize_requests_the_builder_with_the_template()
+    {
+        Pin("en-US");
+        var sut = await LoadedAsync();
+        sut.CustomizeSelectedCommand.CanExecute(null).Should().BeFalse("senza una scheda scelta");
+        sut.Selected = Card(sut, Sleep);
+
+        sut.CustomizeSelectedCommand.Execute(null);
+
+        sut.CustomizeTemplateRequested.Should().Be(Sleep);
+        sut.CreatedHabitNodeId.Should().BeNull();
+        _composed.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Use_on_a_template_the_creator_cannot_launch_as_is_opens_the_creator_instead()
+    {
+        Pin("en-US");
+        // Una scala che il catalogo non ha e che il modello non definisce: il creatore si carica con il campo incompleto.
+        var id = await _templates.CreateAsync(new HabitTemplate
+        {
+            Name = "Broken", IsOfficial = false,
+            PayloadJson = "{\"node\":{\"name\":\"Broken\",\"habit_type\":\"State\"},\"metrics\":[{\"name\":\"m\",\"type\":\"Integer\",\"scale_code\":\"nope\"}]}",
+        });
+        var sut = await LoadedAsync();
+        sut.Selected = Card(sut, id);
+
+        await sut.UseSelectedCommand.ExecuteAsync(null);
+
+        _composed.Requests.Should().BeEmpty("non si crea un'abitudine malformata");
+        sut.CreatedHabitNodeId.Should().BeNull();
+        sut.CustomizeTemplateRequested.Should().Be(id, "il creatore si apre caricato e dice perche'");
+    }
+
+    [Fact]
+    public async Task Detail_lists_what_the_template_records()
+    {
+        Pin("it-IT");
+        var sut = await LoadedAsync();
+
+        sut.Selected = Card(sut, Sleep);
+        await sut.DetailLoad;
+
+        var detail = sut.Detail!;
+        detail.Name.Should().Be("Monitor del sonno");
+        detail.HomeRow.Name.Should().Be("Monitor del sonno");
+        detail.TypeLine.Should().Be("contatore · più volte al giorno");
+        var values = detail.Contents.Select(r => r.Value).ToList();
+        values.Should().Contain(v => v.Contains("Ore dormite (h)"));
+        values.Should().Contain(v => v.Contains("Qualità del sonno"));
+        values.Should().Contain("più volte al giorno: Notte, Pisolino");
+    }
+
+    [Fact]
+    public async Task A_fast_selection_change_never_shows_the_previous_cards_detail()
+    {
+        Pin("en-US");
+        var gated = new GatedGet(_templates, Sleep);
+        var sut = await LoadedAsync(detailTemplates: gated);
+
+        sut.Selected = Card(sut, Sleep);          // resta appeso sul modello
+        var slow = sut.DetailLoad;
+        sut.Selected = Card(sut, FoodDiary);
+        await sut.DetailLoad;
+        gated.Gate.SetResult();
+        await slow;
+
+        sut.Detail!.Name.Should().Be(Card(sut, FoodDiary).Name);
+    }
+
+    private sealed class GatedComposed : IComposedHabitService
+    {
+        public TaskCompletionSource? Gate { get; set; }
+        public List<ComposedHabitRequest> Requests { get; } = [];
+        public async ValueTask<Guid> CreateComposedHabitAsync(ComposedHabitRequest request, CancellationToken ct = default)
+        {
+            Requests.Add(request);
+            if (Gate is { } gate) await gate.Task;
+            return request.Node.Id;
+        }
+    }
+
+    private sealed class GatedGet(FakeHabitTemplateService inner, Guid gatedId) : IHabitTemplateService
+    {
+        public TaskCompletionSource Gate { get; } = new();
+        public async ValueTask<HabitTemplate?> GetAsync(Guid id, CancellationToken ct = default)
+        {
+            if (id == gatedId) await Gate.Task;
+            return await inner.GetAsync(id, ct);
+        }
+        public ValueTask<Guid> CreateAsync(HabitTemplate draft, CancellationToken ct = default) => inner.CreateAsync(draft, ct);
+        public ValueTask UpdateAsync(Guid id, Action<HabitTemplate> mutate, CancellationToken ct = default) => inner.UpdateAsync(id, mutate, ct);
+        public ValueTask DeleteAsync(Guid id, CancellationToken ct = default) => inner.DeleteAsync(id, ct);
+        public ValueTask<IReadOnlyList<HabitTemplate>> ListAsync(CancellationToken ct = default) => inner.ListAsync(ct);
+        public ValueTask<Guid> InstantiateAsync(Guid templateId, Guid? parentId, CancellationToken ct = default) => inner.InstantiateAsync(templateId, parentId, ct);
+    }
+
+    private sealed class SeedReferenceData : IReferenceDataQueryService
+    {
+        public ValueTask<IReadOnlyList<UnitOfMeasure>> ListUnitsAsync(CancellationToken ct = default) => new(UnitOfMeasureSeed.All);
+        public ValueTask<IReadOnlyList<ScaleTemplate>> ListScalesAsync(CancellationToken ct = default) => new(ScaleTemplateSeed.All);
     }
 }
