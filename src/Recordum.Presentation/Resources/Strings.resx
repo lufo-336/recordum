@@ -2406,4 +2406,16 @@ Details: {0}</value>
   <data name="Unit.sets.Name" xml:space="preserve">
     <value>Sets</value>
   </data>
+  <data name="Editor.Field.Labels" xml:space="preserve">
+    <value>Labels</value>
+  </data>
+  <data name="HabitBuilder.NewScale.Steps" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Editor.ScaleLabels.Add" xml:space="preserve">
+    <value>Add label</value>
+  </data>
+  <data name="Editor.ScaleLabels.Remove" xml:space="preserve">
+    <value>Remove label</value>
+  </data>
 </root>

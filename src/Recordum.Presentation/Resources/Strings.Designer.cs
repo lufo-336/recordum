@@ -508,6 +508,10 @@ public static class Strings
     public static string Editor_Action_AddMetric => Get("Editor.Action.AddMetric");
     public static string Editor_Field_Scale => Get("Editor.Field.Scale");
     public static string Editor_Field_CustomLabels => Get("Editor.Field.CustomLabels");
+    public static string Editor_Field_Labels => Get("Editor.Field.Labels");
+    public static string HabitBuilder_NewScale_Steps => Get("HabitBuilder.NewScale.Steps");
+    public static string Editor_ScaleLabels_Add => Get("Editor.ScaleLabels.Add");
+    public static string Editor_ScaleLabels_Remove => Get("Editor.ScaleLabels.Remove");
     public static string Editor_Field_IntegratedTimer => Get("Editor.Field.IntegratedTimer");
     public static string Editor_Field_TimerMode => Get("Editor.Field.TimerMode");
     public static string Editor_Field_TargetSeconds => Get("Editor.Field.TargetSeconds");

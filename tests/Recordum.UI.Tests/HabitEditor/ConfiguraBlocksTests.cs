@@ -44,7 +44,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
         "NoteColorPicker",                                                  // NotesSectionView
         "RepeatableBox", "GestureBox",                                      // RegistrationSectionView
         "ResetTimeBox", "ResetWarning",                                     // ResetTimeSectionView
-        "ScaleBox", "PreviewBorder", "LabelsBox",                           // ScalesSectionView (solo uno stato)
+        "ScaleBox", "LabelsEditor",                           // ScalesSectionView (solo uno stato)
         "ScheduleTypeBox", "WeeklyTargetBox", "EveryXDaysBox",              // SchedulingSectionView
         "StreakModeBox", "StreakRecoveryBox", "ToleranceBox",               // StreakSectionView
         "TagsList",                                                         // TagsSectionView
@@ -54,7 +54,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
     /// <summary>I controlli che prima non avevano nome (la guardia sopra non li vedeva): nominati in questo task.</summary>
     private static readonly string[] NamedNow = ["DaysList", "AddSegmentButton", "SegmentNameBox", "SegmentRestBox", "AutoPromptBox"];
 
-    private static readonly string[] ScalesOnly = ["ScaleBox", "PreviewBorder", "LabelsBox"];
+    private static readonly string[] ScalesOnly = ["ScaleBox", "LabelsEditor"];
 
     private static readonly string[] BlocksWithBoxes = ["RecordBlock", "WhenBlock", "AdvancedRows"];
 

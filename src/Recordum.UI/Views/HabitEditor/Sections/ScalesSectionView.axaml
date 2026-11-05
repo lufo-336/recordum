@@ -20,12 +20,7 @@
         </DataTemplate>
       </ComboBox.ItemTemplate>
     </ComboBox>
-    <Border x:Name="PreviewBorder" Background="{DynamicResource Brush.SurfaceElevated}" CornerRadius="4" Padding="8,5"
-            IsVisible="{CompiledBinding ScalePreview, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <TextBlock Text="{CompiledBinding ScalePreview}" TextWrapping="Wrap" FontSize="{DynamicResource FontSize.Small}"/>
-    </Border>
-    <TextBlock Text="{x:Static res:Strings.Editor_Field_CustomLabels}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
-    <TextBox x:Name="LabelsBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="48"
-             Text="{CompiledBinding LabelsJson, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    <TextBlock Text="{x:Static res:Strings.Editor_Field_Labels}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
+    <ctl:ScaleLabelsEditor x:Name="LabelsEditor" DataContext="{CompiledBinding LabelsEditor}"/>
   </StackPanel>
 </UserControl>

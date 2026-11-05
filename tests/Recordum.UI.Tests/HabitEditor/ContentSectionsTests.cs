@@ -92,6 +92,33 @@ public class ContentSectionsTests
     }
 
     [AvaloniaFact]
+    public async Task Scale_labels_are_a_list_of_fields_one_per_value_and_an_edit_reaches_the_db()
+    {
+        var (o, _, s, v) = await OpenSectionAsync<ScalesSectionViewModel, ScalesSectionView>(e => e.Scales, "SclLbl", HabitType.State,
+            async id => await AddMetricAsync(id, MetricType.Integer));
+        try
+        {
+            var scale = s.AvailableScales.First(t => t.Code == "mood-5");
+            Named<ComboBox>(v, "ScaleBox").SelectedItem = scale;
+            PrivateDbHost.Pump();
+            var boxes = Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<TextBox>().ToList();
+            boxes.Should().HaveCount(scale.MaxValue - scale.MinValue + 1);
+            boxes.Select(b => b.Text).Should().OnlyContain(t => !string.IsNullOrWhiteSpace(t), "la scala porta le sue etichette");
+            Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<Button>().Should().OnlyContain(b => !b.IsVisible,
+                "una scala esistente non ha aggiungi/togli");
+
+            boxes[1].Text = "Custom";
+            await UntilAsync(() => MetricsAsync(o.Id).GetAwaiter().GetResult() is [{ } m] && m.LabelsJson is { } j && j.Contains("Custom"));
+            boxes[^1].BringIntoView();
+            PrivateDbHost.Pump();
+            await Task.Delay(150);
+            PrivateDbHost.Pump();
+            ScreenshotProbeTests.Capture(o.Window, "scale-labels-editor-configura");
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task Timer_mode_reaches_the_db()
     {
         var (o, _, _, v) = await OpenSectionAsync<TimerSectionViewModel, TimerSectionView>(e => e.Timer, "Tmr", HabitType.Counter);

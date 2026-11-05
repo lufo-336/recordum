@@ -2380,4 +2380,16 @@
   <data name="Unit.sets.Name" xml:space="preserve">
     <value>Serie</value>
   </data>
+  <data name="Editor.Field.Labels" xml:space="preserve">
+    <value>Etichette</value>
+  </data>
+  <data name="HabitBuilder.NewScale.Steps" xml:space="preserve">
+    <value>Gradini</value>
+  </data>
+  <data name="Editor.ScaleLabels.Add" xml:space="preserve">
+    <value>Aggiungi etichetta</value>
+  </data>
+  <data name="Editor.ScaleLabels.Remove" xml:space="preserve">
+    <value>Togli etichetta</value>
+  </data>
 </root>

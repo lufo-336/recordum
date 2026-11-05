@@ -16,6 +16,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Presentation.ViewModels.HabitBuilder;
+using Recordum.UI.Controls;
 using Recordum.UI.Services;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views.HabitBuilder;
@@ -332,9 +333,22 @@ public class HabitBuilderViewTests
             Click(window, Named<Button>(view, "AddScaleButton"));
             Click(window, VisibleNamed<Button>(view, "NewScaleButton"));
             Named<TextBox>(view, "ScaleFormName").Text = scale;
-            Named<TextBox>(view, "ScaleFormLabels").Text = "low, high";
+            var steps = Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<TextBox>().ToList();
+            steps.Should().HaveCount(2);
+            steps[0].Text = "low";
+            steps[1].Text = "high";
             Pump();
-                        Click(window, Named<Button>(view, "ScaleFormConfirm"));
+            vm.ScaleForm!.Labels.Should().Equal("low", "high");
+
+            // Aggiungi / togli: tre righe, poi di nuovo due; il × non scende sotto il minimo.
+            Click(window, Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<Button>().First(b => b.Name == "AddButton"));
+            Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<TextBox>().Should().HaveCount(3);
+            ScreenshotProbeTests.Capture(window, "scale-labels-editor-creator");
+            Click(window, Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<Button>().Last(b => b.Name == "RemoveButton"));
+            Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<TextBox>().Should().HaveCount(2);
+            Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<Button>()
+                .Where(b => b.Name == "RemoveButton").Should().OnlyContain(b => !b.IsEnabled);
+            Click(window, Named<Button>(view, "ScaleFormConfirm"));
             vm.StagedScales.Should().ContainSingle(s => s.Name == scale);
 
             Click(window, Named<Button>(view, "CancelButton"));
