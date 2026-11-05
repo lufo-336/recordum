@@ -177,10 +177,42 @@ public class ScalesSectionViewModelTests
         var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
         var (sut, metricId) = await OpenAsync(scale.Id, "[\"x\",\"y\",\"z\"]");
 
-        foreach (var row in sut.LabelsEditor.Rows) row.Text = "";
+        foreach (var row in sut.LabelsEditor.Rows.ToList()) row.Text = "";
         await Task.Delay(50);
 
         _metrics.Store[metricId].LabelsJson.Should().BeNull();
         sut.LabelsJson.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Switching_the_scale_resets_the_custom_labels_in_one_write()
+    {
+        var five = AddScale("custom-5", 1, 5, "[\"a\",\"b\",\"c\",\"d\",\"e\"]");
+        var ten = AddScale("custom-10", 1, 10, "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"ten\"]");
+        var (sut, metricId) = await OpenAsync(five.Id, "[\"x\",\"y\",\"z\",\"w\",\"v\"]");
+        var before = _metrics.UpdateCallCount;
+
+        sut.SelectedScaleTemplateId = ten.Id;
+        await Task.Delay(30);
+
+        _metrics.Store[metricId].ScaleTemplateId.Should().Be(ten.Id);
+        _metrics.Store[metricId].LabelsJson.Should().BeNull();
+        _metrics.UpdateCallCount.Should().Be(before + 1);
+        sut.LabelsJson.Should().BeNull();
+        sut.LabelsEditor.Rows.Should().HaveCount(10);
+        sut.LabelsEditor.Rows[9].Text.Should().Be("ten");
+    }
+
+    [Fact]
+    public async Task Clearing_every_row_shows_the_scale_labels_again()
+    {
+        var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+        var (sut, metricId) = await OpenAsync(scale.Id, "[\"x\",\"y\",\"z\"]");
+
+        foreach (var row in sut.LabelsEditor.Rows.ToList()) row.Text = "";
+        await Task.Delay(50);
+
+        _metrics.Store[metricId].LabelsJson.Should().BeNull();
+        sut.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("a", "b", "c");
     }
 }

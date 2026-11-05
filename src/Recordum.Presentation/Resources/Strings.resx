@@ -2418,4 +2418,7 @@ Details: {0}</value>
   <data name="Editor.ScaleLabels.Remove" xml:space="preserve">
     <value>Remove label</value>
   </data>
+  <data name="Editor.ScaleLabels.RowName" xml:space="preserve">
+    <value>Label for {0}</value>
+  </data>
 </root>

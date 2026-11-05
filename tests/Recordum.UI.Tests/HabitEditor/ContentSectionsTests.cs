@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
@@ -107,7 +108,14 @@ public class ContentSectionsTests
             Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<Button>().Should().OnlyContain(b => !b.IsVisible,
                 "una scala esistente non ha aggiungi/togli");
 
+            boxes[1].Focus();
             boxes[1].Text = "Custom";
+            PrivateDbHost.Pump();
+            await Task.Delay(150);
+            (await MetricsAsync(o.Id)).Single().LabelsJson.Should().BeNull("il testo si conferma uscendo dal campo, non a ogni tasto");
+            AutomationProperties.GetName(boxes[1]).Should().NotBeNullOrWhiteSpace().And.Contain("2");
+            boxes[0].Focus();                                  // esce dal campo: la conferma
+            PrivateDbHost.Pump();
             await UntilAsync(() => MetricsAsync(o.Id).GetAwaiter().GetResult() is [{ } m] && m.LabelsJson is { } j && j.Contains("Custom"));
             boxes[^1].BringIntoView();
             PrivateDbHost.Pump();

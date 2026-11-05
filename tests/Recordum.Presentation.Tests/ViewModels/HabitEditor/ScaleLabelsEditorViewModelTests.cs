@@ -71,4 +71,20 @@ public class ScaleLabelsEditorViewModelTests
         f.Rows[2].Text = "";
         f.Labels.Should().BeEmpty();
     }
+
+    [Fact]
+    public void A_row_has_an_accessible_name_with_its_step_value()
+    {
+        var previous = Recordum.Presentation.Resources.Strings.Culture;
+        try
+        {
+            var sut = new ScaleLabelsEditorViewModel();
+            sut.LoadFixed(1, 3, []);
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+            sut.Rows[2].AutomationName.Should().Be("Label for 3");
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            sut.Rows[2].AutomationName.Should().Be("Etichetta per 3");
+        }
+        finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
+    }
 }

@@ -50,6 +50,19 @@ public class SeriesCellViewModelTests
     }
 
     [Fact]
+    public void A_blank_label_falls_back_to_its_step_number()
+    {
+        var info = new ScaleInfo(1, 3, new[] { "", "Ok", " " });
+        var cell = new SeriesCellViewModel(Scale(), scale: info);
+
+        cell.ReferencePoints.Should().Equal("1", "Ok", "3");
+        cell.SelectedScaleIndex = 2;
+        cell.SelectedScaleLabel.Should().Be("3");
+        cell.SelectedScaleIndex = 1;
+        cell.SelectedScaleLabel.Should().Be("Ok");
+    }
+
+    [Fact]
     public void Labelless_scale_uses_its_bare_numbers_as_reference_points()
     {
         var info = new ScaleInfo(1, 10, Array.Empty<string>());

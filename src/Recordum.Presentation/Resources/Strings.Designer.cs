@@ -512,6 +512,7 @@ public static class Strings
     public static string HabitBuilder_NewScale_Steps => Get("HabitBuilder.NewScale.Steps");
     public static string Editor_ScaleLabels_Add => Get("Editor.ScaleLabels.Add");
     public static string Editor_ScaleLabels_Remove => Get("Editor.ScaleLabels.Remove");
+    public static string Editor_ScaleLabels_RowName => Get("Editor.ScaleLabels.RowName");
     public static string Editor_Field_IntegratedTimer => Get("Editor.Field.IntegratedTimer");
     public static string Editor_Field_TimerMode => Get("Editor.Field.TimerMode");
     public static string Editor_Field_TargetSeconds => Get("Editor.Field.TargetSeconds");

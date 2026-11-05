@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor;
 
@@ -10,7 +12,15 @@ public sealed partial class ScaleLabelRowViewModel(ScaleLabelsEditorViewModel ow
 {
     public ScaleLabelsEditorViewModel Owner { get; } = owner;
 
-    [ObservableProperty] private int _value = value;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AutomationName))]
+    private int _value = value;
+
+    /// <summary>Il nome accessibile del campo, col valore del gradino ("Etichetta per 3").</summary>
+    public string AutomationName =>
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for a UI string
+        string.Format(CultureInfo.CurrentCulture, Strings.Editor_ScaleLabels_RowName, Value);
+#pragma warning restore CA1863
 
     [ObservableProperty] private string _text = string.Empty;
 

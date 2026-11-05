@@ -104,15 +104,22 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
 
     private void OnEditorLabelsChanged(object? sender, EventArgs e)
     {
-        // Tutte vuote = nessun override: vince quello del modello di scala (CLAUDE.md §5).
+        // Tutte vuote = nessun override: vince quello del modello di scala (CLAUDE.md §5), e le righe lo mostrano.
         LabelsJson = LabelsEditor.Labels is { Count: > 0 } l ? JsonSerializer.Serialize(l, s_labelsJsonOptions) : null;
+        if (LabelsJson is null) RebuildEditor();
     }
 
     partial void OnSelectedScaleTemplateIdChanged(Guid? value)
     {
-        if (!_loading) RebuildEditor();
-        if (_loading || _primary is null) return;
-        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => m.ScaleTemplateId = value).AsTask());
+        if (_loading) return;
+        // Le etichette personalizzate sono di una scala, non della metrica: cambiare scala le azzera (un override di cinque
+        // etichette su una scala di dieci gradini darebbe uno slider di cinque). Lo stesso UpdateAsync, nessuna seconda scrittura.
+        _loading = true;
+        try { LabelsJson = null; }
+        finally { _loading = false; }
+        RebuildEditor();
+        if (_primary is null) return;
+        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => { m.ScaleTemplateId = value; m.LabelsJson = null; }).AsTask());
     }
 
     partial void OnLabelsJsonChanged(string? value)

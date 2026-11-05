@@ -2392,4 +2392,7 @@
   <data name="Editor.ScaleLabels.Remove" xml:space="preserve">
     <value>Togli etichetta</value>
   </data>
+  <data name="Editor.ScaleLabels.RowName" xml:space="preserve">
+    <value>Etichetta per {0}</value>
+  </data>
 </root>

@@ -348,6 +348,32 @@ public class CompletionListViewModelTests
     }
 
     [Fact]
+    public async Task LoadDayAsync_shows_the_step_number_for_a_blank_scale_label()
+    {
+        var cs = new FakeCompletionService();
+        var ms = new FakeMetricDefinitionService();
+        var rd = new FakeReferenceData();
+        rd.Scales.Clear();
+        var scaleId = Guid.NewGuid();
+        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood", Name = "Mood", MinValue = 1, MaxValue = 3, LabelsJson = "[\"Low\",\"\",\"High\"]" });
+        var habit = Guid.NewGuid();
+        var moodId = Guid.NewGuid();
+        await ms.CreateAsync(new MetricDefinition { Id = moodId, HabitNodeId = habit, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scaleId, SortOrder = 0 });
+        var onDay = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc);
+        cs.Store[Guid.NewGuid()] = new Completion
+        {
+            Id = Guid.NewGuid(), HabitNodeId = habit, CompletedAt = onDay,
+            CompletedAtMs = new DateTimeOffset(onDay).ToUnixTimeMilliseconds(),
+            Values = new List<CompletionValue> { new() { MetricDefinitionId = moodId, SeriesIndex = 0, ValueInteger = 2 } },
+        };
+
+        var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
+        await sut.LoadDayAsync(habit, new DateOnly(2026, 6, 1));
+
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Mood: 2");
+    }
+
+    [Fact]
     public async Task LoadDayAsync_renders_a_duration_field_value()
     {
         // CR13: a series with only a duration (ValueSeconds) used to show a blank field because

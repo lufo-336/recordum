@@ -12,7 +12,9 @@
         <DataTemplate x:DataType="vm:ScaleLabelRowViewModel">
           <Grid ColumnDefinitions="28,*,Auto" Margin="0,0,0,6">
             <TextBlock Text="{CompiledBinding Value}" Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center"/>
-            <TextBox x:Name="LabelBox" Grid.Column="1" Text="{CompiledBinding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <!-- LostFocus: in Configura ogni modifica e' una scrittura sul DB, non una per tasto (LiveUpdate la anticipa nel creatore). -->
+            <TextBox x:Name="LabelBox" Grid.Column="1" Text="{CompiledBinding Text, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     AutomationProperties.Name="{CompiledBinding AutomationName}"/>
             <Button x:Name="RemoveButton" Grid.Column="2" Classes="ghost" Margin="4,0,0,0" Padding="6" MinHeight="0" VerticalAlignment="Center"
                     AutomationProperties.Name="{x:Static res:Strings.Editor_ScaleLabels_Remove}"
                     ToolTip.Tip="{x:Static res:Strings.Editor_ScaleLabels_Remove}"

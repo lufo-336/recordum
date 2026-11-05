@@ -32,7 +32,7 @@ public static class DaySummaryFormatter
     {
         if (labels is not { Count: > 0 }) return null;
         var val = (int)mag; // 1-based scale value
-        return val >= 1 && val <= labels.Count ? labels[val - 1] : null;
+        return val >= 1 && val <= labels.Count && !string.IsNullOrWhiteSpace(labels[val - 1]) ? labels[val - 1] : null;
     }
 
     private static string FormatMag(decimal mag) =>
