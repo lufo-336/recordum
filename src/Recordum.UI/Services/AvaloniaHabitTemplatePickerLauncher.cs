@@ -7,8 +7,8 @@ using Recordum.UI.Views;
 namespace Recordum.UI.Services;
 
 /// <summary>Gemella di <c>WpfHabitTemplatePickerLauncher</c>: il selettore in una finestra modale con le decorazioni
-/// di sistema. Se chiede il builder ("Composizione libera"), lo apre col genitore del selettore e torna il suo
-/// risultato; altrimenti torna l'id creato, o null se la finestra e' stata chiusa senza scegliere.</summary>
+/// di sistema. Se chiede il creatore (vuoto con "Da zero", riempito con "Personalizza…"), lo apre col genitore del selettore
+/// e torna il suo risultato; altrimenti torna l'id creato, o null se la finestra e' stata chiusa senza scegliere.</summary>
 public sealed class AvaloniaHabitTemplatePickerLauncher(IServiceProvider services, Func<Window?> ownerResolver)
     : IHabitTemplatePickerLauncher
 {
@@ -39,6 +39,9 @@ public sealed class AvaloniaHabitTemplatePickerLauncher(IServiceProvider service
 
         if (vm.OpenBuilderRequested)
             return await services.GetRequiredService<IHabitBuilderLauncher>().LaunchAsync(vm.ParentForBuilder, ct);
+        // "Personalizza…" (o "Usa" su un modello che il creatore non crea cosi' com'e'): il creatore riempito dal modello.
+        if (vm.CustomizeTemplateRequested is { } templateId)
+            return await services.GetRequiredService<IHabitBuilderLauncher>().LaunchFromTemplateAsync(templateId, vm.ParentForBuilder, ct);
         return vm.CreatedHabitNodeId;
     }
 }

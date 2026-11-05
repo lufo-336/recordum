@@ -1,6 +1,10 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
@@ -24,7 +28,7 @@ using Xunit;
 namespace Recordum.UI.Tests;
 
 /// <summary>Il selettore dei template e le porte d'ingresso della creazione (F2b task 4). DB PRIVATO.</summary>
-public class HabitTemplatePickerTests
+public class HabitTemplatePickerTests(ITestOutputHelper output)
 {
     private sealed class RecordingBuilder : IHabitBuilderLauncher
     {
@@ -103,19 +107,40 @@ public class HabitTemplatePickerTests
         return picker!;
     }
 
-    private static Button OptionButton(Window picker, Func<PickerOption, bool> match) =>
-        picker.GetVisualDescendants().OfType<Button>()
-            .First(b => b.Name == "OptionButton" && b.DataContext is PickerOption o && match(o));
+    private static HabitTemplatePickerViewModel Vm(Window picker) => (HabitTemplatePickerViewModel)picker.DataContext!;
 
-    private static Button FirstOfficial(Window picker)
+    private static T Find<T>(Control root, string name) where T : Control =>
+        root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
+
+    /// <summary>La scheda (il contenitore della lista) del modello <paramref name="id"/>, o la prima ufficiale.</summary>
+    private static ListBoxItem Card(Window picker, Guid? id = null)
     {
-        var vm = (HabitTemplatePickerViewModel)picker.DataContext!;
-        vm.OfficialTemplates.Should().NotBeEmpty("i template ufficiali sono seminati");
-        var first = vm.OfficialTemplates[0];
-        return OptionButton(picker, o => o == first);
+        var vm = Vm(picker);
+        vm.VisibleOfficial.Should().NotBeEmpty("i template ufficiali sono seminati");
+        var option = vm.VisibleOfficial.Concat(vm.VisibleCustom).First(o => id is null || o.TemplateId == id);
+        return picker.GetVisualDescendants().OfType<ListBoxItem>().Single(i => Equals(i.DataContext, option));
     }
 
-    private static void Click(Button b) => b.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    /// <summary>Un clic vero (giu' e su del mouse) al centro del controllo: passa dal comando, come l'utente.</summary>
+    private static void Click(Window w, Control c)
+    {
+        c.BringIntoView();
+        PrivateDbHost.Pump();
+        var p = c.TranslatePoint(new Avalonia.Point(c.Bounds.Width / 2, c.Bounds.Height / 2), w)!.Value;
+        w.MouseDown(p, MouseButton.Left);
+        w.MouseUp(p, MouseButton.Left);
+        PrivateDbHost.Pump();
+    }
+
+    private static void Enter(Control target) =>
+        target.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter, Source = target });
+
+    /// <summary>Sceglie la scheda e preme "Usa questo modello".</summary>
+    private static void Use(Window picker, Guid? id = null)
+    {
+        Click(picker, Card(picker, id));
+        Click(picker, Find<Button>(picker, "UseButton"));
+    }
 
     private static async Task<Guid> CreateGroupAsync()
     {
@@ -136,9 +161,9 @@ public class HabitTemplatePickerTests
         {
             var before = vm.Home.Rows.Select(r => r.HabitNodeId).ToHashSet();
             var picker = await PickerOpenedByAsync(launcher, () => vm.Home.OpenNewHabitCommand.ExecuteAsync(null));
-            var option = (PickerOption)FirstOfficial(picker).DataContext!;
+            var option = (PickerOption)Card(picker).DataContext!;
 
-            Click(FirstOfficial(picker));
+            Use(picker);
             await UntilAsync(() => vm.Home.SelectedRow is not null && !before.Contains(vm.Home.SelectedRow.HabitNodeId));
 
             var created = vm.Home.SelectedRow!;
@@ -165,7 +190,7 @@ public class HabitTemplatePickerTests
         {
             await UntilAsync(() => picker is { IsVisible: true });
             PrivateDbHost.Pump();
-            Click(OptionButton(picker!, o => o.Name == Strings.HabitTemplatePicker_FromScratch));
+            Click(picker!, Find<Button>(picker!, "ScratchTile"));
 
             var id = await task.WaitAsync(TimeSpan.FromSeconds(5));
             Builder.Parents.Should().Equal(group);
@@ -177,17 +202,21 @@ public class HabitTemplatePickerTests
     // ---- 4.3 ----------------------------------------------------------------------------------------------
 
     [AvaloniaFact]
-    public async Task A_double_click_on_a_template_creates_one_habit()
+    public async Task Enter_on_a_card_uses_it_and_a_repeated_Enter_creates_one_habit()
     {
         var (window, vm, launcher) = await OpenAsync();
         try
         {
             var before = vm.Home.Rows.Select(r => r.HabitNodeId).ToHashSet();
             var picker = await PickerOpenedByAsync(launcher, () => vm.Home.OpenNewHabitCommand.ExecuteAsync(null));
-            var button = FirstOfficial(picker);
+            var card = Card(picker);
+            Click(picker, card);
+            card.IsFocused.Should().BeTrue("la scheda scelta ha il fuoco: Invio le arriva");
 
-            Click(button);
-            Click(button);
+            // Invio ripetuto prima che il primo abbia finito (nessun giro del dispatcher in mezzo: KeyPress lo farebbe, e la
+            // finestra sarebbe gia' chiusa): ExecuteAsync non consulta CanExecute, la guardia e' nel ViewModel.
+            Enter(card);
+            Enter(card);
             await UntilAsync(() => vm.Home.SelectedRow is not null && !before.Contains(vm.Home.SelectedRow.HabitNodeId));
             await Task.Delay(200);
             await vm.Home.LoadCommand.ExecuteAsync(null);   // rilegge dal DB: un secondo nodo, se c'e', compare qui
@@ -255,7 +284,7 @@ public class HabitTemplatePickerTests
             var before = vm.Home.Rows.Select(r => r.HabitNodeId).ToHashSet();
             var picker = await PickerOpenedByAsync(launcher, () => vm.Home.OpenNewHabitCommand.ExecuteAsync(null));
 
-            Click(FirstOfficial(picker));
+            Use(picker);
             await UntilAsync(() => vm.Home.SelectedRow is not null && !before.Contains(vm.Home.SelectedRow.HabitNodeId));
 
             vm.Home.SelectedRow!.ParentId.Should().Be(group);
@@ -286,19 +315,23 @@ public class HabitTemplatePickerTests
         var picker = await PickerOpenedByAsync(launcher, () => launcher.PickAsync());
         try
         {
-            Button Delete() => picker.GetVisualDescendants().OfType<Button>()
-                .First(b => b.Content as string == Strings.HabitTemplatePicker_Delete
-                    && b.DataContext is PickerOption { TemplateId: var t } && t == id);
+            MenuItem Delete()
+            {
+                var menu = Card(picker, id).GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CardMenuButton");
+                menu.Flyout!.ShowAt(menu);   // il comando si lega quando il menu entra nell'albero
+                PrivateDbHost.Pump();
+                return ((MenuFlyout)menu.Flyout!).Items.OfType<MenuItem>().Single(i => i.Name == "DeleteItem");
+            }
 
             Confirm.Yes = false;
             var calls = Confirm.Calls;
-            Click(Delete());
+            Delete().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             await UntilAsync(() => Confirm.Calls == calls + 1);
             PrivateDbHost.Pump();
             (await ExistsAsync(id)).Should().BeTrue("annullare lascia il template");
 
             Confirm.Yes = true;
-            Click(Delete());
+            Delete().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             for (var i = 0; i < 150 && await ExistsAsync(id); i++) { await Task.Delay(20); PrivateDbHost.Pump(); }
             (await ExistsAsync(id)).Should().BeFalse("confermare lo elimina");
         }
@@ -325,5 +358,215 @@ public class HabitTemplatePickerTests
             spies[2].Disposed.Should().BeFalse("la finestra e' ancora aperta");
         }
         finally { second.Close(); }
+    }
+
+    // ---- 3a, task 6: il selettore di spec §7.2 ------------------------------------------------------------
+
+    private static readonly Guid SleepId = Guid.Parse("00000003-0000-0000-0000-000000000005");
+
+    private static async Task<Window> OpenPickerAsync(Guid? parent = null, double width = 980, string variant = "Light")
+    {
+        var launcher = (AvaloniaHabitTemplatePickerLauncher)Host.Provider.GetRequiredService<IHabitTemplatePickerLauncher>();
+        Window? picker = null;
+        launcher.WindowCreatedForTests += w =>
+        {
+            picker = w;
+            w.Width = width;
+            w.RequestedThemeVariant = variant == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        };
+        _ = launcher.PickAsync(parent);
+        await UntilAsync(() => picker is { IsVisible: true });
+        PrivateDbHost.Pump();
+        return picker!;
+    }
+
+    private static void Render()
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static List<ListBoxItem> Cards(Window picker, string list) =>
+        Find<ListBox>(picker, list).GetVisualDescendants().OfType<ListBoxItem>().Where(i => i.IsEffectivelyVisible).ToList();
+
+    [AvaloniaFact]
+    public async Task Tiles_cards_and_detail_are_laid_out()
+    {
+        var picker = await OpenPickerAsync();
+        try
+        {
+            Click(picker, Card(picker, SleepId));
+            await UntilAsync(() => Vm(picker).Detail is not null);
+            Render();
+
+            Find<Button>(picker, "ScratchTile").IsEffectivelyVisible.Should().BeTrue();
+            Find<Button>(picker, "ScratchTile").Bounds.Height.Should().Be(Find<Button>(picker, "GroupTile").Bounds.Height,
+                "le due tessere hanno la stessa altezza");
+            var groupTile = Find<Button>(picker, "GroupTile");
+            groupTile.IsEffectivelyVisible.Should().BeTrue();
+            // La descrizione va a capo dentro la tessera (in uno StackPanel orizzontale usciva tagliata a destra).
+            var description = Find<TextBlock>(picker, "GroupTileDescription");
+            description.TranslatePoint(new Point(description.Bounds.Width, 0), groupTile)!.Value.X
+                .Should().BeLessThanOrEqualTo(groupTile.Bounds.Width, "la descrizione non esce dalla tessera");
+            var cards = Cards(picker, "OfficialList");
+            cards.Should().HaveCount(8, "gli otto modelli ufficiali");
+            cards.Should().OnlyContain(c => c.Bounds.Height > 40 && c.Bounds.Width > 150, "ogni scheda e' disegnata");
+            cards[0].Bounds.Y.Should().Be(cards[1].Bounds.Y, "due schede per riga");
+
+            var detail = Find<Border>(picker, "DetailHost");
+            var list = Find<ListBox>(picker, "OfficialList");
+            detail.TranslatePoint(default, picker)!.Value.X.Should().BeGreaterThan(
+                list.TranslatePoint(new Avalonia.Point(list.Bounds.Width, 0), picker)!.Value.X - 1, "il dettaglio sta a destra");
+            Find<StackPanel>(picker, "DetailPanel").IsEffectivelyVisible.Should().BeTrue();
+            Find<TextBlock>(picker, "DetailName").Text.Should().Be(Card(picker, SleepId).DataContext is PickerOption o ? o.Name : null);
+            Find<ItemsControl>(picker, "DetailContents").ItemCount.Should().BeGreaterThanOrEqualTo(2);
+            Find<Recordum.UI.Controls.RowPreview>(picker, "DetailRow").Bounds.Height.Should().BeGreaterThan(20, "la riga di Home e' disegnata");
+
+            picker.GetVisualDescendants().OfType<Button>().Count(b => b.Classes.Contains("primary") && b.IsEffectivelyVisible)
+                .Should().Be(1, "un solo inchiostro per finestra: Usa questo modello");
+        }
+        finally { picker.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Use_is_disabled_until_a_card_is_selected()
+    {
+        var picker = await OpenPickerAsync();
+        try
+        {
+            var use = Find<Button>(picker, "UseButton");
+            var customize = Find<Button>(picker, "CustomizeButton");
+            use.IsEffectivelyEnabled.Should().BeFalse();
+            customize.IsEffectivelyEnabled.Should().BeFalse();
+            Find<TextBlock>(picker, "DetailEmpty").IsEffectivelyVisible.Should().BeTrue("senza scheda il dettaglio dice cosa fare");
+
+            Click(picker, Card(picker));
+
+            use.IsEffectivelyEnabled.Should().BeTrue();
+            customize.IsEffectivelyEnabled.Should().BeTrue();
+        }
+        finally { picker.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Arrows_move_between_cards()
+    {
+        var picker = await OpenPickerAsync();
+        try
+        {
+            var vm = Vm(picker);
+            Click(picker, Card(picker, vm.VisibleOfficial[0].TemplateId));
+
+            picker.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+            PrivateDbHost.Pump();
+
+            vm.Selected.Should().NotBe(vm.VisibleOfficial[0], "la freccia sposta la scelta sulla scheda successiva");
+            vm.Selected.Should().NotBeNull();
+        }
+        finally { picker.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Customize_opens_the_creator_filled_with_the_template_and_the_pickers_parent()
+    {
+        var group = await CreateGroupAsync();
+        var launcher = (AvaloniaHabitTemplatePickerLauncher)Host.Provider.GetRequiredService<IHabitTemplatePickerLauncher>();
+        Builder.FromTemplate.Clear();
+        Window? picker = null;
+        launcher.WindowCreatedForTests += w => picker = w;
+        var task = launcher.PickAsync(group);
+        try
+        {
+            await UntilAsync(() => picker is { IsVisible: true });
+            PrivateDbHost.Pump();
+            Click(picker!, Card(picker!, SleepId));
+            Click(picker!, Find<Button>(picker!, "CustomizeButton"));
+
+            var id = await task.WaitAsync(TimeSpan.FromSeconds(5));
+            Builder.FromTemplate.Should().Equal((SleepId, (Guid?)group));
+            id.Should().Be(Builder.Result);
+            picker!.IsVisible.Should().BeFalse("il selettore si chiude prima del creatore");
+        }
+        finally { picker?.Close(); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task Templates_png_with_a_card_selected(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var mine = await CreateCustomTemplateAsync("Mattina");
+        var picker = await OpenPickerAsync(variant: variant);
+        try
+        {
+            Card(picker, mine).GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CardMenuButton")
+                .IsEffectivelyVisible.Should().BeTrue("i tuoi modelli hanno il loro menu");
+            var dots = Card(picker, mine).GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single(p => p.Name == "CardMenuIcon");
+            Render();
+            // Misurato: con Stretch="Uniform" su un Path di 14 px la geometria disegnata era alta 0 (un punto solo).
+            dots.RenderedGeometry!.Bounds.TransformToAABB(dots.TransformToVisual(picker)!.Value).Height
+                .Should().BeGreaterThan(6, "i tre punti stanno in colonna, non schiacciati in uno");
+            Click(picker, Card(picker, Guid.Parse("00000003-0000-0000-0000-000000000008")));
+            await UntilAsync(() => Vm(picker).Detail is not null);
+            Render();
+            output.WriteLine(ScreenshotProbeTests.Capture(picker, $"templates-{variant.ToLowerInvariant()}"));
+
+            Find<TextBlock>(picker, "DetailName").Text.Should().Be("Diario del cibo", "il modello ufficiale si legge in italiano");
+            Find<TextBlock>(picker, "DetailType").Text.Should().Be("journal · più volte al giorno");
+            Card(picker, Guid.Parse("00000003-0000-0000-0000-000000000008")).IsSelected.Should().BeTrue();
+        }
+        finally
+        {
+            picker.Close();
+            using var scope = Host.Provider.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IHabitTemplateService>().DeleteAsync(mine);
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task Templates_search_empty_png(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var picker = await OpenPickerAsync(variant: variant);
+        try
+        {
+            Find<TextBox>(picker, "SearchBox").Text = "zzzz";
+            Render();
+            output.WriteLine(ScreenshotProbeTests.Capture(picker, $"templates-search-empty-{variant.ToLowerInvariant()}"));
+
+            Find<TextBlock>(picker, "NoResultsText").IsEffectivelyVisible.Should().BeTrue();
+            Cards(picker, "OfficialList").Should().BeEmpty();
+            Find<StackPanel>(picker, "YoursSection").IsVisible.Should().BeFalse("nessun tuo modello corrisponde");
+        }
+        finally { picker.Close(); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task Templates_narrow_png_puts_the_detail_under_the_cards(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var picker = await OpenPickerAsync(width: 720, variant: variant);
+        try
+        {
+            Click(picker, Card(picker, SleepId));
+            await UntilAsync(() => Vm(picker).Detail is not null);
+            Render();
+            output.WriteLine(ScreenshotProbeTests.Capture(picker, $"templates-narrow-{variant.ToLowerInvariant()}"));
+
+            var detail = Find<Border>(picker, "DetailHost");
+            detail.Parent.Should().Be(Find<StackPanel>(picker, "MainStack"), "stretto: il dettaglio scende sotto le schede");
+            Find<Grid>(picker, "LayoutGrid").ColumnDefinitions[1].Width.Value.Should().Be(0);
+
+            picker.Width = 980;
+            Render();
+            detail.Parent.Should().Be(Find<Grid>(picker, "LayoutGrid"), "largo di nuovo: torna a destra");
+        }
+        finally { picker.Close(); }
     }
 }

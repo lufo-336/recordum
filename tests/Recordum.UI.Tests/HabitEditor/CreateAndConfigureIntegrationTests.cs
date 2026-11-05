@@ -70,9 +70,11 @@ public class CreateAndConfigureIntegrationTests
             _ = vm.Home.OpenNewHabitCommand.ExecuteAsync(null);
             await UntilAsync(() => picker is { IsVisible: true });
             PrivateDbHost.Pump();
-            var option = picker!.GetVisualDescendants().OfType<Button>()
-                .First(b => b.Name == "OptionButton" && b.DataContext is PickerOption { Name: "Water intake" });
-            option.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            // "Acqua bevuta" (Water intake): la scheda si sceglie, poi "Usa questo modello".
+            var water = Guid.Parse("00000003-0000-0000-0000-000000000004");
+            Click(picker!, picker!.GetVisualDescendants().OfType<ListBoxItem>()
+                .Single(i => i.DataContext is PickerOption { TemplateId: var t } && t == water));
+            Click(picker, Find<Button>(picker, "UseButton"));
 
             await UntilAsync(() => vm.Home.SelectedRow is not null && !before.Contains(vm.Home.SelectedRow.HabitNodeId));
             var id = vm.Home.SelectedRow!.HabitNodeId;
@@ -131,9 +133,7 @@ public class CreateAndConfigureIntegrationTests
         {
             await UntilAsync(() => picker is { IsVisible: true });
             PrivateDbHost.Pump();
-            picker!.GetVisualDescendants().OfType<Button>()
-                .First(b => b.Name == "OptionButton" && b.DataContext is PickerOption { Name: var n } && n == Strings.HabitTemplatePicker_FromScratch)
-                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Click(picker!, Find<Button>(picker!, "ScratchTile"));
             await UntilAsync(() => builder is { IsVisible: true } && builder.Content is HabitBuilderView);
             var view = (HabitBuilderView)builder!.Content!;
             var bvm = (HabitBuilderViewModel)view.DataContext!;

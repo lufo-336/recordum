@@ -54,8 +54,8 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
             output.WriteLine(ScreenshotProbeTests.Capture(picker!, $"picker-{variant.ToLowerInvariant()}"));
 
             picker!.ActualThemeVariant.Should().Be(Theme(variant));
-            var options = picker.GetVisualDescendants().OfType<Button>().Where(b => b.Name == "OptionButton" && b.IsEffectivelyVisible).ToList();
-            options.Should().HaveCountGreaterThanOrEqualTo(8, "i template ufficiali (e le due azioni) sono visibili");
+            var options = picker.GetVisualDescendants().OfType<ListBoxItem>().Where(i => i.IsEffectivelyVisible).ToList();
+            options.Should().HaveCountGreaterThanOrEqualTo(8, "i template ufficiali sono visibili");
             options.Select(o => o.Bounds.Height).Should().OnlyContain(h => h > 20, "ogni voce e' disegnata, non collassata");
         }
         finally { picker?.Close(); window.Close(); }

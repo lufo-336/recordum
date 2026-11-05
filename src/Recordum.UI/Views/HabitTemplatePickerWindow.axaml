@@ -3,82 +3,270 @@
         xmlns:v="using:Recordum.UI.Views"
         xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor"
         xmlns:res="using:Recordum.Presentation.Resources"
+        xmlns:conv="using:Recordum.UI.Converters"
+        xmlns:ctl="using:Recordum.UI.Controls"
         x:Class="Recordum.UI.Views.HabitTemplatePickerWindow"
         x:DataType="vm:HabitTemplatePickerViewModel"
         Title="{x:Static res:Strings.HabitTemplatePicker_Title}"
-        Width="520" Height="640" MinWidth="360" MinHeight="320"
+        Width="980" Height="680" MinWidth="560" MinHeight="420"
         WindowStartupLocation="CenterOwner">
-  <!-- Finestra modale con le decorazioni di sistema (decisione 1 di F2b). La descrizione di ogni template e' sempre
-       visibile (E6): i template si spiegano da soli. I pulsanti passano dal code-behind perche' RenameCustom vuole
-       una coppia (opzione, nuovo nome). -->
+  <!-- Il selettore di spec §7.2 (mockup modelli.html): in alto le due partenze (Da zero, Gruppo vuoto), poi i Modelli come
+       schede con la ricerca, I tuoi modelli con Rinomina ed Elimina nel menu della scheda; a destra la scheda scelta (come
+       apparira' in Home, cosa contiene), sotto le schede sotto i 720 px. In fondo Personalizza… (contorno) e Usa questo modello
+       (inchiostro, l'unico della finestra). Il colore del modello e' solo la barra di 4 px: non e' un comando che registra. -->
+  <Window.Styles>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <Style Selector="Button.start">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="VerticalAlignment" Value="Stretch"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.starticon">
+      <Setter Property="Width" Value="34"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+    </Style>
+    <Style Selector="Path.starticon">
+      <Setter Property="Width" Value="18"/>
+      <Setter Property="Height" Value="18"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="StrokeThickness" Value="1.75"/>
+      <Setter Property="StrokeLineCap" Value="Round"/>
+      <Setter Property="StrokeJoin" Value="Round"/>
+      <Setter Property="Stroke" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Le schede: niente sfondo d'accento di Fluent; la scelta e' un anello d'inchiostro di 2 px attorno alla scheda. -->
+    <Style Selector="ListBox.cards">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="-4,0"/>
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+      <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+    </Style>
+    <Style Selector="ListBox.cards ListBoxItem">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="2"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="ListBox.cards ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Border.ring">
+      <Setter Property="BorderThickness" Value="2"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+    <Style Selector="ListBox.cards ListBoxItem:selected Border.ring">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
+    </Style>
+    <Style Selector="Border.tcard">
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceElevated}"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
+    <Style Selector="ListBox.cards ListBoxItem:pointerover Border.tcard">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.FieldBorder}"/>
+    </Style>
+    <Style Selector="Border.detailrow">
+      <Setter Property="BorderThickness" Value="0,0,0,1"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+      <Setter Property="Padding" Value="0,6"/>
+    </Style>
+  </Window.Styles>
+
   <Window.Resources>
-    <DataTemplate x:Key="OptionTemplate" x:DataType="vm:PickerOption">
-      <Button Name="OptionButton" Margin="0,4" Padding="12,8" HorizontalAlignment="Stretch"
-              HorizontalContentAlignment="Stretch" Cursor="Hand"
-              Background="{DynamicResource Brush.SurfaceElevated}"
-              BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
-              Click="OnPick">
-        <StackPanel>
-          <TextBlock Text="{CompiledBinding Name}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
-          <TextBlock Name="OptionDescription" Text="{CompiledBinding Description}"
-                     FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"
-                     TextWrapping="Wrap"/>
-        </StackPanel>
-      </Button>
+    <!-- Corpo della scheda (nome, descrizione su una riga, tipo), comune ai modelli e ai tuoi. -->
+    <DataTemplate x:Key="CardBody" x:DataType="vm:PickerOption">
+      <StackPanel Margin="12,8" Spacing="1">
+        <TextBlock x:Name="CardName" Text="{CompiledBinding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource Brush.Text}"/>
+        <TextBlock x:Name="CardDescription" Classes="caption" Text="{CompiledBinding Description}" TextTrimming="CharacterEllipsis"
+                   ToolTip.Tip="{CompiledBinding Description}"
+                   IsVisible="{CompiledBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        <TextBlock x:Name="CardType" Classes="caption" Text="{CompiledBinding TypeLine}" Margin="0,2,0,0"/>
+      </StackPanel>
     </DataTemplate>
   </Window.Resources>
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="16">
-      <ItemsControl Name="ActionsList" ItemsSource="{CompiledBinding Actions}" ItemTemplate="{StaticResource OptionTemplate}"/>
 
-      <Expander Name="PredefinedSection" IsExpanded="True" Margin="0,10,0,0" HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Stretch">
-        <Expander.Header>
-          <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}">
-            <Run Text="{x:Static res:Strings.HabitTemplatePicker_PredefinedTemplates}"/><Run
-                 Text="{CompiledBinding OfficialTemplates.Count, StringFormat=' ({0})'}"
-                 Foreground="{DynamicResource Brush.TextMuted}" FontWeight="Normal"/>
-          </TextBlock>
-        </Expander.Header>
-        <ItemsControl Name="OfficialList" ItemsSource="{CompiledBinding OfficialTemplates}"
-                      ItemTemplate="{StaticResource OptionTemplate}" Margin="0,4,0,0"/>
-      </Expander>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Padding="16,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.Border}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button x:Name="CustomizeButton" Content="{x:Static res:Strings.HabitTemplatePicker_Customize}" Padding="14,6"
+                Command="{CompiledBinding CustomizeSelectedCommand}"/>
+        <Button x:Name="UseButton" Classes="primary" Content="{x:Static res:Strings.HabitTemplatePicker_Use}" Padding="18,6"
+                Command="{CompiledBinding UseSelectedCommand}"/>
+      </StackPanel>
+    </Border>
 
-      <Expander Name="YoursSection" IsExpanded="True" Margin="0,10,0,0" HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Stretch" IsVisible="False">
-        <Expander.Header>
-          <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}">
-            <Run Text="{x:Static res:Strings.HabitTemplatePicker_YourTemplates}"/><Run
-                 Text="{CompiledBinding CustomOptions.Count, StringFormat=' ({0})'}"
-                 Foreground="{DynamicResource Brush.TextMuted}" FontWeight="Normal"/>
-          </TextBlock>
-        </Expander.Header>
-        <ItemsControl Name="CustomList" ItemsSource="{CompiledBinding CustomOptions}" Margin="0,4,0,0">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:PickerOption">
-              <Border Margin="0,4" Padding="12,8" CornerRadius="4"
-                      Background="{DynamicResource Brush.SurfaceElevated}"
-                      BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
-                <Grid ColumnDefinitions="*,Auto">
-                  <Button Grid.Column="0" Name="OptionButton" HorizontalContentAlignment="Stretch" Background="Transparent"
-                          BorderThickness="0" Padding="0" Cursor="Hand" Click="OnPick">
-                    <StackPanel>
-                      <TextBlock Text="{CompiledBinding Name}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
-                      <TextBlock Text="{CompiledBinding Description}" FontSize="{StaticResource FontSize.Small}"
-                                 Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                  </Button>
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0" Spacing="6">
-                    <TextBox Name="RenameBox" Width="120" Text="{CompiledBinding Name, Mode=OneWay}"/>
-                    <Button Content="{x:Static res:Strings.HabitTemplatePicker_Rename}" Click="OnRename"/>
-                    <Button Content="{x:Static res:Strings.HabitTemplatePicker_Delete}" Click="OnDelete"/>
-                  </StackPanel>
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </Expander>
-    </StackPanel>
-  </ScrollViewer>
+    <Grid x:Name="LayoutGrid" ColumnDefinitions="*,340">
+      <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="MainStack" Margin="24,20" Spacing="8">
+          <!-- Le due partenze. -->
+          <Grid x:Name="StartTiles" ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,0,0,10">
+            <Button x:Name="ScratchTile" Grid.Column="0" Classes="start"
+                    Command="{CompiledBinding PickCommand}" CommandParameter="{CompiledBinding Actions[0]}">
+              <!-- Una griglia, non uno StackPanel orizzontale: la descrizione va a capo invece di uscire dalla tessera. -->
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Classes="starticon"><Path Classes="starticon" Data="{StaticResource Icon.Plus}"/></Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{x:Static res:Strings.HabitTemplatePicker_Scratch}" FontWeight="Medium"/>
+                  <TextBlock x:Name="ScratchTileDescription" Classes="caption" Text="{x:Static res:Strings.HabitTemplatePicker_Scratch_Description}"
+                             TextWrapping="Wrap"/>
+                </StackPanel>
+              </Grid>
+            </Button>
+            <Button x:Name="GroupTile" Grid.Column="1" Classes="start"
+                    Command="{CompiledBinding PickCommand}" CommandParameter="{CompiledBinding Actions[1]}">
+              <!-- Una griglia, non uno StackPanel orizzontale: la descrizione va a capo invece di uscire dalla tessera. -->
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Classes="starticon"><Path Classes="starticon" Data="{StaticResource Icon.Folder}"/></Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{x:Static res:Strings.HabitTemplatePicker_BlankGroup}" FontWeight="Medium"/>
+                  <TextBlock x:Name="GroupTileDescription" Classes="caption" Text="{x:Static res:Strings.HabitTemplatePicker_BlankGroup_Description}"
+                             TextWrapping="Wrap"/>
+                </StackPanel>
+              </Grid>
+            </Button>
+          </Grid>
+
+          <!-- Modelli, con la ricerca. -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="block" Text="{x:Static res:Strings.HabitTemplatePicker_Templates}" VerticalAlignment="Center"/>
+            <TextBox x:Name="SearchBox" Grid.Column="1" Width="220"
+                     Text="{CompiledBinding SearchText, Mode=TwoWay}"
+                     PlaceholderText="{x:Static res:Strings.HabitTemplatePicker_Search}"
+                     AutomationProperties.Name="{x:Static res:Strings.HabitTemplatePicker_Search}">
+              <TextBox.InnerLeftContent>
+                <Path Width="13" Height="13" Margin="0,0,6,0" Stretch="Uniform" VerticalAlignment="Center" IsHitTestVisible="False"
+                      Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.7" StrokeLineCap="Round"
+                      Data="{StaticResource Icon.Search}"/>
+              </TextBox.InnerLeftContent>
+            </TextBox>
+          </Grid>
+          <TextBlock x:Name="NoResultsText" Classes="caption" Text="{x:Static res:Strings.HabitTemplatePicker_NoResults}"
+                     IsVisible="{CompiledBinding NoResults}" Margin="0,4"/>
+          <ListBox x:Name="OfficialList" Classes="cards" ItemsSource="{CompiledBinding VisibleOfficial}"
+                   AutomationProperties.Name="{x:Static res:Strings.HabitTemplatePicker_Templates}">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:PickerOption">
+                <Border Classes="ring">
+                  <Border Classes="tcard">
+                    <DockPanel>
+                      <Rectangle DockPanel.Dock="Left" Width="{StaticResource Layout.AccentBarWidth}"
+                                 Fill="{CompiledBinding Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                      <ContentPresenter Content="{CompiledBinding}" ContentTemplate="{StaticResource CardBody}"/>
+                    </DockPanel>
+                  </Border>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <!-- I tuoi modelli: Rinomina (in linea) ed Elimina nel menu della scheda. -->
+          <StackPanel x:Name="YoursSection" Spacing="8" Margin="0,10,0,0" IsVisible="False">
+            <TextBlock Classes="block">
+              <Run Text="{x:Static res:Strings.HabitTemplatePicker_Section_Yours}"/><Run
+                   Text="{CompiledBinding VisibleCustom.Count, StringFormat=' {0}'}"
+                   Foreground="{DynamicResource Brush.TextMuted}" FontWeight="Normal"/>
+            </TextBlock>
+            <ListBox x:Name="CustomList" Classes="cards" ItemsSource="{CompiledBinding VisibleCustom}"
+                     AutomationProperties.Name="{x:Static res:Strings.HabitTemplatePicker_Section_Yours}">
+              <ListBox.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+              </ListBox.ItemsPanel>
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:PickerOption">
+                  <Border Classes="ring">
+                    <Border Classes="tcard">
+                      <DockPanel>
+                        <Rectangle DockPanel.Dock="Left" Width="{StaticResource Layout.AccentBarWidth}"
+                                   Fill="{CompiledBinding Color, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                        <Button x:Name="CardMenuButton" DockPanel.Dock="Right" Classes="ghost" Width="28" Height="28" Padding="0"
+                                Margin="0,6,6,0" VerticalAlignment="Top"
+                                ToolTip.Tip="{x:Static res:Strings.HabitTemplatePicker_CardMenu}"
+                                AutomationProperties.Name="{x:Static res:Strings.HabitTemplatePicker_CardMenu}">
+                          <!-- Tre punti di larghezza zero: Stretch="Uniform" su un Path li schiaccerebbe in uno solo; il riquadro
+                               24x24 di Lucide resta intero dentro il Viewbox. -->
+                          <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                              <Path x:Name="CardMenuIcon" Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="2.5"
+                                    StrokeLineCap="Round" Data="{StaticResource Icon.MoreVertical}"/>
+                            </Canvas>
+                          </Viewbox>
+                          <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                              <MenuItem x:Name="RenameItem" Header="{x:Static res:Strings.HabitTemplatePicker_Rename}" Click="OnRename"/>
+                              <MenuItem x:Name="DeleteItem" Header="{x:Static res:Strings.HabitTemplatePicker_Delete}" Click="OnDelete"/>
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                        <Panel>
+                          <ContentPresenter Content="{CompiledBinding}" ContentTemplate="{StaticResource CardBody}"/>
+                          <TextBox x:Name="RenameBox" IsVisible="False" Margin="8,6" VerticalAlignment="Top"
+                                   AutomationProperties.Name="{x:Static res:Strings.HabitTemplatePicker_Rename}"
+                                   KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
+                        </Panel>
+                      </DockPanel>
+                    </Border>
+                  </Border>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- La scheda scelta: come apparira' in Home, il tipo, cosa contiene. -->
+      <Border x:Name="DetailHost" Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Brush.Border}"
+              Background="{DynamicResource Brush.Surface}" Padding="20">
+        <Panel>
+          <TextBlock x:Name="DetailEmpty" Classes="caption" TextWrapping="Wrap"
+                     Text="{x:Static res:Strings.HabitTemplatePicker_DetailEmpty}"
+                     IsVisible="{CompiledBinding Detail, Converter={x:Static ObjectConverters.IsNull}}"/>
+          <StackPanel x:Name="DetailPanel" Spacing="4"
+                      IsVisible="{CompiledBinding Detail, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock x:Name="DetailName" Text="{CompiledBinding Detail.Name}" FontSize="{StaticResource FontSize.Heading}"
+                       FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text}"/>
+            <TextBlock Text="{CompiledBinding Detail.Description}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}"/>
+            <TextBlock x:Name="DetailType" Classes="caption" Text="{CompiledBinding Detail.TypeLine}"/>
+            <TextBlock Classes="caption" FontWeight="SemiBold" Margin="0,14,0,4" Text="{x:Static res:Strings.Editor_Block_Home}"/>
+            <ctl:RowPreview x:Name="DetailRow" Model="{CompiledBinding Detail.HomeRow}"/>
+            <TextBlock Classes="caption" FontWeight="SemiBold" Margin="0,14,0,0" Text="{x:Static res:Strings.HabitTemplatePicker_Contents}"/>
+            <ItemsControl x:Name="DetailContents" ItemsSource="{CompiledBinding Detail.Contents}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TemplateDetailRow">
+                  <Border Classes="detailrow">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                      <TextBlock Text="{CompiledBinding Label}" Foreground="{DynamicResource Brush.Text}"/>
+                      <TextBlock Grid.Column="1" Text="{CompiledBinding Value}" TextWrapping="Wrap" TextAlignment="Right"
+                                 Foreground="{DynamicResource Brush.TextMuted}"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Panel>
+      </Border>
+    </Grid>
+  </DockPanel>
 </v:RecordumWindow>
