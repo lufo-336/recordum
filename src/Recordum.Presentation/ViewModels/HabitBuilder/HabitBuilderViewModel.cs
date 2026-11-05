@@ -27,6 +27,11 @@ public sealed partial class SeriesLabelRowViewModel : ObservableObject
     [ObservableProperty] private string _name = string.Empty;
 }
 
+/// <summary>The creator's number boxes whose rejected text must block "Create habit" (the view reports them through
+/// <see cref="HabitBuilderViewModel.SetInputRejected"/>): their empty value is a valid "none", so clearing it alone would
+/// let a red box create the habit without what it shows.</summary>
+public enum BuilderNumberInput { Tolerance, RollingDays, Rest }
+
 /// <summary>One of the creator's four field tiles: on when the grammar allows the field, with the line that says what it is
 /// for or why it is off (<see cref="HabitBuilderViewModel.FieldTileHint"/>).</summary>
 public sealed partial class FieldTileViewModel(FieldNature nature) : ObservableObject
@@ -415,6 +420,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         var period = ParseEnum(goal.PeriodType, GoalPeriodType.Open);
         GoalBrick.PeriodType = period == GoalPeriodType.Fixed ? GoalPeriodType.Open : period;
         GoalBrick.RollingDays = goal.RollingDays;
+        // La finestra mobile senza il suo numero: la riga sta in Avanzate, lo si apre (e la riga del perche' la nomina).
+        if (GoalBrick is { PeriodType: GoalPeriodType.Rolling, RollingDays: not > 0 }) AdvancedOpen = true;
     }
 
     private static string[] DaysOf(string? json)
@@ -614,6 +621,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// with no gate of its own: a template you cannot launch would create the malformed habit later.</summary>
     public bool CanLaunch =>
         !string.IsNullOrWhiteSpace(Name)
+        && FirstRejectedInput() is null
         && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null)
         && Fields.All(f => f.Nature != FieldNature.Time || f.UnitOfMeasureId is not null)
         && GoalBrick.IsComplete
@@ -626,21 +634,27 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <summary>Why "Create habit" is off, the first failing rule of <see cref="CanLaunch"/> in its order; null when it is on.
     /// A rule with no line of its own (a fixed goal period, which the creator never offers) falls back to the general hint:
     /// a disabled button never stays silent.</summary>
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a line that changes with the culture
     public string? LaunchBlockedReason
     {
         get
         {
             if (CanLaunch) return null;
             if (string.IsNullOrWhiteSpace(Name)) return Strings.HabitBuilder_Blocked_Name;
-#pragma warning disable CA1863 // CompositeFormat caching not worth it for a line that changes with the culture
+            if (FirstRejectedInput() is { } rejected)
+                return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_NotANumber, rejected switch
+                {
+                    BuilderNumberInput.Tolerance => Strings.Editor_Field_ToleranceMinutes,
+                    BuilderNumberInput.Rest => Strings.Editor_Field_RestTimerSeconds,
+                    _ => RollingRowWithGap,
+                });
             if (Fields.FirstOrDefault(f => f.Nature == FieldNature.Scale && f.ScaleTemplateId is null) is { } scale)
                 return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_Scale, FieldLabel(scale));
             if (Fields.FirstOrDefault(f => f.Nature == FieldNature.Time && f.UnitOfMeasureId is null) is { } time)
                 return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_TimeUnit, FieldLabel(time));
-#pragma warning restore CA1863
             if (GoalBrick.HasGoal && GoalBrick.Target is not > 0) return Strings.HabitBuilder_Blocked_GoalTarget;
             if (GoalBrick is { HasGoal: true, PeriodType: GoalPeriodType.Rolling, RollingDays: not > 0 })
-                return Strings.HabitBuilder_Blocked_RollingDays;
+                return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_RollingDays, RollingRowWithGap);
             if (Schedule.StreakToleranceMinutes is <= 0 or > ScheduleBrickViewModel.MaxToleranceMinutes)
                 return Strings.HabitBuilder_Blocked_Tolerance;
             if (SessionBrick is { HasSession: true, RestTimerSeconds: <= 0 }) return Strings.HabitBuilder_Blocked_Rest;
@@ -648,6 +662,38 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             return Strings.HabitBuilder_LaunchHint;
         }
     }
+#pragma warning restore CA1863
+
+    // "Count over the last … days": the Avanzate row, named in the reason with a gap where its number goes.
+#pragma warning disable CA1863 // as above
+    private static string RollingRowWithGap => string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Goal_RollingRow, "…");
+#pragma warning restore CA1863
+
+    private readonly HashSet<BuilderNumberInput> _rejected = [];
+
+    /// <summary>The view reports a number box whose text the binding rejected (and when it is accepted again).</summary>
+    public void SetInputRejected(BuilderNumberInput input, bool rejected)
+    {
+        if (rejected ? _rejected.Add(input) : _rejected.Remove(input)) RaiseLaunchState();
+    }
+
+    // A rejected box counts only while it is part of the composition: the rest without a session, or the window without a
+    // goal, is not on screen and cannot be corrected there.
+    private BuilderNumberInput? FirstRejectedInput()
+    {
+        foreach (var input in new[] { BuilderNumberInput.Tolerance, BuilderNumberInput.RollingDays, BuilderNumberInput.Rest })
+        {
+            if (!_rejected.Contains(input)) continue;
+            if (input == BuilderNumberInput.Rest && !SessionBrick.HasSession) continue;
+            if (input == BuilderNumberInput.RollingDays && !GoalBrick.HasGoal) continue;
+            return input;
+        }
+        return null;
+    }
+
+    /// <summary>Whether the Avanzate block is open. The view binds its toggle here so a template load can open it when the
+    /// row it needs is in there (a rolling goal without its days).</summary>
+    [ObservableProperty] private bool _advancedOpen;
 
     private static string FieldLabel(FieldBlockViewModel f) => string.IsNullOrWhiteSpace(f.Name) ? DefaultName(f.Nature) : f.Name.Trim();
 

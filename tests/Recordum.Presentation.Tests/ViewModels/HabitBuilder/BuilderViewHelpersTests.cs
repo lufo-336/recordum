@@ -61,9 +61,9 @@ public class BuilderViewHelpersTests
         sut.GoalBrick.HasGoal = true;
         sut.LaunchBlockedReason.Should().Be(Strings.HabitBuilder_Blocked_GoalTarget);
         sut.GoalBrick.Target = 3m;
-        sut.GoalBrick.PeriodType = GoalPeriodType.Rolling;
-        sut.LaunchBlockedReason.Should().Be(Strings.HabitBuilder_Blocked_RollingDays);
-        sut.GoalBrick.RollingDays = 7;
+        sut.GoalBrick.RollingWindowDays = 0;
+        sut.LaunchBlockedReason.Should().Be(RollingReason());
+        sut.GoalBrick.RollingWindowDays = 7;
 
         sut.Schedule.StreakToleranceMinutes = 1441;
         sut.LaunchBlockedReason.Should().Be(Strings.HabitBuilder_Blocked_Tolerance);
@@ -81,6 +81,66 @@ public class BuilderViewHelpersTests
         sut.Schedule.Days[0].IsSelected = true;
         sut.LaunchBlockedReason.Should().BeNull();
         sut.CanLaunch.Should().BeTrue();
+    }
+
+    private static string RollingReason() => string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_RollingDays,
+        string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Goal_RollingRow, "…"));
+
+    [Fact]
+    public void A_number_box_with_rejected_text_blocks_creation_and_says_which()
+    {
+        using var _ = Culture("it-IT");
+        var sut = NewSut();
+        sut.Name = "Corsa";
+        sut.SetInputRejected(BuilderNumberInput.Tolerance, true);
+        sut.CanLaunch.Should().BeFalse("la casella e' rossa: il valore non puo' sparire in silenzio");
+        sut.LaunchCommand.CanExecute(null).Should().BeFalse();
+        sut.LaunchBlockedReason.Should().Be("Tolleranza (minuti): non è un numero intero.");
+
+        sut.SetInputRejected(BuilderNumberInput.Tolerance, false);
+        sut.CanLaunch.Should().BeTrue();
+        sut.LaunchBlockedReason.Should().BeNull();
+    }
+
+    [Fact]
+    public void A_rejected_box_that_is_not_part_of_the_composition_does_not_block()
+    {
+        var sut = NewSut();
+        sut.Name = "Corsa";
+        sut.SetInputRejected(BuilderNumberInput.Rest, true);         // nessuna sessione: la casella del riposo non c'e'
+        sut.SetInputRejected(BuilderNumberInput.RollingDays, true);  // nessun obiettivo: neanche la finestra
+        sut.CanLaunch.Should().BeTrue();
+
+        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        sut.SessionBrick.HasSession = true;
+        sut.CanLaunch.Should().BeFalse("con la sessione accesa il riposo rifiutato torna a contare");
+    }
+
+    [Fact]
+    public async Task Launch_refuses_a_rejected_box_even_when_called_directly()
+    {
+        var composed = new FakeComposedHabitService();
+        var settings = new FakeAppSettingService();
+        var sut = new HabitBuilderViewModel(composed, new FakeHabitTemplateService(), new FakeReferenceData(), new FakeClock(),
+            new RecentColorStore(settings), new FavoriteColorStore(settings), new FakeScreenColorPicker()) { Name = "Corsa" };
+        sut.SetInputRejected(BuilderNumberInput.Tolerance, true);
+        await sut.LaunchCommand.ExecuteAsync(null);
+        sut.CreatedHabitNodeId.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("en-US", "Something is still missing: check the name, the fields, the schedule and the goal.",
+        "With no field it is an action to tick off; add what you want to measure each time.", "It's a break", "Count over the last {0} days")]
+    [InlineData("it-IT", "Manca ancora qualcosa: controlla il nome, i campi, il programma e l'obiettivo.",
+        "Senza campi è un'azione da spuntare; aggiungi quello che vuoi misurare ogni volta.", "È una pausa", "Conta sugli ultimi {0} giorni")]
+    public void The_fix_round_words(string culture, string hint, string tiles, string isBreak, string row)
+    {
+        using var _ = Culture(culture);
+        Strings.HabitBuilder_LaunchHint.Should().Be(hint);
+        Strings.HabitBuilder_Tiles_Hint.Should().Be(tiles);
+        Strings.HabitBuilder_Segment_IsBreak.Should().Be(isBreak);
+        Strings.HabitBuilder_Goal_RollingRow.Should().Be(row);
+        Strings.HabitBuilder_Goal_RollingRow_Help.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -129,7 +189,7 @@ public class BuilderViewHelpersTests
         [
             Strings.HabitBuilder_Blocked_Name, Strings.HabitBuilder_Blocked_Scale, Strings.HabitBuilder_Blocked_TimeUnit,
             Strings.HabitBuilder_Blocked_GoalTarget, Strings.HabitBuilder_Blocked_RollingDays, Strings.HabitBuilder_Blocked_Tolerance,
-            Strings.HabitBuilder_Blocked_Rest, Strings.HabitBuilder_Blocked_Schedule,
+            Strings.HabitBuilder_Blocked_Rest, Strings.HabitBuilder_Blocked_Schedule, Strings.HabitBuilder_Blocked_NotANumber,
         ];
         reasons.Should().OnlyContain(r => !string.IsNullOrWhiteSpace(r)).And.OnlyHaveUniqueItems();
         if (culture == "it-IT") Strings.HabitBuilder_Blocked_Name.Should().Be("Dai un nome all'abitudine.");

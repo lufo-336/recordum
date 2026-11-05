@@ -455,6 +455,26 @@ public class BuilderTemplateParityTests : IDisposable
         vm.GoalBrick.PeriodType.Should().Be(GoalPeriodType.Rolling);
         vm.GoalBrick.RollingDays.Should().BeNull();
         vm.CanLaunch.Should().BeFalse();
+        // La riga che manca e' in Avanzate: il creatore lo apre e la riga del perche' la nomina.
+        vm.AdvancedOpen.Should().BeTrue();
+        vm.LaunchBlockedReason.Should().Be(string.Format(System.Globalization.CultureInfo.CurrentCulture,
+            Recordum.Presentation.Resources.Strings.HabitBuilder_Blocked_RollingDays,
+            string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.Presentation.Resources.Strings.HabitBuilder_Goal_RollingRow, "…")));
+    }
+
+    [Fact]
+    public async Task A_rolling_goal_loads_its_days_into_the_window_row()
+    {
+        var t = UserTemplate("""
+            {"node":{"name":"Acqua","habit_type":"Counter"},"metrics":[{"name":"Amount","type":"Decimal","unit":"l"}],
+             "goal":{"target":3,"period_type":"Rolling","rolling_days":7}}
+            """);
+        var vm = NewVm(StoreWith(t));
+        await vm.LoadTemplateAsync(t.Id);
+
+        vm.GoalBrick.RollingWindowDays.Should().Be(7);
+        vm.CanLaunch.Should().BeTrue();
+        vm.AdvancedOpen.Should().BeFalse("nulla manca: Avanzate resta chiuso");
     }
 
     [Fact]

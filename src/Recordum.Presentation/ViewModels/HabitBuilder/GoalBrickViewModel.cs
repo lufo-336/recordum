@@ -33,8 +33,31 @@ public sealed partial class GoalBrickViewModel : ObservableObject
     partial void OnHasGoalChanged(bool value) => Raise();
     partial void OnTargetChanged(decimal? value) => Raise();
     partial void OnNameChanged(string? value) => Raise();
-    partial void OnPeriodTypeChanged(GoalPeriodType value) => Raise();
-    partial void OnRollingDaysChanged(int? value) => Raise();
+    partial void OnPeriodTypeChanged(GoalPeriodType value)
+    {
+        OnPropertyChanged(nameof(RollingWindowDays));
+        Raise();
+    }
+
+    partial void OnRollingDaysChanged(int? value)
+    {
+        OnPropertyChanged(nameof(RollingWindowDays));
+        Raise();
+    }
+
+    /// <summary>The creator's "Count over the last [N] days" row (Avanzate, Ruling 7): a number makes the goal
+    /// <c>Rolling</c> over N days, empty makes it <c>Open</c>. A zero or negative N stays as typed (Rolling, then
+    /// <see cref="IsComplete"/> refuses it): what is saved is what is shown. Reads back what a template load wrote; a fixed
+    /// period has no window.</summary>
+    public int? RollingWindowDays
+    {
+        get => PeriodType == GoalPeriodType.Rolling ? RollingDays : null;
+        set
+        {
+            PeriodType = value is null ? GoalPeriodType.Open : GoalPeriodType.Rolling;
+            RollingDays = value;
+        }
+    }
 
     /// <summary>False when the goal is on but cannot be written: no positive target, a rolling window
     /// without its days, or a fixed period (no dates here) — all would violate

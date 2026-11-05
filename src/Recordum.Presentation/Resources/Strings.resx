@@ -461,7 +461,7 @@ Details: {0}</value>
     <value>Pick a scale</value>
   </data>
   <data name="HabitBuilder.LaunchHint" xml:space="preserve">
-    <value>Name the habit, pick a scale for every Scale field and a unit for every Time field, complete the schedule (the days, or how many times) — and a positive target on the goal, if enabled — to launch.</value>
+    <value>Something is still missing: check the name, the fields, the schedule and the goal.</value>
   </data>
   <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
     <value>Saved ✓</value>
@@ -2479,7 +2479,7 @@ Details: {0}</value>
     <value>The goal needs a target above zero.</value>
   </data>
   <data name="HabitBuilder.Blocked.RollingDays" xml:space="preserve">
-    <value>A rolling goal needs its number of days (in Advanced).</value>
+    <value>{0}: give a number above zero.</value>
   </data>
   <data name="HabitBuilder.Blocked.Tolerance" xml:space="preserve">
     <value>The streak tolerance goes from 1 to 1440 minutes (in Advanced).</value>
@@ -2489,5 +2489,20 @@ Details: {0}</value>
   </data>
   <data name="HabitBuilder.Blocked.Schedule" xml:space="preserve">
     <value>Complete the schedule: the days, or how many times.</value>
+  </data>
+  <data name="HabitBuilder.Goal.RollingRow" xml:space="preserve">
+    <value>Count over the last {0} days</value>
+  </data>
+  <data name="HabitBuilder.Goal.RollingRow.Help" xml:space="preserve">
+    <value>Empty: everything since the start counts. With a number, only those last days count, and the window moves on each day.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.NotANumber" xml:space="preserve">
+    <value>{0}: that is not a whole number.</value>
+  </data>
+  <data name="HabitBuilder.Tiles.Hint" xml:space="preserve">
+    <value>With no field it is an action to tick off; add what you want to measure each time.</value>
+  </data>
+  <data name="HabitBuilder.Segment.IsBreak" xml:space="preserve">
+    <value>It's a break</value>
   </data>
 </root>

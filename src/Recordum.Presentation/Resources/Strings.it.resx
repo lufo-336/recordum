@@ -436,7 +436,7 @@
     <value>Scegli una scala</value>
   </data>
   <data name="HabitBuilder.LaunchHint" xml:space="preserve">
-    <value>Dai un nome, scegli una scala per ogni campo Scala e un'unità per ogni campo Tempo, completa il programma (i giorni, o quante volte) — e un target positivo sull'obiettivo, se attivo — per lanciare.</value>
+    <value>Manca ancora qualcosa: controlla il nome, i campi, il programma e l'obiettivo.</value>
   </data>
   <data name="HabitBuilder.TemplateSaved" xml:space="preserve">
     <value>Salvato ✓</value>
@@ -2453,7 +2453,7 @@
     <value>L'obiettivo vuole un traguardo sopra lo zero.</value>
   </data>
   <data name="HabitBuilder.Blocked.RollingDays" xml:space="preserve">
-    <value>Un obiettivo su giorni mobili vuole il numero di giorni (in Avanzate).</value>
+    <value>{0}: serve un numero sopra lo zero.</value>
   </data>
   <data name="HabitBuilder.Blocked.Tolerance" xml:space="preserve">
     <value>La tolleranza della serie va da 1 a 1440 minuti (in Avanzate).</value>
@@ -2463,5 +2463,20 @@
   </data>
   <data name="HabitBuilder.Blocked.Schedule" xml:space="preserve">
     <value>Completa il programma: i giorni, o quante volte.</value>
+  </data>
+  <data name="HabitBuilder.Goal.RollingRow" xml:space="preserve">
+    <value>Conta sugli ultimi {0} giorni</value>
+  </data>
+  <data name="HabitBuilder.Goal.RollingRow.Help" xml:space="preserve">
+    <value>Vuoto: conta tutto dall'inizio. Con un numero contano solo quegli ultimi giorni, e la finestra si sposta ogni giorno.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.NotANumber" xml:space="preserve">
+    <value>{0}: non è un numero intero.</value>
+  </data>
+  <data name="HabitBuilder.Tiles.Hint" xml:space="preserve">
+    <value>Senza campi è un'azione da spuntare; aggiungi quello che vuoi misurare ogni volta.</value>
+  </data>
+  <data name="HabitBuilder.Segment.IsBreak" xml:space="preserve">
+    <value>È una pausa</value>
   </data>
 </root>

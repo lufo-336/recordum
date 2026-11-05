@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Reactive;
 using Recordum.UI.Behaviors;
 using Avalonia.Data.Converters;
 using Recordum.Core.Enums;
@@ -18,8 +19,10 @@ public partial class HabitBuilderView : UserControl
     public static readonly StreakMode[] StreakModes = Enum.GetValues<StreakMode>();
     public static readonly StreakRecovery[] StreakRecoveries = Enum.GetValues<StreakRecovery>();
 
-    /// <summary>Il creatore offre l'obiettivo aperto o su giorni mobili; il periodo fisso (inizio e fine) resta in Configura.</summary>
-    public static readonly GoalPeriodType[] GoalPeriods = [GoalPeriodType.Open, GoalPeriodType.Rolling];
+    // "Conta sugli ultimi {0} giorni": la casella sta al posto del numero, fra le due meta' della stessa stringa.
+    public static string RollingRowBefore => Strings.HabitBuilder_Goal_RollingRow.Split("{0}")[0].Trim();
+    public static string RollingRowAfter => Strings.HabitBuilder_Goal_RollingRow.Split("{0}")[^1].Trim();
+    public static string RollingRowName => Strings.HabitBuilder_Goal_RollingRow.Replace("{0}", "N", StringComparison.Ordinal);
 
     // "Si comporta come **{0}** · ...": le due meta' della stessa stringa attorno alla parola in grassetto. Proprieta', non
     // campi: si leggono al caricamento della vista, nella lingua di quel momento.
@@ -69,7 +72,16 @@ public partial class HabitBuilderView : UserControl
         RejectedTextGuard.Watch<HabitBuilderViewModel>(ToleranceBox, this, vm => vm.Schedule.StreakToleranceMinutes = null);
         RejectedTextGuard.Watch<HabitBuilderViewModel>(RollingDaysBox, this, vm => vm.GoalBrick.RollingDays = null);
         RejectedTextGuard.Watch<HabitBuilderViewModel>(RestBox, this, vm => vm.SessionBrick.RestTimerSeconds = null);
+        // Per queste tre il valore vuoto e' un "nessuno" valido: svuotarlo non basta, il testo rifiutato deve fermare la
+        // creazione finche' la casella e' rossa (il ViewModel lo sa da qui).
+        ReportRejected(ToleranceBox, BuilderNumberInput.Tolerance);
+        ReportRejected(RollingDaysBox, BuilderNumberInput.RollingDays);
+        ReportRejected(RestBox, BuilderNumberInput.Rest);
     }
+
+    private void ReportRejected(TextBox box, BuilderNumberInput input) =>
+        box.GetObservable(DataValidationErrors.HasErrorsProperty).Subscribe(new AnonymousObserver<bool>(hasErrors =>
+            (DataContext as HabitBuilderViewModel)?.SetInputRejected(input, hasErrors)));
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {

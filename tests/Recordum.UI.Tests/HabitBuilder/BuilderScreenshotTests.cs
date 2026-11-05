@@ -162,7 +162,8 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
             vm.Name = "Corsa";
             vm.AddFieldCommand.Execute(Recordum.Core.Enums.FieldNature.Quantity);
             vm.GoalBrick.HasGoal = true;
-            vm.GoalBrick.PeriodType = Recordum.Core.Enums.GoalPeriodType.Rolling;
+            vm.GoalBrick.Target = 3m;
+            vm.GoalBrick.RollingWindowDays = 7;
             vm.SessionBrick.HasSession = true;
             Settle();
             BuilderBlocksTests.Named<Avalonia.Controls.Primitives.ToggleButton>(view, "AdvancedToggle").IsChecked = true;
@@ -179,6 +180,8 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
                 c.Bounds.Height.Should().BeGreaterThan(0, n);
             }
             BuilderBlocksTests.Named<Avalonia.Controls.Shapes.Path>(view, "AdvancedChevron").RenderTransform.Should().NotBeNull("la freccia gira");
+            BuilderBlocksTests.Named<TextBox>(rows, "RollingDaysBox").Text.Should().Be("7");
+            BuilderBlocksTests.Named<Button>(view, "LaunchButton").IsEffectivelyEnabled.Should().BeTrue();
         }
         finally { w.Close(); scope.Dispose(); }
     }
@@ -208,6 +211,16 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
                 .Select(x => $"{x.c.GetType().Name}#{x.c.Name} → {x.right:F0}")
                 .ToList();
             overflow.Should().BeEmpty("a 600 px nessun controllo esce dal bordo destro");
+            host.Parent.Should().BeSameAs(BuilderBlocksTests.Named<StackPanel>(view, "BlocksStack"), "a 600 px l'anteprima sta in fondo ai blocchi");
+
+            // Di nuovo largo: l'anteprima torna colonna fissa a destra.
+            w.Width = 1100;
+            Settle();
+            var grid = BuilderBlocksTests.Named<Grid>(view, "LayoutGrid");
+            host.Parent.Should().BeSameAs(grid);
+            Grid.GetColumn(host).Should().Be(1);
+            grid.ColumnDefinitions[1].ActualWidth.Should().BeApproximately(360, 0.5);
+            BuilderBlocksTests.Left(host, view).Should().BeGreaterThan(BuilderBlocksTests.Named<ScrollViewer>(view, "BlocksScroll").Bounds.Right - 1);
         }
         finally { w.Close(); scope.Dispose(); }
     }

@@ -194,4 +194,124 @@ public class BuilderBlocksTests
         Shown(line).Should().Contain(Strings.Home_HabitType_Journal);
         line.Inlines!.OfType<Run>().Single(r => r.FontWeight >= Avalonia.Media.FontWeight.SemiBold).Text.Should().Be(Strings.Home_HabitType_Journal);
     }
+
+    // ---- Fix round 1 -------------------------------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task Block_3_has_no_period_choice()
+    {
+        using var culture = TestCulture.Pin();
+        using var o = await OpenAsync();
+        o.Vm.Name = "Acqua";
+        Named<Button>(o.View, "AddQuantityButton").Command!.Execute(FieldNature.Quantity);
+        Named<ToggleButton>(o.View, "GoalToggle").IsChecked = true;
+        Pump();
+
+        var when = Named<StackPanel>(o.View, "WhenBlock");
+        when.GetVisualDescendants().OfType<ComboBox>().Should().NotContain(c => c.Name == "GoalPeriodBox");
+        when.GetVisualDescendants().OfType<ComboBox>().SelectMany(c => c.Items.Cast<object>())
+            .Should().NotContain(i => i is GoalPeriodType, "il periodo dell'obiettivo non si sceglie in Quando conta");
+        Named<TextBox>(when, "GoalTargetBox").IsEffectivelyVisible.Should().BeTrue();
+        Named<TextBox>(when, "GoalNameBox").IsEffectivelyVisible.Should().BeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task The_window_row_in_advanced_sets_rolling_or_open()
+    {
+        using var culture = TestCulture.Pin();
+        using var o = await OpenAsync();
+        o.Vm.Name = "Acqua";
+        Named<Button>(o.View, "AddQuantityButton").Command!.Execute(FieldNature.Quantity);
+        Click(o.Window, Named<ToggleButton>(o.View, "AdvancedToggle"));
+        var box = Named<TextBox>(o.View, "RollingDaysBox");
+        box.IsEffectivelyVisible.Should().BeFalse("senza obiettivo non c'e' finestra da contare");
+
+        Named<ToggleButton>(o.View, "GoalToggle").IsChecked = true;
+        o.Vm.GoalBrick.Target = 2m;
+        Pump();
+        box.IsEffectivelyVisible.Should().BeTrue();
+        var row = (Panel)box.Parent!;
+        Shown(row.Children.OfType<TextBlock>().First()).Should().Be("Conta sugli ultimi");
+        row.Children.OfType<TextBlock>().Last().Text.Should().Be("giorni");
+        ((Panel)row.Parent!).Children.OfType<TextBlock>().Should().Contain(t => t.Text == Strings.HabitBuilder_Goal_RollingRow_Help, "la riga che spiega");
+
+        box.Text = "7";
+        Pump();
+        o.Vm.GoalBrick.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        o.Vm.GoalBrick.RollingDays.Should().Be(7);
+
+        box.Text = "";
+        Pump();
+        o.Vm.GoalBrick.PeriodType.Should().Be(GoalPeriodType.Open);
+        o.Vm.GoalBrick.RollingDays.Should().BeNull();
+        Named<Button>(o.View, "LaunchButton").IsEffectivelyEnabled.Should().BeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task A_loaded_rolling_goal_shows_its_days_and_a_missing_one_opens_advanced()
+    {
+        using var culture = TestCulture.Pin();
+        using var o = await OpenAsync();
+        o.Vm.Name = "Acqua";
+        Named<Button>(o.View, "AddQuantityButton").Command!.Execute(FieldNature.Quantity);
+        // Come fa LoadTemplateAsync: periodo e giorni scritti sul mattone, Avanzate aperto quando il numero manca.
+        o.Vm.GoalBrick.HasGoal = true;
+        o.Vm.GoalBrick.Target = 2m;
+        o.Vm.GoalBrick.PeriodType = GoalPeriodType.Rolling;
+        o.Vm.GoalBrick.RollingDays = 7;
+        o.Vm.AdvancedOpen = true;
+        Pump();
+
+        Named<StackPanel>(o.View, "AdvancedRows").IsEffectivelyVisible.Should().BeTrue();
+        Named<ToggleButton>(o.View, "AdvancedToggle").IsChecked.Should().BeTrue();
+        Named<TextBox>(o.View, "RollingDaysBox").Text.Should().Be("7");
+
+        o.Vm.GoalBrick.RollingDays = null;
+        Pump();
+        Named<TextBox>(o.View, "RollingDaysBox").Text.Should().BeNullOrEmpty();
+        Named<TextBlock>(o.View, "LaunchBlockedText").Text.Should().Be("Conta sugli ultimi … giorni: serve un numero sopra lo zero.");
+    }
+
+    [AvaloniaFact]
+    public async Task Rejected_text_in_tolerance_blocks_creation()
+    {
+        using var culture = TestCulture.Pin();
+        using var o = await OpenAsync();
+        o.Vm.Name = "Acqua";
+        Click(o.Window, Named<ToggleButton>(o.View, "AdvancedToggle"));
+        var create = Named<Button>(o.View, "LaunchButton");
+        create.IsEffectivelyEnabled.Should().BeTrue();
+
+        var box = Named<TextBox>(o.View, "ToleranceBox");
+        box.Text = "dieci";
+        Pump();
+        DataValidationErrors.GetHasErrors(box).Should().BeTrue();
+        create.IsEffectivelyEnabled.Should().BeFalse("la casella rossa non sparisce in silenzio");
+        Named<TextBlock>(o.View, "LaunchBlockedText").Text.Should().Be("Tolleranza (minuti): non è un numero intero.");
+
+        box.Text = "30";
+        Pump();
+        create.IsEffectivelyEnabled.Should().BeTrue();
+        o.Vm.Schedule.StreakToleranceMinutes.Should().Be(30);
+
+        // Vuoto e' "nessuna tolleranza", non un testo rifiutato.
+        box.Text = "";
+        Pump();
+        DataValidationErrors.GetHasErrors(box).Should().BeFalse();
+        o.Vm.Schedule.StreakToleranceMinutes.Should().BeNull();
+        create.IsEffectivelyEnabled.Should().BeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task A_rest_segment_says_it_is_a_break()
+    {
+        using var culture = TestCulture.Pin();
+        using var o = await OpenAsync();
+        Named<Button>(o.View, "AddQuantityButton").Command!.Execute(FieldNature.Quantity);
+        o.Vm.SessionBrick.HasSession = true;
+        o.Vm.AdvancedOpen = true;
+        Pump();
+        Named<ItemsControl>(o.View, "SegmentsList").GetVisualDescendants().OfType<CheckBox>().Select(c => c.Content)
+            .Should().OnlyContain(c => (string)c! == "È una pausa").And.HaveCount(2);
+    }
 }

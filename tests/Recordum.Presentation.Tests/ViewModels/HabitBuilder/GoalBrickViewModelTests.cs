@@ -113,4 +113,45 @@ public class GoalBrickViewModelTests
         var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m, PeriodType = GoalPeriodType.Fixed };
         vm.IsComplete.Should().BeFalse();
     }
+
+    // ---- Fix round 1 (Ruling 7): "Conta sugli ultimi [N] giorni" in Avanzate ----------------------------
+
+    [Fact]
+    public void The_window_row_makes_the_goal_rolling_with_a_number_and_open_without()
+    {
+        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m };
+        vm.RollingWindowDays.Should().BeNull();
+
+        vm.RollingWindowDays = 7;
+        vm.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        vm.RollingDays.Should().Be(7);
+
+        vm.RollingWindowDays = null;
+        vm.PeriodType.Should().Be(GoalPeriodType.Open);
+        vm.RollingDays.Should().BeNull();
+        vm.IsComplete.Should().BeTrue();
+    }
+
+    [Fact]
+    public void The_window_row_reads_what_a_load_wrote_and_says_so()
+    {
+        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m };
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+        vm.PeriodType = GoalPeriodType.Rolling;
+        vm.RollingDays = 14;
+        vm.RollingWindowDays.Should().Be(14);
+        raised.Should().Contain(nameof(GoalBrickViewModel.RollingWindowDays));
+
+        vm.PeriodType = GoalPeriodType.Fixed;
+        vm.RollingWindowDays.Should().BeNull("solo un periodo mobile ha una finestra");
+    }
+
+    [Fact]
+    public void A_zero_window_is_kept_as_typed_and_blocks()
+    {
+        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m, RollingWindowDays = 0 };
+        vm.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        vm.IsComplete.Should().BeFalse("cio' che si salva e' cio' che si vede: uno zero non diventa 'aperto' in silenzio");
+    }
 }

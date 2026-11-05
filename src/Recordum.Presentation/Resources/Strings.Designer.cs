@@ -871,6 +871,11 @@ public static class Strings
     public static string HabitBuilder_Blocked_Tolerance => Get("HabitBuilder.Blocked.Tolerance");
     public static string HabitBuilder_Blocked_Rest => Get("HabitBuilder.Blocked.Rest");
     public static string HabitBuilder_Blocked_Schedule => Get("HabitBuilder.Blocked.Schedule");
+    public static string HabitBuilder_Goal_RollingRow => Get("HabitBuilder.Goal.RollingRow");
+    public static string HabitBuilder_Goal_RollingRow_Help => Get("HabitBuilder.Goal.RollingRow.Help");
+    public static string HabitBuilder_Blocked_NotANumber => Get("HabitBuilder.Blocked.NotANumber");
+    public static string HabitBuilder_Tiles_Hint => Get("HabitBuilder.Tiles.Hint");
+    public static string HabitBuilder_Segment_IsBreak => Get("HabitBuilder.Segment.IsBreak");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
