@@ -13,6 +13,16 @@ public sealed partial class GoalBrickViewModel : ObservableObject
     [ObservableProperty] private bool _hasGoal;
     [ObservableProperty] private decimal? _target;
 
+    /// <summary>Nome proprio dell'obiettivo; vuoto = quello dell'abitudine (CR9).</summary>
+    [ObservableProperty] private string? _name;
+
+    /// <summary>Il creatore offre <c>Open</c> e <c>Rolling</c>: <c>Fixed</c> vuole inizio e fine e resta in
+    /// Configura (<see cref="IsComplete"/> lo rifiuta se arriva comunque).</summary>
+    [ObservableProperty] private GoalPeriodType _periodType = GoalPeriodType.Open;
+
+    /// <summary>Giorni della finestra mobile; richiesti e positivi solo con <c>Rolling</c>.</summary>
+    [ObservableProperty] private int? _rollingDays;
+
     /// <summary>Impostato dall'host in <c>Recompute()</c>: true quando <c>DerivedType == Counter</c>.
     /// Non e' un input utente — quando l'host lo spegne, forziamo <see cref="HasGoal"/> a false cosi'
     /// il draft non porta mai un goal orfano se la composizione smette di supportarlo.</summary>
@@ -22,6 +32,20 @@ public sealed partial class GoalBrickViewModel : ObservableObject
 
     partial void OnHasGoalChanged(bool value) => Raise();
     partial void OnTargetChanged(decimal? value) => Raise();
+    partial void OnNameChanged(string? value) => Raise();
+    partial void OnPeriodTypeChanged(GoalPeriodType value) => Raise();
+    partial void OnRollingDaysChanged(int? value) => Raise();
+
+    /// <summary>False when the goal is on but cannot be written: no positive target, a rolling window
+    /// without its days, or a fixed period (no dates here) — all would violate
+    /// <c>ck_goal_period_consistency</c> or mean nothing. Same rule as Configura's
+    /// <c>GoalSectionViewModel</c> (<c>Editor.Error.RollingDaysPositive</c>).</summary>
+    public bool IsComplete => !HasGoal || Target is > 0 && PeriodType switch
+    {
+        GoalPeriodType.Rolling => RollingDays is > 0,
+        GoalPeriodType.Fixed => false,
+        _ => true,
+    };
 
     partial void OnIsAvailableChanged(bool value)
     {
@@ -41,13 +65,13 @@ public sealed partial class GoalBrickViewModel : ObservableObject
         {
             Id = Guid.NewGuid(),
             HabitNodeId = nodeId,
-            Name = habitName,
+            Name = string.IsNullOrWhiteSpace(Name) ? habitName : Name.Trim(),
             MetricDefinitionId = firstMetricId,
             TargetValue = Target.Value,
-            // Sempre aperto: v. il commento in HabitBuilderView.xaml (review 2.5, F1). Un periodo
-            // Fixed/Rolling senza date o rolling_days viola ck_goal_period_consistency e fa fallire
-            // l'insert; il periodo si sceglie in Configura, che ha i campi per reggerlo.
-            PeriodType = GoalPeriodType.Open,
+            // Open o Rolling (con i suoi giorni): un periodo senza i campi che lo reggono viola
+            // ck_goal_period_consistency e fa fallire l'insert, per questo IsComplete li pretende.
+            PeriodType = PeriodType,
+            RollingDays = PeriodType == GoalPeriodType.Rolling ? RollingDays : null,
         };
     }
 }

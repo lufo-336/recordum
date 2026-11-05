@@ -113,6 +113,9 @@ public sealed class HabitTemplateService(
                     ? ParseEnum<TimerMode>(tm, TimerMode.Stopwatch)
                     : null;
                 c.TimerTargetSeconds = payload.Config.TimerTargetSeconds;
+                c.StreakToleranceMinutes = payload.Config.StreakToleranceMinutes;
+                c.RestTimerSeconds = payload.Config.RestTimerSeconds;
+                c.TimerAutoPrompt = payload.Config.TimerAutoPrompt ?? false;
                 if (c.TimerMode == Recordum.Core.Enums.TimerMode.Session) c.SessionBaseTimer = true;
                 c.Repeatable = payload.Config.Repeatable ?? payload.RepeatableLegacy ?? false;
                 c.SeriesLabelsJson = payload.Config.SeriesLabels is { Count: > 0 }
@@ -245,10 +248,13 @@ public sealed class HabitTemplateService(
             {
                 Id = Guid.NewGuid(),
                 HabitNodeId = habitId,
-                Name = habitName, // the goal belongs to the habit; never a hardcoded literal (CR9)
+                // Il nome proprio dell'obiettivo se il modello lo dichiara; altrimenti quello dell'abitudine
+                // (CR9: mai un literal hardcoded).
+                Name = string.IsNullOrWhiteSpace(g.Name) ? habitName : g.Name,
                 MetricDefinitionId = firstMetricId,
                 TargetValue = g.Target,
                 PeriodType = ParseEnum(g.PeriodType, GoalPeriodType.Open),
+                RollingDays = g.RollingDays,
             });
         }
 
@@ -335,9 +341,11 @@ public sealed class HabitTemplateService(
 
     private sealed class GoalPayload
     {
+        public string? Name { get; set; }
         public decimal Target { get; set; }
         public string? Unit { get; set; }
         public string? PeriodType { get; set; }
+        public int? RollingDays { get; set; }
     }
 
     private sealed class NodePayload
@@ -362,5 +370,8 @@ public sealed class HabitTemplateService(
         public int? TimerTargetSeconds { get; set; }
         public bool? Repeatable { get; set; }
         public List<string>? SeriesLabels { get; set; }
+        public int? StreakToleranceMinutes { get; set; }
+        public int? RestTimerSeconds { get; set; }
+        public bool? TimerAutoPrompt { get; set; }
     }
 }

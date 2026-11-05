@@ -39,7 +39,7 @@ public class BuilderTemplateParityTests
         // config
         "schedule_type", "schedule_days_json", "schedule_weekly_target", "schedule_every_x_days",
         "streak_mode", "streak_recovery", "has_integrated_timer", "timer_mode", "timer_target_seconds",
-        "repeatable", "series_labels",
+        "repeatable", "series_labels", "streak_tolerance_minutes", "rest_timer_seconds", "timer_auto_prompt",
         // ui_prefs
         "journal_gesture",
         // metrics
@@ -47,7 +47,7 @@ public class BuilderTemplateParityTests
         // segments
         "is_rest", "sort_order",
         // goal
-        "target", "period_type",
+        "target", "period_type", "rolling_days",
         // unit / scale definitions
         "code", "min_value", "max_value", "labels", "symbol",
     };
@@ -188,6 +188,13 @@ public class BuilderTemplateParityTests
         vm.SessionBrick.Segments.Add(new SegmentRowViewModel { Name = "Cooldown", IsRest = true });
         vm.GoalBrick.HasGoal = true;
         vm.GoalBrick.Target = 5m;
+        // Ogni valore diverso dal default (il "parametro muto", CLAUDE.md §7).
+        vm.GoalBrick.Name = "Tazze della settimana";
+        vm.GoalBrick.PeriodType = GoalPeriodType.Rolling;
+        vm.GoalBrick.RollingDays = 7;
+        vm.Schedule.StreakToleranceMinutes = 90;
+        vm.SessionBrick.RestTimerSeconds = 45;
+        vm.SessionBrick.TimerAutoPrompt = true;
 
         var payload = JsonDocument.Parse(vm.BuildTemplatePayloadJsonForTest()).RootElement;
         AssertKnownKeys(payload, "Tutto insieme");
@@ -205,9 +212,13 @@ public class BuilderTemplateParityTests
         payload.GetProperty("segments").EnumerateArray().Select(s => s.GetProperty("name").GetString())
             .Should().Equal("Work", "Rest", "Cooldown");
         payload.GetProperty("goal").GetProperty("target").GetDecimal().Should().Be(5m);
-        // Il builder compone solo goal aperti (review 2.5, F1): Fixed/Rolling richiedono campi che
-        // solo Configura ha, e senza di essi violerebbero ck_goal_period_consistency.
-        payload.GetProperty("goal").GetProperty("period_type").GetString().Should().Be("Open");
+        // Rolling porta i suoi giorni (ck_goal_period_consistency); Fixed non si offre nel creatore.
+        payload.GetProperty("goal").GetProperty("period_type").GetString().Should().Be("Rolling");
+        payload.GetProperty("goal").GetProperty("rolling_days").GetInt32().Should().Be(7);
+        payload.GetProperty("goal").GetProperty("name").GetString().Should().Be("Tazze della settimana");
+        config.GetProperty("streak_tolerance_minutes").GetInt32().Should().Be(90);
+        config.GetProperty("rest_timer_seconds").GetInt32().Should().Be(45);
+        config.GetProperty("timer_auto_prompt").GetBoolean().Should().BeTrue();
         payload.GetProperty("units").EnumerateArray().Single().GetProperty("code").GetString().Should().Be("tazze");
         payload.GetProperty("scales").EnumerateArray().Single().GetProperty("labels")
             .EnumerateArray().Select(l => l.GetString()).Should().Equal("Bassa", "Media", "Alta");
@@ -219,8 +230,63 @@ public class BuilderTemplateParityTests
         request.Config.TimerMode.Should().Be(TimerMode.Session);
         request.Segments!.Select(s => s.Name).Should().Equal("Work", "Rest", "Cooldown");
         request.Goal!.TargetValue.Should().Be(5m);
+        request.Goal.Name.Should().Be("Tazze della settimana");
+        request.Goal.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        request.Goal.RollingDays.Should().Be(7);
+        request.Config.StreakToleranceMinutes.Should().Be(90);
+        request.Config.RestTimerSeconds.Should().Be(45);
+        request.Config.TimerAutoPrompt.Should().BeTrue();
         request.NewUnits!.Single().Code.Should().Be("tazze");
         request.NewScales!.Single().Code.Should().Be("energia");
+    }
+
+    [Fact]
+    public void A_plain_composition_writes_none_of_the_optional_brick_keys()
+    {
+        // Assenti = il default di oggi: i modelli salvati prima di questa onda restano identici.
+        var vm = NewVm();
+        vm.Name = "Semplice";
+        AddField(vm, FieldNature.Quantity, "Amount");
+        vm.GoalBrick.HasGoal = true;
+        vm.GoalBrick.Target = 3m;
+        var json = vm.BuildTemplatePayloadJsonForTest();
+        json.Should().NotContain("rolling_days").And.NotContain("streak_tolerance_minutes")
+            .And.NotContain("rest_timer_seconds").And.NotContain("timer_auto_prompt");
+        var goal = JsonDocument.Parse(json).RootElement.GetProperty("goal");
+        goal.TryGetProperty("name", out _).Should().BeFalse("a goal without its own name takes the habit's");
+        goal.GetProperty("period_type").GetString().Should().Be("Open");
+    }
+
+    [Fact]
+    public void Rolling_goal_needs_its_days()
+    {
+        var vm = NewVm();
+        vm.Name = "Acqua";
+        AddField(vm, FieldNature.Quantity, "Amount");
+        vm.GoalBrick.HasGoal = true;
+        vm.GoalBrick.Target = 2m;
+        vm.CanLaunch.Should().BeTrue();
+
+        vm.GoalBrick.PeriodType = GoalPeriodType.Rolling;
+        vm.CanLaunch.Should().BeFalse("Rolling with no days violates ck_goal_period_consistency");
+        vm.GoalBrick.RollingDays = 0;
+        vm.CanLaunch.Should().BeFalse();
+        vm.GoalBrick.RollingDays = 7;
+        vm.CanLaunch.Should().BeTrue();
+        vm.SaveAsTemplateCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1441)]
+    public void A_streak_tolerance_out_of_range_blocks_launch(int minutes)
+    {
+        var vm = NewVm();
+        vm.Name = "Corsa";
+        vm.Schedule.StreakToleranceMinutes = minutes;
+        vm.CanLaunch.Should().BeFalse();
+        vm.Schedule.StreakToleranceMinutes = 1440;
+        vm.CanLaunch.Should().BeTrue();
     }
 
     // ===== helpers =====

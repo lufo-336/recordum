@@ -32,6 +32,12 @@ public sealed partial class SessionBrickViewModel : ObservableObject
     /// segmenti orfani se la composizione smette di supportarli (stesso pattern del Goal brick).</summary>
     [ObservableProperty] private bool _isAvailable;
 
+    /// <summary>Pausa suggerita fra le serie, in secondi; null = nessuna. Conta solo con la sessione.</summary>
+    [ObservableProperty] private int? _restTimerSeconds;
+
+    /// <summary>Propone da sola il cronometro all'apertura. Conta solo con la sessione.</summary>
+    [ObservableProperty] private bool _timerAutoPrompt;
+
     public ObservableCollection<SegmentRowViewModel> Segments { get; } = new();
 
     public event EventHandler? Changed;
@@ -44,6 +50,12 @@ public sealed partial class SessionBrickViewModel : ObservableObject
         else ClearSegments();
         Raise();
     }
+
+    partial void OnRestTimerSecondsChanged(int? value) => Raise();
+    partial void OnTimerAutoPromptChanged(bool value) => Raise();
+
+    /// <summary>False when the session is on with a rest that is not positive.</summary>
+    public bool IsComplete => !HasSession || RestTimerSeconds is null or > 0;
 
     partial void OnIsAvailableChanged(bool value)
     {
@@ -102,6 +114,8 @@ public sealed partial class SessionBrickViewModel : ObservableObject
         config.HasIntegratedTimer = true;
         config.TimerMode = TimerMode.Session;
         config.SessionBaseTimer = true;
+        config.RestTimerSeconds = RestTimerSeconds;
+        config.TimerAutoPrompt = TimerAutoPrompt;
     }
 
     /// <summary>Rows with no name are dropped — an unnamed segment has nothing to record against.

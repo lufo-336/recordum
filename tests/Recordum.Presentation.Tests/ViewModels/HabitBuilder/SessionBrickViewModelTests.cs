@@ -124,4 +124,31 @@ public class SessionBrickViewModelTests
         vm.HasSession.Should().BeFalse();
         vm.Segments.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Rest_and_auto_prompt_reach_the_config_only_with_a_session()
+    {
+        var vm = new SessionBrickViewModel { RestTimerSeconds = 45, TimerAutoPrompt = true };
+        var off = new HabitConfig();
+        vm.ApplyTo(off);
+        off.RestTimerSeconds.Should().BeNull();
+        off.TimerAutoPrompt.Should().BeFalse();
+
+        vm.HasSession = true;
+        var on = new HabitConfig();
+        vm.ApplyTo(on);
+        on.RestTimerSeconds.Should().Be(45);
+        on.TimerAutoPrompt.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_rest_that_is_not_positive_is_incomplete()
+    {
+        var vm = new SessionBrickViewModel { HasSession = true, RestTimerSeconds = 0 };
+        vm.IsComplete.Should().BeFalse();
+        vm.RestTimerSeconds = 45;
+        vm.IsComplete.Should().BeTrue();
+        vm.RestTimerSeconds = null;
+        vm.IsComplete.Should().BeTrue();
+    }
 }

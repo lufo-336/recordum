@@ -30,6 +30,11 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
     [ObservableProperty] private StreakRecovery _streakRecovery = StreakRecovery.GraceDay;
     [ObservableProperty] private bool _isExpanded;
 
+    /// <summary>Margine oltre il quale una serie si spezza, in minuti (1..1440 come in Configura); null = nessuno.</summary>
+    [ObservableProperty] private int? _streakToleranceMinutes;
+
+    private const int MaxToleranceMinutes = 1440;
+
     public ObservableCollection<ScheduleDayToggle> Days { get; }
     public event EventHandler? Changed;
     public string Summary => BuildSummary();
@@ -50,6 +55,7 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
     partial void OnEveryXDaysChanged(int? value) => Raise();
     partial void OnStreakModeChanged(StreakMode value) => Raise();
     partial void OnStreakRecoveryChanged(StreakRecovery value) => Raise();
+    partial void OnStreakToleranceMinutesChanged(int? value) => Raise();
 
     private void Raise()
     {
@@ -66,7 +72,7 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
     /// SpecificDays with no day ticked fails more quietly still, since
     /// <c>ScheduleEvaluator.MatchesDayMask</c> returns false for every date and the habit simply never
     /// comes due. The builder is the only writer that had no guard.</summary>
-    public bool IsComplete => ScheduleType switch
+    public bool IsComplete => (StreakToleranceMinutes is null or > 0 and <= MaxToleranceMinutes) && ScheduleType switch
     {
         ScheduleType.WeeklyX => WeeklyTarget is > 0,
         ScheduleType.EveryXDays => EveryXDays is > 0,
@@ -86,6 +92,7 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
         config.ScheduleEveryXDays = ScheduleType == ScheduleType.EveryXDays ? EveryXDays : null;
         config.StreakMode = StreakMode;
         config.StreakRecovery = StreakRecovery;
+        config.StreakToleranceMinutes = StreakToleranceMinutes;
     }
 
     private string BuildSummary()

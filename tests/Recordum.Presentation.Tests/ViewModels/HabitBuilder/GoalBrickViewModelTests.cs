@@ -82,4 +82,35 @@ public class GoalBrickViewModelTests
 
         vm.HasGoal.Should().BeFalse();
     }
+
+    [Fact]
+    public void Build_carries_name_and_rolling_period()
+    {
+        var vm = new GoalBrickViewModel
+        {
+            HasGoal = true, Target = 2m, Name = "  Settimana  ",
+            PeriodType = GoalPeriodType.Rolling, RollingDays = 7,
+        };
+        var goal = vm.Build(Guid.NewGuid(), "Acqua", null)!;
+        goal.Name.Should().Be("Settimana");
+        goal.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        goal.RollingDays.Should().Be(7);
+    }
+
+    [Fact]
+    public void Build_falls_back_to_the_habit_name_and_drops_stale_rolling_days_when_open()
+    {
+        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m, Name = " ", RollingDays = 7 };
+        var goal = vm.Build(Guid.NewGuid(), "Acqua", null)!;
+        goal.Name.Should().Be("Acqua");
+        goal.PeriodType.Should().Be(GoalPeriodType.Open);
+        goal.RollingDays.Should().BeNull();
+    }
+
+    [Fact]
+    public void Fixed_is_never_complete_because_the_creator_has_no_dates()
+    {
+        var vm = new GoalBrickViewModel { HasGoal = true, Target = 2m, PeriodType = GoalPeriodType.Fixed };
+        vm.IsComplete.Should().BeFalse();
+    }
 }

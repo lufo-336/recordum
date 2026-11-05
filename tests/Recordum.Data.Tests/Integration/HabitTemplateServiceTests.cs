@@ -274,6 +274,51 @@ public class HabitTemplateServiceTests
         cfg!.Repeatable.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task Instantiate_reads_goal_name_rolling_days_tolerance_rest_and_auto_prompt()
+    {
+        await using var fx = new DbFixture();
+        var payload = "{\"node\":{\"name\":\"Corsa\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#e85d4a\"}," +
+                      "\"config\":{\"schedule_type\":\"Daily\",\"has_integrated_timer\":true,\"timer_mode\":\"Session\"," +
+                      "\"streak_tolerance_minutes\":90,\"rest_timer_seconds\":45,\"timer_auto_prompt\":true}," +
+                      "\"metrics\":[{\"name\":\"Km\",\"type\":\"Decimal\"}]," +
+                      "\"goal\":{\"name\":\"Km della settimana\",\"target\":20,\"period_type\":\"Rolling\",\"rolling_days\":7}}";
+        var templateId = await InsertTemplateAsync(fx, payload);
+
+        var svc = CreateSut(fx);
+        var nodeId = await svc.InstantiateAsync(templateId, parentId: null);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var cfg = await db.HabitConfigs.SingleAsync(c => c.HabitNodeId == nodeId);
+        cfg.StreakToleranceMinutes.Should().Be(90);
+        cfg.RestTimerSeconds.Should().Be(45);
+        cfg.TimerAutoPrompt.Should().BeTrue();
+        var goal = await db.Goals.SingleAsync(g => g.HabitNodeId == nodeId);
+        goal.Name.Should().Be("Km della settimana");
+        goal.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        goal.RollingDays.Should().Be(7);
+    }
+
+    [Fact]
+    public async Task Instantiate_without_the_new_fields_keeps_todays_defaults()
+    {
+        await using var fx = new DbFixture();
+        var payload = "{\"node\":{\"name\":\"Corsa\",\"node_type\":\"Habit\",\"habit_type\":\"Counter\",\"color\":\"#e85d4a\"}," +
+                      "\"config\":{\"schedule_type\":\"Daily\"},\"goal\":{\"target\":20,\"period_type\":\"Open\"}}";
+        var templateId = await InsertTemplateAsync(fx, payload);
+
+        var nodeId = await CreateSut(fx).InstantiateAsync(templateId, parentId: null);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var cfg = await db.HabitConfigs.SingleAsync(c => c.HabitNodeId == nodeId);
+        cfg.StreakToleranceMinutes.Should().BeNull();
+        cfg.RestTimerSeconds.Should().BeNull();
+        cfg.TimerAutoPrompt.Should().BeFalse();
+        var goal = await db.Goals.SingleAsync(g => g.HabitNodeId == nodeId);
+        goal.Name.Should().Be("Corsa");
+        goal.RollingDays.Should().BeNull();
+    }
+
     private static async Task<Guid> InsertTemplateAsync(DbFixture fx, string payloadJson)
     {
         var templateId = Guid.NewGuid();

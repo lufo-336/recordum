@@ -65,4 +65,23 @@ public class ScheduleBrickViewModelTests
         vm.Summary.Should().Contain(Strings.HabitBuilder_StreakMode_Occurrences);
         vm.Summary.Should().Contain(Strings.HabitBuilder_Recovery_Retroactive);
     }
+
+    [Fact]
+    public void Streak_tolerance_reaches_the_config_and_is_bounded_like_configura()
+    {
+        var vm = new ScheduleBrickViewModel();
+        var cfg = new HabitConfig();
+        vm.ApplyTo(cfg);
+        cfg.StreakToleranceMinutes.Should().BeNull();
+
+        vm.StreakToleranceMinutes = 90;
+        vm.IsComplete.Should().BeTrue();
+        vm.ApplyTo(cfg);
+        cfg.StreakToleranceMinutes.Should().Be(90);
+
+        vm.StreakToleranceMinutes = 0;
+        vm.IsComplete.Should().BeFalse();
+        vm.StreakToleranceMinutes = 1441;
+        vm.IsComplete.Should().BeFalse();
+    }
 }

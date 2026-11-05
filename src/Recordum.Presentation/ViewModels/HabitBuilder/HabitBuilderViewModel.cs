@@ -390,7 +390,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         !string.IsNullOrWhiteSpace(Name)
         && Fields.All(f => f.Nature != FieldNature.Scale || f.ScaleTemplateId is not null)
         && Fields.All(f => f.Nature != FieldNature.Time || f.UnitOfMeasureId is not null)
-        && (!GoalBrick.HasGoal || GoalBrick.Target is > 0)
+        && GoalBrick.IsComplete
+        && SessionBrick.IsComplete
         && Schedule.IsComplete;
 
     /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
@@ -630,6 +631,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                 ScheduleEveryXDays = launched.ScheduleEveryXDays,
                 StreakMode = launched.StreakMode.ToString(),
                 StreakRecovery = launched.StreakRecovery.ToString(),
+                StreakToleranceMinutes = launched.StreakToleranceMinutes,
+                RestTimerSeconds = launched.RestTimerSeconds,
+                TimerAutoPrompt = launched.TimerAutoPrompt ? true : null,
                 HasIntegratedTimer = launched.HasIntegratedTimer ? true : null,
                 TimerMode = launched.TimerMode?.ToString(),
                 Repeatable = launched.Repeatable ? true : null,
@@ -653,7 +657,15 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             // Il target del goal appartiene alla prima metrica; l'unità è ridondante per il lettore
             // (che la ignora) ma i seed la portano e la parità semantica la confronta.
             Goal = GoalBrick.Build(Guid.Empty, Name.Trim(), null) is { } g
-                ? new GoalPayload { Target = g.TargetValue, Unit = firstUnitCode, PeriodType = g.PeriodType.ToString() }
+                ? new GoalPayload
+                {
+                    // Il nome solo se e' proprio: assente = quello dell'abitudine.
+                    Name = string.IsNullOrWhiteSpace(GoalBrick.Name) ? null : g.Name,
+                    Target = g.TargetValue,
+                    Unit = firstUnitCode,
+                    PeriodType = g.PeriodType.ToString(),
+                    RollingDays = g.RollingDays,
+                }
                 : null,
             Units = units.Count > 0 ? units : null,
             Scales = scales.Count > 0 ? scales : null,
@@ -693,6 +705,9 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         // null-when-false (WhenWritingNull) cosi' i template salvati prima di U8 restano byte-identici.
         public bool? Repeatable { get; set; }
         public List<string>? SeriesLabels { get; set; }
+        public int? StreakToleranceMinutes { get; set; }
+        public int? RestTimerSeconds { get; set; }
+        public bool? TimerAutoPrompt { get; set; }
     }
 
     private sealed class SegmentPayload
@@ -704,9 +719,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     private sealed class GoalPayload
     {
+        public string? Name { get; set; }
         public decimal Target { get; set; }
         public string? Unit { get; set; }
         public string? PeriodType { get; set; }
+        public int? RollingDays { get; set; }
     }
 
     private sealed class UnitDefPayload
