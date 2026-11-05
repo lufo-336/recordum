@@ -44,6 +44,9 @@ public static class ShellDoubles
     {
         public Task<Guid?> LaunchAsync(Guid? parentId = null, CancellationToken ct = default) =>
             Task.FromResult<Guid?>(null);
+
+        public Task<Guid?> LaunchFromTemplateAsync(Guid templateId, Guid? parentId = null, CancellationToken ct = default) =>
+            Task.FromResult<Guid?>(null);
     }
 
     private sealed class StubClipboard : IClipboard

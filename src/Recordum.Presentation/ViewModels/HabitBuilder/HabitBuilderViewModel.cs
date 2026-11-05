@@ -8,6 +8,7 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Composition;
 using Recordum.Core.Enums;
+using Recordum.Core.Errors;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
@@ -205,6 +206,10 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _color = "#808080";
     [ObservableProperty] private string? _icon;
+
+    /// <summary>Descrizione che il modello porta all'abitudine (tradotta se il modello e' ufficiale). Il creatore non la
+    /// mostra: e' di Configura (spec §6.4); qui viaggia solo dal modello alla richiesta di creazione.</summary>
+    [ObservableProperty] private string? _description;
     [ObservableProperty] private bool _countsOccurrences;
     [ObservableProperty] private bool _abstinence;
     [ObservableProperty] private HabitType _derivedType = HabitType.Action;
@@ -262,6 +267,162 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     [ObservableProperty] private bool _templateSaved;
 
     public void SetParent(Guid? parentId) => _parentId = parentId;
+
+
+    /// <summary>Riempie il creatore dal modello <paramref name="templateId"/>: l'inverso di
+    /// <see cref="BuildTemplatePayloadJson"/>, e per la parte che il creatore sa comporre lo stesso risultato di
+    /// <c>HabitTemplateService.InstantiateAsync</c>. Da chiamare su un creatore nuovo, dopo <see cref="InitializeAsync"/>.
+    /// I testi di un modello ufficiale passano da <see cref="OfficialTexts"/> (per Id), quelli di un modello dell'utente
+    /// restano com'e' li ha scritti. Un'unita' o una scala che non si trova lascia il campo incompleto (lo blocca
+    /// <see cref="CanLaunch"/>), mai un'eccezione; un modello che non esiste invece e' un errore di chi chiama.</summary>
+    public async Task LoadTemplateAsync(Guid templateId, CancellationToken ct = default)
+    {
+        var template = await _templates.GetAsync(templateId, ct).ConfigureAwait(true)
+            ?? throw new HabitTemplateNotFoundException(templateId);
+        var payload = ParseTemplatePayload(template.PayloadJson);
+        string Text(string seeded) => OfficialTexts.TemplateText(templateId, seeded);
+        var config = payload.Config;
+
+        Name = Text(payload.Node?.Name ?? template.Name);
+        Description = OfficialTexts.TemplateDescription(template);
+        if (!string.IsNullOrWhiteSpace(payload.Node?.Color)) Color = payload.Node.Color;
+        Icon = payload.Node?.Icon;
+        if (payload.UiPrefs?.JournalGesture is { } gesture
+            && Enum.TryParse<JournalPrimaryGesture>(gesture, ignoreCase: true, out var parsedGesture))
+            JournalGesture = parsedGesture;
+
+        // Il tipo non si carica: lo deriva la grammatica dai mattoni. Il payload non dice "contatore nudo", "astinenza" o
+        // "testo": lo dice il tipo, e un contatore senza metriche e' un contatore nudo.
+        var habitType = Enum.TryParse<HabitType>(payload.Node?.HabitType, ignoreCase: true, out var ht) ? ht : HabitType.Action;
+        var metrics = payload.Metrics?.Where(m => !string.IsNullOrWhiteSpace(m.Name)).ToList() ?? [];
+        if (habitType == HabitType.Resistance) Abstinence = true;
+        else if (habitType == HabitType.Counter && metrics.Count == 0) CountsOccurrences = true;
+        else if (habitType == HabitType.Journal) AddField(FieldNature.Text);
+        foreach (var m in metrics) LoadMetric(m, payload, Text);
+
+        // Il lettore tratta un payload senza "config" cosi': il resto del programma resta quello di default.
+        if (config is null) Repeatable = payload.RepeatableLegacy ?? false;
+        else
+        {
+            Schedule.ScheduleType = ParseEnum(config.ScheduleType, ScheduleType.Daily);
+            Schedule.WeeklyTarget = config.ScheduleWeeklyTarget;
+            Schedule.EveryXDays = config.ScheduleEveryXDays;
+            Schedule.StreakMode = ParseEnum(config.StreakMode, StreakMode.Daily);
+            Schedule.StreakRecovery = ParseEnum(config.StreakRecovery, StreakRecovery.None);
+            Schedule.StreakToleranceMinutes = config.StreakToleranceMinutes;
+            foreach (var day in DaysOf(config.ScheduleDaysJson))
+                if (Schedule.Days.FirstOrDefault(d => d.DayKey == day) is { } toggle) toggle.IsSelected = true;
+            Repeatable = config.Repeatable ?? payload.RepeatableLegacy ?? false;
+            foreach (var label in config.SeriesLabels ?? [])
+                SeriesLabels.Add(new SeriesLabelRowViewModel { Name = Text(label) });
+            LoadSession(config, payload.Segments, Text);
+        }
+        LoadGoal(payload.Goal, Text);
+    }
+
+    private void LoadMetric(MetricPayload m, TemplatePayload payload, Func<string, string> text)
+    {
+        var type = ParseEnum(m.Type, MetricType.Integer);
+        var nature = type == MetricType.Seconds ? FieldNature.Time
+            : m.ScaleCode is not null ? FieldNature.Scale
+            : FieldNature.Quantity;
+        if (!CanAddField(nature)) return;   // una composizione che la grammatica rifiuta (modello a mano) non si carica a meta'
+        AddField(nature);
+        var field = Fields[^1];
+        field.Name = text(m.Name!);
+        if (nature == FieldNature.Scale) field.ScaleTemplateId = FindOrStageScale(m.ScaleCode, payload.Scales);
+        else field.UnitOfMeasureId = FindOrStageUnit(m.Unit, payload.Units);
+        // Un decimale senza unita' si ricorda a parte (il peso del Registro allenamento): con l'unita' lo e' gia'.
+        if (nature == FieldNature.Quantity && field.UnitOfMeasureId is null) field.AllowsDecimals = type == MetricType.Decimal;
+    }
+
+    // Il lettore risolve per codice senza badare alle maiuscole; qui uguale. Un codice che il catalogo non ha ma che il
+    // modello definisce (un'unita' inventata nel creatore) si prepara di nuovo, come ConfirmCustomUnit.
+    private Guid? FindOrStageUnit(string? code, List<UnitDefPayload>? definitions)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+        if (AvailableUnits.FirstOrDefault(u => string.Equals(u.Code, code, StringComparison.OrdinalIgnoreCase)) is { } known)
+            return known.Id;
+        if (definitions?.FirstOrDefault(d => string.Equals(d.Code, code, StringComparison.OrdinalIgnoreCase)) is not { } def)
+            return null;
+        var unit = new UnitOfMeasure
+        {
+            Id = Guid.NewGuid(),
+            Code = def.Code!,
+            Name = string.IsNullOrWhiteSpace(def.Name) ? def.Code! : def.Name,
+            Symbol = def.Symbol,
+            IsOfficial = false,
+        };
+        _stagedUnits.Add(unit);
+        AvailableUnits.Add(unit);
+        return unit.Id;
+    }
+
+    private Guid? FindOrStageScale(string? code, List<ScaleDefPayload>? definitions)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+        if (AvailableScales.FirstOrDefault(s => string.Equals(s.Code, code, StringComparison.OrdinalIgnoreCase)) is { } known)
+            return known.Id;
+        if (definitions?.FirstOrDefault(d => string.Equals(d.Code, code, StringComparison.OrdinalIgnoreCase)) is not { } def)
+            return null;
+        var scale = new ScaleTemplate
+        {
+            Id = Guid.NewGuid(),
+            Code = def.Code!,
+            Name = string.IsNullOrWhiteSpace(def.Name) ? def.Code! : def.Name,
+            MinValue = def.MinValue,
+            MaxValue = def.MaxValue,
+            LabelsJson = JsonSerializer.Serialize(def.Labels ?? []),
+            IsOfficial = false,
+        };
+        _stagedScales.Add(scale);
+        AvailableScales.Add(scale);
+        return scale.Id;
+    }
+
+    private void LoadSession(ConfigPayload config, List<SegmentPayload>? segments, Func<string, string> text)
+    {
+        // Il creatore sa comporre solo la sessione; un cronometro semplice o un tempo obiettivo restano a Configura.
+        // Disponibile solo con i campi gia' al loro posto (Recompute l'ha acceso), come in una composizione a mano.
+        if (!SessionBrick.IsAvailable || ParseEnum(config.TimerMode, TimerMode.Stopwatch) != TimerMode.Session) return;
+        SessionBrick.HasSession = true;
+        // Via i due segmenti di partenza, uno alla volta (mai Clear su una collezione bindata): il modello dice i suoi.
+        while (SessionBrick.Segments.Count > 0) SessionBrick.Segments.RemoveAt(SessionBrick.Segments.Count - 1);
+        foreach (var s in (segments ?? []).Where(s => !string.IsNullOrWhiteSpace(s.Name)).OrderBy(s => s.SortOrder))
+            SessionBrick.Segments.Add(new SegmentRowViewModel { Name = text(s.Name!), IsRest = s.IsRest });
+        SessionBrick.RestTimerSeconds = config.RestTimerSeconds;
+        SessionBrick.TimerAutoPrompt = config.TimerAutoPrompt ?? false;
+    }
+
+    private void LoadGoal(GoalPayload? goal, Func<string, string> text)
+    {
+        if (goal is null || !GoalBrick.IsAvailable) return;
+        GoalBrick.HasGoal = true;
+        GoalBrick.Target = goal.Target;
+        GoalBrick.Name = string.IsNullOrWhiteSpace(goal.Name) ? null : text(goal.Name);
+        // Fixed vuole inizio e fine, che il creatore non ha: un modello a mano o di WPF con un periodo fisso si carica
+        // aperto, tenendo traguardo e nome (Configura lo rende di nuovo fisso).
+        var period = ParseEnum(goal.PeriodType, GoalPeriodType.Open);
+        GoalBrick.PeriodType = period == GoalPeriodType.Fixed ? GoalPeriodType.Open : period;
+        GoalBrick.RollingDays = goal.RollingDays;
+    }
+
+    private static string[] DaysOf(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return JsonSerializer.Deserialize<string[]>(json) ?? []; }
+        catch (JsonException) { return []; }   // un elenco di giorni illeggibile e' un programma incompleto, non un errore
+    }
+
+    private static TemplatePayload ParseTemplatePayload(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new TemplatePayload();
+        try { return JsonSerializer.Deserialize<TemplatePayload>(json, s_templateJsonOptions) ?? new TemplatePayload(); }
+        catch (JsonException) { return new TemplatePayload(); }   // come il lettore: un payload rotto e' un modello vuoto
+    }
+
+    private static TEnum ParseEnum<TEnum>(string? value, TEnum fallback) where TEnum : struct, Enum =>
+        Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
 
     private HabitComposition Snapshot() =>
         new(Fields.Select(f => f.Nature).ToList(), CountsOccurrences, Abstinence);
@@ -443,6 +604,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         {
             Id = Guid.NewGuid(),
             Name = Name,
+            Description = Description,
             IsOfficial = false,
             PayloadJson = BuildTemplatePayloadJson(),
             UpdatedAtMs = _clock.UtcNowMs,
@@ -466,6 +628,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             NodeType = NodeType.Habit,
             HabitType = DerivedType,
             Name = Name.Trim(),
+            Description = Description,
             Color = Color,
             Icon = Icon,
         };
@@ -690,6 +853,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         public GoalPayload? Goal { get; set; }
         public List<UnitDefPayload>? Units { get; set; }
         public List<ScaleDefPayload>? Scales { get; set; }
+
+        /// <summary>Solo lettura: i modelli del creatore prima della 2.4 scrivevano "repeatable" alla radice
+        /// (stessa compatibilita' di <c>HabitTemplateService</c>, I5). Il writer non lo produce piu'.</summary>
+        [JsonPropertyName("repeatable")]
+        public bool? RepeatableLegacy { get; set; }
     }
 
     private sealed class ConfigPayload

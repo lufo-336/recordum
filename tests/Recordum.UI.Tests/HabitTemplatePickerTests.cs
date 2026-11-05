@@ -35,6 +35,13 @@ public class HabitTemplatePickerTests
             Parents.Add(parentId);
             return Task.FromResult<Guid?>(Result);
         }
+
+        public List<(Guid TemplateId, Guid? ParentId)> FromTemplate { get; } = [];
+        public Task<Guid?> LaunchFromTemplateAsync(Guid templateId, Guid? parentId = null, CancellationToken ct = default)
+        {
+            FromTemplate.Add((templateId, parentId));
+            return Task.FromResult<Guid?>(Result);
+        }
     }
 
     private sealed class Answer : IConfirmationDialog

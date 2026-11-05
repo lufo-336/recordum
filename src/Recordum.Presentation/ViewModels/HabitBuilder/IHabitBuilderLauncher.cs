@@ -7,4 +7,8 @@ namespace Recordum.Presentation.ViewModels.HabitBuilder;
 public interface IHabitBuilderLauncher
 {
     Task<Guid?> LaunchAsync(Guid? parentId = null, CancellationToken ct = default);
+
+    /// <summary>Apre il creatore gia' riempito dal modello <paramref name="templateId"/> ("Personalizza…" e "Usa questo
+    /// modello"); torna l'id creato, o null se si annulla o la finestra si chiude.</summary>
+    Task<Guid?> LaunchFromTemplateAsync(Guid templateId, Guid? parentId = null, CancellationToken ct = default);
 }

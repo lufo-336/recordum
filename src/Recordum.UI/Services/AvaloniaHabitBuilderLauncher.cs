@@ -18,12 +18,19 @@ public sealed class AvaloniaHabitBuilderLauncher(IServiceProvider services, Func
     /// <summary>Test-friendly: la finestra e' creata al volo e non ha altro modo di essere raggiunta.</summary>
     internal event Action<Window>? WindowCreatedForTests;
 
-    public async Task<Guid?> LaunchAsync(Guid? parentId = null, CancellationToken ct = default)
+    public Task<Guid?> LaunchAsync(Guid? parentId = null, CancellationToken ct = default) =>
+        ShowAsync(parentId, templateId: null, ct);
+
+    public Task<Guid?> LaunchFromTemplateAsync(Guid templateId, Guid? parentId = null, CancellationToken ct = default) =>
+        ShowAsync(parentId, templateId, ct);
+
+    private async Task<Guid?> ShowAsync(Guid? parentId, Guid? templateId, CancellationToken ct)
     {
         await using var scope = services.CreateAsyncScope();
         var vm = scope.ServiceProvider.GetRequiredService<HabitBuilderViewModel>();
         vm.SetParent(parentId);
         await vm.InitializeAsync(ct).ConfigureAwait(true);   // i selettori di unita' e scala prima di aprire
+        if (templateId is { } id) await vm.LoadTemplateAsync(id, ct).ConfigureAwait(true);   // riempito prima di mostrarlo
 
         var view = new HabitBuilderView { DataContext = vm };
         var window = new RecordumWindow

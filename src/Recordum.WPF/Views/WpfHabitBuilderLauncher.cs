@@ -14,11 +14,18 @@ namespace Recordum.WPF.Views;
 /// </summary>
 public sealed class WpfHabitBuilderLauncher(IServiceProvider services) : IHabitBuilderLauncher
 {
-    public async Task<Guid?> LaunchAsync(Guid? parentId = null, CancellationToken ct = default)
+    public Task<Guid?> LaunchAsync(Guid? parentId = null, CancellationToken ct = default) =>
+        ShowAsync(parentId, templateId: null, ct);
+
+    public Task<Guid?> LaunchFromTemplateAsync(Guid templateId, Guid? parentId = null, CancellationToken ct = default) =>
+        ShowAsync(parentId, templateId, ct);
+
+    private async Task<Guid?> ShowAsync(Guid? parentId, Guid? templateId, CancellationToken ct)
     {
         var vm = services.GetRequiredService<HabitBuilderViewModel>();
         vm.SetParent(parentId);
         await vm.InitializeAsync(ct).ConfigureAwait(true); // populate unit/scale pickers before showing
+        if (templateId is { } id) await vm.LoadTemplateAsync(id, ct).ConfigureAwait(true);
 
         var view = new HabitBuilderView { DataContext = vm };
         var window = new Window

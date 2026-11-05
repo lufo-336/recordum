@@ -233,6 +233,37 @@ public class HabitBuilderViewTests
     }
 
     [AvaloniaFact]
+    public async Task Customize_then_cancel_creates_nothing()
+    {
+        // "Personalizza…": il creatore si apre gia' riempito dal modello; Annulla non lascia ne' abitudine ne' modello.
+        var sleep = Guid.Parse("00000003-0000-0000-0000-000000000005");   // Sleep tracker, ufficiale
+        var launcher = new AvaloniaHabitBuilderLauncher(Host.Provider, () => null);
+        Window? window = null;
+        launcher.WindowCreatedForTests += created => window = created;
+        var (nodesBefore, templatesBefore) = await CountsAsync();
+        var task = launcher.LaunchFromTemplateAsync(sleep);
+        try
+        {
+            await UntilAsync(() => window is { IsVisible: true } && window.Content is HabitBuilderView);
+            var view = (HabitBuilderView)window!.Content!;
+            Named<TextBox>(view, "NameBox").Text.Should().Be("Sleep tracker", "il creatore e' gia' riempito dal modello");
+            ((HabitBuilderViewModel)view.DataContext!).Fields.Should().HaveCount(2);
+
+            Click(window, Named<Button>(view, "CancelButton"));
+            (await task.WaitAsync(TimeSpan.FromSeconds(5))).Should().BeNull();
+            (await CountsAsync()).Should().Be((nodesBefore, templatesBefore));
+        }
+        finally { window?.Close(); }
+    }
+
+    private static async Task<(int Nodes, int Templates)> CountsAsync()
+    {
+        using var scope = Host.Provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<Recordum.Data.RecordumDbContext>();
+        return (await db.HabitNodes.IgnoreQueryFilters().CountAsync(), await db.HabitTemplates.CountAsync());
+    }
+
+    [AvaloniaFact]
     public async Task Closing_with_the_system_button_returns_null_too()
     {
         var launcher = new AvaloniaHabitBuilderLauncher(Host.Provider, () => null);

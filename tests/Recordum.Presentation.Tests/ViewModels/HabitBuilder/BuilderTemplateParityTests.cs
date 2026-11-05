@@ -1,9 +1,12 @@
+using System.Globalization;
 using System.Text.Json;
 using FluentAssertions;
+using Recordum.Core.Errors;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.SeedData;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.HabitBuilder;
@@ -26,8 +29,13 @@ namespace Recordum.Presentation.Tests.ViewModels.HabitBuilder;
 /// <para>Twin of the R7 guard in <c>HabitTemplateSeedTests</c>, which walks the same templates for a
 /// different invariant (no unit-less duration).</para>
 /// </summary>
-public class BuilderTemplateParityTests
+[Collection(ProcessGlobalCultureCollection.Name)]
+public class BuilderTemplateParityTests : IDisposable
 {
+    private readonly CultureInfo? _previousCulture = Strings.Culture;
+
+    public void Dispose() => Strings.Culture = _previousCulture;
+
     /// <summary>Every key the payload contract (T8) defines, plus the ones a seed may carry. A key
     /// outside this set means a template gained a capability that neither the builder nor this guard
     /// knows about — see the failure message.</summary>
@@ -289,6 +297,199 @@ public class BuilderTemplateParityTests
         vm.CanLaunch.Should().BeTrue();
     }
 
+
+    // ===== il creatore si carica da un modello (3a, task 3) =====
+
+    [Theory]
+    [MemberData(nameof(OfficialTemplateNames))]
+    public async Task Every_official_template_loads_and_composes_like_its_fixture(string name)
+    {
+        Strings.Culture = CultureInfo.GetCultureInfo("en-US");
+        var seed = HabitTemplateSeed.All.Single(t => t.Name == name);
+        var expected = BuildFixture(name).BuildRequestForTest();
+
+        var vm = NewVm(StoreWith(seed));
+        await vm.LoadTemplateAsync(seed.Id);
+        var actual = vm.BuildRequestForTest();
+
+        // Gli Id sono nuovi a ogni richiesta; unita' e scale hanno gli Id del catalogo, uguali, e si confrontano.
+        actual.Should().BeEquivalentTo(expected, o => o.Excluding(m => m.Name == "Id" || m.Name == "HabitNodeId"
+            || m.Name == "MetricDefinitionId" || m.Name == "Description"));
+        actual.Node.Description.Should().Be(seed.Description);
+    }
+
+    [Fact]
+    public async Task An_official_template_loads_in_the_interface_language()
+    {
+        Strings.Culture = CultureInfo.GetCultureInfo("it-IT");
+        var sleep = HabitTemplateSeed.All.Single(t => t.Name == "Sleep tracker");
+        var workout = HabitTemplateSeed.All.Single(t => t.Name == "Workout log");
+        var templates = StoreWith(sleep, workout);
+
+        var s = NewVm(templates);
+        await s.LoadTemplateAsync(sleep.Id);
+        var sr = s.BuildRequestForTest();
+        sr.Node.Name.Should().Be("Monitor del sonno");
+        sr.Node.Description.Should().NotBe(sleep.Description).And.NotBeNullOrWhiteSpace();
+        sr.Metrics.Select(m => m.Name).Should().Equal("Ore dormite", "Qualità del sonno");
+        sr.Metrics[1].LabelsJson.Should().Be("""["Pessima","Scarsa","Discreta","Buona","Ottima"]""");
+        sr.Config!.SeriesLabelsJson.Should().Be("""["Notte","Pisolino"]""");
+
+        var w = NewVm(templates);
+        await w.LoadTemplateAsync(workout.Id);
+        var wr = w.BuildRequestForTest();
+        wr.Node.Name.Should().Be("Registro allenamento");
+        wr.Node.Description.Should().Be("Abitudine a sessioni per registrare gli allenamenti in palestra, con segmenti di lavoro e riposo.");
+        wr.Metrics.Select(m => m.Name).Should().Equal("Durata", "Ripetizioni", "Peso");
+        wr.Segments!.Select(x => x.Name).Should().Equal("Lavoro", "Riposo");
+    }
+
+    [Fact]
+    public async Task A_user_template_loads_as_written()
+    {
+        // Stesso nome e stessi testi di un ufficiale, ma e' dell'utente (Id suo): in italiano resta com'e' scritto.
+        Strings.Culture = CultureInfo.GetCultureInfo("it-IT");
+        var mine = new HabitTemplate
+        {
+            Id = Guid.NewGuid(), Name = "Sleep tracker", Description = "My own words", IsOfficial = false,
+            PayloadJson = """
+                {"node":{"name":"Sleep tracker","node_type":"Habit","habit_type":"Counter","color":"#112233"},
+                 "config":{"schedule_type":"Daily","repeatable":true,"series_labels":["Night","Nap"],"has_integrated_timer":true,"timer_mode":"Session"},
+                 "metrics":[{"name":"Hours slept","type":"Decimal","unit":"hours"},{"name":"Duration","type":"Seconds","unit":"minutes"}],
+                 "segments":[{"name":"Work","is_rest":false,"sort_order":0},{"name":"Rest","is_rest":true,"sort_order":1}]}
+                """,
+        };
+        var vm = NewVm(StoreWith(mine));
+        await vm.LoadTemplateAsync(mine.Id);
+
+        var r = vm.BuildRequestForTest();
+        r.Node.Name.Should().Be("Sleep tracker");
+        r.Node.Description.Should().Be("My own words");
+        r.Node.Color.Should().Be("#112233");
+        r.Metrics.Select(m => m.Name).Should().Equal("Hours slept", "Duration");
+        r.Config!.SeriesLabelsJson.Should().Be("""["Night","Nap"]""");
+        r.Segments!.Select(x => x.Name).Should().Equal("Work", "Rest");
+    }
+
+    [Fact]
+    public async Task Loading_then_saving_as_template_round_trips()
+    {
+        // Ogni valore diverso dal default, con unita' e scala inventate nel creatore: il payload ricaricato e' quello salvato.
+        var templates = new FakeHabitTemplateService();
+        var first = NewVm(templates);
+        first.Name = "Tutto insieme";
+        first.Color = "#123456";
+        first.Icon = "star";
+        first.Description = "Con la mia descrizione";
+        AddField(first, FieldNature.Quantity, "Tazze");
+        first.BeginAddCustomUnit(first.Fields[0]);
+        first.UnitForm!.Name = "Tazze";
+        first.ConfirmCustomUnitCommand.Execute(null);
+        AddField(first, FieldNature.Scale, "Energia");
+        first.BeginAddCustomScale(first.Fields[1]);
+        first.ScaleForm!.Name = "Energia";
+        first.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        first.ConfirmCustomScaleCommand.Execute(null);
+        AddField(first, FieldNature.Time, "Durata", unit: "minutes");
+        first.Repeatable = true;
+        AddSeriesLabel(first, "Mattina");
+        AddSeriesLabel(first, "Sera");
+        first.Schedule.ScheduleType = ScheduleType.SpecificDays;
+        foreach (var key in new[] { "Mon", "Wed", "Fri" })
+            first.Schedule.Days.Single(d => d.DayKey == key).IsSelected = true;
+        first.Schedule.StreakMode = StreakMode.Weekly;
+        first.Schedule.StreakRecovery = StreakRecovery.Manual;
+        first.Schedule.StreakToleranceMinutes = 90;
+        first.SessionBrick.HasSession = true;
+        first.SessionBrick.Segments.Add(new SegmentRowViewModel { Name = "Cooldown", IsRest = true });
+        first.SessionBrick.RestTimerSeconds = 45;
+        first.SessionBrick.TimerAutoPrompt = true;
+        first.GoalBrick.HasGoal = true;
+        first.GoalBrick.Target = 5m;
+        first.GoalBrick.Name = "Tazze della settimana";
+        first.GoalBrick.PeriodType = GoalPeriodType.Rolling;
+        first.GoalBrick.RollingDays = 7;
+        await first.SaveAsTemplateCommand.ExecuteAsync(null);
+        var saved = templates.Created.Single();
+
+        var second = NewVm(templates);
+        await second.LoadTemplateAsync(saved.Id);
+
+        second.BuildTemplatePayloadJsonForTest().Should().Be(saved.PayloadJson);
+        second.Description.Should().Be("Con la mia descrizione");
+        var (a, b) = (first.BuildRequestForTest(), second.BuildRequestForTest());
+        b.Should().BeEquivalentTo(a, o => o.Excluding(m => m.Name == "Id" || m.Name == "HabitNodeId"
+            || m.Name == "MetricDefinitionId" || m.Name == "UnitOfMeasureId" || m.Name == "ScaleTemplateId"));
+        b.NewUnits!.Single().Code.Should().Be("tazze");
+        b.NewScales!.Single().Code.Should().Be("energia");
+        b.Metrics[0].UnitOfMeasureId.Should().Be(b.NewUnits!.Single().Id);
+    }
+
+    [Fact]
+    public async Task A_fixed_goal_loads_as_open_keeping_target_and_name()
+    {
+        var t = UserTemplate("""
+            {"node":{"name":"Acqua","habit_type":"Counter"},"metrics":[{"name":"Amount","type":"Decimal","unit":"l"}],
+             "goal":{"name":"Estate","target":3,"period_type":"Fixed"}}
+            """);
+        var vm = NewVm(StoreWith(t));
+        await vm.LoadTemplateAsync(t.Id);
+
+        vm.GoalBrick.HasGoal.Should().BeTrue();
+        vm.GoalBrick.PeriodType.Should().Be(GoalPeriodType.Open);
+        vm.GoalBrick.Target.Should().Be(3m);
+        vm.GoalBrick.Name.Should().Be("Estate");
+        vm.CanLaunch.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_rolling_goal_without_days_loads_incomplete_and_blocks_launch()
+    {
+        var t = UserTemplate("""
+            {"node":{"name":"Acqua","habit_type":"Counter"},"metrics":[{"name":"Amount","type":"Decimal","unit":"l"}],
+             "goal":{"target":3,"period_type":"Rolling"}}
+            """);
+        var vm = NewVm(StoreWith(t));
+        await vm.LoadTemplateAsync(t.Id);
+
+        vm.GoalBrick.PeriodType.Should().Be(GoalPeriodType.Rolling);
+        vm.GoalBrick.RollingDays.Should().BeNull();
+        vm.CanLaunch.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_unit_or_scale_the_catalogue_does_not_know_leaves_the_field_incomplete()
+    {
+        var t = UserTemplate("""
+            {"node":{"name":"Mix","habit_type":"Counter"},
+             "metrics":[{"name":"Durata","type":"Seconds","unit":"fortnights"},{"name":"Umore","type":"Integer","scale_code":"nope"}]}
+            """);
+        var vm = NewVm(StoreWith(t));
+        await vm.LoadTemplateAsync(t.Id);
+
+        vm.Fields.Select(f => f.Nature).Should().Equal(FieldNature.Time, FieldNature.Scale);
+        vm.Fields.Should().OnlyContain(f => f.UnitOfMeasureId == null && f.ScaleTemplateId == null);
+        vm.CanLaunch.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Loading_a_missing_template_says_so()
+    {
+        var vm = NewVm();
+        var act = () => vm.LoadTemplateAsync(Guid.NewGuid());
+        await act.Should().ThrowAsync<HabitTemplateNotFoundException>();
+    }
+
+    private static HabitTemplate UserTemplate(string payload) =>
+        new() { Id = Guid.NewGuid(), Name = "Mio", IsOfficial = false, PayloadJson = payload };
+
+    private static FakeHabitTemplateService StoreWith(params HabitTemplate[] templates)
+    {
+        var fake = new FakeHabitTemplateService();
+        foreach (var t in templates) fake.Store[t.Id] = t;
+        return fake;
+    }
+
     // ===== helpers =====
 
     private static HabitBuilderViewModel BuildFixture(string name)
@@ -300,10 +501,10 @@ public class BuilderTemplateParityTests
 
     /// <summary>A builder loaded with the REAL seed catalogue, so the fixtures can pick units and
     /// scales by the same codes the seed payloads name.</summary>
-    private static HabitBuilderViewModel NewVm()
+    private static HabitBuilderViewModel NewVm(FakeHabitTemplateService? templates = null)
     {
         var settings = new FakeAppSettingService();
-        var vm = new HabitBuilderViewModel(new FakeComposedHabitService(), new FakeHabitTemplateService(),
+        var vm = new HabitBuilderViewModel(new FakeComposedHabitService(), templates ?? new FakeHabitTemplateService(),
             new SeedReferenceData(), new FakeClock(), new RecentColorStore(settings),
             new FavoriteColorStore(settings), new FakeScreenColorPicker());
         vm.InitializeAsync().GetAwaiter().GetResult();
