@@ -349,7 +349,7 @@
     <value>Salva come modello</value>
   </data>
   <data name="HabitBuilder.Launch" xml:space="preserve">
-    <value>Lancia</value>
+    <value>Crea abitudine</value>
   </data>
   <data name="HabitBuilder.Cancel" xml:space="preserve">
     <value>Annulla</value>
@@ -364,7 +364,7 @@
     <value>Nome</value>
   </data>
   <data name="HabitBuilder.Color" xml:space="preserve">
-    <value>Colore (hex)</value>
+    <value>Colore</value>
   </data>
   <data name="HabitBuilder.Icon" xml:space="preserve">
     <value>Icona (opzionale)</value>
@@ -514,10 +514,10 @@
     <value>+ Segmento</value>
   </data>
   <data name="HabitBuilder.Segment.Work" xml:space="preserve">
-    <value>Work</value>
+    <value>Lavoro</value>
   </data>
   <data name="HabitBuilder.Segment.Rest" xml:space="preserve">
-    <value>Rest</value>
+    <value>Riposo</value>
   </data>
   <data name="HabitBuilder.SeriesLabels.Hint" xml:space="preserve">
     <value>Dai un nome alle registrazioni (opzionale): Notte, Riposino…</value>
@@ -2394,5 +2394,74 @@
   </data>
   <data name="Editor.ScaleLabels.RowName" xml:space="preserve">
     <value>Etichetta per {0}</value>
+  </data>
+  <data name="HabitBuilder.DerivedType.Line" xml:space="preserve">
+    <value>Si comporta come **{0}** · cambia da solo con quello che registri</value>
+  </data>
+  <data name="HabitBuilder.Tile.Quantity.Hint" xml:space="preserve">
+    <value>Un numero con l'unità: litri, chilometri, pagine</value>
+  </data>
+  <data name="HabitBuilder.Tile.Time.Hint" xml:space="preserve">
+    <value>Una durata: quanto è durato</value>
+  </data>
+  <data name="HabitBuilder.Tile.Scale.Hint" xml:space="preserve">
+    <value>Un valore su una scala con le etichette: umore, dolore</value>
+  </data>
+  <data name="HabitBuilder.Tile.Text.Hint" xml:space="preserve">
+    <value>Testo libero: una nota, una voce di diario</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.Counter" xml:space="preserve">
+    <value>Non con il contatore a tocco: il tocco è già la registrazione</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.TextOnce" xml:space="preserve">
+    <value>C'è già un campo di testo</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.Abstinence" xml:space="preserve">
+    <value>Non con l'astinenza: registra le ricadute</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.TextWithMeasures" xml:space="preserve">
+    <value>Il testo sta solo con una durata: togli prima quantità e scale</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.Journal" xml:space="preserve">
+    <value>Non in un diario: accanto al testo, solo una durata</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.JournalTime" xml:space="preserve">
+    <value>Un diario ha una durata sola</value>
+  </data>
+  <data name="HabitBuilder.AddSession" xml:space="preserve">
+    <value>+ Sessione a tempo</value>
+  </data>
+  <data name="HabitBuilder.CounterBlock.Help" xml:space="preserve">
+    <value>Niente campi da compilare: un tocco aggiunge uno.</value>
+  </data>
+  <data name="HabitBuilder.AbstinenceBlock.Help" xml:space="preserve">
+    <value>Conta il tempo da quando hai smesso; registri le ricadute.</value>
+  </data>
+  <data name="HabitBuilder.Field.Unit" xml:space="preserve">
+    <value>Unità</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Name" xml:space="preserve">
+    <value>Dai un nome all'abitudine.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Scale" xml:space="preserve">
+    <value>{0}: scegli una scala.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.TimeUnit" xml:space="preserve">
+    <value>{0}: scegli un'unità di tempo.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.GoalTarget" xml:space="preserve">
+    <value>L'obiettivo vuole un traguardo sopra lo zero.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.RollingDays" xml:space="preserve">
+    <value>Un obiettivo su giorni mobili vuole il numero di giorni (in Avanzate).</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Tolerance" xml:space="preserve">
+    <value>La tolleranza della serie va da 1 a 1440 minuti (in Avanzate).</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Rest" xml:space="preserve">
+    <value>Il riposo deve durare più di zero secondi (in Avanzate).</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Schedule" xml:space="preserve">
+    <value>Completa il programma: i giorni, o quante volte.</value>
   </data>
 </root>

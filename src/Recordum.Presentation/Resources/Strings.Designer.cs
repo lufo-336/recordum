@@ -848,6 +848,29 @@ public static class Strings
     public static string Unit_Pages_Name => Get("Unit.pages.Name");
     public static string Unit_Reps_Name => Get("Unit.reps.Name");
     public static string Unit_Sets_Name => Get("Unit.sets.Name");
+    public static string HabitBuilder_DerivedType_Line => Get("HabitBuilder.DerivedType.Line");
+    public static string HabitBuilder_Tile_Quantity_Hint => Get("HabitBuilder.Tile.Quantity.Hint");
+    public static string HabitBuilder_Tile_Time_Hint => Get("HabitBuilder.Tile.Time.Hint");
+    public static string HabitBuilder_Tile_Scale_Hint => Get("HabitBuilder.Tile.Scale.Hint");
+    public static string HabitBuilder_Tile_Text_Hint => Get("HabitBuilder.Tile.Text.Hint");
+    public static string HabitBuilder_Tile_Disabled_Counter => Get("HabitBuilder.Tile.Disabled.Counter");
+    public static string HabitBuilder_Tile_Disabled_TextOnce => Get("HabitBuilder.Tile.Disabled.TextOnce");
+    public static string HabitBuilder_Tile_Disabled_Abstinence => Get("HabitBuilder.Tile.Disabled.Abstinence");
+    public static string HabitBuilder_Tile_Disabled_TextWithMeasures => Get("HabitBuilder.Tile.Disabled.TextWithMeasures");
+    public static string HabitBuilder_Tile_Disabled_Journal => Get("HabitBuilder.Tile.Disabled.Journal");
+    public static string HabitBuilder_Tile_Disabled_JournalTime => Get("HabitBuilder.Tile.Disabled.JournalTime");
+    public static string HabitBuilder_AddSession => Get("HabitBuilder.AddSession");
+    public static string HabitBuilder_CounterBlock_Help => Get("HabitBuilder.CounterBlock.Help");
+    public static string HabitBuilder_AbstinenceBlock_Help => Get("HabitBuilder.AbstinenceBlock.Help");
+    public static string HabitBuilder_Field_Unit => Get("HabitBuilder.Field.Unit");
+    public static string HabitBuilder_Blocked_Name => Get("HabitBuilder.Blocked.Name");
+    public static string HabitBuilder_Blocked_Scale => Get("HabitBuilder.Blocked.Scale");
+    public static string HabitBuilder_Blocked_TimeUnit => Get("HabitBuilder.Blocked.TimeUnit");
+    public static string HabitBuilder_Blocked_GoalTarget => Get("HabitBuilder.Blocked.GoalTarget");
+    public static string HabitBuilder_Blocked_RollingDays => Get("HabitBuilder.Blocked.RollingDays");
+    public static string HabitBuilder_Blocked_Tolerance => Get("HabitBuilder.Blocked.Tolerance");
+    public static string HabitBuilder_Blocked_Rest => Get("HabitBuilder.Blocked.Rest");
+    public static string HabitBuilder_Blocked_Schedule => Get("HabitBuilder.Blocked.Schedule");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

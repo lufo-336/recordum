@@ -33,7 +33,7 @@ public sealed partial class ScheduleBrickViewModel : ObservableObject
     /// <summary>Margine oltre il quale una serie si spezza, in minuti (1..1440 come in Configura); null = nessuno.</summary>
     [ObservableProperty] private int? _streakToleranceMinutes;
 
-    private const int MaxToleranceMinutes = 1440;
+    public const int MaxToleranceMinutes = 1440;
 
     public ObservableCollection<ScheduleDayToggle> Days { get; }
     public event EventHandler? Changed;

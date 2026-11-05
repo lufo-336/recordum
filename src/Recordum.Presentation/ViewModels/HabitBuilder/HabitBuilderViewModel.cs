@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -24,6 +25,15 @@ namespace Recordum.Presentation.ViewModels.HabitBuilder;
 public sealed partial class SeriesLabelRowViewModel : ObservableObject
 {
     [ObservableProperty] private string _name = string.Empty;
+}
+
+/// <summary>One of the creator's four field tiles: on when the grammar allows the field, with the line that says what it is
+/// for or why it is off (<see cref="HabitBuilderViewModel.FieldTileHint"/>).</summary>
+public sealed partial class FieldTileViewModel(FieldNature nature) : ObservableObject
+{
+    public FieldNature Nature { get; } = nature;
+    [ObservableProperty] private bool _isEnabled = true;
+    [ObservableProperty] private string _hint = string.Empty;
 }
 
 /// <summary>Costruttore block-first: assembli mattoni (campi, contatore, astinenza), vedi l'anteprima dal vivo
@@ -429,6 +439,53 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     public bool CanAddField(FieldNature nature) => HabitCompositionRules.CanAddField(Snapshot(), nature);
 
+    /// <summary>The four field tiles of the creator ("Cosa registri"): on or off as <see cref="CanAddField"/> says, with the
+    /// line under each one (<see cref="FieldTileHint"/>). Kept in step by <see cref="Recompute"/>.</summary>
+    public FieldTileViewModel QuantityTile { get; } = new(FieldNature.Quantity);
+    public FieldTileViewModel TimeTile { get; } = new(FieldNature.Time);
+    public FieldTileViewModel ScaleTile { get; } = new(FieldNature.Scale);
+    public FieldTileViewModel TextTile { get; } = new(FieldNature.Text);
+
+    /// <summary>The line under a field tile: what the field is for, or — when the grammar forbids it — why not. Mirrors the
+    /// order of <see cref="HabitCompositionRules.CanAddField"/>, one string per rule.</summary>
+    public string FieldTileHint(FieldNature nature)
+    {
+        var c = Snapshot();
+        if (HabitCompositionRules.CanAddField(c, nature))
+            return nature switch
+            {
+                FieldNature.Quantity => Strings.HabitBuilder_Tile_Quantity_Hint,
+                FieldNature.Time => Strings.HabitBuilder_Tile_Time_Hint,
+                FieldNature.Scale => Strings.HabitBuilder_Tile_Scale_Hint,
+                _ => Strings.HabitBuilder_Tile_Text_Hint,
+            };
+        if (c.CountsOccurrences) return Strings.HabitBuilder_Tile_Disabled_Counter;
+        var hasText = c.Fields.Contains(FieldNature.Text);
+        return nature switch
+        {
+            FieldNature.Text when hasText => Strings.HabitBuilder_Tile_Disabled_TextOnce,
+            FieldNature.Text when c.Abstinence => Strings.HabitBuilder_Tile_Disabled_Abstinence,
+            FieldNature.Text => Strings.HabitBuilder_Tile_Disabled_TextWithMeasures,
+            FieldNature.Time => Strings.HabitBuilder_Tile_Disabled_JournalTime,   // il diario ha gia' la sua durata
+            _ => Strings.HabitBuilder_Tile_Disabled_Journal,                        // quantita' o scala accanto al testo
+        };
+    }
+
+    /// <summary>The derived type in the word Home uses ("counter", "journal"…), for the line under the name.</summary>
+    public string DerivedTypeWord => DerivedType switch
+    {
+        HabitType.Counter => Strings.Home_HabitType_Counter,
+        HabitType.Resistance => Strings.Home_HabitType_Resistance,
+        HabitType.Journal => Strings.Home_HabitType_Journal,
+        HabitType.State => Strings.Home_HabitType_State,
+        _ => Strings.Home_HabitType_Action,
+    };
+
+    /// <summary>"Behaves like: counter · changes by itself with what you record", as plain text (the view bolds the word
+    /// from the <c>**{0}**</c> marker of the same string).</summary>
+    public string DerivedTypeLine =>
+        string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_DerivedType_Line.Replace("**", string.Empty, StringComparison.Ordinal), DerivedTypeWord);
+
     /// <summary>True when the current composition allows the Counter block (empty canvas, no abstinence).
     /// Bound to the Counter CheckBox <c>IsEnabled</c> so it can't be flipped into an invalid state.</summary>
     public bool CanEnableCounter => HabitCompositionRules.CanEnableCounter(Snapshot());
@@ -531,6 +588,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEnableAbstinence));
         OnPropertyChanged(nameof(FieldsAllowed));
         OnPropertyChanged(nameof(ShowJournalGesture));
+        OnPropertyChanged(nameof(DerivedTypeWord));
+        OnPropertyChanged(nameof(DerivedTypeLine));
+        foreach (var tile in new[] { QuantityTile, TimeTile, ScaleTile, TextTile })
+        {
+            tile.IsEnabled = CanAddField(tile.Nature);
+            tile.Hint = FieldTileHint(tile.Nature);
+        }
         RaiseLaunchState();
     }
 
@@ -538,6 +602,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanLaunch));
         OnPropertyChanged(nameof(LaunchBlocked));
+        OnPropertyChanged(nameof(LaunchBlockedReason));
         LaunchCommand.NotifyCanExecuteChanged();
         SaveAsTemplateCommand.NotifyCanExecuteChanged();
     }
@@ -557,6 +622,34 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
 
     /// <summary>Inverse of <see cref="CanLaunch"/>, for the "why is Launch disabled" hint.</summary>
     public bool LaunchBlocked => !CanLaunch;
+
+    /// <summary>Why "Create habit" is off, the first failing rule of <see cref="CanLaunch"/> in its order; null when it is on.
+    /// A rule with no line of its own (a fixed goal period, which the creator never offers) falls back to the general hint:
+    /// a disabled button never stays silent.</summary>
+    public string? LaunchBlockedReason
+    {
+        get
+        {
+            if (CanLaunch) return null;
+            if (string.IsNullOrWhiteSpace(Name)) return Strings.HabitBuilder_Blocked_Name;
+#pragma warning disable CA1863 // CompositeFormat caching not worth it for a line that changes with the culture
+            if (Fields.FirstOrDefault(f => f.Nature == FieldNature.Scale && f.ScaleTemplateId is null) is { } scale)
+                return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_Scale, FieldLabel(scale));
+            if (Fields.FirstOrDefault(f => f.Nature == FieldNature.Time && f.UnitOfMeasureId is null) is { } time)
+                return string.Format(CultureInfo.CurrentCulture, Strings.HabitBuilder_Blocked_TimeUnit, FieldLabel(time));
+#pragma warning restore CA1863
+            if (GoalBrick.HasGoal && GoalBrick.Target is not > 0) return Strings.HabitBuilder_Blocked_GoalTarget;
+            if (GoalBrick is { HasGoal: true, PeriodType: GoalPeriodType.Rolling, RollingDays: not > 0 })
+                return Strings.HabitBuilder_Blocked_RollingDays;
+            if (Schedule.StreakToleranceMinutes is <= 0 or > ScheduleBrickViewModel.MaxToleranceMinutes)
+                return Strings.HabitBuilder_Blocked_Tolerance;
+            if (SessionBrick is { HasSession: true, RestTimerSeconds: <= 0 }) return Strings.HabitBuilder_Blocked_Rest;
+            if (!Schedule.IsComplete) return Strings.HabitBuilder_Blocked_Schedule;
+            return Strings.HabitBuilder_LaunchHint;
+        }
+    }
+
+    private static string FieldLabel(FieldBlockViewModel f) => string.IsNullOrWhiteSpace(f.Name) ? DefaultName(f.Nature) : f.Name.Trim();
 
     [RelayCommand(CanExecute = nameof(CanLaunch))]
     private async Task LaunchAsync(CancellationToken ct)

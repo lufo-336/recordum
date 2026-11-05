@@ -374,7 +374,7 @@ Details: {0}</value>
     <value>Save as template</value>
   </data>
   <data name="HabitBuilder.Launch" xml:space="preserve">
-    <value>Launch</value>
+    <value>Create habit</value>
   </data>
   <data name="HabitBuilder.Cancel" xml:space="preserve">
     <value>Cancel</value>
@@ -389,7 +389,7 @@ Details: {0}</value>
     <value>Name</value>
   </data>
   <data name="HabitBuilder.Color" xml:space="preserve">
-    <value>Color (hex)</value>
+    <value>Color</value>
   </data>
   <data name="HabitBuilder.Icon" xml:space="preserve">
     <value>Icon (optional)</value>
@@ -2420,5 +2420,74 @@ Details: {0}</value>
   </data>
   <data name="Editor.ScaleLabels.RowName" xml:space="preserve">
     <value>Label for {0}</value>
+  </data>
+  <data name="HabitBuilder.DerivedType.Line" xml:space="preserve">
+    <value>Behaves like: **{0}** · changes by itself with what you record</value>
+  </data>
+  <data name="HabitBuilder.Tile.Quantity.Hint" xml:space="preserve">
+    <value>A number with a unit: litres, kilometres, pages</value>
+  </data>
+  <data name="HabitBuilder.Tile.Time.Hint" xml:space="preserve">
+    <value>A duration: how long it took</value>
+  </data>
+  <data name="HabitBuilder.Tile.Scale.Hint" xml:space="preserve">
+    <value>A value on a labelled scale: mood, pain</value>
+  </data>
+  <data name="HabitBuilder.Tile.Text.Hint" xml:space="preserve">
+    <value>Free text: a note, a journal entry</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.Counter" xml:space="preserve">
+    <value>Not with a tap counter: a tap is already the record</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.TextOnce" xml:space="preserve">
+    <value>There is already a text field</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.Abstinence" xml:space="preserve">
+    <value>Not with an abstinence: it records the lapses</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.TextWithMeasures" xml:space="preserve">
+    <value>Text goes with a duration only: remove quantities and scales first</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.Journal" xml:space="preserve">
+    <value>Not in a journal: next to the text, only a duration</value>
+  </data>
+  <data name="HabitBuilder.Tile.Disabled.JournalTime" xml:space="preserve">
+    <value>A journal holds a single duration</value>
+  </data>
+  <data name="HabitBuilder.AddSession" xml:space="preserve">
+    <value>+ Timed session</value>
+  </data>
+  <data name="HabitBuilder.CounterBlock.Help" xml:space="preserve">
+    <value>No fields to fill in: one tap adds one.</value>
+  </data>
+  <data name="HabitBuilder.AbstinenceBlock.Help" xml:space="preserve">
+    <value>Counts the time since you stopped; you record the lapses.</value>
+  </data>
+  <data name="HabitBuilder.Field.Unit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Name" xml:space="preserve">
+    <value>Give the habit a name.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Scale" xml:space="preserve">
+    <value>{0}: pick a scale.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.TimeUnit" xml:space="preserve">
+    <value>{0}: pick a unit of time.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.GoalTarget" xml:space="preserve">
+    <value>The goal needs a target above zero.</value>
+  </data>
+  <data name="HabitBuilder.Blocked.RollingDays" xml:space="preserve">
+    <value>A rolling goal needs its number of days (in Advanced).</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Tolerance" xml:space="preserve">
+    <value>The streak tolerance goes from 1 to 1440 minutes (in Advanced).</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Rest" xml:space="preserve">
+    <value>The rest must be longer than zero seconds (in Advanced).</value>
+  </data>
+  <data name="HabitBuilder.Blocked.Schedule" xml:space="preserve">
+    <value>Complete the schedule: the days, or how many times.</value>
   </data>
 </root>
