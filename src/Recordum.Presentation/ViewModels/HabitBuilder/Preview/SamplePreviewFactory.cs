@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
+using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.Today;
 
 namespace Recordum.Presentation.ViewModels.HabitBuilder.Preview;
@@ -88,7 +89,7 @@ public sealed class SamplePreviewFactory(IClock clock)
     /// <summary>A scale field samples its second step — the first would look like an unset control.</summary>
     private static string SampleStep(PreviewField? field) =>
         field?.ScaleLabels is { Count: > 1 } labels
-            ? labels[1]
+            ? ScaleLabelText.At(labels, 1)
             : SampleValue.ToString(CultureInfo.CurrentCulture);
 
     private ITodayContent? BuildToday(BuilderPreviewInput input)

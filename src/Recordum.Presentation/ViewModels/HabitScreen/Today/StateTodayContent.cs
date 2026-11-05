@@ -109,9 +109,7 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
     partial void OnSliderValueChanged(int value) => CurrentLabel = LabelFor(value);
 
     private string LabelFor(int index)
-        => index >= 0 && index < _labels.Length
-            ? _labels[index]
-            : (index + 1).ToString(CultureInfo.CurrentCulture);
+        => ScaleLabelText.At(_labels, index);
 
     private static string[]? ParseLabels(string? json)
     {

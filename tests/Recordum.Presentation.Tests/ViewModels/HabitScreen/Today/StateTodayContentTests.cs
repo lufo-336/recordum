@@ -56,6 +56,20 @@ public class StateTodayContentTests
     }
 
     [Fact]
+    public async Task CurrentLabel_with_a_blank_label_shows_the_step_number()
+    {
+        var (sut, _, metrics, refData, node) = NewSut();
+        metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, refData.Scales[0].Id, JsonSerializer.Serialize(new[] { "A", "", "C" }));
+
+        await sut.LoadAsync(node, DayBoundary.Utc);
+
+        sut.SliderValue = 1;
+        sut.CurrentLabel.Should().Be("2");
+        sut.SliderValue = 2;
+        sut.CurrentLabel.Should().Be("C");
+    }
+
+    [Fact]
     public async Task Record_replaces_todays_value_and_stores_the_1_based_index()
     {
         var (sut, completions, metrics, refData, node) = NewSut();

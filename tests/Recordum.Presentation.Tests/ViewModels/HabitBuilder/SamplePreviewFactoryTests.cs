@@ -60,6 +60,15 @@ public class SamplePreviewFactoryTests
     }
 
     [Fact]
+    public void A_blank_second_step_samples_its_step_number()
+    {
+        var input = Input(HabitType.State,
+            [new PreviewField("Umore", FieldNature.Scale, null, ["Male", "", "Bene"])]);
+
+        Factory().Build(input).HomeRow.KeyFigure.Should().Be("2");
+    }
+
+    [Fact]
     public void An_unnamed_draft_still_renders_a_row()
     {
         var input = Input(HabitType.Action) with { Name = "   " };

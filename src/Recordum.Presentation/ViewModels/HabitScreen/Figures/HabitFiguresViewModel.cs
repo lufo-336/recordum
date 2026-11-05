@@ -362,7 +362,7 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
 
     /// <summary>Il valore salvato della scala è 1-based (come in <c>StateTodayContent</c>).</summary>
     private static string LabelFor(string[] labels, int value)
-        => value >= 1 && value <= labels.Length ? labels[value - 1] : Int(value);
+        => value >= 1 && value <= labels.Length ? ScaleLabelText.At(labels, value - 1) : Int(value);
 
     private static string[]? ParseLabels(string? json)
     {
