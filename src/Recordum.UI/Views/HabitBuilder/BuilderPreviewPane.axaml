@@ -49,7 +49,8 @@
     <StackPanel x:Name="Inert" Margin="16,12" IsHitTestVisible="False">
 
       <!-- Livello 1: la riga in Home — la stessa striscia per tipo della riga vera (W2V-19), tinta come in Home (RowPreview). -->
-      <TextBlock Classes="label" Text="{x:Static res:Strings.HabitBuilder_Preview_Home}"/>
+      <!-- Il blocco 4 di spec 6.4 ("Come appare in Home"): nel creatore e' questa colonna, col titolo dei blocchi. -->
+      <TextBlock x:Name="HomeTitle" Classes="block" Text="{x:Static res:Strings.Editor_Block_Home}" Margin="0,8,0,12"/>
       <ctl:RowPreview Model="{CompiledBinding HomeRow}" Margin="0,0,0,16"/>
 
       <!-- Livello 2: la fascia "Oggi" (le view reali). Null per il diario: niente da mostrare. -->
@@ -151,8 +152,6 @@
         </Panel>
       </Border>
 
-      <TextBlock Text="{x:Static res:Strings.HabitBuilder_Preview_Sample}"
-                 FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

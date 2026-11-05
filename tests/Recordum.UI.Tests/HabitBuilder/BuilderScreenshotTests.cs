@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -5,6 +6,7 @@ using Avalonia.VisualTree;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.HabitBuilder;
@@ -95,5 +97,118 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
             view.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "NameBox").Text.Should().Be("Acqua");
         }
         finally { w.Close(); }
+    }
+
+    // ---- Onda 3a Task 5: i cinque blocchi ---------------------------------------------------------------
+
+    private static async Task<(IServiceScope Scope, HabitBuilderViewModel Vm, HabitBuilderView View, Window Window)> OpenFramedAsync(
+        string variant, double width, double height)
+    {
+        var scope = Host.Provider.CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<HabitBuilderViewModel>();
+        await vm.InitializeAsync();
+        var view = new HabitBuilderView { DataContext = vm };
+        var frame = new Border { Child = view };
+        frame[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Brush.Background");
+        var w = new Window { Width = width, Height = height, Content = frame, RequestedThemeVariant = Theme(variant) };
+        w.Show();
+        PrivateDbHost.Pump();
+        return (scope, vm, view, w);
+    }
+
+    private static void Settle()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        PrivateDbHost.Pump();
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task The_creator_shows_the_five_blocks(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var (scope, vm, view, w) = await OpenFramedAsync(variant, 1100, 1000);
+        try
+        {
+            vm.Name = "Acqua";
+            vm.AddFieldCommand.Execute(Recordum.Core.Enums.FieldNature.Quantity);
+            vm.Fields[0].Name = "Bicchieri";
+            Settle();
+            output.WriteLine(ScreenshotProbeTests.Capture(w, $"builder-blocks-{variant.ToLowerInvariant()}"));
+
+            var stack = BuilderBlocksTests.Named<StackPanel>(view, "BlocksStack");
+            BuilderBlocksTests.BlockTitles(stack).OrderBy(t => BuilderBlocksTests.Top(t, view)).Select(t => t.Text).Should().Equal(
+                Strings.Editor_Block_Identity, Strings.Editor_Block_Record, Strings.Editor_Block_When, Strings.Editor_Block_Advanced);
+            var home = BuilderBlocksTests.BlockTitles(BuilderBlocksTests.Named<Border>(view, "PreviewHost")).Should().ContainSingle().Subject;
+            home.Text.Should().Be(Strings.Editor_Block_Home);
+            BuilderBlocksTests.Left(home, view).Should().BeGreaterThan(stack.Bounds.Right, "la Home e' la colonna di destra");
+            foreach (var n in new[] { "AddQuantityButton", "AddTimeButton", "AddScaleButton", "AddTextButton" })
+                BuilderBlocksTests.Named<Button>(view, n).Bounds.Height.Should().BeGreaterThan(40, $"{n}: la tessera porta titolo e riga");
+        }
+        finally { w.Close(); scope.Dispose(); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task The_creator_advanced_block_opens_on_its_fields(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var (scope, vm, view, w) = await OpenFramedAsync(variant, 1100, 900);
+        try
+        {
+            vm.Name = "Corsa";
+            vm.AddFieldCommand.Execute(Recordum.Core.Enums.FieldNature.Quantity);
+            vm.GoalBrick.HasGoal = true;
+            vm.GoalBrick.PeriodType = Recordum.Core.Enums.GoalPeriodType.Rolling;
+            vm.SessionBrick.HasSession = true;
+            Settle();
+            BuilderBlocksTests.Named<Avalonia.Controls.Primitives.ToggleButton>(view, "AdvancedToggle").IsChecked = true;
+            Settle();
+            var rows = BuilderBlocksTests.Named<StackPanel>(view, "AdvancedRows");
+            BuilderBlocksTests.Named<ScrollViewer>(view, "BlocksScroll").ScrollToEnd();
+            Settle();
+            output.WriteLine(ScreenshotProbeTests.Capture(w, $"builder-advanced-{variant.ToLowerInvariant()}"));
+
+            foreach (var n in new[] { "ToleranceBox", "RollingDaysBox", "SegmentsList", "RestBox", "AutoPromptBox", "AiSharingRow" })
+            {
+                var c = BuilderBlocksTests.Named<Control>(rows, n);
+                c.IsEffectivelyVisible.Should().BeTrue(n);
+                c.Bounds.Height.Should().BeGreaterThan(0, n);
+            }
+            BuilderBlocksTests.Named<Avalonia.Controls.Shapes.Path>(view, "AdvancedChevron").RenderTransform.Should().NotBeNull("la freccia gira");
+        }
+        finally { w.Close(); scope.Dispose(); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task The_narrow_creator_puts_the_preview_under_the_blocks(string variant)
+    {
+        using var culture = TestCulture.Pin();
+        var (scope, vm, view, w) = await OpenFramedAsync(variant, 600, 1000);
+        try
+        {
+            vm.Name = "Acqua";
+            vm.AddFieldCommand.Execute(Recordum.Core.Enums.FieldNature.Quantity);
+            Settle();
+            output.WriteLine(ScreenshotProbeTests.Capture(w, $"builder-narrow-{variant.ToLowerInvariant()}"));
+
+            var host = BuilderBlocksTests.Named<Border>(view, "PreviewHost");
+            host.IsEffectivelyVisible.Should().BeTrue();
+            BuilderBlocksTests.Top(host, view).Should().BeGreaterThan(
+                BuilderBlocksTests.Top(BuilderBlocksTests.Named<StackPanel>(view, "AdvancedBlock"), view), "l'anteprima scende sotto i blocchi");
+            var overflow = view.GetVisualDescendants().OfType<Control>()
+                .Where(c => c.IsEffectivelyVisible && c.Bounds.Width > 0)
+                .Select(c => (c, right: c.TranslatePoint(new Avalonia.Point(c.Bounds.Width, 0), view)!.Value.X))
+                .Where(x => x.right > 600.5)
+                .Select(x => $"{x.c.GetType().Name}#{x.c.Name} → {x.right:F0}")
+                .ToList();
+            overflow.Should().BeEmpty("a 600 px nessun controllo esce dal bordo destro");
+        }
+        finally { w.Close(); scope.Dispose(); }
     }
 }
