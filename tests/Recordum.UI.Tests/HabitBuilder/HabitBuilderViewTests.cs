@@ -151,6 +151,40 @@ public class HabitBuilderViewTests
     }
 
     [AvaloniaFact]
+    public async Task Official_units_and_scales_show_in_the_interface_language()
+    {
+        using var culture = TestCulture.Pin();
+        var o = await OpenAsync();
+        try
+        {
+            Click(o.Window, Named<Button>(o.View, "AddQuantityButton"));
+            var units = VisibleNamed<ComboBox>(o.View, "UnitPicker");
+            units.SelectedItem = o.Vm.AvailableUnits.Single(u => u.Code == "l");
+            Pump();
+            ShownTexts(units).Should().Contain("Litro").And.NotContain("Litre");
+
+            Click(o.Window, Named<Button>(o.View, "AddScaleButton"));
+            var scales = VisibleNamed<ComboBox>(o.View, "ScalePicker");
+            scales.SelectedItem = o.Vm.AvailableScales.Single(s => s.Code == "mood-5");
+            Pump();
+            ShownTexts(scales).Should().Contain("Scala dell'umore (1–5)");
+        }
+        finally { o.Window.Close(); o.Scope.Dispose(); }
+    }
+
+    [Fact]
+    public void A_user_unit_keeps_the_name_it_was_given()
+    {
+        using var culture = TestCulture.Pin();
+        var mine = new UnitOfMeasure { Code = "l", Name = "Bicchieri", IsOfficial = false };
+
+        Recordum.UI.Converters.OfficialNameConverter.Instance
+            .Convert(mine, typeof(string), null, System.Globalization.CultureInfo.CurrentCulture).Should().Be("Bicchieri");
+    }
+
+    private static IEnumerable<string?> ShownTexts(ComboBox box) => box.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text);
+
+    [AvaloniaFact]
     public async Task An_abstinence_is_created()
     {
         var o = await OpenAsync();

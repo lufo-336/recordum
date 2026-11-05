@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,6 +11,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.Templates;
 using Recordum.Presentation.ViewModels.HabitBuilder.Preview;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels.HabitEditor.Sections;
@@ -547,8 +549,17 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         }
     }
 
-    private string? LabelsOfScale(Guid? scaleId) =>
-        scaleId is { } id ? AvailableScales.FirstOrDefault(s => s.Id == id)?.LabelsJson : null;
+    // Una scala ufficiale nasce con le etichette nella lingua di adesso (UX-11); una dell'utente tiene le sue.
+    // Relaxed: le etichette italiane ("Qualità", "D'accordo") restano leggibili invece di \u00E0 / \u0027.
+    private string? LabelsOfScale(Guid? scaleId)
+    {
+        if (scaleId is not { } id || AvailableScales.FirstOrDefault(s => s.Id == id) is not { } scale) return null;
+        return OfficialTexts.ScaleLabels(scale) is { } translated
+            ? JsonSerializer.Serialize(translated, s_labelsJsonOptions)
+            : scale.LabelsJson;
+    }
+
+    private static readonly JsonSerializerOptions s_labelsJsonOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>The series labels the user actually named: blank rows are an in-progress edit, not an
     /// unnamed entry. Shared by <see cref="BuildConfig"/> and the template payload so a launched habit

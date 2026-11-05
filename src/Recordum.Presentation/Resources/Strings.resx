@@ -2217,4 +2217,193 @@ Details: {0}</value>
   <data name="Editor.Help.Timer.AutoPrompt" xml:space="preserve">
     <value>Coming soon: it has no effect yet.</value>
   </data>
+  <data name="Template.Official.01.Name" xml:space="preserve">
+    <value>Morning routine</value>
+  </data>
+  <data name="Template.Official.01.Description" xml:space="preserve">
+    <value>A daily action habit to anchor your morning routine.</value>
+  </data>
+  <data name="Template.Official.02.Name" xml:space="preserve">
+    <value>Workout log</value>
+  </data>
+  <data name="Template.Official.02.Description" xml:space="preserve">
+    <value>Session-mode habit for logging gym workouts with Work/Rest segments.</value>
+  </data>
+  <data name="Template.Official.03.Name" xml:space="preserve">
+    <value>Daily journal</value>
+  </data>
+  <data name="Template.Official.03.Description" xml:space="preserve">
+    <value>A free-form Markdown journal entry, one per day.</value>
+  </data>
+  <data name="Template.Official.04.Name" xml:space="preserve">
+    <value>Water intake</value>
+  </data>
+  <data name="Template.Official.04.Description" xml:space="preserve">
+    <value>Track daily water consumption in litres with a 2L goal.</value>
+  </data>
+  <data name="Template.Official.05.Name" xml:space="preserve">
+    <value>Sleep tracker</value>
+  </data>
+  <data name="Template.Official.05.Description" xml:space="preserve">
+    <value>Log hours slept and subjective sleep quality each morning.</value>
+  </data>
+  <data name="Template.Official.06.Name" xml:space="preserve">
+    <value>Stop smoking</value>
+  </data>
+  <data name="Template.Official.06.Description" xml:space="preserve">
+    <value>Resistance habit that tracks abstinence time since last cigarette.</value>
+  </data>
+  <data name="Template.Official.07.Name" xml:space="preserve">
+    <value>Mood tracker</value>
+  </data>
+  <data name="Template.Official.07.Description" xml:space="preserve">
+    <value>Daily mood state on a 1–5 labelled scale.</value>
+  </data>
+  <data name="Template.Official.08.Name" xml:space="preserve">
+    <value>Food diary</value>
+  </data>
+  <data name="Template.Official.08.Description" xml:space="preserve">
+    <value>Log each meal in seconds: a short note and a photo, as many times a day as you eat.</value>
+  </data>
+  <data name="Template.Text.MorningRoutine" xml:space="preserve">
+    <value>Morning routine</value>
+  </data>
+  <data name="Template.Text.WorkoutLog" xml:space="preserve">
+    <value>Workout log</value>
+  </data>
+  <data name="Template.Text.DailyJournal" xml:space="preserve">
+    <value>Daily journal</value>
+  </data>
+  <data name="Template.Text.WaterIntake" xml:space="preserve">
+    <value>Water intake</value>
+  </data>
+  <data name="Template.Text.SleepTracker" xml:space="preserve">
+    <value>Sleep tracker</value>
+  </data>
+  <data name="Template.Text.StopSmoking" xml:space="preserve">
+    <value>Stop smoking</value>
+  </data>
+  <data name="Template.Text.MoodTracker" xml:space="preserve">
+    <value>Mood tracker</value>
+  </data>
+  <data name="Template.Text.FoodDiary" xml:space="preserve">
+    <value>Food diary</value>
+  </data>
+  <data name="Template.Text.Duration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="Template.Text.Reps" xml:space="preserve">
+    <value>Reps</value>
+  </data>
+  <data name="Template.Text.Weight" xml:space="preserve">
+    <value>Weight</value>
+  </data>
+  <data name="Template.Text.Amount" xml:space="preserve">
+    <value>Amount</value>
+  </data>
+  <data name="Template.Text.HoursSlept" xml:space="preserve">
+    <value>Hours slept</value>
+  </data>
+  <data name="Template.Text.SleepQuality" xml:space="preserve">
+    <value>Sleep quality</value>
+  </data>
+  <data name="Template.Text.Mood" xml:space="preserve">
+    <value>Mood</value>
+  </data>
+  <data name="Template.Text.Night" xml:space="preserve">
+    <value>Night</value>
+  </data>
+  <data name="Template.Text.Nap" xml:space="preserve">
+    <value>Nap</value>
+  </data>
+  <data name="Template.Text.Work" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="Template.Text.Rest" xml:space="preserve">
+    <value>Rest</value>
+  </data>
+  <data name="Scale.bristol.Name" xml:space="preserve">
+    <value>Bristol Stool Scale</value>
+  </data>
+  <data name="Scale.bristol.Labels" xml:space="preserve">
+    <value>Hard pellets|Lumpy sausage|Cracked sausage|Smooth sausage|Soft blobs|Mushy|Liquid</value>
+  </data>
+  <data name="Scale.mayo-rectal-bleeding.Name" xml:space="preserve">
+    <value>Mayo Rectal Bleeding Score</value>
+  </data>
+  <data name="Scale.mayo-rectal-bleeding.Labels" xml:space="preserve">
+    <value>No bleeding|Streaks on tissue|Visible blood with stool|Bleeding without stool</value>
+  </data>
+  <data name="Scale.nrs-pain.Name" xml:space="preserve">
+    <value>NRS Pain Scale</value>
+  </data>
+  <data name="Scale.nrs-pain.Labels" xml:space="preserve">
+    <value>No pain|1|2|3|4|5|6|7|8|9|Worst pain</value>
+  </data>
+  <data name="Scale.likert-5.Name" xml:space="preserve">
+    <value>Likert Scale (1–5)</value>
+  </data>
+  <data name="Scale.likert-5.Labels" xml:space="preserve">
+    <value>Strongly disagree|Disagree|Neutral|Agree|Strongly agree</value>
+  </data>
+  <data name="Scale.sleep-quality.Name" xml:space="preserve">
+    <value>Sleep Quality (1–5)</value>
+  </data>
+  <data name="Scale.sleep-quality.Labels" xml:space="preserve">
+    <value>Very poor|Poor|Fair|Good|Excellent</value>
+  </data>
+  <data name="Scale.stress-10.Name" xml:space="preserve">
+    <value>Stress Level (1–10)</value>
+  </data>
+  <data name="Scale.stress-10.Labels" xml:space="preserve">
+    <value>Calm|2|3|4|5|6|7|8|9|Overwhelmed</value>
+  </data>
+  <data name="Scale.mood-5.Name" xml:space="preserve">
+    <value>Mood Scale (1–5)</value>
+  </data>
+  <data name="Scale.mood-5.Labels" xml:space="preserve">
+    <value>Very low|Low|Neutral|Good|Very good</value>
+  </data>
+  <data name="Unit.km.Name" xml:space="preserve">
+    <value>Kilometre</value>
+  </data>
+  <data name="Unit.m.Name" xml:space="preserve">
+    <value>Metre</value>
+  </data>
+  <data name="Unit.kg.Name" xml:space="preserve">
+    <value>Kilogram</value>
+  </data>
+  <data name="Unit.g.Name" xml:space="preserve">
+    <value>Gram</value>
+  </data>
+  <data name="Unit.ml.Name" xml:space="preserve">
+    <value>Millilitre</value>
+  </data>
+  <data name="Unit.l.Name" xml:space="preserve">
+    <value>Litre</value>
+  </data>
+  <data name="Unit.kcal.Name" xml:space="preserve">
+    <value>Kilocalorie</value>
+  </data>
+  <data name="Unit.steps.Name" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Unit.hours.Name" xml:space="preserve">
+    <value>Hours</value>
+  </data>
+  <data name="Unit.minutes.Name" xml:space="preserve">
+    <value>Minutes</value>
+  </data>
+  <data name="Unit.seconds.Name" xml:space="preserve">
+    <value>Seconds</value>
+  </data>
+  <data name="Unit.pages.Name" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="Unit.reps.Name" xml:space="preserve">
+    <value>Repetitions</value>
+  </data>
+  <data name="Unit.sets.Name" xml:space="preserve">
+    <value>Sets</value>
+  </data>
 </root>

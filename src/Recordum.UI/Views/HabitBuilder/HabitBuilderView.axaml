@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitBuilder"
              xmlns:core="using:Recordum.Core.Enums"
+             xmlns:m="using:Recordum.Core.Models"
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:ctl="using:Recordum.UI.Controls"
@@ -175,18 +176,36 @@
                       <ComboBox x:Name="UnitPicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}"
                                 IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Quantity}}"
                                 ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableUnits}"
-                                DisplayMemberBinding="{CompiledBinding Name}" SelectedValueBinding="{CompiledBinding Id}"
-                                SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}"/>
+                                SelectedValueBinding="{CompiledBinding Id}"
+                                SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate x:DataType="m:UnitOfMeasure">
+                            <TextBlock Text="{CompiledBinding, Converter={x:Static conv:OfficialNameConverter.Instance}}"/>
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
                       <ComboBox x:Name="ScalePicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_ScalePickerPrompt}"
                                 IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Scale}}"
                                 ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableScales}"
-                                DisplayMemberBinding="{CompiledBinding Name}" SelectedValueBinding="{CompiledBinding Id}"
-                                SelectedValue="{CompiledBinding ScaleTemplateId, Mode=TwoWay}"/>
+                                SelectedValueBinding="{CompiledBinding Id}"
+                                SelectedValue="{CompiledBinding ScaleTemplateId, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate x:DataType="m:ScaleTemplate">
+                            <TextBlock Text="{CompiledBinding, Converter={x:Static conv:OfficialNameConverter.Instance}}"/>
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
                       <ComboBox x:Name="TimeUnitPicker" MinWidth="120" ToolTip.Tip="{x:Static res:Strings.HabitBuilder_UnitPickerPrompt}"
                                 IsVisible="{CompiledBinding Nature, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:FieldNature.Time}}"
                                 ItemsSource="{CompiledBinding $parent[ItemsControl].((vm:HabitBuilderViewModel)DataContext).AvailableTimeUnits}"
-                                DisplayMemberBinding="{CompiledBinding Name}" SelectedValueBinding="{CompiledBinding Id}"
-                                SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}"/>
+                                SelectedValueBinding="{CompiledBinding Id}"
+                                SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate x:DataType="m:UnitOfMeasure">
+                            <TextBlock Text="{CompiledBinding, Converter={x:Static conv:OfficialNameConverter.Instance}}"/>
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
                     </Panel>
 
                     <!-- Quantity senza unita' che vuole comunque le frazioni (il peso corporeo). -->

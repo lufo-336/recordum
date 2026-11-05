@@ -4,6 +4,7 @@
              xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor.Sections"
              xmlns:core="using:Recordum.Core.Enums"
              xmlns:m="using:Recordum.Core.Models"
+             xmlns:conv="using:Recordum.UI.Converters"
              xmlns:s="using:Recordum.UI.Views.HabitEditor.Sections"
              xmlns:ctl="using:Recordum.UI.Controls"
              x:Class="Recordum.UI.Views.HabitEditor.Sections.MetricsSectionView"
@@ -35,7 +36,7 @@
                         SelectedValueBinding="{CompiledBinding Id}" SelectedValue="{CompiledBinding UnitOfMeasureId, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="m:UnitOfMeasure">
-                    <TextBlock Text="{CompiledBinding Name}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{CompiledBinding, Converter={x:Static conv:OfficialNameConverter.Instance}}" TextTrimming="CharacterEllipsis"/>
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
