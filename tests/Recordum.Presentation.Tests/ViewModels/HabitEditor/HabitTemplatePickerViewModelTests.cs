@@ -307,6 +307,17 @@ public sealed class HabitTemplatePickerTemplateTests : IDisposable
         Card(sut, Guid.Parse("00000003-0000-0000-0000-000000000006")).TypeLine.Should().Be("resistenza");
     }
 
+    /// <summary>ListAsync ordina per il nome seminato (inglese): in italiano le schede vanno in ordine col nome che si vede.</summary>
+    [Fact]
+    public async Task Official_cards_are_sorted_by_their_translated_name()
+    {
+        Pin("it-IT");
+        var sut = await LoadedAsync();
+
+        sut.OfficialTemplates.Select(o => o.Name).Should().BeInAscendingOrder(StringComparer.Create(CultureInfo.CurrentCulture, true));
+        sut.VisibleOfficial.Select(o => o.Name).Should().Equal(sut.OfficialTemplates.Select(o => o.Name));
+    }
+
     [Fact]
     public async Task Use_creates_once_even_on_double_click()
     {
@@ -453,6 +464,25 @@ public sealed class HabitTemplatePickerTemplateTests : IDisposable
         sut.Detail.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task After_a_failed_detail_the_next_card_shows_the_normal_placeholder_while_it_loads()
+    {
+        Pin("it-IT");
+        var gated = new GatedGet(_templates, Sleep) { Fault = new InvalidOperationException("disco"), FaultId = FoodDiary };
+        var sut = await LoadedAsync(detailTemplates: gated);
+        sut.Selected = Card(sut, FoodDiary);
+        await sut.DetailLoad;
+        sut.DetailFailed.Should().BeTrue();
+
+        sut.Selected = Card(sut, Sleep);          // resta appeso sul modello
+
+        sut.DetailFailed.Should().BeFalse("la scheda nuova si sta caricando, non e' fallita");
+        sut.DetailPlaceholder.Should().Be(Strings.HabitTemplatePicker_DetailEmpty);
+        gated.Gate.SetResult();
+        await sut.DetailLoad;
+        sut.Detail!.Name.Should().Be(Card(sut, Sleep).Name);
+    }
+
     private sealed class GatedComposed : IComposedHabitService
     {
         public TaskCompletionSource? Gate { get; set; }
@@ -469,9 +499,11 @@ public sealed class HabitTemplatePickerTemplateTests : IDisposable
     {
         public TaskCompletionSource Gate { get; } = new();
         public Exception? Fault { get; init; }
+        /// <summary>Il modello che fallisce; senza, quello appeso.</summary>
+        public Guid? FaultId { get; init; }
         public async ValueTask<HabitTemplate?> GetAsync(Guid id, CancellationToken ct = default)
         {
-            if (id == gatedId && Fault is { } fault) throw fault;
+            if (id == (FaultId ?? gatedId) && Fault is { } fault) throw fault;
             if (id == gatedId) await Gate.Task;
             return await inner.GetAsync(id, ct);
         }

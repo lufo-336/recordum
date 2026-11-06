@@ -67,6 +67,7 @@ public sealed partial class HabitTemplatePickerViewModel(
         CustomOptions.Clear();
         Actions.Add(new PickerOption(Strings.HabitTemplatePicker_FromScratch, Strings.HabitTemplatePicker_BlankHabit_Description, null, NodeType.Habit, parentId));
         Actions.Add(new PickerOption(Strings.HabitTemplatePicker_BlankGroup, Strings.HabitTemplatePicker_BlankGroup_Description, null, NodeType.Group, parentId));
+        var official = new List<PickerOption>();
         foreach (var t in await _templates.ListAsync(ct))
         {
             var (color, type, repeatable, gesture) = HabitBuilderViewModel.DescribeTemplate(t.PayloadJson);
@@ -74,10 +75,13 @@ public sealed partial class HabitTemplatePickerViewModel(
                 NodeType.Habit, parentId, !t.IsOfficial,
                 string.IsNullOrWhiteSpace(color) ? PickerOption.NeutralColor : color, TypeLine(type, repeatable, gesture));
             if (t.IsOfficial)
-                OfficialTemplates.Add(option);
+                official.Add(option);
             else
                 CustomOptions.Add(option);
         }
+        // ListAsync ordina per il nome seminato (inglese): le schede ufficiali vanno per il nome che si vede.
+        foreach (var o in official.OrderBy(o => o.Name, StringComparer.Create(CultureInfo.CurrentCulture, true)))
+            OfficialTemplates.Add(o);
         ApplyFilter();
     }
 
@@ -155,6 +159,7 @@ public sealed partial class HabitTemplatePickerViewModel(
         var generation = ++_detailGeneration;
         if (value?.TemplateId is { } id && _builders is not null)
         {
+            DetailFailed = false;                                  // la scheda nuova si carica: non e' (ancora) fallita
             DetailLoad = LoadDetailAsync(value, id, generation);   // il dettaglio di prima resta finche' arriva il nuovo
             return;
         }

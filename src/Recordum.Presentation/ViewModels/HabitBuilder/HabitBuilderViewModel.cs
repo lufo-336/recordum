@@ -315,8 +315,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         else if (habitType == HabitType.Journal) AddField(FieldNature.Text);
         foreach (var m in metrics) LoadMetric(m, payload, Text);
 
-        // Il lettore tratta un payload senza "config" cosi': il resto del programma resta quello di default.
-        if (config is null) Repeatable = payload.RepeatableLegacy ?? false;
+        // Il lettore tratta un payload senza "config" cosi': il resto del programma resta quello di default di HabitConfig,
+        // che per il recupero della serie e' None (il creatore parte da GraceDay).
+        if (config is null)
+        {
+            Repeatable = payload.RepeatableLegacy ?? false;
+            Schedule.StreakRecovery = StreakRecovery.None;
+        }
         else
         {
             Schedule.ScheduleType = ParseEnum(config.ScheduleType, ScheduleType.Daily);

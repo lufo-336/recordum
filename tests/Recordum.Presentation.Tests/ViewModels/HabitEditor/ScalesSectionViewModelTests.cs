@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitEditor;
 
+[Collection(ProcessGlobalCultureCollection.Name)]
 public class ScalesSectionViewModelTests
 {
     private readonly FakeMetricDefinitionService _metrics = new();
@@ -126,8 +127,10 @@ public class ScalesSectionViewModelTests
         withOverride.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("1", "2", "3", "4", "5");
     }
 
+    /// <summary>UX3A-2: senza override l'editor mostra cio' che mostra la schermata (<c>m.LabelsJson ?? tmpl.LabelsJson</c>),
+    /// cioe' le etichette seminate, in qualunque lingua: nessun riempimento a ritroso (Review Focus 5).</summary>
     [Fact]
-    public async Task An_official_scale_shows_its_labels_in_the_interface_language()
+    public async Task An_official_scale_without_override_shows_the_seeded_labels_like_the_screen()
     {
         var previous = Recordum.Presentation.Resources.Strings.Culture;
         try
@@ -135,11 +138,38 @@ public class ScalesSectionViewModelTests
             var mood = AddScale("mood-5", 1, 5, "[\"Very low\",\"Low\",\"Neutral\",\"Good\",\"Very good\"]", official: true);
             Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
             var (it, _) = await OpenAsync(mood.Id);
-            it.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("Molto basso", "Basso", "Neutro", "Buono", "Molto buono");
+            it.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("Very low", "Low", "Neutral", "Good", "Very good");
 
             Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
             var (en, _) = await OpenAsync(mood.Id);
             en.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("Very low", "Low", "Neutral", "Good", "Very good");
+        }
+        finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
+    }
+
+    /// <summary>UX3A-2: passare a una scala ufficiale la fa nascere con le etichette nella lingua di adesso (Decisione 3),
+    /// sulla metrica e nello stesso UpdateAsync: la schermata e Configura dicono la stessa cosa.</summary>
+    [Fact]
+    public async Task Switching_to_an_official_scale_writes_its_labels_in_the_interface_language_in_one_write()
+    {
+        var previous = Recordum.Presentation.Resources.Strings.Culture;
+        try
+        {
+            var custom = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+            var mood = AddScale("mood-5", 1, 5, "[\"Very low\",\"Low\",\"Neutral\",\"Good\",\"Very good\"]", official: true);
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            var (sut, metricId) = await OpenAsync(custom.Id, "[\"x\",\"y\",\"z\"]");
+            var before = _metrics.UpdateCallCount;
+
+            sut.SelectedScaleTemplateId = mood.Id;
+            await Task.Delay(30);
+
+            const string italian = "[\"Molto basso\",\"Basso\",\"Neutro\",\"Buono\",\"Molto buono\"]";
+            _metrics.Store[metricId].ScaleTemplateId.Should().Be(mood.Id);
+            _metrics.Store[metricId].LabelsJson.Should().Be(italian);
+            _metrics.UpdateCallCount.Should().Be(before + 1);
+            sut.LabelsJson.Should().Be(italian);
+            sut.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("Molto basso", "Basso", "Neutro", "Buono", "Molto buono");
         }
         finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
     }

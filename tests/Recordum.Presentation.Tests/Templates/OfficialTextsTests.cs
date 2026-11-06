@@ -52,6 +52,22 @@ public sealed class OfficialTextsTests : IDisposable
         }
     }
 
+    /// <summary>La scheda usa <c>Template.Official.NN.Name</c>, l'abitudine creata <c>Template.Text.&lt;Nome&gt;</c>: due chiavi
+    /// con lo stesso testo, che un traduttore potrebbe far divergere. Qui restano uguali.</summary>
+    [Fact]
+    public void The_card_name_and_the_created_habit_name_are_the_same_text()
+    {
+        foreach (var culture in new[] { "en-US", "it-IT" })
+        {
+            Pin(culture);
+            foreach (var t in HabitTemplateSeed.All)
+            {
+                var seededNode = PayloadTexts(t).First();
+                OfficialTexts.TemplateName(t).Should().Be(OfficialTexts.TemplateText(t.Id, seededNode), $"{culture}: {t.Name}");
+            }
+        }
+    }
+
     [Fact]
     public void Only_the_eight_seeded_ids_are_official()
     {

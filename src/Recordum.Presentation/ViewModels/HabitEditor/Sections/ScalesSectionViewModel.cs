@@ -13,7 +13,8 @@ namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 /// <summary>
 /// Scales section for HabitType.State. Edits the primary metric's ScaleTemplateId + LabelsJson override; the labels
 /// are a list of fields (<see cref="LabelsEditor"/>, one per value of the chosen scale), not a JSON array. The rows show
-/// the metric's override if it has one, else the scale's own labels (translated for an official scale).
+/// the metric's override if it has one, else the scale's own labels: the same fallback every display path uses, so
+/// Configura and the habit screen always say the same thing.
 /// </summary>
 public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metrics, IReferenceDataQueryService refData) : SectionViewModelBase
 {
@@ -93,13 +94,14 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     public override bool IsApplicable(NodeType node, HabitType? habit) =>
         node == NodeType.Habit && habit == HabitType.State;
 
-    /// <summary>Le righe seguono la scala scelta: una per valore, con le etichette della metrica se ne ha, se no quelle della
-    /// scala. È un caricamento: il VM dell'elenco non solleva niente, quindi niente viene scritto.</summary>
+    /// <summary>Le righe seguono la scala scelta: una per valore, con le etichette della metrica se ne ha, se no quelle seminate
+    /// della scala (<c>m.LabelsJson ?? tmpl.LabelsJson</c>, come la schermata: niente traduzione qui, UX3A-2). È un
+    /// caricamento: il VM dell'elenco non solleva niente, quindi niente viene scritto.</summary>
     private void RebuildEditor()
     {
         var tmpl = AvailableScales.FirstOrDefault(s => s.Id == SelectedScaleTemplateId);
         if (tmpl is null) { LabelsEditor.LoadFixed(0, -1, []); return; }
-        var labels = ParseLabels(LabelsJson) ?? (OfficialTexts.ScaleLabels(tmpl) is { } t ? t.ToArray() : ParseLabels(tmpl.LabelsJson)) ?? [];
+        var labels = ParseLabels(LabelsJson) ?? ParseLabels(tmpl.LabelsJson) ?? [];
         LabelsEditor.LoadFixed(tmpl.MinValue, tmpl.MaxValue, labels);
     }
 
@@ -114,13 +116,16 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     {
         if (_loading) return;
         // Le etichette personalizzate sono di una scala, non della metrica: cambiare scala le azzera (un override di cinque
-        // etichette su una scala di dieci gradini darebbe uno slider di cinque). Lo stesso UpdateAsync, nessuna seconda scrittura.
+        // etichette su una scala di dieci gradini darebbe uno slider di cinque). Una scala ufficiale nasce con le sue etichette
+        // nella lingua di adesso (Decisione 3, UX3A-2): ogni schermata ripiega sulle seminate, inglesi. Lo stesso UpdateAsync.
+        var tmpl = AvailableScales.FirstOrDefault(s => s.Id == value);
+        var born = tmpl is not null && OfficialTexts.ScaleLabels(tmpl) is { } t ? JsonSerializer.Serialize(t, s_labelsJsonOptions) : null;
         _loading = true;
-        try { LabelsJson = null; }
+        try { LabelsJson = born; }
         finally { _loading = false; }
         RebuildEditor();
         if (_primary is null) return;
-        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => { m.ScaleTemplateId = value; m.LabelsJson = null; }).AsTask());
+        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => { m.ScaleTemplateId = value; m.LabelsJson = born; }).AsTask());
     }
 
     partial void OnLabelsJsonChanged(string? value)

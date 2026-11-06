@@ -492,6 +492,21 @@ public class BuilderTemplateParityTests : IDisposable
         vm.CanLaunch.Should().BeFalse();
     }
 
+    /// <summary>Un modello del builder di prima della 2.4 (senza "config"): InstantiateAsync lascia il recupero della serie a
+    /// None (il default di HabitConfig), e il creatore deve fare lo stesso invece di tenere il suo GraceDay.</summary>
+    [Fact]
+    public async Task A_payload_without_config_loads_with_no_streak_recovery_like_InstantiateAsync()
+    {
+        var t = UserTemplate("""
+            {"node":{"name":"Vecchio","habit_type":"Counter"},"metrics":[],"repeatable":true}
+            """);
+        var vm = NewVm(StoreWith(t));
+        await vm.LoadTemplateAsync(t.Id);
+
+        vm.Schedule.StreakRecovery.Should().Be(StreakRecovery.None);
+        vm.Repeatable.Should().BeTrue();
+    }
+
     [Fact]
     public async Task Loading_a_missing_template_says_so()
     {

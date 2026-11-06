@@ -112,7 +112,9 @@ public class ContentSectionsTests
             boxes[1].Text = "Custom";
             PrivateDbHost.Pump();
             await Task.Delay(150);
-            (await MetricsAsync(o.Id)).Single().LabelsJson.Should().BeNull("il testo si conferma uscendo dal campo, non a ogni tasto");
+            // La scala ufficiale e' nata con le sue etichette (UX3A-2); la modifica non c'e' ancora.
+            (await MetricsAsync(o.Id)).Single().LabelsJson.Should().NotBeNull()
+                .And.NotContain("Custom", "il testo si conferma uscendo dal campo, non a ogni tasto");
             AutomationProperties.GetName(boxes[1]).Should().NotBeNullOrWhiteSpace().And.Contain("2");
             boxes[0].Focus();                                  // esce dal campo: la conferma
             PrivateDbHost.Pump();
