@@ -6,22 +6,19 @@
 
 ## Dove siamo — 2026-11-04
 
-- **Branch di lavoro**: `ux2b-group-configure`, impilato su `ux2-habit-screen` (onda 2a, a codice completo, CI verde, non
-  ancora in `main`). **Onda 2b della direzione visiva a codice completo** (piano
-  `docs/superpowers/plans/2026-10-30-ux-wave2b-group-configure.md`, 9 task, ognuno con la sua review): la schermata del
-  gruppo (avanzamento "x di y fatte oggi" con l'astinenza pulita come fatta, numeri del gruppo, figlie come righe della Home
-  segnabili dal gruppo, "Insieme" una riga per figlia nel periodo scelto, mappa dell'anno); Configura in cinque blocchi con
-  le righe-riassunto che si aprono sul posto, Avanzate a parte, la Configura del gruppo; la scelta del colore (sedici
-  pronti, recenti, anteprima chiaro/scuro, il resto in Avanzate); UX2A-1, 5, 6, 8, 9 chiusi; "reset 5:00" nella riga. Il
-  Task 9 ha guardato i PNG in chiaro e in scuro (un difetto trovato e corretto: UX2B-1), misurato (gruppo di 12 figlie con
-  tre anni: `LoadAsync` + Anno ≈ 0,6–0,8 s a caldo, "Tutto" ≈ 0,3 s) e fatto l'inventario di Configura (nessuna voce
-  persa). Misura a macchina ferma fatta il 2026-11-04: nessuno scarto, tranne la tab con un anno
-  (+36…+61 ms, la lettura dell'inizio di UX2A-1; accettato, `docs/MILESTONES.md`). Review dell'intero branch fatta, con un'onda di
-  correzioni (UX2B-5…8: il gruppo segue Inizia/Ricaduta delle figlie, l'obiettivo e i rinomi, "Tutto" dall'inizio del
-  gruppo, ricarica solo per le discendenti). CI verde su Linux e Windows a `35d4a013` (Windows al rilancio: `SerializedSecretStoreTests` instabile,
-  UX2A-3). Aperto UX2B-9 (astinenza sola vecchia se cambiata altrove, precedente a 2b). **Prossimo**: l'autore guarda i PNG (artefatti della CI) e fa il merge di 2a e 2b in `main`; poi **il piano dell'onda 3** (creatore nei cinque blocchi, selettore dei
-  modelli con la traduzione, Impostazioni a categorie, finestre del backup, diario a tutta finestra). Finding nuovi nel
-  tracker, sezione "Onda 2b" (`UX2B-*`). Ripartire dopo una ricaduta resta **CM-5**, al dogfooding. I test di prestazioni non girano in CI.
+- **Branch di lavoro**: `ux3a-creator-templates` (da `main` a `8e9af6f9`). **Onde 2a e 2b in `main`** dal 2026-11-04
+  (fast-forward, CI verde su Linux e Windows; PNG guardati dall'autore). **Onda 3a in corso** (piano
+  `docs/superpowers/plans/2026-11-04-ux-wave3a-creator-templates.md`, 7 task, subagent-driven): Task 1–5 completi con
+  review (testi dei modelli, scale e unità ufficiali tradotti alla creazione; mattoni nuovi del creatore: obiettivo con
+  nome, tolleranza, riposo, richiesta automatica, "Conta sugli ultimi N giorni" in Avanzate; il creatore si carica da un
+  modello; etichette delle scale come elenco di campi, cambiare scala le azzera; il creatore nei cinque blocchi con la
+  riga che dice perché "Crea abitudine" è spento). **Task 6** (selettore dei modelli: tessere, schede con ricerca,
+  dettaglio, Usa e Personalizza) a codice completo a `65c95bfd`, **review da rifare** (interrotta). **Si riprende da qui**:
+  review del Task 6 (pacchetto `fd454606..65c95bfd`), poi Task 7 (PNG, inventario, documenti, review dell'intero branch,
+  CI). Domande per l'autore a fine onda: "journal" o "diario" come parola italiana del tipo (stringa condivisa con Home);
+  il "+" nei titoli delle tessere; l'unità "sets" = "Serie" o "Set"; "2 hours" in inglese nell'anteprima del creatore
+  (`SamplePreviewFactory`). Dopo 3a: il piano **3b** (Impostazioni a categorie, finestre del backup, diario a tutta
+  finestra). Aperti di 2b nel tracker (UX2B-2/3/4, UX2B-9, minori UX2B-M*). I test di prestazioni non girano in CI.
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
