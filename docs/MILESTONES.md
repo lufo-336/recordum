@@ -797,9 +797,14 @@ maiuscole né accenti), "I tuoi modelli" con Rinomina ed Elimina nel ⋮, il det
 "Usa questo modello" (passa dal creatore senza mostrarlo, una sola abitudine anche col doppio clic) e "Personalizza…".
 *Cosa ha insegnato*: i PNG del Task 7 hanno trovato il riassunto della riga Scale ancora in inglese accanto al menu tradotto
 (UX3A-3, corretto) e le etichette di una scala ufficiale in italiano in Configura ma in inglese nella testa della stessa
-schermata (UX3A-2, da decidere); "2 hours" in Home e nelle anteprime è il `Code` dell'unità (UX3A-1, precedente). Un
+schermata (UX3A-2, corretto nell'ondata finale: il cambio di scala fissa le etichette tradotte come il creatore, e Configura
+senza override ripiega sulle seminate come la schermata); "2 hours" in Home e nelle anteprime è il `Code` dell'unità (UX3A-1, precedente). Un
 `KeyDown` in tunnel su una lista prende anche i tasti dei `MenuItem` dei suoi figli: Invio su Rinomina eseguiva "Usa"
 (corretto per il pulsante ⋮; per il `MenuItem` serve lo schermo, perché in headless i suoi tasti non passano dalla lista).
 *Non consegnato*: timer integrato, modalità e obiettivo della sessione nel creatore (UX3A-5, precedente), un modello di
 gruppo, le righe che spiegano gesto del diario, tolleranza, giorni mobili e riposo (UX3A-M3); le domande UX3A-Q1…Q4 vanno
 all'autore. Suite su Linux: Presentation 1430, UI 741 (suite intere, prestazioni comprese), Data 670 (+2 saltati, `Category!=WindowsOnly`), a `e249023c`.
+*Ondata finale* (dalla review dell'intero branch, "With fixes"): UX3A-2 corretto; schede ufficiali in ordine col nome
+tradotto; `DetailFailed` azzerato quando carica la scheda successiva; un modello senza `config` col recupero `None` come
+`InstantiateAsync`; una guardia sui due nomi di un modello ufficiale (scheda e abitudine creata). Quattro scarti accettati
+nel tracker (UX3A-A1…A4). Suite su Linux a `189664a1`: Presentation 1435, UI 741, Data 670 (+2 saltati).

@@ -59,10 +59,10 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 2b: **UX2B-1**, **UX2B-5…8** (dalla review dell'intero branch) `fixed`; **UX2B-2…4** e i minori **UX2B-M1…M25** ·
 `reported` (salvo M5, M6, M11 per metà, `fixed`).
 
-**Direzione visiva, onda 3a (sezione in fondo)** — **UX-11** e **UX-12** `fixed`; **UX3A-3** `fixed` nel Task 7. Aperti:
-**UX3A-1** "2 hours" (il `Code` dell'unità in Home e nelle anteprime), **UX3A-2** etichette di una scala ufficiale in
-italiano in Configura e in inglese nella schermata, **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
-nel creatore, i minori **UX3A-M1…M6** e le domande **UX3A-Q1…Q4** · `reported`.
+**Direzione visiva, onda 3a (sezione in fondo)** — **UX-11** e **UX-12** `fixed`; **UX3A-3** `fixed` nel Task 7;
+**UX3A-2** `fixed` nell'ondata finale (con metà di M4 e di M5). Aperti: **UX3A-1** "2 hours" (il `Code` dell'unità in Home
+e nelle anteprime), **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore, i minori
+**UX3A-M1…M6** e le domande **UX3A-Q1…Q4** · `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2444,15 +2444,21 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   ("hours", "sets") invece del simbolo o del nome tradotto: in italiano esce "2 hours" nella riga della Home, nella colonna
   d'anteprima del creatore e nel dettaglio del selettore (`builder-from-template-light.png`, `templates-narrow-*.png`).
   Rimedio: il simbolo se c'è, altrimenti `OfficialTexts.UnitName`; vale anche per W2V-12. Domanda all'autore in UX3A-Q4.
-- **UX3A-2 — etichette di una scala ufficiale: Configura le mostra in italiano, la schermata le registra in inglese** ·
-  `reported` · una metrica su una scala ufficiale senza `LabelsJson` propria (le abitudini di prima di 3a, e ogni metrica
-  di cui si cambia la scala in Configura, perché il cambio azzera l'override, Ruling 5) mostra in Configura le etichette
-  tradotte (`ScalesSectionViewModel`, `OfficialTexts.ScaleLabels`), mentre testa, quick-add e Cronologia leggono quelle
-  seminate (`MetricCellFactory`, `CompletionListViewModel`: `m.LabelsJson ?? tmpl.LabelsJson`): "Very low … Very good" sopra
-  "Molto basso … Molto buono" nella stessa schermata (`configura-scale-labels-*.png`). Toccando una sola etichetta, l'intero
-  elenco tradotto diventa l'override (minore del Task 4). Da decidere: o il cambio di scala in Configura fissa le etichette
-  tradotte (come il creatore, decisione 3), o tutte le superfici leggono la scala ufficiale tradotta quando manca l'override
-  (ma allora le abitudini di prima cambiano lingua, contro la decisione 3).
+- **UX3A-2 — etichette di una scala ufficiale: Configura le mostrava in italiano, la schermata le registrava in inglese** ·
+  `fixed` (ondata finale) · regressione di 3a: il cambio di scala (Ruling 5) scriveva `LabelsJson = null`, ogni superficie
+  di lettura ripiega sulle etichette seminate (`m.LabelsJson ?? tmpl.LabelsJson`: `MetricCellFactory`,
+  `CompletionListViewModel`, `StateTodayContent`, figure, export, grafici), mentre Configura ripiegava sulle tradotte
+  (`OfficialTexts.ScaleLabels`): "Molto basso…" in Configura sopra "Very low…" nella schermata. Ora vale la decisione 3
+  anche per il cambio di scala in Configura: una scala ufficiale nasce con le etichette nella lingua di adesso, scritte
+  sulla metrica nello stesso `UpdateAsync` (una scala dell'utente: `null`, come prima); e senza override l'editor ripiega
+  sulle seminate come la schermata. Le superfici di lettura non cambiano, nessun riempimento a ritroso (Review Focus 5):
+  un'abitudine di prima di 3a mostra le inglesi ovunque, Configura compreso. Test, rossi prima:
+  `ScalesSectionViewModelTests.Switching_to_an_official_scale_writes_its_labels_in_the_interface_language_in_one_write` e
+  `.An_official_scale_without_override_shows_the_seeded_labels_like_the_screen` (era
+  `An_official_scale_shows_its_labels_in_the_interface_language`, che asseriva il contrario);
+  `Switching_the_scale_resets_the_custom_labels_in_one_write` copre la scala dell'utente (`null`). Aggiornato
+  `ContentSectionsTests.Scale_labels_are_a_list_of_fields_one_per_value_and_an_edit_reaches_the_db` (dopo il cambio la
+  metrica ha le etichette nate, non `null`).
 - **UX3A-3 — il riassunto della riga Scale diceva il nome inglese** ("Mood Scale (1–5)" accanto al menu "Scala dell'umore")
   · `fixed` (Task 7: `OfficialTexts.ScaleName` anche nel riassunto; `SectionSummaryTests.Scales_summary_translates_an_official_scale_like_its_menu`,
   rosso prima). Il riassunto è condiviso: vale anche per WPF, che non lo mostra.
@@ -2474,16 +2480,32 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   - **UX3A-M3** — creatore: manca la riga che spiega per gesto del diario, tolleranza, giorni mobili e riposo (anche
     Configura non ha gli `Editor.Help.*`); spegnere la sessione tiene riposo e richiesta automatica (tornano riaccendendola).
   - **UX3A-M4** — selettore: la riga del tipo della scheda (dal payload) e quella del dettaglio (dal creatore) possono
-    differire su un payload scritto a mano; `DetailFailed` resta vero mentre carica la scheda successiva ("non si è potuto
-    caricare" per un attimo); l'errore di caricamento del dettaglio va solo in `Debug.WriteLine`.
+    differire su un payload scritto a mano; l'errore di caricamento del dettaglio va solo in `Debug.WriteLine`. (`fixed`
+    nell'ondata finale: `DetailFailed` torna falso quando comincia il caricamento della scheda successiva,
+    `HabitTemplatePickerTemplateTests.After_a_failed_detail_the_next_card_shows_the_normal_placeholder_while_it_loads`; e le
+    schede ufficiali sono in ordine col nome tradotto, `.Official_cards_are_sorted_by_their_translated_name`; rossi prima.)
   - **UX3A-M5** — etichette: `OnEditorLabelsChanged` → `RebuildEditor()` svuota le righe dal setter di una riga (rientrante,
-    i test passano); `SamplePreviewFactory.cs:91` legge `labels[1]` senza controllo (non raggiungibile oggi).
+    i test passano). (`SamplePreviewFactory` e `labels[1]`: chiuso, passa già da `ScaleLabelText.At`.)
   - **UX3A-M6** — solo codice e test: il test UI dei menu legge la tendina chiusa, non le voci; commento sull'escape
     rilassato del JSON delle etichette (cosmetico) e posizione di `s_labelsJsonOptions`; i valori `.Labels` dei `.resx`
     divisi da `|` senza commento per chi traduce; mancano un test di `CanLaunch` per sessione + riposo 0 e un giro
     creatore → `InstantiateAsync` con le chiavi nuove; i conteggi di `Customize_then_cancel` non possono andare in rosso;
     `ScheduleBrick.IsExpanded` morto per Avalonia e tre righe di test senza effetto; `ReportRejected` legge il
     `DataContext` al momento dell'evento.
+- Ondata finale, anche: un modello senza `config` (forma del builder di prima della 2.4) si carica nel creatore con il
+  recupero della serie a `None`, come `InstantiateAsync` (prima restava il `GraceDay` del creatore) · `fixed`,
+  `BuilderTemplateParityTests.A_payload_without_config_loads_with_no_streak_recovery_like_InstantiateAsync`, rosso prima; e
+  `OfficialTextsTests.The_card_name_and_the_created_habit_name_are_the_same_text` tiene uguali `Template.Official.NN.Name`
+  (la scheda) e `Template.Text.<Nome>` (l'abitudine creata) in `en-US` e `it-IT` (provato rosso alterandone una).
+- Accettati, `triaged` (dalla review dell'intero branch):
+  - **UX3A-A1** — il selettore WPF mostra i nomi tradotti, ma `PickAsync` → `InstantiateAsync` crea l'abitudine coi testi
+    seminati (inglesi). Deriva solo WPF; WPF si spegne a F8.
+  - **UX3A-A2** — il Ruling 5 e UX3A-2 toccano anche Configura WPF (`ScalesSectionViewModel` è condiviso): la casella del
+    `LabelsJson` grezzo riceve le etichette tradotte a ogni cambio di scala.
+  - **UX3A-A3** — "Usa" passa dal creatore nascosto, che registra il colore del modello fra i colori recenti dell'utente
+    (`InstantiateAsync` non lo faceva).
+  - **UX3A-A4** — mentre si carica il dettaglio di una scheda nuova resta visibile quello della precedente, ma "Usa" agisce
+    sulla scheda nuova.
 - Domande per l'autore:
   - **UX3A-Q1** — "journal" o "diario" come parola italiana del tipo (`Home.HabitType.Journal`, condivisa con la Home); nelle
     schede si legge anche "resistenza" per "Smettere di fumare", mentre il creatore dice "Astinenza".

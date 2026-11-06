@@ -27,7 +27,8 @@
     l'anteprima a destra, "Crea abitudine"; poi "Personalizza…" e Annulla: nessuna abitudine né modello;
   - [ ] il creatore da zero: le quattro tessere (spente con la ragione), unità e scala nuove, Avanzate, "Salva come modello"
     con "Salvato ✓", la finestra stretta con l'anteprima sotto;
-  - [ ] Configura di uno stato: le etichette della scala come elenco di campi; cambiare scala (UX3A-2: le etichette in testa);
+  - [ ] Configura di uno stato: le etichette della scala come elenco di campi; cambiare scala: le etichette
+    nuove nella lingua di adesso, le stesse in Configura e in testa alla schermata (UX3A-2);
   - [ ] cambiare lingua dopo aver creato: l'abitudine resta nella lingua di quando è nata; chiaro e scuro.
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
