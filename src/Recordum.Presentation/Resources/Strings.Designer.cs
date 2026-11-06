@@ -255,6 +255,7 @@ public static class Strings
     public static string HabitTemplatePicker_Use => Get("HabitTemplatePicker.Use");
     public static string HabitTemplatePicker_Customize => Get("HabitTemplatePicker.Customize");
     public static string HabitTemplatePicker_DetailEmpty => Get("HabitTemplatePicker.DetailEmpty");
+    public static string HabitTemplatePicker_DetailFailed => Get("HabitTemplatePicker.DetailFailed");
     public static string HabitTemplatePicker_Contents => Get("HabitTemplatePicker.Contents");
     public static string HabitTemplatePicker_CardMenu => Get("HabitTemplatePicker.CardMenu");
 

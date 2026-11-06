@@ -338,6 +338,50 @@ public class HabitTemplatePickerTests(ITestOutputHelper output)
         finally { picker.Close(); }
     }
 
+    // I tasti premuti sul ⋮ di una scheda passano in tunnel per la lista (il bottone sta dentro la scheda): Invio deve aprire il
+    // menu, non usare la scheda scelta (un'altra: creerebbe un Sonno), e le frecce non spostano la scelta. Le voci del menu,
+    // invece, stanno in un popup il cui Popup non ha genitore visuale: il loro percorso finisce li' e non tocca la lista
+    // (misurato su Avalonia 12.1.2 in headless, che usa OverlayPopupHost; il PopupRoot del desktop qui non si crea). Per loro
+    // il test prova solo che Invio su Elimina arriva al menu e chiede la conferma; la guardia della lista le copre comunque.
+    [AvaloniaFact]
+    public async Task Keys_on_the_card_menu_stay_with_the_menu()
+    {
+        var id = await CreateCustomTemplateAsync($"menu-{Guid.NewGuid():N}");
+        var picker = await OpenPickerAsync();
+        try
+        {
+            var vm = Vm(picker);
+            Click(picker, Card(picker, SleepId));
+            var chosen = vm.Selected;
+            var menu = Card(picker, id).GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CardMenuButton");
+            menu.Focus();
+
+            menu.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Down, Source = menu });
+            PrivateDbHost.Pump();
+            vm.Selected.Should().Be(chosen, "una freccia sul ⋮ non sposta la scheda scelta");
+
+            Enter(menu);
+            PrivateDbHost.Pump();
+            vm.CreatedHabitNodeId.Should().BeNull("Invio sul ⋮ non usa la scheda scelta");
+            menu.Flyout!.IsOpen.Should().BeTrue("Invio sul ⋮ apre il suo menu");
+
+            var delete = ((MenuFlyout)menu.Flyout!).Items.OfType<MenuItem>().Single(i => i.Name == "DeleteItem");
+            delete.Focus();
+            Confirm.Yes = false;
+            var calls = Confirm.Calls;
+            Enter(delete);
+            await UntilAsync(() => Confirm.Calls == calls + 1);
+            await Task.Delay(100);
+            PrivateDbHost.Pump();
+
+            vm.CreatedHabitNodeId.Should().BeNull("Invio su Elimina non usa la scheda scelta");
+            vm.CustomizeTemplateRequested.Should().BeNull();
+            picker.IsVisible.Should().BeTrue();
+            (await ExistsAsync(id)).Should().BeTrue("annullato: il modello resta");
+        }
+        finally { picker.Close(); }
+    }
+
     [AvaloniaFact]
     public async Task Each_picker_open_has_its_own_scope_that_ends_with_the_window()
     {

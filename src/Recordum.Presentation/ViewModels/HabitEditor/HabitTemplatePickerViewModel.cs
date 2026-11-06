@@ -131,9 +131,18 @@ public sealed partial class HabitTemplatePickerViewModel(
     [NotifyCanExecuteChangedFor(nameof(UseSelectedCommand), nameof(CustomizeSelectedCommand))]
     private PickerOption? _selected;
 
-    /// <summary>Il dettaglio della scheda scelta, letto da un creatore caricato col modello (la stessa fonte di "Usa"); null
-    /// mentre si carica o senza scheda.</summary>
+    /// <summary>Il dettaglio della scheda scelta, letto da un creatore caricato col modello (la stessa fonte di "Usa"). Mentre
+    /// si carica quello di una nuova scheda resta il precedente (niente lampo del segnaposto); null senza scheda o se non si
+    /// e' potuto leggere.</summary>
     [ObservableProperty] private TemplateDetailViewModel? _detail;
+
+    /// <summary>Il dettaglio della scheda scelta non si e' potuto leggere: il riquadro lo dice, invece di invitare a scegliere.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailPlaceholder))]
+    private bool _detailFailed;
+
+    /// <summary>Il testo del riquadro senza dettaglio.</summary>
+    public string DetailPlaceholder => DetailFailed ? Strings.HabitTemplatePicker_DetailFailed : Strings.HabitTemplatePicker_DetailEmpty;
 
     /// <summary>Il caricamento del dettaglio in corso (i test lo aspettano).</summary>
     internal Task DetailLoad { get; private set; } = Task.CompletedTask;
@@ -144,20 +153,36 @@ public sealed partial class HabitTemplatePickerViewModel(
     {
         // La generazione: un cambio di scheda rapido non deve mai mostrare il dettaglio della scheda di prima.
         var generation = ++_detailGeneration;
+        if (value?.TemplateId is { } id && _builders is not null)
+        {
+            DetailLoad = LoadDetailAsync(value, id, generation);   // il dettaglio di prima resta finche' arriva il nuovo
+            return;
+        }
         Detail = null;
-        DetailLoad = value?.TemplateId is { } id && _builders is not null
-            ? LoadDetailAsync(value, id, generation)
-            : Task.CompletedTask;
+        DetailFailed = false;
+        DetailLoad = Task.CompletedTask;
     }
 
     private async Task LoadDetailAsync(PickerOption option, Guid templateId, int generation)
     {
-        HabitBuilderViewModel builder;
-        try { builder = await LoadedBuilderAsync(templateId).ConfigureAwait(true); }
-        catch (HabitTemplateNotFoundException) { return; }   // eliminato nel frattempo: niente dettaglio
+        TemplateDetailViewModel? detail = null;
+        var failed = false;
+        try
+        {
+            var builder = await LoadedBuilderAsync(templateId).ConfigureAwait(true);
+            detail = new TemplateDetailViewModel(option.Name, option.Description, builder.Preview!.HomeRow,
+                TypeLine(builder.DerivedType, builder.Repeatable, builder.JournalGesture), Contents(builder));
+        }
+        catch (HabitTemplateNotFoundException) { }   // eliminato nel frattempo: niente dettaglio
+        catch (Exception ex)
+        {
+            // Nessuno aspetta questo Task: un guasto non osservato sparirebbe e il riquadro inviterebbe ancora a scegliere.
+            System.Diagnostics.Debug.WriteLine($"Template detail load failed: {ex}");
+            failed = true;
+        }
         if (generation != _detailGeneration) return;
-        Detail = new TemplateDetailViewModel(option.Name, option.Description, builder.Preview!.HomeRow,
-            TypeLine(builder.DerivedType, builder.Repeatable, builder.JournalGesture), Contents(builder));
+        Detail = detail;
+        DetailFailed = failed;
     }
 
     private async Task<HabitBuilderViewModel> LoadedBuilderAsync(Guid templateId)

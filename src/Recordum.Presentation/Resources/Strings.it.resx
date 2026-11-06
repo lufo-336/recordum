@@ -2506,6 +2506,9 @@
   <data name="HabitTemplatePicker.DetailEmpty" xml:space="preserve">
     <value>Scegli un modello per vedere cosa contiene.</value>
   </data>
+  <data name="HabitTemplatePicker.DetailFailed" xml:space="preserve">
+    <value>Non è stato possibile caricare il dettaglio di questo modello.</value>
+  </data>
   <data name="HabitTemplatePicker.Contents" xml:space="preserve">
     <value>Cosa contiene</value>
   </data>

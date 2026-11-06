@@ -413,6 +413,46 @@ public sealed class HabitTemplatePickerTemplateTests : IDisposable
         sut.Detail!.Name.Should().Be(Card(sut, FoodDiary).Name);
     }
 
+    [Fact]
+    public async Task Changing_card_keeps_the_previous_detail_until_the_new_one_is_ready()
+    {
+        Pin("en-US");
+        var gated = new GatedGet(_templates, Sleep);
+        var sut = await LoadedAsync(detailTemplates: gated);
+        sut.Selected = Card(sut, FoodDiary);
+        await sut.DetailLoad;
+
+        sut.Selected = Card(sut, Sleep);          // resta appeso sul modello
+
+        sut.Detail!.Name.Should().Be(Card(sut, FoodDiary).Name, "il riquadro non lampeggia sul segnaposto fra due schede");
+        gated.Gate.SetResult();
+        await sut.DetailLoad;
+        sut.Detail!.Name.Should().Be(Card(sut, Sleep).Name);
+    }
+
+    [Fact]
+    public async Task A_detail_that_fails_to_load_says_so_instead_of_inviting_a_choice()
+    {
+        Pin("it-IT");
+        var gated = new GatedGet(_templates, Sleep) { Fault = new InvalidOperationException("disco") };
+        var sut = await LoadedAsync(detailTemplates: gated);
+        sut.Selected = Card(sut, FoodDiary);
+        await sut.DetailLoad;
+
+        sut.Selected = Card(sut, Sleep);
+        await sut.DetailLoad;                     // osservato: il caricamento non esce guasto
+
+        sut.Detail.Should().BeNull("il dettaglio della scheda di prima non resta sotto il nome di questa");
+        sut.DetailFailed.Should().BeTrue();
+        sut.DetailPlaceholder.Should().Be(Strings.HabitTemplatePicker_DetailFailed)
+            .And.NotBe(Strings.HabitTemplatePicker_DetailEmpty);
+
+        sut.Selected = Card(sut, FoodDiary);
+        await sut.DetailLoad;
+        sut.DetailFailed.Should().BeFalse("una scheda che si carica torna normale");
+        sut.Detail.Should().NotBeNull();
+    }
+
     private sealed class GatedComposed : IComposedHabitService
     {
         public TaskCompletionSource? Gate { get; set; }
@@ -428,8 +468,10 @@ public sealed class HabitTemplatePickerTemplateTests : IDisposable
     private sealed class GatedGet(FakeHabitTemplateService inner, Guid gatedId) : IHabitTemplateService
     {
         public TaskCompletionSource Gate { get; } = new();
+        public Exception? Fault { get; init; }
         public async ValueTask<HabitTemplate?> GetAsync(Guid id, CancellationToken ct = default)
         {
+            if (id == gatedId && Fault is { } fault) throw fault;
             if (id == gatedId) await Gate.Task;
             return await inner.GetAsync(id, ct);
         }

@@ -72,10 +72,11 @@ public partial class HabitTemplatePickerWindow : RecordumWindow
     }
 
     // Invio su una scheda = Usa questo modello; le frecce si muovono nella griglia a due colonne (destra/sinistra di una scheda,
-    // su/giu' di una riga). Cio' che si digita nella casella di rinomina resta suo.
+    // su/giu' di una riga). Solo i tasti della scheda: quelli del ⋮ (Invio apre il suo menu) e della casella di rinomina
+    // passano in tunnel di qui ma restano loro.
     private void OnListKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Source is TextBox) return;
+        if (e.Source is not ListBoxItem) return;
         var list = (ListBox)sender!;
         if (e.Key == Key.Enter)
         {

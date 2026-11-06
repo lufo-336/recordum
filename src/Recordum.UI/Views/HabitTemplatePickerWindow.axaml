@@ -12,7 +12,7 @@
         WindowStartupLocation="CenterOwner">
   <!-- Il selettore di spec §7.2 (mockup modelli.html): in alto le due partenze (Da zero, Gruppo vuoto), poi i Modelli come
        schede con la ricerca, I tuoi modelli con Rinomina ed Elimina nel menu della scheda; a destra la scheda scelta (come
-       apparira' in Home, cosa contiene), sotto le schede sotto i 720 px. In fondo Personalizza… (contorno) e Usa questo modello
+       apparira' in Home, cosa contiene), sotto le schede sotto i 760 px (NarrowWidth). In fondo Personalizza… (contorno) e Usa questo modello
        (inchiostro, l'unico della finestra). Il colore del modello e' solo la barra di 4 px: non e' un comando che registra. -->
   <Window.Styles>
     <Style Selector="TextBlock.caption">
@@ -240,7 +240,7 @@
               Background="{DynamicResource Brush.Surface}" Padding="20">
         <Panel>
           <TextBlock x:Name="DetailEmpty" Classes="caption" TextWrapping="Wrap"
-                     Text="{x:Static res:Strings.HabitTemplatePicker_DetailEmpty}"
+                     Text="{CompiledBinding DetailPlaceholder}"
                      IsVisible="{CompiledBinding Detail, Converter={x:Static ObjectConverters.IsNull}}"/>
           <StackPanel x:Name="DetailPanel" Spacing="4"
                       IsVisible="{CompiledBinding Detail, Converter={x:Static ObjectConverters.IsNotNull}}">
