@@ -521,4 +521,35 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
         }
         finally { g.Window.Close(); }
     }
+
+    // ---- Onda 3a Task 7: Configura con l'editor delle etichette di una scala ------------------------------------
+
+    [AvaloniaTheory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public async Task Configura_shows_the_scale_labels_as_a_list_of_fields(string variant)
+    {
+        using var _ = TestCulture.Pin();
+        var v = variant.ToLowerInvariant();
+        var (o, pane, editor) = await OpenTypeAsync(HabitType.State, async id => await AddMetricAsync(id));
+        try
+        {
+            o.Window.RequestedThemeVariant = variant == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+            Row(pane, editor.Scales).IsOpen = true;
+            PrivateDbHost.Pump();
+            var scale = editor.Scales.AvailableScales.First(t => t.Code == "mood-5");
+            Named<ComboBox>(pane, "ScaleBox").SelectedItem = scale;
+            PrivateDbHost.Pump();
+            Named<ScaleLabelsEditor>(pane, "LabelsEditor").BringIntoView();
+            output.WriteLine(await CaptureAsync(o.Window, $"configura-scale-labels-{v}"));
+
+            var labels = Named<ScaleLabelsEditor>(pane, "LabelsEditor");
+            labels.IsEffectivelyVisible.Should().BeTrue();
+            var boxes = labels.GetVisualDescendants().OfType<TextBox>().ToList();
+            boxes.Should().HaveCount(5, "un campo per gradino");
+            boxes.Should().OnlyContain(b => b.IsEffectivelyVisible && b.Bounds.Height > 20 && b.Bounds.Width > 60, "ogni campo e' disegnato");
+            boxes.Select(b => b.Text).Should().Equal("Molto basso", "Basso", "Neutro", "Buono", "Molto buono");
+        }
+        finally { o.Window.Close(); }
+    }
 }

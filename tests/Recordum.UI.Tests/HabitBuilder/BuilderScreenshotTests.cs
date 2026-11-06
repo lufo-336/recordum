@@ -224,4 +224,35 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
         }
         finally { w.Close(); scope.Dispose(); }
     }
+
+    // ---- Onda 3a Task 7: il creatore caricato da un modello ufficiale, in italiano --------------------------------
+
+    [AvaloniaFact]
+    public async Task The_creator_loaded_from_the_sleep_template_speaks_italian()
+    {
+        using var culture = TestCulture.Pin();
+        var (scope, vm, view, w) = await OpenFramedAsync("Light", 1100, 1100);
+        try
+        {
+            await vm.LoadTemplateAsync(Guid.Parse("00000003-0000-0000-0000-000000000005"));   // Sleep tracker
+            Settle();
+            BuilderBlocksTests.Named<ScrollViewer>(view, "BlocksScroll").Offset = new Vector(0, 0);
+            Settle();
+            output.WriteLine(ScreenshotProbeTests.Capture(w, "builder-from-template-light"));
+
+            BuilderBlocksTests.Named<TextBox>(view, "NameBox").Text.Should().Be("Monitor del sonno");
+            vm.Fields.Select(f => f.Name).Should().Equal("Ore dormite", "Qualità del sonno");
+            var record = BuilderBlocksTests.Named<StackPanel>(view, "BlocksStack");
+            record.GetVisualDescendants().OfType<TextBox>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text)
+                .Should().Contain(["Ore dormite", "Qualità del sonno", "Notte", "Pisolino"], "campi e serie sono nel blocco, tradotti");
+            BuilderBlocksTests.Named<ItemsControl>(view, "FieldList").GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.IsEffectivelyVisible).Select(t => t.Text)
+                .Should().Contain([Strings.HabitBuilder_Field_Unit, Strings.Editor_Field_Scale], "ogni tendina ha la sua etichetta (UX-12)");
+            BuilderBlocksTests.Named<CheckBox>(view, "RepeatableCheck").IsChecked.Should().BeTrue();
+            var pane = BuilderBlocksTests.Named<Border>(view, "PreviewHost").Child.Should().BeOfType<BuilderPreviewPane>().Subject;
+            pane.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t => t.Text == "Monitor del sonno", "l'anteprima porta il nome tradotto");
+            BuilderBlocksTests.Named<Button>(view, "LaunchButton").IsEffectivelyEnabled.Should().BeTrue("il modello si crea cosi' com'e'");
+        }
+        finally { w.Close(); scope.Dispose(); }
+    }
 }
