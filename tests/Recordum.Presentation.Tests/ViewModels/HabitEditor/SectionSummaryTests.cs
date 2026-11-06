@@ -176,6 +176,17 @@ public class SectionSummaryTests : IDisposable
     }
 
     [Fact]
+    public async Task Scales_summary_translates_an_official_scale_like_its_menu()
+    {
+        var sut = new ScalesSectionViewModel(new FakeMetricDefinitionService(), new FakeReferenceData());
+        await sut.LoadAsync(Habit(HabitType.State));
+        var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "mood-5", Name = "Mood Scale (1–5)", IsOfficial = true };
+        sut.AvailableScales.Add(scale);
+        sut.SelectedScaleTemplateId = scale.Id;
+        sut.Summary.Should().Be("Scala dell'umore (1–5)", "il riassunto dice la scala come la dice il menu (onda 3a, Task 7)");
+    }
+
+    [Fact]
     public async Task Registration_says_how_often_and_the_journal_gesture()
     {
         var configs = new FakeHabitConfigService();

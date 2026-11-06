@@ -19,7 +19,8 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
 {
     public override string Title => Strings.Editor_Section_Scales;
 
-    public override string Summary => AvailableScales.FirstOrDefault(s => s.Id == SelectedScaleTemplateId)?.Name ?? string.Empty;
+    public override string Summary =>
+        AvailableScales.FirstOrDefault(s => s.Id == SelectedScaleTemplateId) is { } s ? OfficialTexts.ScaleName(s) : string.Empty;
 
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;
