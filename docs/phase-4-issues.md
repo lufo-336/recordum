@@ -59,6 +59,11 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 2b: **UX2B-1**, **UX2B-5…8** (dalla review dell'intero branch) `fixed`; **UX2B-2…4** e i minori **UX2B-M1…M25** ·
 `reported` (salvo M5, M6, M11 per metà, `fixed`).
 
+**Direzione visiva, onda 3a (sezione in fondo)** — **UX-11** e **UX-12** `fixed`; **UX3A-3** `fixed` nel Task 7. Aperti:
+**UX3A-1** "2 hours" (il `Code` dell'unità in Home e nelle anteprime), **UX3A-2** etichette di una scala ufficiale in
+italiano in Configura e in inglese nella schermata, **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
+nel creatore, i minori **UX3A-M1…M6** e le domande **UX3A-Q1…Q4** · `reported`.
+
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
 - **F2a-1** — un gruppo in F2a ha l'intestazione ma né chip né colonne (la Panoramica è F3) · **F2a-2** — vista Anno e menu di
@@ -2320,9 +2325,9 @@ Certi (visti in un'immagine e confermati nel codice), tutti `reported`:
 - **UX-9 — date in due formati nella stessa schermata** · `fixed` (onda 2a: un formato solo, "mer 28 ott  09:00", nell'elenco del giorno e del periodo; `RecordsViewTests.The_rows_are_those_of_the_selected_day_and_change_with_it`) · "15/03/2026" accanto a "2026-03-15 12:00" (ISO grezzo nelle
   Registrazioni).
 - **UX-10 — la Cronologia del diario mostra il Markdown grezzo** · `fixed` (onda 2a: la voce è resa da `DiaryEditor` in sola lettura; `CronologiaColumnTests.Journal_history_is_rendered`, `RecordsViewTests.A_diary_row_shows_its_tag_chips_and_the_photo_label`. Resta: le righe del diario nella Cronologia non mostrano le miniature delle foto, `DiaryEntrySummary` non le porta) · ("## Una giornata al lago", "**fredda**", "[foto]").
-- **UX-11 — i modelli predefiniti sono in inglese per un utente italiano** ("Daily journal", "Food diary"…): nomi e
+- **UX-11 — i modelli predefiniti sono in inglese per un utente italiano** · `fixed` (onda 3a: testi dei modelli, delle scale e delle unità ufficiali da `.resx` per Id stabile, fissati alla creazione; `OfficialTextsTests.Every_seeded_template_text_has_a_translation`, `Templates_translate_by_id_not_by_name`, `BuilderTemplateParityTests.An_official_template_loads_in_the_interface_language`, `HabitTemplatePickerViewModelTests.Use_creates_the_translated_habit`, `BuilderOfficialScaleLabelsTests.A_field_on_an_official_scale_is_born_with_translated_labels`) · ("Daily journal", "Food diary"…): nomi e
   descrizioni seminati dalle migrazioni, non localizzati.
-- **UX-12 — builder** · "Colore (hex)" espone l'esadecimale; "Lancia" per creare; la sezione "Dati d'esempio" è vuota; nella
+- **UX-12 — builder** · `fixed` (onda 3a: "Crea abitudine", niente esadecimale né "Dati d'esempio", la tendina della Quantità con la sua etichetta; `BuilderBlocksTests.Footer_is_cancel_save_create`, `No_hex_field_no_sample_data`, `BuilderScreenshotTests.The_creator_loaded_from_the_sleep_template_speaks_italian`) · "Colore (hex)" espone l'esadecimale; "Lancia" per creare; la sezione "Dati d'esempio" è vuota; nella
   riga Quantità la tendina non ha etichetta.
 - **UX-13 — "✎" nella scheda Diario** · `fixed` (onda 1: icone Lucide in Home e cornice; onda 2a: i pulsanti delle colonne con icone Lucide; `HabitHeadViewTests.Column_buttons_use_lucide_icons`) è un glifo Unicode, non un'icona Lucide (regola di §11).
 - **UX-14 — calendario** · `fixed` (onda 2a: numeri a 12 px centrati, fuori mese in `Brush.TextFaint`, la selezione è un bordo e non copre il numero; `CronologiaColumnTests.Month_day_numbers_are_12px_and_centered`, `Out_of_month_differs_from_empty`, `Selected_is_not_completed`) · Numeri del giorno di ~10 px nell'angolo; un giorno fuori mese e uno vuoto del mese si
@@ -2428,3 +2433,60 @@ Dalla review dell'intero branch (corretti nell'onda di correzioni, test rossi pr
   - **UX2B-M23** — mappa del gruppo in Settimana/Mese: i pulsanti dei giorni eseguono ancora `SelectCommand` (senza effetto).
   - **UX2B-M24** — dalla review del Task 9: `TogetherGrid.HeaderLabel` `[..1]` su un nome di giorno vuoto o una coppia surrogata; il `Close` di `OpenOnceAsync` del test di prestazioni non sta in un `finally`; "Insieme" in Settimana è un blocco di ~50 px in un pannello di ~950.
   - **UX2B-M25** — dopo UX2B-8: `MoveAsync` non pubblica eventi, quindi un'abitudine spostata nel gruppo dalla Home mentre il gruppo è aperto non c'è finché non lo si riapre (prima ci entrava alla sua prima registrazione, perché ogni registrazione ricaricava). Vale anche per un'abitudine riattivata dall'archivio dalla Home. Rimedi: un evento di spostamento in Data, oppure, per un id sconosciuto, risalire al genitore e ricaricare se sta sotto il gruppo.
+
+## Onda 3a — il creatore nei cinque blocchi e il selettore dei modelli (`UX3A-*`)
+
+Chiusi: **UX-11** e **UX-12** (sopra, col test che lo prova). Trovati nel Task 7 (PNG in chiaro e in scuro, inventario
+dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove detto.
+
+- **UX3A-1 — "2 hours": la Home e l'anteprima stampano il `Code` dell'unità** · `reported` · precedente a 3a.
+  `HomeRowViewModel.FormatCounterTotal` (~:318) e `SamplePreviewFactory.FormatSample` (~:86) scrivono `Unit.Code`
+  ("hours", "sets") invece del simbolo o del nome tradotto: in italiano esce "2 hours" nella riga della Home, nella colonna
+  d'anteprima del creatore e nel dettaglio del selettore (`builder-from-template-light.png`, `templates-narrow-*.png`).
+  Rimedio: il simbolo se c'è, altrimenti `OfficialTexts.UnitName`; vale anche per W2V-12. Domanda all'autore in UX3A-Q4.
+- **UX3A-2 — etichette di una scala ufficiale: Configura le mostra in italiano, la schermata le registra in inglese** ·
+  `reported` · una metrica su una scala ufficiale senza `LabelsJson` propria (le abitudini di prima di 3a, e ogni metrica
+  di cui si cambia la scala in Configura, perché il cambio azzera l'override, Ruling 5) mostra in Configura le etichette
+  tradotte (`ScalesSectionViewModel`, `OfficialTexts.ScaleLabels`), mentre testa, quick-add e Cronologia leggono quelle
+  seminate (`MetricCellFactory`, `CompletionListViewModel`: `m.LabelsJson ?? tmpl.LabelsJson`): "Very low … Very good" sopra
+  "Molto basso … Molto buono" nella stessa schermata (`configura-scale-labels-*.png`). Toccando una sola etichetta, l'intero
+  elenco tradotto diventa l'override (minore del Task 4). Da decidere: o il cambio di scala in Configura fissa le etichette
+  tradotte (come il creatore, decisione 3), o tutte le superfici leggono la scala ufficiale tradotta quando manca l'override
+  (ma allora le abitudini di prima cambiano lingua, contro la decisione 3).
+- **UX3A-3 — il riassunto della riga Scale diceva il nome inglese** ("Mood Scale (1–5)" accanto al menu "Scala dell'umore")
+  · `fixed` (Task 7: `OfficialTexts.ScaleName` anche nel riassunto; `SectionSummaryTests.Scales_summary_translates_an_official_scale_like_its_menu`,
+  rosso prima). Il riassunto è condiviso: vale anche per WPF, che non lo mostra.
+- **UX3A-4 — Invio su Rinomina/Elimina nel ⋮ di un tuo modello** · `reported`, **verifica a schermo** · deve agire sul menu e
+  mai eseguire "Usa" sulla scheda scelta. In headless i tasti di un `MenuItem` non passano dalla lista: il test copre il
+  pulsante ⋮ (`HabitTemplatePickerTests.Keys_on_the_card_menu_stay_with_the_menu`, rosso prima), la metà del `MenuItem` solo a
+  schermo.
+- **UX3A-5 — la sessione a tempo del creatore non ha timer integrato, modalità né obiettivo** · `reported` · precedente a
+  3a: la spec §6.4 li vuole nel blocco 2, `SessionBrickViewModel` non li ha (oggi si impostano in Configura). Va nella
+  lista dell'onda che porta i mattoni del timer.
+- Minori delle review per task, rimandati (`reported`):
+  - **UX3A-M1** — modelli scritti a mano o importati: `HabitTemplateService` scrive tolleranza, riposo e `rolling_days` dal
+    payload senza controllare l'intervallo; un payload `Rolling` senza `rolling_days` fallisce il CHECK dopo aver creato nodo
+    e config (abitudine a metà; precedente, ora più raggiungibile). Il creatore lo carica come `Rolling` senza giorni e
+    blocca "Crea abitudine" (Ruling 4), e "Usa" passa a "Personalizza…" (Ruling 9).
+  - **UX3A-M2** — `LoadTemplateAsync` senza guardia contro una seconda chiamata o una chiamata prima di `InitializeAsync`;
+    `LoadMetric`/`LoadSession` scartano in silenzio campi rifiutati e timer `Stopwatch`/con obiettivo; `FindOrStageUnit` non
+    controlla che una metrica in secondi prenda un'unità di tempo.
+  - **UX3A-M3** — creatore: manca la riga che spiega per gesto del diario, tolleranza, giorni mobili e riposo (anche
+    Configura non ha gli `Editor.Help.*`); spegnere la sessione tiene riposo e richiesta automatica (tornano riaccendendola).
+  - **UX3A-M4** — selettore: la riga del tipo della scheda (dal payload) e quella del dettaglio (dal creatore) possono
+    differire su un payload scritto a mano; `DetailFailed` resta vero mentre carica la scheda successiva ("non si è potuto
+    caricare" per un attimo); l'errore di caricamento del dettaglio va solo in `Debug.WriteLine`.
+  - **UX3A-M5** — etichette: `OnEditorLabelsChanged` → `RebuildEditor()` svuota le righe dal setter di una riga (rientrante,
+    i test passano); `SamplePreviewFactory.cs:91` legge `labels[1]` senza controllo (non raggiungibile oggi).
+  - **UX3A-M6** — solo codice e test: il test UI dei menu legge la tendina chiusa, non le voci; commento sull'escape
+    rilassato del JSON delle etichette (cosmetico) e posizione di `s_labelsJsonOptions`; i valori `.Labels` dei `.resx`
+    divisi da `|` senza commento per chi traduce; mancano un test di `CanLaunch` per sessione + riposo 0 e un giro
+    creatore → `InstantiateAsync` con le chiavi nuove; i conteggi di `Customize_then_cancel` non possono andare in rosso;
+    `ScheduleBrick.IsExpanded` morto per Avalonia e tre righe di test senza effetto; `ReportRejected` legge il
+    `DataContext` al momento dell'evento.
+- Domande per l'autore:
+  - **UX3A-Q1** — "journal" o "diario" come parola italiana del tipo (`Home.HabitType.Journal`, condivisa con la Home); nelle
+    schede si legge anche "resistenza" per "Smettere di fumare", mentre il creatore dice "Astinenza".
+  - **UX3A-Q2** — il "+" nei titoli delle tessere ("+ Quantità", "+ Testo libero") contro la spec "Quantità · Tempo · Scala · Testo".
+  - **UX3A-Q3** — l'unità "sets": "Serie" (si confonde con le serie delle registrazioni e la streak) o "Set".
+  - **UX3A-Q4** — "2 hours" (UX3A-1): simbolo ("2 h") o nome tradotto ("2 ore")?

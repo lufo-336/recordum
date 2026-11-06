@@ -780,3 +780,26 @@ Data: i quattro test di prestazioni verdi prima e dopo.
 UX2B-M1…M25 nel tracker. Dopo l'onda di correzioni della review dell'intero branch (UX2B-5…8: il gruppo segue
 Inizia/Ricaduta delle figlie, l'obiettivo e i rinomi, "Tutto" dall'inizio del gruppo, ricarica solo per le discendenti):
 suite su Linux Presentation 1337, UI 701 (`Category!=Performance`), Data 664 (+2 saltati, non toccata, `40c5f8e3`).
+
+**Progresso 2026-11-06 (direzione visiva, onda 3a: il creatore nei cinque blocchi e il selettore dei modelli, a codice
+completo).** Piano `2026-11-04-ux-wave3a-creator-templates` eseguito su `ux3a-creator-templates` (7 task, ognuno con la
+sua review), da `main` a `8e9af6f9`.
+*Cosa esiste ora*: i modelli, le scale e le unità ufficiali parlano la lingua dell'interfaccia (UX-11): nome, descrizione e
+ogni testo del contenuto vengono da `.resx` per Id stabile, mai per nome, e si fissano alla creazione; le etichette di una
+scala ufficiale nascono nella `LabelsJson` della metrica; i modelli dell'utente restano come li ha scritti; nessuna
+migrazione. Il creatore nei cinque blocchi di Configura (Chi è, Cosa registri, Quando conta, la colonna "Come appare in
+Home", Avanzate chiuso), con le quattro tessere che dicono a cosa servono o perché sono spente, la riga "Si comporta come
+**contatore**", "Crea abitudine" con la ragione quando è spento, senza esadecimale né "Dati d'esempio" (UX-12); mattoni
+nuovi: obiettivo con nome, tolleranza della serie, "Conta sugli ultimi N giorni", riposo, richiesta automatica, anche nei
+modelli. Il creatore si carica da un modello. Le etichette delle scale sono un elenco di campi, in Configura e nel
+creatore. Il selettore dei modelli: "Da zero" e "Gruppo vuoto", le schede con la ricerca sul testo tradotto (senza
+maiuscole né accenti), "I tuoi modelli" con Rinomina ed Elimina nel ⋮, il dettaglio con la riga della Home e cosa contiene,
+"Usa questo modello" (passa dal creatore senza mostrarlo, una sola abitudine anche col doppio clic) e "Personalizza…".
+*Cosa ha insegnato*: i PNG del Task 7 hanno trovato il riassunto della riga Scale ancora in inglese accanto al menu tradotto
+(UX3A-3, corretto) e le etichette di una scala ufficiale in italiano in Configura ma in inglese nella testa della stessa
+schermata (UX3A-2, da decidere); "2 hours" in Home e nelle anteprime è il `Code` dell'unità (UX3A-1, precedente). Un
+`KeyDown` in tunnel su una lista prende anche i tasti dei `MenuItem` dei suoi figli: Invio su Rinomina eseguiva "Usa"
+(corretto per il pulsante ⋮; per il `MenuItem` serve lo schermo, perché in headless i suoi tasti non passano dalla lista).
+*Non consegnato*: timer integrato, modalità e obiettivo della sessione nel creatore (UX3A-5, precedente), un modello di
+gruppo, le righe che spiegano gesto del diario, tolleranza, giorni mobili e riposo (UX3A-M3); le domande UX3A-Q1…Q4 vanno
+all'autore. Suite su Linux: Presentation 1430, UI 741 (suite intere, prestazioni comprese), Data 670 (+2 saltati, `Category!=WindowsOnly`), a `e249023c`.

@@ -4,21 +4,31 @@
 > non si aggiunge cronaca a `CLAUDE.md` (la cronaca sta in `docs/MILESTONES.md`). Il *perché* del prodotto è in
 > `docs/PRODUCT.md`; i dettagli di ogni passo nei piani e nelle spec in fondo.
 
-## Dove siamo — 2026-11-04
+## Dove siamo — 2026-11-06
 
 - **Branch di lavoro**: `ux3a-creator-templates` (da `main` a `8e9af6f9`). **Onde 2a e 2b in `main`** dal 2026-11-04
-  (fast-forward, CI verde su Linux e Windows; PNG guardati dall'autore). **Onda 3a in corso** (piano
-  `docs/superpowers/plans/2026-11-04-ux-wave3a-creator-templates.md`, 7 task, subagent-driven): Task 1–5 completi con
-  review (testi dei modelli, scale e unità ufficiali tradotti alla creazione; mattoni nuovi del creatore: obiettivo con
-  nome, tolleranza, riposo, richiesta automatica, "Conta sugli ultimi N giorni" in Avanzate; il creatore si carica da un
-  modello; etichette delle scale come elenco di campi, cambiare scala le azzera; il creatore nei cinque blocchi con la
-  riga che dice perché "Crea abitudine" è spento). **Task 6** (selettore dei modelli: tessere, schede con ricerca,
-  dettaglio, Usa e Personalizza) a codice completo a `65c95bfd`, **review da rifare** (interrotta). **Si riprende da qui**:
-  review del Task 6 (pacchetto `fd454606..65c95bfd`), poi Task 7 (PNG, inventario, documenti, review dell'intero branch,
-  CI). Domande per l'autore a fine onda: "journal" o "diario" come parola italiana del tipo (stringa condivisa con Home);
-  il "+" nei titoli delle tessere; l'unità "sets" = "Serie" o "Set"; "2 hours" in inglese nell'anteprima del creatore
-  (`SamplePreviewFactory`). Dopo 3a: il piano **3b** (Impostazioni a categorie, finestre del backup, diario a tutta
-  finestra). Aperti di 2b nel tracker (UX2B-2/3/4, UX2B-9, minori UX2B-M*). I test di prestazioni non girano in CI.
+  (fast-forward, CI verde su Linux e Windows; PNG guardati dall'autore). **Onda 3a a codice completo** (piano
+  `docs/superpowers/plans/2026-11-04-ux-wave3a-creator-templates.md`, 7 task, ognuno con la sua review): testi dei modelli,
+  delle scale e delle unità ufficiali tradotti alla creazione (UX-11); mattoni nuovi del creatore (obiettivo con nome,
+  tolleranza, riposo, richiesta automatica, "Conta sugli ultimi N giorni"); il creatore si carica da un modello; etichette
+  delle scale come elenco di campi; il creatore nei cinque blocchi con "Crea abitudine" e la riga che dice perché è spento
+  (UX-12); il selettore dei modelli con le tessere, le schede con la ricerca, il dettaglio, "Usa questo modello" e
+  "Personalizza…". **Prima del merge**: review dell'intero branch, CI verde, l'autore guarda i PNG (`builder-*`,
+  `templates-*`, `configura-scale-labels-*`). Finding e quattro domande per l'autore nel tracker, sezione "Onda 3a"
+  (UX3A-Q1…Q4: "journal" o "diario", il "+" nelle tessere, "Serie" o "Set", "2 hours"). **Dopo 3a**: il piano **3b**
+  (Impostazioni a categorie, finestre del backup, diario a tutta finestra). Aperti di 2b nel tracker (UX2B-2/3/4, UX2B-9,
+  minori UX2B-M*). I test di prestazioni non girano in CI.
+- **Checklist a schermo dell'autore per 3a** (GNOME, in italiano e in inglese dove detto):
+  - [ ] il selettore: "Da zero" e "Gruppo vuoto"; la ricerca in italiano ("sonno", "umore", "diario", con e senza accenti) e in
+    inglese; frecce e Invio fra le schede; un doppio clic su "Usa questo modello" crea **una** abitudine;
+  - [ ] **"I tuoi modelli"**: Rinomina ed Elimina dal ⋮ col mouse e con la tastiera — **Invio su Rinomina o Elimina agisce sul
+    menu e non esegue mai "Usa"** (UX3A-4, in headless non si prova);
+  - [ ] il creatore da **ciascuno degli otto modelli** con "Personalizza…": nome, campi, serie, scale e unità in italiano,
+    l'anteprima a destra, "Crea abitudine"; poi "Personalizza…" e Annulla: nessuna abitudine né modello;
+  - [ ] il creatore da zero: le quattro tessere (spente con la ragione), unità e scala nuove, Avanzate, "Salva come modello"
+    con "Salvato ✓", la finestra stretta con l'anteprima sotto;
+  - [ ] Configura di uno stato: le etichette della scala come elenco di campi; cambiare scala (UX3A-2: le etichette in testa);
+  - [ ] cambiare lingua dopo aver creato: l'abitudine resta nella lingua di quando è nata; chiaro e scuro.
 - **Interfaccia**: WPF è congelata e verrà spenta; la v1.0 è la shell Avalonia (`src/Recordum.UI`). **F1** (Home,
   workspace, sblocco), **F1-PERF1**, **F2a** (registrazione), **F2b** (creare e configurare) sono complete. **F2c Dati al
   sicuro** è a codice completo: chiave del DB nel portachiavi (libsecret) con sblocco senza passphrase, backup
@@ -117,12 +127,8 @@
   review: variante "testo" sulla riga selezionata, icona di "fatte", giorno dell'app contro giorno dell'abitudine
   nell'intestazione, tempo del timer a 15/600, marchio nell'errore fatale, avviso doppio al primo avvio, ricostruzioni
   della striscia, `YearHeatmapControl.HabitColor` da legare).
-- **Prossimo — si riprende da qui**: (1) **scrivere il piano dell'onda 2** (schermata dell'abitudine e del gruppo, spec §6
-  e §7.1: testa con un solo comando e i quattro numeri per tipo, colonne apribili, selettore di periodo per mappa e
-  Cronologia, giorno scelto con la nota, Cronologia resa, gli 8 casi, Configura in cinque blocchi, la scelta del colore con
-  "Avanzate", e da F3 la colonna Note e la Panoramica del gruppo con "Insieme"); **deciso il 2026-10-29: due piani** — **2a** schermata
-  dell'abitudine e colonna Note (`docs/superpowers/plans/2026-10-29-ux-wave2a-habit-screen.md`, scritto, da approvare ed
-  eseguire), poi **2b** gruppo (Panoramica, "Insieme"), Configura in cinque blocchi e scelta del colore; poi l'onda 3; (2) la checklist di F2d-1 su una
+- **Prossimo — si riprende da qui**: (1) chiudere 3a (review dell'intero branch, CI, PNG, merge dell'autore), poi
+  **scrivere il piano 3b**; (2) la checklist di F2d-1 su una
   **copia** dei dati veri (`--data-dir`), poi le altre; (3) `scripts/install-linux.sh` (chiudere prima la build installata:
   con un `recordum.db-journal` lo script si ferma, D9-1) e il dogfooding, che aspetta la direzione (decisione dell'autore).
   **Finché la prova sulla copia non è fatta, la voce Recordum del menu apre la cartella dati vera: non avviarla.**
