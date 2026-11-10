@@ -92,8 +92,8 @@ dettagliati stanno in `docs/ROADMAP.md`.
 
 ## Dopo la v1.0
 
-Senza date, prima la v1.0: l'iPhone dallo stesso codice di interfaccia; la sincronizzazione senza passare da una
-cartella; plugin e marketplace; la versione web;
+Senza date, prima la v1.0: una sincronizzazione che non chieda una cartella da tenere allineata; plugin e marketplace;
+la versione web;
 statistiche e correlazioni, anche con l'AI, solo con consenso esplicito e con l'AI spenta al primo avvio. Molto più in
 là — si parla di anni — forse una sincronizzazione con un server nostro, sempre opzionale (confermato dall'autore il
 2026-09-30).
