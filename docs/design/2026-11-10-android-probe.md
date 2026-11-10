@@ -49,10 +49,11 @@ d'ingresso e un `App.axaml.cs` suoi. Avvio vero: opzioni, lock, sblocco, conteni
    astrazioni con due implementazioni: serve la terza.
 5. **Il portachiavi.** `OperatingSystem.IsLinux()` è falso su Android: oggi esce `NullSecretStore`. Serve un
    `ISecretStore` sull'Android Keystore, con l'impronta.
-6. **La tastiera nell'editor.** Coi tasti il testo entra, ma i suggerimenti della tastiera Samsung sono diversi da quelli
-   di un `TextBox` (dopo "ciao": "iao / io / iso" contro "ciao / ciaoooo / ciaone"): l'editor non passa alla tastiera il
-   testo intorno al cursore. Correzione automatica, suggerimenti e scrittura a scorrimento vanno provati a mano
-   dall'autore; se non reggono, sul telefono il diario usa un `TextBox` con la stessa sintassi.
+6. **L'editor del diario non regge la tastiera del telefono (provato dall'autore).** Nell'editor (AvaloniaEdit) la
+   correzione automatica **aggiunge** la parola corretta invece di sostituire quella sbagliata: "scirvoscrivo",
+   "jnauna" (`2026-11-10-android-probe/tastiera.png`); la stessa frase in un `TextBox` esce giusta. L'editor non dà alla
+   tastiera il testo in composizione. Conseguenza: **sul telefono il diario si scrive in un `TextBox`**, con la stessa
+   sintassi (Markdown, `#tag`, immagini) e una barra sopra la tastiera; l'anteprima viva resta al computer.
 7. **Dimensioni da desktop.** Nel pannello del gruppo la striscia schiaccia i nomi ("Di…", "Le…"); i comandi delle
    colonne e i bersagli sono pensati per il mouse.
 8. **Build.** Gli using impliciti di Android si scontrano con Avalonia (`Application`, `Button`); un `-r` da riga di
