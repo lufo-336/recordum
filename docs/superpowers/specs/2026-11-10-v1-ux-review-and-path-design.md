@@ -149,5 +149,16 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
    note; il pulsante "Cronologia" dentro Note diventa "Versioni"; righe dell'elenco e nota del blocco del giorno rese,
    Markdown grezzo solo mentre si scrive. Nessuna migrazione; il "modello B" (diario dentro `Note`) non serve alla v1.0.
    **Protezione**: un diario che ha già entità `Note` tiene la colonna, che mostra solo quelle e non ne crea di nuove.
-4. Le parole: "di fila" per lo streak (B4), "Segna una ricaduta…" (B5), e le quattro domande UX3A-Q1…Q4 nel glossario.
+4. Le parole. **Decise dall'autore il 2026-11-10** (vanno in `docs/GLOSSARY.md` con l'inglese accanto, e una guardia sulle
+   `.resx` fa fallire la build su una parola vietata):
+   - streak → **"di fila"** ("3 giorni di fila", "record: 12"; in Configura la riga "Giorni di fila"); mai "serie" né
+     "Streak" in italiano. In inglese resta "streak".
+   - **"serie"** resta solo all'unità della palestra (`sets`, UX3A-Q3: "3 serie da 10").
+   - più registrazioni nello stesso giorno → **"registrazioni"** (non "nomi delle serie").
+   - il tipo → **"astinenza"** ovunque (mai "resistenza"); il tipo diario → **"diario"** (mai "journal", UX3A-Q1).
+   - **"Segna una ricaduta…"** (non "Ho ceduto…"; inglese "Log a relapse…"); "Ricaduta il 16 ott" in testo attenuato,
+     non in rosso; **"libero"** ("Libero da", "giorni liberi"), mai "pulito"; **"ricadute in 90 g"**, non "tentativi".
+   - unità accanto ai valori (UX3A-Q4): il simbolo se c'è ("2 h", "20 min"), altrimenti il nome tradotto ("12 pagine").
+   - **"Si registra con"** al posto di "Gesto primario" (W2V-20).
+   - tessere del creatore (UX3A-Q2): il "+" resta come icona, non come carattere nel titolo.
 5. I tagli verso la 1.1 (§3) e il criterio "niente in arrivo" (D2).
