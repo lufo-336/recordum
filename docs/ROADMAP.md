@@ -8,8 +8,9 @@
 
 - **In `main`**: la shell Avalonia con Home, registrazione dei cinque tipi, creare e configurare, dati al sicuro
   (portachiavi, backup, ripristino), diario con tag e foto, SQLite3MC, e la direzione visiva fino all'onda 2b.
-- **Branch di lavoro**: `ux3a-creator-templates` — onda 3a (creatore e selettore dei modelli) a codice completo.
-  Manca: review dell'intero branch, CI verde, PNG guardati, merge dell'autore.
+- **Branch di lavoro**: `ux3a-creator-templates` — onda 3a (creatore e selettore dei modelli) a codice completo,
+  review dell'intero branch e ondata finale fatte, CI verde su `29c051b5` (i commit dopo sono solo documenti).
+  Manca: l'autore guarda i PNG (`builder-*`, `templates-*`, `configura-scale-labels-*`) e fa il merge.
 - **Il percorso è stato ridisegnato il 2026-11-10**
   (`docs/superpowers/specs/2026-11-10-v1-ux-review-and-path-design.md`, con le decisioni dell'autore al §6):
   la giornata prima delle schermate; **un APK Android nella v1.0** (l'autore userà l'app soprattutto dal telefono, il
@@ -26,7 +27,7 @@
 
 | # | Passo | Stato | Esce quando |
 |---|---|---|---|
-| 1 | **Chiudere 3a** | ◐ | review di branch, CI verde, merge |
+| 1 | **Chiudere 3a** | ◐ | PNG guardati dall'autore, merge |
 | 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; la densità (compatta e larga) come un solo interruttore di misure | ☐ | PNG della Home piena in chiaro e scuro, alle due densità; CI verde |
 | 3 | **Dati protetti → ★ dogfooding sul computer** (prova generale) | ☐ | sezioni 1 e 2 della checklist; `install-linux.sh` |
 | 4 | **Testa Android** — `Recordum.UI` diventa libreria con due teste (`Recordum.Desktop`, `Recordum.Android`); avvio fuori dal thread UI con la schermata d'attesa; la cornice (barra in basso, pagine, fogli dal basso); portachiavi di Android e impronta | ☐ | l'APK apre la Home dei dati veri; tempo dall'icona alla Home misurato |
