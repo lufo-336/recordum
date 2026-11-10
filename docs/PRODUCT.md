@@ -61,7 +61,7 @@ template, e ogni template ufficiale si può ricostruire a mano nel builder.
 - **Non è un gioco**: niente badge, punti, classifiche, frasi motivazionali, animazioni che premiano.
 - **Non è una lista di cose da fare**, e non riduce un'abitudine a una casella.
 - **Non è un dispositivo medico**: registra, non diagnostica.
-- **Nella v1.0 non c'è** intelligenza artificiale, non c'è l'app per il telefono, non c'è la versione web.
+- **Nella v1.0 non c'è** intelligenza artificiale e non c'è la versione web.
 
 ## Come si presenta
 
@@ -72,7 +72,11 @@ contenuto. La profondità è nascosta finché non serve, mai tolta.
 
 ## La v1.0
 
-È l'app che uno sconosciuto scarica da GitHub su Windows o Linux e usa ogni giorno senza di noi:
+È l'app che uno sconosciuto scarica da GitHub su Windows, Linux o Android e usa ogni giorno senza di noi (il telefono
+nella v1.0 è una decisione dell'autore del 2026-11-10):
+
+- sul telefono si fa tutto il quotidiano; il computer è lo studio, per i grafici e per scrivere a lungo; i due
+  dispositivi uniscono i dati attraverso una cartella che l'utente tiene allineata col suo cloud;
 
 - registra in pochi secondi con i cinque tipi, oggi e nei giorni passati;
 - mostra lo storico: heatmap, streak, obiettivi, grafici del Dettaglio;
@@ -88,8 +92,8 @@ dettagliati stanno in `docs/ROADMAP.md`.
 
 ## Dopo la v1.0
 
-Senza date, prima la v1.0: l'app per il telefono dallo stesso codice di interfaccia (Avalonia), con il backup `.recbak`
-come ponte fra i dispositivi; la sincronizzazione attraverso il cloud dell'utente; plugin e marketplace; la versione web;
+Senza date, prima la v1.0: l'iPhone dallo stesso codice di interfaccia; la sincronizzazione senza passare da una
+cartella; plugin e marketplace; la versione web;
 statistiche e correlazioni, anche con l'AI, solo con consenso esplicito e con l'AI spenta al primo avvio. Molto più in
 là — si parla di anni — forse una sincronizzazione con un server nostro, sempre opzionale (confermato dall'autore il
 2026-09-30).

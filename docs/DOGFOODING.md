@@ -3,6 +3,11 @@
 > Le abitudini che l'autore userà davvero, e che cosa serve perché Recordum diventi la sua app di tutti i giorni. L'onda
 > F2 esce quando questa tabella è coperta **su Windows e su Linux** (`docs/ROADMAP.md`). Raccolto il 2026-09-30.
 
+> **Rivisto il 2026-11-10**: l'autore userà l'app soprattutto dal **telefono** (APK Android nella v1.0); il computer è
+> lo studio per grafici e diario lungo. Il dogfooding sul computer è la prova generale, quello vero parte sul telefono
+> (`docs/ROADMAP.md`, passi 3 e 5). La sezione "Due macchine senza sincronizzazione" (D11) è superata: i dispositivi
+> uniscono attraverso una cartella.
+
 ## Le abitudini
 
 L'autore segna **"a metà"**: le cose veloci subito, il resto la sera. Userà **Windows e Linux in parti uguali**.

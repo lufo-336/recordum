@@ -1,6 +1,6 @@
 # Revisione UX e percorso verso la v1.0 — proposta
 
-**Data**: 2026-11-10 · **Stato**: proposta, in attesa dell'autore · **Branch**: `ux3a-creator-templates`
+**Data**: 2026-11-10 · **Stato**: decisioni dell'autore al §6 (2026-11-10); il §3 è superato dalla ROADMAP · **Branch**: `ux3a-creator-templates`
 **Fonti**: i PNG headless del 2026-11-06 (`tests/Recordum.UI.Tests/bin/.../Screenshots`), `PRODUCT.md`, `DOGFOODING.md`,
 la spec della direzione visiva (2026-10-28), le viste di `Recordum.UI` contro quelle di `Recordum.WPF`.
 **Come leggerla**: i finding sono fatti osservati (col PNG o il file che li prova); le **raccomandazioni sono mie** e
@@ -179,7 +179,16 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
      servizi di piattaforma e il tempo d'avvio (≈ 6 s oggi). **Sincronizzazione**: l'autore usa Drive con DriveSync; il
      database resta locale, nella cartella sincronizzata ogni dispositivo scrive il proprio file cifrato e unisce
      quello dell'altro.
-   - Proposte mie ancora da confermare: dall'Onda 5 restano nella v1.0 la **pausa** e un **"Cerca" unico** (nomi, voci,
+   - **Cornice da telefono approvata sui mockup** (`docs/design/2026-11-10-telefono-mockups/cornice.html`, 2026-11-10):
+     barra in basso (Oggi, Cerca, Statistiche, Impostazioni), l'abitudine come pagina a sezioni col comando in basso, il
+     foglio dal basso per registrare, il diario in un campo di testo con la barra, le Impostazioni come elenco di
+     categorie. Richieste dell'autore: **riquadri compatti**; nella striscia **le iniziali dei giorni** (una settimana
+     intera); la **densità a scelta** in Impostazioni › Aspetto (compatta predefinita, larga) — da fare come un solo
+     interruttore di misure, non due disegni; la voce **Statistiche** sul telefono da subito con "In arrivo" (per la
+     build pubblica vale il criterio: grafici veri in sola lettura, oppure la voce si toglie).
+   - Il resto della lista per la 1.1 e le tre aggiunte (pausa, "Cerca" unico, cambia passphrase): l'autore non ha
+     obiettato; trattate come accettate, si riaprono dopo due settimane di dogfooding.
+   - Proposte mie (testo originale): dall'Onda 5 restano nella v1.0 la **pausa** e un **"Cerca" unico** (nomi, voci,
      note); si aggiunge **"cambia passphrase"**; promemoria da decidere (sul telefono smettono di essere facoltativi);
      alla 1.1 il riepilogo settimanale, il Calendario, "Cosa dice il gruppo", la palette dei comandi, la cattura rapida,
      l'import CSV, risparmio e voglia resistita, la routine ordinata.

@@ -27,7 +27,8 @@ esplicito > implicito (soprattutto cascade e mapping EF).
 
 ## 3. Dove siamo
 
-v1.0 in arrivo **su Avalonia** (Windows + Linux); WPF è congelata e si spegne all'onda F8. Stato e prossimo passo:
+v1.0 in arrivo **su Avalonia** (Windows + Linux + un APK Android, deciso il 2026-11-10); WPF è congelata e si spegne
+all'onda F8. Checklist a schermo dell'autore: `docs/CHECKLIST.md`. Stato e prossimo passo:
 `docs/ROADMAP.md` — **a fine sessione si aggiorna quella pagina**, non si aggiunge cronaca qui. Findings: tracker
 `docs/phase-4-issues.md` (stati `reported / verified / triaged / in-progress / fixed / verified-fixed`).
 
