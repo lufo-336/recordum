@@ -174,6 +174,11 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
      telefono è la casa dei dati e il prodotto principale; il computer è lo "studio". Tutti e due scrivono, quindi il
      ponte fra i due deve **unire**, non sostituire: spec a sé (le cancellazioni chiedono lapidi, oggi il soft delete
      c'è solo su `HabitNode`).
+   - **Sonda Android fatta il 2026-11-10** (`docs/design/2026-11-10-android-probe.md`): sul Galaxy S21 dell'autore il
+     database cifrato si apre, lo sblocco costa ≈ 1 s, la Home vera si disegna; il lavoro è la cornice da telefono, i
+     servizi di piattaforma e il tempo d'avvio (≈ 6 s oggi). **Sincronizzazione**: l'autore usa Drive con DriveSync; il
+     database resta locale, nella cartella sincronizzata ogni dispositivo scrive il proprio file cifrato e unisce
+     quello dell'altro.
    - Proposte mie ancora da confermare: dall'Onda 5 restano nella v1.0 la **pausa** e un **"Cerca" unico** (nomi, voci,
      note); si aggiunge **"cambia passphrase"**; promemoria da decidere (sul telefono smettono di essere facoltativi);
      alla 1.1 il riepilogo settimanale, il Calendario, "Cosa dice il gruppo", la palette dei comandi, la cattura rapida,
