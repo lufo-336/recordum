@@ -161,4 +161,15 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
    - unità accanto ai valori (UX3A-Q4): il simbolo se c'è ("2 h", "20 min"), altrimenti il nome tradotto ("12 pagine").
    - **"Si registra con"** al posto di "Gesto primario" (W2V-20).
    - tessere del creatore (UX3A-Q2): il "+" resta come icona, non come carattere nel titolo.
-5. I tagli verso la 1.1 (§3) e il criterio "niente in arrivo" (D2).
+5. I tagli verso la 1.1 (§3) e il criterio "niente in arrivo" (D2). **In corso (2026-11-10)**. Già detto dall'autore:
+   - **Il builder dei grafici e la pagina Statistiche restano nella v1.0** (chiude **D6**: nella v1.0). Il §3 qui sopra,
+     che li mandava alla 1.1, è superato su questo punto.
+   - **La v1.0 comprende un APK Android**: l'autore userà l'app per lo più dal telefono. Rivede `PRODUCT.md` ("nella
+     v1.0 non c'è l'app per il telefono"). Forma, ordine e ponte fra i dispositivi da definire dopo una sonda. Verificato
+     sulla macchina di sviluppo: workload `android` 36.1.69 installato, SDK con `android-36`, `SQLite3MC.PCLRaw.lib`
+     porta i nativi `android-arm/arm64/x64/x86`; Core, Data e Presentation sono `net10.0` puri. Nessun dispositivo
+     collegato né emulatore.
+   - Proposte mie ancora da confermare: dall'Onda 5 restano nella v1.0 la **pausa** e un **"Cerca" unico** (nomi, voci,
+     note); si aggiunge **"cambia passphrase"**; promemoria da decidere (sul telefono smettono di essere facoltativi);
+     alla 1.1 il riepilogo settimanale, il Calendario, "Cosa dice il gruppo", la palette dei comandi, la cattura rapida,
+     l'import CSV, risparmio e voglia resistita, la routine ordinata.
