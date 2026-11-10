@@ -134,8 +134,10 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
 
 ## 6. Cosa decide l'autore
 
-1. Il dogfooding in parallelo, dopo l'onda "Giornata" (§3.4) — rivede "il dogfooding aspetta".
-2. Il giorno corrente in Home (A1) e la testa su una riga (A3) — rivedono §5 della direzione visiva.
+1. Il dogfooding in parallelo, dopo l'onda "Giornata" (§3.4) — rivede "il dogfooding aspetta". **Deciso dall'autore il
+   2026-11-10: sì.** Parte dopo 3a in `main`, l'onda "Giornata" e il pezzo di checklist che protegge i dati veri.
+2. Il giorno corrente in Home (A1) e la testa su una riga (A3) — rivedono §5 della direzione visiva. Mockup cliccabile:
+   `docs/design/2026-11-10-giornata-mockups/home-giorno.html`.
 3. Due concetti per il testo: voce e nota del giorno (B2).
 4. Le parole: "di fila" per lo streak (B4), "Segna una ricaduta…" (B5), e le quattro domande UX3A-Q1…Q4 nel glossario.
 5. I tagli verso la 1.1 (§3) e il criterio "niente in arrivo" (D2).

@@ -1,0 +1,184 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Home col giorno corrente</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600&display=swap">
+<style>
+/* layout: una colonna di lettura; due finestre dell'app una sotto l'altra (com'è, proposta); la seconda si usa */
+:root{--bg:#fbfbfa;--pane:#fff;--rail:#f4f3f1;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#a3a29c;--line:#ecebe8;--chip:#ecebe8;--fb:#d6d5d0;
+  --mix:9%;--selmix:26%;--tk:80%;--tkc:#000;--warn:#8a4407;--warnbg:#fdf6ec;--warnline:#f0dcbd;
+  --ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Source Serif 4",Georgia,serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;
+  --mix:16%;--selmix:36%;--tk:60%;--tkc:#fff;--warn:#e6b676;--warnbg:#2b241a;--warnline:#4a3b22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;
+  --mix:16%;--selmix:36%;--tk:60%;--tkc:#fff;--warn:#e6b676;--warnbg:#2b241a;--warnline:#4a3b22;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--ui)}
+.page{max-width:860px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1{font:600 22px/1.25 var(--ui);margin:0;text-wrap:balance}
+h2{font:600 13px/1.3 var(--ui);margin:10px 0 0;color:var(--mut);letter-spacing:.04em;text-transform:uppercase}
+p{margin:0;max-width:66ch;color:var(--mut)}
+p b,li b{color:var(--ink);font-weight:600}
+ul{margin:0;padding-left:18px;max-width:66ch;display:flex;flex-direction:column;gap:6px;color:var(--mut)}
+kbd{font:500 12px var(--ui);border:1px solid var(--fb);border-radius:4px;padding:0 5px;color:var(--ink);background:var(--pane)}
+
+.app{border:1px solid var(--fb);border-radius:10px;overflow:hidden;background:var(--bg);display:grid;grid-template-columns:44px minmax(0,1fr)}
+.rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:6px}
+.rail b{font:600 18px var(--serif)}
+.rail i{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--fnt)}
+.rail i.on{background:var(--chip);color:var(--ink)}
+svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;display:block}
+.home{min-width:0;padding-bottom:10px}
+.hbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:12px 12px 8px}
+.ttl{font:600 20px/1.2 var(--ui);margin:0}
+.date{color:var(--mut);font-size:13px}
+.cnt{color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums}
+.cnt::before{content:"· "}
+.sp{flex:1}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ib{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:var(--mut)}
+.ib:hover{background:var(--chip);color:var(--ink)}
+.ib[disabled]{color:var(--fnt);cursor:default;background:none}
+.tb{height:28px;padding:0 9px;border:1px solid var(--fb);border-radius:6px;font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px}
+.pri{height:28px;padding:0 11px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:500}
+.seg{display:flex;gap:4px;padding:0 12px 8px;font-size:13px;color:var(--mut)}
+.seg span{padding:3px 9px;border-radius:6px}.seg .s{background:var(--chip);color:var(--ink);font-weight:500}
+.srch{display:flex;gap:8px;padding:0 12px 8px}
+.srch .f{flex:1;height:30px;border:1px solid var(--fb);border-radius:6px;background:var(--pane);display:flex;align-items:center;gap:8px;padding:0 9px;color:var(--fnt);font-size:13px;min-width:0}
+.band{margin:0 8px 8px;padding:7px 10px;border-radius:6px;background:var(--warnbg);border:1px solid var(--warnline);color:var(--warn);font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
+.band button{margin-left:auto;font-weight:600;text-decoration:underline}
+.days,.row .d{display:flex}
+.days{padding:0 46px 4px 12px;font-size:11px;color:var(--mut)}
+.days button,.days span.c,.row .d span{width:30px;text-align:center;flex:none}
+.days button{height:22px;border-radius:5px}
+.days button:hover{background:var(--chip);color:var(--ink)}
+.days button.on{background:var(--ink);color:var(--bg);font-weight:600}
+.row{--ct:color-mix(in srgb,var(--c) var(--tk),var(--tkc));display:flex;align-items:center;gap:6px;height:38px;margin:0 8px 4px;padding:0 5px 0 10px;border-radius:6px;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) var(--mix),var(--pane))}
+.row.ind{margin-left:28px}
+.row .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.row .kv{font-size:12px;color:var(--mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.row .d span{color:var(--fnt);font-size:13px;line-height:26px;border-radius:5px;font-variant-numeric:tabular-nums}
+.row .d span.v{color:var(--ct);font-weight:600}
+.row .d span.cur{background:color-mix(in srgb,var(--c) var(--selmix),var(--pane))}
+.q{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:var(--ct);border:1px solid color-mix(in srgb,var(--c) 45%,var(--pane));background:var(--pane);flex:none}
+.q:hover{background:color-mix(in srgb,var(--c) 18%,var(--pane))}
+.grp{display:flex;align-items:center;gap:8px;padding:8px 14px 5px 12px;font-size:12px;font-weight:600;color:var(--mut)}
+.grp i{width:3px;height:14px;border-radius:2px;background:var(--c)}
+.grp span{margin-left:auto;font-weight:400;font-variant-numeric:tabular-nums}
+.status{margin:6px 12px 0;font-size:12px;color:var(--mut);min-height:18px}
+@media (max-width:560px){
+  .rail{display:none}.app{grid-template-columns:minmax(0,1fr)}
+  .days button:nth-child(-n+4),.row .d span:nth-child(-n+3){display:none}
+  .row.ind{margin-left:18px}
+}
+@media (prefers-reduced-motion:no-preference){.row .d span,.days button{transition:background-color .12s}}
+</style>
+
+<div class="page">
+  <h1>La Home ha un giorno</h1>
+  <p>Oggi la Home scrive solo su oggi: per recuperare ieri si apre ogni abitudine. Qui il giorno si sceglie in testa, e la riga registra su quel giorno. Le abitudini sono quelle del manifesto, con <b>lunedì lasciato a metà</b>.</p>
+
+  <h2>Com'è adesso</h2>
+  <div class="app" aria-label="La testa della Home di oggi">
+    <div class="rail"><b>R</b><i class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg></i></div>
+    <div class="home">
+      <div class="hbar"><span class="ttl">Oggi</span><span class="date">martedì 10 novembre</span><span class="sp"></span><span class="pri" style="display:flex;align-items:center">+ Nuova</span></div>
+      <div class="seg"><span class="s">Attive</span><span>Archiviate</span><span>Cestino</span></div>
+      <div class="srch"><span class="f"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Cerca…</span><span class="tb">fatte</span><span class="tb">Manuale ▾</span></div>
+      <div class="days"><span class="sp"></span><span class="c">mer</span><span class="c">gio</span><span class="c">ven</span><span class="c">sab</span><span class="c">dom</span><span class="c">lun</span><span class="c">oggi</span></div>
+      <div class="row" style="--c:#8a6a4f"><span class="n">Caffè</span><span class="d"><span class="v">2</span><span class="v">3</span><span class="v">2</span><span class="v">1</span><span class="v">2</span><span>·</span><span class="v">1</span></span><span class="q"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></div>
+    </div>
+  </div>
+  <p>Tre righe di comandi prima della prima abitudine. I giorni sono etichette: non si cliccano.</p>
+
+  <h2>Proposta — si può usare</h2>
+  <div class="app" id="app">
+    <div class="rail"><b>R</b><i class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg></i><i><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/></svg></i></div>
+    <div class="home">
+      <div class="hbar">
+        <span class="ttl" id="ttl">Oggi</span><span class="date" id="dt"></span><span class="cnt" id="cnt"></span>
+        <button class="ib" id="prev" aria-label="Giorno prima"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="ib" id="next" aria-label="Giorno dopo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+        <span class="sp"></span>
+        <span class="ib" title="Cerca (Ctrl+F)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span>
+        <span class="tb">fatte</span><span class="tb">Manuale ▾</span>
+        <span class="ib" title="Archivio, Cestino"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span>
+        <span class="pri" style="display:flex;align-items:center">+ Nuova</span>
+      </div>
+      <div class="band" id="band" hidden><span id="bandtxt"></span><button id="back">Torna a oggi</button></div>
+      <div class="days" id="days"><span class="sp"></span></div>
+      <div id="rows"></div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+  </div>
+  <p>Prova: clicca <b>lun</b> nell'intestazione (o <kbd>←</kbd>), poi i comandi a destra delle righe. <kbd>→</kbd> o "Torna a oggi" riporta al presente.</p>
+
+  <h2>Cosa cambia</h2>
+  <ul>
+    <li><b>Il giorno si sceglie in testa.</b> I nomi dei giorni sono pulsanti; ‹ › accanto al titolo; ← → da tastiera. Il titolo dice sempre su che giorno si scrive.</li>
+    <li><b>La colonna del giorno è marcata su ogni riga</b>, anche oggi: si vede dove finisce il clic prima di farlo.</li>
+    <li><b>Su un giorno passato compare la fascia d'avviso</b>, con "Torna a oggi". Alla riapertura dell'app, e al cambio di giorno, la Home torna su oggi da sola: non si resta su ieri per sbaglio.</li>
+    <li><b>I tipi che si registrano con un modulo</b> (lettura, allenamento, i diari) aprono la scheda già sul giorno scelto; l'astinenza apre "Segna una ricaduta…" con quella data.</li>
+    <li><b>La testa sta su una riga</b>: il conto della giornata accanto alla data, la ricerca dietro la lente, Archivio e Cestino dietro ⋯.</li>
+  </ul>
+</div>
+
+<script>
+(function(){
+var D=[['mer','Mercoledì 4 novembre'],['gio','Giovedì 5 novembre'],['ven','Venerdì 6 novembre'],['sab','Sabato 7 novembre'],['dom','Domenica 8 novembre'],['lun','Lunedì 9 novembre'],['oggi','martedì 10 novembre']];
+var T=6,day=T;
+var I={check:'<path d="M5 12l5 5 9-10"/>',plus:'<path d="M12 5v14M5 12h14"/>',
+ scale:'<path d="M4 8h8M18 8h2M4 16h2M12 16h8"/><circle cx="15" cy="8" r="2.5"/><circle cx="9" cy="16" r="2.5"/>',
+ form:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 9v6M9 12h6"/>',
+ pen:'<path d="M4 20l1-5L16 4l4 4L9 19z"/>',back:'<path d="M4 5v5h5"/><path d="M5 14a7 7 0 1 0 1.5-7L4 10"/>'};
+var H=[
+ {g:1,n:'Routine del mattino',c:'#6b7280'},
+ {k:1,t:'check',n:'Stretching',c:'#2f9c8c',v:[1,1,0,1,1,1,0]},
+ {k:1,t:'check',n:'Vitamine',c:'#5f9a3c',v:[1,1,1,1,0,0,0]},
+ {k:1,t:'check',n:'Letto rifatto',c:'#2f8fb0',v:[1,0,1,1,1,1,1]},
+ {t:'abst',n:'Senza fumo',c:'#c98a1e',kv:'23g 4h',v:[1,1,1,1,1,1,1]},
+ {t:'plus',n:'Caffè',c:'#8a6a4f',v:[2,3,2,1,2,0,1]},
+ {t:'form',n:'Lettura',c:'#4f63c4',kv:'pagine',v:[20,0,35,12,40,0,0]},
+ {t:'scale',n:'Umore',c:'#c2508a',v:[4,3,0,4,5,0,0]},
+ {t:'form',n:'Allenamento',c:'#d0603a',kv:'serie',v:[0,12,0,14,0,0,0]},
+ {t:'pen',n:'Diario del cibo',c:'#9a9a2a',v:[3,3,2,3,1,0,1]},
+ {t:'pen',n:'Diario della giornata',c:'#7a5bc4',tick:1,v:[1,1,1,0,1,0,0]}
+];
+var $=function(id){return document.getElementById(id)};
+function leafs(){return H.filter(function(h){return !h.g})}
+function txt(h,i){var x=h.v[i];if(!x)return '·';return (h.t==='check'||h.t==='abst'||h.tick)?'✓':x}
+function name(i){return i===T?'oggi':D[i][1].toLowerCase()}
+function draw(){
+  var past=day<T;
+  $('ttl').textContent=past?D[day][1]:'Oggi';
+  $('dt').textContent=past?(day===T-1?'ieri':(T-day)+' giorni fa'):D[T][1];
+  var done=leafs().filter(function(h){return h.v[day]}).length;
+  $('cnt').textContent=done+' di '+leafs().length;
+  $('next').disabled=!past;$('prev').disabled=day===0;
+  $('band').hidden=!past;$('bandtxt').textContent='Stai segnando '+name(day)+'. Quello che registri va su quel giorno.';
+  var d=$('days');d.innerHTML='<span class="sp"></span>'+D.map(function(x,i){return '<button data-d="'+i+'"'+(i===day?' class="on" aria-pressed="true"':'')+' title="'+x[1]+'">'+x[0]+'</button>'}).join('');
+  var out='';
+  H.forEach(function(h,idx){
+    if(h.g){var kids=[];for(var j=idx+1;j<H.length&&H[j].k;j++)kids.push(H[j]);
+      out+='<div class="grp" style="--c:'+h.c+'"><i></i>'+h.n+'<span>'+kids.filter(function(k){return k.v[day]}).length+' di '+kids.length+'</span></div>';return}
+    out+='<div class="row'+(h.k?' ind':'')+'" style="--c:'+h.c+'"><span class="n">'+h.n+'</span>'+(h.kv?'<span class="kv">'+h.kv+'</span>':'')+'<span class="d">'+
+      h.v.map(function(x,i){return '<span class="'+(x?'v':'')+(i===day?' cur':'')+'">'+txt(h,i)+'</span>'}).join('')+
+      '</span><button class="q" data-i="'+idx+'" aria-label="Registra '+h.n+' su '+name(day)+'"><svg viewBox="0 0 24 24">'+I[h.t==='abst'?'back':h.t]+'</svg></button></div>';
+  });
+  $('rows').innerHTML=out;
+}
+function go(i){day=Math.max(0,Math.min(T,i));$('status').textContent='';draw()}
+$('days').addEventListener('click',function(e){var b=e.target.closest('button');if(b)go(+b.dataset.d)});
+$('prev').addEventListener('click',function(){go(day-1)});
+$('next').addEventListener('click',function(){go(day+1)});
+$('back').addEventListener('click',function(){go(T)});
+$('rows').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var h=H[+b.dataset.i],s;
+  if(h.t==='check'){h.v[day]=h.v[day]?0:1;s=(h.v[day]?'Segnato':'Tolto')+': '+h.n+', '+name(day)+'.'}
+  else if(h.t==='plus'){h.v[day]++;s=h.n+' +1, '+name(day)+'.'}
+  else if(h.t==='scale'){h.v[day]=h.v[day]%5+1;s=h.n+' '+h.v[day]+' su 5, '+name(day)+'.'}
+  else if(h.t==='abst'){s='Si apre "Segna una ricaduta…" con la data di '+name(day)+'.'}
+  else{s='Si apre la scheda di '+h.n+', già su '+name(day)+'.'}
+  draw();$('status').textContent=s});
+document.addEventListener('keydown',function(e){if(/INPUT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==='ArrowLeft'){go(day-1)}else if(e.key==='ArrowRight'){go(day+1)}});
+draw();
+})();
+</script>
