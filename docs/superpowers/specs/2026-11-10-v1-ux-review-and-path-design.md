@@ -142,6 +142,12 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
    marcata su ogni riga (anche oggi); su un giorno passato la fascia d'avviso con "Torna a oggi", e la Home torna su oggi
    alla riapertura e al cambio di giorno; i tipi a modulo aprono la scheda già su quel giorno, l'astinenza la ricaduta
    con quella data; testa su una riga (conto della giornata, lente, "fatte", ordinamento, ⋯ con Archivio e Cestino).
-3. Due concetti per il testo: voce e nota del giorno (B2).
+3. Due concetti per il testo (B2). **Deciso dall'autore il 2026-11-10**, corretto rispetto a B2 dopo aver guardato la
+   colonna Note: **voce** solo nei diari (colonna Diario, lunga o breve col gesto "Nota veloce"; si rilegge in
+   Cronologia; la colonna Note non c'è), **nota** su tutte le altre abitudini (l'appunto di un giorno, con foto e
+   versioni; si scrive nel blocco del giorno o nella colonna Note, che **resta**). Via l'etichetta "Nota veloce" dalle
+   note; il pulsante "Cronologia" dentro Note diventa "Versioni"; righe dell'elenco e nota del blocco del giorno rese,
+   Markdown grezzo solo mentre si scrive. Nessuna migrazione; il "modello B" (diario dentro `Note`) non serve alla v1.0.
+   **Protezione**: un diario che ha già entità `Note` tiene la colonna, che mostra solo quelle e non ne crea di nuove.
 4. Le parole: "di fila" per lo streak (B4), "Segna una ricaduta…" (B5), e le quattro domande UX3A-Q1…Q4 nel glossario.
 5. I tagli verso la 1.1 (§3) e il criterio "niente in arrivo" (D2).
