@@ -1,0 +1,141 @@
+# Revisione UX e percorso verso la v1.0 — proposta
+
+**Data**: 2026-11-10 · **Stato**: proposta, in attesa dell'autore · **Branch**: `ux3a-creator-templates`
+**Fonti**: i PNG headless del 2026-11-06 (`tests/Recordum.UI.Tests/bin/.../Screenshots`), `PRODUCT.md`, `DOGFOODING.md`,
+la spec della direzione visiva (2026-10-28), le viste di `Recordum.UI` contro quelle di `Recordum.WPF`.
+**Come leggerla**: i finding sono fatti osservati (col PNG o il file che li prova); le **raccomandazioni sono mie** e
+diventano decisioni solo quando l'autore le approva. Dove una raccomandazione rivede una decisione già presa, lo dice.
+
+## 1. La tesi
+
+Il codice non è il collo di bottiglia. Sette checklist a schermo aspettano, il dogfooding non è partito, e l'app non ha
+ancora vissuto una giornata vera. Le onde della direzione visiva hanno curato **le schermate**; quello che resta scoperto
+è **la giornata**: il giro "apro, segno, chiudo" e il recupero della sera. Lì si decide se l'app è ottima.
+
+## 2. Finding
+
+### A. La giornata (Home)
+
+- **A1 — Ieri dalla Home non esiste.** `PRODUCT.md`: "il giorno prima deve costare quanto oggi". La Home non ha un giorno:
+  la striscia non si clicca (`HeatmapStrip` non ha gesti), il log rapido scrive solo oggi, `HomeViewModel` non ha stato
+  del giorno. Recuperare ieri per le nove abitudini del manifesto = aprirle una a una e passare da "per un altro giorno"
+  (un link grigio a 12 px). **Raccomandazione**: la Home ha un **giorno corrente**. L'intestazione dei giorni diventa
+  cliccabile (e ‹ › accanto al titolo): il titolo passa da "Oggi" alla data, con "torna a oggi" ben visibile; log rapido e
+  valori della riga valgono per quel giorno (retroattiva a `NoonOf`, giorno risolto una volta da `DayBoundary`). È la
+  modifica che vale di più in tutto il percorso.
+- **A2 — La tastiera registra poco.** Scorciatoie di oggi: Ctrl+1/2/3 (Attive, Archivio, Cestino: le destinazioni più
+  rare), Ctrl+W, Ctrl+F, F2, Canc, Ctrl+E, Ctrl+R, Esc. Non ho trovato un tasto che registri dalla riga, né Ctrl+N. Una
+  delle cinque persone "lavora con la tastiera". **Raccomandazione**: mappa minima per la v1.0 — ↑↓ fra le righe, Spazio =
+  log rapido, Invio = apri, Ctrl+N nuova, ← → cambia giorno (con A1), Ctrl+, Impostazioni — e l'elenco delle scorciatoie
+  in Impostazioni › Informazioni. La palette dei comandi è da 1.1.
+- **A3 — La testa della Home serve le cose rare.** Segmenti Attive/Archiviate/Cestino, una ricerca a tutta larghezza,
+  "fatte" e l'ordinamento occupano due righe prima della prima abitudine; con nove abitudini la ricerca non serve, e la
+  giornata non ha il suo conto (i gruppi dicono "0 di 2", la Home no). **Raccomandazione** (rivede §5 della direzione
+  visiva): una riga sola — "Oggi · data · 3 di 9" a sinistra; a destra cerca (icona che si apre, Ctrl+F), "fatte",
+  ordinamento, e un ⋯ con Archivio e Cestino.
+- **A4 — Non esiste un PNG della Home vissuta.** L'unica Home con righe (`shell-light.png`) ha tre abitudini senza dati.
+  La schermata più importante non è mai stata guardata piena. Serve una fixture "manifesto": le nove abitudini di
+  `DOGFOODING.md`, tre settimane di dati, metà giornata, chiaro e scuro, larga e stretta. In più: quasi tutti i PNG della
+  schermata usano lo stesso cremisi, e ogni schermata sembra uno stato d'errore; le fixture usino colori diversi della
+  palette.
+
+### B. La schermata dell'abitudine
+
+- **B1 — La stessa voce fino a quattro volte** (`habit-all-columns-light.png`): in "Voci di questo giorno", nel giorno
+  scelto della Cronologia, nell'elenco della Cronologia, nella colonna Note. Per ogni tipo, con oggi selezionato, il blocco
+  del giorno e la prima riga dell'elenco sono lo stesso record (astinenza: la scheda "In corso" due volte di seguito).
+  **Raccomandazione**: l'elenco non ripete il giorno scelto.
+- **B2 — Tre parole per scrivere.** Diario (voci), Note (colonna), nota del giorno (in Cronologia), nota veloce. Su un
+  diario la colonna Note elenca le voci del diario **col Markdown grezzo** (`**lenta**`: viola UX-10) e offre "+ Nuova
+  nota": non si capisce dove va un pensiero. **Raccomandazione** (decisione di modello dell'autore; chiude il brainstorm
+  sospeso sulle note): due concetti soli. Su un diario esiste la **voce** (la colonna Note non c'è); sugli altri tipi
+  esiste la **nota del giorno** (la colonna Note la elenca per periodo, resa). Nessuna migrazione: è una regola di vista.
+- **B3 — Lo stato: cinque quadrati vuoti** (`habit-state-light.png`). Sembrano caselle da spuntare, non portano il valore
+  e quello registrato oggi non è marcato. **Raccomandazione**: il numero dentro, il gradino scelto pieno.
+- **B4 — "serie" vuol dire due cose**: lo streak ("serie attuale") e i set ("Registra N serie"); sulla sessione "3 serie"
+  è ambiguo (UX3A-Q3). **Raccomandazione**: streak = "di fila" ("3 giorni di fila", come già dice il gruppo); "serie"
+  resta ai set.
+- **B5 — "Ho ceduto…" e la ricaduta in rosso** (`habit-abstinence-dark.png`). La promessa è "segnare una ricaduta senza
+  giudizio". **Raccomandazione** (rivede la tabella §6.2): "Segna una ricaduta…", e "Ricaduta il 16 ott" in testo
+  attenuato, con la data nel formato del resto dell'app.
+- **B6 — "+ a mano" è un pulsante pieno di grigio** (`habit-session-light.png`): sembra spento, contro §4.4. Difetto.
+- **B7 — La durata come orologio accanto a un'ora**: "09:00 / tempo: 20:00" si legge "alle venti". Decisione dell'autore
+  (evento singolo = orologio); la segnalo perché a schermo inganna: "20 min" sotto l'ora, l'orologio da un'ora in su.
+- **B8 — Mappa dell'anno**: senza mesi, non riempie la larghezza; nel gruppo "Insieme" all'anno schiaccia le righe a
+  destra e compare una linea orfana (`group-brief-overview-light.png`). Rifinitura.
+- **B9 — I valori nel colore dell'abitudine.** Decisione dell'autore (§4.3). Con un colore caldo, nome, quattro numeri,
+  comando e mappa insieme pesano. Non propongo di cambiarla ora: si riguarda sui PNG di A4, con l'alternativa "numeri in
+  inchiostro" accanto.
+
+### C. Le parole
+
+"journal" e "diario", "resistenza" e "astinenza", "gesto primario" (W2V-20), "2 hours" (UX3A-1), "Tipo di
+pianificazione", "Frequency (days) / Keep last N backups". **Raccomandazione**: un `docs/GLOSSARY.md` di una trentina di
+termini (inglese, italiano, cosa vuol dire, cosa non si scrive) e una guardia che cerca nelle `.resx` i termini vietati.
+È anche ciò che serve di più a un modello piccolo per non reinventare le parole.
+
+### D. Fiducia
+
+- **D1 — Chi non configura il backup non ha backup.** Serve una seconda passphrase, scritta in Impostazioni. La perdita
+  dei dati è l'unico errore che l'app non può permettersi. **Da decidere in 3b**: backup automatico acceso dal primo
+  avvio, con la passphrase dei dati come predefinita dove c'è (Linux); su Windows la finestra di primo avvio la chiede.
+- **D2 — "In arrivo".** Barra con due voci spente, Impostazioni con tre categorie spente (Sincronizzazione, Plugin, AI).
+  Va bene finché l'app è nostra; in pubblico sembra un prodotto non finito, e `PRODUCT.md` dice che nella v1.0 l'AI non
+  c'è. **Raccomandazione**: criterio di rilascio nuovo — nella build pubblica nessuna superficie "in arrivo".
+
+## 3. Il percorso
+
+La voce "F3 → F4 → F5 → F6 → F7" della ROADMAP è superata: Configura e creatore (F5) sono fatti da 2b e 3a, il diario
+(F4) da F2d-2 più 3b, Note e Panoramica (F3) da 2a e 2b. Confrontando le viste, su Avalonia manca davvero: Impostazioni
+Generale e Aspetto, diario a tutta finestra, finestre del backup rifatte (**3b**); `ExportDialog` (**export**);
+`TrendChartControl` e `HourlyHistogramControl` (**Dettaglio**); `ChartsView` (**Statistiche**); la sezione Notifiche
+(**promemoria**).
+
+1. **Chiudere 3a** — review dell'intero branch, CI, PNG, merge dell'autore.
+2. **Onda "Giornata"** (nuova, da questa revisione) — A1, A2, A3, A4, B1–B6, il glossario. È ciò che serve per usarla.
+3. **Una checklist a schermo sola** al posto di sette: per percorso (primo avvio, mattino, sera, ieri, backup), solo ciò
+   che un test headless non vede (mouse vero, portachiavi, foto vere, la migrazione delle foto su una **copia** dei dati).
+4. **★ Dogfooding**, quattro settimane — **in parallelo** al resto. Rivede la decisione "il dogfooding aspetta la
+   direzione": sono settimane di calendario che non si comprimono, e ciò che resta (3b, export, grafici) non tocca il
+   giro quotidiano. Ogni aggiornamento della build installata passa dal backup che `install-linux.sh` già chiede.
+5. Durante il dogfooding, in quest'ordine: **3b** → **export** (il PDF per il medico è nella promessa) → **Dettaglio**
+   (i grafici per tipo) → **F8** (WPF si spegne).
+6. **Dopo due settimane d'uso** si rivede lo scope coi dati veri: promemoria sì o no nella v1.0, le questioni di modello
+   del contatore.
+7. **Verso il pubblico**: verità sul core e tempi d'avvio (2.9), packaging, onboarding, revisione di sicurezza, beta.
+
+**Fuori dalla v1.0, in 1.1** (raccomandazione): il builder dei grafici e la pagina Statistiche (chiude **D6**), la
+modalità Calendario, "Cosa dice il gruppo", la palette dei comandi.
+
+## 4. Chi esegue
+
+- **Haiku**: solo i task che il piano marca *meccanici* — stringhe e traduzioni, fixture e PNG, porting ripetitivi,
+  documenti. Mai Data, migrazioni, sicurezza, `DayBoundary`, né un task che cambia una firma condivisa.
+- **Sonnet**: i task normali, e la review di ogni task (di Haiku e propri, in un agente diverso da chi ha scritto).
+- **Opus**: la review dell'intero branch a fine onda e le correzioni che la review marca non banali. Le correzioni
+  banali tornano a chi ha scritto il codice, che ha già il contesto.
+- Ogni piano porta per task: **livello**, file toccati, test che devono diventare rossi e poi verdi, e "quando fermarsi
+  e salire di livello" (due tentativi falliti, o il task tocca qualcosa fuori dai suoi file).
+- Tre definizioni in `.claude/agents/` (esecutore, revisore, correttore), nel repository.
+
+## 5. I documenti
+
+| File | Oggi | Dopo |
+|---|---|---|
+| `ROADMAP.md` | 19 KB, di nuovo cronaca, con righe superate | una pagina: stato, prossimo passo, percorso, decisioni aperte |
+| `docs/CHECKLIST.md` | — (sette liste sparse) | la checklist unica dell'autore |
+| `phase-4-issues.md` | 348 KB, indice del 6 ottobre | `docs/ISSUES.md`: solo le voci aperte, una riga più il dettaglio che serve; il resto in `docs/archive/` |
+| `MILESTONES.md` | 152 KB | resta (cronaca, non si legge per lavorare); nessun documento di lavoro lo cita come lettura obbligata |
+| `CLAUDE.md` | 13 KB sempre caricati | il nucleo sempre caricato; le trappole di Avalonia, EF e test in `.claude/rules/` legate ai percorsi |
+| `MEMORY.md` | 11 KB, metà milestone chiuse | l'indice dei soli ricordi che cambiano il comportamento |
+
+Le voci dell'era WPF che riguardano solo viste WPF si archiviano: WPF si spegne. Restano aperte quelle che toccano
+Presentation, Data o un comportamento che Avalonia ha ereditato.
+
+## 6. Cosa decide l'autore
+
+1. Il dogfooding in parallelo, dopo l'onda "Giornata" (§3.4) — rivede "il dogfooding aspetta".
+2. Il giorno corrente in Home (A1) e la testa su una riga (A3) — rivedono §5 della direzione visiva.
+3. Due concetti per il testo: voce e nota del giorno (B2).
+4. Le parole: "di fila" per lo streak (B4), "Segna una ricaduta…" (B5), e le quattro domande UX3A-Q1…Q4 nel glossario.
+5. I tagli verso la 1.1 (§3) e il criterio "niente in arrivo" (D2).
