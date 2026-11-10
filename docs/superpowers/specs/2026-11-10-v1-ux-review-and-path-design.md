@@ -169,6 +169,11 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
      sulla macchina di sviluppo: workload `android` 36.1.69 installato, SDK con `android-36`, `SQLite3MC.PCLRaw.lib`
      porta i nativi `android-arm/arm64/x64/x86`; Core, Data e Presentation sono `net10.0` puri. Nessun dispositivo
      collegato né emulatore.
+   - **I ruoli dei due dispositivi** (parole dell'autore, 2026-11-10): dal telefono "praticamente tutto"; dal computer
+     guardare i grafici (più spazio) e rivedere o scrivere di più sul diario. Ne segue (lettura mia, da confermare): il
+     telefono è la casa dei dati e il prodotto principale; il computer è lo "studio". Tutti e due scrivono, quindi il
+     ponte fra i due deve **unire**, non sostituire: spec a sé (le cancellazioni chiedono lapidi, oggi il soft delete
+     c'è solo su `HabitNode`).
    - Proposte mie ancora da confermare: dall'Onda 5 restano nella v1.0 la **pausa** e un **"Cerca" unico** (nomi, voci,
      note); si aggiunge **"cambia passphrase"**; promemoria da decidere (sul telefono smettono di essere facoltativi);
      alla 1.1 il riepilogo settimanale, il Calendario, "Cosa dice il gruppo", la palette dei comandi, la cattura rapida,
