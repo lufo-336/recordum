@@ -183,8 +183,13 @@ Presentation, Data o un comportamento che Avalonia ha ereditato.
      barra in basso (Oggi, Cerca, Statistiche, Impostazioni), l'abitudine come pagina a sezioni col comando in basso, il
      foglio dal basso per registrare, il diario in un campo di testo con la barra, le Impostazioni come elenco di
      categorie. Richieste dell'autore: **riquadri compatti**; nella striscia **le iniziali dei giorni** (una settimana
-     intera); la **densità a scelta** in Impostazioni › Aspetto (compatta predefinita, larga) — da fare come un solo
-     interruttore di misure, non due disegni; la voce **Statistiche** sul telefono da subito con "In arrivo" (per la
+     intera); le **righe della Home a scelta** in Impostazioni › Aspetto — decisione dell'autore dell'11 novembre, che supera
+     "compatta e larga come un solo interruttore": **tre versioni, tutte selezionabili, anche sul computer**
+     (`oggi-striscia.html`): *Compatta* (i valori, iniziali dei giorni), *Segni* (la settimana a quadratini e il valore
+     di oggi), *Larga* (i nomi dei giorni, righe alte). Compatta e Larga differiscono solo nelle misure; Segni è un
+     secondo disegno della striscia. Proposte mie, da confermare: alla prima apertura Compatta sul telefono e Larga
+     sul computer (è la Home già approvata); la scelta vale per dispositivo e non si unisce. Le misure del computer
+     sono da bilanciare nell'app; la voce **Statistiche** sul telefono da subito con "In arrivo" (per la
      build pubblica vale il criterio: grafici veri in sola lettura, oppure la voce si toglie).
    - Il resto della lista per la 1.1 e le tre aggiunte (pausa, "Cerca" unico, cambia passphrase): l'autore non ha
      obiettato; trattate come accettate, si riaprono dopo due settimane di dogfooding.

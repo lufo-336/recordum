@@ -28,7 +28,7 @@
 | # | Passo | Stato | Esce quando |
 |---|---|---|---|
 | 1 | **Chiudere 3a** | ◐ | PNG guardati dall'autore, merge |
-| 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; la densità (compatta e larga) come un solo interruttore di misure | ☐ | PNG della Home piena in chiaro e scuro, alle due densità; CI verde |
+| 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; le righe della Home a scelta in Impostazioni › Aspetto, tre versioni (Compatta, Segni, Larga) su computer e telefono | ☐ | PNG della Home piena in chiaro e scuro, nelle tre versioni; CI verde |
 | 3 | **Dati protetti → ★ dogfooding sul computer** (prova generale) | ☐ | sezioni 1 e 2 della checklist; `install-linux.sh` |
 | 4 | **Testa Android** — `Recordum.UI` diventa libreria con due teste (`Recordum.Desktop`, `Recordum.Android`); avvio fuori dal thread UI con la schermata d'attesa; la cornice (barra in basso, pagine, fogli dal basso); portachiavi di Android e impronta | ☐ | l'APK apre la Home dei dati veri; tempo dall'icona alla Home misurato |
 | 5 | **Telefono: registrare tutto** — i cinque tipi, il diario in un campo di testo con la barra, la fotocamera, il timer in background → **★ dogfooding vero**, sul telefono (i dati ci passano con un ripristino) | ☐ | il manifesto di `DOGFOODING.md` coperto dal telefono |

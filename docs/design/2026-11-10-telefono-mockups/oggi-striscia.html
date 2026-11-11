@@ -1,36 +1,49 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <title>Oggi sul telefono, la striscia</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600&display=swap">
 <style>
-/* layout: tre telefoni da 360 affiancati (vanno a capo), la stessa Home con tre strisce diverse; intestazione e righe
-   usano la stessa griglia, così le lettere stanno sopra le celle per costruzione */
+/* layout: una colonna; in alto il telefono (Impostazioni › Aspetto accanto alla Home), sotto la finestra del computer.
+   Una sola scelta guida tutto: la classe v-val / v-seg / v-lar sul telefono e sulla finestra cambia le misure.
+   Intestazione e righe usano la stessa griglia, così le lettere stanno sopra le celle per costruzione. */
 :root{--bg:#fbfbfa;--pane:#fff;--rail:#f4f3f1;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#a3a29c;--line:#ecebe8;--chip:#ecebe8;--fb:#d6d5d0;--cellbg:#e9e8e4;
-  --mix:9%;--selmix:28%;--tk:80%;--tkc:#000;--ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+  --mix:9%;--selmix:28%;--tk:80%;--tkc:#000;--ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Source Serif 4",Georgia,serif}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;--cellbg:#33332f;
   --mix:16%;--selmix:38%;--tk:60%;--tkc:#fff;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;--cellbg:#33332f;
   --mix:16%;--selmix:38%;--tk:60%;--tkc:#fff;color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--ui)}
-.page{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
-h1{font:600 22px/1.25 var(--ui);margin:0}
-p{margin:0;max-width:66ch;color:var(--mut)} p b,li b{color:var(--ink);font-weight:600}
-.frames{display:flex;flex-wrap:wrap;gap:30px 22px}
+.page{max-width:860px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1{font:600 22px/1.25 var(--ui);margin:0;text-wrap:balance}
+h2{font:600 13px/1.3 var(--ui);margin:10px 0 0;color:var(--mut);letter-spacing:.04em;text-transform:uppercase}
+p{margin:0;max-width:66ch;color:var(--mut)} p b{color:var(--ink);font-weight:600}
+.frames{display:flex;flex-wrap:wrap;gap:26px 22px;align-items:flex-start}
 figure{margin:0;width:360px;max-width:100%;display:flex;flex-direction:column;gap:10px}
 figcaption{color:var(--mut);font-size:13px} figcaption b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:2px}
-figcaption ul{margin:4px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:3px}
-.ph{border:1px solid var(--fb);border-radius:26px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
-.v-val{--row:38px;--q:32px;--cell:28px;--gap:0px}
-.v-seg{--row:38px;--q:32px;--cell:14px;--gap:3px}
-.v-lar{--row:48px;--q:40px;--cell:30px;--gap:0px}
 .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sp{flex:1}
+
+/* le misure: il telefono, poi il computer */
+.ph{--row:38px;--q:32px;--cell:28px;--gap:0px;border:1px solid var(--fb);border-radius:26px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;min-height:590px}
+.ph.v-seg,.opt.v-seg{--cell:14px;--gap:3px}
+.ph.v-lar,.opt.v-lar{--row:48px;--q:40px;--cell:30px}
+.app{--row:32px;--q:26px;--cell:28px;--gap:0px;border:1px solid var(--fb);border-radius:10px;overflow:hidden;background:var(--bg);display:grid;grid-template-columns:44px minmax(0,1fr);min-width:660px}
+.app.v-seg{--cell:14px;--gap:3px}
+.app.v-lar{--row:38px;--q:28px;--cell:32px}
+.deskwrap{overflow-x:auto}
+
+/* telefono: testa e barra in basso */
 .top{display:flex;align-items:center;gap:8px;padding:12px 11px 6px 12px}
 .top .t{font:600 21px/1.2 var(--ui)} .top .s{color:var(--mut);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.sp{flex:1}
 .ib{width:var(--q);height:var(--q);border-radius:8px;display:grid;place-items:center;color:var(--mut);flex:none}
 .ib.ink{background:var(--ink);color:var(--bg)} .ib.sm{width:26px}
+.tab{display:flex;border-top:1px solid var(--line);background:var(--rail);padding:5px 0 7px;margin-top:auto}
+.tab span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut)}
+.tab span.on{color:var(--ink);font-weight:600}
+
+/* la riga e la striscia, uguali su telefono e computer */
 .row{--ct:color-mix(in srgb,var(--c) var(--tk),var(--tkc));display:flex;align-items:center;gap:6px;height:var(--row);margin:0 8px 4px;padding:0 3px 0 10px;border-radius:7px;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) var(--mix),var(--pane))}
-.row.ind{margin-left:22px}
+.row.ind{margin-left:22px} .app .row.ind{margin-left:28px}
 .row.hdr{background:none;border-left-color:transparent;height:22px;margin-bottom:2px;font-size:11px;color:var(--mut)}
 .v-seg .row.hdr{font-size:10px}
 .row .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
@@ -38,26 +51,52 @@ figcaption ul{margin:4px 0 0;padding-left:16px;display:flex;flex-direction:colum
 .row .kv.m{color:var(--mut);font-weight:400;font-size:11.5px}
 .d{display:flex;gap:var(--gap);flex:none}
 .d span{width:var(--cell);flex:none;text-align:center;border-radius:6px;font-variant-numeric:tabular-nums}
-.row:not(.hdr) .d span{color:var(--fnt);font-size:13px;line-height:26px}
-.row:not(.hdr) .d span.v{color:var(--ct);font-weight:600}
-.row:not(.hdr) .d span.cur{background:color-mix(in srgb,var(--c) var(--selmix),var(--pane))}
-.hdr .d span{line-height:20px;height:20px}
-.hdr .d span.on{background:var(--ink);color:var(--bg);font-weight:600}
-.hdr .d span.td{color:var(--ink);font-weight:600}
-.v-seg .row:not(.hdr) .d span{height:14px;line-height:14px;border-radius:4px;background:var(--cellbg);font-size:0}
-.v-seg .row:not(.hdr) .d span.cur{outline:2px solid var(--ink);outline-offset:1px}
-.v-seg .hdr .d span{border-radius:4px;line-height:16px;height:16px}
+.d.c span{color:var(--fnt);font-size:13px;line-height:26px}
+.d.c span.v{color:var(--ct);font-weight:600}
+.d.c span.cur{background:color-mix(in srgb,var(--c) var(--selmix),var(--pane))}
+.d.h span{line-height:20px;height:20px}
+.d.h span.on{background:var(--ink);color:var(--bg);font-weight:600}
+.v-seg .d.c span{height:14px;line-height:14px;border-radius:4px;background:var(--cellbg);font-size:0}
+.v-seg .d.c span.cur{outline:2px solid var(--ink);outline-offset:1px}
+.v-seg .d.h span{border-radius:4px;line-height:16px;height:16px}
 .q{width:var(--q);height:var(--q);border-radius:7px;display:grid;place-items:center;color:var(--ct);border:1px solid color-mix(in srgb,var(--c) 45%,var(--pane));background:var(--pane);flex:none}
 .q.ghost{visibility:hidden;height:1px;border:0}
 .grp{display:flex;align-items:center;gap:8px;padding:4px 14px 3px 12px;font-size:12px;font-weight:600;color:var(--mut)}
-.grp i{width:3px;height:14px;border-radius:2px;background:var(--c)} .grp span{margin-left:auto;font-weight:400}
-.tab{display:flex;border-top:1px solid var(--line);background:var(--rail);padding:5px 0 7px;margin-top:6px}
-.tab span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut)}
-.tab span.on{color:var(--ink);font-weight:600}
+.grp i{width:3px;height:14px;border-radius:2px;background:var(--c)} .grp span{margin-left:auto;font-weight:400;font-variant-numeric:tabular-nums}
+
+/* Impostazioni › Aspetto */
+.lab{padding:14px 16px 6px;font-size:12px;font-weight:600;color:var(--mut)}
+.tseg{display:flex;margin:0 14px;border:1px solid var(--fb);border-radius:8px;overflow:hidden}
+.tseg span{flex:1;text-align:center;padding:6px 0;font-size:13px;color:var(--mut)}
+.tseg span.on{background:var(--chip);color:var(--ink);font-weight:500}
+.opt{display:flex;flex-direction:column;gap:7px;padding:10px 6px 9px;border-top:1px solid var(--line);cursor:pointer}
+.opt:last-of-type{border-bottom:1px solid var(--line)}
+.opt:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.opt .oh{display:flex;gap:10px;align-items:center;padding:0 8px}
+.opt b{display:block;font-weight:500} .opt small{display:block;color:var(--mut);font-size:12.5px}
+.opt .row{margin-bottom:0}
+.rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--fb);flex:none;display:grid;place-items:center}
+.opt[aria-checked="true"] .rd{border-color:var(--ink)}
+.opt[aria-checked="true"] .rd::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.note{padding:9px 16px;font-size:12.5px;color:var(--mut)}
+
+/* computer */
+.rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:6px}
+.rail b{font:600 18px var(--serif)}
+.rail i{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--fnt)}
+.rail i.on{background:var(--chip);color:var(--ink)}
+.home{min-width:0;padding-bottom:10px}
+.hbar{display:flex;align-items:center;gap:8px;padding:12px 12px 8px}
+.hbar .ttl{font:600 20px/1.2 var(--ui)} .hbar .date{color:var(--mut);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dib{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:var(--mut);flex:none}
+.tb{height:28px;padding:0 9px;border:1px solid var(--fb);border-radius:6px;font-size:13px;color:var(--mut);display:flex;align-items:center;white-space:nowrap}
+.pri{height:28px;padding:0 11px;border-radius:6px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:500;display:flex;align-items:center;white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){.rd,.opt{transition:border-color .12s}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M4 19.500V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.500Z"/></symbol>
 <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.500-4.500"/></symbol>
 <symbol id="gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.900 4.900l2.100 2.100M17 17l2.100 2.100M4.900 19.100 7 17M17 7l2.100-2.100"/></symbol>
 <symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
@@ -73,12 +112,57 @@ figcaption ul{margin:4px 0 0;padding-left:16px;display:flex;flex-direction:colum
 </defs></svg>
 
 <div class="page">
-  <h1>Oggi sul telefono: la striscia</h1>
-  <p>La stessa Home, larga 360 come il tuo S21, con tre strisce. In tutte le lettere stanno esattamente sopra le celle. Il nodo è lo spazio: a questa larghezza <b>sette giorni coi valori e i nomi interi non ci stanno insieme</b>, quindi ogni variante rinuncia a qualcosa.</p>
+  <h1>La striscia dei giorni si sceglie</h1>
+  <p>Le tre versioni restano tutte, e si scelgono in <b>Impostazioni › Aspetto</b>, alla voce "Righe della Home". Tocca una delle tre nel primo telefono: la Home accanto e quella del computer cambiano subito.</p>
 
-  <div class="frames" id="frames"></div>
+  <h2>Telefono</h2>
+  <div class="frames">
+    <figure>
+      <div class="ph">
+        <div class="top"><span class="ib sm"><svg class="ic"><use href="#back"/></svg></span><span class="t">Aspetto</span></div>
+        <div class="lab">Tema</div>
+        <div class="tseg"><span class="on">Sistema</span><span>Chiaro</span><span>Scuro</span></div>
+        <div class="lab" id="lab-rows">Righe della Home</div>
+        <div role="radiogroup" aria-labelledby="lab-rows" id="opts">
+          <div class="opt v-val" role="radio" tabindex="0" id="o-val" data-k="val" aria-checked="true">
+            <span class="oh"><i class="rd"></i><span><b>Compatta</b><small>I valori degli ultimi giorni, righe basse</small></span></span><span id="s-val"></span>
+          </div>
+          <div class="opt v-seg" role="radio" tabindex="0" id="o-seg" data-k="seg" aria-checked="false">
+            <span class="oh"><i class="rd"></i><span><b>Segni</b><small>La settimana a quadratini, il valore di oggi</small></span></span><span id="s-seg"></span>
+          </div>
+          <div class="opt v-lar" role="radio" tabindex="0" id="o-lar" data-k="lar" aria-checked="false">
+            <span class="oh"><i class="rd"></i><span><b>Larga</b><small>I nomi dei giorni, righe alte</small></span></span><span id="s-lar"></span>
+          </div>
+        </div>
+        <div class="note">Vale per questo dispositivo: telefono e computer possono avere scelte diverse.</div>
+        <div class="tab"><span><svg class="ic"><use href="#home"/></svg>Oggi</span><span><svg class="ic"><use href="#search"/></svg>Cerca</span><span><svg class="ic"><use href="#chart"/></svg>Statistiche</span><span class="on"><svg class="ic"><use href="#gear"/></svg>Impostazioni</span></div>
+      </div>
+      <figcaption><b>Impostazioni › Aspetto</b>Ogni scelta mostra una riga vera, così si capisce prima di toccare. Sul computer è la stessa pagina, nella categoria Aspetto della finestra Impostazioni.</figcaption>
+    </figure>
 
-  <p>La mia preferenza: <b>A come compatta predefinita</b> e <b>C come larga</b>. Hanno gli stessi cinque giorni e gli stessi valori, cambia solo la misura: è un interruttore solo. B fa entrare la settimana, ma è un altro disegno e il giorno non si sceglie più col dito sull'intestazione.</p>
+    <figure>
+      <div class="ph" id="ph">
+        <div class="top" id="phtop"></div>
+        <div id="phlist"></div>
+        <div class="tab"><span class="on"><svg class="ic"><use href="#home"/></svg>Oggi</span><span><svg class="ic"><use href="#search"/></svg>Cerca</span><span><svg class="ic"><use href="#chart"/></svg>Statistiche</span><span><svg class="ic"><use href="#gear"/></svg>Impostazioni</span></div>
+      </div>
+      <figcaption aria-live="polite"><b id="phname"></b><span id="phcap"></span></figcaption>
+    </figure>
+  </div>
+
+  <h2>Computer</h2>
+  <div class="deskwrap">
+    <div class="app" id="app">
+      <div class="rail"><b>R</b><i class="on"><svg class="ic"><use href="#home"/></svg></i><i><svg class="ic"><use href="#book"/></svg></i></div>
+      <div class="home">
+        <div class="hbar"><span class="ttl">Oggi</span><span class="date" id="ddate"></span><span class="dib"><svg class="ic"><use href="#back"/></svg></span><span class="dib" style="margin-left:-8px"><svg class="ic"><use href="#next"/></svg></span><span class="sp"></span><span class="dib"><svg class="ic"><use href="#search"/></svg></span><span class="tb">fatte</span><span class="tb">Manuale ▾</span><span class="dib"><svg class="ic"><use href="#dots"/></svg></span><span class="pri">+ Nuova</span></div>
+        <div id="dlist"></div>
+      </div>
+    </div>
+  </div>
+  <p aria-live="polite"><b id="dname"></b> <span id="dcap"></span></p>
+
+  <p>Alla prima apertura: <b>Compatta sul telefono</b>, <b>Larga sul computer</b>, che è la Home che hai già approvato. Le misure del computer sono una prima stesura, da bilanciare guardandole nell'app.</p>
 </div>
 
 <script>
@@ -98,41 +182,66 @@ var H=[
  {t:'pen',n:'Diario del cibo',c:'#9a9a2a',v:[3,3,2,3,1,0,1]},
  {t:'pen',n:'Diario della giornata',c:'#7a5bc4',tick:1,v:[1,1,1,0,1,0,0]}
 ];
-var V=[
- {cls:'v-val',from:2,names:SHORT,marks:false,arrows:false,
-  cap:'<b>A · Compatta, coi valori</b>Cinque giorni, celle da 28, iniziali.<ul><li>I nomi entrano interi; i numeri respirano.</li><li>Ogni lettera è un bersaglio da dito: il giorno si sceglie toccandola.</li><li>Rinuncia: due giorni della settimana.</li></ul>'},
- {cls:'v-seg',from:0,names:SHORT,marks:true,arrows:true,
-  cap:'<b>B · Compatta, coi segni</b>Sette giorni come quadratini (più pieno = di più), il valore di oggi scritto accanto.<ul><li>Entra la settimana intera, e resta spazio per il nome.</li><li>Rinuncia: i valori dei giorni passati, e le lettere sono troppo vicine per sceglierle col dito: il giorno si cambia con ‹ › o scorrendo.</li></ul>'},
- {cls:'v-lar',from:2,names:LONG,marks:false,arrows:false,
-  cap:'<b>C · Larga</b>Cinque giorni coi nomi, righe da 48, comando da 40.<ul><li>La più comoda da toccare e da leggere.</li><li>Rinuncia: in uno schermo entrano meno abitudini, e i nomi lunghi si accorciano.</li></ul>'}
-];
+/* from = primo giorno mostrato sul telefono; sul computer i giorni sono sempre sette */
+var V={
+ val:{from:2,long:0,marks:0,name:'Compatta',
+  ph:'Cinque giorni coi valori, iniziali, righe da 38. I nomi delle abitudini entrano interi.',
+  dk:'Sette giorni coi valori, iniziali, righe da 32: in una finestra entrano più abitudini.'},
+ seg:{from:0,long:0,marks:1,name:'Segni',
+  ph:'La settimana intera a quadratini (più pieno = di più) e il valore di oggi accanto. Le lettere sono troppo vicine per il dito: il giorno si cambia con ‹ › o scorrendo.',
+  dk:'La stessa striscia a quadratini. Col mouse le lettere si cliccano, quindi il giorno si sceglie anche dall\'intestazione.'},
+ lar:{from:2,long:1,marks:0,name:'Larga',
+  ph:'Cinque giorni coi nomi, righe da 48, comando da 40. È la più comoda da toccare; i nomi lunghi si accorciano.',
+  dk:'Sette giorni coi nomi, righe da 38: è la Home del computer già approvata, senza cambiamenti.'}
+};
+var $=function(id){return document.getElementById(id)};
 function ic(n){return '<svg class="ic"><use href="#'+n+'"/></svg>'}
-function txt(h,i){var x=h.v[i];if(!x)return '·';return (h.t==='check'||h.t==='abst'||h.tick)?'✓':x}
-function frame(v){
-  var i,hd='';
-  for(i=v.from;i<=T;i++)hd+='<span class="'+(i===T?'on':'')+'">'+v.names[i]+'</span>';
-  var leaf=H.filter(function(h){return !h.g}),done=leaf.filter(function(h){return h.v[T]}).length;
-  var out='<div class="top"><span class="t">Oggi</span><span class="s">mar 10 nov · '+done+' di '+leaf.length+'</span>'+
-    (v.arrows?'<span class="ib sm">'+ic('back')+'</span><span class="ib sm" style="margin-left:-8px">'+ic('next')+'</span>':'')+
-    '<span class="sp"></span><span class="ib">'+ic('dots')+'</span><span class="ib ink">'+ic('plus')+'</span></div>'+
-    '<div class="row hdr"><span class="n"></span><span class="d">'+hd+'</span><span class="q ghost"></span></div>';
-  H.forEach(function(h,idx){
-    if(h.g){var kids=[];for(var j=idx+1;j<H.length&&H[j].k;j++)kids.push(H[j]);
-      out+='<div class="grp" style="--c:'+h.c+'"><i></i>'+h.n+'<span>'+kids.filter(function(k){return k.v[T]}).length+' di '+kids.length+'</span></div>';return}
-    var cells='',max=Math.max.apply(null,h.v)||1,kv='';
-    for(var i=v.from;i<=T;i++){
-      var x=h.v[i];
-      if(v.marks){var lv=!x?0:(h.t==='check'||h.t==='abst'||h.tick)?100:(x/max>.66?100:x/max>.33?65:35);
-        cells+='<span class="'+(i===T?'cur':'')+'"'+(lv?' style="background:color-mix(in srgb,var(--c) '+lv+'%,var(--pane))"':'')+'></span>';}
-      else cells+='<span class="'+(x?'v':'')+(i===T?' cur':'')+'">'+txt(h,i)+'</span>';
-    }
-    if(h.kv)kv='<span class="kv m">'+h.kv+'</span>';
-    else if(v.marks&&h.v[T]&&!(h.t==='check'||h.tick))kv='<span class="kv">'+h.v[T]+'</span>';
-    out+='<div class="row'+(h.k?' ind':'')+'" style="--c:'+h.c+'"><span class="n">'+h.n+'</span>'+kv+'<span class="d">'+cells+'</span><span class="q">'+ic(I[h.t])+'</span></div>';
-  });
-  out+='<div class="tab"><span class="on">'+ic('home')+'Oggi</span><span>'+ic('search')+'Cerca</span><span>'+ic('chart')+'Statistiche</span><span>'+ic('gear')+'Impostazioni</span></div>';
-  return '<figure><div class="ph '+v.cls+'">'+out+'</div><figcaption>'+v.cap+'</figcaption></figure>';
+function bin(h){return h.t==='check'||h.t==='abst'||h.tick}
+function hdr(v,from){
+  var names=v.long?LONG:SHORT,s='';
+  for(var i=from;i<=T;i++)s+='<span'+(i===T?' class="on"':'')+'>'+names[i]+'</span>';
+  return '<div class="row hdr"><span class="n"></span><span class="d h">'+s+'</span><span class="q ghost"></span></div>';
 }
-document.getElementById('frames').innerHTML=V.map(frame).join('');
+function row(h,v,from){
+  var cells='',max=Math.max.apply(null,h.v)||1,kv='';
+  for(var i=from;i<=T;i++){
+    var x=h.v[i],cur=i===T?' cur':'';
+    if(v.marks){var lv=!x?0:bin(h)?100:(x/max>.66?100:x/max>.33?65:35);
+      cells+='<span class="'+cur+'"'+(lv?' style="background:color-mix(in srgb,var(--c) '+lv+'%,var(--pane))"':'')+'></span>';}
+    else cells+='<span class="'+(x?'v':'')+cur+'">'+(!x?'·':bin(h)?'✓':x)+'</span>';
+  }
+  if(h.kv)kv='<span class="kv m">'+h.kv+'</span>';
+  else if(v.marks&&h.v[T]&&!bin(h))kv='<span class="kv">'+h.v[T]+'</span>';
+  return '<div class="row'+(h.k?' ind':'')+'" style="--c:'+h.c+'"><span class="n">'+h.n+'</span>'+kv+'<span class="d c">'+cells+'</span><span class="q">'+ic(I[h.t])+'</span></div>';
+}
+function list(v,from){
+  var out=hdr(v,from);
+  H.forEach(function(h,idx){
+    if(!h.g){out+=row(h,v,from);return}
+    var kids=[];for(var j=idx+1;j<H.length&&H[j].k;j++)kids.push(H[j]);
+    out+='<div class="grp" style="--c:'+h.c+'"><i></i>'+h.n+'<span>'+kids.filter(function(k){return k.v[T]}).length+' di '+kids.length+'</span></div>';
+  });
+  return out;
+}
+var leaf=H.filter(function(h){return !h.g}),done=leaf.filter(function(h){return h.v[T]}).length;
+function draw(key){
+  var v=V[key];
+  $('ph').className='ph v-'+key;
+  $('phtop').innerHTML='<span class="t">Oggi</span><span class="s">mar 10 nov · '+done+' di '+leaf.length+'</span>'+
+    (v.marks?'<span class="ib sm">'+ic('back')+'</span><span class="ib sm" style="margin-left:-8px">'+ic('next')+'</span>':'')+
+    '<span class="sp"></span><span class="ib">'+ic('dots')+'</span><span class="ib ink">'+ic('plus')+'</span>';
+  $('phlist').innerHTML=list(v,v.from);
+  $('app').className='app v-'+key;
+  $('dlist').innerHTML=list(v,0);
+  $('phname').textContent='Oggi · '+v.name;$('phcap').textContent=v.ph;
+  $('dname').textContent=v.name+' sul computer.';$('dcap').textContent=v.dk;
+  Object.keys(V).forEach(function(k){$('o-'+k).setAttribute('aria-checked',k===key?'true':'false')});
+}
+$('ddate').textContent='martedì 10 novembre · '+done+' di '+leaf.length;
+Object.keys(V).forEach(function(k){$('s-'+k).innerHTML=row(H[6],V[k],V[k].from)});
+function pick(e){var o=e.target.closest('.opt');if(o)draw(o.dataset.k)}
+$('opts').addEventListener('click',pick);
+$('opts').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}});
+draw('val');
 })();
 </script>
