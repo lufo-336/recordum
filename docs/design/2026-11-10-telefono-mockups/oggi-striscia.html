@@ -1,0 +1,138 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Oggi sul telefono, la striscia</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<style>
+/* layout: tre telefoni da 360 affiancati (vanno a capo), la stessa Home con tre strisce diverse; intestazione e righe
+   usano la stessa griglia, così le lettere stanno sopra le celle per costruzione */
+:root{--bg:#fbfbfa;--pane:#fff;--rail:#f4f3f1;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#a3a29c;--line:#ecebe8;--chip:#ecebe8;--fb:#d6d5d0;--cellbg:#e9e8e4;
+  --mix:9%;--selmix:28%;--tk:80%;--tkc:#000;--ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;--cellbg:#33332f;
+  --mix:16%;--selmix:38%;--tk:60%;--tkc:#fff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;--cellbg:#33332f;
+  --mix:16%;--selmix:38%;--tk:60%;--tkc:#fff;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--ui)}
+.page{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1{font:600 22px/1.25 var(--ui);margin:0}
+p{margin:0;max-width:66ch;color:var(--mut)} p b,li b{color:var(--ink);font-weight:600}
+.frames{display:flex;flex-wrap:wrap;gap:30px 22px}
+figure{margin:0;width:360px;max-width:100%;display:flex;flex-direction:column;gap:10px}
+figcaption{color:var(--mut);font-size:13px} figcaption b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:2px}
+figcaption ul{margin:4px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:3px}
+.ph{border:1px solid var(--fb);border-radius:26px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+.v-val{--row:38px;--q:32px;--cell:28px;--gap:0px}
+.v-seg{--row:38px;--q:32px;--cell:14px;--gap:3px}
+.v-lar{--row:48px;--q:40px;--cell:30px;--gap:0px}
+.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.top{display:flex;align-items:center;gap:8px;padding:12px 11px 6px 12px}
+.top .t{font:600 21px/1.2 var(--ui)} .top .s{color:var(--mut);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sp{flex:1}
+.ib{width:var(--q);height:var(--q);border-radius:8px;display:grid;place-items:center;color:var(--mut);flex:none}
+.ib.ink{background:var(--ink);color:var(--bg)} .ib.sm{width:26px}
+.row{--ct:color-mix(in srgb,var(--c) var(--tk),var(--tkc));display:flex;align-items:center;gap:6px;height:var(--row);margin:0 8px 4px;padding:0 3px 0 10px;border-radius:7px;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) var(--mix),var(--pane))}
+.row.ind{margin-left:22px}
+.row.hdr{background:none;border-left-color:transparent;height:22px;margin-bottom:2px;font-size:11px;color:var(--mut)}
+.v-seg .row.hdr{font-size:10px}
+.row .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.row .kv{font-size:12px;color:var(--ct);font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.row .kv.m{color:var(--mut);font-weight:400;font-size:11.5px}
+.d{display:flex;gap:var(--gap);flex:none}
+.d span{width:var(--cell);flex:none;text-align:center;border-radius:6px;font-variant-numeric:tabular-nums}
+.row:not(.hdr) .d span{color:var(--fnt);font-size:13px;line-height:26px}
+.row:not(.hdr) .d span.v{color:var(--ct);font-weight:600}
+.row:not(.hdr) .d span.cur{background:color-mix(in srgb,var(--c) var(--selmix),var(--pane))}
+.hdr .d span{line-height:20px;height:20px}
+.hdr .d span.on{background:var(--ink);color:var(--bg);font-weight:600}
+.hdr .d span.td{color:var(--ink);font-weight:600}
+.v-seg .row:not(.hdr) .d span{height:14px;line-height:14px;border-radius:4px;background:var(--cellbg);font-size:0}
+.v-seg .row:not(.hdr) .d span.cur{outline:2px solid var(--ink);outline-offset:1px}
+.v-seg .hdr .d span{border-radius:4px;line-height:16px;height:16px}
+.q{width:var(--q);height:var(--q);border-radius:7px;display:grid;place-items:center;color:var(--ct);border:1px solid color-mix(in srgb,var(--c) 45%,var(--pane));background:var(--pane);flex:none}
+.q.ghost{visibility:hidden;height:1px;border:0}
+.grp{display:flex;align-items:center;gap:8px;padding:4px 14px 3px 12px;font-size:12px;font-weight:600;color:var(--mut)}
+.grp i{width:3px;height:14px;border-radius:2px;background:var(--c)} .grp span{margin-left:auto;font-weight:400}
+.tab{display:flex;border-top:1px solid var(--line);background:var(--rail);padding:5px 0 7px;margin-top:6px}
+.tab span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut)}
+.tab span.on{color:var(--ink);font-weight:600}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.500-4.500"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.900 4.900l2.100 2.100M17 17l2.100 2.100M4.900 19.100 7 17M17 7l2.100-2.100"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z"/></symbol>
+<symbol id="scale" viewBox="0 0 24 24"><path d="M4 8h8M18 8h2M4 16h2M12 16h8"/><circle cx="15" cy="8" r="2.500"/><circle cx="9" cy="16" r="2.500"/></symbol>
+<symbol id="form" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 9v6M9 12h6"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M4 5v5h5"/><path d="M5 14a7 7 0 1 0 1.500-7L4 10"/></symbol>
+</defs></svg>
+
+<div class="page">
+  <h1>Oggi sul telefono: la striscia</h1>
+  <p>La stessa Home, larga 360 come il tuo S21, con tre strisce. In tutte le lettere stanno esattamente sopra le celle. Il nodo è lo spazio: a questa larghezza <b>sette giorni coi valori e i nomi interi non ci stanno insieme</b>, quindi ogni variante rinuncia a qualcosa.</p>
+
+  <div class="frames" id="frames"></div>
+
+  <p>La mia preferenza: <b>A come compatta predefinita</b> e <b>C come larga</b>. Hanno gli stessi cinque giorni e gli stessi valori, cambia solo la misura: è un interruttore solo. B fa entrare la settimana, ma è un altro disegno e il giorno non si sceglie più col dito sull'intestazione.</p>
+</div>
+
+<script>
+(function(){
+var LONG=['mer','gio','ven','sab','dom','lun','oggi'],SHORT=['m','g','v','s','d','l','m'],T=6;
+var I={check:'check',plus:'plus',scale:'scale',form:'form',pen:'pen',abst:'undo'};
+var H=[
+ {g:1,n:'Routine del mattino',c:'#6b7280'},
+ {k:1,t:'check',n:'Stretching',c:'#2f9c8c',v:[1,1,0,1,1,1,1]},
+ {k:1,t:'check',n:'Vitamine',c:'#5f9a3c',v:[1,1,1,1,0,0,1]},
+ {k:1,t:'check',n:'Letto rifatto',c:'#2f8fb0',v:[1,0,1,1,1,1,1]},
+ {t:'abst',n:'Senza fumo',c:'#c98a1e',kv:'23g 4h',v:[1,1,1,1,1,1,1]},
+ {t:'plus',n:'Caffè',c:'#8a6a4f',v:[2,3,2,1,2,0,1]},
+ {t:'form',n:'Lettura',c:'#4f63c4',v:[20,0,35,12,40,0,35]},
+ {t:'scale',n:'Umore',c:'#c2508a',v:[4,3,0,4,5,0,4]},
+ {t:'form',n:'Allenamento',c:'#d0603a',v:[0,12,0,14,0,0,0]},
+ {t:'pen',n:'Diario del cibo',c:'#9a9a2a',v:[3,3,2,3,1,0,1]},
+ {t:'pen',n:'Diario della giornata',c:'#7a5bc4',tick:1,v:[1,1,1,0,1,0,0]}
+];
+var V=[
+ {cls:'v-val',from:2,names:SHORT,marks:false,arrows:false,
+  cap:'<b>A · Compatta, coi valori</b>Cinque giorni, celle da 28, iniziali.<ul><li>I nomi entrano interi; i numeri respirano.</li><li>Ogni lettera è un bersaglio da dito: il giorno si sceglie toccandola.</li><li>Rinuncia: due giorni della settimana.</li></ul>'},
+ {cls:'v-seg',from:0,names:SHORT,marks:true,arrows:true,
+  cap:'<b>B · Compatta, coi segni</b>Sette giorni come quadratini (più pieno = di più), il valore di oggi scritto accanto.<ul><li>Entra la settimana intera, e resta spazio per il nome.</li><li>Rinuncia: i valori dei giorni passati, e le lettere sono troppo vicine per sceglierle col dito: il giorno si cambia con ‹ › o scorrendo.</li></ul>'},
+ {cls:'v-lar',from:2,names:LONG,marks:false,arrows:false,
+  cap:'<b>C · Larga</b>Cinque giorni coi nomi, righe da 48, comando da 40.<ul><li>La più comoda da toccare e da leggere.</li><li>Rinuncia: in uno schermo entrano meno abitudini, e i nomi lunghi si accorciano.</li></ul>'}
+];
+function ic(n){return '<svg class="ic"><use href="#'+n+'"/></svg>'}
+function txt(h,i){var x=h.v[i];if(!x)return '·';return (h.t==='check'||h.t==='abst'||h.tick)?'✓':x}
+function frame(v){
+  var i,hd='';
+  for(i=v.from;i<=T;i++)hd+='<span class="'+(i===T?'on':'')+'">'+v.names[i]+'</span>';
+  var leaf=H.filter(function(h){return !h.g}),done=leaf.filter(function(h){return h.v[T]}).length;
+  var out='<div class="top"><span class="t">Oggi</span><span class="s">mar 10 nov · '+done+' di '+leaf.length+'</span>'+
+    (v.arrows?'<span class="ib sm">'+ic('back')+'</span><span class="ib sm" style="margin-left:-8px">'+ic('next')+'</span>':'')+
+    '<span class="sp"></span><span class="ib">'+ic('dots')+'</span><span class="ib ink">'+ic('plus')+'</span></div>'+
+    '<div class="row hdr"><span class="n"></span><span class="d">'+hd+'</span><span class="q ghost"></span></div>';
+  H.forEach(function(h,idx){
+    if(h.g){var kids=[];for(var j=idx+1;j<H.length&&H[j].k;j++)kids.push(H[j]);
+      out+='<div class="grp" style="--c:'+h.c+'"><i></i>'+h.n+'<span>'+kids.filter(function(k){return k.v[T]}).length+' di '+kids.length+'</span></div>';return}
+    var cells='',max=Math.max.apply(null,h.v)||1,kv='';
+    for(var i=v.from;i<=T;i++){
+      var x=h.v[i];
+      if(v.marks){var lv=!x?0:(h.t==='check'||h.t==='abst'||h.tick)?100:(x/max>.66?100:x/max>.33?65:35);
+        cells+='<span class="'+(i===T?'cur':'')+'"'+(lv?' style="background:color-mix(in srgb,var(--c) '+lv+'%,var(--pane))"':'')+'></span>';}
+      else cells+='<span class="'+(x?'v':'')+(i===T?' cur':'')+'">'+txt(h,i)+'</span>';
+    }
+    if(h.kv)kv='<span class="kv m">'+h.kv+'</span>';
+    else if(v.marks&&h.v[T]&&!(h.t==='check'||h.tick))kv='<span class="kv">'+h.v[T]+'</span>';
+    out+='<div class="row'+(h.k?' ind':'')+'" style="--c:'+h.c+'"><span class="n">'+h.n+'</span>'+kv+'<span class="d">'+cells+'</span><span class="q">'+ic(I[h.t])+'</span></div>';
+  });
+  out+='<div class="tab"><span class="on">'+ic('home')+'Oggi</span><span>'+ic('search')+'Cerca</span><span>'+ic('chart')+'Statistiche</span><span>'+ic('gear')+'Impostazioni</span></div>';
+  return '<figure><div class="ph '+v.cls+'">'+out+'</div><figcaption>'+v.cap+'</figcaption></figure>';
+}
+document.getElementById('frames').innerHTML=V.map(frame).join('');
+})();
+</script>
