@@ -20,8 +20,10 @@
 - **WPF** è congelata: riferimento di comportamento, si spegne a F8.
 - **Dati veri**: finché le sezioni 1 e 2 di `docs/CHECKLIST.md` non sono fatte, la voce Recordum del menu apre la
   cartella dati vera — **non avviarla**.
-- **Prossimo — si riprende da qui**: (1) chiudere 3a; (2) scrivere il piano dell'onda "Giornata"; (3) scrivere la spec
-  dell'"unisci".
+- **Piano dell'onda "Giornata" scritto** (2026-11-11, `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task in
+  tre parti: le parole, la Home, la schermata dell'abitudine): l'autore lo legge, con le 13 "Decisioni mie" in fondo.
+- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) eseguire il piano "Giornata" sul
+  branch `giornata`, da `main`; (3) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per dispositivo).
 
 ## Il percorso
 
