@@ -2512,3 +2512,11 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   - **UX3A-Q2** — il "+" nei titoli delle tessere ("+ Quantità", "+ Testo libero") contro la spec "Quantità · Tempo · Scala · Testo".
   - **UX3A-Q3** — l'unità "sets": "Serie" (si confonde con le serie delle registrazioni e la streak) o "Set".
   - **UX3A-Q4** — "2 hours" (UX3A-1): simbolo ("2 h") o nome tradotto ("2 ore")?
+
+## Onda "Giornata" (`GIO-*`)
+
+- **GIO-1 — `SaveAsTemplate_creates_custom_template_with_roundtrippable_payload` è instabile** · `reported` · precedente
+  all'onda. `HabitBuilderViewModelTests` confronta il nome del campo con `Strings.HabitBuilder_DefaultField_Quantity`
+  senza fissare la cultura: in una corsa su quattro della suite Presentation (2026-11-11, Fedora) ha letto "Quantity"
+  dove si aspettava "Quantità", perché un'altra classe in parallelo aveva cambiato la cultura delle risorse. Da sola e
+  nelle altre corse è verde. Correzione: fissare la cultura nel test come fanno gli altri che confrontano etichette.

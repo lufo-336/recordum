@@ -302,9 +302,9 @@ public sealed class HabitTemplatePickerTemplateTests : IDisposable
         food.Name.Should().Be("Diario del cibo");
         food.Description.Should().StartWith("Annota ogni pasto");
         food.Color.Should().Be("#e67e22");
-        food.TypeLine.Should().Be("journal · più volte al giorno");
+        food.TypeLine.Should().Be("diario · più volte al giorno");
         Card(sut, Sleep).TypeLine.Should().Be("contatore · più volte al giorno");
-        Card(sut, Guid.Parse("00000003-0000-0000-0000-000000000006")).TypeLine.Should().Be("resistenza");
+        Card(sut, Guid.Parse("00000003-0000-0000-0000-000000000006")).TypeLine.Should().Be("astinenza");
     }
 
     /// <summary>ListAsync ordina per il nome seminato (inglese): in italiano le schede vanno in ordine col nome che si vede.</summary>

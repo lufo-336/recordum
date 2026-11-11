@@ -58,6 +58,20 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Recordum</value>
+  </data>
+  <data name="MainWindowPlaceholder" xml:space="preserve">
+    <value>Recordum si sta avviando…</value>
+  </data>
+  <data name="StartupErrorTitle" xml:space="preserve">
+    <value>Recordum non si è avviato</value>
+  </data>
+  <data name="StartupErrorMessage" xml:space="preserve">
+    <value>Recordum non è riuscito a inizializzarsi. L'applicazione verrà chiusa.
+
+Dettagli: {0}</value>
+  </data>
   <data name="Calendar.View.Week" xml:space="preserve">
     <value>Settimana</value>
   </data>
@@ -119,10 +133,10 @@
     <value>contatore</value>
   </data>
   <data name="Home.HabitType.Resistance" xml:space="preserve">
-    <value>resistenza</value>
+    <value>astinenza</value>
   </data>
   <data name="Home.HabitType.Journal" xml:space="preserve">
-    <value>journal</value>
+    <value>diario</value>
   </data>
   <data name="Home.HabitType.State" xml:space="preserve">
     <value>stato</value>
@@ -400,7 +414,7 @@
     <value>Astinenza</value>
   </data>
   <data name="HabitBuilder.AbstinenceBlock.Tip" xml:space="preserve">
-    <value>Resistere a qualcosa: registri le ricadute/episodi; la streak misura il tempo dall'ultima.</value>
+    <value>Astenersi da qualcosa: registri le ricadute; il tempo si conta dall'ultima.</value>
   </data>
   <data name="HabitBuilder.Preview.Tap" xml:space="preserve">
     <value>+1</value>
@@ -445,7 +459,7 @@
     <value>Dettagli della composizione</value>
   </data>
   <data name="HabitBuilder.Schedule.Header" xml:space="preserve">
-    <value>Programma e streak</value>
+    <value>Programma e giorni di fila</value>
   </data>
   <data name="HabitBuilder.Schedule.Daily" xml:space="preserve">
     <value>Ogni giorno</value>
@@ -460,7 +474,7 @@
     <value>Ogni X giorni</value>
   </data>
   <data name="HabitBuilder.Schedule.StreakMode" xml:space="preserve">
-    <value>Streak</value>
+    <value>Giorni di fila</value>
   </data>
   <data name="HabitBuilder.Schedule.Recovery" xml:space="preserve">
     <value>Recupero</value>
@@ -928,16 +942,16 @@
     <value>Completato</value>
   </data>
   <data name="Detail.Streak.Current" xml:space="preserve">
-    <value>Streak attuale</value>
+    <value>Di fila ora</value>
   </data>
   <data name="Detail.Streak.Longest" xml:space="preserve">
-    <value>Streak record</value>
+    <value>Record di fila</value>
   </data>
   <data name="Detail.Streak.Runs90" xml:space="preserve">
     <value>Cicli (90gg)</value>
   </data>
   <data name="Detail.Streak.Lapses90" xml:space="preserve">
-    <value>Ricadute (90gg)</value>
+    <value>Ricadute (90 g)</value>
   </data>
   <data name="Abstinence.Start" xml:space="preserve">
     <value>Inizio</value>
@@ -946,10 +960,10 @@
     <value>Ricaduta</value>
   </data>
   <data name="Abstinence.CleanFor" xml:space="preserve">
-    <value>Pulito da</value>
+    <value>Libero da</value>
   </data>
   <data name="Abstinence.RelapsedOn" xml:space="preserve">
-    <value>Ricaduto il {0}</value>
+    <value>Ricaduta il {0}</value>
   </data>
   <data name="Abstinence.NotStarted" xml:space="preserve">
     <value>Non avviata</value>
@@ -958,7 +972,7 @@
     <value>In corso</value>
   </data>
   <data name="Abstinence.CleanDays" xml:space="preserve">
-    <value>{0} giorni puliti</value>
+    <value>{0} giorni liberi</value>
   </data>
   <data name="Abstinence.Since" xml:space="preserve">
     <value>dal {0}</value>
@@ -970,7 +984,7 @@
     <value>Eliminare questa registrazione d'astinenza? L'operazione non è reversibile.</value>
   </data>
   <data name="Today.Resistance.Attempts" xml:space="preserve">
-    <value>{0} tentativi (90g)</value>
+    <value>{0} ricadute in 90 g</value>
   </data>
   <data name="Today.Action.MarkDone" xml:space="preserve">
     <value>Segna come fatto</value>
@@ -1003,7 +1017,7 @@
     <value>sec</value>
   </data>
   <data name="Detail.Streak.Empty" xml:space="preserve">
-    <value>Nessuno streak ancora</value>
+    <value>Ancora nessun giorno di fila</value>
   </data>
   <data name="Detail.Streak.Days" xml:space="preserve">
     <value>{0} giorni</value>
@@ -1381,7 +1395,7 @@
     <value>Programma</value>
   </data>
   <data name="Editor.Section.Streak" xml:space="preserve">
-    <value>Streak</value>
+    <value>Giorni di fila</value>
   </data>
   <data name="Editor.Section.Metrics" xml:space="preserve">
     <value>Metriche</value>
@@ -1430,7 +1444,7 @@
     <value>Nessuno</value>
   </data>
   <data name="Editor.HomeRow.KF.Streak" xml:space="preserve">
-    <value>Serie</value>
+    <value>Giorni di fila</value>
   </data>
   <data name="Editor.HomeRow.KF.DoneToday" xml:space="preserve">
     <value>Fatto oggi</value>
@@ -1467,7 +1481,7 @@
     <value>Si può registrare più volte al giorno</value>
   </data>
   <data name="Editor.Registration.JournalGesture" xml:space="preserve">
-    <value>Gesto primario</value>
+    <value>Si registra con</value>
   </data>
   <data name="Editor.Registration.Gesture.Diary" xml:space="preserve">
     <value>Scrivi la voce di oggi</value>
@@ -1529,7 +1543,7 @@
     <value>Ogni X giorni</value>
   </data>
   <data name="Editor.Field.StreakMode" xml:space="preserve">
-    <value>Modalità streak</value>
+    <value>Conteggio dei giorni di fila</value>
   </data>
   <data name="Editor.Field.Recovery" xml:space="preserve">
     <value>Recupero</value>
@@ -1910,10 +1924,10 @@
     <value>Se dimentichi la passphrase, i dati non si possono recuperare: è il prezzo della cifratura.</value>
   </data>
   <data name="Figures.CurrentStreak" xml:space="preserve">
-    <value>serie attuale</value>
+    <value>di fila ora</value>
   </data>
   <data name="Figures.BestStreak" xml:space="preserve">
-    <value>serie migliore</value>
+    <value>record di fila</value>
   </data>
   <data name="Figures.Pct30" xml:space="preserve">
     <value>30 giorni</value>
@@ -1928,7 +1942,7 @@
     <value>media 30 g</value>
   </data>
   <data name="Figures.GoalStreak" xml:space="preserve">
-    <value>serie obiettivo</value>
+    <value>obiettivi di fila</value>
   </data>
   <data name="Figures.Trend" xml:space="preserve">
     <value>andamento</value>
@@ -1940,7 +1954,7 @@
     <value>voci della settimana</value>
   </data>
   <data name="Figures.Streak" xml:space="preserve">
-    <value>serie</value>
+    <value>di fila</value>
   </data>
   <data name="Figures.Entries" xml:space="preserve">
     <value>voci</value>
@@ -2051,7 +2065,7 @@
     <value>+ a mano</value>
   </data>
   <data name="Head.Abstinence.Lapse" xml:space="preserve">
-    <value>Ho ceduto…</value>
+    <value>Segna una ricaduta…</value>
   </data>
   <data name="Head.Abstinence.LapseConfirm" xml:space="preserve">
     <value>Registrare una ricaduta adesso? Il periodo in corso finisce qui.</value>
@@ -2456,7 +2470,7 @@
     <value>{0}: serve un numero sopra lo zero.</value>
   </data>
   <data name="HabitBuilder.Blocked.Tolerance" xml:space="preserve">
-    <value>La tolleranza della serie va da 1 a 1440 minuti (in Avanzate).</value>
+    <value>La tolleranza dei giorni di fila va da 1 a 1440 minuti (in Avanzate).</value>
   </data>
   <data name="HabitBuilder.Blocked.Rest" xml:space="preserve">
     <value>Il riposo deve durare più di zero secondi (in Avanzate).</value>

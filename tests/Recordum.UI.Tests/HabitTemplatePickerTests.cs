@@ -558,7 +558,7 @@ public class HabitTemplatePickerTests(ITestOutputHelper output)
             output.WriteLine(ScreenshotProbeTests.Capture(picker, $"templates-{variant.ToLowerInvariant()}"));
 
             Find<TextBlock>(picker, "DetailName").Text.Should().Be("Diario del cibo", "il modello ufficiale si legge in italiano");
-            Find<TextBlock>(picker, "DetailType").Text.Should().Be("journal · più volte al giorno");
+            Find<TextBlock>(picker, "DetailType").Text.Should().Be("diario · più volte al giorno");
             Card(picker, Guid.Parse("00000003-0000-0000-0000-000000000008")).IsSelected.Should().BeTrue();
         }
         finally

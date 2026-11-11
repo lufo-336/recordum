@@ -94,7 +94,7 @@ public sealed class HabitFiguresTests : IDisposable
         await vm.LoadAsync(Node(HabitType.Action), Daily(), HabitCase.Action, Boundary);
 
         Values(vm).Should().Equal("4", "12", "63%", "148");
-        vm.Items.Select(f => f.Caption).Should().Equal("serie attuale", "serie migliore", "30 giorni", "in tutto");
+        vm.Items.Select(f => f.Caption).Should().Equal("di fila ora", "record di fila", "30 giorni", "in tutto");
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public sealed class HabitFiguresTests : IDisposable
         await vm.LoadAsync(Node(HabitType.Journal), Daily(), HabitCase.Journal, Boundary);
 
         Values(vm).Should().Equal("3", "3", "10");
-        vm.Items.Select(f => f.Caption).Should().Equal("voci della settimana", "serie", "voci");
+        vm.Items.Select(f => f.Caption).Should().Equal("voci della settimana", "di fila", "voci");
     }
 
     [Fact]
@@ -359,7 +359,7 @@ public sealed class HabitFiguresTests : IDisposable
         var vm = Vm();
         await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Measured, Boundary);
 
-        vm.Items.Select(f => f.Caption).Should().Equal("oggi", "serie attuale", "media al giorno", "in tutto");
+        vm.Items.Select(f => f.Caption).Should().Equal("oggi", "di fila ora", "media al giorno", "in tutto");
         vm.Items.Select(f => f.Value).Should().Equal("20", "1", "0,7", "20");
     }
 
@@ -422,7 +422,7 @@ public sealed class HabitFiguresTests : IDisposable
         await vm.LoadAsync(Node(HabitType.Counter), Daily(), HabitCase.Session, Boundary);
 
         vm.Items.Select(f => f.Value).Should().Equal("12 min", "2", "20 min", "10 h");
-        vm.Items.Select(f => f.Caption).Should().Equal("oggi", "serie", "media 30 g", "in tutto");
+        vm.Items.Select(f => f.Caption).Should().Equal("oggi", "di fila", "media 30 g", "in tutto");
     }
 
     private static long Ms(DateTimeOffset t) => t.ToUnixTimeMilliseconds();
