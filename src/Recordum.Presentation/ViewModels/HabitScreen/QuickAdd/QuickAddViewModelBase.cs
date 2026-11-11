@@ -4,6 +4,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
@@ -61,16 +62,5 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
     /// (00:00–06:00) e regge il cambio d'ora, mentre la vecchia mezzanotte UTC poteva cadere nel giorno
     /// prima non appena il confine è diventato locale (spec R9 §5).</para></summary>
     protected (DateTime Timestamp, long Ms, bool IsRetroactive) ResolveCompletionTimestamp()
-    {
-        var date = DateOnly.FromDateTime(CompletionDate.Date);
-        var today = DayBoundary.Today(Clock);                                  // A58
-        if (date == today)
-        {
-            var now = Clock.UtcNow;
-            return (now.UtcDateTime, now.ToUnixTimeMilliseconds(), false);
-        }
-
-        var noon = DayBoundary.NoonOf(date);
-        return (noon.UtcDateTime, noon.ToUnixTimeMilliseconds(), true);
-    }
+        => CompletionStamp.For(DayBoundary, Clock, DateOnly.FromDateTime(CompletionDate.Date));
 }

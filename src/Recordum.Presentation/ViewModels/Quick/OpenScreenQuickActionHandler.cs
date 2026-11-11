@@ -10,6 +10,6 @@ public sealed class OpenScreenQuickActionHandler(HabitType type) : IQuickActionH
 {
     public HabitType HabitType { get; } = type;
 
-    public ValueTask<bool> ExecuteAsync(Guid habitNodeId, CancellationToken ct = default)
+    public ValueTask<bool> ExecuteAsync(Guid habitNodeId, DateOnly? day, CancellationToken ct = default)
         => new(false);
 }

@@ -558,7 +558,7 @@ public class HomeViewModelTests
     private sealed class StubQuickActionHandler(HabitType type, bool recorded) : IQuickActionHandler
     {
         public HabitType HabitType { get; } = type;
-        public ValueTask<bool> ExecuteAsync(Guid habitNodeId, CancellationToken ct = default) => new(recorded);
+        public ValueTask<bool> ExecuteAsync(Guid habitNodeId, DateOnly? day, CancellationToken ct = default) => new(recorded);
     }
 
     [Fact]

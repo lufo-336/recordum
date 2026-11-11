@@ -15,7 +15,7 @@ public class AbstinenceQuickActionHandlerTests
         var sut = new AbstinenceQuickActionHandler(abstinence);
         var habitId = Guid.NewGuid();
 
-        var result = await sut.ExecuteAsync(habitId);
+        var result = await sut.ExecuteAsync(habitId, null);
 
         result.Should().BeTrue();
         var state = await abstinence.GetStateAsync(habitId);
@@ -30,7 +30,7 @@ public class AbstinenceQuickActionHandlerTests
         await abstinence.StartAsync(habitId); // put habit into Abstaining state
         var sut = new AbstinenceQuickActionHandler(abstinence);
 
-        var result = await sut.ExecuteAsync(habitId);
+        var result = await sut.ExecuteAsync(habitId, null);
 
         result.Should().BeTrue();
         var state = await abstinence.GetStateAsync(habitId);

@@ -484,7 +484,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (_quickActionSelector is null || HabitType is null) return;
         var handler = _quickActionSelector.For(HabitType.Value);
         if (handler is null) return;
-        var recorded = await handler.ExecuteAsync(HabitNodeId, ct).ConfigureAwait(true);
+        var recorded = await handler.ExecuteAsync(HabitNodeId, null, ct).ConfigureAwait(true);
         QuickActionExecuted?.Invoke(this, new QuickActionExecutedEventArgs(HabitNodeId, recorded));
     }
 

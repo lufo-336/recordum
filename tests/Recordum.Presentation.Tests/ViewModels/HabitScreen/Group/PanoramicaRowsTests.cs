@@ -76,7 +76,7 @@ public sealed class PanoramicaRowsTests : IDisposable
     public async Task Quick_log_records_and_refreshes()
     {
         var completions = new FakeCompletionService();
-        var rig = CreateRig(new QuickActionHandlerSelector([new ActionQuickActionHandler(completions, new FakeClock(Now))]));
+        var rig = CreateRig(new QuickActionHandlerSelector([new ActionQuickActionHandler(completions, new FakeClock(Now), new FakeResetTimeResolver())]));
         var child = Guid.NewGuid();
         rig.Tree.HomeRows.Add(Row(child, _group, "corsa", HabitType.Action));
         await rig.Vm.LoadAsync(_group);
@@ -105,7 +105,7 @@ public sealed class PanoramicaRowsTests : IDisposable
         var child = Guid.NewGuid();
         var field = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = child, Name = "km", Type = MetricType.Integer, SortOrder = 0 };
         metrics.Store[field.Id] = field;
-        var rig = CreateRig(new QuickActionHandlerSelector([new CounterQuickActionHandler(completions, metrics, new FakeClock(Now))]));
+        var rig = CreateRig(new QuickActionHandlerSelector([new CounterQuickActionHandler(completions, metrics, new FakeClock(Now), new FakeResetTimeResolver())]));
         rig.Tree.HomeRows.Add(Row(child, _group, "corsa", HabitType.Counter));
         await rig.Vm.LoadAsync(_group);
         var opened = new List<Guid>();

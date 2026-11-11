@@ -191,7 +191,7 @@ public sealed class BootstrapSmokeTests : IDisposable
             var selector = scope.ServiceProvider.GetRequiredService<QuickActionHandlerSelector>();
             var handler = selector.For(HabitType.Action);
             handler.Should().NotBeNull();
-            (await handler!.ExecuteAsync(habitId)).Should().BeTrue();
+            (await handler!.ExecuteAsync(habitId, null)).Should().BeTrue();
         }
 
         using (var scope = _services.CreateScope())
