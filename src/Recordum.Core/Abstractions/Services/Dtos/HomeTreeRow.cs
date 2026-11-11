@@ -40,4 +40,7 @@ public sealed record HomeTreeRow(
     // Il giorno dell'abitudine e quello dell'app (cascata reset: abitudine -> gruppi -> app). Null = non risolti
     // (gruppi, fixture): la riga non dice mai "reset".
     DayBoundary? HabitDay = null,
-    DayBoundary? AppDay = null);
+    DayBoundary? AppDay = null,
+    string? TodayCounterUnitSymbol = null,
+    string? TodayCounterUnitName = null,
+    bool TodayCounterUnitIsOfficial = false);

@@ -76,8 +76,6 @@
           <DataTemplate x:DataType="vm:NoteRowViewModel">
             <StackPanel Spacing="2" Margin="0,2">
               <TextBlock Classes="meta">
-                <Run Text="{CompiledBinding CategoryLabel}"/>
-                <Run Text=" · "/>
                 <Run Text="{CompiledBinding AnchorDateDisplay, Mode=OneWay}"/>
                 <Run Text="{CompiledBinding CreatedAtTimeDisplay, Mode=OneWay}"/>
               </TextBlock>

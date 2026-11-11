@@ -192,4 +192,16 @@ public class SeriesCellViewModelTests
 
         cell.BuildValue(0).Should().BeNull();
     }
+
+    [Fact]
+    public void A_cell_shows_the_unit_symbol_not_its_code()
+    {
+        var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Code = "kilometres", Name = "Kilometres", Symbol = "km" };
+        var metric = new MetricDefinition
+        { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), Name = "Distanza", Type = MetricType.Decimal, UnitOfMeasureId = unit.Id };
+
+        var cell = new MetricCellFactory([unit], []).Create(metric);
+
+        cell.UnitLabel.Should().Be("km");
+    }
 }

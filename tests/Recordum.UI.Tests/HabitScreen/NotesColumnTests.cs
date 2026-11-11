@@ -361,6 +361,38 @@ public class NotesColumnTests
         o.Window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task HistoryButton_reads_Versioni_in_Italian_and_Versions_in_English()
+    {
+        var prevStrings = Recordum.Presentation.Resources.Strings.Culture;
+        var prevCurrent = System.Globalization.CultureInfo.CurrentCulture;
+        var prevUi = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            var it = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            Recordum.Presentation.Resources.Strings.Culture = it;
+            System.Globalization.CultureInfo.CurrentCulture = it;
+            System.Globalization.CultureInfo.CurrentUICulture = it;
+            var oIt = await OpenAsync();
+            Named<Button>(oIt.Column, "HistoryButton").Content.Should().Be("Versioni");
+            oIt.Window.Close();
+
+            var en = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+            Recordum.Presentation.Resources.Strings.Culture = en;
+            System.Globalization.CultureInfo.CurrentCulture = en;
+            System.Globalization.CultureInfo.CurrentUICulture = en;
+            var oEn = await OpenAsync();
+            Named<Button>(oEn.Column, "HistoryButton").Content.Should().Be("Versions");
+            oEn.Window.Close();
+        }
+        finally
+        {
+            Recordum.Presentation.Resources.Strings.Culture = prevStrings;
+            System.Globalization.CultureInfo.CurrentCulture = prevCurrent;
+            System.Globalization.CultureInfo.CurrentUICulture = prevUi;
+        }
+    }
+
     private static async Task<T> UntilFoundAsync<T>(Opened o, string name) where T : Control
     {
         await UntilAsync(() => o.View.GetVisualDescendants().OfType<T>().Any(c => c.Name == name));

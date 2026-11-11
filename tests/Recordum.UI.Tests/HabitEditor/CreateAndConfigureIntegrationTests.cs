@@ -161,7 +161,7 @@ public class CreateAndConfigureIntegrationTests
             await UntilAsync(() => window.GetVisualDescendants().OfType<MetricCellView>().Any());
             window.GetVisualDescendants().OfType<MetricCellView>().Single()
                 .GetVisualDescendants().OfType<TextBlock>()
-                .Should().Contain(t => t.Text == created.Code && t.IsEffectivelyVisible, "il quick-add mostra l'unita' nuova");
+                .Should().Contain(t => t.Text == created.Name && t.IsEffectivelyVisible, "il quick-add mostra l'unita' nuova col suo nome, non col codice");
         }
         finally { window.Close(); builder?.Close(); }
     }

@@ -398,16 +398,16 @@ Details: {0}</value>
     <value>Blocks</value>
   </data>
   <data name="HabitBuilder.AddQuantity" xml:space="preserve">
-    <value>+ Quantity</value>
+    <value>Quantity</value>
   </data>
   <data name="HabitBuilder.AddTime" xml:space="preserve">
-    <value>+ Time</value>
+    <value>Time</value>
   </data>
   <data name="HabitBuilder.AddScale" xml:space="preserve">
-    <value>+ Scale</value>
+    <value>Scale</value>
   </data>
   <data name="HabitBuilder.AddText" xml:space="preserve">
-    <value>+ Free text</value>
+    <value>Free text</value>
   </data>
   <data name="HabitBuilder.CounterBlock" xml:space="preserve">
     <value>Tap counter (+1, no fields)</value>
@@ -885,7 +885,7 @@ Details: {0}</value>
     <value>current</value>
   </data>
   <data name="Notes.History" xml:space="preserve">
-    <value>History</value>
+    <value>Versions</value>
   </data>
   <data name="Notes.History.Back" xml:space="preserve">
     <value>‹ Back</value>

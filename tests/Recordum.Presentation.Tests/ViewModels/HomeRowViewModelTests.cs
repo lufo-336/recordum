@@ -331,4 +331,21 @@ public class HomeRowViewModelTests
         counterVm.StripLength.Should().Be(HomeStrip.Days7);
         counterVm.StripCounts.Length.Should().Be(7);
     }
+
+    [Fact]
+    public void Counter_key_figure_uses_unit_symbol_instead_of_code()
+    {
+        var row = new HomeTreeRow(
+            Guid.NewGuid(), null, "c", "#000000", HabitType.Counter, null, 0, false,
+            PinScope.None, 0, false, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 1), ImmutableArray<Guid>.Empty,
+            TodayCounterTotal: 2m,
+            TodayCounterUnitCode: "hours",
+            TodayCounterUnitSymbol: "h",
+            TodayCounterUnitName: "Hours",
+            TodayCounterUnitIsOfficial: true);
+
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureText.Should().Be("2 h");
+    }
 }

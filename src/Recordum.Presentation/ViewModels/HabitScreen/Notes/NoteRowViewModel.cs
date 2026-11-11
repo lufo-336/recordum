@@ -37,11 +37,6 @@ public sealed partial class NoteRowViewModel(Note note, DayBoundary day) : Obser
 
     public bool IsDiario => Note.Category == NoteCategory.Diario;
 
-    /// <summary>Chip label: "Diary" for paired diary entries, "Quick note" for free notes.</summary>
-    public string CategoryLabel => IsDiario
-        ? Recordum.Presentation.Resources.Strings.Notes_Category_Diary
-        : Recordum.Presentation.Resources.Strings.Notes_Category_Quick;
-
     /// <summary>Time-of-day the note was written (HH:mm), from CreatedAt.</summary>
     public string CreatedAtTimeDisplay =>
         DateTime.SpecifyKind(Note.CreatedAt, DateTimeKind.Utc)

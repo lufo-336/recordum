@@ -28,6 +28,8 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
     /// can read "12:00" instead of the raw second count (W23-VF2).</summary>
     [ObservableProperty] private string? _todayTotalDisplay;
     [ObservableProperty] private string? _unitCode;
+    /// <summary>Ciò che si legge accanto al totale (simbolo o nome tradotto); <see cref="UnitCode"/> resta per la logica.</summary>
+    [ObservableProperty] private string? _unitLabel;
     [ObservableProperty] private bool _hasGoal;
     [ObservableProperty] private double _goalFraction;
 
@@ -64,7 +66,9 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
             // Sum of the primary metric's values today — same semantics as the Home row's TodayCounterTotal.
             var sums = await _completions.GetDailySumAsync(node.Id, primary.Id, today, today, ct).ConfigureAwait(true);
             var rawSum = sums.FirstOrDefault(s => s.Date == today)?.Sum ?? 0m;
-            UnitCode = await ResolveUnitCodeAsync(primary, ct).ConfigureAwait(true);
+            var unit = await ResolveUnitAsync(primary, ct).ConfigureAwait(true);
+            UnitCode = unit?.Code;
+            UnitLabel = unit is null ? null : Recordum.Presentation.Templates.UnitLabel.For(unit);
             // A duration (Seconds) metric stores value_seconds; show the total in the metric's own unit
             // (90s on a "minutes" metric = 1.5), not the raw second count with a "minutes" label.
             isDuration = primary.Type == MetricType.Seconds;
@@ -76,6 +80,7 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
             var mags = await _completions.GetDailyMagnitudeAsync(node.Id, today.Year, today.Month, ct).ConfigureAwait(true);
             TodayTotal = mags.FirstOrDefault(m => m.Date == today)?.Magnitude ?? 0m;
             UnitCode = null;
+            UnitLabel = null;
         }
 
         // A duration with no time unit is still raw seconds: render it as h:mm:ss so this total agrees
@@ -88,11 +93,11 @@ public sealed partial class CounterTodayContent : ObservableObject, ITodayConten
         GoalFraction = HasGoal ? Math.Clamp(_goalCard.PercentComplete, 0d, 1d) : 0d;
     }
 
-    private async Task<string?> ResolveUnitCodeAsync(MetricDefinition primary, CancellationToken ct)
+    private async Task<UnitOfMeasure?> ResolveUnitAsync(MetricDefinition primary, CancellationToken ct)
     {
         if (primary.UnitOfMeasureId is not { } uid) return null;
         var units = await _refData.ListUnitsAsync(ct).ConfigureAwait(true);
-        return units.FirstOrDefault(u => u.Id == uid)?.Code;
+        return units.FirstOrDefault(u => u.Id == uid);
     }
 
     [RelayCommand]

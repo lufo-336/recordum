@@ -54,6 +54,7 @@ public class CounterTodayContentTests
         var (sut, completions, metrics, refData, _, node) = NewSut();
         var today = DateOnly.FromDateTime(Now.UtcDateTime);
         var minutes = refData.Units.Single(u => u.Code == "minutes");
+        minutes.Symbol = "min";
         // A duration (Seconds) metric measured in "minutes": the stored sum is 90 SECONDS, which must
         // display as 1.5 minutes — not "90 minutes" (raw seconds + label, the pre-fix bug).
         var metric = new MetricDefinition
@@ -65,6 +66,7 @@ public class CounterTodayContentTests
 
         sut.TodayTotal.Should().Be(1.5m);
         sut.UnitCode.Should().Be("minutes");
+        sut.UnitLabel.Should().Be("min", "accanto al totale si legge il simbolo, il codice resta per la logica");
     }
 
     [Fact]

@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitBuilder;
 
+[Collection(ProcessGlobalCultureCollection.Name)]
 public class HabitBuilderViewModelTests
 {
     private static HabitBuilderViewModel NewSut(
@@ -1355,5 +1356,26 @@ public class HabitBuilderViewModelTests
 
         sut.CanLaunch.Should().BeTrue();
         sut.LaunchCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Builder_tiles_have_no_plus_in_the_title()
+    {
+        var prev = Strings.Culture;
+        try
+        {
+            foreach (var culture in new[] { "en-US", "it-IT" })
+            {
+                Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+                Strings.HabitBuilder_AddQuantity.Should().NotStartWith("+");
+                Strings.HabitBuilder_AddTime.Should().NotStartWith("+");
+                Strings.HabitBuilder_AddScale.Should().NotStartWith("+");
+                Strings.HabitBuilder_AddText.Should().NotStartWith("+");
+            }
+        }
+        finally
+        {
+            Strings.Culture = prev;
+        }
     }
 }

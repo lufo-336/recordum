@@ -102,6 +102,9 @@ public static class OfficialTexts
     public static IReadOnlyList<string>? ScaleLabels(ScaleTemplate s) =>
         s.IsOfficial && s_scales.TryGetValue(s.Code, out var x) ? x.Labels().Split('|') : null;
 
+    public static string UnitName(string code, string name, bool isOfficial) =>
+        isOfficial && s_units.TryGetValue(code, out var x) ? x() : name;
+
     public static string UnitName(UnitOfMeasure u) =>
-        u.IsOfficial && s_units.TryGetValue(u.Code, out var x) ? x() : u.Name;
+        UnitName(u.Code, u.Name, u.IsOfficial);
 }

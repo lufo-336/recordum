@@ -2439,7 +2439,7 @@ Dalla review dell'intero branch (corretti nell'onda di correzioni, test rossi pr
 Chiusi: **UX-11** e **UX-12** (sopra, col test che lo prova). Trovati nel Task 7 (PNG in chiaro e in scuro, inventario
 dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove detto.
 
-- **UX3A-1 — "2 hours": la Home e l'anteprima stampano il `Code` dell'unità** · `reported` · precedente a 3a.
+- **UX3A-1 — "2 hours": la Home e l'anteprima stampano il `Code` dell'unità** · `fixed` (onda "Giornata", Task 2: `UnitLabel`, simbolo o nome tradotto in Home, anteprima, "Oggi", elenco e quick-add) · precedente a 3a.
   `HomeRowViewModel.FormatCounterTotal` (~:318) e `SamplePreviewFactory.FormatSample` (~:86) scrivono `Unit.Code`
   ("hours", "sets") invece del simbolo o del nome tradotto: in italiano esce "2 hours" nella riga della Home, nella colonna
   d'anteprima del creatore e nel dettaglio del selettore (`builder-from-template-light.png`, `templates-narrow-*.png`).

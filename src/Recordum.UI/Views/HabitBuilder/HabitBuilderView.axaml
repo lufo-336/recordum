@@ -133,40 +133,44 @@
               <Button x:Name="AddQuantityButton" Grid.Column="0" Classes="tile" IsEnabled="{CompiledBinding QuantityTile.IsEnabled}"
                       Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Quantity}">
                 <StackPanel Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Path Classes="tileicon" Data="{StaticResource Icon.BarChart3}"/>
-                    <TextBlock Text="{x:Static res:Strings.HabitBuilder_AddQuantity}" FontWeight="Medium"/>
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Path Grid.Column="0" Classes="tileicon" Margin="0,0,6,0" Data="{StaticResource Icon.BarChart3}"/>
+                    <TextBlock Grid.Column="1" Text="{x:Static res:Strings.HabitBuilder_AddQuantity}" FontWeight="Medium"/>
+                    <Path Grid.Column="2" Classes="tileicon" HorizontalAlignment="Right" Data="{StaticResource Icon.Plus}"/>
+                  </Grid>
                   <TextBlock x:Name="QuantityHint" Classes="caption" Text="{CompiledBinding QuantityTile.Hint}"/>
                 </StackPanel>
               </Button>
               <Button x:Name="AddTimeButton" Grid.Column="1" Classes="tile" IsEnabled="{CompiledBinding TimeTile.IsEnabled}"
                       Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Time}">
                 <StackPanel Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Path Classes="tileicon" Data="{StaticResource Icon.Clock}"/>
-                    <TextBlock Text="{x:Static res:Strings.HabitBuilder_AddTime}" FontWeight="Medium"/>
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Path Grid.Column="0" Classes="tileicon" Margin="0,0,6,0" Data="{StaticResource Icon.Clock}"/>
+                    <TextBlock Grid.Column="1" Text="{x:Static res:Strings.HabitBuilder_AddTime}" FontWeight="Medium"/>
+                    <Path Grid.Column="2" Classes="tileicon" HorizontalAlignment="Right" Data="{StaticResource Icon.Plus}"/>
+                  </Grid>
                   <TextBlock x:Name="TimeHint" Classes="caption" Text="{CompiledBinding TimeTile.Hint}"/>
                 </StackPanel>
               </Button>
               <Button x:Name="AddScaleButton" Grid.Column="2" Classes="tile" IsEnabled="{CompiledBinding ScaleTile.IsEnabled}"
                       Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Scale}">
                 <StackPanel Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Path Classes="tileicon" Data="{StaticResource Icon.SlidersHorizontal}"/>
-                    <TextBlock Text="{x:Static res:Strings.HabitBuilder_AddScale}" FontWeight="Medium"/>
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Path Grid.Column="0" Classes="tileicon" Margin="0,0,6,0" Data="{StaticResource Icon.SlidersHorizontal}"/>
+                    <TextBlock Grid.Column="1" Text="{x:Static res:Strings.HabitBuilder_AddScale}" FontWeight="Medium"/>
+                    <Path Grid.Column="2" Classes="tileicon" HorizontalAlignment="Right" Data="{StaticResource Icon.Plus}"/>
+                  </Grid>
                   <TextBlock x:Name="ScaleHint" Classes="caption" Text="{CompiledBinding ScaleTile.Hint}"/>
                 </StackPanel>
               </Button>
               <Button x:Name="AddTextButton" Grid.Column="3" Classes="tile" IsEnabled="{CompiledBinding TextTile.IsEnabled}"
                       Command="{CompiledBinding AddFieldCommand}" CommandParameter="{x:Static core:FieldNature.Text}">
                 <StackPanel Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Path Classes="tileicon" Data="{StaticResource Icon.PenLine}"/>
-                    <TextBlock Text="{x:Static res:Strings.HabitBuilder_AddText}" FontWeight="Medium"/>
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Path Grid.Column="0" Classes="tileicon" Margin="0,0,6,0" Data="{StaticResource Icon.PenLine}"/>
+                    <TextBlock Grid.Column="1" Text="{x:Static res:Strings.HabitBuilder_AddText}" FontWeight="Medium"/>
+                    <Path Grid.Column="2" Classes="tileicon" HorizontalAlignment="Right" Data="{StaticResource Icon.Plus}"/>
+                  </Grid>
                   <TextBlock x:Name="TextHint" Classes="caption" Text="{CompiledBinding TextTile.Hint}"/>
                 </StackPanel>
               </Button>

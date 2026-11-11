@@ -7,7 +7,7 @@ public sealed class FakeReferenceData : IReferenceDataQueryService
 {
     public List<UnitOfMeasure> Units { get; } = new()
     {
-        new UnitOfMeasure { Id = Guid.NewGuid(), Code = "l", Name = "Litre" },
+        new UnitOfMeasure { Id = Guid.NewGuid(), Code = "l", Name = "Litre", Symbol = "l", IsOfficial = true },
         new UnitOfMeasure { Id = Guid.NewGuid(), Code = "hours", Name = "Hours" },
         new UnitOfMeasure { Id = Guid.NewGuid(), Code = "minutes", Name = "Minutes" },
         new UnitOfMeasure { Id = Guid.NewGuid(), Code = "seconds", Name = "Seconds" },

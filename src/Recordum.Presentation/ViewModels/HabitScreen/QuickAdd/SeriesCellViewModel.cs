@@ -106,12 +106,12 @@ public sealed partial class SeriesCellViewModel : ObservableObject
         return metric.Type == MetricType.Text ? MetricInputKind.Text : MetricInputKind.Measured;
     }
 
-    public SeriesCellViewModel(MetricDefinition metric, string? unitCode = null, ScaleInfo? scale = null)
+    public SeriesCellViewModel(MetricDefinition metric, string? unitCode = null, ScaleInfo? scale = null, string? unitLabel = null)
     {
         ArgumentNullException.ThrowIfNull(metric);
         Metric = metric;
         Kind = ResolveKind(metric);
-        UnitLabel = unitCode;
+        UnitLabel = unitLabel ?? unitCode;
         if (IsDuration)
             DurationUnit = unitCode?.ToLowerInvariant() switch
             {

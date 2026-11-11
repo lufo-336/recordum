@@ -12,6 +12,7 @@ using Recordum.Core.Models;
 using Recordum.Core.Time;
 using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.Templates;
 using Recordum.Presentation.ViewModels.Quick;
 
 namespace Recordum.Presentation.ViewModels;
@@ -315,12 +316,10 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (CounterTotalDisplay.AsRawDuration(row.TodayCounterIsDuration, row.TodayCounterUnitCode, total) is { } duration)
             return duration;
         var value = total.ToString("0.##", CultureInfo.CurrentCulture);
-        var unit = row.TodayCounterUnitCode;
-#pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string
-        return string.IsNullOrEmpty(unit)
-            ? value
-            : string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_CounterTotal, value, unit).Trim();
-#pragma warning restore CA1863
+        var label = row.TodayCounterUnitCode is { Length: > 0 } code
+            ? UnitLabel.For(code, row.TodayCounterUnitSymbol, row.TodayCounterUnitName ?? code, row.TodayCounterUnitIsOfficial)
+            : null;
+        return UnitLabel.WithValue(value, label);
     }
 
     /// <summary>Current elapsed-abstinence display, computed from the open-period start and the clock.

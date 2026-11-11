@@ -62,12 +62,6 @@
                                 </ContextMenu>
                             </StackPanel.ContextMenu>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                <Border Padding="5,1" CornerRadius="3" Margin="0,0,4,0"
-                                        Background="{DynamicResource Brush.SurfaceElevated}">
-                                    <TextBlock Text="{Binding CategoryLabel}"
-                                               FontSize="{StaticResource FontSize.Small}"
-                                               Foreground="{DynamicResource Brush.TextMuted}"/>
-                                </Border>
                                 <Border Padding="5,1" CornerRadius="3"
                                         Background="{DynamicResource Brush.SurfaceElevated}">
                                     <TextBlock FontSize="{StaticResource FontSize.Small}"

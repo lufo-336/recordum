@@ -807,4 +807,36 @@ public class HabitTreeQueryServiceTests
         var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
         row.JournalEntriesThisWeek.Should().Be(2);
     }
+
+    [Fact]
+    public async Task GetHomeTreeAsync_projects_unit_symbol_name_and_is_official_for_counter()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        var hours = Recordum.Data.SeedData.UnitOfMeasureSeed.All.Single(u => u.Code == "hours");
+        var hoursId = hours.Id;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "Sonno", NodeType = NodeType.Habit, HabitType = HabitType.Counter });
+            db.MetricDefinitions.Add(new MetricDefinition
+            {
+                Id = Guid.NewGuid(),
+                HabitNodeId = habitId,
+                Name = "Durata",
+                Type = MetricType.Seconds,
+                UnitOfMeasureId = hoursId,
+                SortOrder = 0,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+
+        row.TodayCounterUnitCode.Should().Be("hours");
+        row.TodayCounterUnitSymbol.Should().Be(hours.Symbol).And.NotBeNullOrEmpty();
+        row.TodayCounterUnitName.Should().Be(hours.Name);
+        row.TodayCounterUnitIsOfficial.Should().BeTrue();
+    }
 }

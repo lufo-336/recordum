@@ -102,27 +102,9 @@ public class NoteRowViewModelTests
     }
 
     [Fact]
-    public void Diario_note_reports_IsDiario_and_diary_label()
+    public void A_note_row_has_no_category_label()
     {
-        var row = new NoteRowViewModel(new Note
-        {
-            Id = Guid.NewGuid(),
-            HabitNodeId = Guid.NewGuid(),
-            BodyMd = "entry",
-            Category = NoteCategory.Diario,
-        }, DayBoundary.Utc);
-
-        row.IsDiario.Should().BeTrue();
-        row.CategoryLabel.Should().Be(Recordum.Presentation.Resources.Strings.Notes_Category_Diary);
-    }
-
-    [Fact]
-    public void Veloce_note_reports_not_diario_and_quick_label()
-    {
-        var row = new NoteRowViewModel(new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" }, DayBoundary.Utc);
-
-        row.IsDiario.Should().BeFalse();
-        row.CategoryLabel.Should().Be(Recordum.Presentation.Resources.Strings.Notes_Category_Quick);
+        typeof(NoteRowViewModel).GetProperty("CategoryLabel").Should().BeNull();
     }
 
     [Fact]

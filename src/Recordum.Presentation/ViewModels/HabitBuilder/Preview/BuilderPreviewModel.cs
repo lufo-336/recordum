@@ -11,7 +11,8 @@ public sealed record PreviewField(
     string Name,
     FieldNature Nature,
     string? UnitCode,
-    IReadOnlyList<string> ScaleLabels);
+    IReadOnlyList<string> ScaleLabels,
+    string? UnitLabel = null);
 
 /// <summary>The draft, projected into what the preview needs — no view-models, no services, so the
 /// factory is a pure function of the composition (determinism, spec §3).</summary>

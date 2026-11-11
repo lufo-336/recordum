@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
+using Recordum.Presentation.Templates;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.Today;
 
@@ -83,7 +84,7 @@ public sealed class SamplePreviewFactory(IClock clock)
     private static string FormatSample(PreviewField? field)
     {
         var value = SampleValue.ToString("0.##", CultureInfo.CurrentCulture);
-        return field?.UnitCode is { Length: > 0 } code ? $"{value} {code}" : value;
+        return UnitLabel.WithValue(value, field?.UnitLabel ?? field?.UnitCode);
     }
 
     /// <summary>A scale field samples its second step — the first would look like an unset control.</summary>
@@ -106,12 +107,14 @@ public sealed class SamplePreviewFactory(IClock clock)
                     UsualHour = "08:00",
                 };
             case HabitType.Counter:
+                var measured = FirstMeasured(input.Fields);
                 var counter = new CounterTodayContent(new SampleServices.NoCompletions(), new SampleServices.NoMetrics(),
                     new SampleServices.NoReferenceData(), new SampleServices.NoGoals(), _clock)
                 {
                     TodayTotal = SampleValue,
                     TodayTotalDisplay = SampleValue.ToString("0.##", CultureInfo.CurrentCulture),
-                    UnitCode = FirstMeasured(input.Fields)?.UnitCode,
+                    UnitCode = measured?.UnitCode,
+                    UnitLabel = measured?.UnitLabel ?? measured?.UnitCode,
                     HasGoal = input.GoalTarget is > 0,
                     GoalFraction = input.GoalTarget is { } t and > 0 ? Math.Min(1d, (double)(SampleValue / t)) : 0d,
                 };
@@ -150,7 +153,7 @@ public sealed class SamplePreviewFactory(IClock clock)
             .Select(f => new RecordingFieldPreview(
                 f.Name,
                 f.Nature == FieldNature.Scale ? SampleStep(f) : SampleValue.ToString("0.##", CultureInfo.CurrentCulture),
-                f.Nature == FieldNature.Scale ? null : f.UnitCode))
+                f.Nature == FieldNature.Scale ? null : f.UnitLabel ?? f.UnitCode))
             .ToList();
 
         var kind = input.Type switch

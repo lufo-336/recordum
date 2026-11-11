@@ -387,16 +387,16 @@ Dettagli: {0}</value>
     <value>Mattoni</value>
   </data>
   <data name="HabitBuilder.AddQuantity" xml:space="preserve">
-    <value>+ Quantità</value>
+    <value>Quantità</value>
   </data>
   <data name="HabitBuilder.AddTime" xml:space="preserve">
-    <value>+ Tempo</value>
+    <value>Tempo</value>
   </data>
   <data name="HabitBuilder.AddScale" xml:space="preserve">
-    <value>+ Scala</value>
+    <value>Scala</value>
   </data>
   <data name="HabitBuilder.AddText" xml:space="preserve">
-    <value>+ Testo libero</value>
+    <value>Testo libero</value>
   </data>
   <data name="HabitBuilder.CounterBlock" xml:space="preserve">
     <value>Contatore a tap (+1, senza campi)</value>
@@ -873,7 +873,7 @@ Dettagli: {0}</value>
     <value>corrente</value>
   </data>
   <data name="Notes.History" xml:space="preserve">
-    <value>Cronologia</value>
+    <value>Versioni</value>
   </data>
   <data name="Notes.History.Back" xml:space="preserve">
     <value>‹ Indietro</value>

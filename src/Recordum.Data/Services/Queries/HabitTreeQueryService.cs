@@ -107,6 +107,9 @@ public sealed class HabitTreeQueryService(
                 m.LabelsJson,
                 m.ScaleTemplateId,
                 UnitCode = m.UnitOfMeasure != null ? m.UnitOfMeasure.Code : null,
+                UnitSymbol = m.UnitOfMeasure != null ? m.UnitOfMeasure.Symbol : null,
+                UnitName = m.UnitOfMeasure != null ? m.UnitOfMeasure.Name : null,
+                UnitIsOfficial = m.UnitOfMeasure != null && m.UnitOfMeasure.IsOfficial,
             })
             .ToListAsync(ct);
         var primaryMetricByHabit = metricRows
@@ -255,6 +258,9 @@ public sealed class HabitTreeQueryService(
 
                 decimal? todayCounterTotal = null;
                 string? todayCounterUnitCode = null;
+                string? todayCounterUnitSymbol = null;
+                string? todayCounterUnitName = null;
+                bool todayCounterUnitIsOfficial = false;
                 bool todayCounterIsDuration = false;
                 int? todayStateValue = null;
                 string? todayStateLabel = null;
@@ -271,6 +277,9 @@ public sealed class HabitTreeQueryService(
                         if (primaryMetricByHabit.TryGetValue(r.Id, out var counterMetric))
                         {
                             todayCounterUnitCode = counterMetric.UnitCode;
+                            todayCounterUnitSymbol = counterMetric.UnitSymbol;
+                            todayCounterUnitName = counterMetric.UnitName;
+                            todayCounterUnitIsOfficial = counterMetric.UnitIsOfficial;
                             // A duration (Seconds) metric stores value_seconds; the total must be shown
                             // in the metric's own unit (90s on a "minutes" metric = 1.5), not the raw
                             // second count with a "minutes" label (which read "90 minutes" for 90s).
@@ -352,7 +361,10 @@ public sealed class HabitTreeQueryService(
                     ValuesLast14Days: values14,
                     TodayCounterIsDuration: todayCounterIsDuration,
                     HabitDay: r.HabitType is null ? null : DayOf(r.Id).Boundary,
-                    AppDay: r.HabitType is null ? null : appDay);
+                    AppDay: r.HabitType is null ? null : appDay,
+                    TodayCounterUnitSymbol: todayCounterUnitSymbol,
+                    TodayCounterUnitName: todayCounterUnitName,
+                    TodayCounterUnitIsOfficial: todayCounterUnitIsOfficial);
             })
             .ToList();
     }

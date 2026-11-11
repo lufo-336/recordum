@@ -847,10 +847,15 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         CountsOccurrences: CountsOccurrences,
         Repeatable: Repeatable,
         JournalGesture: JournalGesture,
-        Fields: Fields.Select(f => new PreviewField(
-            f.Name, f.Nature,
-            f.UnitOfMeasureId is { } uid ? AvailableUnits.FirstOrDefault(u => u.Id == uid)?.Code : null,
-            ScaleLabelsOf(f.ScaleTemplateId))).ToList(),
+        Fields: Fields.Select(f =>
+        {
+            var unit = f.UnitOfMeasureId is { } uid ? AvailableUnits.FirstOrDefault(u => u.Id == uid) : null;
+            return new PreviewField(
+                f.Name, f.Nature,
+                unit?.Code,
+                ScaleLabelsOf(f.ScaleTemplateId),
+                unit is not null ? UnitLabel.For(unit) : null);
+        }).ToList(),
         SeriesLabels: NamedSeriesLabels(),
         SegmentNames: SessionBrick.HasSession
             ? SessionBrick.Segments.Select(s => s.Name).Where(n => !string.IsNullOrWhiteSpace(n)).ToList()

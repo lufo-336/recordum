@@ -9,6 +9,7 @@ using Recordum.Core.Time;
 using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
+using Recordum.Presentation.Templates;
 using Recordum.Presentation.ViewModels.HabitScreen.Journal;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
@@ -126,7 +127,7 @@ public sealed partial class CompletionListViewModel : ObservableObject
     private async Task<Dictionary<Guid, MetricDisplay>> BuildLookupAsync(Guid habitNodeId, CancellationToken ct)
     {
         var metrics = await _metrics.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(true);
-        var units = (await _refData.ListUnitsAsync(ct).ConfigureAwait(true)).ToDictionary(u => u.Id, u => u.Code);
+        var units = (await _refData.ListUnitsAsync(ct).ConfigureAwait(true)).ToDictionary(u => u.Id, UnitLabel.For);
         var scales = (await _refData.ListScalesAsync(ct).ConfigureAwait(true)).ToDictionary(s => s.Id, s => s);
         var map = new Dictionary<Guid, MetricDisplay>();
         foreach (var m in metrics)

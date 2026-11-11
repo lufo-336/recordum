@@ -7,21 +7,21 @@ namespace Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 /// Built once per load from reference data; reused for every row (Measured = 1 row, CounterSeries = N).</summary>
 public sealed class MetricCellFactory
 {
-    private readonly Dictionary<Guid, string> _unitCodeById;
+    private readonly Dictionary<Guid, UnitOfMeasure> _unitById;
     private readonly Dictionary<Guid, ScaleTemplate> _scaleById;
 
     public MetricCellFactory(IEnumerable<UnitOfMeasure> units, IEnumerable<ScaleTemplate> scales)
     {
         ArgumentNullException.ThrowIfNull(units);
         ArgumentNullException.ThrowIfNull(scales);
-        _unitCodeById = units.ToDictionary(u => u.Id, u => u.Code);
+        _unitById = units.ToDictionary(u => u.Id, u => u);
         _scaleById = scales.ToDictionary(s => s.Id, s => s);
     }
 
     public SeriesCellViewModel Create(MetricDefinition m)
     {
         ArgumentNullException.ThrowIfNull(m);
-        string? unitCode = m.UnitOfMeasureId is { } uid && _unitCodeById.TryGetValue(uid, out var c) ? c : null;
+        var unit = m.UnitOfMeasureId is { } uid && _unitById.TryGetValue(uid, out var u) ? u : null;
 
         ScaleInfo? scale = null;
         if (m.ScaleTemplateId is { } sid && _scaleById.TryGetValue(sid, out var tmpl))
@@ -30,7 +30,7 @@ public sealed class MetricCellFactory
             var labels = ParseLabels(m.LabelsJson) ?? ParseLabels(tmpl.LabelsJson) ?? [];
             scale = new ScaleInfo(tmpl.MinValue, tmpl.MaxValue, labels);
         }
-        return new SeriesCellViewModel(m, unitCode, scale);
+        return new SeriesCellViewModel(m, unit?.Code, scale, unit is null ? null : Recordum.Presentation.Templates.UnitLabel.For(unit));
     }
 
     private static string[]? ParseLabels(string? json)

@@ -14,9 +14,9 @@
         <!-- Preformattato dal ViewModel: una durata senza unita' legge "12:00". -->
         <TextBlock x:Name="Total" Text="{CompiledBinding TodayTotalDisplay}" FontSize="22" FontWeight="SemiBold"
                    Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Bottom"/>
-        <TextBlock Text="{CompiledBinding UnitCode}" Margin="5,0,0,3" VerticalAlignment="Bottom"
+        <TextBlock Text="{CompiledBinding UnitLabel}" Margin="5,0,0,3" VerticalAlignment="Bottom"
                    Foreground="{DynamicResource Brush.TextMuted}"
-                   IsVisible="{CompiledBinding UnitCode, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                   IsVisible="{CompiledBinding UnitLabel, Converter={x:Static ObjectConverters.IsNotNull}}"/>
       </StackPanel>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center" IsVisible="{CompiledBinding HasGoal}">
         <ProgressBar Minimum="0" Maximum="1" Value="{CompiledBinding GoalFraction, Mode=OneWay}"
