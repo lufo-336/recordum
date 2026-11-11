@@ -2520,3 +2520,16 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   senza fissare la cultura: in una corsa su quattro della suite Presentation (2026-11-11, Fedora) ha letto "Quantity"
   dove si aspettava "Quantità", perché un'altra classe in parallelo aveva cambiato la cultura delle risorse. Da sola e
   nelle altre corse è verde. Correzione: fissare la cultura nel test come fanno gli altri che confrontano etichette.
+- **Cosa si vede nella prima Home piena** (Task 3, PNG `home-manifesto-{light,dark}-{900,360}.png`, fixture
+  `ManifestHome`: un gruppo con tre azioni e sei abitudini sciolte, oggi 4 fatte su 9). Regge: a 900 e a 360 nessun nome
+  troncato, la testa sta su una riga, i nove colori si distinguono in chiaro e in scuro, a 360 l'intestazione scende a
+  quattro giorni e le righe la seguono. Tutti `reported`:
+  - **GIO-2 — le strisce dentro un gruppo non stanno sotto le colonne dell'intestazione**: le figlie sono rientrate di
+    circa 5 px per la cornice del gruppo, quindi i loro segni cadono a sinistra del giorno a cui appartengono (a livello
+    alto l'ultima cella è sotto "oggi" entro 1 px). Il test lo dichiara: ±1 px sulle righe di primo livello, "dentro la
+    colonna" per le figlie.
+  - **GIO-3 — a 900 px l'intestazione ha 14 giorni ma quasi tutte le righe ne riempiono 7**: solo l'astinenza disegna
+    14 colonne; azioni, contatori, stato e diari usano le ultime 7 (`HomeStrip.Days7`), e le sette etichette di sinistra
+    stanno sopra il vuoto. Da decidere con le tre righe del Task 9.
+  - **GIO-4 — il pulsante di spunta è uguale per una fatta e una non fatta**: "Letto rifatto" (non fatta oggi) ha lo
+    stesso segno nel pulsante di "Stretching" (fatta); la differenza si legge solo nella cella di oggi.
