@@ -238,8 +238,8 @@ l'astinenza non era ancora cominciata."
 - `PreviousDayCommand`, `NextDayCommand` (con `CanExecute` **e** guardia interna), `SelectDayCommand(int daysBack)`,
   `BackToTodayCommand`. Attivi solo in `HomeTab.Active`; cambiare scheda riporta a oggi.
 - `ImmutableArray<DayHeaderCell> DayHeader` al posto di `StripHeader` —
-  `record struct DayHeaderCell(string Short, string Initial, string FullName, int DaysBack, bool IsToday, bool IsSelected)`
-  (`Short` = "ddd", per oggi `Home.StripHeader.Today`; `Initial` = la prima lettera di "ddd", minuscola nella cultura).
+  `record struct DayHeaderCell(string ShortName, string Initial, string FullName, int DaysBack, bool IsToday, bool IsSelected)`
+  (`ShortName` = "ddd", per oggi `Home.StripHeader.Today`; `Initial` = la prima lettera di "ddd", minuscola nella cultura).
 - `StripCell(string Glyph, bool On, bool IsToday, bool IsSelected = false)`.
 - `HomeRowViewModel(..., int daysBack = 0)`: `IsDoneOnDay` (per `daysBack == 0` è `row.IsCompletedToday`; altrimenti la
   cella di quel giorno ha un conto o un valore), la cella scelta marcata `IsSelected`, la cifra chiave **del giorno** per
@@ -275,6 +275,21 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
 - [ ] **Step 2: implementa.** `StripHeader`, `TodayLabel` e `ShowStripHeader` si sostituiscono; il compilatore elenca i
   chiamanti (WPF compresa: lì `DayHeader` si adatta col minimo, mostrando `Short`).
 - [ ] **Step 3:** verdi, commit `feat(presentation): la Home ha un giorno corrente (A1)`.
+
+**Com'è stato fatto (2026-11-12)** — ciò che i task dopo trovano diverso da qui sopra:
+- `DayHeaderCell.ShortName`, non `Short` (CA1720 vieta un identificatore che è un nome di tipo).
+- `ShowDayHeader` al posto di `ShowStripHeader`: falso anche fuori dalle Attive. In `HomeView.axaml` l'intestazione è ancora
+  la `HeatmapStrip` di prima, alimentata da `DayHeader` col convertitore `HomeView.HeaderCells`: il Task 7 toglie entrambi.
+- La riga riceve il giorno da registrare in `HomeRowViewModel.RecordDay` (`init`, null = oggi), non lo ricalcola.
+- **Il giorno della Home è dell'app, la striscia è dell'abitudine**: `GroupProgress.CellBack(row, daysBack, clock)` dice di
+  quante celle indietro sta il giorno scelto nella striscia di *quella* riga (Review Focus 2: reset 05:00, app 00:00, alle
+  02:00 "ieri" della Home è l'ultima cella dell'abitudine, quella che il log rapido riempie). Cella scelta, `IsDoneOnDay`,
+  filtro "fatte" e conti passano tutti da lì; `GroupProgress.HasEntryOn` / `IsDoneOn` / `CountOn` / `ValueOn` leggono il giorno.
+- `GroupProgress.Count(byParent, Guid? groupId, isDone = null)`: `isDone` facoltativo (la Panoramica resta su oggi),
+  `groupId` null conta dalla radice (è il "4 di 9" della testa).
+- Il ritorno a oggi al cambio di giorno sta nel **caricamento** (`ResolveAppDayAsync`), non solo nel battito: un evento che
+  ricarica dopo mezzanotte, prima del battito, non sposta "ieri" di un giorno. Il battito si limita a ricaricare.
+- La Home ora batte sempre (una callback per il cambio di giorno), anche senza righe di astinenza.
 
 ### Task 7: La testa su una riga, l'intestazione che si clicca, la fascia
 
