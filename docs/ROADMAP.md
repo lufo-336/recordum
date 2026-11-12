@@ -23,14 +23,14 @@
 - **Piano dell'onda "Giornata" scritto** (2026-11-11, `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task in
   tre parti: le parole, la Home, la schermata dell'abitudine): l'autore lo legge, con le 13 "Decisioni mie" in fondo.
 - **Onda "Giornata" in corso** (dal 2026-11-11) sul branch `giornata-agy`, da `ux3a-creator-templates` (3a non è
-  ancora in `main`): si scrive in cooperazione con Antigravity, per valutarla. **Fatti i Task 1-4** (le parole:
+  ancora in `main`): si scrive in cooperazione con Antigravity, per valutarla. **Fatti i Task 1-5** (le parole:
   guardia, glossario, valori; unità col simbolo o col nome tradotto, tessere senza "+", note senza etichetta di
-  categoria; la fixture "manifesto" coi PNG della Home piena; il log rapido riceve il giorno), CI verde. **Il Task 5
-  (la ricaduta con una data) è scritto ma non verificato né committato** (2026-11-12). Aspettano l'autore, prima del Task 4: le parole marcate "(proposta)" in `docs/GLOSSARY.md` e quattro
+  categoria; la fixture "manifesto" coi PNG della Home piena; il log rapido riceve il giorno; la ricaduta con una data, e dalla Home un periodo
+  non si chiude più con un clic — `b935a749`, 2026-11-12). Aspettano l'autore, prima del Task 4: le parole marcate "(proposta)" in `docs/GLOSSARY.md` e quattro
   "Decisioni mie" del piano (3, 4, 5 e 1: la spunta dalla Home registra e non toglie; l'astinenza dalla Home non chiude
   un periodo con un clic; una ricaduta su un giorno passato chiude e basta; dalla Home al massimo 13 giorni indietro).
-- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) verificare e committare il Task 5 del piano
-  "Giornata", poi il Task 6 (il giorno corrente della Home); (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
+- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) il Task 6 del piano "Giornata" (il giorno corrente
+  della Home); (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
   vale per dispositivo).
 
 ## Il percorso
