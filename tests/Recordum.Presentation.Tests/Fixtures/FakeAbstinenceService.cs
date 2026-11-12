@@ -31,8 +31,12 @@ public sealed class FakeAbstinenceService : IAbstinenceService
         return Task.CompletedTask;
     }
 
-    public Task LapseAsync(Guid habitNodeId, CancellationToken ct = default)
+    /// <summary>Every <c>day</c> received by <see cref="LapseAsync"/>, in call order (null = today).</summary>
+    public List<DateOnly?> LapseDays { get; } = new();
+
+    public Task LapseAsync(Guid habitNodeId, DateOnly? day = null, CancellationToken ct = default)
     {
+        LapseDays.Add(day);
         var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var open = List(habitNodeId).FirstOrDefault(p => p.EndedAtMs is null);
         if (open is not null)

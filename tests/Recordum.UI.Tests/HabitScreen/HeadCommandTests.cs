@@ -230,7 +230,7 @@ public class HeadCommandTests
         await UntilAsync(() => ab.CanLapse);
 
         var lapse = Named<Button>(o.Command, "LapseButton");
-        lapse.Classes.Should().Contain("danger");
+        lapse.Classes.Should().Contain("record").And.NotContain("danger");
         Click(o.Window, lapse);
         var flyout = (Flyout)lapse.Flyout!;
         flyout.IsOpen.Should().BeTrue("la ricaduta si conferma");
@@ -267,6 +267,101 @@ public class HeadCommandTests
         var relapsed = Named<TextBlock>(o.Command, "Relapsed");
         relapsed.IsEffectivelyVisible.Should().BeTrue();
         relapsed.Text.Should().Be(ab.RelapsedOnDisplay).And.NotBeEmpty();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Relapse_text_is_muted_not_red()
+    {
+        using var _ = TestCulture.Pin();
+        var o = await OpenAsync(HabitType.Resistance);
+        var ab = (AbstinenceQuickAddViewModel)o.Vm.QuickAdd!;
+        Click(o.Window, Named<Button>(o.Command, "StartButton"));
+        await UntilAsync(() => ab.CanLapse);
+
+        var lapse = Named<Button>(o.Command, "LapseButton");
+        lapse.Content.Should().Be("Segna una ricaduta…");
+        lapse.Classes.Should().Contain("record").And.NotContain("danger");
+
+        Click(o.Window, lapse);
+        var confirm = ((Control)((Flyout)lapse.Flyout!).Content!).GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "ConfirmLapseButton");
+        confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await UntilAsync(() => !ab.CanLapse);
+        Pump();
+
+        var relapsed = Named<TextBlock>(o.Command, "Relapsed");
+        relapsed.IsEffectivelyVisible.Should().BeTrue();
+        o.Window.TryFindResource("Brush.TextMuted", o.Window.ActualThemeVariant, out var muted).Should().BeTrue();
+        o.Window.TryFindResource("Brush.Danger", o.Window.ActualThemeVariant, out var danger).Should().BeTrue();
+        ((ISolidColorBrush)relapsed.Foreground!).Color.Should().Be(((ISolidColorBrush)muted!).Color)
+            .And.NotBe(((ISolidColorBrush)danger!).Color);
+        relapsed.Text.Should().Be("Ricaduta il 28 ott", "la data ha il formato del resto dell'app");
+        o.Window.Close();
+    }
+
+    private static TextBlock LapseOnNote(Button lapse) =>
+        ((Control)((Flyout)lapse.Flyout!).Content!).GetLogicalDescendants().OfType<TextBlock>().Single(t => t.Tag as string == "LapseOn");
+
+    private static void ConfirmLapse(Button lapse) =>
+        ((Control)((Flyout)lapse.Flyout!).Content!).GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "ConfirmLapseButton")
+            .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+    [AvaloniaFact]
+    public async Task Lapse_flyout_names_the_chosen_day_and_the_relapse_goes_there()
+    {
+        using var _ = TestCulture.Pin();
+        // Il periodo comincia il 25; la schermata si apre il 28.
+        var o = await OpenAsync(HabitType.Resistance, async (sp, id) =>
+        {
+            Host.Clock.Now = new DateTimeOffset(2026, 10, 25, 10, 0, 0, TimeSpan.Zero);
+            await sp.GetRequiredService<IAbstinenceService>().StartAsync(id);
+            Host.Clock.Now = new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero);
+        });
+        var ab = (AbstinenceQuickAddViewModel)o.Vm.QuickAdd!;
+        await UntilAsync(() => ab.CanLapse);
+        var lapse = Named<Button>(o.Command, "LapseButton");
+
+        Click(o.Window, lapse);
+        LapseOnNote(lapse).IsVisible.Should().BeFalse("oggi non si nomina");
+        lapse.Flyout!.Hide();
+        Pump();
+
+        await o.Vm.SelectDayAsync(new DateOnly(2026, 10, 27));
+        Pump();
+        Click(o.Window, lapse);
+        LapseOnNote(lapse).IsVisible.Should().BeTrue();
+        LapseOnNote(lapse).Text.Should().Be("La ricaduta va su martedì 27 ottobre 2026.");
+
+        ConfirmLapse(lapse);
+        await UntilAsync(() => !ab.CanLapse);
+        Pump();
+        Named<TextBlock>(o.Command, "Relapsed").Text.Should().Be("Ricaduta il 27 ott");
+        var period = (await o.Scope.ServiceProvider.GetRequiredService<IAbstinenceService>()
+            .ListPeriodsAsync(o.Id, new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 31))).Single();
+        period.EndedAtMs.Should().Be(new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds());
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Lapse_on_a_day_before_the_start_shows_the_error_and_keeps_the_period()
+    {
+        using var _ = TestCulture.Pin();
+        var o = await OpenAsync(HabitType.Resistance);
+        var ab = (AbstinenceQuickAddViewModel)o.Vm.QuickAdd!;
+        Click(o.Window, Named<Button>(o.Command, "StartButton"));   // comincia il 28
+        await UntilAsync(() => ab.CanLapse);
+
+        await o.Vm.SelectDayAsync(new DateOnly(2026, 10, 27));
+        Pump();
+        var lapse = Named<Button>(o.Command, "LapseButton");
+        Click(o.Window, lapse);
+        ConfirmLapse(lapse);
+        await UntilAsync(() => ab.ErrorMessage is not null);
+
+        var error = Named<TextBlock>(o.Command, "Error");
+        error.IsEffectivelyVisible.Should().BeTrue();
+        error.Text.Should().Be("Quel giorno l'astinenza non era ancora cominciata.");
+        ab.CanLapse.Should().BeTrue("niente e' stato scritto");
         o.Window.Close();
     }
 

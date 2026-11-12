@@ -220,6 +220,38 @@ public class RecordsViewTests
     }
 
     [AvaloniaFact]
+    public async Task A_closed_period_is_not_drawn_as_an_error()
+    {
+        // B5: una ricaduta non e' un errore — barra del colore del bordo, testo attenuato, data "15 mar".
+        using var _ = TestCulture.Pin();
+        var o = await OpenAsync(HabitType.Resistance, async (s, id) =>
+        {
+            var ab = s.ServiceProvider.GetRequiredService<IAbstinenceService>();
+            Host.Clock.Now = Noon.AddDays(-3);
+            await ab.StartAsync(id);
+            Host.Clock.Now = Noon;
+            await ab.LapseAsync(id);   // oggi: il periodo chiuso tocca il giorno scelto
+        });
+        try
+        {
+            await UntilAsync(() => RecordsHost(o).Child is AbstinencePeriodListView && Buttons(o).Count == 1);
+            Avalonia.Media.Color Res(string key)
+            {
+                o.Window.TryFindResource(key, o.Window.ActualThemeVariant, out var b).Should().BeTrue();
+                return ((Avalonia.Media.ISolidColorBrush)b!).Color;
+            }
+
+            var bar = RecordsHost(o).GetVisualDescendants().OfType<Border>()
+                .Single(b => b.CornerRadius == new CornerRadius(2) && b.IsEffectivelyVisible);
+            ((Avalonia.Media.ISolidColorBrush)bar.Background!).Color.Should().Be(Res("Brush.Border")).And.NotBe(Res("Brush.Danger"));
+
+            var relapsed = RecordsHost(o).GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Ricaduta il 15 mar");
+            ((Avalonia.Media.ISolidColorBrush)relapsed.Foreground!).Color.Should().Be(Res("Brush.TextMuted")).And.NotBe(Res("Brush.Danger"));
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void The_template_builds_the_list_of_its_type_only()
     {
         var t = RecordsTemplate.Instance;

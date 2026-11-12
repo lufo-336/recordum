@@ -2,6 +2,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Errors;
 using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
 using Recordum.Core.Time;
@@ -54,7 +55,7 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase,
         {
             if (RelapsedOn is not { } d) return string.Empty;
 #pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
-            return string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_RelapsedOn, d.ToString("d", CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_RelapsedOn, d.ToString("d MMM", CultureInfo.CurrentCulture));
 #pragma warning restore CA1863
         }
     }
@@ -64,6 +65,9 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase,
     /// <summary>Raised after a successful Start or Lapse so the host can refresh the streak summary
     /// and calendar markers without waiting for a completion event (abstinence writes no completions).</summary>
     public event EventHandler? Changed;
+
+    /// <summary>Raised by <see cref="RequestLapsePrompt"/>: the view opens the confirmation flyout.</summary>
+    public event EventHandler? LapsePromptRequested;
 
     // ---- load ----
 
@@ -117,9 +121,34 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase,
     [RelayCommand]
     private async Task LapseAsync()
     {
-        await _abstinence.LapseAsync(Node!.Id).ConfigureAwait(true);
+        try
+        {
+            ErrorMessage = null;
+            await _abstinence.LapseAsync(Node!.Id, CompletionDay).ConfigureAwait(true);
+        }
+        catch (AbstinenceLapseBeforeStartException)
+        {
+            ErrorMessage = Strings.Abstinence_Error_BeforeStart;
+            return;
+        }
         await ReloadAsync().ConfigureAwait(true);
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Asks the view to open the relapse confirmation (the host's way to start a lapse).</summary>
+    public void RequestLapsePrompt() => LapsePromptRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>"The relapse goes on {day}." when the chosen day is not today; empty otherwise.</summary>
+    public string LapseOnDisplay
+    {
+        get
+        {
+            if (CompletionDay == DayBoundary.Today(Clock)) return string.Empty;
+#pragma warning disable CA1863 // CompositeFormat caching not worth complexity for low-frequency UI string
+            return string.Format(CultureInfo.CurrentCulture, Strings.Head_Abstinence_LapseOn,
+                CompletionDay.ToString("D", CultureInfo.CurrentCulture));
+#pragma warning restore CA1863
+        }
     }
 
     // ---- QuickAddViewModelBase contract ----

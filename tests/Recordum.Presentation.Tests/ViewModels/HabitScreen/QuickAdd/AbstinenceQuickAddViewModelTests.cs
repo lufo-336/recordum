@@ -92,4 +92,61 @@ public class AbstinenceQuickAddViewModelTests
         vm.Status.Should().Be(AbstinenceStatus.Relapsed);
         changedFired.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task Lapse_uses_the_chosen_completion_day()
+    {
+        var (vm, abstinence, clock) = Create();
+        var id = vm.Node!.Id;
+        abstinence.States[id] = new AbstinenceState(AbstinenceStatus.Abstaining, clock.UtcNow.ToUnixTimeMilliseconds(), null);
+        await vm.LoadAsync(DayBoundary.Utc);
+        vm.CompletionDate = new DateTime(2026, 5, 30);
+
+        await vm.LapseCommand.ExecuteAsync(null);
+
+        abstinence.LapseDays.Should().Equal(new DateOnly(2026, 5, 30));
+    }
+
+    [Fact]
+    public async Task Lapse_before_start_shows_the_error_and_does_not_reload()
+    {
+        var (vm, _, _) = Create();
+        var throwing = new ThrowingAbstinence();
+        var sut = new AbstinenceQuickAddViewModel(new FakeCompletionService(), throwing, new FakeClock(Epoch), null)
+        {
+            Node = vm.Node,
+        };
+        bool changedFired = false;
+        sut.Changed += (_, _) => changedFired = true;
+
+        await sut.LapseCommand.ExecuteAsync(null);
+
+        sut.ErrorMessage.Should().Be(Recordum.Presentation.Resources.Strings.Abstinence_Error_BeforeStart);
+        changedFired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RequestLapsePrompt_raises_the_event()
+    {
+        var (vm, _, _) = Create();
+        bool raised = false;
+        vm.LapsePromptRequested += (_, _) => raised = true;
+
+        vm.RequestLapsePrompt();
+
+        raised.Should().BeTrue();
+    }
+
+    private sealed class ThrowingAbstinence : IAbstinenceService
+    {
+        public Task<AbstinenceState> GetStateAsync(Guid habitNodeId, CancellationToken ct = default)
+            => Task.FromResult(new AbstinenceState(AbstinenceStatus.Abstaining, 0, null));
+        public Task StartAsync(Guid habitNodeId, CancellationToken ct = default) => Task.CompletedTask;
+        public Task LapseAsync(Guid habitNodeId, DateOnly? day = null, CancellationToken ct = default)
+            => throw new Recordum.Core.Errors.AbstinenceLapseBeforeStartException(habitNodeId, day ?? default);
+        public Task<IReadOnlyList<AbstinencePeriod>> ListPeriodsAsync(
+            Guid habitNodeId, DateOnly from, DateOnly to, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<AbstinencePeriod>>([]);
+        public Task DeletePeriodAsync(Guid periodId, CancellationToken ct = default) => Task.CompletedTask;
+    }
 }

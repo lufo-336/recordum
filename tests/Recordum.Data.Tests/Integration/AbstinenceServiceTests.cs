@@ -239,4 +239,94 @@ public class AbstinenceServiceTests
 
         periods.Should().ContainSingle();
     }
+
+    private static async Task<(DbFixture Fx, Guid HabitId, AbstinenceService Sut)> LapseSetupAsync(DateTimeOffset? startedAt)
+    {
+        // Fuso +2, reset 00:00: "oggi" = 20 agosto; mezzogiorno del 18 = 10:00Z.
+        var clock = new FakeClock(new DateTimeOffset(2026, 8, 20, 6, 0, 0, TimeSpan.Zero), Plus2);
+        var fx = new DbFixture(clock);
+        var habitId = await SeedResistanceHabit(fx);
+        if (startedAt is { } s) await SeedPeriodAtAsync(fx, habitId, s);
+        return (fx, habitId, new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes));
+    }
+
+    private static async Task<long?> OnlyPeriodEndAsync(DbFixture fx, Guid habitId)
+    {
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        return (await db.AbstinencePeriods.AsNoTracking().SingleAsync(p => p.HabitNodeId == habitId)).EndedAtMs;
+    }
+
+    [Fact]
+    public async Task Lapse_on_a_past_day_ends_at_noon_of_that_day()
+    {
+        var (fx, habitId, sut) = await LapseSetupAsync(new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+
+        await sut.LapseAsync(habitId, new DateOnly(2026, 8, 18));
+
+        (await OnlyPeriodEndAsync(fx, habitId))
+            .Should().Be(new DateTimeOffset(2026, 8, 18, 10, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds());
+    }
+
+    [Fact]
+    public async Task Lapse_on_the_same_day_as_start_ends_at_the_end_of_that_day()
+    {
+        // Inizio alle 15:00 locali (13:00Z) del 18: mezzogiorno (10:00Z) e' prima dell'inizio.
+        var start = new DateTimeOffset(2026, 8, 18, 13, 0, 0, TimeSpan.Zero);
+        var (fx, habitId, sut) = await LapseSetupAsync(start);
+        await using var _ = fx;
+
+        await sut.LapseAsync(habitId, new DateOnly(2026, 8, 18));
+
+        var end = await OnlyPeriodEndAsync(fx, habitId);
+        end.Should().Be(new DateTimeOffset(2026, 8, 18, 22, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds() - 1);
+        end.Should().BeGreaterThan(start.ToUnixTimeMilliseconds());
+    }
+
+    [Fact]
+    public async Task Lapse_on_a_day_before_the_start_throws_and_writes_nothing()
+    {
+        var (fx, habitId, sut) = await LapseSetupAsync(new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+
+        var act = () => sut.LapseAsync(habitId, new DateOnly(2026, 8, 18));
+
+        await act.Should().ThrowAsync<Recordum.Core.Errors.AbstinenceLapseBeforeStartException>();
+        (await OnlyPeriodEndAsync(fx, habitId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Lapse_on_a_future_day_throws()
+    {
+        var (fx, habitId, sut) = await LapseSetupAsync(new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+
+        var act = () => sut.LapseAsync(habitId, new DateOnly(2026, 8, 21));
+
+        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+        (await OnlyPeriodEndAsync(fx, habitId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Lapse_on_a_past_day_without_open_period_does_nothing()
+    {
+        var (fx, habitId, sut) = await LapseSetupAsync(null);
+        await using var _ = fx;
+
+        await sut.LapseAsync(habitId, new DateOnly(2026, 8, 18));
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.AbstinencePeriods.CountAsync(p => p.HabitNodeId == habitId)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Lapse_without_day_ends_now()
+    {
+        var (fx, habitId, sut) = await LapseSetupAsync(new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+        await using var _ = fx;
+
+        await sut.LapseAsync(habitId);
+
+        (await OnlyPeriodEndAsync(fx, habitId)).Should().Be(fx.Clock.UtcNowMs);
+    }
 }

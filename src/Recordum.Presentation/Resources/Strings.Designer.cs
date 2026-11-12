@@ -751,6 +751,8 @@ public static class Strings
     public static string Head_Session_Manual => Get("Head.Session.Manual");
     public static string Head_Abstinence_Lapse => Get("Head.Abstinence.Lapse");
     public static string Head_Abstinence_LapseConfirm => Get("Head.Abstinence.LapseConfirm");
+    public static string Head_Abstinence_LapseOn => Get("Head.Abstinence.LapseOn");
+    public static string Abstinence_Error_BeforeStart => Get("Abstinence.Error.BeforeStart");
     public static string Head_Confirm => Get("Head.Confirm");
     public static string Head_Counter_Progress => Get("Head.Counter.Progress");
     public static string History_Map => Get("History.Map");

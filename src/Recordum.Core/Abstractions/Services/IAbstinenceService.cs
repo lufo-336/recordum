@@ -15,8 +15,11 @@ public interface IAbstinenceService
     /// <summary>Opens a new abstinence period (now). No-op if one is already open.</summary>
     Task StartAsync(Guid habitNodeId, CancellationToken ct = default);
 
-    /// <summary>Closes the open period (now = the relapse day). No-op if none is open.</summary>
-    Task LapseAsync(Guid habitNodeId, CancellationToken ct = default);
+    /// <summary>Closes the open period. <paramref name="day"/> null or today: now. A past day (habit
+    /// boundary): noon of that day, or its last millisecond if noon is not after the start; throws
+    /// <c>AbstinenceLapseBeforeStartException</c> if the period began after that day, and
+    /// <see cref="ArgumentOutOfRangeException"/> for a future day. No-op if none is open.</summary>
+    Task LapseAsync(Guid habitNodeId, DateOnly? day = null, CancellationToken ct = default);
 
     /// <summary>Periods that intersect [from, to] (by day), newest-relevant order not guaranteed.</summary>
 #pragma warning disable CA1716 // Parameter name 'to' conflicts with reserved keyword

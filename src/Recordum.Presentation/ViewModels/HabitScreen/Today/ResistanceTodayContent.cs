@@ -82,7 +82,7 @@ public sealed partial class ResistanceTodayContent : ObservableObject, ITodayCon
     [RelayCommand]
     private async Task LapseAsync()
     {
-        await _abstinence.LapseAsync(_habitId).ConfigureAwait(true);
+        await _abstinence.LapseAsync(_habitId, day: null).ConfigureAwait(true);
         await ReloadAsync().ConfigureAwait(true);
         Changed?.Invoke(this, EventArgs.Empty);
     }

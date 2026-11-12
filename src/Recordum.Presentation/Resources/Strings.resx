@@ -2082,6 +2082,12 @@ Details: {0}</value>
   <data name="Head.Abstinence.LapseConfirm" xml:space="preserve">
     <value>Record a lapse now? The current period ends here.</value>
   </data>
+  <data name="Head.Abstinence.LapseOn" xml:space="preserve">
+    <value>The relapse goes on {0}.</value>
+  </data>
+  <data name="Abstinence.Error.BeforeStart" xml:space="preserve">
+    <value>On that day the abstinence had not started yet.</value>
+  </data>
   <data name="Head.Confirm" xml:space="preserve">
     <value>Confirm</value>
   </data>

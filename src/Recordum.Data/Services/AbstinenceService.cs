@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Errors;
 using Recordum.Core.Models;
 using Recordum.Plugins.Contracts.Events;
 using Recordum.Plugins.Contracts.Hosting;
@@ -51,8 +52,14 @@ public sealed class AbstinenceService(
         _events.Publish(new AbstinenceChangedPayload(habitNodeId, WellKnownEvents.AbstinenceStarted));
     }
 
-    public async Task LapseAsync(Guid habitNodeId, CancellationToken ct = default)
+    public async Task LapseAsync(Guid habitNodeId, DateOnly? day = null, CancellationToken ct = default)
     {
+        // Boundary resolved once, at the top.
+        var boundary = await resetTimes.GetDayBoundaryAsync(habitNodeId, ct).ConfigureAwait(false);
+        var today = boundary.Today(clock);
+        if (day is { } requested && requested > today)
+            throw new ArgumentOutOfRangeException(nameof(day), requested, "A relapse cannot be logged on a future day.");
+
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
 
         var open = await db.AbstinencePeriods
@@ -60,7 +67,23 @@ public sealed class AbstinenceService(
             .OrderByDescending(p => p.StartedAtMs).FirstOrDefaultAsync(ct).ConfigureAwait(false);
         if (open is null) return; // guard
 
-        open.EndedAtMs = clock.UtcNowMs;
+        long endMs;
+        if (day is not { } past || past == today)
+        {
+            endMs = clock.UtcNowMs;
+        }
+        else
+        {
+            endMs = boundary.NoonOf(past).ToUnixTimeMilliseconds();
+            if (endMs <= open.StartedAtMs)
+            {
+                endMs = boundary.StartOf(past.AddDays(1)).ToUnixTimeMilliseconds() - 1;
+                if (endMs <= open.StartedAtMs)
+                    throw new AbstinenceLapseBeforeStartException(habitNodeId, past);
+            }
+        }
+
+        open.EndedAtMs = endMs;
         await db.SaveChangesAsync(ct).ConfigureAwait(false);
         _events.Publish(new AbstinenceChangedPayload(habitNodeId, WellKnownEvents.AbstinenceLapsed));
     }

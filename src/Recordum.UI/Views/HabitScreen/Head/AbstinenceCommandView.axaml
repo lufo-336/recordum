@@ -3,15 +3,17 @@
              xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
              x:Class="Recordum.UI.Views.HabitScreen.Head.AbstinenceCommandView"
              x:DataType="qa:AbstinenceQuickAddViewModel">
-  <!-- Astinenza: "Ho ceduto…" chiede prima di chiudere il periodo; senza periodo aperto "Inizio". -->
+  <!-- Astinenza: "Segna una ricaduta…" chiede prima di chiudere il periodo; senza periodo aperto "Inizio". -->
   <StackPanel HorizontalAlignment="Right">
-    <Button x:Name="LapseButton" Classes="record danger" Content="{x:Static res:Strings.Head_Abstinence_Lapse}"
+    <Button x:Name="LapseButton" Classes="record" Content="{x:Static res:Strings.Head_Abstinence_Lapse}"
             IsVisible="{CompiledBinding CanLapse}">
       <Button.Flyout>
-        <Flyout Placement="BottomEdgeAlignedRight">
+        <Flyout Placement="BottomEdgeAlignedRight" Opening="OnLapseFlyoutOpening">
           <StackPanel MaxWidth="280" Spacing="10">
             <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text}"
                        Text="{x:Static res:Strings.Head_Abstinence_LapseConfirm}"/>
+            <!-- Il giorno scelto, solo se non e' oggi: il testo lo imposta il code-behind all'apertura. -->
+            <TextBlock Tag="LapseOn" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}" IsVisible="False"/>
             <Button x:Name="ConfirmLapseButton" Classes="primary" HorizontalAlignment="Right"
                     Content="{x:Static res:Strings.Head_Confirm}" Click="OnConfirmLapse"/>
           </StackPanel>

@@ -2070,6 +2070,12 @@ Dettagli: {0}</value>
   <data name="Head.Abstinence.LapseConfirm" xml:space="preserve">
     <value>Registrare una ricaduta adesso? Il periodo in corso finisce qui.</value>
   </data>
+  <data name="Head.Abstinence.LapseOn" xml:space="preserve">
+    <value>La ricaduta va su {0}.</value>
+  </data>
+  <data name="Abstinence.Error.BeforeStart" xml:space="preserve">
+    <value>Quel giorno l'astinenza non era ancora cominciata.</value>
+  </data>
   <data name="Head.Confirm" xml:space="preserve">
     <value>Conferma</value>
   </data>

@@ -8,8 +8,8 @@
         <Border Margin="0,0,0,8" Padding="12" CornerRadius="8" BorderThickness="1"
                 BorderBrush="{DynamicResource Brush.Border}" Background="{DynamicResource Brush.Surface}">
           <Grid ColumnDefinitions="4,*,Auto">
-            <!-- barra: pericolo = chiuso (ricaduta); quella accento sopra la copre per il periodo aperto -->
-            <Border Grid.Column="0" CornerRadius="2" Margin="0,0,10,0" Background="{DynamicResource Brush.Danger}"/>
+            <!-- barra: bordo = chiuso (ricaduta, non e' un errore); quella accento sopra la copre per il periodo aperto -->
+            <Border Grid.Column="0" CornerRadius="2" Margin="0,0,10,0" Background="{DynamicResource Brush.Border}"/>
             <Border Grid.Column="0" CornerRadius="2" Margin="0,0,10,0" Background="{DynamicResource Brush.Accent}"
                     IsVisible="{CompiledBinding IsCurrent}"/>
             <StackPanel Grid.Column="1">
@@ -20,7 +20,7 @@
               <TextBlock Text="{CompiledBinding DurationDisplay}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"
                          IsVisible="{CompiledBinding !IsCurrent}"/>
               <TextBlock Text="{CompiledBinding SinceDisplay}" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"/>
-              <TextBlock Text="{CompiledBinding RelapsedOnDisplay}" FontSize="12" Foreground="{DynamicResource Brush.Danger}"
+              <TextBlock Text="{CompiledBinding RelapsedOnDisplay}" FontSize="12" Foreground="{DynamicResource Brush.TextMuted}"
                          IsVisible="{CompiledBinding !IsCurrent}"/>
             </StackPanel>
             <Button Grid.Column="2" x:Name="DeleteButton" Width="28" Height="28" Padding="0" VerticalAlignment="Top"

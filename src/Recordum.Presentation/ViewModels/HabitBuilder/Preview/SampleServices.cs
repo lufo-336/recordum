@@ -78,7 +78,7 @@ internal static class SampleServices
         public Task<AbstinenceState> GetStateAsync(Guid habitNodeId, CancellationToken ct = default) =>
             Task.FromResult(new AbstinenceState(AbstinenceStatus.NotStarted, null, null));
         public Task StartAsync(Guid habitNodeId, CancellationToken ct = default) => Task.CompletedTask;
-        public Task LapseAsync(Guid habitNodeId, CancellationToken ct = default) => Task.CompletedTask;
+        public Task LapseAsync(Guid habitNodeId, DateOnly? day = null, CancellationToken ct = default) => Task.CompletedTask;
         public Task<IReadOnlyList<AbstinencePeriod>> ListPeriodsAsync(Guid habitNodeId, DateOnly from, DateOnly to,
             CancellationToken ct = default) => Task.FromResult<IReadOnlyList<AbstinencePeriod>>([]);
         public Task DeletePeriodAsync(Guid periodId, CancellationToken ct = default) => Task.CompletedTask;

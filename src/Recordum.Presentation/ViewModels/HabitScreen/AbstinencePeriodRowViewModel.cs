@@ -68,7 +68,7 @@ public sealed partial class AbstinencePeriodRowViewModel : ObservableObject, IDi
             // a same-day attempt reads "3:20:00", a multi-day one "2g 6:14:09" (not a calendar-day count).
             DurationDisplay = DurationFormat.FormatStopwatch(endInstant - startInstant);
 #pragma warning disable CA1863 // Ctor not called repeatedly
-            RelapsedOnDisplay = string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_RelapsedOn, end.ToString("d", CultureInfo.CurrentCulture));
+            RelapsedOnDisplay = string.Format(CultureInfo.CurrentCulture, Strings.Abstinence_RelapsedOn, end.ToString("d MMM", CultureInfo.CurrentCulture));
 #pragma warning restore CA1863
             SinceDisplay = $"{start.ToString("d", CultureInfo.CurrentCulture)} → {end.ToString("d", CultureInfo.CurrentCulture)}";
         }
