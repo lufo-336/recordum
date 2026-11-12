@@ -23,17 +23,20 @@
 - **Piano dell'onda "Giornata" scritto** (2026-11-11, `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task in
   tre parti: le parole, la Home, la schermata dell'abitudine): l'autore lo legge, con le 13 "Decisioni mie" in fondo.
 - **Onda "Giornata" in corso** (dal 2026-11-11) sul branch `giornata-agy`, da `ux3a-creator-templates` (3a non è
-  ancora in `main`): si scrive in cooperazione con Antigravity, per valutarla. **Fatti i Task 1-6** (le parole:
+  ancora in `main`): si scrive in cooperazione con Antigravity, per valutarla. **Fatti i Task 1-7** (le parole:
   guardia, glossario, valori; unità col simbolo o col nome tradotto, tessere senza "+", note senza etichetta di
   categoria; la fixture "manifesto" coi PNG della Home piena; il log rapido riceve il giorno; la ricaduta con una data, e dalla Home un periodo
   non si chiude più con un clic — `b935a749`, 2026-11-12; la Home ha un giorno corrente nel ViewModel: titolo, conto "x di y",
   righe, filtro "fatte" e log rapido seguono il giorno scelto senza rileggere il database, e al cambio di giorno si torna a
-  oggi — `23c2f914`, 2026-11-12, scritto senza Antigravity: quote Sonnet e Argon esaurite fino al 17 novembre circa). **Decisioni dell'autore
+  oggi — `23c2f914`, 2026-11-12, scritto senza Antigravity: quote Sonnet e Argon esaurite fino al 17 novembre circa; la
+  testa della Home su una riga — titolo, data, conto, ‹ ›, la ricerca dietro la lente, Archivio e Cestino dietro ⋯ —, i
+  giorni dell'intestazione che si cliccano, la fascia sul giorno passato, la colonna del giorno marcata su ogni riga —
+  `34c9acbc`, 2026-11-12, implementazione scritta da Antigravity con Gemini 4 Hydrogen, che ha quota). **Decisioni dell'autore
   del 2026-11-12**: confermate le parole del glossario e le "Decisioni mie" 1, 4 e 5 del piano; cambiata la 3 — dalla
   Home una spunta già fatta si toglie, dopo una conferma (Task 8b, aggiunto al piano). La CI Linux è caduta sull'SDK
   .NET 11 della nuova immagine Ubuntu 26.04: `global.json` fissa l'SDK al 10.
-- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) il Task 7 del piano "Giornata" (la testa su una riga,
-  l'intestazione che si clicca, la fascia: la parte a schermo del giorno corrente); (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
+- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) il Task 8 del piano "Giornata" (dalla Home si apre la
+  schermata sul giorno scelto); (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
   vale per dispositivo).
 
 ## Il percorso

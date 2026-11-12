@@ -330,6 +330,30 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
   con la fascia).
 - [ ] **Step 3:** verdi, guardare i PNG, commit `feat(ui): la testa della Home su una riga, i giorni si cliccano, fascia sul giorno passato (A1, A3)`.
 
+**Com'è stato fatto (2026-11-12)** — ciò che i task dopo trovano diverso da qui sopra:
+- **Chi ha scritto**: test, stringhe e disegno in sessione; l'implementazione (`HomeView`, `DayHeaderView`, `HeatmapStrip`)
+  l'ha scritta Antigravity con `gemini-4-hydrogen-high` da un brief coi percorsi (140 s, compila al primo colpo, 40 test
+  su 41 verdi al primo giro); tre ritocchi in sessione dopo aver guardato i PNG.
+- **La testa va a capo quando non ci sta, non sotto una soglia fissa**: `HomeHeadPanel` (in `HomeView.axaml.cs`) tiene
+  titolo e strumenti sulla stessa riga finché ci stanno e altrimenti manda gli strumenti sotto, a destra (è il `flex-wrap`
+  del mockup). Sotto i 520 px va sempre a capo; con un titolo lungo ("Mercoledì 30 settembre") può andarci anche poco
+  sopra. Nel blocco del titolo cede prima la data, poi il titolo (puntini); ‹ › e conto non si tagliano mai.
+- Sotto i 400 px "fatte" resta la sola icona (col tooltip); sotto i 340 circa gli strumenti vanno a capo fra loro
+  (`WrapPanel`): a 280 px "+ Nuova" sta su una terza riga.
+- **La ricerca è stato della vista** (`_searchOpen`): Esc la chiude **e toglie il filtro** (una ricerca che non si vede
+  non deve filtrare); con del testo dentro resta aperta anche senza fuoco, e resta a vista anche se non trova niente.
+- **Il menu ⋯** usa le parole delle schede di prima (`Home.Tab.*`: "Attive / Archiviate / Cestino"), non "Archivio": il
+  titolo della scheda (Task 6) dice già "Archiviate". La scheda attiva ha il segno del `MenuItem` a scelta singola
+  (`ToggleType="Radio"`: un punto, non una spunta). Stringhe nuove oltre a `Home.BackToActive`: `Home.Search`
+  "Search" / "Cerca" e `Home.More` "Archive and trash" / "Archivio e cestino" (nomi accessibili di lente e ⋯).
+- `MaxDaysBack` lo imposta `HomeView.ApplyWidthRules` (colonne dell'intestazione − 1) **solo se c'è almeno una striscia**:
+  una ricerca senza risultati non riporta a oggi.
+- La cella del giorno scelto è un `Border` di nome `HeatmapStrip.SelectedCellName` attorno al `TextBlock`: il colore
+  dell'abitudine mescolato al pannello (26% chiaro, 36% scuro), opaco. Gli stili del giorno stanno in `DayHeaderView`;
+  `RowCardStyles.axaml` non è stato toccato.
+- `DayHeaderView` ricrea i suoi pulsanti a ogni cambio di giorno: il fuoco da tastiera su un giorno si perde dopo Invio.
+  Lo riprende il Task 11 (← →).
+
 ### Task 8: Dalla Home si apre la schermata sul giorno scelto
 
 **Livello:** Sonnet.

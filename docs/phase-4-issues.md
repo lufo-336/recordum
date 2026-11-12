@@ -2531,5 +2531,14 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   - **GIO-3 — a 900 px l'intestazione ha 14 giorni ma quasi tutte le righe ne riempiono 7**: solo l'astinenza disegna
     14 colonne; azioni, contatori, stato e diari usano le ultime 7 (`HomeStrip.Days7`), e le sette etichette di sinistra
     stanno sopra il vuoto. Da decidere con le tre righe del Task 9.
+    **Dal Task 7 (2026-11-12) pesa di più**: i 14 giorni dell'intestazione si cliccano, quindi si può scegliere un giorno
+    da 7 a 13 giorni fa che su quasi tutte le righe non ha una cella: il titolo e la fascia lo dicono, il log rapido ci
+    scrive, ma la riga non lo mostra.
   - **GIO-4 — il pulsante di spunta è uguale per una fatta e una non fatta**: "Letto rifatto" (non fatta oggi) ha lo
     stesso segno nel pulsante di "Stretching" (fatta); la differenza si legge solo nella cella di oggi.
+- **GIO-5 — con la lista vuota per un filtro, il filtro non si può più togliere** · `reported` · precedente all'onda,
+  letto nel codice durante il Task 7 (non provato a schermo). `HomeViewModel.Rebuild` mette `State = Empty` quando non
+  resta nessuna riga, e lente, "fatte" e ordinamento si vedono solo con `State == Loaded`: con "fatte" acceso e tutto
+  fatto resta lo schermo vuoto col germoglio ("crea un'abitudine") e il pulsante per spegnere il filtro non c'è. Prima del
+  Task 7 valeva anche per la ricerca; ora la casella di ricerca aperta resta a vista. Serve uno stato "nessun risultato"
+  distinto da "nessuna abitudine".
