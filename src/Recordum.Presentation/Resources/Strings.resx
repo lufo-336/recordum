@@ -2080,7 +2080,7 @@ Details: {0}</value>
     <value>Log a relapse…</value>
   </data>
   <data name="Head.Abstinence.LapseConfirm" xml:space="preserve">
-    <value>Record a lapse now? The current period ends here.</value>
+    <value>Record a relapse now? The current period ends here.</value>
   </data>
   <data name="Head.Abstinence.LapseOn" xml:space="preserve">
     <value>The relapse goes on {0}.</value>
