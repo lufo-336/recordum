@@ -439,6 +439,41 @@ Restano Ctrl+1/2/3, Ctrl+W, Ctrl+F, F2, Canc, Ctrl+E, Ctrl+R, Esc.
 - [ ] **Step 2: implementa.** I tooltip di ‹ ›, "+ Nuova" e del comando di riga dicono la scorciatoia.
 - [ ] **Step 3:** verdi, commit `feat(ui): la tastiera registra dalla Home (A2)`.
 
+### Task 8b: Dalla Home una spunta si toglie, con conferma
+
+Deciso dall'autore il 2026-11-12 (cambia la "Decisione mia" 3). **Livello:** Sonnet (cancella dati: **mai** Haiku).
+
+**Com'è oggi:** `ActionQuickActionHandler` registra sempre: un secondo clic su un'azione già fatta scrive una seconda
+registrazione. Nella schermata `ActionQuickAddViewModel.ToggleAsync` alterna già, senza chiedere.
+
+**Files:**
+- Modify: `ViewModels/Quick/ActionQuickActionHandler.cs`; `Strings.resx` + `Strings.it.resx` + accessor
+- Test: `tests/Recordum.Presentation.Tests/ViewModels/Quick/ActionQuickActionHandlerTests.cs`; uno nei test UI della Home
+
+**Interfaces — Produces:**
+- `ActionQuickActionHandler(ICompletionService, IClock, IResetTimeResolver, IConfirmationDialog)`. Il giorno è `day` o
+  l'oggi del confine dell'abitudine, risolto una volta. Se quel giorno non ha registrazioni: registra, come oggi. Se ne
+  ha: `ConfirmAsync(Home.Uncheck.Title, Home.Uncheck.Message col giorno)`; "sì" cancella **la più recente di quel giorno**
+  (la stessa finestra di `ToggleAsync`: `RangeOf(day)` meno 1 ms — la finestra si scrive in un punto solo, usato da
+  entrambi); "no" non scrive niente. In tutti e tre i casi torna `true`: la schermata non si apre.
+- Vale solo per l'azione. Il contatore senza campi continua ad aggiungere uno: non è una spunta.
+
+Stringhe nuove: `Home.Uncheck.Title` "Remove the check?" / "Togliere la spunta?" · `Home.Uncheck.Message` "The record
+of {0} is deleted." / "La registrazione di {0} viene cancellata." (`{0}`: "oggi"/"today" o il giorno lungo, "lunedì 9
+novembre").
+
+**Trappole:** `IConfirmationDialog` è registrato in UI e in WPF (l'handler è condiviso: WPF riceve lo stesso
+comportamento, col minimo); un test della registrazione DI se manca. La conferma è una finestra: nei test UI serve il
+finto che risponde, come in `RecordsViewTests`.
+
+- [ ] **Step 1: test rossi:** `Action_not_done_records_without_asking` (la conferma non viene mai chiesta);
+  `Action_already_done_asks_and_removes_the_latest_of_that_day` (due registrazioni nel giorno: resta la più vecchia);
+  `Declining_writes_nothing_and_does_not_open_the_screen`; `Removal_on_a_past_day_leaves_today_alone`;
+  `Removal_uses_the_habit_boundary` (reset 05:00: una registrazione alle 02:00 appartiene al giorno prima). UI: clic su
+  una riga già fatta → conferma chiesta una volta, "sì" → la riga torna non fatta.
+- [ ] **Step 2: implementa.**
+- [ ] **Step 3:** verdi, commit `feat(presentation): dalla Home una spunta si toglie, con conferma`.
+
 ---
 
 ## Parte 3 — La schermata dell'abitudine
@@ -521,14 +556,18 @@ fanno scattare `HomePerformanceTests` o rendono lenta la colonna, ci si ferma co
 
 1. **Il cambio di giorno non rilegge il database**: la Home ha già 14 giorni per riga. Più indietro di così dalla Home non
    si va (si apre l'abitudine); su una finestra stretta si va indietro quanto le colonne che si vedono.
+   **Confermata dall'autore il 2026-11-12**: per la vista d'insieme ci sono i grafici e la schermata dell'abitudine; un
+   lasso di tempo navigabile a scelta è un'idea per dopo, non prioritaria (vedi "Fuori dall'onda").
 2. **"Fatta" in un giorno passato** = quel giorno ha un conto o un valore. Per oggi resta la risposta della query.
 3. **La spunta dalla Home registra, non toglie** (com'è oggi). Il mockup la faceva alternare: togliere una registrazione
    con un clic su ieri mi sembra un rischio per i dati; resta "Annulla l'ultima" nella schermata. Se l'autore la vuole
    alternata, è un task a parte.
+   **Cambiata dall'autore il 2026-11-12**: il clic su una spunta già fatta chiede conferma e, confermato, la toglie.
+   È il Task 8b.
 4. **Dalla Home l'astinenza non chiude più un periodo con un clic**: apre la schermata sul giorno e propone "Segna una
-   ricaduta…". Oggi un clic sulla riga chiudeva il periodo senza chiedere.
+   ricaduta…". Oggi un clic sulla riga chiudeva il periodo senza chiedere. **Confermata dall'autore il 2026-11-12.**
 5. **Una ricaduta su un giorno passato chiude il periodo e basta**: "Inizia" resta un gesto a sé, da adesso. I giorni fra
-   la ricaduta e il nuovo inizio non sono "liberi".
+   la ricaduta e il nuovo inizio non sono "liberi". **Confermata dall'autore il 2026-11-12.**
 6. **In Archivio e Cestino** il titolo dice dove si è e c'è "Torna alle abitudini"; niente giorno, niente conto.
 7. **"x di y" della giornata** conta tutte le abitudini non archiviate, come i gruppi, anche quelle non in programma quel
    giorno.
@@ -552,3 +591,5 @@ fanno scattare `HomePerformanceTests` o rendono lenta la colonna, ci si ferma co
 - Impostazioni a categorie, Generale, Informazioni con le scorciatoie, carattere dell'app: 3b.
 - `home.rows` fuori dall'"unisci" (vale per dispositivo): va scritto nella spec dell'"unisci".
 - La palette dei comandi: 1.1.
+- Un lasso di tempo navigabile a scelta nella Home (oltre i 14 giorni delle righe): idea dell'autore del 2026-11-12, non
+  prioritaria.

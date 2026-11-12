@@ -26,9 +26,10 @@
   ancora in `main`): si scrive in cooperazione con Antigravity, per valutarla. **Fatti i Task 1-5** (le parole:
   guardia, glossario, valori; unità col simbolo o col nome tradotto, tessere senza "+", note senza etichetta di
   categoria; la fixture "manifesto" coi PNG della Home piena; il log rapido riceve il giorno; la ricaduta con una data, e dalla Home un periodo
-  non si chiude più con un clic — `b935a749`, 2026-11-12). Aspettano l'autore, prima del Task 4: le parole marcate "(proposta)" in `docs/GLOSSARY.md` e quattro
-  "Decisioni mie" del piano (3, 4, 5 e 1: la spunta dalla Home registra e non toglie; l'astinenza dalla Home non chiude
-  un periodo con un clic; una ricaduta su un giorno passato chiude e basta; dalla Home al massimo 13 giorni indietro).
+  non si chiude più con un clic — `b935a749`, 2026-11-12). **Decisioni dell'autore
+  del 2026-11-12**: confermate le parole del glossario e le "Decisioni mie" 1, 4 e 5 del piano; cambiata la 3 — dalla
+  Home una spunta già fatta si toglie, dopo una conferma (Task 8b, aggiunto al piano). La CI Linux è caduta sull'SDK
+  .NET 11 della nuova immagine Ubuntu 26.04: `global.json` fissa l'SDK al 10.
 - **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) il Task 6 del piano "Giornata" (il giorno corrente
   della Home); (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
   vale per dispositivo).
