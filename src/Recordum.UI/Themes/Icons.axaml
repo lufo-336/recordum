@@ -15,8 +15,10 @@
          estremità esatte dei tratti corretti. -->
 
     <!-- ── chrome icons (pre-existing) ───────────────────────────────────── -->
+    <StreamGeometry x:Key="Icon.ChevronLeft">M15 18l-6-6 6-6</StreamGeometry>
     <StreamGeometry x:Key="Icon.ChevronRight">M9 18l6-6-6-6</StreamGeometry>
     <StreamGeometry x:Key="Icon.ChevronDown">M6 9l6 6 6-6</StreamGeometry>
+    <StreamGeometry x:Key="Icon.Ellipsis">M 4 12 a 1 1 0 1 0 2 0 a 1 1 0 1 0 -2 0 z M 11 12 a 1 1 0 1 0 2 0 a 1 1 0 1 0 -2 0 z M 18 12 a 1 1 0 1 0 2 0 a 1 1 0 1 0 -2 0 z</StreamGeometry>
     <StreamGeometry x:Key="Icon.Pin">M12 17v5 M5 17h14 M8 17V7l4-3 4 3v10</StreamGeometry>
     <StreamGeometry x:Key="Icon.Settings">M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z</StreamGeometry>
     <StreamGeometry x:Key="Icon.MoreVertical">M12 5v.01 M12 12v.01 M12 19v.01</StreamGeometry>

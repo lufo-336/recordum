@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Recordum.UI.Tests.Icons;
 
-/// <summary>Il catalogo delle 74 icone Lucide (Themes/Icons.axaml). Tre cose diverse possono andare
+/// <summary>Il catalogo delle 76 icone Lucide (Themes/Icons.axaml). Tre cose diverse possono andare
 /// storte e ognuna ha il proprio test: le chiavi (WPF le chiede per nome, una mancante è un Path
 /// vuoto muto), il parsing (una stringa malformata esplode alla prima richiesta, non al caricamento),
 /// e il SIGNIFICATO dei tratti (una stringa che si legge senza errori ma disegna la cosa sbagliata).</summary>
@@ -16,7 +16,7 @@ public class IconCatalogTests
 {
     private static readonly string[] ExpectedKeys =
     [
-        "Icon.ChevronRight", "Icon.ChevronDown", "Icon.Pin", "Icon.Settings", "Icon.MoreVertical",
+        "Icon.ChevronLeft", "Icon.Ellipsis", "Icon.ChevronRight", "Icon.ChevronDown", "Icon.Pin", "Icon.Settings", "Icon.MoreVertical",
         "Icon.AlertTriangle", "Icon.Search", "Icon.Palette", "Icon.SlidersHorizontal", "Icon.LifeBuoy",
         "Icon.Info", "Icon.RefreshCw", "Icon.Puzzle", "Icon.Sparkles", "Icon.BarChart3", "Icon.Upload",
         "Icon.CircleHelp", "Icon.Dumbbell", "Icon.Bike", "Icon.Footprints", "Icon.Trophy", "Icon.Mountain",
@@ -55,11 +55,11 @@ public class IconCatalogTests
         [.. PathGeometry.Parse(RawPaths()[key]).Figures!];
 
     [Fact]
-    public void The_catalog_holds_exactly_the_74_expected_keys()
+    public void The_catalog_holds_exactly_the_76_expected_keys()
     {
         var keys = RawPaths().Keys;
 
-        ExpectedKeys.Should().HaveCount(74);
+        ExpectedKeys.Should().HaveCount(76);
         keys.Should().BeEquivalentTo(ExpectedKeys, "una chiave in meno è un'icona d'abitudine che sparisce; "
             + "una in più è un'icona che nessun test guarda");
     }

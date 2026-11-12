@@ -3,9 +3,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
+using Avalonia.Styling;
 using Recordum.Core.HomeRow;
-
 using Recordum.Presentation.ViewModels;
+using Recordum.UI.Converters;
+using Recordum.UI.Theming;
 
 namespace Recordum.UI.Controls;
 
@@ -59,16 +62,6 @@ public partial class HeatmapStrip : UserControl
     public static int GetVisibleDays(Control element) => element.GetValue(VisibleDaysProperty);
     public static void SetVisibleDays(Control element, int value) => element.SetValue(VisibleDaysProperty, value);
 
-    /// <summary>L'intestazione dei giorni: le celle sono i nomi brevi, nel testo attenuato, e "oggi" in grassetto.</summary>
-    public static readonly StyledProperty<bool> IsHeaderProperty =
-        AvaloniaProperty.Register<HeatmapStrip, bool>(nameof(IsHeader));
-
-    public bool IsHeader
-    {
-        get => GetValue(IsHeaderProperty);
-        set => SetValue(IsHeaderProperty, value);
-    }
-
     public ImmutableArray<int> Counts
     {
         get => GetValue(CountsProperty);
@@ -104,7 +97,6 @@ public partial class HeatmapStrip : UserControl
         AccentColorProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         ValuesProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         VisibleDaysProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => { if (!strip.Values.IsDefaultOrEmpty) strip.Rebuild(); });
-        IsHeaderProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
     }
 
 
@@ -158,8 +150,8 @@ public partial class HeatmapStrip : UserControl
 
         if (!Values.IsDefaultOrEmpty)
         {
-            foreach (var text in BuildValueCells())
-                Cells.Children.Add(text);
+            foreach (var cell in BuildValueCells())
+                Cells.Children.Add(cell);
             return;
         }
         if (!Fractions.IsDefaultOrEmpty)
@@ -175,31 +167,55 @@ public partial class HeatmapStrip : UserControl
             Cells.Children.Add(border);
     }
 
+    internal const string SelectedCellName = "SelectedDay";
+
     /// <summary>Larghezza di una cella di valori, uguale per tutte le strisce: le colonne dei giorni si allineano.</summary>
     public const double ValueSlotWidth = 26d;
 
     // La striscia della Home (direzione visiva §5): i valori del giorno nella variante "testo" del colore dell'abitudine,
     // i giorni vuoti nel testo tenue. Ogni cella è larga uguale, così oggi resta sotto "oggi" dell'intestazione.
-    private List<TextBlock> BuildValueCells()
+    private List<Control> BuildValueCells()
     {
         var shown = Math.Min(Values.Length, Math.Max(1, GetVisibleDays(this)));
         var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
         var app = global::Avalonia.Application.Current!;
-        IBrush Token(string key) => Converters.HabitTextBrushConverter.Resource<IBrush>(app, key, ActualThemeVariant) ?? Brushes.Gray;
-        var on = IsHeader ? Token("Brush.TextMuted") : Converters.HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
-        var off = IsHeader ? Token("Brush.TextMuted") : Token("Brush.TextFaint");
-        return values.Select(cell => new TextBlock
+        IBrush Token(string key) => HabitTextBrushConverter.Resource<IBrush>(app, key, ActualThemeVariant) ?? Brushes.Gray;
+        var on = HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
+        var off = Token("Brush.TextFaint");
+        // Fondo opaco sul pannello per il giorno scelto, così resta leggibile anche con la tinta della riga.
+        IBrush? selectedBg = null;
+        if (HabitColors.TryParse(AccentColor, out var habit)
+            && HabitTextBrushConverter.Resource<ISolidColorBrush>(app, "Brush.Pane", ActualThemeVariant) is { } pane)
         {
-            Text = cell.Glyph,
-            Width = ValueSlotWidth,
-            TextAlignment = TextAlignment.Center,
-            TextTrimming = TextTrimming.None,
-            VerticalAlignment = VerticalAlignment.Center,
-            FontSize = IsHeader ? (cell.IsToday ? 10d : 11d) : 13d,   // "today" a 11 px non sta nei 26 px della colonna
-            FontWeight = IsHeader ? (cell.IsToday ? FontWeight.SemiBold : FontWeight.Normal)
-                                  : (cell.On ? FontWeight.SemiBold : FontWeight.Normal),
-            FontFeatures = new FontFeatureCollection { FontFeature.Parse("+tnum") },
-            Foreground = IsHeader && cell.IsToday ? Token("Brush.Text") : (cell.On ? on : off),
+            var opacity = ActualThemeVariant == ThemeVariant.Dark ? 0.36 : 0.26;
+            selectedBg = new ImmutableSolidColorBrush(HabitColors.Blend(habit, opacity, pane.Color));
+        }
+
+        return values.Select<StripCell, Control>(cell =>
+        {
+            var text = new TextBlock
+            {
+                Text = cell.Glyph,
+                Width = ValueSlotWidth,
+                TextAlignment = TextAlignment.Center,
+                TextTrimming = TextTrimming.None,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 13d,
+                FontWeight = cell.On ? FontWeight.SemiBold : FontWeight.Normal,
+                FontFeatures = new FontFeatureCollection { FontFeature.Parse("+tnum") },
+                Foreground = cell.On ? on : off,
+            };
+            if (!cell.IsSelected) return text;
+            return new Border
+            {
+                Name = SelectedCellName,
+                Width = ValueSlotWidth,
+                Height = 24d,
+                CornerRadius = new CornerRadius(5),
+                VerticalAlignment = VerticalAlignment.Center,
+                Background = selectedBg,
+                Child = text,
+            };
         }).ToList();
     }
 

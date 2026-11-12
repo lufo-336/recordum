@@ -4,9 +4,9 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:v="using:Recordum.UI.Views"
+             xmlns:home="using:Recordum.UI.Views.Home"
              xmlns:rows="using:Recordum.UI.Views.Rows"
              xmlns:beh="using:Recordum.UI.Behaviors"
-             xmlns:ctl="using:Recordum.UI.Controls"
              x:Class="Recordum.UI.Views.HomeView"
              x:DataType="vm:HomeViewModel"
              Background="{DynamicResource Brush.Background}">
@@ -19,116 +19,194 @@
     <Style Selector="ToggleButton#DoneToggle:checked Path">
       <Setter Property="Stroke" Value="{DynamicResource Brush.OnAccent}"/>
     </Style>
+    <!-- ‹ › spente (su oggi non c'è un giorno dopo): niente cornice del pulsante disabilitato di Fluent, solo l'icona tenue. -->
+    <Style Selector="Button.ghost:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.ghost:disabled Path">
+      <Setter Property="Opacity" Value="0.35"/>
+    </Style>
   </UserControl.Styles>
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+  <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-    <!-- La testa (direzione visiva §5): "Oggi" col giorno dell'app, e l'unico pulsante primario della Home. Sotto i 320 px
-         la data si nasconde (code-behind), così "+ Nuova" non finisce sopra i segmenti (F2b-5). -->
-    <Grid Grid.Row="0" Margin="16,14,12,6" ColumnDefinitions="*,Auto">
-      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" ClipToBounds="True">
-        <TextBlock x:Name="TodayTitle" Text="{CompiledBinding Title}"
-                   FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold"
-                   Foreground="{DynamicResource Brush.Text}"/>
-        <TextBlock x:Name="TodayDate" Text="{CompiledBinding DateLabel}" VerticalAlignment="Bottom" Margin="0,0,0,2"
-                   FontSize="{StaticResource FontSize.Label}" TextTrimming="CharacterEllipsis"
-                   Foreground="{DynamicResource Brush.TextMuted}"/>
-      </StackPanel>
-
-      <!-- Il menu "+ Nuova" è un Flyout del pulsante: sparisce il code-behind che in WPF apriva
-           una ContextMenu col tasto sinistro e le passava il DataContext a mano. -->
-      <Button Grid.Column="1" x:Name="NewMenuButton" Classes="primary"
-              Padding="10,5" VerticalAlignment="Center"
-              AutomationProperties.Name="{x:Static res:Strings.Home_NewHabit_Button}">
-        <StackPanel Orientation="Horizontal" Spacing="5">
-          <Path Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"
-                Stroke="{DynamicResource Brush.OnInk}" StrokeThickness="2" StrokeLineCap="Round"
-                Data="{StaticResource Icon.Plus}"/>
-          <TextBlock Text="{x:Static res:Strings.Home_NewMenu_Label}" VerticalAlignment="Center" FontWeight="Medium"/>
-          <Path Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center"
-                Stroke="{DynamicResource Brush.OnInk}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                Data="{StaticResource Icon.ChevronDown}"/>
-        </StackPanel>
-        <Button.Flyout>
-          <MenuFlyout Placement="BottomEdgeAlignedRight">
-            <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Habit}"
-                      Command="{CompiledBinding OpenNewHabitCommand}"/>
-            <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Group}"
-                      Command="{CompiledBinding CreateGroupCommand}"/>
-          </MenuFlyout>
-        </Button.Flyout>
-      </Button>
-    </Grid>
-
-    <Border x:Name="HomeTabs" Grid.Row="1" Margin="16,0,16,8" HorizontalAlignment="Left"
-            Background="{DynamicResource Brush.Surface}" CornerRadius="7" Padding="2">
-      <StackPanel Orientation="Horizontal">
-        <RadioButton Classes="segment" GroupName="HomeTab"
-                     Content="{x:Static res:Strings.Home_Tab_Active}"
-                     IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}"
-                     Command="{CompiledBinding SwitchTabCommand}"
-                     CommandParameter="{x:Static vm:HomeTab.Active}"/>
-        <RadioButton Classes="segment" GroupName="HomeTab" Margin="2,0,0,0"
-                     Content="{x:Static res:Strings.Home_Tab_Archived}"
-                     IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
-                     Command="{CompiledBinding SwitchTabCommand}"
-                     CommandParameter="{x:Static vm:HomeTab.Archived}"/>
-        <RadioButton Classes="segment" GroupName="HomeTab" Margin="2,0,0,0"
-                     Content="{x:Static res:Strings.Home_Tab_Trash}"
-                     IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
-                     Command="{CompiledBinding SwitchTabCommand}"
-                     CommandParameter="{x:Static vm:HomeTab.Trash}"/>
-      </StackPanel>
-    </Border>
-
-    <!-- Gli strumenti: cerca (si allarga), "fatte" (= Nascondi completate oggi), l'ordinamento. -->
-    <Grid Grid.Row="2" Margin="16,0,12,6" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6"
-          IsVisible="{CompiledBinding State, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeState.Loaded}}">
-      <!-- PlaceholderText + InnerLeftContent al posto della Path sovrapposta e del TextBlock
-           acquerello con DataTrigger su Text="" che WPF doveva costruire a mano. -->
-      <TextBox x:Name="SearchBox" Grid.Column="0" MinWidth="60" VerticalAlignment="Center"
-               Text="{CompiledBinding SearchText, Mode=TwoWay}"
-               PlaceholderText="{x:Static res:Strings.Home_Filter_SearchPlaceholder}">
-        <TextBox.InnerLeftContent>
-          <Path Width="13" Height="13" Margin="0,0,6,0" Stretch="Uniform"
-                VerticalAlignment="Center" IsHitTestVisible="False"
-                Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.7"
-                StrokeLineCap="Round" Data="{StaticResource Icon.Search}"/>
-        </TextBox.InnerLeftContent>
-      </TextBox>
-      <ToggleButton x:Name="DoneToggle" Grid.Column="1" Classes="pill" Padding="8,5"
-                    IsChecked="{CompiledBinding HideCompletedToday}"
-                    ToolTip.Tip="{x:Static res:Strings.Home_Filter_HideCompleted}"
-                    AutomationProperties.Name="{x:Static res:Strings.Home_Filter_HideCompleted}"
+    <!-- La testa su una riga (a capo sotto i 520 px via HomeHeadPanel): titolo + giorno a sinistra, strumenti a destra. -->
+    <v:HomeHeadPanel x:Name="HomeHead" Grid.Row="0" Margin="16,12,12,8">
+      <DockPanel x:Name="HeadLead">
+        <StackPanel x:Name="DayArrows" DockPanel.Dock="Right" Orientation="Horizontal" Margin="4,0,0,0"
                     IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}">
-        <StackPanel Orientation="Horizontal" Spacing="5">
-          <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
-                StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"
-                Data="{StaticResource Icon.EyeOff}"/>
-          <TextBlock Text="{x:Static res:Strings.Home_Filter_Done}" VerticalAlignment="Center"
-                     FontSize="{StaticResource FontSize.Label}"/>
+          <Button x:Name="PrevDayButton" Classes="ghost" Width="28" Height="28" Padding="0"
+                  Command="{CompiledBinding PreviousDayCommand}"
+                  ToolTip.Tip="{x:Static res:Strings.Home_Day_Previous}"
+                  AutomationProperties.Name="{x:Static res:Strings.Home_Day_Previous}">
+            <Path Width="14" Height="14" Stretch="Uniform"
+                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                  StrokeLineCap="Round" StrokeJoin="Round"
+                  Data="{StaticResource Icon.ChevronLeft}"/>
+          </Button>
+          <Button x:Name="NextDayButton" Classes="ghost" Width="28" Height="28" Padding="0"
+                  Command="{CompiledBinding NextDayCommand}"
+                  ToolTip.Tip="{x:Static res:Strings.Home_Day_Next}"
+                  AutomationProperties.Name="{x:Static res:Strings.Home_Day_Next}">
+            <Path Width="14" Height="14" Stretch="Uniform"
+                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                  StrokeLineCap="Round" StrokeJoin="Round"
+                  Data="{StaticResource Icon.ChevronRight}"/>
+          </Button>
         </StackPanel>
-      </ToggleButton>
-      <ComboBox x:Name="SortBox" Grid.Column="2" VerticalAlignment="Center"
-                ItemsSource="{CompiledBinding AvailableSorts}"
-                SelectedItem="{CompiledBinding SortOption}">
-        <!-- L'etichetta tradotta, non il nome dell'enum ("Manual" in un'app in italiano; visto nei PNG, onda 2a). -->
-        <ComboBox.ItemTemplate>
-          <DataTemplate x:DataType="vm:HomeSort">
-            <TextBlock Text="{CompiledBinding Converter={x:Static v:HomeView.SortLabel}}"/>
-          </DataTemplate>
-        </ComboBox.ItemTemplate>
-      </ComboBox>
-    </Grid>
+
+        <Button x:Name="BackToActiveButton" DockPanel.Dock="Right" Classes="ghost" Margin="8,0,0,0" Padding="8,4"
+                IsVisible="False"
+                Content="{x:Static res:Strings.Home_BackToActive}"
+                FontSize="{StaticResource FontSize.Label}"
+                Command="{CompiledBinding SwitchTabCommand}"
+                CommandParameter="{x:Static vm:HomeTab.Active}"/>
+
+        <TextBlock x:Name="DayCount" DockPanel.Dock="Right"
+                   Text="{CompiledBinding DayCountText, StringFormat='· {0}'}"
+                   Margin="6,3,0,0" VerticalAlignment="Center"
+                   FontSize="{StaticResource FontSize.Label}"
+                   Foreground="{DynamicResource Brush.TextMuted}"
+                   FontFeatures="+tnum"/>
+
+        <TextBox x:Name="SearchBox" DockPanel.Dock="Right" IsVisible="False" Width="200" Margin="10,0,0,0"
+                 VerticalAlignment="Center"
+                 Text="{CompiledBinding SearchText, Mode=TwoWay}"
+                 PlaceholderText="{x:Static res:Strings.Home_Filter_SearchPlaceholder}">
+          <TextBox.InnerLeftContent>
+            <Path Width="13" Height="13" Margin="0,0,6,0" Stretch="Uniform"
+                  VerticalAlignment="Center" IsHitTestVisible="False"
+                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.7"
+                  StrokeLineCap="Round" Data="{StaticResource Icon.Search}"/>
+          </TextBox.InnerLeftContent>
+        </TextBox>
+
+        <DockPanel>
+          <TextBlock x:Name="TodayTitle" DockPanel.Dock="Left"
+                     Text="{CompiledBinding Title}"
+                     FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold"
+                     TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                     Foreground="{DynamicResource Brush.Text}"/>
+          <TextBlock x:Name="TodayDate"
+                     Text="{CompiledBinding DateLabel}"
+                     Margin="10,3,0,0" VerticalAlignment="Center"
+                     FontSize="{StaticResource FontSize.Label}" TextTrimming="CharacterEllipsis"
+                     Foreground="{DynamicResource Brush.TextMuted}"/>
+        </DockPanel>
+      </DockPanel>
+
+      <WrapPanel x:Name="HomeTools" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" ItemsAlignment="End" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6"
+                    IsVisible="{CompiledBinding State, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeState.Loaded}}">
+          <Button x:Name="SearchButton" Classes="ghost" Width="28" Height="28" Padding="0"
+                  ToolTip.Tip="{x:Static res:Strings.Home_Search}"
+                  AutomationProperties.Name="{x:Static res:Strings.Home_Search}"
+                  Click="OnSearchButtonClick">
+            <Path Width="14" Height="14" Stretch="Uniform"
+                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                  StrokeLineCap="Round" StrokeJoin="Round"
+                  Data="{StaticResource Icon.Search}"/>
+          </Button>
+          <ToggleButton x:Name="DoneToggle" Classes="pill" Padding="8,5"
+                        IsChecked="{CompiledBinding HideCompletedToday}"
+                        ToolTip.Tip="{x:Static res:Strings.Home_Filter_HideCompleted}"
+                        AutomationProperties.Name="{x:Static res:Strings.Home_Filter_HideCompleted}"
+                        IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                    StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="{StaticResource Icon.EyeOff}"/>
+              <TextBlock x:Name="DoneLabel" Text="{x:Static res:Strings.Home_Filter_Done}" VerticalAlignment="Center"
+                         FontSize="{StaticResource FontSize.Label}"/>
+            </StackPanel>
+          </ToggleButton>
+          <ComboBox x:Name="SortBox" VerticalAlignment="Center"
+                    ItemsSource="{CompiledBinding AvailableSorts}"
+                    SelectedItem="{CompiledBinding SortOption}">
+            <!-- L'etichetta tradotta, non il nome dell'enum ("Manual" in un'app in italiano; visto nei PNG, onda 2a). -->
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:HomeSort">
+                <TextBlock Text="{CompiledBinding Converter={x:Static v:HomeView.SortLabel}}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+
+        <Button x:Name="MoreButton" Classes="ghost" Width="28" Height="28" Padding="0"
+                ToolTip.Tip="{x:Static res:Strings.Home_More}"
+                AutomationProperties.Name="{x:Static res:Strings.Home_More}">
+          <Path Width="14" Stretch="Uniform" VerticalAlignment="Center"
+                Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                Data="{StaticResource Icon.Ellipsis}"/>
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight">
+              <MenuItem Header="{x:Static res:Strings.Home_Tab_Active}" ToggleType="Radio"
+                        IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}"
+                        Command="{CompiledBinding SwitchTabCommand}"
+                        CommandParameter="{x:Static vm:HomeTab.Active}"/>
+              <MenuItem Header="{x:Static res:Strings.Home_Tab_Archived}" ToggleType="Radio"
+                        IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Archived}}"
+                        Command="{CompiledBinding SwitchTabCommand}"
+                        CommandParameter="{x:Static vm:HomeTab.Archived}"/>
+              <MenuItem Header="{x:Static res:Strings.Home_Tab_Trash}" ToggleType="Radio"
+                        IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
+                        Command="{CompiledBinding SwitchTabCommand}"
+                        CommandParameter="{x:Static vm:HomeTab.Trash}"/>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+
+        <!-- Il menu "+ Nuova" è un Flyout del pulsante: sparisce il code-behind che in WPF apriva
+             una ContextMenu col tasto sinistro e le passava il DataContext a mano. -->
+        <Button x:Name="NewMenuButton" Classes="primary"
+                Padding="10,5" VerticalAlignment="Center"
+                AutomationProperties.Name="{x:Static res:Strings.Home_NewHabit_Button}">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <Path Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"
+                  Stroke="{DynamicResource Brush.OnInk}" StrokeThickness="2" StrokeLineCap="Round"
+                  Data="{StaticResource Icon.Plus}"/>
+            <TextBlock Text="{x:Static res:Strings.Home_NewMenu_Label}" VerticalAlignment="Center" FontWeight="Medium"/>
+            <Path Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center"
+                  Stroke="{DynamicResource Brush.OnInk}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                  Data="{StaticResource Icon.ChevronDown}"/>
+          </StackPanel>
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight">
+              <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Habit}"
+                        Command="{CompiledBinding OpenNewHabitCommand}"/>
+              <MenuItem Header="{x:Static res:Strings.Home_NewMenu_Group}"
+                        Command="{CompiledBinding CreateGroupCommand}"/>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+      </WrapPanel>
+    </v:HomeHeadPanel>
+
+    <!-- La fascia del giorno passato: avvisa e riporta a oggi. -->
+    <Border x:Name="PastDayBand" Grid.Row="1" Margin="12,0,12,8" Padding="10,5,4,5" CornerRadius="6"
+            Background="{DynamicResource Brush.WarningSurface}"
+            IsVisible="{CompiledBinding PastDayBanner, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{CompiledBinding PastDayBanner}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   FontSize="{StaticResource FontSize.Label}" Foreground="{DynamicResource Brush.Warning}"/>
+        <Button x:Name="BackToTodayButton" Grid.Column="1" Classes="ghost" Padding="8,3" Margin="8,0,0,0"
+                Command="{CompiledBinding BackToTodayCommand}">
+          <TextBlock Text="{x:Static res:Strings.Home_PastDay_BackToToday}" TextDecorations="Underline"
+                     FontWeight="SemiBold" FontSize="{StaticResource FontSize.Label}"
+                     Foreground="{DynamicResource Brush.Warning}"/>
+        </Button>
+      </Grid>
+    </Border>
 
     <!-- L'intestazione dei giorni (UX-6): oggi a destra, sopra la colonna di oggi di ogni striscia. Il margine a destra è
          quello del log rapido della riga (28 + 7) più quello della striscia (8). -->
-    <ctl:HeatmapStrip x:Name="StripHeader" Grid.Row="3" IsHeader="True" HorizontalAlignment="Right" Margin="0,0,43,2"
-                      Values="{CompiledBinding DayHeader, Converter={x:Static v:HomeView.HeaderCells}}"
-                      IsVisible="{CompiledBinding ShowDayHeader}"/>
+    <home:DayHeaderView x:Name="DayHeader" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,43,2"
+                        Cells="{CompiledBinding DayHeader}" IsVisible="{CompiledBinding ShowDayHeader}"/>
 
     <!-- Lo sfondo Transparent (non null) rende lo spazio vuoto sotto le righe colpibile dal
          puntatore: è il clic che deseleziona. Vale in Avalonia come in WPF. -->
-    <Border x:Name="TreeRegion" Grid.Row="4" Background="Transparent" Margin="0,0,0,0">
+    <Border x:Name="TreeRegion" Grid.Row="3" Background="Transparent" Margin="0,0,0,0">
       <ContentControl Content="{CompiledBinding State}">
         <ContentControl.ContentTemplate>
           <v:HomeStateTemplate>

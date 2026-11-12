@@ -1,13 +1,11 @@
-using System.Collections.Immutable;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
-using Recordum.Presentation.ViewModels.Home;
 using Recordum.UI.Behaviors;
 
 namespace Recordum.UI.Views;
@@ -21,13 +19,10 @@ public partial class HomeView : UserControl
         _ => Strings.Home_Filter_Sort_Manual,
     });
 
-    // Finché la testa nuova non arriva (Task 7), l'intestazione dei giorni è ancora una HeatmapStrip.
-    public static readonly FuncValueConverter<ImmutableArray<DayHeaderCell>, ImmutableArray<StripCell>> HeaderCells = new(h =>
-        h.IsDefaultOrEmpty ? [] : [.. h.Select(c => new StripCell(c.ShortName, false, c.IsToday, c.IsSelected))]);
-
     private Point? _pressPoint;
     // Il TopLevel va tenuto da parte: allo stacco GetTopLevel(this) è già null e il gestore resterebbe appeso.
     private TopLevel? _top;
+    private bool _searchOpen;
 
     public HomeView()
     {
@@ -36,6 +31,7 @@ public partial class HomeView : UserControl
         AddHandler(PointerReleasedEvent, OnPointerReleasedTunnel, RoutingStrategies.Tunnel);
         PropertyChanged += (_, e) => { if (e.Property == BoundsProperty) ApplyWidthRules(); };
         DataContextChanged += (_, _) => WatchStripLength();
+        SearchBox.LostFocus += (_, _) => { if (string.IsNullOrEmpty(SearchBox.Text)) CloseSearch(); };
     }
 
     // La Home dalla sua larghezza (direzione visiva §5): 14 giorni da 640 px, 7 da 400, 4 sotto (lo eredita ogni riga;
@@ -57,19 +53,62 @@ public partial class HomeView : UserControl
 
     private void OnHomePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(HomeViewModel.MaxVisibleStripLength)) ApplyWidthRules();
+        switch (e.PropertyName)
+        {
+            case nameof(HomeViewModel.MaxVisibleStripLength):
+            case nameof(HomeViewModel.ActiveTab):
+            case nameof(HomeViewModel.DateLabel):
+            case nameof(HomeViewModel.DayCountText):
+                ApplyWidthRules();
+                break;
+            case nameof(HomeViewModel.SearchText):
+                // Il cambio di scheda azzera i filtri: se la casella è vuota e non ha il fuoco, si richiude.
+                if (_searchOpen && string.IsNullOrEmpty(_watched?.SearchText) && !SearchBox.IsKeyboardFocusWithin)
+                    CloseSearch();
+                break;
+        }
     }
 
     private void ApplyWidthRules()
     {
         var width = Bounds.Width;
         if (width <= 0) return;
+        var vm = DataContext as HomeViewModel;
         var days = width >= FourteenDaysFrom ? 14 : width >= SevenDaysFrom ? 7 : 4;
         Controls.HeatmapStrip.SetVisibleDays(this, days);
-        var longest = (DataContext as HomeViewModel)?.MaxVisibleStripLength ?? days;
-        Controls.HeatmapStrip.SetVisibleDays(StripHeader, Math.Max(1, Math.Min(days, longest)));
-        TodayDate.IsVisible = width >= DateFrom;
+        var longest = vm?.MaxVisibleStripLength ?? 0;
+        var headerDays = Math.Max(1, Math.Min(days, longest > 0 ? longest : days));
+        Controls.HeatmapStrip.SetVisibleDays(DayHeader, headerDays);
+        // Con zero righe non si tocca: una ricerca senza risultati non deve riportare a oggi.
+        if (vm is not null && longest > 0) vm.MaxDaysBack = headerDays - 1;
+
+        var active = vm is null || vm.ActiveTab == HomeTab.Active;
+        TodayDate.IsVisible = !_searchOpen && width >= DateFrom && !string.IsNullOrEmpty(vm?.DateLabel);
+        DayCount.IsVisible = !_searchOpen && !string.IsNullOrEmpty(vm?.DayCountText);
+        SearchBox.IsVisible = _searchOpen;
+        SearchBox.Width = width >= SevenDaysFrom ? 200 : 120;
+        BackToActiveButton.IsVisible = !active;
+        DoneLabel.IsVisible = width >= SevenDaysFrom;
     }
+
+    private void OpenSearch()
+    {
+        _searchOpen = true;
+        ApplyWidthRules();
+        SearchBox.Focus();
+        SearchBox.SelectAll();
+    }
+
+    private void CloseSearch()
+    {
+        _searchOpen = false;
+        // Una ricerca che non si vede non deve filtrare.
+        if (DataContext is HomeViewModel vm && !string.IsNullOrEmpty(vm.SearchText))
+            vm.SearchText = null;
+        ApplyWidthRules();
+    }
+
+    private void OnSearchButtonClick(object? sender, RoutedEventArgs e) => OpenSearch();
 
     // Le scorciatoie della Home (Ctrl+F e i tasti di riga, D5) non possono stare su HomeView: un
     // evento di tastiera viaggia dalla radice al SOLO elemento a fuoco, quindi finché il fuoco non è
@@ -180,10 +219,16 @@ public partial class HomeView : UserControl
         var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
         if (focused is Visual fv && !this.IsVisualAncestorOf(fv)) return;
 
+        if (e.Key == Key.Escape && _searchOpen && SearchBox.IsKeyboardFocusWithin)
+        {
+            CloseSearch();
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
         {
-            SearchBox.Focus();
-            SearchBox.SelectAll();
+            OpenSearch();
             e.Handled = true;
             return;
         }
@@ -217,5 +262,59 @@ public partial class HomeView : UserControl
                 e.Handled = true;
                 break;
         }
+    }
+}
+
+/// <summary>Dispone il blocco titolo a sinistra e gli strumenti a destra su una riga finché ci stanno, poi manda gli
+/// strumenti sotto allineati a destra.</summary>
+public sealed class HomeHeadPanel : Panel
+{
+    private const double ColumnGap = 8;
+    private const double RowGap = 6;
+    private bool _wrapped;
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (Children.Count != 2) return base.MeasureOverride(availableSize);
+        var lead = Children[0];
+        var tools = Children[1];
+        var unbounded = new Size(double.PositiveInfinity, availableSize.Height);
+        lead.Measure(unbounded);
+        tools.Measure(unbounded);
+
+        var oneRowWidth = lead.DesiredSize.Width + ColumnGap + tools.DesiredSize.Width;
+        _wrapped = !double.IsInfinity(availableSize.Width) && oneRowWidth > availableSize.Width;
+        if (!_wrapped)
+        {
+            return new Size(oneRowWidth, Math.Max(lead.DesiredSize.Height, tools.DesiredSize.Height));
+        }
+
+        // Rimisura il blocco sinistro con la larghezza disponibile così il titolo si accorcia con i puntini.
+        lead.Measure(new Size(availableSize.Width, availableSize.Height));
+        tools.Measure(new Size(availableSize.Width, availableSize.Height));   // sotto i 340 px gli strumenti vanno a capo fra loro
+        var width = Math.Min(availableSize.Width, Math.Max(lead.DesiredSize.Width, tools.DesiredSize.Width));
+        return new Size(width, lead.DesiredSize.Height + RowGap + tools.DesiredSize.Height);
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        if (Children.Count != 2) return base.ArrangeOverride(finalSize);
+        var lead = Children[0];
+        var tools = Children[1];
+
+        if (!_wrapped)
+        {
+            var leadY = (finalSize.Height - lead.DesiredSize.Height) / 2;
+            var toolsY = (finalSize.Height - tools.DesiredSize.Height) / 2;
+            lead.Arrange(new Rect(0, leadY, lead.DesiredSize.Width, lead.DesiredSize.Height));
+            tools.Arrange(new Rect(finalSize.Width - tools.DesiredSize.Width, toolsY, tools.DesiredSize.Width, tools.DesiredSize.Height));
+        }
+        else
+        {
+            lead.Arrange(new Rect(0, 0, Math.Min(lead.DesiredSize.Width, finalSize.Width), lead.DesiredSize.Height));
+            var toolsX = Math.Max(0, finalSize.Width - tools.DesiredSize.Width);
+            tools.Arrange(new Rect(toolsX, lead.DesiredSize.Height + RowGap, tools.DesiredSize.Width, tools.DesiredSize.Height));
+        }
+        return finalSize;
     }
 }

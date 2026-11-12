@@ -196,6 +196,9 @@ public static class Strings
     public static string Home_Day_DaysAgo => Get("Home.Day.DaysAgo");
     public static string Home_PastDay_Banner => Get("Home.PastDay.Banner");
     public static string Home_PastDay_BackToToday => Get("Home.PastDay.BackToToday");
+    public static string Home_BackToActive => Get("Home.BackToActive");
+    public static string Home_Search => Get("Home.Search");
+    public static string Home_More => Get("Home.More");
     public static string Home_NewMenu_Label => Get("Home.NewMenu.Label");
     public static string Rail_Diary_ComingSoon => Get("Rail.Diary.ComingSoon");
     public static string Rail_Stats_ComingSoon => Get("Rail.Stats.ComingSoon");

@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels"
+             xmlns:home="using:Recordum.Presentation.ViewModels.Home"
+             xmlns:local="using:Recordum.UI.Views.Home"
+             x:Class="Recordum.UI.Views.Home.DayHeaderView"
+             x:DataType="vm:HomeViewModel">
+  <UserControl.Styles>
+    <!-- Larghezza 26 = HeatmapStrip.ValueSlotWidth: ogni pulsante sta sopra la propria colonna della striscia. -->
+    <Style Selector="Button.day">
+      <Setter Property="Width" Value="26"/>
+      <Setter Property="Height" Value="22"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="MinWidth" Value="0"/>
+      <Setter Property="CornerRadius" Value="5"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.day:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    </Style>
+    <Style Selector="Button.day.today">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <!-- "today" a 11 px non sta nei 26 px della colonna. -->
+      <Setter Property="FontSize" Value="10"/>
+    </Style>
+    <!-- Dopo today perché il giorno scelto vince sull'evidenza di oggi; Fluent ridipinge il ContentPresenter negli stati. -->
+    <Style Selector="Button.day.selected">
+      <Setter Property="Background" Value="{DynamicResource Brush.Ink}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.day.selected:pointerover /template/ ContentPresenter, Button.day.selected:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Ink}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <ItemsControl x:Name="Days">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Orientation="Horizontal"/>
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="home:DayHeaderCell">
+        <Button Classes="day"
+                Classes.today="{CompiledBinding IsToday}"
+                Classes.selected="{CompiledBinding IsSelected}"
+                Content="{CompiledBinding ShortName}"
+                ToolTip.Tip="{CompiledBinding FullName}"
+                AutomationProperties.Name="{CompiledBinding FullName}"
+                Command="{Binding $parent[local:DayHeaderView].((vm:HomeViewModel)DataContext).SelectDayCommand}"
+                CommandParameter="{CompiledBinding DaysBack}"/>
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

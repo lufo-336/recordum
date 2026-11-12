@@ -1929,6 +1929,15 @@ Dettagli: {0}</value>
   <data name="Home.PastDay.BackToToday" xml:space="preserve">
     <value>Torna a oggi</value>
   </data>
+  <data name="Home.BackToActive" xml:space="preserve">
+    <value>Torna alle abitudini</value>
+  </data>
+  <data name="Home.Search" xml:space="preserve">
+    <value>Cerca</value>
+  </data>
+  <data name="Home.More" xml:space="preserve">
+    <value>Archivio e cestino</value>
+  </data>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>Nuova</value>
   </data>

@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -14,6 +15,7 @@ using Recordum.Presentation.ViewModels.Quick;
 using Recordum.UI.Controls;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views;
+using Recordum.UI.Views.Home;
 using Recordum.UI.Views.Rows;
 using Xunit;
 
@@ -52,6 +54,31 @@ public class HomeLayoutTests
 
     private static Rect BoundsIn(Visual v, Visual root) =>
         new(v.TranslatePoint(new Point(0, 0), root)!.Value, v.Bounds.Size);
+
+    private static void Pump()
+    {
+        for (var i = 0; i < 3; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Click(Window w, Control target)
+    {
+        var p = target.TranslatePoint(new Point(target.Bounds.Width / 2, target.Bounds.Height / 2), w)!.Value;
+        w.MouseDown(p, MouseButton.Left);
+        w.MouseUp(p, MouseButton.Left);
+        Pump();
+    }
+
+    /// <summary>I pulsanti dei giorni dell'intestazione, dal più vecchio a oggi.</summary>
+    private static List<Button> HeaderDays(HomeView view) =>
+        view.FindControl<DayHeaderView>("DayHeader")!.GetVisualDescendants().OfType<Button>().ToList();
+
+    private static List<TextBlock> StripCells(HabitRow row) =>
+        row.GetVisualDescendants().OfType<HeatmapStrip>().Single().GetVisualDescendants().OfType<TextBlock>().ToList();
+
+    private static List<Border> MarkedCells(HabitRow row) =>
+        row.GetVisualDescendants().OfType<HeatmapStrip>().Single().GetVisualDescendants().OfType<Border>()
+            .Where(b => b.Name == HeatmapStrip.SelectedCellName).ToList();
 
     [AvaloniaFact]
     public void Header_reads_Oggi_with_the_date()
@@ -93,9 +120,8 @@ public class HomeLayoutTests
         var (w, view, _) = Show(900,
             Row("Sette"), Row("Quattordici", HabitType.Resistance, days: 14),
             Row("Gruppo", type: null) with { HabitNodeId = GroupId }, Row("Figlia", parent: GroupId));
-        var header = view.FindControl<HeatmapStrip>("StripHeader")!;
-        var today = header.GetVisualDescendants().OfType<TextBlock>().Last();
-        today.Text.Should().Be("oggi");
+        var today = HeaderDays(view).Last();
+        today.Content.Should().Be("oggi");
         var column = BoundsIn(today, view);
 
         var strips = view.GetVisualDescendants().OfType<HabitRow>()
@@ -115,7 +141,7 @@ public class HomeLayoutTests
         // Review Focus 3 e F2b-5: a 280 px "+ Nuova" finiva sopra "Archiviate".
         using var culture = TestCulture.Pin();
         var (w, view, _) = Show(280, Row("Un nome davvero molto lungo per una riga stretta"));
-        var parts = new[] { "NewMenuButton", "HomeTabs", "SearchBox", "DoneToggle", "SortBox" }
+        var parts = new[] { "TodayTitle", "PrevDayButton", "NextDayButton", "SearchButton", "DoneToggle", "SortBox", "MoreButton", "NewMenuButton" }
             .Select(n => (Name: n, Rect: BoundsIn(view.FindControl<Control>(n)!, view))).ToList();
         foreach (var a in parts)
             foreach (var b in parts.Where(p => p.Name != a.Name))
@@ -134,17 +160,17 @@ public class HomeLayoutTests
     public void A_wide_home_shows_fourteen_days_a_middle_one_seven_and_a_narrow_one_four()
     {
         var (w, view, _) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
-        view.FindControl<HeatmapStrip>("StripHeader")!.GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(14);
+        HeaderDays(view).Should().HaveCount(14);
         w.Width = 460;
         for (var i = 0; i < 2; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
-        view.FindControl<HeatmapStrip>("StripHeader")!.GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(7);
+        HeaderDays(view).Should().HaveCount(7);
         view.GetVisualDescendants().OfType<HabitRow>().Single().GetVisualDescendants().OfType<HeatmapStrip>().Single()
             .GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(7);
 
         // A 280 px (il minimo) sette colonne lasciavano al nome venti pixel: se ne vedono quattro (visto nel PNG).
         w.Width = 280;
         for (var i = 0; i < 2; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
-        view.FindControl<HeatmapStrip>("StripHeader")!.GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(4);
+        HeaderDays(view).Should().HaveCount(4);
         w.Close();
     }
 
@@ -192,6 +218,246 @@ public class HomeLayoutTests
         var menu = (ContextMenu)row.Resources["RowMenu"]!;
         menu.Items.OfType<MenuItem>().Should().OnlyContain(m => m.Icon != null);
         menu.Items.OfType<MenuItem>().Where(m => m.Classes.Contains("danger")).Should().HaveCount(2);
+        w.Close();
+    }
+
+    // ── Onda "Giornata", Task 7: la testa su una riga, i giorni che si cliccano, la fascia ──
+
+    [AvaloniaFact]
+    public void Head_is_one_row_at_900()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _) = Show(900, Row("Acqua", done: true), Row("Corsa"));
+        var title = BoundsIn(view.FindControl<TextBlock>("TodayTitle")!, view);
+        var add = BoundsIn(view.FindControl<Button>("NewMenuButton")!, view);
+        add.Top.Should().BeLessThan(title.Bottom, "titolo e \"+ Nuova\" stanno sulla stessa riga");
+        add.Bottom.Should().BeGreaterThan(title.Top);
+        add.Right.Should().BeApproximately(900 - 12, 1, "gli strumenti stanno a destra");
+        view.FindControl<Control>("HomeTabs").Should().BeNull("i segmenti Attive/Archiviate/Cestino non ci sono più");
+        view.FindControl<TextBlock>("DayCount")!.Text.Should().Contain("1 di 2");
+        view.FindControl<TextBox>("SearchBox")!.IsVisible.Should().BeFalse("la ricerca sta dietro la lente");
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Head_wraps_under_520()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _) = Show(500, Row("Acqua"));
+        var title = BoundsIn(view.FindControl<TextBlock>("TodayTitle")!, view);
+        var prev = BoundsIn(view.FindControl<Button>("PrevDayButton")!, view);
+        var add = BoundsIn(view.FindControl<Button>("NewMenuButton")!, view);
+        var lens = BoundsIn(view.FindControl<Button>("SearchButton")!, view);
+        prev.Top.Should().BeLessThan(title.Bottom, "‹ › restano accanto al titolo");
+        add.Top.Should().BeGreaterThanOrEqualTo(title.Bottom - 2, "gli strumenti vanno sulla riga sotto");
+        lens.Top.Should().BeGreaterThanOrEqualTo(title.Bottom - 2);
+        add.Right.Should().BeApproximately(500 - 12, 1, "a destra");
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Clicking_a_header_day_selects_it()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, vm) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
+        var days = HeaderDays(view);
+        days.Should().HaveCount(14);
+        Avalonia.Automation.AutomationProperties.GetName(days[^3]).Should().Be("lunedì 26 ottobre");
+
+        Click(w, days[^3]);
+
+        vm.DaysBack.Should().Be(2);
+        view.FindControl<TextBlock>("TodayTitle")!.Text.Should().Be("Lunedì 26 ottobre");
+        var after = HeaderDays(view);
+        after.Where(b => b.Classes.Contains("selected")).Should().ContainSingle().Which.Should().BeSameAs(after[^3]);
+        w.Close();
+    }
+
+    [AvaloniaTheory]
+    [InlineData(900, 14)]
+    [InlineData(460, 7)]
+    [InlineData(300, 4)]
+    public void Header_days_sit_over_their_columns(int width, int columns)
+    {
+        var (w, view, _) = Show(width, Row("Quattordici", HabitType.Resistance, days: 14));
+        var days = HeaderDays(view);
+        var cells = StripCells(view.GetVisualDescendants().OfType<HabitRow>().Single());
+        days.Should().HaveCount(columns);
+        cells.Should().HaveCount(columns);
+        for (var i = 0; i < columns; i++)
+            BoundsIn(days[i], view).Center.X.Should().BeApproximately(BoundsIn(cells[i], view).Center.X, 1.0, $"colonna {i}");
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Selected_day_is_marked_on_every_row()
+    {
+        var (w, view, vm) = Show(900, Row("Sette"), Row("Quattordici", HabitType.Resistance, days: 14), Row("Acqua", HabitType.Counter));
+        foreach (var back in new[] { 0, 2 })
+        {
+            vm.SelectDayCommand.Execute(back);
+            Pump();
+            var column = BoundsIn(HeaderDays(view).Single(b => b.Classes.Contains("selected")), view);
+            var rows = view.GetVisualDescendants().OfType<HabitRow>().ToList();
+            rows.Should().HaveCount(3);
+            foreach (var row in rows)
+            {
+                var marked = MarkedCells(row);
+                marked.Should().ContainSingle($"una sola cella marcata per riga ({back} giorni fa)");
+                marked[0].Background.Should().NotBeNull();
+                BoundsIn(marked[0], view).Center.X.Should().BeApproximately(column.Center.X, 1.0, "sotto il giorno scelto");
+            }
+        }
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Banner_shows_only_on_a_past_day_and_goes_back()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, vm) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
+        var band = view.FindControl<Border>("PastDayBand")!;
+        band.IsVisible.Should().BeFalse("su oggi niente fascia");
+
+        Click(w, view.FindControl<Button>("PrevDayButton")!);
+
+        vm.DaysBack.Should().Be(1);
+        band.IsVisible.Should().BeTrue();
+        band.Bounds.Height.Should().BeGreaterThan(0);
+        band.GetVisualDescendants().OfType<TextBlock>().Should().Contain(t => t.Text != null && t.Text.Contains("martedì 27 ottobre"));
+        view.FindControl<TextBlock>("TodayDate")!.Text.Should().Be("ieri");
+
+        Click(w, view.FindControl<Button>("BackToTodayButton")!);
+
+        vm.DaysBack.Should().Be(0);
+        band.IsVisible.Should().BeFalse();
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Narrowing_the_view_clamps_the_day()
+    {
+        // Review Focus 4: il giorno scelto esce dalle colonne visibili → diventa il più vecchio visibile.
+        using var culture = TestCulture.Pin();
+        var (w, view, vm) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
+        vm.MaxDaysBack.Should().Be(13, "la vista dice al ViewModel quante colonne si vedono");
+        vm.SelectDayCommand.Execute(6);
+        Pump();
+        vm.DaysBack.Should().Be(6);
+
+        w.Width = 360;
+        Pump();
+
+        vm.MaxDaysBack.Should().Be(3);
+        vm.DaysBack.Should().Be(3);
+        var days = HeaderDays(view);
+        days.Should().HaveCount(4);
+        days[0].Classes.Contains("selected").Should().BeTrue("il giorno scelto è il più vecchio che si vede");
+        view.FindControl<TextBlock>("TodayTitle")!.Text.Should().Be("Domenica 25 ottobre");
+        view.FindControl<Border>("PastDayBand")!.GetVisualDescendants().OfType<TextBlock>()
+            .Should().Contain(t => t.Text != null && t.Text.Contains("domenica 25 ottobre"));
+        MarkedCells(view.GetVisualDescendants().OfType<HabitRow>().Single()).Should().ContainSingle();
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void A_search_with_no_match_does_not_move_the_day()
+    {
+        // Senza righe non c'è una striscia da misurare: il giorno scelto resta dov'è.
+        var (w, view, vm) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
+        vm.SelectDayCommand.Execute(5);
+        Pump();
+        vm.SearchText = "zzzz";
+        Pump();
+        vm.Rows.Should().BeEmpty("il test non prova niente se la ricerca trova qualcosa");
+        vm.DaysBack.Should().Be(5);
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void More_menu_switches_tabs_and_archive_has_no_day_controls()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, vm) = Show(900, Row("Quattordici", HabitType.Resistance, days: 14));
+        var more = view.FindControl<Button>("MoreButton")!;
+        var flyout = (MenuFlyout)more.Flyout!;
+        flyout.ShowAt(more);
+        Pump();
+        var items = flyout.Items.OfType<MenuItem>().ToList();
+        items.Select(i => i.Header).Should().Equal("Attive", "Archiviate", "Cestino");
+        items.Select(i => i.IsChecked).Should().Equal(new[] { true, false, false }, "la spunta è sulla scheda attiva");
+        var back = view.FindControl<Button>("BackToActiveButton")!;
+        back.IsVisible.Should().BeFalse();
+
+        items[1].Command!.Execute(items[1].CommandParameter);
+        flyout.Hide();
+        Pump();
+
+        vm.ActiveTab.Should().Be(HomeTab.Archived);
+        view.FindControl<TextBlock>("TodayTitle")!.Text.Should().Be("Archiviate");
+        view.FindControl<Button>("PrevDayButton")!.IsEffectivelyVisible.Should().BeFalse("niente ‹ › in Archivio");
+        view.FindControl<Button>("NextDayButton")!.IsEffectivelyVisible.Should().BeFalse();
+        view.FindControl<TextBlock>("DayCount")!.IsVisible.Should().BeFalse("niente conto");
+        view.FindControl<TextBlock>("TodayDate")!.IsVisible.Should().BeFalse();
+        view.FindControl<DayHeaderView>("DayHeader")!.IsVisible.Should().BeFalse("niente intestazione dei giorni");
+        back.IsVisible.Should().BeTrue();
+        back.Content.Should().Be("Torna alle abitudini");
+        flyout.ShowAt(more);
+        Pump();
+        flyout.Items.OfType<MenuItem>().Select(i => i.IsChecked).Should().Equal(false, true, false);
+        flyout.Hide();
+
+        Click(w, back);
+
+        vm.ActiveTab.Should().Be(HomeTab.Active);
+        back.IsVisible.Should().BeFalse();
+        view.FindControl<Button>("PrevDayButton")!.IsEffectivelyVisible.Should().BeTrue();
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void Search_opens_from_the_lens_and_from_ctrl_f()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, vm) = Show(900, Row("Acqua"), Row("Corsa"));
+        var box = view.FindControl<TextBox>("SearchBox")!;
+        var date = view.FindControl<TextBlock>("TodayDate")!;
+        var count = view.FindControl<TextBlock>("DayCount")!;
+        box.IsVisible.Should().BeFalse();
+        date.IsVisible.Should().BeTrue();
+
+        Click(w, view.FindControl<Button>("SearchButton")!);
+
+        box.IsVisible.Should().BeTrue("la lente apre la casella");
+        box.IsFocused.Should().BeTrue();
+        date.IsVisible.Should().BeFalse("la casella prende il posto di data e conto");
+        count.IsVisible.Should().BeFalse();
+
+        box.Text = "acq";
+        Pump();
+        vm.Rows.Should().ContainSingle();
+        w.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, "");
+        Pump();
+        box.IsVisible.Should().BeFalse("Esc la richiude");
+        vm.SearchText.Should().BeNullOrEmpty("e toglie il filtro: una ricerca che non si vede non deve filtrare");
+        vm.Rows.Should().HaveCount(2);
+        date.IsVisible.Should().BeTrue();
+
+        w.KeyPress(Key.F, RawInputModifiers.Control, PhysicalKey.F, "f");
+        Pump();
+        box.IsVisible.Should().BeTrue("Ctrl+F la apre");
+        box.IsFocused.Should().BeTrue();
+
+        // Vuota e senza fuoco si richiude; con del testo resta.
+        view.FindControl<Button>("NewMenuButton")!.Focus();
+        Pump();
+        box.IsVisible.Should().BeFalse();
+
+        w.KeyPress(Key.F, RawInputModifiers.Control, PhysicalKey.F, "f");
+        box.Text = "cor";
+        view.FindControl<Button>("NewMenuButton")!.Focus();
+        Pump();
+        box.IsVisible.Should().BeTrue("una ricerca in corso resta a vista");
         w.Close();
     }
 }
