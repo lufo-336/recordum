@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -6,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Home;
 using Recordum.UI.Behaviors;
 
 namespace Recordum.UI.Views;
@@ -18,6 +20,10 @@ public partial class HomeView : UserControl
         HomeSort.LastCompletion => Strings.Home_Filter_Sort_LastCompletion,
         _ => Strings.Home_Filter_Sort_Manual,
     });
+
+    // Finché la testa nuova non arriva (Task 7), l'intestazione dei giorni è ancora una HeatmapStrip.
+    public static readonly FuncValueConverter<ImmutableArray<DayHeaderCell>, ImmutableArray<StripCell>> HeaderCells = new(h =>
+        h.IsDefaultOrEmpty ? [] : [.. h.Select(c => new StripCell(c.ShortName, false, c.IsToday, c.IsSelected))]);
 
     private Point? _pressPoint;
     // Il TopLevel va tenuto da parte: allo stacco GetTopLevel(this) è già null e il gestore resterebbe appeso.

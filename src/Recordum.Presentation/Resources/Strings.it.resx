@@ -1911,6 +1911,24 @@ Dettagli: {0}</value>
   <data name="Home.Row.ResetPending.Tip" xml:space="preserve">
     <value>Per questa abitudine la giornata finisce alle {0}: l'ultima casella è ancora ieri.</value>
   </data>
+  <data name="Home.Day.Previous" xml:space="preserve">
+    <value>Giorno prima</value>
+  </data>
+  <data name="Home.Day.Next" xml:space="preserve">
+    <value>Giorno dopo</value>
+  </data>
+  <data name="Home.Day.Yesterday" xml:space="preserve">
+    <value>ieri</value>
+  </data>
+  <data name="Home.Day.DaysAgo" xml:space="preserve">
+    <value>{0} giorni fa</value>
+  </data>
+  <data name="Home.PastDay.Banner" xml:space="preserve">
+    <value>Stai segnando {0}. Quello che registri va su quel giorno.</value>
+  </data>
+  <data name="Home.PastDay.BackToToday" xml:space="preserve">
+    <value>Torna a oggi</value>
+  </data>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>Nuova</value>
   </data>

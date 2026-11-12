@@ -120,6 +120,15 @@ public sealed partial class HomeRowViewModel : ObservableObject
     public DateTime? LastCompletionAt { get; }
     public bool IsCompletedToday { get; }
 
+    /// <summary>Il giorno scelto nella Home ha una registrazione (per oggi è <see cref="IsCompletedToday"/>).</summary>
+    public bool IsDoneOnDay { get; }
+
+    /// <summary>Il giorno che il log rapido passa all'handler: null = oggi, altrimenti il giorno scelto nella Home.</summary>
+    public DateOnly? RecordDay { get; init; }
+
+    // Di quante celle indietro sta il giorno scelto nella striscia di questa abitudine (0 = l'ultima).
+    private readonly int _cellBack;
+
     /// <summary>Per un gruppo: quante abitudini discendenti sono completate oggi, e quante sono (direzione visiva §5).</summary>
     public int ChildrenDoneToday { get; private set; }
 
@@ -188,7 +197,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
 
     public HomeRowViewModel(
         HomeTreeRow row, int indentLevel, IHabitNodeService nodes, IPurgeService purge,
-        HabitUiPrefs? uiPrefs = null, IStreakAggregator? streaks = null, IClock? clock = null)
+        HabitUiPrefs? uiPrefs = null, IStreakAggregator? streaks = null, IClock? clock = null, int daysBack = 0)
     {
         _nodes = nodes;
         _purge = purge;
@@ -203,6 +212,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
         CompletionsLast7Days = row.CompletionsLast7Days;
         LastCompletionAt = row.LastCompletionAt;
         IsCompletedToday = row.IsCompletedToday;
+        _cellBack = GroupProgress.CellBack(row, daysBack, clock);
+        IsDoneOnDay = GroupProgress.HasEntryOn(row, _cellBack);
         _habitDay = row.HabitDay;
         _appDay = row.AppDay;
         RefreshDayLag();
@@ -224,7 +235,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         StripFractions = ComputeStripFractions(row);
         StripCells = ComputeStripCells(row);
         _keyFigureText = ComputeSynchronousKeyFigure(row);
-        _isKeyFigureZero = KeyFigureKind == KeyFigureKind.CounterTotal && (row.TodayCounterTotal ?? 0m) == 0m;
+        _isKeyFigureZero = KeyFigureKind == KeyFigureKind.CounterTotal && DayCounterTotal(row) == 0m;
 
         // Children are filled by Rebuild right after construction; keep the frame chrome in sync.
         Children.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasVisibleChildren));
@@ -265,7 +276,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
                 glyph = row.TodayCounterIsDuration ? StripValueFormat.Duration(v, culture) : StripValueFormat.Compact(v, culture);
             }
             else glyph = "✓";
-            cells.Add(new StripCell(glyph, on, i == n - 1));
+            cells.Add(new StripCell(glyph, on, i == n - 1, i == n - 1 - _cellBack));
         }
         return cells.MoveToImmutable();
     }
@@ -294,8 +305,11 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// Streak (and any future async kind) stays empty here and is filled by <see cref="LoadKeyFigureAsync"/>.</summary>
     private string ComputeSynchronousKeyFigure(HomeTreeRow row) => KeyFigureKind switch
     {
-        KeyFigureKind.DoneToday or KeyFigureKind.JournalToday => IsCompletedToday ? "✓" : "—",
-        KeyFigureKind.CounterTotal => FormatCounterTotal(row),
+        KeyFigureKind.DoneToday or KeyFigureKind.JournalToday => IsDoneOnDay ? "✓" : "—",
+        KeyFigureKind.CounterTotal => FormatCounterTotal(row, DayCounterTotal(row)),
+        // L'etichetta dello stato c'è solo per oggi: di un giorno passato si scrive il valore.
+        KeyFigureKind.StateValue when _cellBack > 0 =>
+            GroupProgress.ValueOn(row, _cellBack)?.ToString("0.##", CultureInfo.CurrentCulture) ?? string.Empty,
         KeyFigureKind.StateValue => row.TodayStateLabel
             ?? row.TodayStateValue?.ToString(CultureInfo.CurrentCulture)
             ?? string.Empty,
@@ -308,9 +322,19 @@ public sealed partial class HomeRowViewModel : ObservableObject
         _ => string.Empty, // Streak / None: async or nothing
     };
 
-    private static string FormatCounterTotal(HomeTreeRow row)
+    /// <summary>Il totale del contatore nel giorno scelto, nell'unità della metrica. I valori dei giorni passati sono grezzi
+    /// (secondi, per una durata) e si convertono come la query converte quello di oggi; un contatore senza metriche conta
+    /// le registrazioni.</summary>
+    private decimal DayCounterTotal(HomeTreeRow row)
     {
-        var total = row.TodayCounterTotal ?? 0m;
+        if (_cellBack == 0) return row.TodayCounterTotal ?? 0m;
+        if (row.ValuesLast14Days.IsDefaultOrEmpty) return GroupProgress.CountOn(row, _cellBack);
+        return Recordum.Core.Formatting.SecondsDisplay.ConvertTotal(
+            GroupProgress.ValueOn(row, _cellBack) ?? 0m, row.TodayCounterIsDuration, row.TodayCounterUnitCode);
+    }
+
+    private static string FormatCounterTotal(HomeTreeRow row, decimal total)
+    {
         // A duration total that no time unit converted is still raw seconds: show it as h:mm:ss so the
         // row agrees with the records list, and skip the unit label (the format carries the meaning).
         if (CounterTotalDisplay.AsRawDuration(row.TodayCounterIsDuration, row.TodayCounterUnitCode, total) is { } duration)
@@ -484,7 +508,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (_quickActionSelector is null || HabitType is null) return;
         var handler = _quickActionSelector.For(HabitType.Value);
         if (handler is null) return;
-        var recorded = await handler.ExecuteAsync(HabitNodeId, null, ct).ConfigureAwait(true);
+        var recorded = await handler.ExecuteAsync(HabitNodeId, RecordDay, ct).ConfigureAwait(true);
         QuickActionExecuted?.Invoke(this, new QuickActionExecutedEventArgs(HabitNodeId, recorded));
     }
 

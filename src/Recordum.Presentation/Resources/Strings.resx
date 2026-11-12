@@ -1923,6 +1923,24 @@ Details: {0}</value>
   <data name="Home.Row.ResetPending.Tip" xml:space="preserve">
     <value>For this habit the day ends at {0}: the last box is still yesterday.</value>
   </data>
+  <data name="Home.Day.Previous" xml:space="preserve">
+    <value>Previous day</value>
+  </data>
+  <data name="Home.Day.Next" xml:space="preserve">
+    <value>Next day</value>
+  </data>
+  <data name="Home.Day.Yesterday" xml:space="preserve">
+    <value>yesterday</value>
+  </data>
+  <data name="Home.Day.DaysAgo" xml:space="preserve">
+    <value>{0} days ago</value>
+  </data>
+  <data name="Home.PastDay.Banner" xml:space="preserve">
+    <value>You are logging {0}. What you record goes on that day.</value>
+  </data>
+  <data name="Home.PastDay.BackToToday" xml:space="preserve">
+    <value>Back to today</value>
+  </data>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>New</value>
   </data>

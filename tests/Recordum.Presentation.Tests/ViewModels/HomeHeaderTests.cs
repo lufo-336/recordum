@@ -42,15 +42,16 @@ public class HomeHeaderTests
 
     [Fact]
     public async Task Today_label_is_the_long_date()
-        => (await Loaded(Wed1000, Row("a"))).TodayLabel.Should().Be("mercoledì 28 ottobre");
+        => (await Loaded(Wed1000, Row("a"))).DateLabel.Should().Be("mercoledì 28 ottobre");
 
     [Fact]
     public async Task Strip_header_ends_with_today()
     {
-        var header = (await Loaded(Wed1000, Row("a"))).StripHeader;
+        var header = (await Loaded(Wed1000, Row("a"))).DayHeader;
         header.Should().HaveCount(14);
-        header[^1].Should().Be(new StripCell("oggi", false, true));
-        header[^2].Glyph.Should().Be("mar");
+        header[^1].ShortName.Should().Be("oggi");
+        header[^1].IsToday.Should().BeTrue();
+        header[^2].ShortName.Should().Be("mar");
         header.Take(13).Should().OnlyContain(c => !c.IsToday);
     }
 
@@ -58,8 +59,8 @@ public class HomeHeaderTests
     public async Task Before_the_reset_today_is_yesterday()
     {
         var sut = await Loaded(new DateTimeOffset(2026, 10, 28, 4, 30, 0, TimeSpan.Zero), Row("a"));
-        sut.TodayLabel.Should().Be("martedì 27 ottobre");
-        sut.StripHeader[^2].Glyph.Should().Be("lun");
+        sut.DateLabel.Should().Be("martedì 27 ottobre");
+        sut.DayHeader[^2].ShortName.Should().Be("lun");
     }
 
     [Fact]
@@ -110,16 +111,16 @@ public class HomeHeaderTests
         await sut.LoadCommand.ExecuteAsync(null);
         sut.State.Should().Be(HomeState.Loaded);
         sut.Rows.Should().ContainSingle();
-        sut.ShowStripHeader.Should().BeFalse();
+        sut.ShowDayHeader.Should().BeFalse();
     }
 
     [Fact]
     public async Task The_header_shows_only_with_loaded_rows()
     {
         var sut = await Loaded(Wed1000, Row("a"));
-        sut.ShowStripHeader.Should().BeTrue();
+        sut.ShowDayHeader.Should().BeTrue();
         sut.State = HomeState.Error;
-        sut.ShowStripHeader.Should().BeFalse("in errore o in caricamento l'intestazione non resta sola");
+        sut.ShowDayHeader.Should().BeFalse("in errore o in caricamento l'intestazione non resta sola");
     }
 
     private sealed class ThrowingResolver : Recordum.Core.Abstractions.Services.IResetTimeResolver

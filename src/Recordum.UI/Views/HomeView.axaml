@@ -26,10 +26,10 @@
          la data si nasconde (code-behind), così "+ Nuova" non finisce sopra i segmenti (F2b-5). -->
     <Grid Grid.Row="0" Margin="16,14,12,6" ColumnDefinitions="*,Auto">
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" ClipToBounds="True">
-        <TextBlock x:Name="TodayTitle" Text="{x:Static res:Strings.Home_Title_Today}"
+        <TextBlock x:Name="TodayTitle" Text="{CompiledBinding Title}"
                    FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold"
                    Foreground="{DynamicResource Brush.Text}"/>
-        <TextBlock x:Name="TodayDate" Text="{CompiledBinding TodayLabel}" VerticalAlignment="Bottom" Margin="0,0,0,2"
+        <TextBlock x:Name="TodayDate" Text="{CompiledBinding DateLabel}" VerticalAlignment="Bottom" Margin="0,0,0,2"
                    FontSize="{StaticResource FontSize.Label}" TextTrimming="CharacterEllipsis"
                    Foreground="{DynamicResource Brush.TextMuted}"/>
       </StackPanel>
@@ -123,8 +123,8 @@
     <!-- L'intestazione dei giorni (UX-6): oggi a destra, sopra la colonna di oggi di ogni striscia. Il margine a destra è
          quello del log rapido della riga (28 + 7) più quello della striscia (8). -->
     <ctl:HeatmapStrip x:Name="StripHeader" Grid.Row="3" IsHeader="True" HorizontalAlignment="Right" Margin="0,0,43,2"
-                      Values="{CompiledBinding StripHeader}"
-                      IsVisible="{CompiledBinding ShowStripHeader}"/>
+                      Values="{CompiledBinding DayHeader, Converter={x:Static v:HomeView.HeaderCells}}"
+                      IsVisible="{CompiledBinding ShowDayHeader}"/>
 
     <!-- Lo sfondo Transparent (non null) rende lo spazio vuoto sotto le righe colpibile dal
          puntatore: è il clic che deseleziona. Vale in Avalonia come in WPF. -->

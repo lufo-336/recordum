@@ -62,10 +62,10 @@ public sealed class RowResetPendingTests : IDisposable
     [Fact]
     public async Task Same_reset_never_shows_it()
     {
-        var (home, _, ticks) = await LoadAsync(TimeOnly.MinValue, hour: 2);
+        var (home, _, _) = await LoadAsync(TimeOnly.MinValue, hour: 2);
 
+        // La Home batte comunque (per il cambio di giorno): che la riga non chieda il battito lo dice TracksDayLag.
         home.Rows.Single().IsDayBehindApp.Should().BeFalse();
         home.Rows.Single().TracksDayLag.Should().BeFalse();
-        ticks.RunningCount.Should().Be(0, "senza ritardo possibile la riga non chiede il battito");
     }
 }

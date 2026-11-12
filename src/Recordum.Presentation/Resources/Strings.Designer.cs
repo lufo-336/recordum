@@ -190,6 +190,12 @@ public static class Strings
     public static string Home_Group_Progress => Get("Home.Group.Progress");
     public static string Home_Row_ResetPending => Get("Home.Row.ResetPending");
     public static string Home_Row_ResetPending_Tip => Get("Home.Row.ResetPending.Tip");
+    public static string Home_Day_Previous => Get("Home.Day.Previous");
+    public static string Home_Day_Next => Get("Home.Day.Next");
+    public static string Home_Day_Yesterday => Get("Home.Day.Yesterday");
+    public static string Home_Day_DaysAgo => Get("Home.Day.DaysAgo");
+    public static string Home_PastDay_Banner => Get("Home.PastDay.Banner");
+    public static string Home_PastDay_BackToToday => Get("Home.PastDay.BackToToday");
     public static string Home_NewMenu_Label => Get("Home.NewMenu.Label");
     public static string Rail_Diary_ComingSoon => Get("Rail.Diary.ComingSoon");
     public static string Rail_Stats_ComingSoon => Get("Rail.Stats.ComingSoon");

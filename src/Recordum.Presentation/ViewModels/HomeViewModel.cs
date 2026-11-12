@@ -42,9 +42,13 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private Guid? _selectionAnchor;
     private bool _syncingSelection;
 
-    [ObservableProperty] private HomeTab _activeTab = HomeTab.Active;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowStripHeader))]
+    [NotifyPropertyChangedFor(nameof(ShowDayHeader))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousDayCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextDayCommand))]
+    private HomeTab _activeTab = HomeTab.Active;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowDayHeader))]
     private HomeState _state = HomeState.Loading;
     [ObservableProperty] private string? _errorMessage;
 
@@ -52,21 +56,53 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     [ObservableProperty] private ImmutableHashSet<Guid> _tagFilter = ImmutableHashSet<Guid>.Empty;
     [ObservableProperty] private bool _hideCompletedToday;
 
-    /// <summary>La data lunga del giorno dell'app accanto a "Oggi" ("mercoledì 28 ottobre"); vuota senza orologio.</summary>
-    [ObservableProperty] private string _todayLabel = string.Empty;
+    // Il giorno dell'app risolto all'ultimo caricamento; null senza orologio o se il confine non si legge.
+    private DayBoundary? _appDay;
+    private DateOnly? _today;
 
-    /// <summary>L'intestazione dei giorni sopra le strisce: 14 celle dal più vecchio, l'ultima è "oggi".</summary>
+    /// <summary>Il giorno corrente della Home, in giorni fa: 0 = oggi. Sta dentro la finestra di 14 giorni già caricata.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowStripHeader))]
-    private ImmutableArray<StripCell> _stripHeader = ImmutableArray<StripCell>.Empty;
+    [NotifyPropertyChangedFor(nameof(IsOnToday))]
+    [NotifyPropertyChangedFor(nameof(SelectedDay))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousDayCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextDayCommand))]
+    private int _daysBack;
+
+    /// <summary>Il giorno più vecchio che si può scegliere: lo imposta la vista (colonne visibili − 1).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PreviousDayCommand))]
+    private int _maxDaysBack = 13;
+
+    public bool IsOnToday => DaysBack == 0;
+
+    /// <summary>Il giorno scelto, nel calendario dell'app.</summary>
+    public DateOnly SelectedDay => _today?.AddDays(-DaysBack) ?? default;
+
+    /// <summary>"Oggi", o il giorno scelto ("Lunedì 9 novembre"); in Archivio e Cestino il nome della scheda.</summary>
+    [ObservableProperty] private string _title = Strings.Home_Title_Today;
+
+    /// <summary>Accanto al titolo: oggi la data lunga ("mercoledì 28 ottobre"), su un giorno passato "ieri" / "3 giorni fa".</summary>
+    [ObservableProperty] private string _dateLabel = string.Empty;
+
+    /// <summary>"4 di 9": le abitudini non archiviate fatte nel giorno scelto sul totale.</summary>
+    [ObservableProperty] private string _dayCountText = string.Empty;
+
+    /// <summary>La fascia sotto la testa su un giorno passato; null su oggi.</summary>
+    [ObservableProperty] private string? _pastDayBanner;
+
+    /// <summary>L'intestazione dei giorni sopra le strisce: 14 celle dal più vecchio, l'ultima è oggi.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowDayHeader))]
+    private ImmutableArray<DayHeaderCell> _dayHeader = ImmutableArray<DayHeaderCell>.Empty;
 
     /// <summary>La striscia più lunga fra le righe visibili: quante celle dell'intestazione mostrare.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowStripHeader))]
+    [NotifyPropertyChangedFor(nameof(ShowDayHeader))]
     private int _maxVisibleStripLength;
 
-    /// <summary>L'intestazione dei giorni: solo con le righe caricate, una striscia e il giorno risolto.</summary>
-    public bool ShowStripHeader => State == HomeState.Loaded && MaxVisibleStripLength > 0 && !StripHeader.IsDefaultOrEmpty;
+    /// <summary>L'intestazione dei giorni: solo fra le Attive, con le righe caricate, una striscia e il giorno risolto.</summary>
+    public bool ShowDayHeader => State == HomeState.Loaded && ActiveTab == HomeTab.Active
+        && MaxVisibleStripLength > 0 && !DayHeader.IsDefaultOrEmpty;
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private HomeSort _sortOption = HomeSort.Manual;
 
@@ -136,6 +172,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
                 ? await _query.GetTrashTreeAsync()
                 : await _query.GetHomeTreeAsync();
             await PrefetchPrefsAsync();
+            await ResolveAppDayAsync();
             Rebuild();
         }
         catch (Exception ex)
@@ -143,11 +180,70 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
             ErrorMessage = ex.Message;
             State = HomeState.Error;
             Rows.Clear();
-            return;
         }
-        // Fuori dal try: l'intestazione è un di più, e un confine del giorno che non si legge non spegne la Home (review M-6).
-        try { await RefreshHeaderAsync(); }
-        catch (Exception) { StripHeader = ImmutableArray<StripCell>.Empty; TodayLabel = string.Empty; }
+    }
+
+    /// <summary>Il giorno dell'app (<c>daily_reset_time</c>), risolto una volta per caricamento. Senza orologio resta null
+    /// (superfici di design, test).</summary>
+    private async Task ResolveAppDayAsync()
+    {
+        if (_clock is null) return;
+        try
+        {
+            _appDay = _resetTimes is null
+                ? DayBoundary.Utc
+                : await _resetTimes.GetAppDayBoundaryAsync().ConfigureAwait(true);
+            var today = _appDay.Today(_clock);
+            // Il giorno è cambiato con la Home aperta: si torna a oggi, o "ieri" diventerebbe un altro giorno senza dirlo.
+            if (_today is { } before && before != today) SetDaysBackQuietly(0);
+            _today = today;
+        }
+        catch (Exception)
+        {
+            // Un confine del giorno che non si legge non spegne la Home: le righe si vedono, l'intestazione no (review M-6).
+            _appDay = null;
+            _today = null;
+            SetDaysBackQuietly(0);
+        }
+    }
+
+    // Per chi ricostruisce subito dopo: senza il Rebuild di OnDaysBackChanged.
+    private void SetDaysBackQuietly(int value)
+    {
+        _suppressRebuild = true;
+        try { DaysBack = value; }
+        finally { _suppressRebuild = false; }
+    }
+
+    private bool CanChangeDay => ActiveTab == HomeTab.Active && _today is not null;
+    private bool CanGoToPreviousDay() => CanChangeDay && DaysBack < MaxDaysBack;
+    private bool CanGoToNextDay() => CanChangeDay && DaysBack > 0;
+
+    // Execute non consulta CanExecute: la guardia sta anche dentro.
+    [RelayCommand(CanExecute = nameof(CanGoToPreviousDay))]
+    private void PreviousDay() { if (CanGoToPreviousDay()) DaysBack++; }
+
+    [RelayCommand(CanExecute = nameof(CanGoToNextDay))]
+    private void NextDay() { if (CanGoToNextDay()) DaysBack--; }
+
+    [RelayCommand]
+    private void SelectDay(int daysBack) { if (CanChangeDay) DaysBack = Math.Clamp(daysBack, 0, Math.Max(0, MaxDaysBack)); }
+
+    [RelayCommand]
+    private void BackToToday() => DaysBack = 0;
+
+    // Cambiare giorno non rilegge il database: le righe si rifanno da _lastFetched.
+    partial void OnDaysBackChanged(int value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
+
+    // La finestra si stringe: il giorno scelto resta fra le colonne che si vedono.
+    partial void OnMaxDaysBackChanged(int value) { if (DaysBack > value) DaysBack = Math.Max(0, value); }
+
+    /// <summary>Il battito della Home: se il giorno dell'app è cambiato, si ricarica (e il caricamento riporta a oggi).</summary>
+    private void CheckDayRollover()
+    {
+        if (_appDay is null || _clock is null || _today is null || _appDay.Today(_clock) == _today) return;
+        _clockTicker.Clear();   // il ricaricamento registra di nuovo: senza, un caricamento lento ne farebbe partire uno al secondo
+        _ = ReloadPreservingSelectionAsync();
     }
 
     [RelayCommand]
@@ -379,6 +475,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
             TagFilter = ImmutableHashSet<Guid>.Empty;
             HideCompletedToday = false;
             SortOption = HomeSort.Manual;
+            DaysBack = 0;   // cambiare scheda riporta a oggi
         }
         finally
         {
@@ -396,6 +493,18 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         var keep = _selectedIds.ToList();
         await LoadAsync();
         if (generation != _reloadGeneration) return;
+        RestoreSelection(keep);
+    }
+
+    private void RebuildPreservingSelection()
+    {
+        var keep = _selectedIds.ToList();
+        Rebuild();
+        RestoreSelection(keep);
+    }
+
+    private void RestoreSelection(List<Guid> keep)
+    {
         _selectedIds.Clear();
         foreach (var id in keep.Where(id => Rows.Any(r => r.HabitNodeId == id)))
             _selectedIds.Add(id);
@@ -461,7 +570,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         if (!TagFilter.IsEmpty)
             q = q.Where(r => r.TagIds.Any(TagFilter.Contains));
         if (HideCompletedToday && ActiveTab == HomeTab.Active)
-            q = q.Where(r => !r.IsCompletedToday);
+            q = q.Where(r => !GroupProgress.HasEntryOn(r, GroupProgress.CellBack(r, DaysBack, _clock)));
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var needle = SearchText.Trim();
@@ -469,6 +578,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         }
         _rebuilding = true;
         _clockTicker.Clear();
+        if (_today is not null) _clockTicker.Register(CheckDayRollover);
         try
         {
             var parentStack = new List<HomeRowViewModel>();
@@ -478,8 +588,9 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
             {
                 var (row, level) = ordered[i];
                 _prefsByNode.TryGetValue(row.HabitNodeId, out var prefs);
-                var vm = new HomeRowViewModel(row, level, _nodes, _purge, prefs, _streaks, _clock)
+                var vm = new HomeRowViewModel(row, level, _nodes, _purge, prefs, _streaks, _clock, DaysBack)
                 {
+                    RecordDay = DaysBack == 0 ? null : SelectedDay,
                     FrameSlices = frames[i],
                     CurrentTab = ActiveTab,
                     IsExpanded = !_collapsedGroupIds.Contains(row.HabitNodeId),
@@ -501,47 +612,78 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
             }
         }
         finally { _rebuilding = false; }
-        ApplyGroupProgress();
+        ApplyDayProgress();
+        RefreshHead();
         MaxVisibleStripLength = Rows.Count == 0 ? 0 : Rows.Max(r => r.StripCells.Length);
         State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
         ApplySelectionToRows();
         _ = FillKeyFiguresAsync();
     }
 
-    /// <summary>"3 di 5" dei gruppi: le abitudini discendenti del gruppo fra quelle non archiviate, non solo le righe
-    /// visibili, così il filtro "fatte" non cambia il conto.</summary>
-    private void ApplyGroupProgress()
+    /// <summary>"3 di 5" dei gruppi e il "4 di 9" della testa, nel giorno scelto: le abitudini non archiviate, non solo
+    /// le righe visibili, così il filtro "fatte" non cambia il conto.</summary>
+    private void ApplyDayProgress()
     {
-        var live = _lastFetched.Where(r => !r.IsArchived).ToList();
-        var byParent = live.ToLookup(r => r.ParentId);
+        var byParent = _lastFetched.Where(r => !r.IsArchived).ToLookup(r => r.ParentId);
+        bool IsDone(HomeTreeRow r) => GroupProgress.IsDoneOn(r, GroupProgress.CellBack(r, DaysBack, _clock));
         foreach (var vm in Rows.Where(r => r.IsGroup))
         {
-            var (done, total) = GroupProgress.Count(byParent, vm.HabitNodeId);
+            var (done, total) = GroupProgress.Count(byParent, vm.HabitNodeId, IsDone);
             vm.SetGroupProgress(done, total);
         }
+        var (dayDone, dayTotal) = GroupProgress.Count(byParent, null, IsDone);
+#pragma warning disable CA1863 // stringa localizzata, una volta per ricostruzione
+        DayCountText = ActiveTab == HomeTab.Active && dayTotal > 0
+            ? string.Format(CultureInfo.CurrentCulture, Strings.Home_Group_Progress, dayDone, dayTotal)
+            : string.Empty;
+#pragma warning restore CA1863
     }
 
-    /// <summary>La testa della Home: la data lunga e i 14 giorni dell'intestazione, dal giorno dell'app
-    /// (<c>daily_reset_time</c>) risolto una volta. Senza orologio resta vuota (superfici di design, test).</summary>
-    private async Task RefreshHeaderAsync()
+    /// <summary>La testa della Home dal giorno scelto: titolo, data, fascia e i 14 giorni dell'intestazione. Non legge
+    /// niente: senza il giorno dell'app resta "Oggi" e basta.</summary>
+    private void RefreshHead()
     {
-        if (_clock is null) return;
-        var appDay = _resetTimes is null
-            ? DayBoundary.Utc
-            : await _resetTimes.GetAppDayBoundaryAsync().ConfigureAwait(true);
-        var today = appDay.Today(_clock);
         var culture = CultureInfo.CurrentCulture;
-        var date = today.ToDateTime(TimeOnly.MinValue);
-        TodayLabel = $"{date.ToString("dddd", culture)} {date.ToString(culture.DateTimeFormat.MonthDayPattern, culture)}";
-        var cells = ImmutableArray.CreateBuilder<StripCell>(14);
-        for (var back = 13; back >= 0; back--)
+        string LongDay(DateOnly day)
         {
-            var day = today.AddDays(-back).ToDateTime(TimeOnly.MinValue);
-            cells.Add(back == 0
-                ? new StripCell(Resources.Strings.Home_StripHeader_Today, false, true)
-                : new StripCell(day.ToString("ddd", culture), false, false));
+            var date = day.ToDateTime(TimeOnly.MinValue);
+            return $"{date.ToString("dddd", culture)} {date.ToString(culture.DateTimeFormat.MonthDayPattern, culture)}";
         }
-        StripHeader = cells.MoveToImmutable();
+
+        var onActive = ActiveTab == HomeTab.Active;
+        var selected = onActive && _today is not null && DaysBack > 0 ? LongDay(SelectedDay) : null;
+        Title = ActiveTab switch
+        {
+            HomeTab.Archived => Strings.Home_Tab_Archived,
+            HomeTab.Trash => Strings.Home_Tab_Trash,
+            _ => selected is null ? Strings.Home_Title_Today : char.ToUpper(selected[0], culture) + selected[1..],
+        };
+#pragma warning disable CA1863 // stringhe localizzate, una volta per ricostruzione
+        DateLabel = !onActive || _today is not { } today ? string.Empty
+            : DaysBack == 0 ? LongDay(today)
+            : DaysBack == 1 ? Strings.Home_Day_Yesterday
+            : string.Format(culture, Strings.Home_Day_DaysAgo, DaysBack);
+        PastDayBanner = selected is null ? null : string.Format(culture, Strings.Home_PastDay_Banner, selected);
+#pragma warning restore CA1863
+
+        if (_today is { } t)
+        {
+            var cells = ImmutableArray.CreateBuilder<DayHeaderCell>(14);
+            for (var back = 13; back >= 0; back--)
+            {
+                var day = t.AddDays(-back);
+                var name = day.ToDateTime(TimeOnly.MinValue).ToString("ddd", culture);
+                cells.Add(new DayHeaderCell(
+                    back == 0 ? Strings.Home_StripHeader_Today : name,
+                    culture.TextInfo.ToLower(name[..1]), LongDay(day), back, back == 0, back == DaysBack));
+            }
+            DayHeader = cells.MoveToImmutable();
+        }
+        else DayHeader = ImmutableArray<DayHeaderCell>.Empty;
+
+        OnPropertyChanged(nameof(SelectedDay));
+        PreviousDayCommand.NotifyCanExecuteChanged();
+        NextDayCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>Loads per-node presentation prefs for the current fetch, once, into a lookup the
