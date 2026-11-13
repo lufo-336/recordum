@@ -40,7 +40,7 @@
   Home una spunta già fatta si toglie, dopo una conferma (Task 8b, aggiunto al piano). La CI Linux è caduta sull'SDK
   .NET 11 della nuova immagine Ubuntu 26.04: `global.json` fissa l'SDK al 10.
 - **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) il Task 10 del piano "Giornata" (Impostazioni ›
-  Aspetto: il tema e le righe della Home), poi 11, 8b; GIO-7 (le celle vuote di Segni in scuro) da guardare a schermo; (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
+  Aspetto: il tema e le righe della Home), poi 11, 8b; GIO-3 (14 giorni in testa, 7 nelle righe) da decidere; (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
   vale per dispositivo).
 
 ## Il percorso

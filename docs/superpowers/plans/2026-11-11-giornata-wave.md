@@ -463,7 +463,7 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
   intestazione reagiscono al suo cambio. Via `HeatmapStrip.ValueSlotWidth` (la colonna è `metrics.Column`); il margine
   destro dell'intestazione lo calcola `HomeView` (`Command + 15`: 43 in Larga, com'era).
 - Il comando di registrazione ha `x:Name="QuickLog"` ed è largo `Command`, alto `Command − 2` (28×26 in Larga, com'era).
-- **Segni**: quadratini 14×14 raggio 4 a 3 di distanza, vuoto `Brush.Border`, pieno il colore mescolato **opaco** al
+- **Segni**: quadratini 14×14 raggio 4 a 3 di distanza, vuoto `Brush.CellEmpty` (GIO-7: prima `Brush.Border`, in scuro spariva), pieno il colore mescolato **opaco** al
   pannello (35 / 65 / 100 % dalla frazione di `StripFractions`, i sì/no sempre 100 %); il giorno scelto ha un `Border`
   `SelectedDay` d'inchiostro, 2 px, staccato di 1. Intestazione con le iniziali, pastiglia alta 16 (classe `narrow` su
   `DayHeaderView`). Il valore di oggi accanto ai quadratini è la cifra chiave che la riga ha già.
@@ -474,7 +474,7 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
   12 PNG in `GiornataScreenshotTests.Home_in_three_versions`. Prove del rosso: valore "7" senza `IsDefined`, `Dispose` che
   non si stacca, `HomeView` che non segue `RowsStyle`, `Marks` senza il minimo di 7 giorni.
 - Resta aperto **GIO-3** (in tutte e tre le versioni a 900 px l'intestazione ha 14 giorni e le righe non d'astinenza 7) e
-  si apre **GIO-7** (in scuro i quadratini vuoti di Segni si leggono poco).
+  si è aperta e chiusa **GIO-7** (in scuro i quadratini vuoti di Segni si leggevano poco: token `Brush.CellEmpty`).
 
 ### Task 10: Impostazioni › Aspetto
 
