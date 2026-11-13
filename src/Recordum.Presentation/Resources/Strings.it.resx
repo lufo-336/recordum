@@ -225,6 +225,33 @@ Dettagli: {0}</value>
   <data name="Settings.Theme.Dark" xml:space="preserve">
     <value>Scuro</value>
   </data>
+  <data name="Settings.Appearance.HomeRows" xml:space="preserve">
+    <value>Righe della Home</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Compact" xml:space="preserve">
+    <value>Compatta</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Compact.Hint" xml:space="preserve">
+    <value>I valori degli ultimi giorni, righe basse</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Marks" xml:space="preserve">
+    <value>Segni</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Marks.Hint" xml:space="preserve">
+    <value>La settimana a quadratini, il valore di oggi</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Comfortable" xml:space="preserve">
+    <value>Larga</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Comfortable.Hint" xml:space="preserve">
+    <value>I nomi dei giorni, righe alte</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.DeviceNote" xml:space="preserve">
+    <value>Vale per questo dispositivo.</value>
+  </data>
+  <data name="Settings.Appearance.HomeRows.Sample" xml:space="preserve">
+    <value>Lettura</value>
+  </data>
   <data name="Settings.Font" xml:space="preserve">
     <value>Carattere</value>
   </data>

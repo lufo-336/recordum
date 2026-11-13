@@ -210,6 +210,15 @@ public static class Strings
     public static string Settings_Theme_System => Get("Settings.Theme.System");
     public static string Settings_Theme_Light => Get("Settings.Theme.Light");
     public static string Settings_Theme_Dark => Get("Settings.Theme.Dark");
+    public static string Settings_Appearance_HomeRows => Get("Settings.Appearance.HomeRows");
+    public static string Settings_Appearance_HomeRows_Compact => Get("Settings.Appearance.HomeRows.Compact");
+    public static string Settings_Appearance_HomeRows_Compact_Hint => Get("Settings.Appearance.HomeRows.Compact.Hint");
+    public static string Settings_Appearance_HomeRows_Marks => Get("Settings.Appearance.HomeRows.Marks");
+    public static string Settings_Appearance_HomeRows_Marks_Hint => Get("Settings.Appearance.HomeRows.Marks.Hint");
+    public static string Settings_Appearance_HomeRows_Comfortable => Get("Settings.Appearance.HomeRows.Comfortable");
+    public static string Settings_Appearance_HomeRows_Comfortable_Hint => Get("Settings.Appearance.HomeRows.Comfortable.Hint");
+    public static string Settings_Appearance_HomeRows_DeviceNote => Get("Settings.Appearance.HomeRows.DeviceNote");
+    public static string Settings_Appearance_HomeRows_Sample => Get("Settings.Appearance.HomeRows.Sample");
     public static string Settings_Font => Get("Settings.Font");
     public static string Settings_Font_System => Get("Settings.Font.System");
     public static string Settings_Font_Serif => Get("Settings.Font.Serif");

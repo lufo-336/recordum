@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels"
+             xmlns:home="using:Recordum.Presentation.ViewModels.Home"
+             xmlns:enums="using:Recordum.Core.Enums"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Views.Settings.AppearancePage"
+             x:DataType="vm:SettingsViewModel">
+  <!-- Impostazioni › Aspetto (mockup oggi-striscia.html): il tema a segmenti e le righe della Home a radio, ognuna con
+       una riga vera d'esempio disegnata nella sua versione (HomeRowsMetrics.Rows sulla RowPreview). -->
+  <UserControl.Styles>
+    <Style Selector="RadioButton.homerows">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
+    <Style Selector="ctl|RowPreview">
+      <Setter Property="Margin" Value="0,6,0,0"/>
+      <Setter Property="MaxWidth" Value="460"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="24" Spacing="6">
+      <TextBlock Classes="h1" FontFamily="{DynamicResource Font.Serif}" FontSize="22" Margin="0,0,0,8"
+                 Text="{x:Static res:Strings.Settings_Category_Appearance}"/>
+
+      <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Theme}"/>
+      <StackPanel x:Name="ThemeSegments" Orientation="Horizontal" Spacing="4" Margin="0,0,0,16">
+        <RadioButton x:Name="ThemeSystem" Classes="segment" GroupName="theme" Content="{x:Static res:Strings.Settings_Theme_System}"
+                     IsChecked="{CompiledBinding ThemeMode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:ThemeMode.System}}"/>
+        <RadioButton x:Name="ThemeLight" Classes="segment" GroupName="theme" Content="{x:Static res:Strings.Settings_Theme_Light}"
+                     IsChecked="{CompiledBinding ThemeMode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:ThemeMode.Light}}"/>
+        <RadioButton x:Name="ThemeDark" Classes="segment" GroupName="theme" Content="{x:Static res:Strings.Settings_Theme_Dark}"
+                     IsChecked="{CompiledBinding ThemeMode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static enums:ThemeMode.Dark}}"/>
+      </StackPanel>
+
+      <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows}"/>
+      <RadioButton x:Name="RowsCompact" Classes="homerows" GroupName="homerows"
+                   IsChecked="{CompiledBinding HomeRows, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static home:HomeRows.Compact}}">
+        <StackPanel>
+          <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Compact}"/>
+          <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Compact_Hint}"/>
+          <ctl:RowPreview x:Name="PreviewCompact" ctl:HomeRowsMetrics.Rows="Compact" Model="{CompiledBinding HomeRowsSample}"/>
+        </StackPanel>
+      </RadioButton>
+      <RadioButton x:Name="RowsMarks" Classes="homerows" GroupName="homerows"
+                   IsChecked="{CompiledBinding HomeRows, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static home:HomeRows.Marks}}">
+        <StackPanel>
+          <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Marks}"/>
+          <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Marks_Hint}"/>
+          <ctl:RowPreview x:Name="PreviewMarks" ctl:HomeRowsMetrics.Rows="Marks" Model="{CompiledBinding HomeRowsSample}"/>
+        </StackPanel>
+      </RadioButton>
+      <RadioButton x:Name="RowsComfortable" Classes="homerows" GroupName="homerows"
+                   IsChecked="{CompiledBinding HomeRows, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static home:HomeRows.Comfortable}}">
+        <StackPanel>
+          <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Comfortable}"/>
+          <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Comfortable_Hint}"/>
+          <ctl:RowPreview x:Name="PreviewComfortable" ctl:HomeRowsMetrics.Rows="Comfortable" Model="{CompiledBinding HomeRowsSample}"/>
+        </StackPanel>
+      </RadioButton>
+      <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_DeviceNote}"/>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

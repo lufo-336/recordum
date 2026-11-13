@@ -505,12 +505,31 @@ today's value" / "La settimana a quadratini, il valore di oggi" · `.HomeRows.Co
 `.Comfortable.Hint` "Day names, tall rows" / "I nomi dei giorni, righe alte" · `.HomeRows.DeviceNote` "Applies to this
 device." / "Vale per questo dispositivo."
 
-- [ ] **Step 1: test rossi:** `Home_rows_loads_from_the_preference`; `Changing_home_rows_saves_once_and_not_while_loading`;
+- [x] **Step 1: test rossi:** `Home_rows_loads_from_the_preference`; `Changing_home_rows_saves_once_and_not_while_loading`;
   UI: `Appearance_page_shows_three_choices_each_with_its_own_row` (tre `RowPreview` con tre altezze/disegni diversi);
   `Picking_marks_updates_the_preference`; `Settings_open_on_appearance_and_backup_deep_link_still_works`;
   `Theme_segments_change_the_theme`.
-- [ ] **Step 2: implementa.** PNG `settings-appearance-{light,dark}.png`.
-- [ ] **Step 3:** verdi, commit `feat(ui): Impostazioni › Aspetto con il tema e le righe della Home`.
+- [x] **Step 2: implementa.** PNG `settings-appearance-{light,dark}.png`.
+- [x] **Step 3:** verdi, commit `feat(ui): Impostazioni › Aspetto con il tema e le righe della Home`.
+
+**Com'è stato fatto (2026-11-13)** — ciò che i task dopo trovano diverso da qui sopra:
+- **Chi ha scritto**: tutto in sessione (Antigravity non usato).
+- `Settings.Appearance.Theme` non c'è: il titolo del tema riusa `Settings.Theme`. Una stringa in più:
+  `Settings.Appearance.HomeRows.Sample` "Reading" / "Lettura" (il nome della riga d'esempio).
+- **La riga d'esempio è la `RowPreview` del creatore** con un campo nuovo, `HomeRowPreviewModel.Values` (opzionale, le
+  `StripCell` della Home): con i valori la striscia è quella della Home (cifre o quadratini) e la riga è alta come
+  `HomeRowsMetrics.RowHeight`, con margine 10,0; senza (creatore, Configura) è com'era. Il campione sta in
+  `SettingsViewModel.HomeRowsSample` (contatore azzurro, sette giorni 20 · 30 25 · 40 35, oggi scelto, cifra chiave 35).
+- **La finestra**: `SettingsWindow` resta con DataContext `DataAndBackupPageViewModel`; la pagina Aspetto riceve il suo da
+  `SettingsWindow.Appearance` (impostato: compare il segmento `PageTabs` e si apre su Aspetto), `ShowPage(categoria)`
+  sceglie la pagina (Backup e Diagnostica → Dati e backup, come prima). Senza `Appearance` la finestra è quella di
+  prima, ed è così che i test di Dati e backup la aprono ancora.
+- `SettingsViewModel` registrato in `AvaloniaShellServices` (transient, con la preferenza); WPF registra il suo, senza.
+- Test: 3 in `SettingsViewModelTests`, 6 in `AppearancePageTests` (2 sono i PNG). Prove del rosso: la riga d'esempio
+  sempre alta 36, il launcher che non apre la pagina della categoria, `InitializeAsync` che non legge la preferenza. La
+  metà "non durante il caricamento" non si fa rossa togliendo la guardia: la preferenza non riscrive un valore uguale.
+- Nei PNG Compatta e Larga si distinguono solo per 6 px d'altezza: la differenza vera (iniziali o nomi dei giorni)
+  sta nell'intestazione, che la riga d'esempio non ha.
 
 ### Task 11: La tastiera
 

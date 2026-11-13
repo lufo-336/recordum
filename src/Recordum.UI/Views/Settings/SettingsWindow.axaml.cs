@@ -1,7 +1,31 @@
+using Recordum.Presentation.ViewModels.Settings;
+using Recordum.Presentation.ViewModels;
+
 namespace Recordum.UI.Views.Settings;
 
-/// <summary>Finestra Impostazioni ridotta di Avalonia: ospita la sola pagina "Dati e backup".</summary>
+/// <summary>Finestra Impostazioni di Avalonia: Aspetto e Dati e backup, scelte da un segmento in testa.</summary>
 public partial class SettingsWindow : RecordumWindow
 {
     public SettingsWindow() => InitializeComponent();
+
+    /// <summary>Il ViewModel della pagina Aspetto. Impostato, il segmento compare e la finestra apre su Aspetto.</summary>
+    public SettingsViewModel? Appearance
+    {
+        get => AppearancePage.DataContext as SettingsViewModel;
+        set
+        {
+            AppearancePage.DataContext = value;
+            PageTabs.IsVisible = value is not null;
+            ShowPage(null);
+        }
+    }
+
+    /// <summary>La pagina della categoria: Backup apre Dati e backup, e cosi' la diagnostica, che non ha ancora una pagina
+    /// (come prima di Aspetto); il resto apre Aspetto, se c'e'.</summary>
+    public void ShowPage(SettingsCategoryId? category)
+    {
+        var data = Appearance is null || category is SettingsCategoryId.Backup or SettingsCategoryId.Diagnostics;
+        DataTab.IsChecked = data;
+        AppearanceTab.IsChecked = !data;
+    }
 }

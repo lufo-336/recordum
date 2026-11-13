@@ -19,10 +19,31 @@ public partial class RowPreview : UserControl
     public HomeRowPreviewModel? Model { get => GetValue(ModelProperty); set => SetValue(ModelProperty, value); }
     public ThemeVariant? Variant { get => GetValue(VariantProperty); set => SetValue(VariantProperty, value); }
 
+    static RowPreview()
+    {
+        HomeRowsMetrics.RowsProperty.Changed.AddClassHandler<RowPreview>((preview, _) => preview.ApplyRows());
+    }
+
     public RowPreview()
     {
         InitializeComponent();
         Card.DataContext = null;
+    }
+
+    /// <summary>Con i valori dei giorni la riga e' quella della Home (Impostazioni › Aspetto): alta come la versione
+    /// scelta da <see cref="HomeRowsMetrics"/>. Senza (creatore, Configura) resta com'era.</summary>
+    private void ApplyRows()
+    {
+        if (Model is { Values.IsDefaultOrEmpty: false })
+        {
+            HomeRowGrid.Margin = new Thickness(10, 0);
+            HomeRowGrid.Height = HomeRowsMetrics.Of(this).RowHeight;
+        }
+        else
+        {
+            HomeRowGrid.Margin = new Thickness(10);
+            HomeRowGrid.Height = double.NaN;
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -32,6 +53,7 @@ public partial class RowPreview : UserControl
         {
             Card.DataContext = Model;
             Card.IsVisible = Model is not null;
+            ApplyRows();
         }
         else if (change.Property == VariantProperty) Scope.RequestedThemeVariant = Variant ?? ThemeVariant.Default;
     }

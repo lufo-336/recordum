@@ -34,7 +34,8 @@
                      Text="{CompiledBinding KeyFigure}"
                      IsVisible="{CompiledBinding KeyFigure, Converter={x:Static ObjectConverters.IsNotNull}}"/>
           <ctl:HeatmapStrip x:Name="HomeStrip" Grid.Column="3" VerticalAlignment="Center"
-                            Kind="{CompiledBinding StripStyle}" Fractions="{CompiledBinding Fractions}" AccentColor="{CompiledBinding Color}"/>
+                            Kind="{CompiledBinding StripStyle}" Fractions="{CompiledBinding Fractions}" Values="{CompiledBinding Values}"
+                            AccentColor="{CompiledBinding Color}"/>
         </Grid>
       </Panel>
     </Border>

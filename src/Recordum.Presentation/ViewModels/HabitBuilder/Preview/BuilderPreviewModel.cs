@@ -40,7 +40,8 @@ public sealed record HomeRowPreviewModel(
     string? KeyFigure,
     StripStyle StripStyle,
     ImmutableArray<int> Counts,
-    ImmutableArray<double> Fractions);
+    ImmutableArray<double> Fractions,
+    ImmutableArray<StripCell> Values = default);   // i valori dei giorni, come nella Home: allora la riga ha le misure di HomeRowsMetrics
 
 /// <summary>What the third pane shows. Not the production quick-add: those DataTemplates live inside
 /// <c>HabitScreen.xaml</c>'s resources, wired to DB-backed view-models, and one of them hosts the

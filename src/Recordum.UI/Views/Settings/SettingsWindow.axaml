@@ -9,6 +9,19 @@
         Title="{x:Static res:Strings.Settings_Title}"
         Width="640" Height="680" MinWidth="480" MinHeight="400"
         WindowStartupLocation="CenterOwner">
-  <!-- F2c: la finestra ridotta ha una sola pagina. Le altre categorie arrivano con F6, quando WPF si spegne. -->
-  <s:DataAndBackupPage Name="Page"/>
+  <!-- Due pagine scelte da un segmento in testa: il minimo prima delle categorie a sinistra di 3b. La finestra ha per
+       DataContext la pagina Dati e backup; Aspetto riceve il suo ViewModel da Appearance (senza, il segmento non c'e'). -->
+  <DockPanel>
+    <StackPanel x:Name="PageTabs" DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="24,16,24,0" IsVisible="False">
+      <RadioButton x:Name="AppearanceTab" Classes="segment" GroupName="settingspage"
+                   Content="{x:Static res:Strings.Settings_Category_Appearance}"/>
+      <RadioButton x:Name="DataTab" Classes="segment" GroupName="settingspage" IsChecked="True"
+                   Content="{x:Static res:Strings.Settings_DataAndBackup}"/>
+    </StackPanel>
+    <Panel>
+      <!-- DataContext nullo finche' non arriva il suo: non eredita quello della finestra, che e' di un altro tipo. -->
+      <s:AppearancePage x:Name="AppearancePage" DataContext="{x:Null}" IsVisible="{Binding #AppearanceTab.IsChecked}"/>
+      <s:DataAndBackupPage Name="Page" IsVisible="{Binding #DataTab.IsChecked}"/>
+    </Panel>
+  </DockPanel>
 </v:RecordumWindow>
