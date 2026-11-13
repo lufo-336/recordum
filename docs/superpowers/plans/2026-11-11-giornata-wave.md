@@ -439,7 +439,7 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
 - `HabitRow`/`GroupRow`: altezza e lato del comando dalla tabella (code-behind sulla proprietà ereditata; via il
   `StaticResource Layout.RowHeight` dalle due righe).
 
-- [ ] **Step 1: test rossi:**
+- [x] **Step 1: test rossi:**
   - Presentation: `Defaults_to_the_fallback`; `Reads_the_saved_value`; `Unknown_value_falls_back_without_throwing`
     (**Review Focus 5**: "Gigantic" nel fake); `Set_persists_and_raises_changed_once`; `Home_follows_the_preference_live`
     (`SetAsync(Marks)` con la Home costruita → `RowsStyle == Marks`, una notifica).
@@ -447,9 +447,34 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
     `Marks_draws_squares_and_no_text` (7 `Border` 14×14 per striscia, nessun `TextBlock`; la cella scelta col contorno);
     `Header_sits_over_columns_in_every_style` (±1 px, i tre stili × 900 e 360); `Visible_days_table` (theory sulla tabella);
     `Changing_style_redraws_open_home` (**Review Focus 5**); `CompositionTests`: `HomeRowsPreference` risolta e passata alla Home.
-- [ ] **Step 2: implementa.**
-- [ ] **Step 3:** verdi; PNG `home-manifesto-{compact|marks|comfortable}-{theme}-{900|360}.png` (12), guardati tutti; commit
+- [x] **Step 2: implementa.**
+- [x] **Step 3:** verdi; PNG `home-manifesto-{compact|marks|comfortable}-{theme}-{900|360}.png` (12), guardati tutti; commit
   `feat(ui): le righe della Home in tre versioni (Compatta, Segni, Larga)`.
+
+**Com'è stato fatto (2026-11-13)** — ciò che i task dopo trovano diverso da qui sopra:
+- **Chi ha scritto**: preferenza, `RowsStyle`, registrazione, avvio e tutti i test in sessione; la parte UI
+  (`HomeRowsMetrics`, `HeatmapStrip`, righe, `HomeView`, `DayHeaderView`) Antigravity con `gemini-4-hydrogen-high` da un
+  brief coi percorsi (157 s, diff fedele, due `using Avalonia;` mancanti). Un ritocco dopo i PNG: la striscia non ritaglia
+  più (`ClipToBounds = false`), altrimenti del contorno di Segni si vedevano solo i lati.
+- **La tabella dei giorni visibili vale anche per Larga**: a 360 px la Home mostra ora 5 giorni, non 4 (≥ 340 → 5).
+  `Narrowing_the_view_clamps_the_day` è stato aggiornato (360 px → `MaxDaysBack` 4).
+- `HomeRowsMetrics` è un `record` (`RowHeight, Command, Column, Gap, HeaderInitials, Marks`): `For(valore sconosciuto)` vale
+  Larga. La proprietà ereditata `Rows` la imposta `HomeView` su di sé dal `RowsStyle` del ViewModel; righe, strisce e
+  intestazione reagiscono al suo cambio. Via `HeatmapStrip.ValueSlotWidth` (la colonna è `metrics.Column`); il margine
+  destro dell'intestazione lo calcola `HomeView` (`Command + 15`: 43 in Larga, com'era).
+- Il comando di registrazione ha `x:Name="QuickLog"` ed è largo `Command`, alto `Command − 2` (28×26 in Larga, com'era).
+- **Segni**: quadratini 14×14 raggio 4 a 3 di distanza, vuoto `Brush.Border`, pieno il colore mescolato **opaco** al
+  pannello (35 / 65 / 100 % dalla frazione di `StripFractions`, i sì/no sempre 100 %); il giorno scelto ha un `Border`
+  `SelectedDay` d'inchiostro, 2 px, staccato di 1. Intestazione con le iniziali, pastiglia alta 16 (classe `narrow` su
+  `DayHeaderView`). Il valore di oggi accanto ai quadratini è la cifra chiave che la riga ha già.
+- `HomeViewModel.Dispose` stacca la Home dalla preferenza (singleton, la Home è transient). La preferenza si inizializza in
+  `App.StartAsync` dopo il tema. Un valore numerico come "7" passa `Enum.TryParse`: la preferenza lo scarta con
+  `Enum.IsDefined`.
+- Test: 9 in `HomeRowsPreferenceTests` (Presentation), 27 in `HomeRowsTests`, `CompositionTests.The_home_rows_preference_is_one_and_reaches_the_home`,
+  12 PNG in `GiornataScreenshotTests.Home_in_three_versions`. Prove del rosso: valore "7" senza `IsDefined`, `Dispose` che
+  non si stacca, `HomeView` che non segue `RowsStyle`, `Marks` senza il minimo di 7 giorni.
+- Resta aperto **GIO-3** (in tutte e tre le versioni a 900 px l'intestazione ha 14 giorni e le righe non d'astinenza 7) e
+  si apre **GIO-7** (in scuro i quadratini vuoti di Segni si leggono poco).
 
 ### Task 10: Impostazioni › Aspetto
 

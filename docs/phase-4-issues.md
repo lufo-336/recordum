@@ -2551,3 +2551,7 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   la domanda "cambiare giorno?" a ogni apertura. Da decidere: lasciare così, oppure da oggi riportare a oggi la
   schermata **tranne** quando il diario ha una modifica aperta. Vale anche il contrario, per scelta (Task 8, "Com'è
   stato fatto"): cambiare giorno nella Home non sposta una schermata già aperta.
+- **GIO-7 — in scuro i quadratini vuoti di "Segni" si leggono poco** · `reported` · dal Task 9 (2026-11-13), visto nei PNG
+  `home-manifesto-marks-dark-*`. Il vuoto è `Brush.Border` (in scuro quasi il colore del pannello) e sulla tinta della riga
+  sparisce: la settimana sembra fatta di soli giorni pieni. Il mockup usa un grigio suo (`--cellbg`, `#33332f` in scuro),
+  un po' più chiaro. Da decidere a schermo: un token nuovo per la cella vuota, oppure `Brush.Border` più marcato.
