@@ -473,8 +473,10 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
 - Test: 9 in `HomeRowsPreferenceTests` (Presentation), 27 in `HomeRowsTests`, `CompositionTests.The_home_rows_preference_is_one_and_reaches_the_home`,
   12 PNG in `GiornataScreenshotTests.Home_in_three_versions`. Prove del rosso: valore "7" senza `IsDefined`, `Dispose` che
   non si stacca, `HomeView` che non segue `RowsStyle`, `Marks` senza il minimo di 7 giorni.
-- Resta aperto **GIO-3** (in tutte e tre le versioni a 900 px l'intestazione ha 14 giorni e le righe non d'astinenza 7) e
-  si è aperta e chiusa **GIO-7** (in scuro i quadratini vuoti di Segni si leggevano poco: token `Brush.CellEmpty`).
+- **GIO-3 chiuso dopo il Task 9** (scelta dell'autore, 2026-11-13): le righe seguono l'intestazione. Quanti giorni lo
+  decide la Home, l'abitudine dice solo se la striscia c'è (`ResolveStrip(prefs)` → `None` o `Days14`; un `Days7` salvato
+  vale sì). In Configura "Nessuna / Ultimi giorni". A 900 px ogni riga ha 14 colonne in tutte e tre le versioni.
+- Si è aperta e chiusa **GIO-7** (in scuro i quadratini vuoti di Segni si leggevano poco: token `Brush.CellEmpty`).
 
 ### Task 10: Impostazioni › Aspetto
 

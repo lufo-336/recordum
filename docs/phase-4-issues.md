@@ -2528,12 +2528,20 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
     circa 5 px per la cornice del gruppo, quindi i loro segni cadono a sinistra del giorno a cui appartengono (a livello
     alto l'ultima cella è sotto "oggi" entro 1 px). Il test lo dichiara: ±1 px sulle righe di primo livello, "dentro la
     colonna" per le figlie.
-  - **GIO-3 — a 900 px l'intestazione ha 14 giorni ma quasi tutte le righe ne riempiono 7**: solo l'astinenza disegna
+  - **GIO-3 — a 900 px l'intestazione ha 14 giorni ma quasi tutte le righe ne riempiono 7** · `fixed`: solo l'astinenza disegna
     14 colonne; azioni, contatori, stato e diari usano le ultime 7 (`HomeStrip.Days7`), e le sette etichette di sinistra
     stanno sopra il vuoto. Da decidere con le tre righe del Task 9.
     **Dal Task 7 (2026-11-12) pesa di più**: i 14 giorni dell'intestazione si cliccano, quindi si può scegliere un giorno
     da 7 a 13 giorni fa che su quasi tutte le righe non ha una cella: il titolo e la fascia lo dicono, il log rapido ci
     scrive, ma la riga non lo mostra.
+    **Deciso dall'autore (2026-11-13): le righe seguono l'intestazione.** Quanti giorni si vedono lo decide la Home dalla
+    larghezza, uguale per tutte le righe (14 / 7 / 5 / 4, `HomeRowsMetrics.VisibleDays`); l'abitudine dice solo se la
+    striscia c'è. `HomeRowPresentation.ResolveStrip(prefs)` torna `None` o `Days14`, e un `Days7` salvato prima vale come
+    sì (l'enum resta: è nei dati). In Configura la scelta è "Nessuna / Ultimi giorni" (`Editor.HomeRow.Strip.Shown`; via
+    `.Days7` e `.Days14`). Anche l'anteprima del creatore ha 14 celle per ogni tipo. Test:
+    `HomeLayoutTests.Every_row_has_a_cell_under_every_header_day` (rosso provato col taglio a 7 di prima),
+    `HomeRowPresentationTests.ResolveStrip_is_yes_or_no`, `HomeRowSectionViewModelTests.A_seven_days_strip_saved_before_shows_as_the_strip`.
+    A 660 px i nomi stanno ancora interi (PNG di prova). Resta da guardare a schermo.
   - **GIO-4 — il pulsante di spunta è uguale per una fatta e una non fatta**: "Letto rifatto" (non fatta oggi) ha lo
     stesso segno nel pulsante di "Stretching" (fatta); la differenza si legge solo nella cella di oggi.
 - **GIO-5 — con la lista vuota per un filtro, il filtro non si può più togliere** · `reported` · precedente all'onda,
