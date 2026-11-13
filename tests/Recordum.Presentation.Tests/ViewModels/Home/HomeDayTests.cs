@@ -133,13 +133,13 @@ public sealed class HomeDayTests : IDisposable
     public async Task Rows_mark_the_selected_day_and_use_its_values()
     {
         var sut = await LoadedAsync();
-        RowOf(sut, "Acqua").StripCells.Select(c => c.IsSelected).Should().Equal([.. Enumerable.Repeat(false, 6), true]);
+        RowOf(sut, "Acqua").StripCells.Select(c => c.IsSelected).Should().Equal([.. Enumerable.Repeat(false, 13), true]);
         RowOf(sut, "Acqua").KeyFigureText.Should().StartWith("2");
         RowOf(sut, "Corsa").IsDoneOnDay.Should().BeFalse();
 
         sut.PreviousDayCommand.Execute(null);
 
-        RowOf(sut, "Acqua").StripCells.Select(c => c.IsSelected).Should().Equal([.. Enumerable.Repeat(false, 5), true, false]);
+        RowOf(sut, "Acqua").StripCells.Select(c => c.IsSelected).Should().Equal([.. Enumerable.Repeat(false, 12), true, false]);
         RowOf(sut, "Acqua").StripCells[^1].IsToday.Should().BeTrue();
         RowOf(sut, "Acqua").KeyFigureText.Should().StartWith("5");
         RowOf(sut, "Corsa").IsDoneOnDay.Should().BeTrue();

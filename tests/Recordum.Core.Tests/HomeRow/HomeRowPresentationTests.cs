@@ -53,26 +53,22 @@ public class HomeRowPresentationTests
 
     // ---- Strip ----
 
-    [Theory]
-    [InlineData(HabitType.Action, HomeStrip.Days7)]
-    [InlineData(HabitType.Counter, HomeStrip.Days7)]
-    [InlineData(HabitType.Resistance, HomeStrip.Days14)]
-    [InlineData(HabitType.Journal, HomeStrip.Days7)]
-    [InlineData(HabitType.State, HomeStrip.Days7)]
-    public void ResolveStrip_null_prefs_returns_type_default(HabitType type, HomeStrip expected)
+    // GIO-3 (2026-11-13): quanti giorni si vedono lo decide la Home dalla larghezza; l'abitudine dice solo se la striscia
+    // c'è. Ogni tipo la ha, ed è lunga quanto i giorni caricati (14).
+    [Fact]
+    public void ResolveStrip_without_prefs_shows_the_strip()
     {
-        HomeRowPresentation.ResolveStrip(type, null).Should().Be(expected);
-        HomeRowPresentation.ResolveStrip(type, new HabitUiPrefs()).Should().Be(expected);
+        HomeRowPresentation.ResolveStrip(null).Should().Be(HomeStrip.Days14);
+        HomeRowPresentation.ResolveStrip(new HabitUiPrefs()).Should().Be(HomeStrip.Days14);
     }
 
     [Theory]
-    [InlineData(HomeStrip.None)]
-    [InlineData(HomeStrip.Days7)]
-    [InlineData(HomeStrip.Days14)]
-    public void ResolveStrip_honors_explicit_choice(HomeStrip strip)
+    [InlineData(HomeStrip.None, HomeStrip.None)]
+    [InlineData(HomeStrip.Days7, HomeStrip.Days14)]   // salvato prima di GIO-3: vale come "sì"
+    [InlineData(HomeStrip.Days14, HomeStrip.Days14)]
+    public void ResolveStrip_is_yes_or_no(HomeStrip saved, HomeStrip expected)
     {
-        HomeRowPresentation.ResolveStrip(HabitType.Action, new HabitUiPrefs { Strip = strip })
-            .Should().Be(strip);
+        HomeRowPresentation.ResolveStrip(new HabitUiPrefs { Strip = saved }).Should().Be(expected);
     }
 
     // ---- Strip style (2.1-bis: per-type fixed visual, spec wave-2 §1) ----

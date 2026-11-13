@@ -79,9 +79,10 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
             SelectedKeyFigure = KeyFigureOptions.FirstOrDefault(o => o.Kind == resolvedKf);
 
             StripOptions.Clear();
-            foreach (var strip in new[] { HomeStrip.None, HomeStrip.Days7, HomeStrip.Days14 })
+            // GIO-3: la striscia c'è o non c'è; quanti giorni lo decide la Home dalla larghezza.
+            foreach (var strip in new[] { HomeStrip.None, HomeStrip.Days14 })
                 StripOptions.Add(new StripOption(strip, StripLabel(strip)));
-            var resolvedStrip = HomeRowPresentation.ResolveStrip(type, prefs);
+            var resolvedStrip = HomeRowPresentation.ResolveStrip(prefs);
             SelectedStrip = StripOptions.FirstOrDefault(o => o.Strip == resolvedStrip);
         }
         finally { _loading = false; }
@@ -127,17 +128,12 @@ public sealed partial class HomeRowSectionViewModel(IHabitUiPrefsService uiPrefs
         _ => Strings.Editor_HomeRow_KF_None,
     };
 
-    private static string StripLabel(HomeStrip strip) => strip switch
-    {
-        HomeStrip.None => Strings.Editor_HomeRow_Strip_None,
-        HomeStrip.Days7 => Strings.Editor_HomeRow_Strip_Days7,
-        HomeStrip.Days14 => Strings.Editor_HomeRow_Strip_Days14,
-        _ => Strings.Editor_HomeRow_Strip_None,
-    };
+    private static string StripLabel(HomeStrip strip) =>
+        strip == HomeStrip.None ? Strings.Editor_HomeRow_Strip_None : Strings.Editor_HomeRow_Strip_Shown;
 }
 
 /// <summary>A selectable key-figure choice: the kind + its localized label.</summary>
 public sealed record KeyFigureOption(KeyFigureKind Kind, string Label);
 
-/// <summary>A selectable strip-length choice: the enum + its localized label.</summary>
+/// <summary>A selectable strip choice (none, or the last days): the enum + its localized label.</summary>
 public sealed record StripOption(HomeStrip Strip, string Label);

@@ -114,11 +114,9 @@ public static class HomeRowPresentation
         _ => "none",
     };
 
-    /// <summary>Resolves the strip length: explicit pref wins; otherwise the type default (Resistance = 14 days, others = 7).</summary>
-    public static HomeStrip ResolveStrip(HabitType type, HabitUiPrefs? prefs)
-    {
-        if (prefs?.Strip is { } strip)
-            return strip;
-        return type == HabitType.Resistance ? HomeStrip.Days14 : HomeStrip.Days7;
-    }
+    /// <summary>Se la riga ha la striscia (GIO-3, 2026-11-13): quanti giorni si vedono lo decide la Home dalla sua
+    /// larghezza, uguale per tutte le righe; l'abitudine dice solo sì (<see cref="HomeStrip.Days14"/>, i giorni caricati)
+    /// o no. Un <see cref="HomeStrip.Days7"/> salvato prima vale come sì.</summary>
+    public static HomeStrip ResolveStrip(HabitUiPrefs? prefs) =>
+        prefs?.Strip == HomeStrip.None ? HomeStrip.None : HomeStrip.Days14;
 }

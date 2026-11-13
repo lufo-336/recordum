@@ -108,7 +108,7 @@ public class HomeRowsTests
         var quick = row.FindControl<Button>("QuickLog")!;
         (quick.Bounds.Width, quick.Bounds.Height).Should().Be((28, 26));
         var cells = Strip(row).GetVisualDescendants().OfType<TextBlock>().ToList();
-        cells.Should().HaveCount(7).And.OnlyContain(t => t.Bounds.Width == 26);
+        cells.Should().HaveCount(14).And.OnlyContain(t => t.Bounds.Width == 26);
         HeaderDays(view).Last().Content.Should().Be("oggi");
         HeaderDays(view).Should().OnlyContain(b => b.Bounds.Width == 26 && b.Bounds.Height == 22);
         w.Close();
@@ -126,10 +126,10 @@ public class HomeRowsTests
         view.GetVisualDescendants().OfType<GroupRow>().Single().FindControl<Grid>("MenuHost")!.Bounds.Height.Should().Be(30);
         var quick = row.FindControl<Button>("QuickLog")!;
         (quick.Bounds.Width, quick.Bounds.Height).Should().Be((24, 22));
-        Strip(row).GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(7).And.OnlyContain(t => t.Bounds.Width == 26);
+        Strip(row).GetVisualDescendants().OfType<TextBlock>().Should().HaveCount(14).And.OnlyContain(t => t.Bounds.Width == 26);
 
         var days = HeaderDays(view);
-        days.Should().HaveCount(7);
+        days.Should().HaveCount(14);
         days.Should().OnlyContain(b => ((string)b.Content!).Length == 1, "le iniziali, non \"mer\" e \"oggi\"");
         // Mercoledì 28 ottobre 2026.
         days.Last().Content.Should().Be("m");

@@ -73,7 +73,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// <summary>The resolved strip length. None hides the strip entirely.</summary>
     public HomeStrip StripLength { get; }
 
-    /// <summary>Daily completion counts sliced to <see cref="StripLength"/> (7 or 14, empty for None).</summary>
+    /// <summary>Daily completion counts for the strip: every loaded day (14), empty for None.</summary>
     public ImmutableArray<int> StripCounts { get; }
 
     /// <summary>The fixed per-type strip visual (2.1-bis, spec wave-2 §1).</summary>
@@ -228,7 +228,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (HabitType is { } type)
         {
             KeyFigureKind = HomeRowPresentation.ResolveKeyFigure(type, uiPrefs);
-            StripLength = HomeRowPresentation.ResolveStrip(type, uiPrefs);
+            StripLength = HomeRowPresentation.ResolveStrip(uiPrefs);
             StripVisual = HomeRowPresentation.ResolveStripStyle(type);
         }
         StripCounts = SliceStrip(row, StripLength);
@@ -247,9 +247,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
         var src14 = row.CompletionsLast14Days.IsDefaultOrEmpty ? ImmutableArray<int>.Empty : row.CompletionsLast14Days;
         return length switch
         {
-            HomeStrip.Days14 => src14.IsEmpty ? row.CompletionsLast7Days : src14,
-            HomeStrip.Days7 => src14.Length >= 7 ? src14[^7..] : row.CompletionsLast7Days,
-            _ => ImmutableArray<int>.Empty,
+            // Tutti i giorni caricati: quanti se ne vedono lo decide la Home dalla larghezza (GIO-3).
+            _ => src14.IsEmpty ? row.CompletionsLast7Days : src14,
         };
     }
 
@@ -291,7 +290,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         if (StripVisual is StripStyle.Bars or StripStyle.Ramp && !row.ValuesLast14Days.IsDefaultOrEmpty)
         {
             var values14 = row.ValuesLast14Days;
-            var slice = StripLength == HomeStrip.Days7 && values14.Length >= 7 ? values14[^7..] : values14;
+            var slice = values14;
             var max = slice.Max(v => v ?? 0m);
             if (max > 0m)
                 return ImmutableArray.CreateRange(slice.Select(v => v is { } d && d > 0m ? (double)(d / max) : 0d));

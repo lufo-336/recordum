@@ -70,7 +70,7 @@ public class HomeRowStripCellsTests
     }
 
     [Theory]
-    [InlineData(HomeStrip.Days7, 7)]
+    [InlineData(HomeStrip.Days7, 14)]   // GIO-3: un "7 giorni" salvato prima vale come "sì", e la Home ne mostra quanti ci stanno
     [InlineData(HomeStrip.Days14, 14)]
     [InlineData(HomeStrip.None, 0)]
     public void Length_follows_the_strip(HomeStrip strip, int length) =>

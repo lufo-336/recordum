@@ -10,13 +10,14 @@ namespace Recordum.Presentation.Tests.ViewModels.HabitEditor;
 
 public class BuilderHomeRowPinTests
 {
-    // Fissata PRIMA del refactor di BuildHomeRow: l'anteprima del builder non deve cambiare.
+    // Fissata PRIMA del refactor di BuildHomeRow: l'anteprima del builder non deve cambiare. Unico cambio voluto (GIO-3,
+    // 2026-11-13): ogni tipo ha la striscia di 14 giorni, non più 7 fuori dall'astinenza.
     [Theory]
-    [InlineData(HabitType.Action, "5", StripStyle.Squares, 7)]
-    [InlineData(HabitType.Counter, "2", StripStyle.Bars, 7)]
+    [InlineData(HabitType.Action, "5", StripStyle.Squares, 14)]
+    [InlineData(HabitType.Counter, "2", StripStyle.Bars, 14)]
     [InlineData(HabitType.Resistance, "20g 4:12", StripStyle.Band, 14)]
-    [InlineData(HabitType.Journal, "1", StripStyle.Dots, 7)]
-    [InlineData(HabitType.State, "2", StripStyle.Ramp, 7)]
+    [InlineData(HabitType.Journal, "1", StripStyle.Dots, 14)]
+    [InlineData(HabitType.State, "2", StripStyle.Ramp, 14)]
     public void Builder_preview_is_unchanged(HabitType type, string keyFigure, StripStyle style, int length)
     {
         var input = new BuilderPreviewInput("Tè", "#123456", "star", type, false, false, JournalPrimaryGesture.Diary, [], [], [], null);

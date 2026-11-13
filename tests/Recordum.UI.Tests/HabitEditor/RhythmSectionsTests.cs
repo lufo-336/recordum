@@ -207,10 +207,11 @@ public class RhythmSectionsTests
         try
         {
             var row = () => o.Vm.Home.Rows.Single(r => r.HabitNodeId == o.Id);
-            row().StripLength.Should().Be(HomeStrip.Days7, "il default di un'azione");
-            Named<ComboBox>(v, "StripBox").SelectedItem = s.StripOptions.Single(x => x.Strip == HomeStrip.Days14);
-            await UntilAsync(() => PrefsAsync(o.Id).GetAwaiter().GetResult().Strip == HomeStrip.Days14);
-            await UntilAsync(() => row().StripLength == HomeStrip.Days14 && row().StripCounts.Length == 14);
+            row().StripLength.Should().Be(HomeStrip.Days14, "ogni tipo ha la striscia (GIO-3)");
+            row().StripCounts.Length.Should().Be(14);
+            Named<ComboBox>(v, "StripBox").SelectedItem = s.StripOptions.Single(x => x.Strip == HomeStrip.None);
+            await UntilAsync(() => PrefsAsync(o.Id).GetAwaiter().GetResult().Strip == HomeStrip.None);
+            await UntilAsync(() => row().StripLength == HomeStrip.None && row().StripCounts.Length == 0);
         }
         finally { o.Window.Close(); }
     }

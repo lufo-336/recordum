@@ -343,7 +343,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             // Revisione: un'abitudine vera non mostra numeri inventati; resta la forma della striscia, a celle vuote.
             Named<TextBlock>(preview, "KeyFigureText").IsVisible.Should().BeFalse("nessun valore accanto al nome");
             var strip = Named<HeatmapStrip>(preview, "HomeStrip");
-            strip.Fractions.Should().HaveCount(7).And.OnlyContain(f => f == 0);
+            strip.Fractions.Should().HaveCount(14).And.OnlyContain(f => f == 0);   // GIO-3: ogni tipo ha la striscia intera
             var tint = Named<Border>(preview, "Tint");
             tint.IsEffectivelyVisible.Should().BeTrue();
             tint.Background.Should().BeAssignableTo<ISolidColorBrush>().Which.Color.Should().Be(Color.Parse("#E11D48"));

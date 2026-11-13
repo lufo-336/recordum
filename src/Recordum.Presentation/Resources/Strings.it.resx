@@ -1467,11 +1467,8 @@ Dettagli: {0}</value>
   <data name="Editor.HomeRow.Strip.None" xml:space="preserve">
     <value>Nessuna</value>
   </data>
-  <data name="Editor.HomeRow.Strip.Days7" xml:space="preserve">
-    <value>7 giorni</value>
-  </data>
-  <data name="Editor.HomeRow.Strip.Days14" xml:space="preserve">
-    <value>14 giorni</value>
+  <data name="Editor.HomeRow.Strip.Shown" xml:space="preserve">
+    <value>Ultimi giorni</value>
   </data>
   <!-- U8: sezione Registrazione (ripetibile), solo Counter -->
   <data name="Editor.Section.Registration" xml:space="preserve">

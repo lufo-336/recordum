@@ -221,7 +221,7 @@ public class SectionSummaryTests : IDisposable
     {
         var sut = new HomeRowSectionViewModel(new FakeHabitUiPrefsService(), null);
         await sut.LoadAsync(Habit());
-        sut.Summary.Should().Be("Totale di oggi · 7 giorni");
+        sut.Summary.Should().Be("Totale di oggi · Ultimi giorni");
     }
 
     [Fact]
@@ -259,10 +259,10 @@ public class SectionSummaryTests : IDisposable
         var sut = new HomeRowSectionViewModel(new FakeHabitUiPrefsService(), null);
         await sut.LoadAsync(node);
         sut.Preview.Should().NotBeNull();
-        sut.Preview!.Fractions.Should().HaveCount(7);
+        sut.Preview!.Fractions.Should().HaveCount(14);
 
-        sut.SelectedStrip = sut.StripOptions.First(o => o.Strip == HomeStrip.Days14);
-        sut.Preview!.Fractions.Length.Should().Be(14);
+        sut.SelectedStrip = sut.StripOptions.First(o => o.Strip == HomeStrip.None);
+        sut.Preview!.Fractions.Should().BeEmpty();
 
         sut.SetIdentity("Nuovo nome", "#112233", "star");
         sut.Preview!.Name.Should().Be("Nuovo nome");
@@ -289,7 +289,7 @@ public class SectionSummaryTests : IDisposable
         foreach (var strip in sut.StripOptions)
         {
             sut.SelectedStrip = strip;
-            var expected = strip.Strip switch { HomeStrip.Days14 => 14, HomeStrip.Days7 => 7, _ => 0 };
+            var expected = strip.Strip == HomeStrip.None ? 0 : 14;
             sut.Preview!.Fractions.Should().HaveCount(expected);
             sut.Preview.Fractions.Where(f => f != 0).Should().BeEmpty("celle vuote");
             sut.Preview.Counts.Should().HaveCount(expected);

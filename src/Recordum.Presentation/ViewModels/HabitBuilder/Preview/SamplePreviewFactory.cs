@@ -35,7 +35,7 @@ public sealed class SamplePreviewFactory(IClock clock)
 
     private static HomeRowPreviewModel BuildHomeRow(BuilderPreviewInput input) =>
         HomeRowFor(input.Type, HomeRowPresentation.ResolveKeyFigure(input.Type, null),
-            HomeRowPresentation.ResolveStrip(input.Type, null), input.Name, input.Color, input.Icon, input.Fields);
+            HomeRowPresentation.ResolveStrip(null), input.Name, input.Color, input.Icon, input.Fields);
 
     /// <summary>La riga Home con valore e striscia <b>scelti</b> (Configura: anteprima viva). Stessa logica del builder,
     /// che passa i suoi default; senza campi il valore del contatore e' senza unita'. Con <paramref name="sample"/> falso
@@ -48,7 +48,7 @@ public sealed class SamplePreviewFactory(IClock clock)
     private static HomeRowPreviewModel HomeRowFor(HabitType type, KeyFigureKind keyFigure, HomeStrip strip,
         string name, string color, string? icon, IReadOnlyList<PreviewField> fields, bool sample = true)
     {
-        var length = strip switch { HomeStrip.Days14 => 14, HomeStrip.Days7 => 7, _ => 0 };
+        var length = strip == HomeStrip.None ? 0 : 14;
         var counts = Enumerable.Range(0, length).Select(i => sample ? DayPattern[i % DayPattern.Length] : 0).ToImmutableArray();
         // Bars and Ramp read Fractions; the others read Counts. Filling both keeps the strip honest
         // whichever style the type resolves to.

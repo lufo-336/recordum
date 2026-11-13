@@ -263,8 +263,8 @@ public class HomeRowViewModelTests
     [Fact]
     public void StripFractions_counter_bars_are_daily_value_over_period_max()
     {
-        // Values (14d): 5 at index 10, 22 today (index 13) → sliced to the 7-day default the
-        // fractions are value/max-of-slice: 5/22 and 1.0, zeros elsewhere.
+        // Values (14d): 5 at index 10, 22 today (index 13). The strip keeps every loaded day (GIO-3): the fractions are
+        // value/max of the 14 days, 5/22 and 1.0, zeros elsewhere.
         var values = new decimal?[14];
         values[10] = 5m; values[13] = 22m;
         var row = new HomeTreeRow(Guid.NewGuid(), null, "c", "#000000", HabitType.Counter, null, 0, false,
@@ -274,9 +274,9 @@ public class HomeRowViewModelTests
 
         var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
 
-        sut.StripFractions.Length.Should().Be(7);
-        sut.StripFractions[3].Should().BeApproximately(5d / 22d, 0.001); // index 10 of 14 → 3 of last-7
-        sut.StripFractions[6].Should().Be(1d);
+        sut.StripFractions.Length.Should().Be(14);
+        sut.StripFractions[10].Should().BeApproximately(5d / 22d, 0.001);
+        sut.StripFractions[13].Should().Be(1d);
         sut.StripFractions[0].Should().Be(0d);
     }
 
@@ -289,9 +289,9 @@ public class HomeRowViewModelTests
 
         var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
 
-        sut.StripFractions[1].Should().Be(1d);
-        sut.StripFractions[2].Should().Be(0d);
-        sut.StripFractions[4].Should().Be(1d);
+        sut.StripFractions[8].Should().Be(1d);
+        sut.StripFractions[9].Should().Be(0d);
+        sut.StripFractions[11].Should().Be(1d);
     }
 
     [Fact]
@@ -306,13 +306,13 @@ public class HomeRowViewModelTests
 
         var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
 
-        sut.StripFractions[5].Should().Be(0.5d);
-        sut.StripFractions[6].Should().Be(1d);
+        sut.StripFractions[12].Should().Be(0.5d);
+        sut.StripFractions[13].Should().Be(1d);
         sut.StripFractions[0].Should().Be(0d);
     }
 
     [Fact]
-    public void Strip_length_honors_type_default_14_for_resistance_else_7()
+    public void Every_type_has_the_full_strip()
     {
         var res = new HomeTreeRow(Guid.NewGuid(), null, "r", "#000000", HabitType.Resistance, null, 0, false,
             PinScope.None, 0, false, ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty,
@@ -328,8 +328,9 @@ public class HomeRowViewModelTests
 
         var counterVm = new HomeRowViewModel(CounterRow(Guid.NewGuid(), 1m, "x"), 0,
             new FakeHabitNodeService(), new FakePurgeService());
-        counterVm.StripLength.Should().Be(HomeStrip.Days7);
-        counterVm.StripCounts.Length.Should().Be(7);
+        // GIO-3: non più 7 per i tipi diversi dall'astinenza. La Home taglia alla larghezza, uguale per tutte le righe.
+        counterVm.StripLength.Should().Be(HomeStrip.Days14);
+        counterVm.StripCounts.Length.Should().Be(14);
     }
 
     [Fact]

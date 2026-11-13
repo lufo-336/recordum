@@ -584,8 +584,7 @@ public static class Strings
     public static string Editor_HomeRow_KF_JournalToday => Get("Editor.HomeRow.KF.JournalToday");
     public static string Editor_HomeRow_KF_JournalEntriesWeek => Get("Editor.HomeRow.KF.JournalEntriesWeek");
     public static string Editor_HomeRow_Strip_None => Get("Editor.HomeRow.Strip.None");
-    public static string Editor_HomeRow_Strip_Days7 => Get("Editor.HomeRow.Strip.Days7");
-    public static string Editor_HomeRow_Strip_Days14 => Get("Editor.HomeRow.Strip.Days14");
+    public static string Editor_HomeRow_Strip_Shown => Get("Editor.HomeRow.Strip.Shown");
     public static string Editor_Section_Registration => Get("Editor.Section.Registration");
     public static string Editor_Registration_Repeatable => Get("Editor.Registration.Repeatable");
     public static string Editor_Registration_JournalGesture => Get("Editor.Registration.JournalGesture");

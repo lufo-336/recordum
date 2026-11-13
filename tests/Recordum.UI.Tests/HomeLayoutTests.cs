@@ -335,6 +335,33 @@ public class HomeLayoutTests
     }
 
     [AvaloniaFact]
+    public void Every_row_has_a_cell_under_every_header_day()
+    {
+        // GIO-3: a 900 px l'intestazione ha 14 giorni, e prima le righe che non sono astinenze ne riempivano 7: un giorno
+        // scelto 10 giorni fa non aveva la sua cella. Ora quanti giorni si vedono lo decide la Home, uguale per tutte.
+        using var culture = TestCulture.Pin();
+        var (w, view, vm) = Show(900, Row("Azione", days: 14), Row("Contatore", HabitType.Counter, days: 14),
+            Row("Astinenza", HabitType.Resistance, days: 14), Row("Diario", HabitType.Journal, days: 14));
+        var days = HeaderDays(view);
+        days.Should().HaveCount(14);
+        var rows = view.GetVisualDescendants().OfType<HabitRow>().ToList();
+        rows.Should().HaveCount(4);
+        foreach (var row in rows)
+            StripCells(row).Should().HaveCount(14, "ogni riga ha le colonne dell'intestazione");
+
+        vm.SelectDayCommand.Execute(10);
+        Pump();
+        var column = BoundsIn(HeaderDays(view).Single(b => b.Classes.Contains("selected")), view);
+        foreach (var row in view.GetVisualDescendants().OfType<HabitRow>())
+        {
+            var marked = MarkedCells(row);
+            marked.Should().ContainSingle("il giorno scelto ha la sua cella su ogni riga");
+            BoundsIn(marked[0], view).Center.X.Should().BeApproximately(column.Center.X, 1.0);
+        }
+        w.Close();
+    }
+
+    [AvaloniaFact]
     public void Narrowing_the_view_clamps_the_day()
     {
         // Review Focus 4: il giorno scelto esce dalle colonne visibili → diventa il più vecchio visibile.

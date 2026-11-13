@@ -2,6 +2,7 @@ using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.HomeRow;
 using Recordum.Core.Models;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.HabitEditor.Sections;
 using Xunit;
@@ -24,8 +25,25 @@ public class HomeRowSectionViewModelTests
         sut.KeyFigureOptions.Select(o => o.Kind).Should()
             .Equal(KeyFigureKind.CounterTotal, KeyFigureKind.Streak, KeyFigureKind.None);
         sut.SelectedKeyFigure!.Kind.Should().Be(KeyFigureKind.CounterTotal);
-        sut.StripOptions.Select(o => o.Strip).Should().Equal(HomeStrip.None, HomeStrip.Days7, HomeStrip.Days14);
-        sut.SelectedStrip!.Strip.Should().Be(HomeStrip.Days7);
+        // GIO-3: la striscia c'è o non c'è; quanti giorni lo decide la Home.
+        sut.StripOptions.Select(o => o.Strip).Should().Equal(HomeStrip.None, HomeStrip.Days14);
+        sut.StripOptions.Select(o => o.Label).Should().Equal(Strings.Editor_HomeRow_Strip_None, Strings.Editor_HomeRow_Strip_Shown);
+        sut.SelectedStrip!.Strip.Should().Be(HomeStrip.Days14);
+    }
+
+    [Fact]
+    public async Task A_seven_days_strip_saved_before_shows_as_the_strip()
+    {
+        // Un'abitudine configurata a "7 giorni" prima di GIO-3: la scelta non resta vuota, vale "Ultimi giorni".
+        var prefs = new FakeHabitUiPrefsService();
+        var id = Guid.NewGuid();
+        await prefs.UpdateAsync(id, p => p with { Strip = HomeStrip.Days7 });
+        var sut = new HomeRowSectionViewModel(prefs, null);
+
+        await sut.LoadAsync(Habit(id, HabitType.Action));
+
+        sut.SelectedStrip!.Strip.Should().Be(HomeStrip.Days14);
+        sut.Summary.Should().EndWith(Strings.Editor_HomeRow_Strip_Shown);
     }
 
     [Fact]
