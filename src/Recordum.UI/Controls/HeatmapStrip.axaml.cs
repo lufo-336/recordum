@@ -187,7 +187,7 @@ public partial class HeatmapStrip : UserControl
         IBrush Token(string key) => HabitTextBrushConverter.Resource<IBrush>(app, key, ActualThemeVariant) ?? Brushes.Gray;
         var paneBrush = HabitTextBrushConverter.Resource<ISolidColorBrush>(app, "Brush.Pane", ActualThemeVariant);
         if (metrics.Marks)
-            return BuildMarkCells(metrics, shown, Token("Brush.Border"), Token("Brush.Ink"), paneBrush?.Color ?? Colors.White);
+            return BuildMarkCells(metrics, shown, Token("Brush.CellEmpty"), Token("Brush.Ink"), paneBrush?.Color ?? Colors.White);
 
         var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
         var on = HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);

@@ -52,6 +52,8 @@ public class TokenContrastTests
         AtLeast(4.5, "Brush.Warning", "Brush.Pane", theme);
         AtLeast(4.5, "Brush.Warning", "Brush.WarningSurface", theme);
         AtLeast(2.5, "Brush.TextFaint", "Brush.Pane", theme);
+        // GIO-7: la cella vuota di "Segni" si stacca dal pannello (con Brush.Border, 1,17 in scuro, spariva).
+        AtLeast(1.2, "Brush.CellEmpty", "Brush.Pane", theme);
     }
 
     [AvaloniaTheory]

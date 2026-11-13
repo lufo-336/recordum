@@ -64,6 +64,8 @@
         <SolidColorBrush x:Key="Brush.Surface"         Color="#FFF4F3F1"/>
         <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FFFFFFFF"/>
         <SolidColorBrush x:Key="Brush.Border"          Color="#FFECEBE8"/>
+        <!-- La cella vuota della striscia "Segni": si deve leggere anche sulla tinta della riga (GIO-7). -->
+        <SolidColorBrush x:Key="Brush.CellEmpty"       Color="#FFE9E8E4"/>
         <SolidColorBrush x:Key="Brush.FieldBorder"     Color="#FFD6D5D0"/>
         <SolidColorBrush x:Key="Brush.Selection"       Color="#FFECEBE8"/>
         <SolidColorBrush x:Key="Brush.Text"            Color="#FF1F1F1D"/>
@@ -138,6 +140,7 @@
         <SolidColorBrush x:Key="Brush.Surface"         Color="#FF181817"/>
         <SolidColorBrush x:Key="Brush.SurfaceElevated" Color="#FF2A2A28"/>
         <SolidColorBrush x:Key="Brush.Border"          Color="#FF2E2E2C"/>
+        <SolidColorBrush x:Key="Brush.CellEmpty"       Color="#FF3F3F3B"/>
         <SolidColorBrush x:Key="Brush.FieldBorder"     Color="#FF3A3A37"/>
         <SolidColorBrush x:Key="Brush.Selection"       Color="#FF2E2E2C"/>
         <SolidColorBrush x:Key="Brush.Text"            Color="#FFE6E5E1"/>

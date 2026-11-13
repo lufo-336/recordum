@@ -181,7 +181,7 @@ public class HomeRowsTests
 
         var habit = Color.Parse(Blue);
         var pane = Token<ISolidColorBrush>("Brush.Pane").Color;
-        var empty = Token<ISolidColorBrush>("Brush.Border").Color;
+        var empty = Token<ISolidColorBrush>("Brush.CellEmpty").Color;
         var fills = Squares(Strip(HabitRows(view)[0])).Select(Fill).ToList();
         fills.Should().Equal(
             habit, HabitColors.Blend(habit, 0.65, pane), HabitColors.Blend(habit, 0.35, pane), empty,
