@@ -30,6 +30,8 @@
     <!-- Ctrl+4 (Grafici, F7) e Ctrl+5 (Cronologia backup, F6) arrivano con i loro workspace: una
          scorciatoia verso un workspace senza vista sarebbe UI finta, come i pulsanti del rail. -->
     <KeyBinding Gesture="Ctrl+W" Command="{Binding Workspace.CloseActiveTabCommand}"/>
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding Home.OpenNewHabitCommand}"/>
+    <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding ShowSettingsCommand}"/>
   </Window.KeyBindings>
 
   <Window.Styles>

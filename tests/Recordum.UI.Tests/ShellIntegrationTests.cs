@@ -274,4 +274,40 @@ public class ShellIntegrationTests(ITestOutputHelper output)
         window.GetVisualDescendants().OfType<ItemsControl>().Single(c => c.Name == "RowsHost")
             .GetRealizedContainers().Should().NotBeEmpty();
     }
+
+    private static async Task PumpUntil(Func<bool> done)
+    {
+        for (var i = 0; i < 200 && !done(); i++)
+        {
+            await Task.Delay(20);
+            Dispatcher.UIThread.RunJobs();
+        }
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    [AvaloniaFact]
+    public async Task Arrows_keep_walking_the_rows_after_the_screen_opens_and_enter_pins_it()
+    {
+        // Onda "Giornata", Task 11: la riga scelta con la freccia apre la sua schermata in anteprima; il fuoco non deve
+        // finirci dentro, o la freccia dopo non arriva più alla Home.
+        var window = await OpenSeededAsync();
+        var vm = (MainWindowViewModel)window.DataContext!;
+        vm.Home.Rows.Count.Should().BeGreaterThanOrEqualTo(3);
+
+        window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+        await PumpUntil(() => vm.Workspace.Tabs.Count > 0);
+        vm.Home.SelectedRow.Should().BeSameAs(vm.Home.Rows[0]);
+        vm.Workspace.Tabs.Should().ContainSingle("il test non prova niente se la schermata non si apre");
+
+        window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+        await PumpUntil(() => vm.Workspace.ActiveSubjectTab?.SubjectId == vm.Home.Rows[1].HabitNodeId);
+        vm.Home.SelectedRow.Should().BeSameAs(vm.Home.Rows[1]);
+        vm.Workspace.ActiveSubjectTab!.IsPreview.Should().BeTrue();
+
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await PumpUntil(() => vm.Workspace.ActiveSubjectTab?.IsPreview == false);
+        vm.Workspace.ActiveSubjectTab!.IsPreview.Should().BeFalse("Invio fissa la scheda");
+        vm.Workspace.ActiveSubjectTab.SubjectId.Should().Be(vm.Home.Rows[1].HabitNodeId);
+    }
 }

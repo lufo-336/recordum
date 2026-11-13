@@ -271,6 +271,27 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     [RelayCommand]
     private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
 
+    /// <summary>↓ (A2): la riga dopo quella scelta; senza una riga scelta, la prima. In fondo si resta in fondo.</summary>
+    public void SelectNext() => SelectByStep(1);
+
+    /// <summary>↑ (A2): la riga prima; senza una riga scelta, l'ultima.</summary>
+    public void SelectPrevious() => SelectByStep(-1);
+
+    private void SelectByStep(int step)
+    {
+        if (Rows.Count == 0) return;
+        // Con più righe scelte si parte dall'ancora, come Maiusc+clic.
+        var current = SelectedRow ?? (HasMultiSelection ? Rows.FirstOrDefault(r => r.HabitNodeId == _selectionAnchor) : null);
+        var at = current is null ? -1 : Rows.IndexOf(current);
+        SelectedRow = Rows[at < 0 ? (step > 0 ? 0 : Rows.Count - 1) : Math.Clamp(at + step, 0, Rows.Count - 1)];
+    }
+
+    /// <summary>Invio (A2): apre e fissa la scheda della riga scelta. Non è una richiesta di registrare.</summary>
+    public void ActivateSelected()
+    {
+        if (SelectedRow is { } row) HabitActivationRequested?.Invoke(this, row.HabitNodeId);
+    }
+
     public bool HasMultiSelection => _selectedIds.Count > 1;
 
     /// <summary>File-manager selection (spec §C.1): plain=single, Ctrl=toggle, Shift=range from anchor.</summary>
@@ -527,9 +548,9 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
     private async void OnRowChanged(object? sender, EventArgs e) => await ReloadPreservingSelectionAsync();
 
-    /// <summary>Raised when the user requests recording on a habit whose row is already selected.
-    /// Setting <see cref="SelectedRow"/> would be a no-op, so the host must (re)open the workspace
-    /// explicitly. Carries the habit node id to open.</summary>
+    /// <summary>Raised when the user requests recording on a habit whose row is already selected, or presses Enter
+    /// on the selected row. Setting <see cref="SelectedRow"/> would be a no-op, so the host must (re)open and pin the
+    /// workspace tab explicitly. Carries the habit node id to open; <see cref="RecordRequestedFor"/> tells the two apart.</summary>
     public event EventHandler<Guid>? HabitActivationRequested;
 
     /// <summary>Raised after a group is created via the ＋New menu (host opens Configura for rename).</summary>

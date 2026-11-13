@@ -2598,4 +2598,16 @@ Details: {0}</value>
   <data name="HabitTemplatePicker.CardMenu" xml:space="preserve">
     <value>Template actions</value>
   </data>
+  <data name="Home.Day.Previous.Tip" xml:space="preserve">
+    <value>Previous day (←)</value>
+  </data>
+  <data name="Home.Day.Next.Tip" xml:space="preserve">
+    <value>Next day (→)</value>
+  </data>
+  <data name="Home.NewMenu.Tip" xml:space="preserve">
+    <value>New habit (Ctrl+N)</value>
+  </data>
+  <data name="Home.QuickAction.Tip" xml:space="preserve">
+    <value>Quick log (Space)</value>
+  </data>
 </root>

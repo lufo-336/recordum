@@ -249,8 +249,50 @@ public partial class HomeView : UserControl
         // D5: i tasti di riga agiscono sulla riga SELEZIONATA, non su quella che ha il fuoco —
         // in WPF funzionavano solo se il fuoco era su un discendente focusabile della riga.
         if (focused is TextBox) return;
+        if (DispatchHomeKey(home, focused, e)) return;
         if (home.SelectedRow is not { } row) return;
         DispatchRowKey(row, e);
+    }
+
+    // A2: ↑ ↓ la riga, Spazio il log rapido sul giorno della Home, Invio apre e fissa, ← → il giorno. Frecce, Spazio e
+    // Invio restano di chi li usa: un pulsante, una tendina o una voce di menu a fuoco.
+    private bool DispatchHomeKey(HomeViewModel home, IInputElement? focused, KeyEventArgs e)
+    {
+        if (e.KeyModifiers != KeyModifiers.None || focused is Button or ComboBox or MenuItem) return false;
+        switch (e.Key)
+        {
+            case Key.Down:
+                home.SelectNext();
+                BringIntoView(home);
+                break;
+            case Key.Up:
+                home.SelectPrevious();
+                BringIntoView(home);
+                break;
+            case Key.Left:
+                if (home.PreviousDayCommand.CanExecute(null)) home.PreviousDayCommand.Execute(null);
+                break;
+            case Key.Right:
+                if (home.NextDayCommand.CanExecute(null)) home.NextDayCommand.Execute(null);
+                break;
+            case Key.Space:
+                if (home.SelectedRow?.QuickActionCommand is { } log && log.CanExecute(null)) log.Execute(null);
+                break;
+            case Key.Enter:
+                home.ActivateSelected();
+                break;
+            default:
+                return false;
+        }
+        e.Handled = true;
+        return true;
+    }
+
+    private void BringIntoView(HomeViewModel home)
+    {
+        var index = home.SelectedRow is { } row ? home.Rows.IndexOf(row) : -1;
+        if (index < 0) return;
+        this.GetVisualDescendants().OfType<ItemsControl>().FirstOrDefault(i => i.Name == "RowsHost")?.ScrollIntoView(index);
     }
 
     private static void DispatchRowKey(HomeRowViewModel row, KeyEventArgs e)

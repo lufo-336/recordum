@@ -544,11 +544,33 @@ log rapido della riga scelta sul giorno della Home · **Invio** = apre e fissa l
 ← → giorno prima/dopo · **Ctrl+N** = nuova abitudine (`OpenNewHabitCommand`) · **Ctrl+,** = Impostazioni (`ShowSettingsCommand`).
 Restano Ctrl+1/2/3, Ctrl+W, Ctrl+F, F2, Canc, Ctrl+E, Ctrl+R, Esc.
 
-- [ ] **Step 1: test rossi** (uno per tasto, più): `Space_in_the_search_box_types_a_space`; `Arrows_do_nothing_while_renaming`;
+- [x] **Step 1: test rossi** (uno per tasto, più): `Space_in_the_search_box_types_a_space`; `Arrows_do_nothing_while_renaming`;
   `Right_arrow_on_today_does_nothing`; `Space_on_a_group_does_nothing`; `Left_arrow_in_archive_does_nothing`;
   `Keys_are_ignored_when_focus_is_in_a_workspace_tab`.
-- [ ] **Step 2: implementa.** I tooltip di ‹ ›, "+ Nuova" e del comando di riga dicono la scorciatoia.
-- [ ] **Step 3:** verdi, commit `feat(ui): la tastiera registra dalla Home (A2)`.
+- [x] **Step 2: implementa.** I tooltip di ‹ ›, "+ Nuova" e del comando di riga dicono la scorciatoia.
+- [x] **Step 3:** verdi, commit `feat(ui): la tastiera registra dalla Home (A2)`.
+
+**Com'è stato fatto (2026-11-13)** — ciò che i task dopo trovano diverso da qui sopra:
+- **Chi ha scritto**: tutto in sessione (Antigravity non usato: task piccolo).
+- `HomeView.DispatchHomeKey` sta prima di `DispatchRowKey`, nello stesso gestore in tunnel sul `TopLevel`: vale solo senza
+  modificatori e mai con un `Button` (quindi anche `ToggleButton`), una `ComboBox` o una `MenuItem` a fuoco; F2, Canc,
+  Ctrl+E, Ctrl+R continuano a rinunciare solo davanti a un `TextBox`, come prima. ← → passano dai comandi del giorno
+  (`CanExecute`: in Archivio e Cestino non fanno niente); Spazio da `QuickActionCommand` della riga, che usa già `RecordDay`.
+- `HomeViewModel.SelectNext/SelectPrevious`: sulle `Rows` piatte (i figli dei gruppi aperti compresi), senza ricominciare
+  dall'altro capo; con più righe scelte si parte dall'ancora. La riga entra in vista con `RowsHost.ScrollIntoView(indice)`.
+  Ogni freccia apre la riga in anteprima nella scheda, come un clic: il fuoco non ci finisce dentro (prova d'insieme in
+  `ShellIntegrationTests`).
+- **Invio** = `HomeViewModel.ActivateSelected()`, che alza `HabitActivationRequested`: l'host ora passa `recording` da
+  `RecordRequestedFor` invece che `true` fisso, così Invio su un'astinenza apre e fissa sul giorno della Home **senza**
+  proporre la ricaduta (`MainWindowViewModelTests.Enter_on_an_abstinence_pins_it_on_the_day_without_the_relapse_prompt`).
+- Ctrl+N e Ctrl+, sono `KeyBinding` della finestra (`Ctrl+OemComma`), accanto a Ctrl+1/2/3 e Ctrl+W: valgono anche col
+  fuoco nella scheda.
+- Stringhe nuove (i nomi accessibili restano senza scorciatoia): `Home.Day.Previous.Tip` "Previous day (←)" / "Giorno
+  prima (←)" · `Home.Day.Next.Tip` "Next day (→)" / "Giorno dopo (→)" · `Home.NewMenu.Tip` "New habit (Ctrl+N)" /
+  "Nuova abitudine (Ctrl+N)" · `Home.QuickAction.Tip` "Quick log (Space)" / "Log rapido (Spazio)".
+- Test: 17 in `HomeKeyboardTests`, uno in `MainWindowTests`, uno in `ShellIntegrationTests`, uno in
+  `MainWindowViewModelTests`. Prove del rosso: niente `ScrollIntoView`, niente esclusione di pulsanti e tendine, freccia
+  che ignora l'ancora, Invio che chiede la ricaduta.
 
 ### Task 8b: Dalla Home una spunta si toglie, con conferma
 

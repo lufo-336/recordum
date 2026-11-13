@@ -185,7 +185,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private static WorkspaceTabKind KindOf(HomeRowViewModel row)
         => row.IsGroup ? WorkspaceTabKind.Group : WorkspaceTabKind.Habit;
 
-    // "+" on a habit whose row is already selected: SelectedRow won't change, so pin
+    // "+" on a habit whose row is already selected, or Enter on the selected row: SelectedRow won't change, so pin
     // the subject in the workspace to keep it from being replaced by the next preview.
     private async void OnHabitActivationRequested(object? sender, Guid habitNodeId)
     {
@@ -193,8 +193,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == habitNodeId);
             if (row is null) return;
+            // Letto prima di ogni await: vale solo mentre la Home alza l'evento. Invio apre, non registra.
+            var recording = Home.RecordRequestedFor == habitNodeId;
             await Workspace.OpenSubjectAsync(habitNodeId, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
-            await LandOnHomeDayAsync(row, recording: true).ConfigureAwait(true);
+            await LandOnHomeDayAsync(row, recording).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitActivationRequested failed: {ex}"); }
     }

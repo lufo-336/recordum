@@ -2586,4 +2586,16 @@ Dettagli: {0}</value>
   <data name="HabitTemplatePicker.CardMenu" xml:space="preserve">
     <value>Azioni del modello</value>
   </data>
+  <data name="Home.Day.Previous.Tip" xml:space="preserve">
+    <value>Giorno prima (←)</value>
+  </data>
+  <data name="Home.Day.Next.Tip" xml:space="preserve">
+    <value>Giorno dopo (→)</value>
+  </data>
+  <data name="Home.NewMenu.Tip" xml:space="preserve">
+    <value>Nuova abitudine (Ctrl+N)</value>
+  </data>
+  <data name="Home.QuickAction.Tip" xml:space="preserve">
+    <value>Log rapido (Spazio)</value>
+  </data>
 </root>

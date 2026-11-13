@@ -123,7 +123,7 @@
         </StackPanel>
 
         <Button x:Name="QuickLog" Grid.Column="4" Classes="quicklog" Margin="0,0,7,0" VerticalAlignment="Center"
-                ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"
+                ToolTip.Tip="{x:Static res:Strings.Home_QuickAction_Tip}"
                 Command="{CompiledBinding QuickActionCommand}"
                 IsVisible="{CompiledBinding CanQuickAction}">
           <Path Data="{CompiledBinding HabitType, Converter={x:Static conv:QuickLogIconConverter.Instance}}"

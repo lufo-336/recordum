@@ -319,4 +319,16 @@ public class MainWindowTests
             .GetVisualDescendants().OfType<TextBlock>().Should().BeEmpty("nella barra del titolo restano solo i pulsanti");
         window.Close();
     }
+
+    [AvaloniaFact]
+    public async Task Ctrl_N_opens_a_new_habit_and_ctrl_comma_the_settings()
+    {
+        // Onda "Giornata", Task 11. Il comando vero aprirebbe una finestra: si prova che il tasto arriva al comando giusto.
+        var (window, vm) = await Open();
+        KeyBinding For(Key key) => window.KeyBindings.Single(b =>
+            b.Gesture.Matches(new KeyEventArgs { Key = key, KeyModifiers = KeyModifiers.Control }));
+
+        For(Key.N).Command.Should().BeSameAs(vm.Home.OpenNewHabitCommand);
+        For(Key.OemComma).Command.Should().BeSameAs(vm.ShowSettingsCommand);
+    }
 }

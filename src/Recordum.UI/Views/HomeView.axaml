@@ -37,7 +37,7 @@
                     IsVisible="{CompiledBinding ActiveTab, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Active}}">
           <Button x:Name="PrevDayButton" Classes="ghost" Width="28" Height="28" Padding="0"
                   Command="{CompiledBinding PreviousDayCommand}"
-                  ToolTip.Tip="{x:Static res:Strings.Home_Day_Previous}"
+                  ToolTip.Tip="{x:Static res:Strings.Home_Day_Previous_Tip}"
                   AutomationProperties.Name="{x:Static res:Strings.Home_Day_Previous}">
             <Path Width="14" Height="14" Stretch="Uniform"
                   Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
@@ -46,7 +46,7 @@
           </Button>
           <Button x:Name="NextDayButton" Classes="ghost" Width="28" Height="28" Padding="0"
                   Command="{CompiledBinding NextDayCommand}"
-                  ToolTip.Tip="{x:Static res:Strings.Home_Day_Next}"
+                  ToolTip.Tip="{x:Static res:Strings.Home_Day_Next_Tip}"
                   AutomationProperties.Name="{x:Static res:Strings.Home_Day_Next}">
             <Path Width="14" Height="14" Stretch="Uniform"
                   Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
@@ -161,6 +161,7 @@
              una ContextMenu col tasto sinistro e le passava il DataContext a mano. -->
         <Button x:Name="NewMenuButton" Classes="primary"
                 Padding="10,5" VerticalAlignment="Center"
+                ToolTip.Tip="{x:Static res:Strings.Home_NewMenu_Tip}"
                 AutomationProperties.Name="{x:Static res:Strings.Home_NewHabit_Button}">
           <StackPanel Orientation="Horizontal" Spacing="5">
             <Path Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"

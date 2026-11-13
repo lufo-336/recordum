@@ -377,6 +377,28 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task Enter_on_an_abstinence_pins_it_on_the_day_without_the_relapse_prompt()
+    {
+        // Task 11: Invio apre e fissa la scheda (lo stesso evento del log rapido su una riga già scelta), ma non è una
+        // richiesta di registrare.
+        var d = await CreateDaySutAsync(HabitType.Resistance, abstaining: true);
+        d.Home.PreviousDayCommand.Execute(null);
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        var ab = (AbstinenceQuickAddViewModel)d.Screen.QuickAdd!;
+        var raised = 0;
+        ab.LapsePromptRequested += (_, _) => raised++;
+
+        d.Home.ActivateSelected();
+        await Task.Delay(30);
+
+        d.Sut.Workspace.Tabs.Single(t => t.SubjectId == d.Id).IsPreview.Should().BeFalse("Invio fissa la scheda");
+        d.Screen.SelectedDay.Should().Be(Monday);
+        raised.Should().Be(0, "aprire non è chiedere di registrare");
+        ab.TakeLapsePrompt().Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Opening_a_group_from_a_past_day_leaves_it_on_today()
     {
         // La Panoramica di un gruppo resta su oggi (Task 6): la sua schermata non prende il giorno della Home.
