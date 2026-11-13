@@ -2542,3 +2542,12 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   fatto resta lo schermo vuoto col germoglio ("crea un'abitudine") e il pulsante per spegnere il filtro non c'è. Prima del
   Task 7 valeva anche per la ricerca; ora la casella di ricerca aperta resta a vista. Serve uno stato "nessun risultato"
   distinto da "nessuna abitudine".
+- **GIO-6 — tornata la Home a oggi, la schermata aperta da un giorno passato resta su quel giorno** · `reported` ·
+  dal Task 8 (2026-11-13), letto nel codice e fissato da un test (`Opening_from_today_leaves_the_screen_on_its_day`), non
+  provato a schermo. Home su ieri → clic su "Peso": la schermata si apre su ieri. "Torna a oggi" nella Home: la scheda
+  resta su ieri, e anche il log rapido della riga (che da oggi apre la schermata) la lascia lì. La schermata lo dice in
+  testa ("per lunedì 9 novembre" e "torna a oggi", in piccolo), ma la Home accanto dice "Oggi". È la regola del
+  piano: da oggi la Home non tocca il giorno della schermata, perché un diario aperto sulla bozza di ieri riceverebbe
+  la domanda "cambiare giorno?" a ogni apertura. Da decidere: lasciare così, oppure da oggi riportare a oggi la
+  schermata **tranne** quando il diario ha una modifica aperta. Vale anche il contrario, per scelta (Task 8, "Com'è
+  stato fatto"): cambiare giorno nella Home non sposta una schermata già aperta.

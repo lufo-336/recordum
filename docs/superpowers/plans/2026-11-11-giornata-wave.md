@@ -361,14 +361,40 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
 **Files:** `MainWindowViewModel.cs`; `AbstinenceCommandView.axaml.cs`; test in `MainWindowViewModelTests.cs` e
 `tests/Recordum.UI.Tests/HabitScreen/`
 
-- [ ] **Step 1: test rossi:** `Opening_a_habit_from_a_past_day_selects_that_day` (selezione della riga **e** log rapido
+- [x] **Step 1: test rossi:** `Opening_a_habit_from_a_past_day_selects_that_day` (selezione della riga **e** log rapido
   che torna `false`: dopo `OpenSubjectAsync`, `Screen.SelectedDay == Home.SelectedDay`); `Opening_from_today_leaves_the_screen_on_today`
   (non chiama `SelectDayAsync`: un diario con una modifica aperta non riceve la domanda "cambiare giorno?");
   `Quick_action_on_an_abstinence_asks_for_the_relapse_prompt` (in astinenza: schermata aperta sul giorno,
   `LapsePromptRequested` alzato una volta); UI: il flyout si apre e mostra "La ricaduta va su lunedì 9 novembre."
-- [ ] **Step 2: implementa** nei tre punti che aprono un soggetto dalla Home (`SelectedRow`, `HabitActivationRequested`,
+- [x] **Step 2: implementa** nei tre punti che aprono un soggetto dalla Home (`SelectedRow`, `HabitActivationRequested`,
   il terzo `OpenSubjectAsync`): dopo l'apertura, se `!Home.IsOnToday`, `await screen.SelectDayAsync(Home.SelectedDay)`.
-- [ ] **Step 3:** verdi, commit `feat(presentation): dalla Home la schermata si apre sul giorno scelto; l'astinenza propone la ricaduta con quella data`.
+- [x] **Step 3:** verdi, commit `feat(presentation): dalla Home la schermata si apre sul giorno scelto; l'astinenza propone la ricaduta con quella data`.
+
+**Com'è stato fatto (2026-11-13)** — ciò che i task dopo trovano diverso da qui sopra:
+- **Il giorno si dà solo quando è l'utente ad aprire.** La Home rifà le righe a ogni registrazione e a ogni cambio di
+  giorno, e ri-seleziona la stessa abitudine con una riga nuova: `SelectedRow` cambia senza che nessuno abbia aperto
+  niente. `MainWindowViewModel` tiene l'id dell'ultima selezione (`_selectedSubject`) e su una ri-selezione non tocca la
+  schermata, altrimenti il giorno scelto *dentro* la schermata tornava indietro a ogni registrazione
+  (`Rebuilding_the_Home_does_not_move_an_open_screen`). Ne segue: cambiare giorno nella Home **non** sposta una
+  schermata già aperta; la sposta il clic sulla riga o il log rapido.
+- **Due punti, non tre**: `SelectedRow` e `HabitActivationRequested`, tutti e due da `LandOnHomeDayAsync(row, recording)`.
+  Il giorno è `row.RecordDay` (quello che la riga dà al log rapido, null su oggi), preso dalla riga al momento del gesto.
+  Un **gruppo** resta su oggi come la sua Panoramica (Task 6), quindi `GroupCreated` e un figlio aperto dalla Panoramica
+  (`SubjectActivationRequested`) non sono toccati.
+- **"Ha chiesto di registrare" o "ha selezionato"**: `HomeViewModel.RecordRequestedFor` vale solo mentre la Home alza la
+  selezione che segue un log rapido che ha risposto `false`; l'host lo legge lì. La ricaduta si propone solo in quel caso
+  (anche su oggi), mai su una semplice selezione.
+- **La domanda aspetta la vista**: una schermata appena aperta non ha ancora la sua `AbstinenceCommandView`, e l'evento
+  cadeva nel vuoto (provato: senza l'attesa il test d'insieme è rosso). `RequestLapsePrompt` segna la richiesta,
+  `TakeLapsePrompt()` la consuma una volta; la vista la prende all'evento, al cambio di `DataContext` e a `OnLoaded`.
+  Senza un periodo aperto `RequestLapsePrompt` non fa niente.
+- **Riaprire una scheda che sta caricando aspetta il caricamento** (`SubjectTabViewModel.Loading`): un doppio clic sul
+  log rapido non dà il giorno a una schermata a metà.
+- Test: otto in `MainWindowViewModelTests`, tre in `AbstinenceQuickAddViewModelTests`, uno in `WorkspaceViewModelTests`,
+  `HeadCommandTests.A_requested_relapse_prompt_opens_the_flyout_on_the_chosen_day` e, da capo a fondo col contenitore vero,
+  `ShellIntegrationTests.Quick_action_on_an_abstinence_from_a_past_day_opens_the_relapse_prompt_on_that_day`. Sei prove del
+  rosso. Scritto in sessione, senza Antigravity (task piccolo: sei file, un'ottantina di righe).
+- Resta aperto **GIO-6** (tracker): tornata la Home a oggi, una schermata aperta da un giorno passato resta su quel giorno.
 
 ### Task 9: Le tre righe — preferenza, misure, striscia a segni
 
