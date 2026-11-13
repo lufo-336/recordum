@@ -71,6 +71,35 @@ public class WorkspaceViewModelTests
     }
 
     [Fact]
+    public async Task Reopening_a_subject_that_is_still_loading_waits_for_its_load()
+    {
+        // Chi apre e poi agisce sulla schermata (la Home le dà il giorno scelto) non la trova a metà caricamento.
+        var gate = new TaskCompletionSource();
+        var sut = new WorkspaceViewModel(new GatedScreenFactory(gate.Task), new FakeAppSettingService());
+        var id = Guid.NewGuid();
+        var first = sut.OpenSubjectAsync(id, WorkspaceTabKind.Habit, "Corsa");
+        first.IsCompleted.Should().BeFalse();
+
+        var second = sut.OpenSubjectAsync(id, WorkspaceTabKind.Habit, "Corsa");
+
+        second.IsCompleted.Should().BeFalse("la scheda c'è ma la sua schermata sta ancora caricando");
+        gate.SetResult();
+        await second;
+        await first;
+        sut.Tabs.Should().ContainSingle();
+    }
+
+    private sealed class GatedScreenFactory(Task gate) : ISubjectScreenFactory
+    {
+        public SubjectScreen Create()
+        {
+            var (vm, nodes) = HabitScreenViewModelFactory.Create();
+            nodes.GetGate = gate;
+            return new SubjectScreen(vm, new TrackingDisposable());
+        }
+    }
+
+    [Fact]
     public async Task Open_with_pin_true_creates_a_pinned_tab()
     {
         var (sut, _) = WorkspaceViewModelFactory.Create();

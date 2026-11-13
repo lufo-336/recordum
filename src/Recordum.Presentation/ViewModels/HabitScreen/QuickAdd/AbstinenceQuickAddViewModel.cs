@@ -135,8 +135,25 @@ public sealed partial class AbstinenceQuickAddViewModel : QuickAddViewModelBase,
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Asks the view to open the relapse confirmation (the host's way to start a lapse).</summary>
-    public void RequestLapsePrompt() => LapsePromptRequested?.Invoke(this, EventArgs.Empty);
+    private bool _lapsePromptPending;
+
+    /// <summary>Asks the view to open the relapse confirmation (the host's way to start a lapse). Without an open
+    /// period there is nothing to close. The request stays pending until a view takes it with
+    /// <see cref="TakeLapsePrompt"/>: a screen just opened from the Home has no view yet.</summary>
+    public void RequestLapsePrompt()
+    {
+        if (!CanLapse) return;
+        _lapsePromptPending = true;
+        LapsePromptRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>The view calls this when it can show the flyout: true once per request, and only while a period is open.</summary>
+    public bool TakeLapsePrompt()
+    {
+        var pending = _lapsePromptPending;
+        _lapsePromptPending = false;
+        return pending && CanLapse;
+    }
 
     /// <summary>"The relapse goes on {day}." when the chosen day is not today; empty otherwise.</summary>
     public string LapseOnDisplay

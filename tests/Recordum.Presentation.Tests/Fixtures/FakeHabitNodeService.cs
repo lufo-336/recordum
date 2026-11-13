@@ -81,10 +81,14 @@ public sealed class FakeHabitNodeService : IHabitNodeService
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask<HabitNode?> GetAsync(Guid id, CancellationToken ct = default)
+    /// <summary>Se impostato, <see cref="GetAsync"/> lo aspetta: un test tiene un caricamento a metà.</summary>
+    public Task? GetGate { get; set; }
+
+    public async ValueTask<HabitNode?> GetAsync(Guid id, CancellationToken ct = default)
     {
         Throw();
-        return new ValueTask<HabitNode?>(Store.TryGetValue(id, out var n) ? n : null);
+        if (GetGate is { } gate) await gate.ConfigureAwait(true);
+        return Store.TryGetValue(id, out var n) ? n : null;
     }
 
     public ValueTask SetPinScopeAsync(Guid id, PinScope scope, CancellationToken ct = default)

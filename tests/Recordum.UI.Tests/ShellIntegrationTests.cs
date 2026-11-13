@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -6,11 +7,18 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Avalonia.LogicalTree;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
+using Recordum.Core.Models;
+using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views;
 using Recordum.UI.Views.HabitScreen;
+using Recordum.UI.Views.HabitScreen.Head;
 using Recordum.UI.Views.Workspace;
 using Xunit;
 
@@ -78,6 +86,52 @@ public class ShellIntegrationTests(ITestOutputHelper output)
         var grid = window.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "HomeWorkspace");
         grid.ColumnDefinitions[0].Width.Should().Be(new GridLength(340));
         window.GetVisualDescendants().OfType<GridSplitter>().Single().IsVisible.Should().BeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task Quick_action_on_an_abstinence_from_a_past_day_opens_the_relapse_prompt_on_that_day()
+    {
+        // Onda "Giornata", Task 8, da capo a fondo: la Home su ieri, il log rapido di un'astinenza in corso. La schermata
+        // nasce in quel momento, e la domanda parte prima che la sua vista esista: deve trovarla ad aspettarla.
+        using var _ = TestCulture.Pin();
+        await ShellFixture.Shared.SeedAsync();
+        var id = await Task.Run(async () =>
+        {
+            using var scope = ShellFixture.Shared.Services.CreateScope();
+            var created = await scope.ServiceProvider.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
+            {
+                NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "Niente fumo", Color = "#B45309",
+            });
+            await scope.ServiceProvider.GetRequiredService<IAbstinenceService>().StartAsync(created);
+            return created;
+        });
+        var (window, vm) = await ShellFixture.OpenMainWindowAsync(ShellFixture.Shared.NewMainWindowViewModel());
+        vm.Home.PreviousDayCommand.Execute(null);
+        vm.Home.IsOnToday.Should().BeFalse();
+        var day = vm.Home.SelectedDay;
+
+        await vm.Home.Rows.Single(r => r.HabitNodeId == id).QuickActionCommand.ExecuteAsync(null);
+
+        Button? lapse = null;
+        for (var i = 0; i < 200 && lapse?.Flyout?.IsOpen != true; i++)
+        {
+            await Task.Delay(20);
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Dispatcher.UIThread.RunJobs();
+            lapse = window.GetVisualDescendants().OfType<AbstinenceCommandView>().SingleOrDefault()
+                ?.GetVisualDescendants().OfType<Button>().SingleOrDefault(b => b.Name == "LapseButton");
+        }
+
+        vm.Workspace.ActiveSubjectTab!.SubjectId.Should().Be(id);
+        vm.Workspace.ActiveSubjectTab.Screen.SelectedDay.Should().Be(day);
+        lapse.Should().NotBeNull();
+        lapse!.Flyout!.IsOpen.Should().BeTrue("il log rapido di un'astinenza in corso propone la ricaduta");
+        var note = ((Control)((Flyout)lapse.Flyout).Content!).GetLogicalDescendants().OfType<TextBlock>().Single(t => t.Tag as string == "LapseOn");
+        note.IsVisible.Should().BeTrue();
+        note.Text.Should().Be(string.Format(CultureInfo.CurrentCulture, Strings.Head_Abstinence_LapseOn,
+            day.ToString("D", CultureInfo.CurrentCulture)));
+        lapse.Flyout.Hide();
+        window.Close();
     }
 
     [AvaloniaFact]

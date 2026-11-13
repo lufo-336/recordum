@@ -125,16 +125,52 @@ public class AbstinenceQuickAddViewModelTests
         changedFired.Should().BeFalse();
     }
 
-    [Fact]
-    public void RequestLapsePrompt_raises_the_event()
+    private static async Task<AbstinenceQuickAddViewModel> AbstainingAsync()
     {
-        var (vm, _, _) = Create();
-        bool raised = false;
-        vm.LapsePromptRequested += (_, _) => raised = true;
+        var (vm, abstinence, clock) = Create();
+        abstinence.States[vm.Node!.Id] = new AbstinenceState(AbstinenceStatus.Abstaining, clock.UtcNow.ToUnixTimeMilliseconds(), null);
+        await vm.LoadAsync(DayBoundary.Utc);
+        return vm;
+    }
+
+    [Fact]
+    public async Task RequestLapsePrompt_raises_the_event()
+    {
+        var vm = await AbstainingAsync();
+        var raised = 0;
+        vm.LapsePromptRequested += (_, _) => raised++;
 
         vm.RequestLapsePrompt();
 
-        raised.Should().BeTrue();
+        raised.Should().Be(1);
+    }
+
+    /// <summary>La domanda parte prima che la vista esista (schermata appena aperta dalla Home): resta ad aspettarla, e
+    /// si consuma una volta sola.</summary>
+    [Fact]
+    public async Task Lapse_prompt_waits_for_a_view_that_is_not_there_yet()
+    {
+        var vm = await AbstainingAsync();
+        vm.TakeLapsePrompt().Should().BeFalse("nessuno l'ha chiesta");
+
+        vm.RequestLapsePrompt();
+
+        vm.TakeLapsePrompt().Should().BeTrue();
+        vm.TakeLapsePrompt().Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RequestLapsePrompt_without_an_open_period_does_nothing()
+    {
+        var (vm, _, _) = Create();
+        await vm.LoadAsync(DayBoundary.Utc);   // NotStarted: non c'è niente da chiudere
+        var raised = 0;
+        vm.LapsePromptRequested += (_, _) => raised++;
+
+        vm.RequestLapsePrompt();
+
+        raised.Should().Be(0);
+        vm.TakeLapsePrompt().Should().BeFalse();
     }
 
     private sealed class ThrowingAbstinence : IAbstinenceService

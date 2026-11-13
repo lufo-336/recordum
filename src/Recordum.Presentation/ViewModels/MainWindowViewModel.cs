@@ -6,6 +6,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels.Backup;
 using Recordum.Presentation.ViewModels.Export;
+using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 using Recordum.Presentation.ViewModels.Settings;
 using Recordum.Presentation.ViewModels.Timer;
 using Recordum.Presentation.ViewModels.Workspace;
@@ -155,10 +156,30 @@ public sealed partial class MainWindowViewModel : ObservableObject
         try
         {
             if (e.PropertyName != nameof(HomeViewModel.SelectedRow)) return;
-            if (Home.SelectedRow is not { } row) { Workspace.ActivatePanoramica(); return; }
+            if (Home.SelectedRow is not { } row) { _selectedSubject = null; Workspace.ActivatePanoramica(); return; }
+            // La Home rifà le righe a ogni registrazione e a ogni cambio di giorno, e ri-seleziona la stessa abitudine con
+            // una riga nuova: non è l'utente che apre, e il giorno che ha scelto nella schermata non si tocca.
+            var recording = Home.RecordRequestedFor == row.HabitNodeId;
+            var opened = recording || _selectedSubject != row.HabitNodeId;
+            _selectedSubject = row.HabitNodeId;
             await Workspace.OpenSubjectAsync(row.HabitNodeId, KindOf(row), row.Name).ConfigureAwait(true);
+            if (opened) await LandOnHomeDayAsync(row, recording).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHomePropertyChanged failed: {ex}"); }
+    }
+
+    private Guid? _selectedSubject;
+
+    /// <summary>Dopo un'apertura fatta dall'utente dalla Home (onda "Giornata", A1). Su un giorno passato la schermata
+    /// dell'abitudine va su quel giorno; da oggi non si tocca (un diario aperto sulla bozza di ieri non riceve la domanda
+    /// "cambiare giorno?" a ogni apertura). Se l'utente aveva chiesto di registrare e l'astinenza è in corso, la schermata
+    /// propone la ricaduta, con quella data. Un gruppo resta su oggi, come la sua Panoramica.</summary>
+    private async Task LandOnHomeDayAsync(HomeRowViewModel row, bool recording)
+    {
+        if (row.IsGroup) return;
+        if (Workspace.Tabs.FirstOrDefault(t => t.SubjectId == row.HabitNodeId)?.Screen is not { HasNode: true } screen) return;
+        if (row.RecordDay is { } day && screen.SelectedDay != day) await screen.SelectDayAsync(day).ConfigureAwait(true);
+        if (recording && screen.QuickAdd is AbstinenceQuickAddViewModel abstinence) abstinence.RequestLapsePrompt();
     }
 
     private static WorkspaceTabKind KindOf(HomeRowViewModel row)
@@ -173,6 +194,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             var row = Home.Rows.FirstOrDefault(r => r.HabitNodeId == habitNodeId);
             if (row is null) return;
             await Workspace.OpenSubjectAsync(habitNodeId, KindOf(row), row.Name, pin: true).ConfigureAwait(true);
+            await LandOnHomeDayAsync(row, recording: true).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnHabitActivationRequested failed: {ex}"); }
     }

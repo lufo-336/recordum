@@ -1,10 +1,13 @@
 using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Tests.Abstractions;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Core.Services;
+using Recordum.Core.Time;
 using Recordum.Plugins.ExtensionPoints;
 using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.Services;
@@ -13,6 +16,9 @@ using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.Backup;
 using Recordum.Presentation.ViewModels.Charts;
 using Recordum.Presentation.ViewModels.HabitEditor;
+using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
+using Recordum.Presentation.ViewModels.Quick;
 using Recordum.Presentation.ViewModels.Settings;
 using Recordum.Presentation.ViewModels.Timer;
 using Recordum.Presentation.ViewModels.Workspace;
@@ -236,6 +242,217 @@ public class MainWindowViewModelTests
 
         var raw = await parts.AppSettings.GetAsync(WorkspaceViewModel.StateSettingKey);
         raw.Should().NotBeNull(); // save was triggered on the change
+    }
+
+    // ---- Onda "Giornata", Task 8: dalla Home la schermata si apre sul giorno scelto ----
+    // Martedì 10 novembre 2026 alle 10:00, app e abitudine a mezzanotte UTC: ieri è lunedì 9.
+
+    private static readonly DateTimeOffset TuesdayMorning = new(2026, 11, 10, 10, 0, 0, TimeSpan.Zero);
+    private static readonly DateOnly Tuesday = new(2026, 11, 10), Monday = new(2026, 11, 9), Saturday = new(2026, 11, 7);
+
+    [Fact]
+    public async Task Opening_a_habit_from_a_past_day_selects_that_day()
+    {
+        var d = await CreateDaySutAsync(HabitType.Action);
+        d.Home.PreviousDayCommand.Execute(null);
+
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+
+        d.Home.SelectedDay.Should().Be(Monday);
+        d.Screen.SelectedDay.Should().Be(Monday);
+        DateOnly.FromDateTime(d.Screen.QuickAdd!.CompletionDate).Should().Be(Monday, "ciò che si registra dalla schermata va su quel giorno");
+    }
+
+    [Fact]
+    public async Task A_quick_action_that_opens_the_screen_from_a_past_day_selects_that_day()
+    {
+        var d = await CreateDaySutAsync(HabitType.Action);
+        d.Home.PreviousDayCommand.Execute(null);
+
+        // La riga non è selezionata: il log rapido risponde "non da qui" e la Home la seleziona.
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+        d.Handler.Days.Should().Equal(Monday);
+        d.Screen.SelectedDay.Should().Be(Monday);
+
+        // La riga è già selezionata (HabitActivationRequested): la schermata, rimessa su oggi, torna sul giorno della Home.
+        await d.Screen.SelectDayAsync(Tuesday);
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Monday);
+    }
+
+    [Fact]
+    public async Task Opening_from_today_leaves_the_screen_on_its_day()
+    {
+        // Da oggi la Home non tocca il giorno della schermata: un diario aperto sulla bozza di ieri non riceve la
+        // domanda "cambiare giorno?" a ogni apertura.
+        var d = await CreateDaySutAsync(HabitType.Action);
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Tuesday);
+        await d.Screen.SelectDayAsync(Saturday);
+
+        d.Home.SelectedRow = null;
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Saturday);
+
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Saturday);
+    }
+
+    [Fact]
+    public async Task Rebuilding_the_Home_does_not_move_an_open_screen()
+    {
+        // La Home rifà le righe a ogni registrazione e a ogni cambio di giorno, e ri-seleziona la stessa abitudine:
+        // non è un'apertura. Il giorno che l'utente ha scelto nella schermata resta.
+        var d = await CreateDaySutAsync(HabitType.Action);
+        d.Home.PreviousDayCommand.Execute(null);
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Monday);
+        await d.Screen.SelectDayAsync(Saturday);
+
+        d.Home.PreviousDayCommand.Execute(null);   // domenica 8: righe rifatte, selezione ripristinata
+        await Task.Delay(30);
+        d.Home.SelectedRow.Should().NotBeNull();
+        d.Screen.SelectedDay.Should().Be(Saturday);
+
+        await d.Home.LoadCommand.ExecuteAsync(null);
+        d.Home.SelectInteractive(d.Row, ctrl: false, shift: false);   // stessa abitudine, riga nuova
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Saturday);
+    }
+
+    [Fact]
+    public async Task Quick_action_on_an_abstinence_asks_for_the_relapse_prompt()
+    {
+        var d = await CreateDaySutAsync(HabitType.Resistance, abstaining: true);
+        d.Home.PreviousDayCommand.Execute(null);
+
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+
+        d.Screen.SelectedDay.Should().Be(Monday);
+        var ab = (AbstinenceQuickAddViewModel)d.Screen.QuickAdd!;
+        DateOnly.FromDateTime(ab.CompletionDate).Should().Be(Monday, "la ricaduta proposta porta quella data");
+        // La vista non c'era ancora quando la domanda è partita: la trova ad aspettarla, una volta sola.
+        ab.TakeLapsePrompt().Should().BeTrue();
+        ab.TakeLapsePrompt().Should().BeFalse();
+
+        // Con la schermata già aperta (riga già selezionata) l'evento si alza, una volta.
+        var raised = 0;
+        ab.LapsePromptRequested += (_, _) => raised++;
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+        raised.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Quick_action_on_an_abstinence_today_asks_for_the_relapse_prompt_on_today()
+    {
+        var d = await CreateDaySutAsync(HabitType.Resistance, abstaining: true);
+
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+
+        d.Screen.SelectedDay.Should().Be(Tuesday);
+        ((AbstinenceQuickAddViewModel)d.Screen.QuickAdd!).TakeLapsePrompt().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Selecting_an_abstinence_row_does_not_ask_for_the_relapse_prompt()
+    {
+        var d = await CreateDaySutAsync(HabitType.Resistance, abstaining: true);
+        d.Home.PreviousDayCommand.Execute(null);
+
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+
+        d.Screen.SelectedDay.Should().Be(Monday);
+        ((AbstinenceQuickAddViewModel)d.Screen.QuickAdd!).TakeLapsePrompt().Should().BeFalse("selezionare non è chiedere di registrare");
+    }
+
+    [Fact]
+    public async Task Opening_a_group_from_a_past_day_leaves_it_on_today()
+    {
+        // La Panoramica di un gruppo resta su oggi (Task 6): la sua schermata non prende il giorno della Home.
+        var d = await CreateDaySutAsync(type: null);
+        d.Home.PreviousDayCommand.Execute(null);
+
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+
+        d.Screen.SelectedDay.Should().Be(Tuesday);
+    }
+
+    private sealed record DaySut(MainWindowViewModel Sut, Guid Id, DecliningHandler Handler)
+    {
+        public HomeViewModel Home => Sut.Home;
+        public HomeRowViewModel Row => Sut.Home.Rows.Single(r => r.HabitNodeId == Id);
+        public HabitScreenViewModel Screen => Sut.Workspace.Tabs.Single(t => t.SubjectId == Id).Screen;
+    }
+
+    /// <summary>Una Home col suo orologio e un'abitudine sola, il cui log rapido risponde sempre "non da qui"; le
+    /// schermate hanno lo stesso orologio e conoscono l'abitudine (in astinenza, se chiesto).</summary>
+    private static async Task<DaySut> CreateDaySutAsync(HabitType? type, bool abstaining = false)
+    {
+        var id = Guid.NewGuid();
+        var node = new HabitNode
+        {
+            Id = id, NodeType = type is null ? NodeType.Group : NodeType.Habit, HabitType = type, Name = "Soggetto", Color = "#2F7FC1",
+        };
+        var query = new FakeHabitTreeQueryService();
+        query.HomeRows.Add(new HomeTreeRow(id, null, node.Name, node.Color, type, null, 0, false, PinScope.None, 0, false,
+            ImmutableArray.Create(new int[7]), ImmutableArray<Guid>.Empty, CompletionsLast14Days: ImmutableArray.Create(new int[14])));
+        var handler = new DecliningHandler(type ?? HabitType.Action);
+        var clock = new FakeClock(TuesdayMorning);
+        var nodes = new FakeHabitNodeService();
+        nodes.Store[id] = node;
+        var home = new HomeViewModel(query, nodes, new FakePurgeService(),
+            quickActions: new QuickActionHandlerSelector([handler]), clock: clock,
+            resetTimes: new FakeResetTimeResolver(new DayBoundary(TimeZoneInfo.Utc, TimeOnly.MinValue)), ticks: new FakeTickSourceFactory());
+        var settings = new FakeAppSettingService();
+        var workspace = new WorkspaceViewModel(new RigScreenFactory(node, abstaining), settings);
+        var charts = new ChartsWorkspaceViewModel(
+            new FakeChartService(), new FakeChartQueryService(), new ExtensionPointRegistry(),
+            new ChartBuilderViewModel(new FakeChartService(), new FakeHabitTreeQueryService(), new FakeMetricDefinitionService(),
+                new FakeChartQueryService(), new ExtensionPointRegistry(), null));
+        var sut = new MainWindowViewModel(home, settings,
+            new TimerStatusBarViewModel(new FakeActiveTimerService(), clock, nodes, new FakeEventBus(), NullTickSourceFactory.Instance),
+            workspace, charts, new FakeExportDialogLauncher(), new FakeBackupDialogLauncher(),
+            new BackupHistoryViewModel(new FakeBackupLogService(), new FakeFolderOpener()), new FakeSettingsWindowLauncher(),
+            new FakeApplicationLifetime());
+        await sut.InitializeAsync();
+        return new DaySut(sut, id, handler);
+    }
+
+    private sealed class RigScreenFactory(HabitNode node, bool abstaining) : ISubjectScreenFactory
+    {
+        public SubjectScreen Create()
+        {
+            var rig = HabitScreenViewModelFactory.CreateRig(TuesdayMorning);
+            rig.Nodes.Store[node.Id] = node;
+            if (abstaining)
+                rig.Abstinence.States[node.Id] = new AbstinenceState(
+                    AbstinenceStatus.Abstaining, TuesdayMorning.AddDays(-5).ToUnixTimeMilliseconds(), null);
+            return new SubjectScreen(rig.Vm, new TrackingDisposable());
+        }
+    }
+
+    private sealed class DecliningHandler(HabitType type) : IQuickActionHandler
+    {
+        public List<DateOnly?> Days { get; } = [];
+        public HabitType HabitType => type;
+
+        public ValueTask<bool> ExecuteAsync(Guid habitNodeId, DateOnly? day, CancellationToken ct = default)
+        {
+            Days.Add(day);
+            return new(false);
+        }
     }
 
     private static HomeTreeRow SampleRow(Guid id, string name, HabitType? type = HabitType.Action, Guid? parent = null) =>

@@ -307,6 +307,34 @@ public class HeadCommandTests
             .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
     [AvaloniaFact]
+    public async Task A_requested_relapse_prompt_opens_the_flyout_on_the_chosen_day()
+    {
+        // È ciò che fa la Home quando il log rapido di un'astinenza in corso apre la schermata (onda "Giornata", Task 8).
+        using var _ = TestCulture.Pin();
+        var o = await OpenAsync(HabitType.Resistance, async (sp, id) =>
+        {
+            Host.Clock.Now = new DateTimeOffset(2026, 10, 25, 10, 0, 0, TimeSpan.Zero);
+            await sp.GetRequiredService<IAbstinenceService>().StartAsync(id);
+            Host.Clock.Now = new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero);
+        });
+        var ab = (AbstinenceQuickAddViewModel)o.Vm.QuickAdd!;
+        await UntilAsync(() => ab.CanLapse);
+        var lapse = Named<Button>(o.Command, "LapseButton");
+        await o.Vm.SelectDayAsync(new DateOnly(2026, 10, 27));
+        Pump();
+        lapse.Flyout!.IsOpen.Should().BeFalse();
+
+        ab.RequestLapsePrompt();
+        Pump();
+
+        lapse.Flyout!.IsOpen.Should().BeTrue();
+        LapseOnNote(lapse).Text.Should().Be("La ricaduta va su martedì 27 ottobre 2026.");
+        ab.TakeLapsePrompt().Should().BeFalse("la vista l'ha già presa: non si riapre da sola");
+        lapse.Flyout!.Hide();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task Lapse_flyout_names_the_chosen_day_and_the_relapse_goes_there()
     {
         using var _ = TestCulture.Pin();

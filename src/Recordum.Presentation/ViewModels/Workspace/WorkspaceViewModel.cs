@@ -121,6 +121,8 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
             if (pin) existing.Pin();
             if (!existing.IsPreview) _previewTab = _previewTab == existing ? null : _previewTab;
             ActiveSubjectTab = existing;
+            // Chi apre e poi agisce sulla schermata (la Home le dà il giorno scelto) non la trova a metà caricamento.
+            await existing.Loading.ConfigureAwait(true);
             return;
         }
 
@@ -144,7 +146,8 @@ public sealed partial class WorkspaceViewModel : ObservableObject, IDisposable
         _previewTab = pin ? null : tab;
         ActiveSubjectTab = tab;
 
-        await created.Screen.LoadAsync(subjectId, ct).ConfigureAwait(true);
+        tab.Loading = created.Screen.LoadAsync(subjectId, ct);
+        await tab.Loading.ConfigureAwait(true);
     }
 
     public void PinActiveTab()

@@ -542,12 +542,22 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         // recorded == false: one-click recording doesn't apply (State/Resistance/Journal),
         // so open the detail and let the user record the value via the QuickAdd panel.
         if (e.Recorded || sender is not HomeRowViewModel row) return;
-        if (SelectedRow == row)
-            // already selected → the SelectedRow setter won't notify; ask the host to (re)open.
-            HabitActivationRequested?.Invoke(this, row.HabitNodeId);
-        else
-            SelectedRow = row;
+        RecordRequestedFor = row.HabitNodeId;
+        try
+        {
+            if (SelectedRow == row)
+                // already selected → the SelectedRow setter won't notify; ask the host to (re)open.
+                HabitActivationRequested?.Invoke(this, row.HabitNodeId);
+            else
+                SelectedRow = row;
+        }
+        finally { RecordRequestedFor = null; }
     }
+
+    /// <summary>L'abitudine il cui log rapido ha appena risposto "non da qui" (serve la schermata). Vale solo mentre la
+    /// Home alza il cambio di <see cref="SelectedRow"/> che ne segue: l'host lo legge lì, in modo sincrono, per
+    /// distinguere "voglio registrare" da "ho selezionato la riga".</summary>
+    public Guid? RecordRequestedFor { get; private set; }
 
     private void Rebuild()
     {

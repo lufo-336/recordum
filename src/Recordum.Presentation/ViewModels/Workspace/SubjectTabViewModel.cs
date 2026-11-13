@@ -12,6 +12,10 @@ public sealed partial class SubjectTabViewModel : ObservableObject, IDisposable
     public WorkspaceTabKind Kind { get; }
     public HabitScreenViewModel Screen { get; }
 
+    /// <summary>Il primo caricamento della schermata, avviato da <c>WorkspaceViewModel.OpenSubjectAsync</c>: chi riapre
+    /// la scheda mentre carica lo aspetta.</summary>
+    internal Task Loading { get; set; } = Task.CompletedTask;
+
     [ObservableProperty] private string _title;
     [ObservableProperty] private bool _isPreview;
 

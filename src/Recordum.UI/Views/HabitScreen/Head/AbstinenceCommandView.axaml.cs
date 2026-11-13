@@ -19,9 +19,24 @@ public partial class AbstinenceCommandView : UserControl
         if (_subscribed is not null) _subscribed.LapsePromptRequested -= OnLapsePromptRequested;
         _subscribed = DataContext as AbstinenceQuickAddViewModel;
         if (_subscribed is not null) _subscribed.LapsePromptRequested += OnLapsePromptRequested;
+        ShowPendingLapsePrompt();
     }
 
-    private void OnLapsePromptRequested(object? sender, EventArgs e) => LapseButton.Flyout?.ShowAt(LapseButton);
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        ShowPendingLapsePrompt();
+    }
+
+    private void OnLapsePromptRequested(object? sender, EventArgs e) => ShowPendingLapsePrompt();
+
+    // La domanda può arrivare prima della vista (schermata appena aperta dalla Home): aspetta nel view model e si apre
+    // quando il pulsante è a schermo.
+    private void ShowPendingLapsePrompt()
+    {
+        if (!IsLoaded || _subscribed is null || !_subscribed.TakeLapsePrompt()) return;
+        LapseButton.Flyout?.ShowAt(LapseButton);
+    }
 
     // Il contenuto di un Flyout non eredita il DataContext in modo affidabile: il giorno scelto si scrive qui.
     private void OnLapseFlyoutOpening(object? sender, EventArgs e)
