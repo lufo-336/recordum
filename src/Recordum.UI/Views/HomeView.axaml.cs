@@ -6,7 +6,9 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Home;
 using Recordum.UI.Behaviors;
+using Recordum.UI.Controls;
 
 namespace Recordum.UI.Views;
 
@@ -34,9 +36,9 @@ public partial class HomeView : UserControl
         SearchBox.LostFocus += (_, _) => { if (string.IsNullOrEmpty(SearchBox.Text)) CloseSearch(); };
     }
 
-    // La Home dalla sua larghezza (direzione visiva §5): 14 giorni da 640 px, 7 da 400, 4 sotto (lo eredita ogni riga;
-    // a 280 px sette colonne lasciavano al nome venti pixel); sotto i 320 px la data accanto a "Oggi" si nasconde. L'intestazione dei giorni non è più
-    // lunga della striscia più lunga fra le righe.
+    // I giorni visibili li dice HomeRowsMetrics.VisibleDays; sotto i 320 px la data accanto a "Oggi" si nasconde,
+    // sotto i 400 si stringe la ricerca e sparisce il testo di "Fatte". L'intestazione dei giorni non è più lunga della
+    // striscia più lunga fra le righe.
     internal const double FourteenDaysFrom = 640;
     internal const double SevenDaysFrom = 400;
     internal const double DateFrom = 320;
@@ -48,6 +50,12 @@ public partial class HomeView : UserControl
         if (_watched is not null) _watched.PropertyChanged -= OnHomePropertyChanged;
         _watched = DataContext as HomeViewModel;
         if (_watched is not null) _watched.PropertyChanged += OnHomePropertyChanged;
+        ApplyRowsStyle();
+    }
+
+    private void ApplyRowsStyle()
+    {
+        HomeRowsMetrics.SetRows(this, (DataContext as HomeViewModel)?.RowsStyle ?? HomeRows.Comfortable);
         ApplyWidthRules();
     }
 
@@ -55,6 +63,9 @@ public partial class HomeView : UserControl
     {
         switch (e.PropertyName)
         {
+            case nameof(HomeViewModel.RowsStyle):
+                ApplyRowsStyle();
+                break;
             case nameof(HomeViewModel.MaxVisibleStripLength):
             case nameof(HomeViewModel.ActiveTab):
             case nameof(HomeViewModel.DateLabel):
@@ -74,11 +85,13 @@ public partial class HomeView : UserControl
         var width = Bounds.Width;
         if (width <= 0) return;
         var vm = DataContext as HomeViewModel;
-        var days = width >= FourteenDaysFrom ? 14 : width >= SevenDaysFrom ? 7 : 4;
-        Controls.HeatmapStrip.SetVisibleDays(this, days);
+        var style = HomeRowsMetrics.GetRows(this);
+        var days = HomeRowsMetrics.VisibleDays(style, width);
+        HeatmapStrip.SetVisibleDays(this, days);
         var longest = vm?.MaxVisibleStripLength ?? 0;
         var headerDays = Math.Max(1, Math.Min(days, longest > 0 ? longest : days));
-        Controls.HeatmapStrip.SetVisibleDays(DayHeader, headerDays);
+        HeatmapStrip.SetVisibleDays(DayHeader, headerDays);
+        DayHeader.Margin = new Thickness(0, 0, HomeRowsMetrics.For(style).Command + 15, 2);
         // Con zero righe non si tocca: una ricerca senza risultati non deve riportare a oggi.
         if (vm is not null && longest > 0) vm.MaxDaysBack = headerDays - 1;
 

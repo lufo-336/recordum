@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
 using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Home;
 using Recordum.UI.Controls;
 using Recordum.UI.Tests.Fixtures;
 using Recordum.UI.Views;
@@ -29,10 +30,10 @@ public class GiornataScreenshotTests
     private static Rect BoundsIn(Visual v, Visual root) =>
         new(v.TranslatePoint(new Point(0, 0), root)!.Value, v.Bounds.Size);
 
-    private static (Window W, HomeView V, HomeViewModel Vm, IReadOnlyList<Recordum.Core.Abstractions.Services.Dtos.HomeTreeRow> Rows) ShowManifest(string theme, int width)
+    private static (Window W, HomeView V, HomeViewModel Vm, IReadOnlyList<Recordum.Core.Abstractions.Services.Dtos.HomeTreeRow> Rows) ShowManifest(string theme, int width, HomeRows? style = null)
     {
         var rows = ManifestHome.Rows(ManifestHome.Today);
-        var vm = ManifestHome.Home(rows);
+        var vm = ManifestHome.Home(rows, style);
         var view = new HomeView { DataContext = vm };
         var w = new Window
         {
@@ -114,6 +115,65 @@ public class GiornataScreenshotTests
         marked.Should().OnlyContain(b => BoundsIn(b, view).Center.X >= column.Left && BoundsIn(b, view).Center.X <= column.Right);
 
         ScreenshotProbeTests.Capture(w, $"home-manifesto-ieri-{theme}-{width}");
+        w.Close();
+    }
+
+    /// <summary>Le tre versioni delle righe (Task 9) sulla Home piena, larga e da telefono: dodici PNG.</summary>
+    [AvaloniaTheory]
+    [InlineData(HomeRows.Compact, "light", 900)]
+    [InlineData(HomeRows.Compact, "light", 360)]
+    [InlineData(HomeRows.Compact, "dark", 900)]
+    [InlineData(HomeRows.Compact, "dark", 360)]
+    [InlineData(HomeRows.Marks, "light", 900)]
+    [InlineData(HomeRows.Marks, "light", 360)]
+    [InlineData(HomeRows.Marks, "dark", 900)]
+    [InlineData(HomeRows.Marks, "dark", 360)]
+    [InlineData(HomeRows.Comfortable, "light", 900)]
+    [InlineData(HomeRows.Comfortable, "light", 360)]
+    [InlineData(HomeRows.Comfortable, "dark", 900)]
+    [InlineData(HomeRows.Comfortable, "dark", 360)]
+    public void Home_in_three_versions(HomeRows style, string theme, int width)
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _, rows) = ShowManifest(theme, width, style);
+        var metrics = HomeRowsMetrics.For(style);
+        var columns = HomeRowsMetrics.VisibleDays(style, width);
+
+        var habitRows = view.GetVisualDescendants().OfType<HabitRow>().ToList();
+        habitRows.Should().HaveCount(9);
+        habitRows.Should().OnlyContain(r => r.FindControl<Grid>("MenuHost")!.Bounds.Height == metrics.RowHeight);
+        view.FindControl<TextBlock>("DayCount")!.Text.Should().Contain("4 di 9");
+
+        var days = view.FindControl<DayHeaderView>("DayHeader")!.GetVisualDescendants().OfType<Button>().ToList();
+        days.Should().HaveCount(columns);
+        days[^1].Content.Should().Be(metrics.HeaderInitials ? "m" : "oggi");   // martedì 10 novembre
+        BoundsIn(days[0], view).Left.Should().BeGreaterThanOrEqualTo(0, "l'intestazione sta nella finestra");
+
+        // Ogni riga di primo livello ha le sue colonne sotto i giorni; le figlie del gruppo, rientrate, dentro la colonna.
+        var topLevelIds = rows.Where(r => r.ParentId is null).Select(r => r.HabitNodeId).ToHashSet();
+        foreach (var row in habitRows)
+        {
+            var strip = row.GetVisualDescendants().OfType<HeatmapStrip>().Single();
+            var cells = metrics.Marks
+                ? strip.GetVisualDescendants().OfType<Border>().Where(b => b.Width == metrics.Column).Cast<Control>().ToList()
+                : strip.GetVisualDescendants().OfType<TextBlock>().Cast<Control>().ToList();
+            // Le azioni hanno sette giorni, l'astinenza quattordici: si confrontano le colonne da oggi all'indietro.
+            cells.Should().HaveCount(Math.Min(columns, ((HomeRowViewModel)row.DataContext!).StripCells.Length));
+            var topLevel = topLevelIds.Contains(((HomeRowViewModel)row.DataContext!).HabitNodeId);
+            for (var back = 1; back <= cells.Count; back++)
+            {
+                var center = BoundsIn(cells[^back], view).Center.X;
+                var column = BoundsIn(days[^back], view);
+                if (topLevel)
+                    center.Should().BeApproximately(column.Center.X, 1.0, $"{back - 1} giorni fa");
+                else
+                    center.Should().BeInRange(column.Left - metrics.Gap, column.Right + metrics.Gap, $"{back - 1} giorni fa");
+            }
+            // Il nome resta leggibile: la riga non è mangiata dalle colonne.
+            BoundsIn(strip, view).Left.Should().BeGreaterThan(width * 0.3);
+        }
+
+        ScreenshotProbeTests.Capture(w, $"home-manifesto-{style.ToString().ToLowerInvariant()}-{theme}-{width}");
         w.Close();
     }
 }

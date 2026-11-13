@@ -33,6 +33,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private readonly IClock? _clock;
     private readonly IResetTimeResolver? _resetTimes;
     private readonly HomeClockTicker _clockTicker;
+    private readonly HomeRowsPreference? _rowsPreference;
     private Dictionary<Guid, HabitUiPrefs> _prefsByNode = new();
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
@@ -108,6 +109,10 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
 
     [ObservableProperty] private HomeRowViewModel? _selectedRow;
 
+    /// <summary>La versione delle righe scelta in Impostazioni › Aspetto: segue la preferenza senza riavvio. Senza
+    /// preferenza (WPF) vale Larga.</summary>
+    [ObservableProperty] private HomeRows _rowsStyle = HomeRows.Comfortable;
+
     public ObservableCollection<HomeRowViewModel> Rows { get; } = new();
 
     /// <summary>Top-level rows for the hierarchical view (the frame around group children
@@ -129,7 +134,8 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         IStreakAggregator? streaks = null,
         IClock? clock = null,
         IResetTimeResolver? resetTimes = null,
-        ITickSourceFactory? ticks = null)
+        ITickSourceFactory? ticks = null,
+        HomeRowsPreference? rows = null)
     {
         _query = query;
         _nodes = nodes;
@@ -141,6 +147,12 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         _clock = clock;
         _resetTimes = resetTimes;
         _clockTicker = new HomeClockTicker(ticks);
+        _rowsPreference = rows;
+        if (rows is not null)
+        {
+            RowsStyle = rows.Current;
+            rows.Changed += OnRowsPreferenceChanged;
+        }
 
         // Any completion change (quick-action, detail QuickAdd, retroactive, edit, delete) must
         // refresh the row indicators (sparkline / completed-today); a habit edit (name/color/icon
@@ -802,6 +814,13 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         _ => rows,
     };
 
-    /// <summary>Stops the shared Home clock ticker so it stops ticking and can be collected.</summary>
-    public void Dispose() => _clockTicker.Dispose();
+    private void OnRowsPreferenceChanged(object? sender, EventArgs e) => RowsStyle = _rowsPreference!.Current;
+
+    /// <summary>Stops the shared Home clock ticker so it stops ticking and can be collected; the Home is transient and the
+    /// rows preference a singleton, so it also lets go of that.</summary>
+    public void Dispose()
+    {
+        _clockTicker.Dispose();
+        if (_rowsPreference is not null) _rowsPreference.Changed -= OnRowsPreferenceChanged;
+    }
 }

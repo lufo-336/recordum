@@ -17,6 +17,7 @@ using Recordum.Presentation.ViewModels.Export;
 using Recordum.Presentation.ViewModels.HabitBuilder;
 using Recordum.Presentation.ViewModels.HabitEditor;
 using Recordum.Presentation.ViewModels.HabitScreen;
+using Recordum.Presentation.ViewModels.Home;
 using Recordum.Presentation.ViewModels.Settings;
 using Recordum.Presentation.ViewModels.Startup;
 using Recordum.Presentation.ViewModels.Timer;
@@ -56,6 +57,29 @@ public class CompositionTests
         scope.ServiceProvider.GetRequiredService<ExportDialogViewModel>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<DiagnosticInfoViewModel>().Should().NotBeNull();
         scope.ServiceProvider.GetRequiredService<TimerRecoveryService>().Should().NotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task The_home_rows_preference_is_one_and_reaches_the_home()
+    {
+        var services = ShellFixture.Shared.Services;
+        var rows = services.GetRequiredService<HomeRowsPreference>();
+        rows.Should().BeSameAs(services.GetRequiredService<HomeRowsPreference>(), "una sola: Impostazioni e Home parlano della stessa");
+        rows.Current.Should().Be(HomeRows.Comfortable, "sul computer la predefinita è Larga");
+        using var home = services.GetRequiredService<HomeViewModel>();
+        try
+        {
+            await rows.SetAsync(HomeRows.Marks);
+
+            home.RowsStyle.Should().Be(HomeRows.Marks, "la Home risolta dal contenitore ha ricevuto la preferenza");
+            (await services.GetRequiredService<Recordum.Core.Abstractions.Services.IAppSettingService>().GetAsync(HomeRowsPreference.Key))
+                .Should().Be("Marks");
+        }
+        finally
+        {
+            // Il contenitore è condiviso fra i test: si rimette com'era.
+            await rows.SetAsync(HomeRows.Comfortable);
+        }
     }
 
     [AvaloniaFact]

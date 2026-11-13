@@ -43,7 +43,7 @@
             Classes.dragging="{CompiledBinding IsBeingDragged}"
             Classes.dropbefore="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.Before}}"
             Classes.dropafter="{CompiledBinding DropEdge, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:RowDropEdge.After}}">
-      <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}" ColumnDefinitions="Auto,Auto,*,Auto">
+      <Grid x:Name="MenuHost" ColumnDefinitions="Auto,Auto,*,Auto">
         <ToggleButton Grid.Column="0" Classes="chevron" Margin="4,0,0,0" VerticalAlignment="Center"
                       IsChecked="{CompiledBinding IsExpanded, Mode=TwoWay}">
           <!-- Data e Stroke arrivano dallo stile `.chevron` e cambiano con :checked. -->

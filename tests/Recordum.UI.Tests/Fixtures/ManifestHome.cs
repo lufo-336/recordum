@@ -3,7 +3,9 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Time;
+using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels;
+using Recordum.Presentation.ViewModels.Home;
 using Recordum.Presentation.ViewModels.Quick;
 
 namespace Recordum.UI.Tests.Fixtures;
@@ -81,13 +83,14 @@ internal static class ManifestHome
     }
 
     /// <summary>Una Home sul manifesto con l'orologio fisso. Chi la mostra chiama <c>LoadCommand</c>.</summary>
-    public static HomeViewModel Home(IReadOnlyList<HomeTreeRow>? rows = null)
+    public static HomeViewModel Home(IReadOnlyList<HomeTreeRow>? rows = null, HomeRows? style = null)
     {
         var query = new FakeHabitTreeQueryService();
         query.Rows.AddRange(rows ?? Rows(Today));
         return new HomeViewModel(query, new FakeHabitNodeService(), new FakePurgeService(),
             quickActions: new QuickActionHandlerSelector([]),
-            clock: new PrivateDbHost.FakeClock { Now = Now });
+            clock: new PrivateDbHost.FakeClock { Now = Now },
+            rows: style is { } s ? new HomeRowsPreference(new Services.FakeAppSettingService(), s) : null);
     }
 
     private sealed class Builder

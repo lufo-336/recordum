@@ -199,9 +199,9 @@
       </Grid>
     </Border>
 
-    <!-- L'intestazione dei giorni (UX-6): oggi a destra, sopra la colonna di oggi di ogni striscia. Il margine a destra è
-         quello del log rapido della riga (28 + 7) più quello della striscia (8). -->
-    <home:DayHeaderView x:Name="DayHeader" Grid.Row="2" HorizontalAlignment="Right" Margin="0,0,43,2"
+    <!-- L'intestazione dei giorni (UX-6): oggi a destra, sopra la colonna di oggi di ogni striscia. Il margine a destra
+         (log rapido + margine della striscia) lo imposta il code-behind secondo la versione delle righe. -->
+    <home:DayHeaderView x:Name="DayHeader" Grid.Row="2" HorizontalAlignment="Right"
                         Cells="{CompiledBinding DayHeader}" IsVisible="{CompiledBinding ShowDayHeader}"/>
 
     <!-- Lo sfondo Transparent (non null) rende lo spazio vuoto sotto le righe colpibile dal

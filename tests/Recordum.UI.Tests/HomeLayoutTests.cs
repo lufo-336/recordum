@@ -348,14 +348,15 @@ public class HomeLayoutTests
         w.Width = 360;
         Pump();
 
-        vm.MaxDaysBack.Should().Be(3);
-        vm.DaysBack.Should().Be(3);
+        // A 360 px si vedono cinque giorni (da 340; sotto, quattro): tabella in HomeRowsMetrics.
+        vm.MaxDaysBack.Should().Be(4);
+        vm.DaysBack.Should().Be(4);
         var days = HeaderDays(view);
-        days.Should().HaveCount(4);
+        days.Should().HaveCount(5);
         days[0].Classes.Contains("selected").Should().BeTrue("il giorno scelto è il più vecchio che si vede");
-        view.FindControl<TextBlock>("TodayTitle")!.Text.Should().Be("Domenica 25 ottobre");
+        view.FindControl<TextBlock>("TodayTitle")!.Text.Should().Be("Sabato 24 ottobre");
         view.FindControl<Border>("PastDayBand")!.GetVisualDescendants().OfType<TextBlock>()
-            .Should().Contain(t => t.Text != null && t.Text.Contains("domenica 25 ottobre"));
+            .Should().Contain(t => t.Text != null && t.Text.Contains("sabato 24 ottobre"));
         MarkedCells(view.GetVisualDescendants().OfType<HabitRow>().Single()).Should().ContainSingle();
         w.Close();
     }

@@ -61,7 +61,7 @@
       <Panel>
       <!-- La tinta: il colore pieno all'opacità del tema, sopra il pannello (stile in RowCardStyles.axaml). -->
       <Border Classes="tint"/>
-      <Grid x:Name="MenuHost" Height="{StaticResource Layout.RowHeight}"
+      <Grid x:Name="MenuHost"
             ColumnDefinitions="Auto,*,Auto,Auto,Auto">
         <Rectangle Grid.Column="0"
                    Width="{StaticResource Layout.AccentBarWidth}"
@@ -122,7 +122,7 @@
                             ToolTip.Tip="{CompiledBinding HabitType, Converter={x:Static conv:HabitTypeLabelConverter.Instance}}"/>
         </StackPanel>
 
-        <Button Grid.Column="4" Classes="quicklog" Margin="0,0,7,0" VerticalAlignment="Center"
+        <Button x:Name="QuickLog" Grid.Column="4" Classes="quicklog" Margin="0,0,7,0" VerticalAlignment="Center"
                 ToolTip.Tip="{x:Static res:Strings.Home_QuickAction}"
                 Command="{CompiledBinding QuickActionCommand}"
                 IsVisible="{CompiledBinding CanQuickAction}">

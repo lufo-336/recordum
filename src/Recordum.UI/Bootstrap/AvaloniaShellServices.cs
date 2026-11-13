@@ -40,6 +40,10 @@ public static class AvaloniaShellServices
         services.AddSingleton<IThemeService>(sp =>
             new AvaloniaThemeService(sp.GetRequiredService<IAppSettingService>(), Application.Current!));
 
+        // Le righe della Home a scelta (Impostazioni › Aspetto): sul computer la predefinita è Larga. WPF non la registra.
+        services.AddSingleton(sp => new HomeRowsPreference(
+            sp.GetRequiredService<IAppSettingService>(), Presentation.ViewModels.Home.HomeRows.Comfortable));
+
         // Stesso ragionamento della lambda sopra per l'owner: valutato alla risoluzione, quando
         // MainWindow esiste già (Home, che usa questa dialog per Elimina/Purge, non esiste prima).
         services.AddSingleton<IConfirmationDialog>(_ => new AvaloniaConfirmationDialog(TopmostWindow));

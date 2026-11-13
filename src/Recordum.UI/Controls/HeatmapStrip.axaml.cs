@@ -54,8 +54,8 @@ public partial class HeatmapStrip : UserControl
         set => SetValue(ValuesProperty, value);
     }
 
-    /// <summary>Quanti giorni mostrano le strisce di valori sotto questo elemento: lo decide la Home dalla sua larghezza
-    /// (7 stretta, 14 larga) e lo eredita ogni riga, così intestazione e strisce hanno le stesse colonne.</summary>
+    /// <summary>Quanti giorni mostrano le strisce di valori sotto questo elemento: lo decide la Home da larghezza e versione
+    /// delle righe (<see cref="HomeRowsMetrics.VisibleDays"/>) e lo eredita ogni riga, così intestazione e strisce hanno le stesse colonne.</summary>
     public static readonly AttachedProperty<int> VisibleDaysProperty =
         AvaloniaProperty.RegisterAttached<HeatmapStrip, Control, int>("VisibleDays", 7, inherits: true);
 
@@ -97,6 +97,7 @@ public partial class HeatmapStrip : UserControl
         AccentColorProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         ValuesProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => strip.Rebuild());
         VisibleDaysProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => { if (!strip.Values.IsDefaultOrEmpty) strip.Rebuild(); });
+        HomeRowsMetrics.RowsProperty.Changed.AddClassHandler<HeatmapStrip>((strip, _) => { if (!strip.Values.IsDefaultOrEmpty) strip.Rebuild(); });
     }
 
 
@@ -114,6 +115,10 @@ public partial class HeatmapStrip : UserControl
     public HeatmapStrip()
     {
         InitializeComponent();
+        // In "Segni" il contorno del giorno scelto sporge di 3 px dal quadratino, anche fuori dalla striscia: tagliato,
+        // se ne vedevano solo i lati (PNG del Task 9).
+        ClipToBounds = false;
+        Cells.ClipToBounds = false;
         // La variante "testo" dei valori dipende dal tema: un cambio a runtime ridisegna la striscia (come StreakTimeline).
         ActualThemeVariantChanged += (_, _) => { if (!Values.IsDefaultOrEmpty) Rebuild(); };
     }
@@ -147,6 +152,7 @@ public partial class HeatmapStrip : UserControl
     {
         RebuildCount++;
         Cells.Children.Clear();
+        Cells.Spacing = 0;
 
         if (!Values.IsDefaultOrEmpty)
         {
@@ -169,23 +175,26 @@ public partial class HeatmapStrip : UserControl
 
     internal const string SelectedCellName = "SelectedDay";
 
-    /// <summary>Larghezza di una cella di valori, uguale per tutte le strisce: le colonne dei giorni si allineano.</summary>
-    public const double ValueSlotWidth = 26d;
-
     // La striscia della Home (direzione visiva §5): i valori del giorno nella variante "testo" del colore dell'abitudine,
     // i giorni vuoti nel testo tenue. Ogni cella è larga uguale, così oggi resta sotto "oggi" dell'intestazione.
     private List<Control> BuildValueCells()
     {
+        var metrics = HomeRowsMetrics.Of(this);
+        Cells.Spacing = metrics.Gap;
+
         var shown = Math.Min(Values.Length, Math.Max(1, GetVisibleDays(this)));
-        var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
         var app = global::Avalonia.Application.Current!;
         IBrush Token(string key) => HabitTextBrushConverter.Resource<IBrush>(app, key, ActualThemeVariant) ?? Brushes.Gray;
+        var paneBrush = HabitTextBrushConverter.Resource<ISolidColorBrush>(app, "Brush.Pane", ActualThemeVariant);
+        if (metrics.Marks)
+            return BuildMarkCells(metrics, shown, Token("Brush.Border"), Token("Brush.Ink"), paneBrush?.Color ?? Colors.White);
+
+        var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
         var on = HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
         var off = Token("Brush.TextFaint");
         // Fondo opaco sul pannello per il giorno scelto, così resta leggibile anche con la tinta della riga.
         IBrush? selectedBg = null;
-        if (HabitColors.TryParse(AccentColor, out var habit)
-            && HabitTextBrushConverter.Resource<ISolidColorBrush>(app, "Brush.Pane", ActualThemeVariant) is { } pane)
+        if (HabitColors.TryParse(AccentColor, out var habit) && paneBrush is { } pane)
         {
             var opacity = ActualThemeVariant == ThemeVariant.Dark ? 0.36 : 0.26;
             selectedBg = new ImmutableSolidColorBrush(HabitColors.Blend(habit, opacity, pane.Color));
@@ -196,7 +205,7 @@ public partial class HeatmapStrip : UserControl
             var text = new TextBlock
             {
                 Text = cell.Glyph,
-                Width = ValueSlotWidth,
+                Width = metrics.Column,
                 TextAlignment = TextAlignment.Center,
                 TextTrimming = TextTrimming.None,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -209,7 +218,7 @@ public partial class HeatmapStrip : UserControl
             return new Border
             {
                 Name = SelectedCellName,
-                Width = ValueSlotWidth,
+                Width = metrics.Column,
                 Height = 24d,
                 CornerRadius = new CornerRadius(5),
                 VerticalAlignment = VerticalAlignment.Center,
@@ -217,6 +226,68 @@ public partial class HeatmapStrip : UserControl
                 Child = text,
             };
         }).ToList();
+    }
+
+    private List<Control> BuildMarkCells(HomeRowsMetrics metrics, int shown, IBrush empty, IBrush ink, Color pane)
+    {
+        var offset = Values.Length - shown;
+        var hasFractions = !Fractions.IsDefault && Fractions.Length == Values.Length;
+        var habit = HabitColors.TryParse(AccentColor, out var parsed) ? parsed : Colors.Gray;
+        var cells = new List<Control>(shown);
+
+        for (var i = 0; i < shown; i++)
+        {
+            var cell = Values[offset + i];
+            IBrush fill;
+            if (!cell.On)
+            {
+                fill = empty;
+            }
+            else
+            {
+                var fraction = hasFractions ? Fractions[offset + i] : 1d;
+                var level = fraction <= 1d / 3d ? 0.35 : fraction <= 2d / 3d ? 0.65 : 1d;
+                fill = new ImmutableSolidColorBrush(HabitColors.Blend(habit, level, pane));
+            }
+
+            var square = new Border
+            {
+                Width = metrics.Column,
+                Height = metrics.Column,
+                CornerRadius = new CornerRadius(4),
+                VerticalAlignment = VerticalAlignment.Center,
+                Background = fill,
+            };
+
+            if (!cell.IsSelected)
+            {
+                cells.Add(square);
+                continue;
+            }
+
+            var outline = new Border
+            {
+                Name = SelectedCellName,
+                Width = metrics.Column + 6,
+                Height = metrics.Column + 6,
+                Margin = new Thickness(-3),
+                BorderThickness = new Thickness(2),
+                BorderBrush = ink,
+                CornerRadius = new CornerRadius(6),
+                IsHitTestVisible = false,
+            };
+            var host = new Panel
+            {
+                Width = metrics.Column,
+                Height = metrics.Column,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            host.Children.Add(square);
+            host.Children.Add(outline);
+            cells.Add(host);
+        }
+
+        return cells;
     }
 
     private SolidColorBrush Accent(double alpha)
