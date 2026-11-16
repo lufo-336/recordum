@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using DayWindow = Recordum.Presentation.Services.CompletionDay;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
@@ -38,11 +39,7 @@ public sealed partial class ActionQuickAddViewModel(ICompletionService completio
     }
 
     private async Task<IReadOnlyList<Completion>> ListDayAsync(CancellationToken ct)
-    {
-        // RangeOf è semiaperta, il filtro del servizio inclusivo al millisecondo: -1 ms.
-        var (from, toExclusive) = DayBoundary.RangeOf(CompletionDay);
-        return await Completions.ListByHabitAsync(Node!.Id, from, toExclusive.AddMilliseconds(-1), ct: ct).ConfigureAwait(true);
-    }
+        => await DayWindow.ListAsync(Completions, Node!.Id, DayBoundary, CompletionDay, ct).ConfigureAwait(true);
 
     [RelayCommand]
     private Task Save(CancellationToken ct) => SaveAsync(ct);

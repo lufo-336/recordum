@@ -39,7 +39,7 @@
   del 2026-11-12**: confermate le parole del glossario e le "Decisioni mie" 1, 4 e 5 del piano; cambiata la 3 — dalla
   Home una spunta già fatta si toglie, dopo una conferma (Task 8b, aggiunto al piano). La CI Linux è caduta sull'SDK
   .NET 11 della nuova immagine Ubuntu 26.04: `global.json` fissa l'SDK al 10.
-- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) il Task 8b del piano "Giornata" (la spunta che si toglie dalla Home), poi la Parte 3 (Task 10, Impostazioni › Aspetto, e Task 11, la tastiera, fatti il 2026-11-13); GIO-3 e GIO-7 corretti il 2026-11-13 (le righe hanno le colonne dell'intestazione; la cella vuota di Segni ha un colore suo), da guardare a schermo; (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
+- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) la Parte 3 del piano "Giornata" (Task 12-15, la schermata dell'abitudine); il Task 8b (la spunta che si toglie dalla Home, con conferma) è fatto il 2026-11-16 (Task 10, Impostazioni › Aspetto, e Task 11, la tastiera, fatti il 2026-11-13); GIO-3 e GIO-7 corretti il 2026-11-13 (le righe hanno le colonne dell'intestazione; la cella vuota di Segni ha un colore suo), da guardare a schermo; (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
   vale per dispositivo).
 
 ## Il percorso

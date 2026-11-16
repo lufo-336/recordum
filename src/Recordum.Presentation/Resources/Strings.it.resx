@@ -2598,4 +2598,10 @@ Dettagli: {0}</value>
   <data name="Home.QuickAction.Tip" xml:space="preserve">
     <value>Log rapido (Spazio)</value>
   </data>
+  <data name="Home.Uncheck.Title" xml:space="preserve">
+    <value>Togliere la spunta?</value>
+  </data>
+  <data name="Home.Uncheck.Message" xml:space="preserve">
+    <value>La registrazione di {0} viene cancellata.</value>
+  </data>
 </root>

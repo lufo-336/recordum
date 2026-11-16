@@ -76,7 +76,7 @@ public sealed class PanoramicaRowsTests : IDisposable
     public async Task Quick_log_records_and_refreshes()
     {
         var completions = new FakeCompletionService();
-        var rig = CreateRig(new QuickActionHandlerSelector([new ActionQuickActionHandler(completions, new FakeClock(Now), new FakeResetTimeResolver())]));
+        var rig = CreateRig(new QuickActionHandlerSelector([new ActionQuickActionHandler(completions, new FakeClock(Now), new FakeResetTimeResolver(), new FakeConfirmationDialog())]));
         var child = Guid.NewGuid();
         rig.Tree.HomeRows.Add(Row(child, _group, "corsa", HabitType.Action));
         await rig.Vm.LoadAsync(_group);

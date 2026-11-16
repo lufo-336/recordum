@@ -2610,4 +2610,10 @@ Details: {0}</value>
   <data name="Home.QuickAction.Tip" xml:space="preserve">
     <value>Quick log (Space)</value>
   </data>
+  <data name="Home.Uncheck.Title" xml:space="preserve">
+    <value>Remove the check?</value>
+  </data>
+  <data name="Home.Uncheck.Message" xml:space="preserve">
+    <value>The record of {0} is deleted.</value>
+  </data>
 </root>

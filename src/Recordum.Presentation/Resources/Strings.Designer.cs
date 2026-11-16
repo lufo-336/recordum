@@ -198,6 +198,8 @@ public static class Strings
     public static string Home_Day_Next_Tip => Get("Home.Day.Next.Tip");
     public static string Home_NewMenu_Tip => Get("Home.NewMenu.Tip");
     public static string Home_QuickAction_Tip => Get("Home.QuickAction.Tip");
+    public static string Home_Uncheck_Title => Get("Home.Uncheck.Title");
+    public static string Home_Uncheck_Message => Get("Home.Uncheck.Message");
     public static string Home_PastDay_Banner => Get("Home.PastDay.Banner");
     public static string Home_PastDay_BackToToday => Get("Home.PastDay.BackToToday");
     public static string Home_BackToActive => Get("Home.BackToActive");

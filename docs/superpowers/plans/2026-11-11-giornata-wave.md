@@ -599,13 +599,33 @@ novembre").
 comportamento, col minimo); un test della registrazione DI se manca. La conferma è una finestra: nei test UI serve il
 finto che risponde, come in `RecordsViewTests`.
 
-- [ ] **Step 1: test rossi:** `Action_not_done_records_without_asking` (la conferma non viene mai chiesta);
+- [x] **Step 1: test rossi:** `Action_not_done_records_without_asking` (la conferma non viene mai chiesta);
   `Action_already_done_asks_and_removes_the_latest_of_that_day` (due registrazioni nel giorno: resta la più vecchia);
   `Declining_writes_nothing_and_does_not_open_the_screen`; `Removal_on_a_past_day_leaves_today_alone`;
   `Removal_uses_the_habit_boundary` (reset 05:00: una registrazione alle 02:00 appartiene al giorno prima). UI: clic su
   una riga già fatta → conferma chiesta una volta, "sì" → la riga torna non fatta.
-- [ ] **Step 2: implementa.**
-- [ ] **Step 3:** verdi, commit `feat(presentation): dalla Home una spunta si toglie, con conferma`.
+- [x] **Step 2: implementa.**
+- [x] **Step 3:** verdi, commit `feat(presentation): dalla Home una spunta si toglie, con conferma`.
+
+**Com'è stato fatto (2026-11-16)** — ciò che i task dopo trovano diverso da qui sopra:
+- **Chi ha scritto**: test rossi, stringhe e brief in sessione; i quattro file dell'implementazione li ha scritti
+  Antigravity **Hydrogen** (65 s, compila al primo colpo, verde al primo giro); review indipendente di Antigravity
+  **Argon** (nessun punto). Il brief è in `/tmp/agy-task8b-brief.md` (può non esserci più).
+- **La finestra in un punto solo** è `Recordum.Presentation.Services.CompletionDay.ListAsync(completions, id, boundary,
+  giorno)`: la usano l'handler e `ActionQuickAddViewModel.ListDayAsync` (lì con l'alias `DayWindow`: `CompletionDay` è
+  già la proprietà del giorno). `CompletionDay.LongLabel(giorno, cultura)` è il "lunedì 9 novembre" che stava come
+  funzione locale in `HomeViewModel.RefreshHead`; ora lo usano la testa della Home e il messaggio della conferma.
+- "oggi"/"today" nel messaggio è `Home.StripHeader.Today` (nessuna stringa in più oltre alle due del piano).
+- **Nell'handler ogni `await` è `ConfigureAwait(true)`**: la conferma è una finestra e va chiesta dal thread
+  dell'interfaccia (prima erano `false`).
+- Nessuna registrazione DI nuova: `IConfirmationDialog` c'era già in UI e in WPF, e i test di composizione lo coprono.
+- Test: cinque (uno a due culture) in `ActionQuickActionHandlerTests`; due in `tests/Recordum.UI.Tests/HomeUncheckTests.cs`
+  (contenitore vero, DB privato, conferma finta: sì → la riga torna non fatta, no → resta com'è). Cinque prove del rosso:
+  registra sempre (anche sul test UI), toglie la più vecchia, finestra col confine dell'app, il no che cancella.
+  Presentation 1500, UI 836.
+- **Staffetta su Linux**: `agy -p` nega la lettura della cartella di memoria di Claude qualunque regola `read_file(...)`
+  le si dia (cartella, file, `/**`: provate tutte e tre), e la sessione si annulla. Finché lo script non cambia, il brief
+  deve vietare di leggere fuori dal repo.
 
 ---
 

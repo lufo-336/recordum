@@ -687,11 +687,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private void RefreshHead()
     {
         var culture = CultureInfo.CurrentCulture;
-        string LongDay(DateOnly day)
-        {
-            var date = day.ToDateTime(TimeOnly.MinValue);
-            return $"{date.ToString("dddd", culture)} {date.ToString(culture.DateTimeFormat.MonthDayPattern, culture)}";
-        }
+        string LongDay(DateOnly day) => CompletionDay.LongLabel(day, culture);
 
         var onActive = ActiveTab == HomeTab.Active;
         var selected = onActive && _today is not null && DaysBack > 0 ? LongDay(SelectedDay) : null;
