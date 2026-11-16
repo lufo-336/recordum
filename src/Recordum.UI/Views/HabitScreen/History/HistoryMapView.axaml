@@ -11,6 +11,7 @@
        anche un colore chiaro), il numero piccolo in angolo (GIO-9); la nota è un punto nel suo colore. -->
   <UserControl.Resources>
     <conv:HeatLevelBrushConverter x:Key="HeatLevel"/>
+    <conv:HeatLevelTextBrushConverter x:Key="HeatText"/>
     <conv:HabitTextBrushConverter x:Key="HabitText"/>
   </UserControl.Resources>
   <UserControl.Styles>
@@ -113,8 +114,17 @@
                     </Path.Stroke>
                   </Path>
                 </Border>
+                <!-- Sulla cella piena il numero prende il colore che ci si legge (GIO-24); su quella vuota resta dello stile. -->
                 <TextBlock x:Name="DayNumber" Classes="day-number" Classes.outside="{CompiledBinding !InRange}"
-                           Classes.lapse="{CompiledBinding IsLapse}" Text="{CompiledBinding DayNumber}"/>
+                           Classes.lapse="{CompiledBinding IsLapse}" Text="{CompiledBinding DayNumber}">
+                  <TextBlock.Foreground>
+                    <MultiBinding Converter="{StaticResource HeatText}">
+                      <Binding Path="Step"/>
+                      <Binding Path="HabitColor" ElementName="Root"/>
+                      <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+                    </MultiBinding>
+                  </TextBlock.Foreground>
+                </TextBlock>
                 <Ellipse x:Name="NoteDot" Width="5" Height="5" Margin="0,4,4,0" HorizontalAlignment="Right" VerticalAlignment="Top"
                          IsVisible="{CompiledBinding HasNote}"
                          Fill="{Binding #Root.NoteColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>

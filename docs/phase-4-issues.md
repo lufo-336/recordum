@@ -67,7 +67,7 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`. Aperti: **GIO-1**,
 **GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
 (2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** in
-ROADMAP, **GIO-22**, **GIO-24**, **GIO-25** aperti. Fuori dall'onda restano **B7** e
+ROADMAP, **GIO-24** `fixed`, **GIO-22**, **GIO-25** aperti. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2795,9 +2795,13 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     ROADMAP "Prossimo") · oggi `ScaleTemplate` ha
     `MinValue`/`MaxValue` interi e il valore salvato è sempre l'intero (§5 di CLAUDE.md). Chiesto: una scala su cui ci si
     colloca fra due scaglioni (1,37 fra "Sto malissimo" e "Sto male"), o 0–100.
-  - **GIO-24 — in chiaro i numeri del calendario non si leggono sulle celle piene** · `reported`, misurato su
-    `habit-session-light.png`: `#611E36` su `#E11D48`, contrasto circa 2,5:1 (in scuro sono bianchi). Vale per sessione,
-    stato, note e diario.
+  - **GIO-24 — in chiaro i numeri del calendario si leggono poco sulle celle piene** · `fixed` (2026-11-16) · il numero
+    era sempre `Brush.Text`: sul cremisi pieno in chiaro 3,5:1, su un colore molto scuro fino a 2,1:1 (misurati dal
+    test; il "2,5:1" scritto qui in un primo momento veniva da un ritaglio che prendeva solo il bordo sfumato della
+    cifra). Ora `HeatLevelTextBrushConverter` sceglie, fra il testo del tema chiaro e quello dello scuro, quello che
+    contrasta di più con la cella; cella vuota, fuori mese e ricaduta tengono il colore dello stile. Sui toni medi
+    nessun colore arriva a 4,5:1: il peggiore misurato è 3,7. Test `HeatLevelTextTests`, rossi prima. Non toccata la
+    heatmap a colonne (`HeatGrid`), che non scrive numeri.
   - **GIO-25 — minori dai fogli** · `reported`: nel creatore stretto "Testo libero" è tagliato dal "+" della tessera
     (`builder-narrow-*`); la × della ricaduta in Larga è quasi un puntino (`home-ricaduta-comfortable-light`); in
     `habit-abstinence-*` "Segna una ricaduta…" sembra rosso solo perché la fixture è cremisi.
