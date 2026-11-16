@@ -785,17 +785,26 @@ fanno scattare `HomePerformanceTests` o rendono lenta la colonna, ci si ferma co
 
 **Livello:** Haiku per PNG e documenti; **Opus** per la review dell'intero branch.
 
-- [ ] **Step 1: PNG.** Tutti quelli dei task, in chiaro e scuro, guardati uno per uno; nel report ciò che non torna.
+- [x] **Step 1: PNG.** Tutti quelli dei task, in chiaro e scuro, guardati uno per uno; nel report ciò che non torna.
   In più `home-manifesto-comfortable-light-900.png` accanto alla variante "numeri in inchiostro" (finding B9: solo
   un'immagine per la decisione dell'autore, nessun codice di prodotto).
-- [ ] **Step 2: inventario.** Niente di ciò che la Home faceva si è perso: Attive/Archivio/Cestino, ricerca, "fatte", i tre
+- [x] **Step 2: inventario.** Niente di ciò che la Home faceva si è perso: Attive/Archivio/Cestino, ricerca, "fatte", i tre
   ordinamenti, "+ Nuova" (abitudine e gruppo), rinomina, fissa, archivia, elimina, ripristina, trascinamento, selezione
   multipla, "reset 5:00", cifre chiave per tipo, cornici dei gruppi. Una voce persa è un difetto del task che l'ha tolta.
-- [ ] **Step 3: documenti.** Tracker: sezione "Onda Giornata"; A1–A4, B1–B6, UX3A-Q1…Q4, W2V-20 `fixed` col test che lo
+- [x] **Step 3: documenti.** Tracker: sezione "Onda Giornata"; A1–A4, B1–B6, UX3A-Q1…Q4, W2V-20 `fixed` col test che lo
   prova. ROADMAP ("Dove siamo", passo 2 ☑), MILESTONES, `CLAUDE.md` §5 solo se nasce una regola (il timbro unico). Commit e
   push.
-- [ ] **Step 4: review dell'intero branch** (Opus) con la spec e i due mockup in mano; un'onda di correzioni (le banali
+- [x] **Step 4: review dell'intero branch** (Opus) con la spec e i due mockup in mano; un'onda di correzioni (le banali
   tornano a chi ha scritto); **CI verde** su Linux e Windows. Il merge in `main` dopo che l'autore ha guardato i PNG.
+
+- [x] Fatto 2026-11-16 (Claude: PNG guardati, brief, verifica dei rilievi, prova del rosso, ROADMAP; agy Hydrogen:
+  inventario, tracker e MILESTONES, test e correzioni dell'ondata finale; agy Argon: review dell'intero branch).
+
+**Com'è stato fatto (2026-11-16):** la review dell'intero branch l'ha fatta Argon su Antigravity, non Opus (quota
+esaurita lì per 30 ore). Sei rilievi, verificati nel codice: quattro corretti (GIO-12…15), gli altri nel tracker
+(GIO-9, GIO-10, GIO-11 e un caso in più per GIO-6). L'immagine di B9 nasce in
+`GiornataScreenshotTests.Home_with_values_in_ink_B9`, che ridipinge le celle nel test. Il passo 2 della ROADMAP è ◐ e
+non ☑: mancano i PNG guardati dall'autore e il merge.
 
 ## Decisioni mie (da controllare leggendo)
 

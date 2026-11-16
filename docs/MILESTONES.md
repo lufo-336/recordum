@@ -843,3 +843,11 @@ difetti veri che i test non coprivano); la prova del rosso si fa dopo la review.
 Android, passo 4 della roadmap), Impostazioni a categorie con Generale, Informazioni con le scorciatoie e carattere
 dell'app (3b), `home.rows` fuori dalla specifica dell'"unisci", la palette dei comandi (1.1) e un lasso di tempo
 navigabile a scelta nella Home.
+*Chiusura* (Task 15, 2026-11-16): la CI Linux era caduta a metà onda sull'SDK .NET 11 preinstallato nell'immagine Ubuntu
+26.04 (una regola CA nuova solo in CI): `global.json` fissa l'SDK al 10. Inventario della Home contro
+`ux3a-creator-templates`: venti voci, nessuna persa. Review dell'intero branch di Antigravity Argon (Opus era senza
+quota), "da correggere": sei rilievi verificati nel codice, quattro corretti nell'ondata finale da Antigravity Hydrogen
+su brief, coi test provati rossi — "fatte" su oggi non nascondeva un'astinenza in corso (GIO-12), le frecce morte dopo un
+clic su un pulsante della testa (GIO-13), la riga scelta staccata dopo un filtro (GIO-14), la nota del giorno che poteva
+nascere due volte (GIO-15); gli altri nel tracker (GIO-9, GIO-10, GIO-11). Suite su Linux: Presentation 1532, UI 856
+(suite intere), Data 677 (+2 saltati, `Category!=WindowsOnly`).

@@ -64,8 +64,8 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
-**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3** e **GIO-7** `fixed`. Aperti: **GIO-1**,
-**GIO-2**, **GIO-4**, **GIO-5** · `reported`, e **GIO-6** (da decidere con l'autore). Fuori dall'onda restano **B7**,
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-7** e **GIO-12…15** (ondata finale) `fixed`. Aperti: **GIO-1**,
+**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; **GIO-6** e **GIO-9** da decidere con l'autore. Fuori dall'onda restano **B7**,
 **B8**, **B9** (solo l'immagine di confronto).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2650,3 +2650,57 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
   `#3F3F3B` in scuro (il `#33332F` del mockup faceva 1,26 sul pannello, poco più di `Brush.Border`; questo 1,51). Guardia in
   `TokenContrastTests.Ink_and_states_read` (≥ 1,2 sul pannello in entrambi i temi; rosso provato col vecchio colore, 1,17).
   Resta da guardare a schermo.
+- **Chiusura dell'onda (Task 15, 2026-11-16)** — inventario, PNG e review dell'intero branch.
+  - **Inventario** (Antigravity Hydrogen, sola lettura, contro `ux3a-creator-templates`): venti voci della Home
+    controllate una per una (viste Attive/Archivio/Cestino, ricerca, "fatte", ordinamenti, "+ Nuova" abitudine e gruppo,
+    rinomina, fissa, archivia, elimina, ripristina, trascinamento, selezione multipla, "reset 5:00", cifre chiave, cornici
+    dei gruppi, menu della riga, log rapido, stati vuoto/errore/caricamento): nessuna persa; quelle cambiate sono tutte
+    scritte nel piano.
+  - **Review dell'intero branch** (Antigravity Argon, 24 minuti; Opus su Antigravity era senza quota): 2 alte e 4 medie,
+    verificate nel codice una per una. Corrette nell'ondata finale le quattro nate nell'onda (GIO-12…15); le altre sono
+    qui sotto.
+  - **GIO-8 — nell'editor della colonna Note il secondo punto di un elenco resta "- "** · `reported` · precedente
+    all'onda (l'editor del diario di F2d-2), visto in `habit-notes-light.png`: di "- 14 km\n- ritmo 5:40" il primo ha il
+    pallino, il secondo il trattino; il blocco del giorno, sola lettura, li rende giusti tutti e due.
+  - **GIO-9 — il giorno di una ricaduta è "pulito" nella striscia della Home** · `reported` · regola precedente
+    (`HabitTreeQueryService`, banda dell'astinenza: un periodo copre ogni giorno che tocca, compreso quello in cui
+    finisce), ma dall'onda pesa di più: su un giorno passato il conto "x di y" e il filtro "fatte" leggono quella cella,
+    quindi il giorno della ricaduta conta come fatto, mentre la schermata dell'abitudine lo segna come ricaduta
+    (`BuildAbstinenceMarkersAsync`). **Da decidere con l'autore**: se la ricaduta svuota la cella, cosa mostra un giorno
+    con ricaduta e nuovo inizio.
+  - **GIO-10 — la schermata di un'astinenza non segue ciò che succede fuori da lei** · `reported` · precedente.
+    `OnAbstinenceEvent` ascolta il bus solo per i gruppi: "Inizia" dalla riga della Home con la scheda aperta lascia la
+    scheda su "Inizia". E l'elenco dei periodi in fondo alla Cronologia (`PeriodRecords.Periods`) non è collegato a
+    `OnAbstinenceChanged`: eliminato da lì il periodo aperto, l'orologio in testa continua a correre. Letto nel codice,
+    non provato a schermo. Correggerlo dal bus vuole una guardia contro la doppia ricarica.
+  - **GIO-6, un caso in più**: Home su ieri → apro "Senza fumo" → "Torna a oggi" → log rapido della riga: il riquadro
+    della ricaduta dice "La ricaduta va su lunedì 9 novembre" mentre la Home dice "Oggi". Lo dice, ma è il caso in cui
+    lasciare la schermata sul giorno vecchio costa di più.
+  - **GIO-11 — minori dalla review, non corretti** · `reported`: `HomeViewModel` non rilascia le sette sottoscrizioni al
+    bus né `ExpandToggled` delle righe sostituite (precedente; la Home vive quanto l'app);
+    `ReloadPreservingSelectionAsync` legge la selezione prima dell'attesa e la rimette sopra una scelta fatta nel
+    frattempo; nel blocco del giorno, cambiando giorno dalla mappa dell'anno con la casella della nota a fuoco, la nota
+    del giorno nuovo resta in Markdown grezzo finché la casella non perde il fuoco.
+  - **Dai PNG**: nei gradini dello stato di `habit-state-*.png` le etichette sono in inglese ("Very low"…) perché la
+    fixture usa la scala seminata senza passare dal creatore (che fissa quelle tradotte, UX3A-2): non è un difetto
+    dell'app; "Very good" va su due righe sotto il gradino. GIO-4 (il pulsante di spunta uguale per fatta e non fatta)
+    si vede ancora in tutte le versioni.
+  - **Ondata finale** (test e correzioni scritti da Antigravity Hydrogen su brief, 151 s; ogni test provato rosso contro
+    il codice di prima), tutti `fixed`:
+    - **GIO-12 — "fatte" su oggi non nascondeva un'astinenza in corso**: il filtro leggeva `HasEntryOn` (per oggi
+      `IsCompletedToday`, mai vero per un'astinenza) mentre il conto "x di y" usa `IsDoneOn`; su ieri la nascondeva. Ora
+      il filtro usa `IsDoneOn`. Test: `HomeDayTests.Hide_done_on_today_hides_an_abstinence_in_progress`.
+    - **GIO-13 — dopo un clic su ‹ ›, "fatte" o un altro pulsante le frecce erano morte**: il fuoco restava sul pulsante
+      e la Home gli lasciava tutti i tasti. Un pulsante tiene solo Spazio e Invio; tendine e menu tengono tutto come
+      prima. Test: `HomeKeyboardTests.Arrows_still_work_with_the_focus_on_a_button`.
+    - **GIO-14 — cambiato un filtro, la riga scelta restava un'istanza staccata**: ricerca, "fatte", ordinamento, filtri
+      e apri/chiudi di un gruppo rifacevano le righe senza riallineare `SelectedRow`: ↓ saltava alla prima riga e Spazio
+      registrava una riga che il filtro aveva nascosto. Ora passano da `RebuildPreservingSelection`. Test:
+      `HomeDayTests.A_filter_that_hides_the_selected_row_clears_the_selection`,
+      `HomeDayTests.A_filter_keeps_the_selected_row_as_a_live_row`.
+    - **GIO-15 — la nota del giorno poteva nascere due volte**: uscire dalla casella salva senza attendere (Task 13), e
+      il clic su un altro giorno salva di nuovo: `ExecuteAsync` non consulta `CanExecute`, quindi col primo salvataggio
+      ancora in volo partiva una seconda creazione, e la nota del giorno vecchio poteva diventare quella corrente del
+      giorno nuovo. `DayNoteViewModel` mette in fila i salvataggi, carica il giorno nuovo dopo che il vecchio è salvato e
+      non adotta una nota di un altro giorno. Test: `DayNoteViewModelTests.Two_saves_in_a_row_create_one_note`,
+      `DayNoteViewModelTests.A_save_in_flight_does_not_leak_into_the_next_day`.

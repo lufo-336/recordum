@@ -4,7 +4,7 @@
 > Qui non entra cronaca (sta in `docs/MILESTONES.md`) e non entrano checklist (stanno in `docs/CHECKLIST.md`).
 > Il *perché* del prodotto è in `docs/PRODUCT.md`; i finding nel tracker `docs/phase-4-issues.md`.
 
-## Dove siamo — 2026-11-10
+## Dove siamo — 2026-11-16
 
 - **In `main`**: la shell Avalonia con Home, registrazione dei cinque tipi, creare e configurare, dati al sicuro
   (portachiavi, backup, ripristino), diario con tag e foto, SQLite3MC, e la direzione visiva fino all'onda 2b.
@@ -20,34 +20,28 @@
 - **WPF** è congelata: riferimento di comportamento, si spegne a F8.
 - **Dati veri**: finché le sezioni 1 e 2 di `docs/CHECKLIST.md` non sono fatte, la voce Recordum del menu apre la
   cartella dati vera — **non avviarla**.
-- **Piano dell'onda "Giornata" scritto** (2026-11-11, `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task in
-  tre parti: le parole, la Home, la schermata dell'abitudine): l'autore lo legge, con le 13 "Decisioni mie" in fondo.
-- **Onda "Giornata" in corso** (dal 2026-11-11) sul branch `giornata-agy`, da `ux3a-creator-templates` (3a non è
-  ancora in `main`): si scrive in cooperazione con Antigravity, per valutarla. **Fatti i Task 1-9** (le parole:
-  guardia, glossario, valori; unità col simbolo o col nome tradotto, tessere senza "+", note senza etichetta di
-  categoria; la fixture "manifesto" coi PNG della Home piena; il log rapido riceve il giorno; la ricaduta con una data, e dalla Home un periodo
-  non si chiude più con un clic — `b935a749`, 2026-11-12; la Home ha un giorno corrente nel ViewModel: titolo, conto "x di y",
-  righe, filtro "fatte" e log rapido seguono il giorno scelto senza rileggere il database, e al cambio di giorno si torna a
-  oggi — `23c2f914`, 2026-11-12, scritto senza Antigravity: quote Sonnet e Argon esaurite fino al 17 novembre circa; la
-  testa della Home su una riga — titolo, data, conto, ‹ ›, la ricerca dietro la lente, Archivio e Cestino dietro ⋯ —, i
-  giorni dell'intestazione che si cliccano, la fascia sul giorno passato, la colonna del giorno marcata su ogni riga —
-  `34c9acbc`, 2026-11-12, implementazione scritta da Antigravity con Gemini 4 Hydrogen, che ha quota; dalla Home su un
-  giorno passato la schermata dell'abitudine si apre su quel giorno, e il log rapido di un'astinenza in corso propone la
-  ricaduta con quella data — `9c543670`, 2026-11-13, scritto in sessione; le righe della Home in tre versioni,
-  Compatta, Segni e Larga, con la preferenza `home.rows` che la Home segue senza riavvio — Task 9, 2026-11-13, parte UI
-  scritta da Antigravity con Hydrogen; manca ancora la pagina che la sceglie, Task 10). **Decisioni dell'autore
-  del 2026-11-12**: confermate le parole del glossario e le "Decisioni mie" 1, 4 e 5 del piano; cambiata la 3 — dalla
-  Home una spunta già fatta si toglie, dopo una conferma (Task 8b, aggiunto al piano). La CI Linux è caduta sull'SDK
-  .NET 11 della nuova immagine Ubuntu 26.04: `global.json` fissa l'SDK al 10.
-- **Prossimo — si riprende da qui**: (1) chiudere 3a (PNG e merge dell'autore); (2) la Parte 3 del piano "Giornata": il Task 12 (l'elenco della Cronologia non ripete il giorno scelto, B1) e il Task 13 (voce nei diari, nota sulle altre abitudini, note rese, B2) sono fatti il 2026-11-16, restano i Task 14-15; il Task 8b (la spunta che si toglie dalla Home, con conferma) è fatto il 2026-11-16 (Task 10, Impostazioni › Aspetto, e Task 11, la tastiera, fatti il 2026-11-13); GIO-3 e GIO-7 corretti il 2026-11-13 (le righe hanno le colonne dell'intestazione; la cella vuota di Segni ha un colore suo), da guardare a schermo; (3) scrivere la spec dell'"unisci" (dentro: `home.rows`
-  vale per dispositivo).
+- **Onda "Giornata" a codice completo** (2026-11-16) sul branch `giornata-agy`, da `ux3a-creator-templates` (3a non è
+  ancora in `main`): piano `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task più l'8b. La Home ha un giorno
+  corrente (titolo, conto "x di y", ‹ ›, i giorni dell'intestazione che si cliccano, la fascia sul giorno passato), la
+  testa su una riga, tre versioni delle righe scelte in Impostazioni › Aspetto, la tastiera che registra, la spunta che
+  si toglie con conferma; la schermata dell'abitudine non ripete il giorno scelto, ha la voce nei diari e la nota sulle
+  altre, lo stato col numero; le parole sono in `docs/GLOSSARY.md` con la guardia. Scritta in cooperazione con
+  Antigravity (cronaca e cosa ha insegnato in `docs/MILESTONES.md`). Chiusura del 2026-11-16: inventario della Home
+  senza voci perse, review dell'intero branch con quattro correzioni (GIO-12…15), suite verdi.
+- **Aspetta l'autore**: guardare i PNG (`home-manifesto-*`, `habit-state-*`, `habit-session-*`, `habit-notes-*`,
+  `habit-journal-*`, `settings-appearance-*`); decidere **B9** sull'immagine di confronto
+  (`home-manifesto-comfortable-light-900-inchiostro.png` accanto a `…-light-900.png`), **GIO-6** (la schermata resta sul
+  giorno passato quando la Home torna a oggi) e **GIO-9** (il giorno di una ricaduta conta come pulito nella Home);
+  poi i merge: prima 3a, poi `giornata-agy`.
+- **Prossimo — si riprende da qui**: (1) chiudere 3a e "Giornata" (PNG e merge dell'autore); (2) scrivere la spec
+  dell'"unisci" (dentro: `home.rows` vale per dispositivo); (3) il passo 3, dati protetti e dogfooding sul computer.
 
 ## Il percorso
 
 | # | Passo | Stato | Esce quando |
 |---|---|---|---|
 | 1 | **Chiudere 3a** | ◐ | PNG guardati dall'autore, merge |
-| 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; le righe della Home a scelta in Impostazioni › Aspetto, tre versioni (Compatta, Segni, Larga) su computer e telefono | ☐ | PNG della Home piena in chiaro e scuro, nelle tre versioni; CI verde |
+| 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; le righe della Home a scelta in Impostazioni › Aspetto, tre versioni (Compatta, Segni, Larga) su computer e telefono | ◐ | PNG della Home piena in chiaro e scuro, nelle tre versioni; CI verde |
 | 3 | **Dati protetti → ★ dogfooding sul computer** (prova generale) | ☐ | sezioni 1 e 2 della checklist; `install-linux.sh` |
 | 4 | **Testa Android** — `Recordum.UI` diventa libreria con due teste (`Recordum.Desktop`, `Recordum.Android`); avvio fuori dal thread UI con la schermata d'attesa; la cornice (barra in basso, pagine, fogli dal basso); portachiavi di Android e impronta | ☐ | l'APK apre la Home dei dati veri; tempo dall'icona alla Home misurato |
 | 5 | **Telefono: registrare tutto** — i cinque tipi, il diario in un campo di testo con la barra, la fotocamera, il timer in background → **★ dogfooding vero**, sul telefono (i dati ci passano con un ripristino) | ☐ | il manifesto di `DOGFOODING.md` coperto dal telefono |
