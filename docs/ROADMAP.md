@@ -29,12 +29,13 @@
   Antigravity (cronaca e cosa ha insegnato in `docs/MILESTONES.md`). Chiusura del 2026-11-16: inventario della Home
   senza voci perse, review dell'intero branch con quattro correzioni (GIO-12…15), suite verdi.
 - **Aspetta l'autore**: guardare i PNG (`home-manifesto-*`, `habit-state-*`, `habit-session-*`, `habit-notes-*`,
-  `habit-journal-*`, `settings-appearance-*`); decidere **GIO-6** (la schermata resta sul
-  giorno passato quando la Home torna a oggi) e **GIO-9** (il giorno di una ricaduta conta come pulito nella Home);
-  **B9** è deciso (2026-11-16): i valori restano nel colore dell'abitudine;
-  poi i merge: prima 3a, poi `giornata-agy`.
-- **Prossimo — si riprende da qui**: (1) chiudere 3a e "Giornata" (PNG e merge dell'autore); (2) scrivere la spec
-  dell'"unisci" (dentro: `home.rows` vale per dispositivo); (3) il passo 3, dati protetti e dogfooding sul computer.
+  `habit-journal-*`, `settings-appearance-*`), poi i merge: prima 3a, poi `giornata-agy`.
+- **Deciso il 2026-11-16** (tracker, in fondo alla sezione "Giornata"): B9, i valori restano nel colore
+  dell'abitudine; GIO-6, vince il giorno della Home; GIO-9, il giorno di una ricaduta è una × nella Home e una cella a
+  contorno con la × nel calendario (`docs/design/2026-11-16-ricaduta/`).
+- **Prossimo — si riprende da qui**: (1) il task "ricaduta e giorno della Home" (GIO-6, GIO-9 e il calendario), su
+  `giornata-agy`; (2) chiudere 3a e "Giornata" (PNG e merge dell'autore); (3) scrivere la spec dell'"unisci" (dentro:
+  `home.rows` vale per dispositivo); (4) il passo 3, dati protetti e dogfooding sul computer.
 
 ## Il percorso
 

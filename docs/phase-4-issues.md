@@ -65,7 +65,7 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-7** e **GIO-12…15** (ondata finale) `fixed`. Aperti: **GIO-1**,
-**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; **GIO-6** e **GIO-9** da decidere con l'autore. Fuori dall'onda restano **B7** e
+**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; **GIO-6** e **GIO-9** `triaged` (decisi il 2026-11-16, da fare). Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2705,3 +2705,15 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
       giorno nuovo. `DayNoteViewModel` mette in fila i salvataggi, carica il giorno nuovo dopo che il vecchio è salvato e
       non adotta una nota di un altro giorno. Test: `DayNoteViewModelTests.Two_saves_in_a_row_create_one_note`,
       `DayNoteViewModelTests.A_save_in_flight_does_not_leak_into_the_next_day`.
+- **Deciso dall'autore il 2026-11-16, sulle immagini** (`docs/design/2026-11-16-ricaduta/`): da fare in un task a parte.
+  - **GIO-6 · `triaged`: vince il giorno della Home.** Ogni gesto che parte dalla Home (aprire, registrare, la ricaduta)
+    porta la schermata sul giorno della Home, oggi compreso. Unica eccezione: una schermata con una scrittura in corso
+    su un altro giorno (bozza del diario, nota del giorno non salvata) resta dov'è.
+  - **GIO-9 · `triaged`: il giorno di una ricaduta non è un giorno pulito.** Nella Home la cella mostra una × grigia
+    attenuata (in "Segni" il quadratino vuoto con la × dentro, `home.png`); quel giorno non conta nel "x di y" e "fatte"
+    non lo nasconde. Ricaduta e nuovo inizio nello stesso giorno: resta ×, il primo giorno pulito è il successivo.
+  - **Il calendario della Cronologia**: il giorno della ricaduta è una cella vuota col contorno e una × grande al
+    centro nel colore dell'abitudine, il numero piccolo in alto a sinistra (`calendario-d3.png`, secondo riquadro); via
+    la tacca di oggi, che copre il numero e lascia la ricaduta come la cella più piena del mese. Da curare: la × è
+    l'icona Lucide, non un carattere; per i colori chiari la correzione di contrasto già usata per i numeri delle
+    strisce; i giorni scoperti restano senza tinta come sono.
