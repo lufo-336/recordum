@@ -26,6 +26,15 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
     /// d'inizio e di ricaduta secondo il giorno dell'abitudine, non la data UTC.</summary>
     internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
 
+    /// <summary>B1: il giorno che il blocco del giorno scelto mostra già. I periodi che lo toccano non entrano
+    /// nell'elenco di un intervallo.</summary>
+    internal DateOnly? ExcludedDay { get; set; }
+
+    /// <summary>Niente da elencare solo perché i periodi stanno tutti in <see cref="ExcludedDay"/>.</summary>
+    internal bool OnlyExcludedDayHasPeriods => Rows.Count == 0 && _excludedCount > 0;
+
+    private int _excludedCount;
+
     public AbstinencePeriodListViewModel(IAbstinenceService abstinence, IConfirmationDialog confirm, IClock clock, ITickSourceFactory? ticks = null)
     {
         _abstinence = abstinence;
@@ -39,8 +48,18 @@ public sealed partial class AbstinencePeriodListViewModel : ObservableObject, ID
 
     public async Task LoadRangeAsync(Guid habitNodeId, DateOnly? from, DateOnly? to, CancellationToken ct = default)
     {
+        var skipped = ExcludedDay; // letto prima delle attese: un cambio di giorno a metà non mescola due domande
         var periods = await _abstinence.ListPeriodsAsync(
             habitNodeId, from ?? DateOnly.MinValue, to ?? DateOnly.MaxValue, ct).ConfigureAwait(true);
+        var found = periods.Count;
+        if (skipped is { } skip)
+        {
+            // Gli stessi che il blocco del giorno carica con LoadDayAsync: la stessa domanda, non una formula gemella.
+            var shown = (await _abstinence.ListPeriodsAsync(habitNodeId, skip, skip, ct).ConfigureAwait(true))
+                .Select(p => p.Id).ToHashSet();
+            periods = periods.Where(p => !shown.Contains(p.Id)).ToList();
+        }
+        _excludedCount = found - periods.Count;
 
         // Dispose the outgoing rows first: the open-period row owns a running tick source that the
         // dispatcher roots, so a bare Clear() would orphan a still-ticking clock on every reload.

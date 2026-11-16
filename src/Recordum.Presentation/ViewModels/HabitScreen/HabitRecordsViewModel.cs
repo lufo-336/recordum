@@ -28,8 +28,19 @@ public sealed partial class HabitRecordsViewModel : ObservableObject, IDisposabl
     /// habits, <see cref="CompletionListViewModel"/> for all others. Bound to the ContentControl in XAML.</summary>
     public object CurrentList => _isResistance ? Periods : Records;
 
-    /// <summary>True when the active list has no rows (drives the empty-state TextBlock visibility).</summary>
-    public bool IsEmpty => _isResistance ? Periods.IsEmpty : Records.Rows.Count == 0;
+    /// <summary>True when there is nothing to list (drives the empty-state TextBlock visibility). False when the list
+    /// has no rows only because everything sits in <see cref="ExcludedDay"/>: the day block shows it (B1).</summary>
+    public bool IsEmpty => _isResistance
+        ? Periods.IsEmpty && !Periods.OnlyExcludedDayHasPeriods
+        : Records.Rows.Count == 0 && !Records.OnlyExcludedDayHasRecords;
+
+    /// <summary>B1: il giorno che il blocco del giorno scelto mostra già; le sue registrazioni (o i periodi che lo
+    /// toccano) non entrano nell'elenco di un intervallo. Vale dal caricamento successivo.</summary>
+    public DateOnly? ExcludedDay
+    {
+        get => Records.ExcludedDay;
+        set => Records.ExcludedDay = Periods.ExcludedDay = value;
+    }
 
     [ObservableProperty] private EntriesRecordsMode _mode = EntriesRecordsMode.Giorno;
     [ObservableProperty] private EntriesPeriod _selectedPeriod = EntriesPeriod.Mese;

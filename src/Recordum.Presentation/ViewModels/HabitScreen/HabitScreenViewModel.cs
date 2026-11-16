@@ -611,6 +611,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         // Un gruppo: "Insieme" e la mappa del gruppo seguono lo stesso periodo.
         if (Node.NodeType == NodeType.Group)
             return Panoramica.LoadHistoryAsync(Period.From, Period.To, shape, today, ct);
+        PeriodRecords.ExcludedDay = SelectedDay; // B1: il giorno scelto sta nel suo blocco, non due volte
         return Task.WhenAll(
             Map.LoadAsync(Period.From, Period.To, shape, today, SelectedDay, ct),
             PeriodRecords.ShowRangeAsync(Period.From, Period.To, ct));
@@ -799,6 +800,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Notes.Dispose();
         Detail.Dispose();
         Records.Dispose();
+        PeriodRecords.Dispose(); // anche l'elenco del periodo può avere la riga "In corso" col suo orologio
         TodayStrip.Dispose();
         TimerControl.Dispose();
         foreach (var s in _subscriptions) s.Dispose();
@@ -1399,6 +1401,13 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         await DayNote.LoadDayAsync(date).ConfigureAwait(true);
         await PushDaySummaryAsync(date, CancellationToken.None).ConfigureAwait(true);
         if (Node is not null) await Records.ShowDayAsync(date).ConfigureAwait(true);
+        // B1: l'elenco del periodo restituisce il giorno di prima e cede quello nuovo.
+        if (Node is { NodeType: NodeType.Habit })
+        {
+            // SelectedDay, non date: dopo le attese qui sopra un clic più recente può aver già scelto un altro giorno.
+            PeriodRecords.ExcludedDay = SelectedDay;
+            await PeriodRecords.ShowRangeAsync(Period.From, Period.To).ConfigureAwait(true);
+        }
         await RefreshUndoAsync(CancellationToken.None).ConfigureAwait(true);
     }
 

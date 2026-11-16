@@ -53,6 +53,15 @@ public sealed partial class CompletionListViewModel : ObservableObject
     /// e la mezzanotte UTC la pescherebbe nel giorno sbagliato.</summary>
     internal DayBoundary DayBoundary { get; set; } = DayBoundary.Utc;
 
+    /// <summary>B1: il giorno che un altro pannello mostra già (il blocco del giorno scelto). Le sue registrazioni,
+    /// col confine dell'abitudine, non entrano in <see cref="LoadRangeAsync"/>.</summary>
+    internal DateOnly? ExcludedDay { get; set; }
+
+    /// <summary>Niente da elencare solo perché tutto sta in <see cref="ExcludedDay"/>: "niente registrato" sarebbe falso.</summary>
+    internal bool OnlyExcludedDayHasRecords => _allRows.Count == 0 && _excludedCount > 0;
+
+    private int _excludedCount;
+
     public CompletionListViewModel(ICompletionService completions, IMetricDefinitionService metrics,
         IReferenceDataQueryService refData, IDiaryService diary, IConfirmationDialog? confirm = null)
     {
@@ -78,13 +87,17 @@ public sealed partial class CompletionListViewModel : ObservableObject
     {
         var generation = ++_generation;
         NodeId = habitNodeId;
+        var skipped = ExcludedDay; // letto prima delle attese
         // RangeOf e' semiaperta, il filtro del servizio e' inclusivo al millisecondo: il tetto e'
         // l'ultimo millisecondo del giorno, non il primo istante di quello dopo.
         var fromTs = from is { } f ? DayBoundary.StartOf(f) : (DateTimeOffset?)null;
         var toTs = to is { } t ? DayBoundary.RangeOf(t).ToExclusive.AddMilliseconds(-1) : (DateTimeOffset?)null;
-        var list = await _completions.ListByHabitAsync(habitNodeId, fromTs, toTs, ct: ct).ConfigureAwait(true);
+        var all = await _completions.ListByHabitAsync(habitNodeId, fromTs, toTs, ct: ct).ConfigureAwait(true);
+        IReadOnlyList<Completion> list = skipped is { } skip
+            ? all.Where(c => DayBoundary.DayOf(c.CompletedAtMs) != skip).ToList()
+            : all;
         var lookup = await BuildLookupAsync(habitNodeId, ct).ConfigureAwait(true);
-        await PopulateAsync(list, lookup, generation, ct).ConfigureAwait(true);
+        await PopulateAsync(list, lookup, generation, ct, all.Count - list.Count).ConfigureAwait(true);
     }
 
     /// <summary>Loads the completions recorded on a single day. Thin wrapper over <see cref="LoadRangeAsync"/>.</summary>
@@ -94,12 +107,13 @@ public sealed partial class CompletionListViewModel : ObservableObject
     private int _generation;
 
     // ‹ › rapidi o un cambio di abitudine: vince l'ultimo caricamento, quelli superati non toccano le righe.
-    private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, int generation, CancellationToken ct)
+    private async Task PopulateAsync(IReadOnlyList<Completion> list, Dictionary<Guid, MetricDisplay> lookup, int generation, CancellationToken ct, int excluded = 0)
     {
         IReadOnlyDictionary<Guid, DiaryEntrySummary> entries = IsJournal
             ? await _diary.GetEntrySummariesByCompletionsAsync(list.Select(c => c.Id).ToList(), ct).ConfigureAwait(true)
             : new Dictionary<Guid, DiaryEntrySummary>();
         if (generation != _generation) return;
+        _excludedCount = excluded; // prima delle righe: chi sente CollectionChanged legge il conteggio di questo caricamento
         _allRows.Clear();
         foreach (var c in list.OrderByDescending(c => c.CompletedAtMs))
         {

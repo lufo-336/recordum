@@ -10,7 +10,8 @@ using Xunit;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitScreen;
 
-/// <summary>L'elenco del periodo nella Cronologia (spec §6.1). Oggi 28/10/2026 10:00, reset 05:00, it-IT.</summary>
+/// <summary>L'elenco del periodo nella Cronologia (spec §6.1). Oggi 28/10/2026 10:00, reset 05:00, it-IT. Il giorno
+/// scelto (oggi, all'apertura) sta nel suo blocco e non nell'elenco (B1): qui le registrazioni sono di altri giorni.</summary>
 public sealed class HistoryListTests : IDisposable
 {
     private static readonly DayBoundary Boundary = new(TimeZoneInfo.Utc, new TimeOnly(5, 0));
@@ -54,7 +55,7 @@ public sealed class HistoryListTests : IDisposable
         {
             Add(r, id, new DateTimeOffset(2026, 10, 20, 9, 0, 0, TimeSpan.Zero));
             Add(r, id, new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero));
-            Add(r, id, new DateTimeOffset(2026, 10, 28, 7, 42, 0, TimeSpan.Zero));
+            Add(r, id, new DateTimeOffset(2026, 10, 27, 7, 42, 0, TimeSpan.Zero));
             Add(r, id, new DateTimeOffset(2026, 9, 30, 9, 0, 0, TimeSpan.Zero));
         });
         rig.Vm.PeriodRecords.Records.Rows.Should().HaveCount(3);   // ottobre
@@ -62,14 +63,14 @@ public sealed class HistoryListTests : IDisposable
         rig.Vm.Period.Period = HistoryPeriod.Week;
         await Task.Delay(30);
 
-        rig.Vm.PeriodRecords.Records.Rows.Select(r => r.DayLabel).Should().Equal("mer 28 ott", "lun 26 ott");
+        rig.Vm.PeriodRecords.Records.Rows.Select(r => r.DayLabel).Should().Equal("mar 27 ott", "lun 26 ott");
     }
 
     [Fact]
     public async Task A_config_change_reloads_the_period_list_with_the_new_series_labels()
     {
         // UX2A-8: dopo un cambio delle etichette di serie l'elenco del periodo restava vecchio.
-        var (rig, id) = await LoadAsync(HabitType.Counter, (r, i) => Add(r, i, new DateTimeOffset(2026, 10, 28, 7, 0, 0, TimeSpan.Zero)));
+        var (rig, id) = await LoadAsync(HabitType.Counter, (r, i) => Add(r, i, new DateTimeOffset(2026, 10, 27, 7, 0, 0, TimeSpan.Zero)));
         var before = rig.Vm.PeriodRecords.Records.Rows.Single();
         rig.Configs.Store[id] = new HabitConfig { HabitNodeId = id, SeriesLabelsJson = "[\"a\",\"b\"]" };
 
@@ -85,11 +86,11 @@ public sealed class HistoryListTests : IDisposable
     {
         var (rig, _) = await LoadAsync(HabitType.Action, (r, id) =>
         {
-            Add(r, id, new DateTimeOffset(2026, 10, 28, 7, 42, 0, TimeSpan.Zero));
+            Add(r, id, new DateTimeOffset(2026, 10, 27, 7, 42, 0, TimeSpan.Zero));
             Add(r, id, new DateTimeOffset(2026, 10, 27, 4, 30, 0, TimeSpan.Zero));   // prima del reset: è del 26
         });
         var rows = rig.Vm.PeriodRecords.Records.Rows;
-        rows[0].DayLabel.Should().Be("mer 28 ott");
+        rows[0].DayLabel.Should().Be("mar 27 ott");
         rows[0].TimeLabel.Should().Be("07:42");
         rows[1].DayLabel.Should().Be("lun 26 ott");
     }
@@ -99,7 +100,7 @@ public sealed class HistoryListTests : IDisposable
     {
         var (rig, _) = await LoadAsync(HabitType.Action, (r, id) =>
         {
-            Add(r, id, new DateTimeOffset(2026, 10, 28, 7, 0, 0, TimeSpan.Zero), "gambe pesanti");
+            Add(r, id, new DateTimeOffset(2026, 10, 26, 7, 0, 0, TimeSpan.Zero), "gambe pesanti");
             Add(r, id, new DateTimeOffset(2026, 10, 27, 7, 0, 0, TimeSpan.Zero));
         });
         var list = rig.Vm.PeriodRecords.Records;
@@ -117,7 +118,7 @@ public sealed class HistoryListTests : IDisposable
     public async Task Preview_has_no_markdown()
     {
         var (rig, _) = await LoadAsync(HabitType.Action, (r, id) =>
-            Add(r, id, new DateTimeOffset(2026, 10, 28, 7, 0, 0, TimeSpan.Zero), "\n## Al lago\n**fredda**"));
+            Add(r, id, new DateTimeOffset(2026, 10, 27, 7, 0, 0, TimeSpan.Zero), "\n## Al lago\n**fredda**"));
         rig.Vm.PeriodRecords.Records.Rows[0].Preview.Should().Be("Al lago");
     }
 
@@ -145,7 +146,7 @@ public sealed class HistoryListTests : IDisposable
             Add(r, id, new DateTimeOffset(2026, 10, 28, 7, 0, 0, TimeSpan.Zero));
             Add(r, id, new DateTimeOffset(2026, 10, 20, 7, 0, 0, TimeSpan.Zero));
         });
-        rig.Vm.Records.Records.Rows.Should().ContainSingle();
-        rig.Vm.PeriodRecords.Records.Rows.Should().HaveCount(2);
+        rig.Vm.Records.Records.Rows.Should().ContainSingle().Which.DayLabel.Should().Be("mer 28 ott");
+        rig.Vm.PeriodRecords.Records.Rows.Should().ContainSingle().Which.DayLabel.Should().Be("mar 20 ott");   // B1
     }
 }

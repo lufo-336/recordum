@@ -217,7 +217,8 @@ public class CronologiaColumnTests
     {
         var o = await OpenAsync(seed: async (sp, id) =>
         {
-            for (var d = 0; d < 300; d++) await Record(sp, id, Now.AddDays(-d).AddHours(-1));
+            // Quella di oggi (d = 0) sta nel blocco del giorno scelto, non nell'elenco (B1): ne restano 300.
+            for (var d = 0; d <= 300; d++) await Record(sp, id, Now.AddDays(-d).AddHours(-1));
         }, createdAt: new DateTimeOffset(2025, 12, 1, 12, 0, 0, TimeSpan.Zero));
         Named<RadioButton>(o.Column, "AllPeriod").IsChecked = true;
         var rows = o.Vm.PeriodRecords.Records.Rows;

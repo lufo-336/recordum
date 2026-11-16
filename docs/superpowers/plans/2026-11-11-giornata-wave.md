@@ -642,12 +642,36 @@ il caricamento del periodo); test in `tests/Recordum.Presentation.Tests/ViewMode
 dell'abitudine, non entrano nell'elenco del periodo); per l'astinenza l'elenco dei periodi salta quelli che il blocco del
 giorno mostra già. Lo schermo lo imposta a `SelectedDay` e lo aggiorna a ogni `SelectDayAsync`.
 
-- [ ] **Step 1: test rossi:** `Period_list_skips_the_selected_day` (tre giorni di registrazioni, scelto quello di mezzo:
+- [x] **Step 1: test rossi:** `Period_list_skips_the_selected_day` (tre giorni di registrazioni, scelto quello di mezzo:
   l'elenco ha gli altri due); `Selecting_another_day_brings_the_previous_one_back`; `Empty_message_does_not_lie` (un periodo
   con registrazioni solo nel giorno scelto **non** dice "niente registrato": l'elenco resta vuoto senza quel testo);
   `Abstinence_current_period_is_shown_once` (oggi scelto: "In corso" solo nel blocco del giorno); `With_notes_filter_still_works`.
-- [ ] **Step 2: implementa.** **Step 3:** verdi, PNG `habit-all-columns-light.png` riguardato (una voce una volta), commit
+- [x] **Step 2: implementa.** **Step 3:** verdi, PNG `habit-all-columns-light.png` riguardato (una voce una volta), commit
   `fix(presentation): l'elenco della Cronologia non ripete il giorno scelto (B1)`.
+
+- [x] Fatto 2026-11-16 (Claude, in sessione; review di agy Argon).
+
+**Com'è stato fatto (2026-11-16):**
+
+- `ExcludedDay` sta su `HabitRecordsViewModel` e lo gira ai due figli (`CompletionListViewModel`,
+  `AbstinencePeriodListViewModel`). Lo imposta lo schermo in `ReloadHistoryAsync` e in `SelectDayAsync` (a `SelectedDay`,
+  riletto dopo le attese: un clic più recente vince). Solo `PeriodRecords` lo riceve; `Records` (il blocco del giorno) no.
+- Astinenza: l'elenco toglie i periodi che `ListPeriodsAsync(giorno, giorno)` restituisce, cioè la stessa domanda del blocco
+  del giorno, non una formula gemella (una query in più per caricamento).
+- **`IsEmpty` di `HabitRecordsViewModel` cambia significato**: falso anche quando l'elenco non ha righe solo perché tutto
+  sta nel giorno escluso. Così `PeriodListView.axaml` non si tocca (non era nell'elenco dei file): né "niente registrato" né
+  "nessuna nota" compaiono. Caso lasciato così: solo il giorno scelto ha registrazioni, nessuna con nota, filtro "Con note"
+  acceso → nessun messaggio.
+- Dalla review: il conteggio degli esclusi è vivo (cancellato l'ultimo periodo elencato, il messaggio non mente), si scrive
+  prima delle righe, e `PeriodRecords` ora si rilascia in `Dispose` (la riga "In corso" ha un orologio: mancava dalla 2a).
+- Test: dieci in `History/PeriodListExcludedDayTests.cs` (i cinque del piano più: apertura, confine alle 04:00, periodo
+  vuoto davvero, astinenza col messaggio, cancellazione dell'ultimo periodo). Rosso provato: 8 su 9 prima del codice, e la
+  cancellazione contro il conteggio statico. **Non coperta da un test**: la gara fra due cambi di giorno ravvicinati (coi
+  finti sincroni un test non va rosso). Adeguati `HistoryListTests` (le registrazioni spostate da oggi) e, in UI,
+  `CronologiaColumnTests` (301 registrazioni per averne 300 in elenco). Presentation 1510.
+- PNG `habit-all-columns-light.png` riguardato: la voce di oggi sta solo nel blocco del giorno, l'elenco parte da ieri.
+- **Staffetta**: la review di agy va solo se il prompt vieta esplicitamente di leggere la memoria di Claude e ogni file
+  fuori dal repo (due tentativi annullati su `read_file`, il terzo riuscito in 9 minuti).
 
 ### Task 13: Voce nei diari, nota sulle altre (B2)
 
