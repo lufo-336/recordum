@@ -31,8 +31,11 @@
     <Button x:Name="AddSegmentButton" Content="{x:Static res:Strings.Editor_Action_AddSegment}" Command="{CompiledBinding AddSegmentCommand}" HorizontalAlignment="Left"/>
     <CheckBox x:Name="AutoPromptBox" Margin="0,8,0,0" Content="{x:Static res:Strings.Editor_Field_AutoPrompt}" IsChecked="{CompiledBinding TimerAutoPrompt, Mode=TwoWay}"/>
     <TextBlock Classes="help" Text="{x:Static res:Strings.Editor_Help_Timer_AutoPrompt}"/>
-    <TextBlock Text="{x:Static res:Strings.Editor_Field_RestTimerSeconds}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
-    <TextBox x:Name="RestBox" HorizontalAlignment="Left" MinWidth="120"
-             Text="{CompiledBinding RestTimerSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    <!-- GIO-21: il timer di riposo si salva ma il timer della sessione non lo legge: nascosto finché non funziona. -->
+    <StackPanel Spacing="4" IsVisible="False">
+      <TextBlock Text="{x:Static res:Strings.Editor_Field_RestTimerSeconds}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
+      <TextBox x:Name="RestBox" HorizontalAlignment="Left" MinWidth="120"
+               Text="{CompiledBinding RestTimerSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+    </StackPanel>
   </StackPanel>
 </UserControl>

@@ -95,13 +95,16 @@ public class BuilderBlocksTests
 
         var rows = Named<StackPanel>(o.View, "AdvancedRows");
         rows.IsEffectivelyVisible.Should().BeFalse("Avanzate parte chiuso");
-        string[] inside = ["ToleranceBox", "RollingDaysBox", "SegmentsList", "RestBox", "AutoPromptBox", "AiSharingRow"];
+        string[] inside = ["RollingDaysBox", "SegmentsList", "AutoPromptBox", "AiSharingRow"];
+        // GIO-21: tolleranza e timer di riposo si salvano ma niente li legge: nascosti finche' non funzionano.
+        string[] hidden = ["ToleranceBox", "RestBox"];
         foreach (var n in inside)
             rows.GetVisualDescendants().OfType<Control>().Should().Contain(c => c.Name == n, $"{n} sta in Avanzate");
 
         Click(o.Window, Named<ToggleButton>(o.View, "AdvancedToggle"));
         rows.IsEffectivelyVisible.Should().BeTrue();
         foreach (var n in inside) Named<Control>(rows, n).IsEffectivelyVisible.Should().BeTrue(n);
+        foreach (var n in hidden) Named<Control>(rows, n).IsEffectivelyVisible.Should().BeFalse(n + " non ha effetto: nascosta");
         Named<ItemsControl>(rows, "SegmentsList").ItemCount.Should().Be(2, "la sessione nasce con Lavoro e Riposo");
         Named<StackPanel>(rows, "AiSharingRow").GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text)
             .Should().Contain(Strings.Editor_Summary_ComingSoon, "l'AI e' in arrivo, come in Configura");

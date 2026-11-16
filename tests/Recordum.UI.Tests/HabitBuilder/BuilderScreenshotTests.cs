@@ -173,7 +173,7 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
             Settle();
             output.WriteLine(ScreenshotProbeTests.Capture(w, $"builder-advanced-{variant.ToLowerInvariant()}"));
 
-            foreach (var n in new[] { "ToleranceBox", "RollingDaysBox", "SegmentsList", "RestBox", "AutoPromptBox", "AiSharingRow" })
+            foreach (var n in new[] { "RollingDaysBox", "SegmentsList", "AutoPromptBox", "AiSharingRow" })
             {
                 var c = BuilderBlocksTests.Named<Control>(rows, n);
                 c.IsEffectivelyVisible.Should().BeTrue(n);

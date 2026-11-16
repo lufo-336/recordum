@@ -66,7 +66,8 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`. Aperti: **GIO-1**,
 **GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
-(2026-11-16) **GIO-16…20** `fixed`, **GIO-21…25** aperti. Fuori dall'onda restano **B7** e
+(2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** in
+ROADMAP, **GIO-22**, **GIO-24**, **GIO-25** aperti. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2777,7 +2778,12 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     `SamplePreviewFactory.HomeRowFor` riempiva `Counts` e `Fractions` ma non `Values`, e senza
     `Values` `HeatmapStrip` cade su `BuildStyledCells`. L'anteprima deve scrivere le celle come la Home, nella versione
     delle righe scelta in Aspetto.
-  - **GIO-21 — "Tolleranza (minuti)" e "Secondi timer di riposo" non spiegano cosa fanno** · `verified` · e non fanno
+  - **GIO-21 — "Tolleranza (minuti)" e "Secondi timer di riposo" non spiegano cosa fanno** · `triaged` · **nascosti il
+    2026-11-16 per scelta dell'autore** (creatore: i due campi restano nell'albero con `IsVisible="False"`; Configura:
+    `StreakSectionViewModel.HasAdvanced` falso, il riposo nascosto in `TimerAdvancedView`; i valori salvati restano;
+    test `BuilderBlocksTests.Advanced_is_closed_and_holds_tolerance_rolling_segments_rest_prompt_ai` e
+    `ConfiguraBlocksTests.Advanced_is_closed_and_holds_the_advanced_parts`, rossi prima). Farli funzionare è in ROADMAP,
+    passo 7: nemmeno l'autore ricorda cosa dovesse fare la tolleranza, va deciso lì. Com'erano: non fanno
     niente: `StreakToleranceMinutes` e `RestTimerSeconds` si salvano e finiscono nella storia della config, ma nessun
     aggregatore né il timer della sessione li legge (cercati in `src`, fuori da creatore, Configura e modelli). L'autore
     chiede una riga di spiegazione e l'unità a scelta (minuti anche per il riposo). Da decidere: nasconderli finché non

@@ -10,7 +10,9 @@ public sealed partial class StreakSectionViewModel(IHabitConfigService configs) 
 {
     public override string Title => Strings.Editor_Section_Streak;
 
-    public override bool HasAdvanced => true;
+    // GIO-21: la parte avanzata della serie era la sola tolleranza, che si salva ma nessun calcolo legge. Nascosta
+    // finché non funziona (ROADMAP, passo 7); StreakAdvancedView resta per quel giorno.
+    public override bool HasAdvanced => false;
 
     public override string Summary
     {

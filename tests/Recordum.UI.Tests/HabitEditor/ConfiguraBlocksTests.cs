@@ -32,7 +32,9 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
     /// <summary>L'inventario (guardia dell'anti-obiettivo "nessun campo sparisce"): ogni <c>x:Name</c> delle dodici view di
     /// sezione e della testata di Configura, preso PRIMA del refactor (6be01df8). Nessun nome e' cambiato; RollingDaysBox,
     /// ToleranceBox e RestBox sono passati nelle view *Advanced. Fuori dall'elenco, di proposito, SectionsHost: era
-    /// l'ItemsControl che ospitava gli Expander, non un campo (lo sostituiscono i blocchi).</summary>
+    /// l'ItemsControl che ospitava gli Expander, non un campo (lo sostituiscono i blocchi). ToleranceBox e' uscita
+    /// dall'elenco il 2026-11-16 per scelta dell'autore (GIO-21: tolleranza e riposo non hanno effetto, restano nascosti
+    /// finche' non funzionano); RestBox resta nell'albero, nascosta.</summary>
     private static readonly string[] FieldsBefore =
     [
         // testata
@@ -46,7 +48,7 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
         "ResetTimeBox", "ResetWarning",                                     // ResetTimeSectionView
         "ScaleBox", "LabelsEditor",                           // ScalesSectionView (solo uno stato)
         "ScheduleTypeBox", "WeeklyTargetBox", "EveryXDaysBox",              // SchedulingSectionView
-        "StreakModeBox", "StreakRecoveryBox", "ToleranceBox",               // StreakSectionView
+        "StreakModeBox", "StreakRecoveryBox",                               // StreakSectionView
         "TagsList",                                                         // TagsSectionView
         "IntegratedBox", "ModeBox", "TargetBox", "SegmentsList", "RestBox", // TimerSectionView (TargetBox c'e' due volte)
     ];
@@ -240,20 +242,24 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             Click(o, Named<ToggleButton>(pane, "AdvancedToggle"));
             block.IsEffectivelyVisible.Should().BeTrue();
 
-            var rows = new[] { Row(pane, editor.Streak, SectionPart.Advanced), Row(pane, editor.Goal, SectionPart.Advanced),
+            var rows = new[] { Row(pane, editor.Goal, SectionPart.Advanced),
                 Row(pane, editor.Timer, SectionPart.Advanced), Row(pane, editor.AiSharing) };
             rows.Should().OnlyContain(r => r.IsEffectivelyVisible && r.GetVisualAncestors().Contains(block));
             foreach (var r in rows) Click(o, Named<Button>(r, "Header"));
             editor.Streak.IsExpanded.Should().BeFalse("la parte avanzata ha uno stato suo, non apre la riga principale");
-            foreach (var t in new[] { typeof(StreakAdvancedView), typeof(GoalAdvancedView), typeof(TimerAdvancedView), typeof(AiSharingSectionView) })
+            foreach (var t in new[] { typeof(GoalAdvancedView), typeof(TimerAdvancedView), typeof(AiSharingSectionView) })
                 block.GetVisualDescendants().Should().ContainSingle(v => v.GetType() == t, t.Name);
+            // GIO-21: tolleranza e timer di riposo si salvano ma niente li legge: nascosti finche' non funzionano.
+            block.GetVisualDescendants().Should().NotContain(v => v is StreakAdvancedView, "la serie non ha piu' una parte avanzata");
+            Named<TextBox>(pane, "RestBox").IsEffectivelyVisible.Should().BeFalse("il timer di riposo e' nascosto");
+            Named<CheckBox>(pane, "AutoPromptBox").IsEffectivelyVisible.Should().BeTrue();
 
             Row(pane, editor.Streak).IsOpen = true;
             PrivateDbHost.Pump();
             var streak = pane.GetVisualDescendants().OfType<StreakSectionView>().Single();
             streak.GetVisualDescendants().OfType<TextBox>().Should().NotContain(t => t.Name == "ToleranceBox", "la tolleranza e' uscita");
             streak.GetVisualDescendants().OfType<ToggleButton>().Should().BeEmpty("niente piu' interruttore 'Avanzate' dentro la sezione");
-            pane.GetVisualDescendants().OfType<TextBox>().Where(t => t.Name == "ToleranceBox").Should().ContainSingle();
+            pane.GetVisualDescendants().OfType<TextBox>().Where(t => t.Name == "ToleranceBox").Should().BeEmpty("GIO-21");
             // Spec 6.4 blocco 5: i segmenti del timer sono una cosa avanzata.
             Row(pane, editor.Timer).IsOpen = true;
             PrivateDbHost.Pump();
@@ -268,21 +274,15 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
     [AvaloniaFact]
     public async Task An_advanced_field_still_saves()
     {
-        var (o, pane, editor) = await OpenTypeAsync(HabitType.Action);
+        var (o, pane, editor) = await OpenTypeAsync(HabitType.Counter);
         try
         {
             Click(o, Named<ToggleButton>(pane, "AdvancedToggle"));
-            Click(o, Named<Button>(Row(pane, editor.Streak, SectionPart.Advanced), "Header"));
-            var box = Named<TextBox>(pane, "ToleranceBox");
-            box.Focus();
-            PrivateDbHost.Pump();
-            box.SelectAll();
-            o.Window.KeyTextInput("30");
-            PrivateDbHost.Pump();
-            Named<TextBox>(pane, "NameBox").Focus();
+            Click(o, Named<Button>(Row(pane, editor.Timer, SectionPart.Advanced), "Header"));
+            Click(o, Named<CheckBox>(pane, "AutoPromptBox"));
             PrivateDbHost.Pump();
             await UntilAsync(() => InScope(sp => sp.GetRequiredService<IHabitConfigService>().GetAsync(o.Id).AsTask())
-                .GetAwaiter().GetResult() is { StreakToleranceMinutes: 30 });
+                .GetAwaiter().GetResult() is { TimerAutoPrompt: true });
         }
         finally { o.Window.Close(); }
     }

@@ -71,7 +71,7 @@ public class SectionSummaryTests : IDisposable
 
         await sut.LoadAsync(Habit(), new HabitConfig { StreakMode = StreakMode.Daily, StreakRecovery = StreakRecovery.GraceDay });
         sut.Summary.Should().Be("Giornaliera · Giorno di grazia");
-        sut.HasAdvanced.Should().BeTrue();
+        sut.HasAdvanced.Should().BeFalse("GIO-21: la sola cosa avanzata era la tolleranza, nascosta finché non funziona");
     }
 
     [Fact]
