@@ -36,7 +36,8 @@
   Fatto il 2026-11-16 nel task "ricaduta e giorno della Home" (GIO-6, GIO-9 e il calendario `fixed`, tracker).
 - **Prossimo — si riprende da qui**: (1) chiudere 3a e "Giornata" (PNG e merge dell'autore; in più
   `home-ricaduta-*` e `habit-abstinence-*`); (2) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per
-  dispositivo); (3) il passo 3, dati protetti e dogfooding sul computer.
+  dispositivo) e, a parte, quella delle **scale continue** (GIO-23, chiesta dall'autore il 2026-11-16: collocarsi fra
+  due scaglioni, es. 1,37; oggi il valore di una scala è un intero, quindi vuole una migrazione); (3) il passo 3, dati protetti e dogfooding sul computer.
 
 ## Il percorso
 

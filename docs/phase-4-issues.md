@@ -2785,7 +2785,8 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
   - **GIO-22 — i tag di un'abitudine non servono a niente che si veda** · `verified` · Configura › Tag li assegna e
     `HomeViewModel.TagFilter` filtra le righe, ma la Home su Avalonia non ha un comando per sceglierli, e la ricerca
     guarda solo il nome. (I tag delle voci del diario sono un'altra cosa.)
-  - **GIO-23 — scale continue** (richiesta dell'autore) · `reported`, vuole una spec · oggi `ScaleTemplate` ha
+  - **GIO-23 — scale continue** (richiesta dell'autore) · `triaged`, spec a parte dopo i merge (deciso il 2026-11-16, in
+    ROADMAP "Prossimo") · oggi `ScaleTemplate` ha
     `MinValue`/`MaxValue` interi e il valore salvato è sempre l'intero (§5 di CLAUDE.md). Chiesto: una scala su cui ci si
     colloca fra due scaglioni (1,37 fra "Sto malissimo" e "Sto male"), o 0–100.
   - **GIO-24 — in chiaro i numeri del calendario non si leggono sulle celle piene** · `reported`, misurato su
