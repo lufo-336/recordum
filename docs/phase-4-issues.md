@@ -65,8 +65,8 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-7** e **GIO-12…15** (ondata finale) `fixed`. Aperti: **GIO-1**,
-**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; **GIO-6** e **GIO-9** da decidere con l'autore. Fuori dall'onda restano **B7**,
-**B8**, **B9** (solo l'immagine di confronto).
+**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; **GIO-6** e **GIO-9** da decidere con l'autore. Fuori dall'onda restano **B7** e
+**B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2596,7 +2596,8 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
 
 Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
 (`home-manifesto-comfortable-light-900-inchiostro.png` accanto a `home-manifesto-comfortable-light-900.png`,
-`GiornataScreenshotTests.Home_with_values_in_ink_B9`): decide l'autore.
+`GiornataScreenshotTests.Home_with_values_in_ink_B9`).
+**B9 deciso dall'autore il 2026-11-16, viste le due immagini affiancate: i valori restano nel colore dell'abitudine.** Chiuso, nessun codice.
 
 - **GIO-1 — `SaveAsTemplate_creates_custom_template_with_roundtrippable_payload` è instabile** · `reported` · precedente
   all'onda. `HabitBuilderViewModelTests` confronta il nome del campo con `Strings.HabitBuilder_DefaultField_Quantity`
