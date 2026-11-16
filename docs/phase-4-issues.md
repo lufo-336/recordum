@@ -65,7 +65,8 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`. Aperti: **GIO-1**,
-**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`. Fuori dall'onda restano **B7** e
+**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
+(2026-11-16) **GIO-16…25**. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2745,3 +2746,40 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     nuova conta come scrittura in corso. Non corretta, `reported` con **GIO-11**: con due righe scelte e un filtro che
     ne nasconde una, la Home rimette la selezione sull'altra e `MainWindowViewModel` lo prende per un'apertura (la
     schermata va sul giorno della Home); il meccanismo è precedente.
+- **Revisione dei PNG con l'autore (2026-11-16)** — 23 fogli chiaro/scuro (Giornata e 3a), suite UI 858 verde, CI verde
+  su `622f2273`. Le varianti disegnate sulla Home vera stanno in `docs/design/2026-11-16-revisione-png/` (banco di prova
+  usa-e-getta, nessun codice di prodotto rimasto). Rilievi dell'autore, con ciò che dice il codice:
+  - **GIO-16 — in "Segni" la cornice del giorno scelto è troppo spessa e stona** · `triaged`, da scegliere sulle
+    immagini `A-segni-cornice-*` · oggi 2 px d'inchiostro staccata di 1 px dal quadratino (`HeatmapStrip.BuildMarkCells`).
+    Varianti: A1 sottile d'inchiostro, A2 sottile grigia, A3 contorno sul quadratino stesso.
+  - **GIO-17 — nell'intestazione il riquadro del giorno scelto è troppo grande** · `triaged`, immagini `B-testa-giorno-*`
+    · oggi una pillola piena larga quanto la colonna (26×22): a 360 px tocca i giorni vicini ("dom[lun]oggi").
+    Varianti: B1 pillola bassa, B2 sottolineato, B3 contorno.
+  - **GIO-18 — una linea che segue l'astinenza** (idea dell'autore: dare soddisfazione al percorso; si interrompe il
+    giorno della ricaduta e riprende) · `triaged`, immagini `C-astinenza-*` · C1 linea sotto spunte/quadratini, C2 solo
+    la linea (Larga, Compatta) e quadratini fusi in un nastro (Segni). La striscia di prima dell'onda (`StripStyle.Band`,
+    `BuildStyledCells`) era già un nastro continuo.
+  - **GIO-19 — Impostazioni › Aspetto: Compatta e Larga sembrano uguali** · `verified` · la differenza vera sono i nomi
+    dei giorni in testa (iniziali contro "lun mar") e l'altezza della riga (30 contro 36), ma l'anteprima
+    (`AppearancePage`, `RowPreview`) disegna la sola riga, senza intestazione: restano 6 px di altezza.
+  - **GIO-20 — le anteprime di creatore, selettore dei modelli e Configura disegnano la striscia di prima** (barrette,
+    pallini) · `verified` · `SamplePreviewFactory.HomeRowFor` riempie `Counts` e `Fractions` ma non `Values`, e senza
+    `Values` `HeatmapStrip` cade su `BuildStyledCells`. L'anteprima deve scrivere le celle come la Home, nella versione
+    delle righe scelta in Aspetto.
+  - **GIO-21 — "Tolleranza (minuti)" e "Secondi timer di riposo" non spiegano cosa fanno** · `verified` · e non fanno
+    niente: `StreakToleranceMinutes` e `RestTimerSeconds` si salvano e finiscono nella storia della config, ma nessun
+    aggregatore né il timer della sessione li legge (cercati in `src`, fuori da creatore, Configura e modelli). L'autore
+    chiede una riga di spiegazione e l'unità a scelta (minuti anche per il riposo). Da decidere: nasconderli finché non
+    hanno effetto, oppure "In arrivo" come "Richiesta automatica".
+  - **GIO-22 — i tag di un'abitudine non servono a niente che si veda** · `verified` · Configura › Tag li assegna e
+    `HomeViewModel.TagFilter` filtra le righe, ma la Home su Avalonia non ha un comando per sceglierli, e la ricerca
+    guarda solo il nome. (I tag delle voci del diario sono un'altra cosa.)
+  - **GIO-23 — scale continue** (richiesta dell'autore) · `reported`, vuole una spec · oggi `ScaleTemplate` ha
+    `MinValue`/`MaxValue` interi e il valore salvato è sempre l'intero (§5 di CLAUDE.md). Chiesto: una scala su cui ci si
+    colloca fra due scaglioni (1,37 fra "Sto malissimo" e "Sto male"), o 0–100.
+  - **GIO-24 — in chiaro i numeri del calendario non si leggono sulle celle piene** · `reported`, misurato su
+    `habit-session-light.png`: `#611E36` su `#E11D48`, contrasto circa 2,5:1 (in scuro sono bianchi). Vale per sessione,
+    stato, note e diario.
+  - **GIO-25 — minori dai fogli** · `reported`: nel creatore stretto "Testo libero" è tagliato dal "+" della tessera
+    (`builder-narrow-*`); la × della ricaduta in Larga è quasi un puntino (`home-ricaduta-comfortable-light`); in
+    `habit-abstinence-*` "Segna una ricaduta…" sembra rosso solo perché la fixture è cremisi.
