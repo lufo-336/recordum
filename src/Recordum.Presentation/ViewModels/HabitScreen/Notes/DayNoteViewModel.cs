@@ -17,6 +17,7 @@ public sealed partial class DayNoteViewModel : ObservableObject
     private readonly IClock _clock;
     private Guid _habitNodeId;
     private Note? _current;
+    private Task? _saving;
 
     public DayNoteViewModel(INoteService notes, IClock clock)
     {
@@ -74,6 +75,7 @@ public sealed partial class DayNoteViewModel : ObservableObject
     /// <summary>Loads the (most recent) note anchored to <paramref name="date"/> into the editor, or an empty editor.</summary>
     public async Task LoadDayAsync(DateOnly date, CancellationToken ct = default)
     {
+        if (_saving is { IsCompleted: false } saving) await saving.ConfigureAwait(true);
         Date = date;
         HasDate = true;
         var list = await _notes.ListByHabitAndDateAsync(_habitNodeId, date, ct).ConfigureAwait(true);
@@ -91,8 +93,19 @@ public sealed partial class DayNoteViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync(CancellationToken ct)
     {
+        if (_saving is { IsCompleted: false } saving)
+        {
+            await saving.ConfigureAwait(true);
+            if (!CanSave) return;
+        }
+        _saving = SaveCoreAsync(ct);
+        await _saving.ConfigureAwait(true);
+    }
+
+    private async Task SaveCoreAsync(CancellationToken ct)
+    {
         if (Date is not { } d) return;
-        if (_current is null)
+        if (_current is not { } current)
         {
             var draft = new Note
             {
@@ -102,13 +115,13 @@ public sealed partial class DayNoteViewModel : ObservableObject
                 UpdatedAtMs = _clock.UtcNowMs,
             };
             await _notes.CreateAsync(draft, ct).ConfigureAwait(true);
-            _current = draft;
+            if (Date == d) _current = draft;
         }
         else
         {
             var body = Text;
-            await _notes.UpdateAsync(_current.Id, n => n.BodyMd = body, ct).ConfigureAwait(true);
-            _current.BodyMd = body;
+            await _notes.UpdateAsync(current.Id, n => n.BodyMd = body, ct).ConfigureAwait(true);
+            if (Date == d) current.BodyMd = body;
         }
         OnPropertyChanged(nameof(CanSave));
         SaveCommand.NotifyCanExecuteChanged();

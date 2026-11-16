@@ -176,4 +176,27 @@ public class GiornataScreenshotTests
         ScreenshotProbeTests.Capture(w, $"home-manifesto-{style.ToString().ToLowerInvariant()}-{theme}-{width}");
         w.Close();
     }
+
+    /// <summary>Finding B9: la Home Larga coi valori in inchiostro invece che nel colore dell'abitudine, da mettere
+    /// accanto a <c>home-manifesto-comfortable-light-900.png</c>. Solo un'immagine per la decisione dell'autore: la
+    /// variante si ottiene ridipingendo le celle nel test, nessun codice di prodotto.</summary>
+    [AvaloniaFact]
+    public void Home_with_values_in_ink_B9()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _, _) = ShowManifest("light", 900, HomeRows.Comfortable);
+        Application.Current!.TryGetResource("Brush.Ink", ThemeVariant.Light, out var res).Should().BeTrue();
+        var ink = (Avalonia.Media.IBrush)res!;
+
+        var on = view.GetVisualDescendants().OfType<HeatmapStrip>()
+            .SelectMany(s => s.GetVisualDescendants().OfType<TextBlock>())
+            .Where(t => t.FontWeight == Avalonia.Media.FontWeight.SemiBold).ToList();
+        on.Should().NotBeEmpty("la Home piena ha valori accesi");
+        on.Should().Contain(t => !Equals(t.Foreground, ink), "di serie i valori hanno il colore dell'abitudine");
+        foreach (var t in on) t.Foreground = ink;
+        Pump();
+
+        ScreenshotProbeTests.Capture(w, "home-manifesto-comfortable-light-900-inchiostro");
+        w.Close();
+    }
 }

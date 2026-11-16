@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Tests.Fixtures;
@@ -114,5 +116,92 @@ public class DayNoteViewModelTests
         sut.SetContext(Guid.NewGuid(), isJournal: false);
 
         sut.ShowEditor.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Two_saves_in_a_row_create_one_note()
+    {
+        var notes = new BlockingNoteService();
+        var sut = new DayNoteViewModel(notes, new FakeClock());
+        sut.SetContext(Guid.NewGuid());
+        await sut.LoadDayAsync(new DateOnly(2026, 6, 10));
+
+        var gate = new TaskCompletionSource();
+        notes.CreateGate = gate;
+        sut.Text = "x";
+        sut.SaveCommand.Execute(null);
+        var first = sut.SaveCommand.ExecutionTask!;
+
+        var second = sut.SaveCommand.ExecuteAsync(null);
+        gate.SetResult();
+        await Task.WhenAll(first, second);
+
+        notes.Created.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task A_save_in_flight_does_not_leak_into_the_next_day()
+    {
+        var dayA = new DateOnly(2026, 6, 10);
+        var dayB = new DateOnly(2026, 6, 11);
+        var notes = new BlockingNoteService();
+        var sut = new DayNoteViewModel(notes, new FakeClock());
+        sut.SetContext(Guid.NewGuid());
+        await sut.LoadDayAsync(dayA);
+
+        var gate = new TaskCompletionSource();
+        notes.CreateGate = gate;
+        sut.Text = "a";
+        sut.SaveCommand.Execute(null);
+        var save = sut.SaveCommand.ExecutionTask!;
+
+        var load = sut.LoadDayAsync(dayB);
+        gate.SetResult();
+        await load;
+        await save;
+
+        sut.Text.Should().BeEmpty();
+        sut.Date.Should().Be(dayB);
+
+        sut.Text = "b";
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        notes.Updated.Should().BeEmpty();
+        notes.Created.Should().HaveCount(2);
+        notes.Created[1].TargetDate.Should().Be(dayB);
+    }
+
+    private sealed class BlockingNoteService : INoteService
+    {
+        private readonly FakeNoteService _inner = new();
+        public TaskCompletionSource? CreateGate { get; set; }
+        public List<Note> Created { get; } = [];
+        public List<Guid> Updated { get; } = [];
+
+        public async ValueTask<Guid> CreateAsync(Note draft, CancellationToken ct = default)
+        {
+            Created.Add(draft);
+            if (CreateGate is { } gate)
+            {
+                CreateGate = null;
+                await gate.Task;
+            }
+            return await _inner.CreateAsync(draft, ct);
+        }
+
+        public ValueTask UpdateAsync(Guid id, Action<Note> mutate, CancellationToken ct = default)
+        {
+            Updated.Add(id);
+            return _inner.UpdateAsync(id, mutate, ct);
+        }
+
+        public ValueTask DeleteAsync(Guid id, CancellationToken ct = default) => _inner.DeleteAsync(id, ct);
+        public ValueTask<Note?> GetAsync(Guid id, CancellationToken ct = default) => _inner.GetAsync(id, ct);
+        public ValueTask<IReadOnlyList<Note>> ListByHabitAsync(Guid habitNodeId, CancellationToken ct = default) => _inner.ListByHabitAsync(habitNodeId, ct);
+        public ValueTask<IReadOnlyList<Note>> ListByHabitAndDateAsync(Guid habitNodeId, DateOnly targetDate, CancellationToken ct = default) => _inner.ListByHabitAndDateAsync(habitNodeId, targetDate, ct);
+        public ValueTask<IReadOnlyList<DateOnly>> ListNoteDaysInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default) => _inner.ListNoteDaysInMonthAsync(habitNodeId, year, month, ct);
+        public ValueTask<IReadOnlyList<DayNoteCount>> ListNoteCountsInMonthAsync(Guid habitNodeId, int year, int month, CancellationToken ct = default) => _inner.ListNoteCountsInMonthAsync(habitNodeId, year, month, ct);
+        public ValueTask<IReadOnlyList<NoteVersion>> ListVersionsAsync(Guid noteId, CancellationToken ct = default) => _inner.ListVersionsAsync(noteId, ct);
+        public ValueTask RestoreVersionAsync(Guid noteId, Guid versionId, CancellationToken ct = default) => _inner.RestoreVersionAsync(noteId, versionId, ct);
     }
 }

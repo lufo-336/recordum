@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using FluentAssertions;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Tests.Abstractions;
@@ -159,6 +160,49 @@ public sealed class HomeDayTests : IDisposable
         sut.Rows.Select(r => r.Name).Should().BeEquivalentTo("Mattina", "Lettura");
         RowOf(sut, "Mattina").GroupProgressText.Should().Be("2 di 2");
         sut.DayCountText.Should().Be("2 di 3", "il filtro non cambia il conto");
+    }
+
+    [Fact]
+    public async Task Hide_done_on_today_hides_an_abstinence_in_progress()
+    {
+        _query.HomeRows.Clear();
+        _query.HomeRows.Add(Row("Astinenza", null, HabitType.Resistance, Days()) with { AbstinenceStatus = AbstinenceStatus.Abstaining });
+        _query.HomeRows.Add(Row("Azione", null, HabitType.Action, Days()));
+        var sut = await LoadedAsync();
+
+        sut.DaysBack.Should().Be(0);
+        sut.HideCompletedToday = true;
+
+        sut.Rows.Should().ContainSingle().Which.Name.Should().Be("Azione");
+    }
+
+    [Fact]
+    public async Task A_filter_that_hides_the_selected_row_clears_the_selection()
+    {
+        _query.HomeRows.Clear();
+        _query.HomeRows.Add(Row("Alfa", null, HabitType.Action, Days()));
+        _query.HomeRows.Add(Row("Beta", null, HabitType.Action, Days()));
+        var sut = await LoadedAsync();
+        sut.SelectedRow = RowOf(sut, "Beta");
+
+        sut.SearchText = "Alfa";
+
+        sut.SelectedRow.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_filter_keeps_the_selected_row_as_a_live_row()
+    {
+        _query.HomeRows.Clear();
+        _query.HomeRows.Add(Row("Alfa", null, HabitType.Action, Days()));
+        _query.HomeRows.Add(Row("Beta", null, HabitType.Action, Days()));
+        var sut = await LoadedAsync();
+        sut.SelectedRow = RowOf(sut, "Alfa");
+
+        sut.SearchText = "Alfa";
+
+        sut.SelectedRow.Should().NotBeNull();
+        sut.Rows.Contains(sut.SelectedRow!).Should().BeTrue();
     }
 
     [Fact]

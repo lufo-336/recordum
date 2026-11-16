@@ -279,6 +279,26 @@ public class HomeKeyboardTests
     }
 
     [AvaloniaFact]
+    public void Arrows_still_work_with_the_focus_on_a_button()
+    {
+        var h = Show(Row("a"), Row("b"));
+        var prev = h.View.FindControl<Button>("PrevDayButton")!;
+        prev.Focus();
+        Pump();
+        prev.IsFocused.Should().BeTrue();
+
+        Down(h.W);
+        h.Vm.SelectedRow.Should().BeSameAs(h.Vm.Rows[0]);
+
+        Left(h.W);
+        h.Vm.DaysBack.Should().Be(1);
+
+        Space(h.W);
+        h.Spy.Calls.Should().BeEmpty();
+        h.W.Close();
+    }
+
+    [AvaloniaFact]
     public void Left_and_right_change_the_day_and_right_stops_at_today()
     {
         var h = Show(Row("a"));

@@ -492,11 +492,11 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private void ToggleTypeFilter(HabitType type) =>
         TypeFilter = TypeFilter.SymmetricExcept(new[] { type });
 
-    partial void OnTypeFilterChanged(ImmutableHashSet<HabitType> value) { if (!_suppressRebuild) Rebuild(); }
-    partial void OnTagFilterChanged(ImmutableHashSet<Guid> value) { if (!_suppressRebuild) Rebuild(); }
-    partial void OnHideCompletedTodayChanged(bool value) { if (!_suppressRebuild) Rebuild(); }
-    partial void OnSearchTextChanged(string? value) { if (!_suppressRebuild) Rebuild(); }
-    partial void OnSortOptionChanged(HomeSort value) { if (!_suppressRebuild) Rebuild(); }
+    partial void OnTypeFilterChanged(ImmutableHashSet<HabitType> value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
+    partial void OnTagFilterChanged(ImmutableHashSet<Guid> value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
+    partial void OnHideCompletedTodayChanged(bool value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
+    partial void OnSearchTextChanged(string? value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
+    partial void OnSortOptionChanged(HomeSort value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
 
     private void ResetFilters()
     {
@@ -613,7 +613,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         if (!TagFilter.IsEmpty)
             q = q.Where(r => r.TagIds.Any(TagFilter.Contains));
         if (HideCompletedToday && ActiveTab == HomeTab.Active)
-            q = q.Where(r => !GroupProgress.HasEntryOn(r, GroupProgress.CellBack(r, DaysBack, _clock)));
+            q = q.Where(r => !GroupProgress.IsDoneOn(r, GroupProgress.CellBack(r, DaysBack, _clock)));
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var needle = SearchText.Trim();
@@ -807,7 +807,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         if (_rebuilding || sender is not HomeRowViewModel row || !row.IsGroup) return;
         if (row.IsExpanded) _collapsedGroupIds.Remove(row.HabitNodeId);
         else _collapsedGroupIds.Add(row.HabitNodeId);
-        Rebuild();
+        RebuildPreservingSelection();
     }
 
     private IEnumerable<(HomeTreeRow Row, int Level)> WalkSubtree(HomeTreeRow node, int level, ILookup<Guid?, HomeTreeRow> byParent)

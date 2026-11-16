@@ -6,7 +6,7 @@
 >
 > Quando un issue raggiunge `verified-fixed`, spostalo in fondo nella sezione "Risolti" con il commit SHA del fix.
 
-## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-10-06)
+## Indice — cosa resta aperto e dove si chiude (aggiornato al 2026-11-16)
 
 > Una pagina per sapere cosa è ancora aperto e **dove si chiude**. Il dettaglio di ogni voce sta più sotto, nella sezione
 > della sua onda. I problemi trovati dalla revisione del 2026-09-25 (`RV-*`) sono nel piano del Passo 0, non qui; i
@@ -21,7 +21,7 @@
 - **W2V-13** — due unità con lo stesso nome nel picker, a schermo lo slug · `verified`
 - **W2V-14** — i mattoni illegali non sono disabilitati: il click è muto · `verified`
 - **W2V-17 (a, b)** — "Decimali" insegna il modello sbagliato; l'input numerico non dice le sue regole · `verified`
-- **W2V-20** — "gesto primario" è gergo di progetto · `verified`
+- **W2V-20** — "gesto primario" è gergo di progetto · `fixed` (onda "Giornata", Task 1)
 - **F0-M4, F0-M5, F0-Q1, F0-T3** — residui di F0: guardia di C1 a metà, timer del chart builder non disposto,
   `QuitCommand` senza consumatori, nessun test che il ticker riparta dopo `Clear()` · `reported`
 - **R9-M1…M8** — i minori della review di R9 · `reported`
@@ -60,9 +60,13 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 `reported` (salvo M5, M6, M11 per metà, `fixed`).
 
 **Direzione visiva, onda 3a (sezione in fondo)** — **UX-11** e **UX-12** `fixed`; **UX3A-3** `fixed` nel Task 7;
-**UX3A-2** `fixed` nell'ondata finale (con metà di M4 e di M5). Aperti: **UX3A-1** "2 hours" (il `Code` dell'unità in Home
-e nelle anteprime), **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore, i minori
-**UX3A-M1…M6** e le domande **UX3A-Q1…Q4** · `reported`; accettati **UX3A-A1…A4** · `triaged`.
+**UX3A-2** `fixed` nell'ondata finale (con metà di M4 e di M5); **UX3A-1** e **UX3A-Q1…Q4** `fixed` nell'onda "Giornata".
+Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
+`reported`; accettati **UX3A-A1…A4** · `triaged`.
+
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3** e **GIO-7** `fixed`. Aperti: **GIO-1**,
+**GIO-2**, **GIO-4**, **GIO-5** · `reported`, e **GIO-6** (da decidere con l'autore). Fuori dall'onda restano **B7**,
+**B8**, **B9** (solo l'immagine di confronto).
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -1651,12 +1655,14 @@ builder. È il progetto: il payload la porta come definizione incorporata e la c
   l'anteprima è **meno fedele della cosa che anticipa**. Fix piccolo e circoscritto: un campione di valori
   **non binario** (il pattern dei giorni resta, cambiano le magnitudini), verificando che `Fractions` copra
   l'intervallo utile.
-- **W2V-20 — "Gesto primario" è gergo di progetto esposto all'utente** (`verified`, autore + codice).
+- **W2V-20 — "Gesto primario" è gergo di progetto esposto all'utente** (`fixed` nell'onda "Giornata", Task 1).
   L'etichetta della manopola journal è letteralmente `Gesto primario`
   (`Strings.it.resx:1399`), con le opzioni "Scrivi la voce di oggi" / "Nota veloce con foto". Le **opzioni**
   sono chiare; è l'**etichetta** a nominare il concetto interno invece di porre la domanda ("Aprendo il
   diario, cosa vuoi fare?"). Compare identica nel builder e in Configura → Registrazione. Copy, non
   comportamento — ma è la prima cosa che si legge di U7.
+  Chiuso (`c37c4556`): l'etichetta ora è "Si registra con" (`Editor.Registration.JournalGesture`). Test:
+  `GlossaryGuardTests.Italian_values_avoid_forbidden_words`.
 
 ## SEC-1 — La cifratura del database era spenta (trovato 2026-09-08, `fixed`)
 
@@ -2508,12 +2514,89 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
     sulla scheda nuova.
 - Domande per l'autore:
   - **UX3A-Q1** — "journal" o "diario" come parola italiana del tipo (`Home.HabitType.Journal`, condivisa con la Home); nelle
-    schede si legge anche "resistenza" per "Smettere di fumare", mentre il creatore dice "Astinenza".
-  - **UX3A-Q2** — il "+" nei titoli delle tessere ("+ Quantità", "+ Testo libero") contro la spec "Quantità · Tempo · Scala · Testo".
-  - **UX3A-Q3** — l'unità "sets": "Serie" (si confonde con le serie delle registrazioni e la streak) o "Set".
-  - **UX3A-Q4** — "2 hours" (UX3A-1): simbolo ("2 h") o nome tradotto ("2 ore")?
+    schede si legge anche "resistenza" per "Smettere di fumare", mentre il creatore dice "Astinenza" · `fixed` (onda
+    "Giornata", Task 1): deciso "diario" (mai "journal" in italiano) e "astinenza" ovunque (mai "resistenza"/"resistance"),
+    in `docs/GLOSSARY.md`. Test: `GlossaryGuardTests.Italian_values_avoid_forbidden_words`,
+    `GlossaryGuardTests.English_values_avoid_forbidden_words`.
+  - **UX3A-Q2** — il "+" nei titoli delle tessere ("+ Quantità", "+ Testo libero") contro la spec "Quantità · Tempo · Scala · Testo"
+    · `fixed` (onda "Giornata", Task 2): via il "+" dal testo delle tessere (resta l'icona del pulsante). Test:
+    `HabitBuilderViewModelTests.Builder_tiles_have_no_plus_in_the_title`.
+  - **UX3A-Q3** — l'unità "sets": "Serie" (si confonde con le serie delle registrazioni e la streak) o "Set" · `fixed`
+    (onda "Giornata", Task 1): "serie" resta solo all'unità `sets` (e alle serie dei grafici); lo streak è "di fila" e
+    le più registrazioni nello stesso giorno sono "registrazioni" (`docs/GLOSSARY.md`). Test:
+    `GlossaryGuardTests.Italian_values_avoid_forbidden_words`.
+  - **UX3A-Q4** — "2 hours" (UX3A-1): simbolo ("2 h") o nome tradotto ("2 ore")? · `fixed` (onda "Giornata", Task 2):
+    simbolo se c'è ("2 h", "20 min"), altrimenti nome tradotto ("12 pagine"), via `UnitLabel` (`docs/GLOSSARY.md`).
+    Test: `UnitLabelTests.Unit_next_to_a_value_uses_the_symbol_when_there_is_one`,
+    `UnitLabelTests.Unit_next_to_a_value_otherwise_the_translated_name`.
 
 ## Onda "Giornata" (`GIO-*`)
+
+**Finding della revisione del 2026-11-10 chiusi dall'onda**
+- **A1 — Ieri dalla Home non esiste** · `fixed` · Task 4, 6, 7, 8, 8b (`659128c8`, `23c2f914`, `34c9acbc`, `9c543670`,
+  `a2b39368`): la Home ha un giorno corrente (`DaysBack`, 0 = oggi) scelto da ‹ › o dai pulsanti dei giorni in testa,
+  con fascia sul giorno passato; il log rapido passa il giorno e timbra con `CompletionStamp`, l'apertura della
+  schermata atterra sul giorno scelto, e dalla Home una spunta si toglie con conferma. Test: `HomeDayTests.Starts_on_today`,
+  `HomeDayTests.Previous_day_moves_title_date_count_and_banner`, `HomeDayTests.Quick_action_on_a_past_day_passes_that_day`,
+  `CompletionStampTests.Stamp_past_day_is_noon_of_that_day_and_retroactive`,
+  `ActionQuickActionHandlerTests.Action_on_a_past_day_records_at_noon_of_the_habit_boundary`,
+  `CounterQuickActionHandlerTests.Counter_without_fields_on_a_past_day_records_one`,
+  `HomeLayoutTests.Clicking_a_header_day_selects_it`, `HomeLayoutTests.Banner_shows_only_on_a_past_day_and_goes_back`,
+  `MainWindowViewModelTests.Opening_a_habit_from_a_past_day_selects_that_day`,
+  `HomeUncheckTests.Quick_log_on_a_done_action_asks_once_and_yes_unchecks_the_row`.
+- **A2 — La tastiera registra poco** · `fixed` · Task 11 (`5770155a`): dalla Home ↑ ↓ scorrono le righe in vista, Spazio
+  esegue il log rapido sul giorno corrente, Invio apre e fissa la scheda, ← → cambiano giorno, Ctrl+N apre una nuova
+  abitudine e Ctrl+, apre Impostazioni, senza rubare tasti a `TextBox`, pulsanti, tendine o menu. Test:
+  `HomeKeyboardTests.Down_without_a_selection_picks_the_first_row_and_up_the_last`,
+  `HomeKeyboardTests.Space_on_a_past_day_logs_on_that_day`,
+  `HomeKeyboardTests.Left_and_right_change_the_day_and_right_stops_at_today`,
+  `HomeKeyboardTests.Enter_opens_and_pins_the_selected_row`,
+  `MainWindowTests.Ctrl_N_opens_a_new_habit_and_ctrl_comma_the_settings`,
+  `ShellIntegrationTests.Arrows_keep_walking_the_rows_after_the_screen_opens_and_enter_pins_it`.
+- **A3 — La testa della Home serve le cose rare** · `fixed` · Task 7 (`34c9acbc`): la testa sta su una riga con titolo,
+  data, conto della giornata e ‹ › a sinistra, e lente di ricerca, "fatte", ordinamento, menu ⋯ (Attive / Archiviate /
+  Cestino) e "+ Nuova" a destra, andando a capo quando non ci sta. Test: `HomeLayoutTests.Head_is_one_row_at_900`,
+  `HomeLayoutTests.Head_wraps_under_520`, `HomeLayoutTests.More_menu_switches_tabs_and_archive_has_no_day_controls`,
+  `HomeLayoutTests.Search_opens_from_the_lens_and_from_ctrl_f`.
+- **A4 — Non esiste un PNG della Home vissuta** · `fixed` · Task 3 (`cdb8e040`): aggiunta la fixture `ManifestHome` (nove
+  abitudini con gruppo, 14 giorni di dati, oggi a metà, nove colori) e i PNG `home-manifesto-{light,dark}-{900,360}.png`.
+  Test: `GiornataScreenshotTests.Home_full`, `GiornataScreenshotTests.Home_on_yesterday`,
+  `GiornataScreenshotTests.Home_in_three_versions`.
+- **B1 — La stessa voce fino a quattro volte** · `fixed` · Task 12 (`270c00ef`): `HabitRecordsViewModel.ExcludedDay`
+  esclude le registrazioni del giorno scelto e il periodo già mostrato nel blocco del giorno dall'elenco della Cronologia,
+  senza far mentire `IsEmpty`. Test: `PeriodListExcludedDayTests.Period_list_skips_the_selected_day`,
+  `PeriodListExcludedDayTests.Selecting_another_day_brings_the_previous_one_back`,
+  `PeriodListExcludedDayTests.Empty_message_does_not_lie`, `PeriodListExcludedDayTests.Abstinence_current_period_is_shown_once`.
+- **B2 — Tre parole per scrivere** · `fixed` · Task 2, 13 (`90c76dac`, `39073679`): solo voci sui diari (colonna Note
+  assente salvo note libere preesistenti, che mostra senza crearne), note sulle altre abitudini senza etichetta di
+  categoria, pulsante "Versioni", righe della colonna Note e nota del blocco del giorno rese in Markdown. Test:
+  `NoteRowViewModelTests.A_note_row_has_no_category_label`,
+  `NotesColumnTests.HistoryButton_reads_Versioni_in_Italian_and_Versions_in_English`,
+  `JournalNotesColumnTests.A_journal_has_no_notes_column`,
+  `JournalNotesColumnTests.A_journal_with_existing_notes_keeps_it_read_only`,
+  `JournalNotesColumnTests.A_journal_gets_the_column_back_when_notes_appear_after_reload`,
+  `NotesColumnTests.Note_rows_render_markdown`, `NotesColumnTests.Day_block_note_renders_markdown_until_edited`.
+- **B3 — Lo stato: cinque quadrati vuoti** · `fixed` · Task 14 (`3b9303fa`): ogni gradino mostra il suo numero intero
+  (1..N) e il gradino registrato nel giorno scelto si riempie nel colore dell'abitudine. Test:
+  `StateStepsTests.State_steps_show_their_number`, `StateStepsTests.The_recorded_step_is_filled`,
+  `StateStepsTests.No_step_is_filled_on_a_day_without_a_value`, `StateStepsTests.The_fill_follows_the_selected_day`.
+- **B4 — "serie" vuol dire due cose** · `fixed` · Task 1 (`c37c4556`): streak tradotto con "di fila" ("{0} giorni di fila",
+  "Giorni di fila") lasciando "serie" solo all'unità `sets` (e ai grafici), in `docs/GLOSSARY.md` con guardia sulle
+  `.resx`. Test: `GlossaryGuardTests.Italian_values_avoid_forbidden_words`.
+- **B5 — "Ho ceduto…" e la ricaduta in rosso** · `fixed` · Task 1, 5 (`c37c4556`, `b935a749`): comando "Segna una
+  ricaduta…" (`Button.record` senza `danger`), dalla Home non si chiude un periodo con un clic (apre la schermata sul
+  giorno scelto proponendo la ricaduta su quella data), e la ricaduta usa `Brush.TextMuted` col formato data corto. Test:
+  `GlossaryGuardTests.Italian_values_avoid_forbidden_words`, `AbstinenceQuickActionHandlerTests.Home_quick_action_never_lapses`,
+  `AbstinenceQuickAddViewModelTests.Lapse_uses_the_chosen_completion_day`,
+  `HeadCommandTests.Relapse_text_is_muted_not_red`,
+  `HeadCommandTests.Lapse_flyout_names_the_chosen_day_and_the_relapse_goes_there`.
+- **B6 — "+ a mano" è un pulsante pieno di grigio** · `fixed` · Task 14 (`3b9303fa`): ora usa `ToggleButton.outline`
+  con fondo trasparente, bordo `Brush.Border` e testo `Brush.Text` (`Brush.Selection` quando premuto). Test:
+  `StateStepsTests.Manual_button_is_an_outline_secondary`, `StateStepsTests.Manual_button_hover_is_visible`.
+
+Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
+(`home-manifesto-comfortable-light-900-inchiostro.png` accanto a `home-manifesto-comfortable-light-900.png`,
+`GiornataScreenshotTests.Home_with_values_in_ink_B9`): decide l'autore.
 
 - **GIO-1 — `SaveAsTemplate_creates_custom_template_with_roundtrippable_payload` è instabile** · `reported` · precedente
   all'onda. `HabitBuilderViewModelTests` confronta il nome del campo con `Strings.HabitBuilder_DefaultField_Quantity`

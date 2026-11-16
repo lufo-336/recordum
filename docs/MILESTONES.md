@@ -808,3 +808,38 @@ all'autore. Suite su Linux: Presentation 1430, UI 741 (suite intere, prestazioni
 tradotto; `DetailFailed` azzerato quando carica la scheda successiva; un modello senza `config` col recupero `None` come
 `InstantiateAsync`; una guardia sui due nomi di un modello ufficiale (scheda e abitudine creata). Quattro scarti accettati
 nel tracker (UX3A-A1…A4). Suite su Linux a `189664a1`: Presentation 1435, UI 741, Data 670 (+2 saltati).
+
+**Progresso 2026-11-16 (onda "Giornata": la Home col giorno corrente, la tastiera, voce e nota, le parole — a codice
+completo).** Piano `2026-11-11-giornata-wave` eseguito su `giornata-agy` (15 task + 8b), da `ux3a-creator-templates`.
+*Cosa esiste ora*: le parole dell'app fissate in `docs/GLOSSARY.md` con guardia sulle `.resx` (`GlossaryGuardTests`):
+"di fila" per lo streak, "astinenza", "diario", "libero", "ricaduta" / "Segna una ricaduta…", "Si registra con", "serie"
+riservato all'unità `sets`, unità accanto ai valori col simbolo o col nome tradotto (`UnitLabel`), tessere del creatore
+senza "+" nel titolo, righe delle note senza etichetta di categoria e pulsante "Versioni". La Home ha la fixture
+"manifesto" con nove abitudini e colori distinti (`ManifestHome`), una testa su una riga con titolo, conto della giornata,
+‹ ›, lente espandibile e menu ⋯ (che va a capo quando manca spazio), un giorno corrente (`DaysBack`) cliccabile
+dall'intestazione e navigabile da tastiera (↑ ↓, Spazio, Invio, ← →, Ctrl+N, Ctrl+,), fascia d'avviso sul giorno
+passato con "Torna a oggi" e ritorno automatico a oggi al cambio di giorno. Il log rapido riceve il giorno e timbra con
+l'helper unico `CompletionStamp.For` (`NoonOf` per i giorni passati, confine dell'abitudine); le spunte si tolgono dalla
+Home previa conferma; una ricaduta si data su un giorno passato dalla schermata dell'abitudine (dalla Home non chiude più
+un periodo con un clic) e si legge in `Brush.TextMuted`. Le righe della Home hanno tre versioni (Compatta, Segni con
+quadratini e `Brush.CellEmpty`, Larga) governate da `HomeRowsPreference` (`home.rows`) e `HomeRowsMetrics`, configurabili
+in Impostazioni › Aspetto con anteprima vera. Nella schermata dell'abitudine l'elenco della Cronologia esclude il giorno
+scelto (`ExcludedDay`, B1); i diari hanno solo voci (colonna Note solo se esistono già note libere: le mostra, non ne crea)
+e le altre abitudini hanno note rese in Markdown anche nel blocco del giorno (B2); i gradini dello stato
+mostrano il numero e quello del giorno scelto è pieno (B3); "+ a mano" della sessione è un secondario a contorno (B6).
+*Cosa ha insegnato*: con i 14 giorni cliccabili in testa, le righe limitate a 7 giorni lasciavano senza cella i giorni
+più vecchi (GIO-3): ora è la Home a decidere quante colonne mostrare per tutte le righe. La Home ricostruisce e
+ri-seleziona le righe a ogni registrazione o cambio di giorno, quindi `MainWindowViewModel` tiene `_selectedSubject` per
+distinguere una ri-selezione dall'apertura esplicita e la richiesta di ricaduta (`TakeLapsePrompt`) aspetta la vista
+appena creata. Rendere `LoadDayAsync` virtuale su `QuickAddViewModelBase` ha unificato l'aggiornamento del giorno su
+tutti i comandi, scoprendo che la ricostruzione da Configura (`OnHabitUpdatedEvent`) perdeva il giorno scelto. Solo le
+note libere (`NoteCategory.Veloce`) aprono la colonna Note su un diario, lette prima di assegnare `Node` per non
+chiudere e riaprire la colonna al passaggio; uscire dal fuoco salva la nota del giorno resa. L'onda è stata scritta in
+cooperazione con Antigravity: Claude decide il disegno, scrive i test rossi, le stringhe e il brief; Antigravity scrive
+l'implementazione (Hydrogen: 65-190 s per task, quasi sempre verde al primo giro) e fa la review (Argon, ~13 minuti,
+difetti veri che i test non coprivano); la prova del rosso si fa dopo la review.
+*Non consegnato*: B7, B8, B9 (solo l'immagine di confronto `home-manifesto-comfortable-light-900-inchiostro.png`); GIO-1,
+2, 4, 5 aperti, GIO-6 da decidere; e dal piano: la cornice da telefono, le misure da dito e il foglio dal basso (testa
+Android, passo 4 della roadmap), Impostazioni a categorie con Generale, Informazioni con le scorciatoie e carattere
+dell'app (3b), `home.rows` fuori dalla specifica dell'"unisci", la palette dei comandi (1.1) e un lasso di tempo
+navigabile a scelta nella Home.

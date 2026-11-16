@@ -254,11 +254,11 @@ public partial class HomeView : UserControl
         DispatchRowKey(row, e);
     }
 
-    // A2: ↑ ↓ la riga, Spazio il log rapido sul giorno della Home, Invio apre e fissa, ← → il giorno. Frecce, Spazio e
-    // Invio restano di chi li usa: un pulsante, una tendina o una voce di menu a fuoco.
+    // A2: ↑ ↓ riga, ← → giorno, Spazio log rapido, Invio apre; un Button tiene solo Spazio/Invio, ComboBox e MenuItem tutto.
     private bool DispatchHomeKey(HomeViewModel home, IInputElement? focused, KeyEventArgs e)
     {
-        if (e.KeyModifiers != KeyModifiers.None || focused is Button or ComboBox or MenuItem) return false;
+        if (e.KeyModifiers != KeyModifiers.None || focused is ComboBox or MenuItem) return false;
+        if (focused is Button && e.Key is Key.Space or Key.Enter) return false;
         switch (e.Key)
         {
             case Key.Down:
