@@ -16,7 +16,7 @@ public sealed partial class ActionQuickAddViewModel(ICompletionService completio
 
     /// <summary>Rilegge <see cref="IsDone"/> per il giorno di <see cref="QuickAddViewModelBase.CompletionDate"/>, nella
     /// finestra del confine dell'abitudine.</summary>
-    public async Task LoadDayAsync(CancellationToken ct = default)
+    public override async Task LoadDayAsync(CancellationToken ct = default)
         => IsDone = Node is not null && (await ListDayAsync(ct).ConfigureAwait(true)).Count > 0;
 
     /// <summary>Registra se il giorno non è fatto; altrimenti cancella la registrazione più recente del giorno.</summary>

@@ -9,6 +9,22 @@
              x:DataType="qa:MeasuredQuickAddViewModel">
   <!-- Stato: con una scala sola di al più 10 gradini, un gradino per etichetta e un clic registra; altrimenti le celle e
        "Registra". Accanto l'ultimo valore. -->
+  <UserControl.Styles>
+    <Style Selector="Button.step">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.step.current">
+      <Setter Property="Background" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+    </Style>
+    <!-- Fluent e lo stile globale .record:pointerover ridipingono PART_ContentPresenter su hover/pressed. -->
+    <Style Selector="Button.step.current /template/ ContentPresenter#PART_ContentPresenter, Button.step.current:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.step.current:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Habit}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+    </Style>
+  </UserControl.Styles>
   <StackPanel HorizontalAlignment="Right">
     <ItemsControl x:Name="Steps" ItemsSource="{CompiledBinding Steps}" IsVisible="{CompiledBinding HasSteps}">
       <ItemsControl.ItemsPanel>
@@ -17,10 +33,13 @@
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="qa:ScalePoint">
           <StackPanel Width="56">
-            <Button Classes="record step" Width="30" Height="30" Padding="0" HorizontalAlignment="Center"
+            <Button Classes="record step" Classes.current="{CompiledBinding IsCurrent}" Width="30" Height="30" Padding="0" HorizontalAlignment="Center"
                     ToolTip.Tip="{CompiledBinding Label}" AutomationProperties.Name="{CompiledBinding Label}"
                     Command="{CompiledBinding $parent[ItemsControl].((qa:MeasuredQuickAddViewModel)DataContext).RecordStepCommand}"
-                    CommandParameter="{CompiledBinding}"/>
+                    CommandParameter="{CompiledBinding}">
+              <TextBlock Text="{CompiledBinding Value}" FontSize="{DynamicResource FontSize.Label}" FontWeight="Medium"
+                         FontFeatures="+tnum" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
             <!-- Va a capo, non si tronca: "Very good" in 56 px diventava "Very go…" (visto nei PNG). -->
             <TextBlock x:Name="StepLabel" Text="{CompiledBinding Label}" FontSize="{DynamicResource FontSize.Small}" Margin="0,3,0,0"
                        Foreground="{DynamicResource Brush.TextMuted}" TextAlignment="Center" TextWrapping="Wrap"/>

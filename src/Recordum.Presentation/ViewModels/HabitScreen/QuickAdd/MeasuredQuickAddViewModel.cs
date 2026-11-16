@@ -6,6 +6,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.Resources;
+using DayWindow = Recordum.Presentation.Services.CompletionDay;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 
@@ -60,6 +61,25 @@ public sealed partial class MeasuredQuickAddViewModel(
         Row = new SeriesRowViewModel(ordered.Select(factory.Create));
     }
 
+    /// <summary>Accende il gradino registrato nel giorno di <see cref="QuickAddViewModelBase.CompletionDate"/>: l'ultimo
+    /// valore della scala in quel giorno (come la mappa: una registrazione più recente senza valore non lo spegne).</summary>
+    public override async Task LoadDayAsync(CancellationToken ct = default)
+    {
+        if (Node is null || !HasSteps)
+        {
+            foreach (var step in Steps) step.IsCurrent = false;
+            return;
+        }
+        var day = CompletionDay;
+        var list = await DayWindow.ListAsync(Completions, Node.Id, DayBoundary, day, ct).ConfigureAwait(true);
+        // Durante l'attesa il giorno o la scala possono essere cambiati: vale la lettura partita per ultima.
+        if (day != CompletionDay || !HasSteps) return;
+        var metricId = Row.Cells[0].Metric.Id;
+        var value = list.OrderByDescending(c => c.CompletedAtMs).SelectMany(c => c.Values)
+            .FirstOrDefault(v => v.MetricDefinitionId == metricId)?.ValueInteger;
+        foreach (var step in Steps) step.IsCurrent = step.Value == value;
+    }
+
     [RelayCommand]
     private Task Save(CancellationToken ct) => SaveAsync(ct);
 
@@ -90,6 +110,7 @@ public sealed partial class MeasuredQuickAddViewModel(
                 Notes = Notes,
             };
             await Completions.RecordAsync(draft, values, ct: ct).ConfigureAwait(true);
+            await LoadDayAsync(ct).ConfigureAwait(true);
         }
         catch (Exception ex)
         {

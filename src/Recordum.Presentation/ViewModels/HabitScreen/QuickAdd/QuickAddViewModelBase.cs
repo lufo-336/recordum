@@ -45,6 +45,10 @@ public abstract partial class QuickAddViewModelBase : ObservableObject
 
     public abstract Task SaveAsync(CancellationToken ct = default);
 
+    /// <summary>Rilegge dal database ciò che il quick-add mostra del giorno di <see cref="CompletionDate"/>. Lo schermo lo
+    /// chiama a ogni cambio di giorno e a ogni registrazione cambiata; di base non c'è niente da rileggere.</summary>
+    public virtual Task LoadDayAsync(CancellationToken ct = default) => Task.CompletedTask;
+
     /// <summary>Il giorno di <see cref="CompletionDate"/>: un giorno scelto dall'utente, non un istante da bucketizzare.</summary>
     protected DateOnly CompletionDay => DateOnly.FromDateTime(CompletionDate.Date);
 

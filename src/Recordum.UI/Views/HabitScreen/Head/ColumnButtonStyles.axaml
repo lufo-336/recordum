@@ -31,6 +31,34 @@
   <Style Selector="ToggleButton.column:focus-visible">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
   </Style>
+  <!-- Il secondario a contorno che si accende ("+ a mano"): a riposo non sembra premuto (B6). -->
+  <Style Selector="ToggleButton.outline">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <!-- Pane, non Surface: la schermata ha già il fondo Surface e il passaggio del mouse non si vedrebbe. -->
+  <Style Selector="ToggleButton.outline:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Brush.Pane}"/>
+  </Style>
+  <Style Selector="ToggleButton.outline:checked">
+    <Setter Property="Background" Value="{DynamicResource Brush.Selection}"/>
+  </Style>
+  <Style Selector="ToggleButton.outline:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
+  </Style>
   <Style Selector="Path.column-glyph">
     <Setter Property="Width" Value="14"/>
     <Setter Property="Height" Value="14"/>

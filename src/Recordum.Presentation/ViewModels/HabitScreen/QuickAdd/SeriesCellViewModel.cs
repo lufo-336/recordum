@@ -11,9 +11,17 @@ namespace Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 public sealed record ScaleInfo(int Min, int Max, IReadOnlyList<string> Labels);
 
 /// <summary>One stepped-slider caption with its position along the track as a 0..1 fraction
-/// (0 = first step / left thumb stop, 1 = last). Lets the captions sit exactly under the thumb
-/// stops, which fall on (N-1) intervals — not the N cell-centres a uniform grid would give.</summary>
-public sealed record ScalePoint(string Label, double Fraction);
+/// (0 = first step / left thumb stop, 1 = last), its 1-based recorded integer <see cref="Value"/>,
+/// and whether it is the value currently recorded on the selected day.</summary>
+public sealed partial class ScalePoint(string label, double fraction, int value) : ObservableObject
+{
+    public string Label { get; } = label;
+    public double Fraction { get; } = fraction;
+    /// <summary>Il valore intero che il gradino registra (a base 1).</summary>
+    public int Value { get; } = value;
+    /// <summary>Il gradino registrato nel giorno scelto (lo scrive <c>MeasuredQuickAddViewModel.LoadDayAsync</c>).</summary>
+    [ObservableProperty] private bool _isCurrent;
+}
 
 /// <summary>Input cell for one <see cref="MetricDefinition"/> in a recording row. Kind-aware:
 /// measured (numeric + unit), scale (labelled selector or slider), or free text.</summary>
@@ -129,7 +137,7 @@ public sealed partial class SeriesCellViewModel : ObservableObject
                 : Enumerable.Range(1, StepCount).Select(n => n.ToString(CultureInfo.CurrentCulture)).ToList();
             var lastStep = Math.Max(1, StepCount - 1);
             ScalePoints = ReferencePoints
-                .Select((label, i) => new ScalePoint(label, StepCount > 1 ? (double)i / lastStep : 0d))
+                .Select((label, i) => new ScalePoint(label, StepCount > 1 ? (double)i / lastStep : 0d, i + 1))
                 .ToList();
             // A slider always rests on a step, so the first one is selected by default: the thumb's
             // position is a real value (the first step is otherwise unreachable — you can't drag onto

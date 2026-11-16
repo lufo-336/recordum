@@ -748,8 +748,38 @@ fanno scattare `HomePerformanceTests` o rendono lenta la colonna, ci si ferma co
   ogni cambio di giorno); `No_step_is_filled_on_a_day_without_a_value`; `Manual_button_is_an_outline_secondary` (B6:
   l'aspetto del `Button` senza classe, cioè il secondario a contorno della direzione visiva §4.4: fondo trasparente,
   bordo `Brush.Border`, testo `Brush.Text`; da premuto resta leggibile).
-- [ ] **Step 2: implementa.** **Step 3:** verdi, PNG `habit-state-{light,dark}.png` e `habit-session-light.png` rifatti e
+- [x] **Step 2: implementa.** **Step 3:** verdi, PNG `habit-state-{light,dark}.png` e `habit-session-light.png` rifatti e
   guardati, commit `fix(ui): lo stato col numero e il gradino scelto pieno (B3); "+ a mano" a contorno (B6)`.
+
+- [x] Fatto 2026-11-16 (test, brief e correzioni di Claude; implementazione di agy Hydrogen, 120 s; review di agy Argon).
+
+**Com'è stato fatto (2026-11-16):**
+
+- `ScalePoint` da record a classe osservabile: in più `Value` (l'intero a base 1 che il gradino registra) e `IsCurrent`.
+  Nessuno dipendeva dall'uguaglianza per valore (controllato anche dalla review; WPF lega solo `Label` e `Fraction`).
+- **Fuori dall'elenco dei file, per forza**: `LoadDayAsync` è ora virtuale su `QuickAddViewModelBase` (di base non fa
+  niente; azione e contatore a tocco lo sovrascrivono come prima) e `HabitScreenViewModel` lo chiama su **qualunque**
+  comando al posto delle coppie `is CounterTap… / is Action…` (apertura, cambio di giorno, evento di registrazione,
+  "annulla"). `MeasuredQuickAddViewModel.LoadDayAsync` accende il gradino dell'ultimo **valore** della scala nel giorno
+  scelto (confine dell'abitudine, `CompletionDay.ListAsync`), e si rilegge dopo ogni `SaveAsync`.
+- Stili dei gradini locali a `StateCommandView.axaml` (`Button.step` a contorno, `Button.step.current` pieno con
+  `Brush.Habit` e numero `Brush.OnInk`, ripetuti sul `ContentPresenter` per hover e premuto). "+ a mano" è
+  `ToggleButton.outline` in `ColumnButtonStyles.axaml`, col suo template: fondo trasparente, `Brush.Border`, `Brush.Text`;
+  acceso `Brush.Selection`.
+- **Dalla review** (2 medie, 2 basse, tutte verificate): (1) cambiata la forma del comando da Configura (es. le etichette
+  della scala), quello ricostruito nasceva su **oggi** anche con un giorno passato scelto, e senza gradino pieno: ora
+  `OnHabitUpdatedEvent` lo rimette su `SelectedDay` e lo rilegge. Il difetto del giorno c'era da prima di quest'onda e
+  valeva per ogni tipo (una registrazione sarebbe finita su oggi). (2) `LoadDayAsync` scarta una lettura superata da un
+  cambio di giorno e scrive sui gradini correnti, non su quelli catturati prima dell'attesa. (3) L'hover di "+ a mano" era
+  `Brush.Surface` su fondo `Brush.Surface` (invisibile): ora `Brush.Pane`; raggio 6 come gli altri pulsanti di colonna.
+  (4) I test di spostamento e cancellazione guardano anche il pulsante, non solo il ViewModel.
+- **Test**: dieci in `StateStepsTests` (i quattro del piano più: secondo gradino lo stesso giorno, il pieno segue il giorno,
+  cancellazione, valore già presente all'apertura, comando ricostruito, hover). Rosso provato: 9 su 10 togliendo stili,
+  classe, numero e l'accensione; l'hover e il comando ricostruito visti rossi prima della correzione. **Non coperto**:
+  una registrazione più recente senza il valore della scala (il servizio la rifiuta per uno Stato: il caso nasce solo da
+  una metrica tolta dopo), e la gara fra due cambi di giorno (coi servizi veri non si costruisce).
+- PNG guardati: `habit-state-light`, `habit-state-dark` (gradini 1–5, quello di oggi pieno, etichette sotto),
+  `habit-session-light` ("+ a mano" a contorno; il bordo `Brush.Border` è molto leggero, com'è scritto nel piano).
 
 ### Task 15: Schermate, inventario, documenti, review
 

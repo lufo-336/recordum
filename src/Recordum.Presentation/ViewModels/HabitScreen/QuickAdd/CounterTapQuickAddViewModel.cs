@@ -14,7 +14,7 @@ public sealed partial class CounterTapQuickAddViewModel(ICompletionService compl
     [ObservableProperty] private int _dayCount;
 
     /// <summary>Conta le occorrenze del giorno selezionato (CompletionDate, anche retroattivo).</summary>
-    public async Task LoadDayAsync(CancellationToken ct = default)
+    public override async Task LoadDayAsync(CancellationToken ct = default)
     {
         if (Node is null) { DayCount = 0; return; }
         var (from, to) = DayWindowUtc();

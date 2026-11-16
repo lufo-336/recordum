@@ -944,7 +944,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _periodForGroup = isGroup;
         await ReloadHistoryAsync(ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return;
-        if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync(ct).ConfigureAwait(true);
+        if (QuickAdd is not null) await QuickAdd.LoadDayAsync(ct).ConfigureAwait(true);
         await RefreshUndoAsync(ct).ConfigureAwait(true);
         if (Calendar.SelectedDate is { } sel)
         {
@@ -1055,8 +1055,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             };
             // The tap quick-add counts the day in a local field it bumps per tap, so a completion
             // deleted from the records list would leave it reading high (W23-VF1). Re-read from the DB.
-            if (QuickAdd is CounterTapQuickAddViewModel tap) reloads.Add(tap.LoadDayAsync());
-            if (QuickAdd is ActionQuickAddViewModel action) reloads.Add(action.LoadDayAsync());
+            if (QuickAdd is not null) reloads.Add(QuickAdd.LoadDayAsync());
             reloads.Add(RefreshUndoAsync(CancellationToken.None));
             reloads.Add(LoadFiguresAsync(CancellationToken.None));
             // Una voce cancellata dalla Cronologia non deve restare nella colonna Diario (M4).
@@ -1172,7 +1171,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             ScheduleLabel = ScheduleText.Describe(cfg, System.Globalization.CultureInfo.CurrentUICulture);
             await LoadFiguresAsync(CancellationToken.None).ConfigureAwait(true);
             if (QuickAdd is not null && QuickAddShape(cfg, defs) != _quickAddShape)
+            {
                 await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
+                // Il comando ricostruito nasce su oggi: torna sul giorno scelto, o registrerebbe nel giorno sbagliato.
+                if (QuickAdd is { } rebuilt)
+                {
+                    rebuilt.CompletionDate = SelectedDay.ToDateTime(TimeOnly.MinValue);
+                    await rebuilt.LoadDayAsync().ConfigureAwait(true);
+                }
+            }
             var segmentsChanged = !segs.Select(x => (x.Id, x.Name, x.IsRest)).SequenceEqual(TimerControl.Segments.Select(x => (x.Id, x.Name, x.IsRest)));
             if (segmentsChanged || cfg?.TimerMode != TimerControl.Mode || (cfg?.HasIntegratedTimer == true && cfg.TimerMode is not null) != TimerControl.IsApplicable)
                 await TimerControl.SetContextAsync(refreshed, cfg).ConfigureAwait(true);
@@ -1418,8 +1425,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             QuickAdd.CompletionDate = date.ToDateTime(TimeOnly.MinValue);
         // The tap quick-add's count belongs to the day it was loaded for: without this it kept
         // showing the previous day's total, and the next tap incremented from there (W23-VF1).
-        if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
-        if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync().ConfigureAwait(true);
+        if (QuickAdd is not null) await QuickAdd.LoadDayAsync().ConfigureAwait(true);
         Notes.SetCalendarDay(date);
         JournalQuickEntry?.SetDay(date);
         await DayNote.LoadDayAsync(date).ConfigureAwait(true);
@@ -1447,8 +1453,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var newest = (await ListSelectedDayAsync(CancellationToken.None).ConfigureAwait(true))
             .OrderByDescending(c => c.CompletedAtMs).FirstOrDefault();
         if (newest is not null) await _completions.DeleteAsync(newest.Id).ConfigureAwait(true);
-        if (QuickAdd is CounterTapQuickAddViewModel tap) await tap.LoadDayAsync().ConfigureAwait(true);
-        if (QuickAdd is ActionQuickAddViewModel action) await action.LoadDayAsync().ConfigureAwait(true);
+        if (QuickAdd is not null) await QuickAdd.LoadDayAsync().ConfigureAwait(true);
         await RefreshUndoAsync(CancellationToken.None).ConfigureAwait(true);
     }
 

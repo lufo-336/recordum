@@ -8,7 +8,7 @@
   <StackPanel HorizontalAlignment="Right">
     <hs:TimerControlView x:Name="Timer" HorizontalAlignment="Right"/>
     <StackPanel x:Name="ManualRow" HorizontalAlignment="Right" IsVisible="{CompiledBinding !IsActive}">
-      <ToggleButton x:Name="ManualButton" HorizontalAlignment="Right" Margin="0,4,0,0" Padding="10,3"
+      <ToggleButton x:Name="ManualButton" Classes="outline" HorizontalAlignment="Right" Margin="0,4,0,0" Padding="10,3"
                     Content="{x:Static res:Strings.Head_Session_Manual}"/>
       <Border x:Name="ManualHost" IsVisible="{Binding #ManualButton.IsChecked}"/>
     </StackPanel>
