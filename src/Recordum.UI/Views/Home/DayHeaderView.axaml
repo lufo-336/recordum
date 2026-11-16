@@ -36,14 +36,22 @@
       <Setter Property="FontSize" Value="10"/>
     </Style>
     <!-- Dopo today perché il giorno scelto vince sull'evidenza di oggi; Fluent ridipinge il ContentPresenter negli stati. -->
+    <!-- GIO-17: un contorno d'inchiostro, non una pillola piena (a 360 px la pillola toccava i giorni vicini). -->
     <Style Selector="Button.day.selected">
-      <Setter Property="Background" Value="{DynamicResource Brush.Ink}"/>
-      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+      <Setter Property="Height" Value="18"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
+    <Style Selector="local|DayHeaderView.narrow Button.day.selected">
+      <Setter Property="Height" Value="16"/>
+    </Style>
     <Style Selector="Button.day.selected:pointerover /template/ ContentPresenter, Button.day.selected:pressed /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource Brush.Ink}"/>
-      <Setter Property="Foreground" Value="{DynamicResource Brush.OnInk}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
     </Style>
   </UserControl.Styles>
 

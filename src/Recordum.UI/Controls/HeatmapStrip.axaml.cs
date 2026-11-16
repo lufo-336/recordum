@@ -115,7 +115,7 @@ public partial class HeatmapStrip : UserControl
     public HeatmapStrip()
     {
         InitializeComponent();
-        // In "Segni" il contorno del giorno scelto sporge di 3 px dal quadratino, anche fuori dalla striscia: tagliato,
+        // In "Segni" il contorno del giorno scelto sporge di 2 px dal quadratino, anche fuori dalla striscia: tagliato,
         // se ne vedevano solo i lati (PNG del Task 9).
         ClipToBounds = false;
         Cells.ClipToBounds = false;
@@ -187,7 +187,7 @@ public partial class HeatmapStrip : UserControl
         IBrush Token(string key) => HabitTextBrushConverter.Resource<IBrush>(app, key, ActualThemeVariant) ?? Brushes.Gray;
         var paneBrush = HabitTextBrushConverter.Resource<ISolidColorBrush>(app, "Brush.Pane", ActualThemeVariant);
         if (metrics.Marks)
-            return BuildMarkCells(metrics, shown, Token("Brush.CellEmpty"), Token("Brush.Ink"), paneBrush?.Color ?? Colors.White);
+            return BuildMarkCells(metrics, shown, Token("Brush.CellEmpty"), paneBrush?.Color ?? Colors.White);
 
         var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
         var on = HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
@@ -200,7 +200,10 @@ public partial class HeatmapStrip : UserControl
             selectedBg = new ImmutableSolidColorBrush(HabitColors.Blend(habit, opacity, pane.Color));
         }
 
-        return values.Select<StripCell, Control>(cell =>
+        // L'astinenza (GIO-18): una linea sotto le spunte dei giorni puliti, continua da una cella all'altra; la ricaduta
+        // la interrompe e la linea riparte, rientrata e arrotondata, dal giorno dopo.
+        var band = Kind == StripStyle.Band;
+        return values.Select<StripCell, Control>((cell, i) =>
         {
             var text = new TextBlock
             {
@@ -214,23 +217,43 @@ public partial class HeatmapStrip : UserControl
                 FontFeatures = new FontFeatureCollection { FontFeature.Parse("+tnum") },
                 Foreground = cell.On ? on : off,
             };
-            if (!cell.IsSelected) return text;
-            return new Border
+            Control content = text;
+            if (cell.IsSelected)
+                content = new Border
+                {
+                    Name = SelectedCellName,
+                    Width = metrics.Column,
+                    Height = 24d,
+                    CornerRadius = new CornerRadius(5),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Background = selectedBg,
+                    Child = text,
+                };
+            if (!band || !cell.On) return content;
+
+            var starts = i > 0 && !values[i - 1].On;
+            var ends = i < values.Length - 1 && !values[i + 1].On;
+            var host = new Panel { Width = metrics.Column, Height = 24d, VerticalAlignment = VerticalAlignment.Center };
+            host.Children.Add(content);
+            host.Children.Add(new Border
             {
-                Name = SelectedCellName,
-                Width = metrics.Column,
-                Height = 24d,
-                CornerRadius = new CornerRadius(5),
-                VerticalAlignment = VerticalAlignment.Center,
-                Background = selectedBg,
-                Child = text,
-            };
+                Name = BandLineName,
+                Height = 2d,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(starts ? 5 : 0, 0, ends ? 5 : 0, 0),
+                CornerRadius = new CornerRadius(starts ? 1 : 0, ends ? 1 : 0, ends ? 1 : 0, starts ? 1 : 0),
+                Background = on,
+                IsHitTestVisible = false,
+            });
+            return host;
         }).ToList();
     }
 
     internal const string LapseMarkName = "LapseMark";
+    internal const string BandBridgeName = "BandBridge";
+    internal const string BandLineName = "BandLine";
 
-    private List<Control> BuildMarkCells(HomeRowsMetrics metrics, int shown, IBrush empty, IBrush ink, Color pane)
+    private List<Control> BuildMarkCells(HomeRowsMetrics metrics, int shown, IBrush empty, Color pane)
     {
         var app = global::Avalonia.Application.Current!;
         var cross = app.TryFindResource("Icon.X", out var x) ? x as Geometry : null;
@@ -239,6 +262,7 @@ public partial class HeatmapStrip : UserControl
         var hasFractions = !Fractions.IsDefault && Fractions.Length == Values.Length;
         var habit = HabitColors.TryParse(AccentColor, out var parsed) ? parsed : Colors.Gray;
         var cells = new List<Control>(shown);
+        var band = Kind == StripStyle.Band;
 
         for (var i = 0; i < shown; i++)
         {
@@ -278,23 +302,19 @@ public partial class HeatmapStrip : UserControl
                     VerticalAlignment = VerticalAlignment.Center,
                 };
 
-            if (!cell.IsSelected)
+            // L'astinenza (GIO-18): i giorni puliti di fila si fondono in un nastro. Il quadratino resta largo una colonna
+            // (le colonne non si spostano); lo spazio fino al giorno dopo lo riempie un ponte dello stesso colore.
+            var joinsPrev = band && cell.On && i > 0 && Values[offset + i - 1].On;
+            var joinsNext = band && cell.On && i < shown - 1 && Values[offset + i + 1].On;
+            if (joinsPrev || joinsNext)
+                square.CornerRadius = new CornerRadius(joinsPrev ? 0 : 4, joinsNext ? 0 : 4, joinsNext ? 0 : 4, joinsPrev ? 0 : 4);
+
+            if (!cell.IsSelected && !joinsNext)
             {
                 cells.Add(square);
                 continue;
             }
 
-            var outline = new Border
-            {
-                Name = SelectedCellName,
-                Width = metrics.Column + 6,
-                Height = metrics.Column + 6,
-                Margin = new Thickness(-3),
-                BorderThickness = new Thickness(2),
-                BorderBrush = ink,
-                CornerRadius = new CornerRadius(6),
-                IsHitTestVisible = false,
-            };
             var host = new Panel
             {
                 Width = metrics.Column,
@@ -302,7 +322,30 @@ public partial class HeatmapStrip : UserControl
                 VerticalAlignment = VerticalAlignment.Center,
             };
             host.Children.Add(square);
-            host.Children.Add(outline);
+            if (joinsNext)
+                host.Children.Add(new Border
+                {
+                    Name = BandBridgeName,
+                    Width = metrics.Gap,
+                    Height = metrics.Column,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Margin = new Thickness(0, 0, -metrics.Gap, 0),
+                    Background = fill,
+                    IsHitTestVisible = false,
+                });
+            // Il giorno scelto (GIO-16): un contorno sottile e grigio, staccato di 1 px dal quadratino.
+            if (cell.IsSelected)
+                host.Children.Add(new Border
+                {
+                    Name = SelectedCellName,
+                    Width = metrics.Column + 4,
+                    Height = metrics.Column + 4,
+                    Margin = new Thickness(-2),
+                    BorderThickness = new Thickness(1),
+                    BorderBrush = faint,
+                    CornerRadius = new CornerRadius(5),
+                    IsHitTestVisible = false,
+                });
             cells.Add(host);
         }
 

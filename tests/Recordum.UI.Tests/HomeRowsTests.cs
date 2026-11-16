@@ -110,7 +110,7 @@ public class HomeRowsTests
         var cells = Strip(row).GetVisualDescendants().OfType<TextBlock>().ToList();
         cells.Should().HaveCount(14).And.OnlyContain(t => t.Bounds.Width == 26);
         HeaderDays(view).Last().Content.Should().Be("oggi");
-        HeaderDays(view).Should().OnlyContain(b => b.Bounds.Width == 26 && b.Bounds.Height == 22);
+        HeaderDays(view).Should().OnlyContain(b => b.Bounds.Width == 26 && b.Bounds.Height == (b.Classes.Contains("selected") ? 18 : 22));
         w.Close();
     }
 
@@ -155,10 +155,11 @@ public class HomeRowsTests
                 (BoundsIn(squares[i], view).Left - BoundsIn(squares[i - 1], view).Left).Should().BeApproximately(17, 0.01);
 
             var outline = strip.GetVisualDescendants().OfType<Border>().Single(b => b.Name == HeatmapStrip.SelectedCellName);
-            outline.BorderThickness.Should().Be(new Thickness(2));
-            ((ISolidColorBrush)outline.BorderBrush!).Color.Should().Be(Token<ISolidColorBrush>("Brush.Ink").Color);
-            var around = BoundsIn(squares[^1], view).Inflate(3);
-            BoundsIn(outline, view).Should().Be(around, "il contorno sta 1 px fuori dal quadratino di oggi, spesso 2");
+            // GIO-16 (scelta A2 dell'autore): sottile e grigio, non 2 px d'inchiostro.
+            outline.BorderThickness.Should().Be(new Thickness(1));
+            ((ISolidColorBrush)outline.BorderBrush!).Color.Should().Be(Token<ISolidColorBrush>("Brush.TextMuted").Color);
+            var around = BoundsIn(squares[^1], view).Inflate(2);
+            BoundsIn(outline, view).Should().Be(around, "il contorno sta 1 px fuori dal quadratino di oggi, spesso 1");
         }
 
         // Il giorno scelto si sposta: il contorno lo segue.
@@ -170,6 +171,87 @@ public class HomeRowsTests
         w.Close();
     }
 
+    private static HomeTreeRow Lapsed() => Row("Astinenza", HabitType.Resistance) with
+    {
+        CompletionsLast14Days = ImmutableArray.Create(4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 4),
+        LapsesLast14Days = ImmutableArray.Create(Enumerable.Range(0, 14).Select(i => i == 12).ToArray()),
+    };
+
+    /// <summary>GIO-17 (scelta B3): il giorno scelto in testa è un contorno d'inchiostro, non una pillola piena.</summary>
+    [AvaloniaFact]
+    public void The_selected_header_day_is_an_outline()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _, _) = Show(900, HomeRows.Comfortable, Row("Acqua"));
+        var selected = HeaderDays(view).Last();
+        selected.Classes.Should().Contain("selected");
+        ((ISolidColorBrush)selected.Background!).Color.A.Should().Be(0, "niente riempimento");
+        selected.BorderThickness.Should().Be(new Thickness(1));
+        ((ISolidColorBrush)selected.BorderBrush!).Color.Should().Be(Token<ISolidColorBrush>("Brush.Ink").Color);
+        ((ISolidColorBrush)selected.Foreground!).Color.Should().Be(Token<ISolidColorBrush>("Brush.Text").Color);
+        selected.Bounds.Height.Should().Be(18);
+        w.Close();
+    }
+
+    /// <summary>GIO-18 (scelta C2 per Segni): i giorni puliti di fila si fondono in un nastro, che la ricaduta strappa.</summary>
+    [AvaloniaFact]
+    public void An_abstinence_in_Marks_is_a_band_torn_by_the_lapse()
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _, _) = Show(900, HomeRows.Marks, Lapsed(), Row("Sì o no"));
+        var strip = Strip(HabitRows(view)[0]);
+        var squares = Squares(strip);
+        squares.Should().HaveCount(14);
+        squares[0].CornerRadius.Should().Be(new CornerRadius(4, 0, 0, 4), "il nastro comincia");
+        squares[5].CornerRadius.Should().Be(new CornerRadius(0), "in mezzo al nastro");
+        squares[11].CornerRadius.Should().Be(new CornerRadius(0, 4, 4, 0), "il nastro finisce prima della ricaduta");
+        squares[12].CornerRadius.Should().Be(new CornerRadius(4), "la ricaduta resta un quadratino");
+        squares[13].CornerRadius.Should().Be(new CornerRadius(4), "oggi ricomincia da solo");
+
+        var bridges = strip.GetVisualDescendants().OfType<Border>().Where(b => b.Name == HeatmapStrip.BandBridgeName).ToList();
+        bridges.Should().HaveCount(11, "undici spazi fra dodici giorni di fila");
+        for (var i = 0; i < 11; i++)
+        {
+            var bridge = BoundsIn(bridges[i], view);
+            bridge.Left.Should().BeApproximately(BoundsIn(squares[i], view).Right, 0.01);
+            bridge.Right.Should().BeApproximately(BoundsIn(squares[i + 1], view).Left, 0.01);
+            Fill(bridges[i]).Should().Be(Fill(squares[i]));
+        }
+
+        var action = Strip(HabitRows(view)[1]);
+        action.GetVisualDescendants().OfType<Border>().Should().NotContain(b => b.Name == HeatmapStrip.BandBridgeName, "solo l'astinenza è un nastro");
+        Squares(action).Should().OnlyContain(b => b.CornerRadius == new CornerRadius(4));
+        w.Close();
+    }
+
+    /// <summary>GIO-18 (scelta C1 per Larga e Compatta): una linea sotto le spunte, che la ricaduta interrompe.</summary>
+    [AvaloniaTheory]
+    [InlineData(HomeRows.Comfortable)]
+    [InlineData(HomeRows.Compact)]
+    public void An_abstinence_with_checks_has_a_line_under_them(HomeRows style)
+    {
+        using var culture = TestCulture.Pin();
+        var (w, view, _, _) = Show(900, style, Lapsed(), Row("Sì o no"));
+        var strip = Strip(HabitRows(view)[0]);
+        var texts = strip.GetVisualDescendants().OfType<TextBlock>().ToList();
+        var lines = strip.GetVisualDescendants().OfType<Border>().Where(b => b.Name == HeatmapStrip.BandLineName).ToList();
+        lines.Should().HaveCount(13, "dodici giorni puliti e oggi; sotto la ricaduta niente");
+        var lapse = BoundsIn(texts[12], view);
+        lines.Should().NotContain(l => BoundsIn(l, view).Left < lapse.Right && BoundsIn(l, view).Right > lapse.Left);
+        for (var i = 0; i < 11; i++)
+            BoundsIn(lines[i], view).Right.Should().BeApproximately(BoundsIn(lines[i + 1], view).Left, 0.01, "la linea è continua");
+        BoundsIn(lines[11], view).Right.Should().BeLessThan(BoundsIn(texts[11], view).Right, "prima della ricaduta la linea si ferma dentro la cella");
+        BoundsIn(lines[12], view).Left.Should().BeGreaterThan(BoundsIn(texts[13], view).Left, "e dopo riparte dentro la cella");
+        foreach (var line in lines)
+        {
+            line.Bounds.Height.Should().Be(2);
+            BoundsIn(line, view).Top.Should().BeGreaterThan(BoundsIn(texts[0], view).Top + 14, "sta sotto la spunta");
+            Fill(line).Should().Be(((ISolidColorBrush)texts[0].Foreground!).Color, "nel colore delle spunte");
+        }
+        Strip(HabitRows(view)[1]).GetVisualDescendants().OfType<Border>().Should().NotContain(b => b.Name == HeatmapStrip.BandLineName);
+        w.Close();
+    }
+
     [AvaloniaTheory]
     [InlineData(HomeRows.Marks)]
     [InlineData(HomeRows.Comfortable)]
@@ -177,11 +259,7 @@ public class HomeRowsTests
     {
         // GIO-9: ieri una ricaduta. Segni: quadratino vuoto con la × dentro. Larga: una × nel testo tenue.
         using var culture = TestCulture.Pin();
-        var lapsed = Row("Astinenza", HabitType.Resistance) with
-        {
-            CompletionsLast14Days = ImmutableArray.Create(4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 4),
-            LapsesLast14Days = ImmutableArray.Create(Enumerable.Range(0, 14).Select(i => i == 12).ToArray()),
-        };
+        var lapsed = Lapsed();
         var (w, view, _, _) = Show(900, style, lapsed);
         var strip = Strip(HabitRows(view)[0]);
 
