@@ -66,7 +66,7 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`. Aperti: **GIO-1**,
 **GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
-(2026-11-16) **GIO-16…25**. Fuori dall'onda restano **B7** e
+(2026-11-16) **GIO-16…20** `fixed`, **GIO-21…25** aperti. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2749,21 +2749,32 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
 - **Revisione dei PNG con l'autore (2026-11-16)** — 23 fogli chiaro/scuro (Giornata e 3a), suite UI 858 verde, CI verde
   su `622f2273`. Le varianti disegnate sulla Home vera stanno in `docs/design/2026-11-16-revisione-png/` (banco di prova
   usa-e-getta, nessun codice di prodotto rimasto). Rilievi dell'autore, con ciò che dice il codice:
-  - **GIO-16 — in "Segni" la cornice del giorno scelto è troppo spessa e stona** · `triaged`, da scegliere sulle
-    immagini `A-segni-cornice-*` · oggi 2 px d'inchiostro staccata di 1 px dal quadratino (`HeatmapStrip.BuildMarkCells`).
+  - **GIO-16 — in "Segni" la cornice del giorno scelto è troppo spessa e stona** · `fixed` (scelta dell'autore: **A2**, sottile e
+    grigia; test `HomeRowsTests.Marks_draws_squares_and_no_text`, rosso prima) · immagini `A-segni-cornice-*` · oggi 2 px d'inchiostro staccata di 1 px dal quadratino (`HeatmapStrip.BuildMarkCells`).
     Varianti: A1 sottile d'inchiostro, A2 sottile grigia, A3 contorno sul quadratino stesso.
-  - **GIO-17 — nell'intestazione il riquadro del giorno scelto è troppo grande** · `triaged`, immagini `B-testa-giorno-*`
-    · oggi una pillola piena larga quanto la colonna (26×22): a 360 px tocca i giorni vicini ("dom[lun]oggi").
+  - **GIO-17 — nell'intestazione il riquadro del giorno scelto è troppo grande** · `fixed` (scelta dell'autore: **B3**, un
+    contorno d'inchiostro alto 18; test `HomeRowsTests.The_selected_header_day_is_an_outline`, rosso prima) · immagini
+    `B-testa-giorno-*` · oggi una pillola piena larga quanto la colonna (26×22): a 360 px tocca i giorni vicini ("dom[lun]oggi").
     Varianti: B1 pillola bassa, B2 sottolineato, B3 contorno.
   - **GIO-18 — una linea che segue l'astinenza** (idea dell'autore: dare soddisfazione al percorso; si interrompe il
-    giorno della ricaduta e riprende) · `triaged`, immagini `C-astinenza-*` · C1 linea sotto spunte/quadratini, C2 solo
+    giorno della ricaduta e riprende) · `fixed` (scelta dell'autore: **C2** in Segni, i quadratini fusi in un nastro con
+    un ponte nello spazio fra le colonne, `BandBridge`; **C1** in Larga e Compatta, una linea di 2 px sotto le spunte,
+    `BandLine`; test `HomeRowsTests.An_abstinence_in_Marks_is_a_band_torn_by_the_lapse` e
+    `.An_abstinence_with_checks_has_a_line_under_them`, rossi prima) · immagini `C-astinenza-*` · C1 linea sotto spunte/quadratini, C2 solo
     la linea (Larga, Compatta) e quadratini fusi in un nastro (Segni). La striscia di prima dell'onda (`StripStyle.Band`,
     `BuildStyledCells`) era già un nastro continuo.
-  - **GIO-19 — Impostazioni › Aspetto: Compatta e Larga sembrano uguali** · `verified` · la differenza vera sono i nomi
+  - **GIO-19 — Impostazioni › Aspetto: Compatta e Larga sembrano uguali** · `fixed` (ogni esempio ha
+    sopra la sua intestazione dei giorni, `SettingsViewModel.HomeRowsSampleDays`; `DayHeaderView.SelectCommand` al posto
+    del cast su `HomeViewModel`; test `AppearancePageTests.Each_choice_shows_its_day_header_over_the_strip`, rosso prima)
+    · la differenza vera sono i nomi
     dei giorni in testa (iniziali contro "lun mar") e l'altezza della riga (30 contro 36), ma l'anteprima
     (`AppearancePage`, `RowPreview`) disegna la sola riga, senza intestazione: restano 6 px di altezza.
   - **GIO-20 — le anteprime di creatore, selettore dei modelli e Configura disegnano la striscia di prima** (barrette,
-    pallini) · `verified` · `SamplePreviewFactory.HomeRowFor` riempie `Counts` e `Fractions` ma non `Values`, e senza
+    pallini) · `fixed` (`HomeRowFor` scrive anche `Values`; la versione delle righe arriva alle anteprime da uno stile
+    dell'applicazione, `HomeRowsAppStyle`, che `App` aggiorna a ogni cambio della preferenza; test
+    `SamplePreviewFactoryTests.The_home_row_writes_its_days_like_the_home`,
+    `RowPreviewTests.A_sample_row_is_drawn_like_the_home_in_the_chosen_version`, rossi prima) ·
+    `SamplePreviewFactory.HomeRowFor` riempiva `Counts` e `Fractions` ma non `Values`, e senza
     `Values` `HeatmapStrip` cade su `BuildStyledCells`. L'anteprima deve scrivere le celle come la Home, nella versione
     delle righe scelta in Aspetto.
   - **GIO-21 — "Tolleranza (minuti)" e "Secondi timer di riposo" non spiegano cosa fanno** · `verified` · e non fanno

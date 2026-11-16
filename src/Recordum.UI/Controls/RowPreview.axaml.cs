@@ -46,6 +46,19 @@ public partial class RowPreview : UserControl
         }
     }
 
+    /// <summary>Quanti giorni mostra la striscia: la regola della Home sulla larghezza dell'anteprima, così in una colonna
+    /// stretta (il creatore) il nome non sparisce. Chi li fissa da sé (Impostazioni › Aspetto) non viene toccato.</summary>
+    private bool _ownsVisibleDays;
+
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (Model is not { Values.IsDefaultOrEmpty: false }) return;
+        if (IsSet(HeatmapStrip.VisibleDaysProperty) && !_ownsVisibleDays) return;
+        _ownsVisibleDays = true;
+        HeatmapStrip.SetVisibleDays(this, HomeRowsMetrics.VisibleDays(HomeRowsMetrics.GetRows(this), e.NewSize.Width));
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);

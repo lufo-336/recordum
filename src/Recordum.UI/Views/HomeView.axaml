@@ -203,7 +203,8 @@
     <!-- L'intestazione dei giorni (UX-6): oggi a destra, sopra la colonna di oggi di ogni striscia. Il margine a destra
          (log rapido + margine della striscia) lo imposta il code-behind secondo la versione delle righe. -->
     <home:DayHeaderView x:Name="DayHeader" Grid.Row="2" HorizontalAlignment="Right"
-                        Cells="{CompiledBinding DayHeader}" IsVisible="{CompiledBinding ShowDayHeader}"/>
+                        Cells="{CompiledBinding DayHeader}" IsVisible="{CompiledBinding ShowDayHeader}"
+                        SelectCommand="{CompiledBinding SelectDayCommand}"/>
 
     <!-- Lo sfondo Transparent (non null) rende lo spazio vuoto sotto le righe colpibile dal
          puntatore: è il clic che deseleziona. Vale in Avalonia come in WPF. -->

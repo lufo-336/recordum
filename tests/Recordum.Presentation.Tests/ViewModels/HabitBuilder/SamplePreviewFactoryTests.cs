@@ -36,6 +36,38 @@ public class SamplePreviewFactoryTests
         preview.HomeRow.StripStyle.Should().Be(StripStyle.Bars);
     }
 
+    /// <summary>GIO-20: l'anteprima scrive le celle come la Home (spunte o valori, oggi per ultima e scelta), non la
+    /// striscia a barrette di prima dell'onda Giornata.</summary>
+    [Theory]
+    [InlineData(HabitType.Action, "✓")]
+    [InlineData(HabitType.Journal, "✓")]
+    [InlineData(HabitType.Resistance, "✓")]
+    [InlineData(HabitType.Counter, null)]
+    [InlineData(HabitType.State, null)]
+    public void The_home_row_writes_its_days_like_the_home(HabitType type, string? glyph)
+    {
+        var row = SamplePreviewFactory.HomeRowFor(type, KeyFigureKind.None, HomeStrip.Days14, "Tè", "#123456", null);
+
+        row.Values.Should().HaveCount(14);
+        row.Values[^1].IsToday.Should().BeTrue();
+        row.Values[^1].IsSelected.Should().BeTrue("come la Home su oggi");
+        row.Values.Take(13).Should().OnlyContain(c => !c.IsToday && !c.IsSelected);
+        row.Values.Select(c => c.On).Should().Equal(row.Counts.Select(c => c > 0));
+        row.Values.Where(c => !c.On).Should().OnlyContain(c => c.Glyph == "·");
+        if (glyph is not null) row.Values.Where(c => c.On).Should().OnlyContain(c => c.Glyph == glyph);
+        else row.Values.Where(c => c.On).Should().OnlyContain(c => c.Glyph.All(char.IsDigit) && c.Glyph.Length > 0);
+    }
+
+    [Fact]
+    public void A_real_habit_in_Configura_has_empty_cells_and_no_strip_has_none()
+    {
+        var real = SamplePreviewFactory.HomeRowFor(HabitType.Counter, KeyFigureKind.None, HomeStrip.Days14, "Tè", "#123456", null, sample: false);
+        real.Values.Should().HaveCount(14).And.OnlyContain(c => !c.On && c.Glyph == "·");
+
+        SamplePreviewFactory.HomeRowFor(HabitType.Counter, KeyFigureKind.None, HomeStrip.None, "Tè", "#123456", null)
+            .Values.IsDefaultOrEmpty.Should().BeTrue();
+    }
+
     [Fact]
     public void A_resistance_row_shows_the_static_clean_streak_over_a_fortnight()
     {

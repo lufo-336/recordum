@@ -29,6 +29,11 @@
       <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     </Style>
+    <!-- Senza comando (Impostazioni › Aspetto) il pulsante è spento: resta scritto com'è, senza il fondo di Fluent. -->
+    <Style Selector="Button.day:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
     <Style Selector="Button.day.today">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
@@ -48,7 +53,7 @@
     <Style Selector="local|DayHeaderView.narrow Button.day.selected">
       <Setter Property="Height" Value="16"/>
     </Style>
-    <Style Selector="Button.day.selected:pointerover /template/ ContentPresenter, Button.day.selected:pressed /template/ ContentPresenter">
+    <Style Selector="Button.day.selected:pointerover /template/ ContentPresenter, Button.day.selected:pressed /template/ ContentPresenter, Button.day.selected:disabled /template/ ContentPresenter">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ink}"/>
@@ -70,7 +75,7 @@
                 Content="{CompiledBinding ShortName}"
                 ToolTip.Tip="{CompiledBinding FullName}"
                 AutomationProperties.Name="{CompiledBinding FullName}"
-                Command="{Binding $parent[local:DayHeaderView].((vm:HomeViewModel)DataContext).SelectDayCommand}"
+                Command="{Binding $parent[local:DayHeaderView].SelectCommand}"
                 CommandParameter="{CompiledBinding DaysBack}"/>
       </DataTemplate>
     </ItemsControl.ItemTemplate>

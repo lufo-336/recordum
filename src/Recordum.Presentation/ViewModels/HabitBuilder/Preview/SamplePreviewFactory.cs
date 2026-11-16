@@ -53,14 +53,22 @@ public sealed class SamplePreviewFactory(IClock clock)
         // Bars and Ramp read Fractions; the others read Counts. Filling both keeps the strip honest
         // whichever style the type resolves to.
         var fractions = counts.Select(c => c == 0 ? 0d : 0.4 + (0.2 * (c % 3))).ToImmutableArray();
+        var style = HomeRowPresentation.ResolveStripStyle(type);
+        // Le celle come le scrive la Home (GIO-20): spunte, oppure un valore d'esempio per contatori e stati; oggi è
+        // l'ultima ed è il giorno scelto. Senza, la riga cadeva sulla striscia a barrette di prima dell'onda Giornata.
+        var numbers = style is StripStyle.Bars or StripStyle.Ramp;
+        var values = counts.Select((c, i) => new StripCell(
+            c == 0 ? "·" : numbers ? (2 + (i % 3)).ToString(CultureInfo.CurrentCulture) : "✓",
+            c > 0, IsToday: i == length - 1, IsSelected: i == length - 1)).ToImmutableArray();
         return new HomeRowPreviewModel(
             Name: string.IsNullOrWhiteSpace(name) ? Resources.Strings.HabitBuilder_Preview_UnnamedHabit : name,
             Color: color,
             Icon: icon,
             KeyFigure: KeyFigureText(keyFigure, fields),
-            StripStyle: HomeRowPresentation.ResolveStripStyle(type),
+            StripStyle: style,
             Counts: counts,
-            Fractions: fractions);
+            Fractions: fractions,
+            Values: values);
     }
 
     private static string? KeyFigureText(KeyFigureKind kind, IReadOnlyList<PreviewField> fields) =>

@@ -6,10 +6,12 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:ctl="using:Recordum.UI.Controls"
+             xmlns:hv="using:Recordum.UI.Views.Home"
              x:Class="Recordum.UI.Views.Settings.AppearancePage"
              x:DataType="vm:SettingsViewModel">
   <!-- Impostazioni › Aspetto (mockup oggi-striscia.html): il tema a segmenti e le righe della Home a radio, ognuna con
-       una riga vera d'esempio disegnata nella sua versione (HomeRowsMetrics.Rows sulla RowPreview). -->
+       una riga vera d'esempio disegnata nella sua versione (HomeRowsMetrics.Rows sulla RowPreview), sotto la sua
+       intestazione dei giorni: è quella a distinguere Compatta da Larga (GIO-19). -->
   <UserControl.Styles>
     <Style Selector="RadioButton.homerows">
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -21,7 +23,7 @@
       <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
     </Style>
     <Style Selector="ctl|RowPreview">
-      <Setter Property="Margin" Value="0,6,0,0"/>
+      <Setter Property="Margin" Value="0,2,0,0"/>
       <Setter Property="MaxWidth" Value="460"/>
       <Setter Property="HorizontalAlignment" Value="Left"/>
     </Style>
@@ -47,7 +49,11 @@
         <StackPanel>
           <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Compact}"/>
           <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Compact_Hint}"/>
-          <ctl:RowPreview x:Name="PreviewCompact" ctl:HomeRowsMetrics.Rows="Compact" Model="{CompiledBinding HomeRowsSample}"/>
+          <StackPanel HorizontalAlignment="Left">
+            <hv:DayHeaderView x:Name="HeaderCompact" ctl:HomeRowsMetrics.Rows="Compact" HorizontalAlignment="Right" Margin="0,6,11,0"
+                              IsHitTestVisible="False" Cells="{CompiledBinding HomeRowsSampleDays}"/>
+            <ctl:RowPreview ctl:HeatmapStrip.VisibleDays="7" x:Name="PreviewCompact" ctl:HomeRowsMetrics.Rows="Compact" Model="{CompiledBinding HomeRowsSample}"/>
+          </StackPanel>
         </StackPanel>
       </RadioButton>
       <RadioButton x:Name="RowsMarks" Classes="homerows" GroupName="homerows"
@@ -55,7 +61,11 @@
         <StackPanel>
           <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Marks}"/>
           <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Marks_Hint}"/>
-          <ctl:RowPreview x:Name="PreviewMarks" ctl:HomeRowsMetrics.Rows="Marks" Model="{CompiledBinding HomeRowsSample}"/>
+          <StackPanel HorizontalAlignment="Left">
+            <hv:DayHeaderView x:Name="HeaderMarks" ctl:HomeRowsMetrics.Rows="Marks" HorizontalAlignment="Right" Margin="0,6,11,0"
+                              IsHitTestVisible="False" Cells="{CompiledBinding HomeRowsSampleDays}"/>
+            <ctl:RowPreview ctl:HeatmapStrip.VisibleDays="7" x:Name="PreviewMarks" ctl:HomeRowsMetrics.Rows="Marks" Model="{CompiledBinding HomeRowsSample}"/>
+          </StackPanel>
         </StackPanel>
       </RadioButton>
       <RadioButton x:Name="RowsComfortable" Classes="homerows" GroupName="homerows"
@@ -63,7 +73,11 @@
         <StackPanel>
           <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Comfortable}"/>
           <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_Comfortable_Hint}"/>
-          <ctl:RowPreview x:Name="PreviewComfortable" ctl:HomeRowsMetrics.Rows="Comfortable" Model="{CompiledBinding HomeRowsSample}"/>
+          <StackPanel HorizontalAlignment="Left">
+            <hv:DayHeaderView x:Name="HeaderComfortable" ctl:HomeRowsMetrics.Rows="Comfortable" HorizontalAlignment="Right" Margin="0,6,11,0"
+                              IsHitTestVisible="False" Cells="{CompiledBinding HomeRowsSampleDays}"/>
+            <ctl:RowPreview ctl:HeatmapStrip.VisibleDays="7" x:Name="PreviewComfortable" ctl:HomeRowsMetrics.Rows="Comfortable" Model="{CompiledBinding HomeRowsSample}"/>
+          </StackPanel>
         </StackPanel>
       </RadioButton>
       <TextBlock Classes="hint" Text="{x:Static res:Strings.Settings_Appearance_HomeRows_DeviceNote}"/>

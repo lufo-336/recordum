@@ -107,7 +107,10 @@ public partial class App : Application
 
             var theme = _services.GetRequiredService<IThemeService>();
             await theme.InitializeAsync().ConfigureAwait(true);
-            await _services.GetRequiredService<Presentation.Services.HomeRowsPreference>().InitializeAsync().ConfigureAwait(true);
+            var homeRows = _services.GetRequiredService<Presentation.Services.HomeRowsPreference>();
+            await homeRows.InitializeAsync().ConfigureAwait(true);
+            Controls.HomeRowsAppStyle.Apply(this, homeRows.Current);
+            homeRows.Changed += (_, _) => Controls.HomeRowsAppStyle.Apply(this, homeRows.Current);
 
             var window = _services.GetRequiredService<MainWindow>();
             desktop.MainWindow = window;

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -101,6 +102,42 @@ public class AppearancePageTests
         Find<RadioButton>(window, "RowsComfortable").IsChecked.Should().BeTrue();
         Find<RadioButton>(window, "RowsCompact").IsChecked.Should().BeFalse();
         Find<RadioButton>(window, "RowsMarks").IsChecked.Should().BeFalse();
+        await CloseAsync(window, shown);
+    }
+
+    /// <summary>GIO-19: senza l'intestazione dei giorni Compatta e Larga erano la stessa riga. Ogni esempio ha la sua
+    /// testa (iniziali in Compatta e Segni, i nomi e "oggi" in Larga), sopra le colonne della striscia.</summary>
+    [AvaloniaFact]
+    public async Task Each_choice_shows_its_day_header_over_the_strip()
+    {
+        using var culture = TestCulture.Pin();
+        var (window, shown) = await OpenAsync(NewHost("app-header", new RecordingTheme()));
+
+        foreach (var (name, initials) in new[] { ("Compact", true), ("Marks", true), ("Comfortable", false) })
+        {
+            var header = Find<Recordum.UI.Views.Home.DayHeaderView>(window, "Header" + name);
+            var days = header.GetVisualDescendants().OfType<Button>().ToList();
+            days.Should().HaveCount(7, name);
+            if (initials) days.Should().OnlyContain(b => ((string)b.Content!).Length == 1, name + " scrive le iniziali");
+            else
+            {
+                days[^1].Content.Should().Be("oggi");
+                days.Take(6).Should().OnlyContain(b => ((string)b.Content!).Length == 3, "Larga scrive i nomi");
+            }
+            days[^1].Classes.Should().Contain("selected");
+
+            var strip = Strip(Find<RowPreview>(window, "Preview" + name));
+            var cells = name == "Marks"
+                ? strip.GetVisualDescendants().OfType<Border>().Where(b => b.Bounds.Width == 14 && b.Bounds.Height == 14).Cast<Control>().ToList()
+                : strip.GetVisualDescendants().OfType<TextBlock>().Cast<Control>().ToList();
+            cells.Should().HaveCount(7);
+            for (var i = 0; i < 7; i++)
+            {
+                var day = days[i].TranslatePoint(new Avalonia.Point(days[i].Bounds.Width / 2, 0), window)!.Value.X;
+                var cell = cells[i].TranslatePoint(new Avalonia.Point(cells[i].Bounds.Width / 2, 0), window)!.Value.X;
+                day.Should().BeApproximately(cell, 1.0, $"{name}: il giorno {i} sta sopra la sua colonna");
+            }
+        }
         await CloseAsync(window, shown);
     }
 

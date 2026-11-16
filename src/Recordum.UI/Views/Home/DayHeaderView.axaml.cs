@@ -14,6 +14,17 @@ public partial class DayHeaderView : UserControl
     public static readonly StyledProperty<HomeRowsMetrics> MetricsProperty =
         AvaloniaProperty.Register<DayHeaderView, HomeRowsMetrics>(nameof(Metrics), HomeRowsMetrics.For(HomeRows.Comfortable));
 
+    /// <summary>Il comando di un giorno (parametro: quanti giorni fa). Null dove l'intestazione è solo da guardare
+    /// (Impostazioni › Aspetto).</summary>
+    public static readonly StyledProperty<System.Windows.Input.ICommand?> SelectCommandProperty =
+        AvaloniaProperty.Register<DayHeaderView, System.Windows.Input.ICommand?>(nameof(SelectCommand));
+
+    public System.Windows.Input.ICommand? SelectCommand
+    {
+        get => GetValue(SelectCommandProperty);
+        set => SetValue(SelectCommandProperty, value);
+    }
+
     public ImmutableArray<DayHeaderCell> Cells
     {
         get => GetValue(CellsProperty);

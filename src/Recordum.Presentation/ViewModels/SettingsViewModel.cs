@@ -67,6 +67,24 @@ public sealed partial class SettingsViewModel : ObservableObject
         _ = _rows.SetAsync(value).AsTask();
     }
 
+    /// <summary>I sette giorni sopra la riga d'esempio: una settimana qualunque che finisce oggi (di lunedì). È la testa
+    /// a distinguere Compatta (iniziali) da Larga (i nomi): senza, le due anteprime erano la stessa riga (GIO-19).</summary>
+    public ImmutableArray<Home.DayHeaderCell> HomeRowsSampleDays { get; } = BuildSampleDays();
+
+    private static ImmutableArray<Home.DayHeaderCell> BuildSampleDays()
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        DayOfWeek[] week = [DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday,
+            DayOfWeek.Saturday, DayOfWeek.Sunday, DayOfWeek.Monday];
+        return week.Select((day, i) =>
+        {
+            var name = culture.DateTimeFormat.GetAbbreviatedDayName(day);
+            var today = i == week.Length - 1;
+            return new Home.DayHeaderCell(today ? Resources.Strings.Home_StripHeader_Today : name,
+                culture.TextInfo.ToLower(name[..1]), culture.DateTimeFormat.GetDayName(day), week.Length - 1 - i, today, today);
+        }).ToImmutableArray();
+    }
+
     private static HomeRowPreviewModel BuildSample()
     {
         decimal?[] days = [20, null, 30, 25, null, 40, 35];
