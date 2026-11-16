@@ -42,7 +42,8 @@
                      IsChecked="{CompiledBinding Mode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:EntriesRecordsMode.Giorno}}"/>
         <RadioButton Grid.Column="1" x:Name="PeriodMode" Classes="segment" GroupName="notes-mode" Content="{x:Static res:Strings.Records_Mode_Period}"
                      IsChecked="{CompiledBinding Mode, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static hvm:EntriesRecordsMode.Periodo}}"/>
-        <Button Grid.Column="3" x:Name="NewButton" Padding="8,3" Command="{CompiledBinding NewCommand}">
+        <Button Grid.Column="3" x:Name="NewButton" Padding="8,3" Command="{CompiledBinding NewCommand}"
+                IsVisible="{CompiledBinding !IsReadOnlyLegacy}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <Path Classes="note-icon" Data="{StaticResource Icon.Plus}"/>
             <TextBlock Text="{x:Static res:Strings.Notes_Column_New}"/>
@@ -80,7 +81,9 @@
                 <Run Text="{CompiledBinding CreatedAtTimeDisplay, Mode=OneWay}"/>
               </TextBlock>
               <TextBlock Classes="meta" Text="{CompiledBinding ModifiedAtDisplay}" IsVisible="{CompiledBinding WasModified}"/>
-              <TextBlock Text="{CompiledBinding Summary}" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Brush.Text}"/>
+              <!-- Resa come le voci del diario; non riceve né il clic (sceglie la riga) né il Tab. -->
+              <c:DiaryEditor IsReadOnly="True" Margin="-10,-8" IsHitTestVisible="False" KeyboardNavigation.TabNavigation="None"
+                             Markdown="{CompiledBinding PreviewMarkdown, Mode=OneWay}"/>
             </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>

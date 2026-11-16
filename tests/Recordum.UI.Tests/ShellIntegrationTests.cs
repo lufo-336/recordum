@@ -204,7 +204,8 @@ public class ShellIntegrationTests(ITestOutputHelper output)
         // Esc col visore aperto chiudeva la colonna Note (l'ultima aperta) e lasciava il visore aperto dentro.
         var window = await OpenSeededAsync();
         var vm = (MainWindowViewModel)window.DataContext!;
-        vm.Home.SelectedRow = vm.Home.Rows.First(r => !r.IsGroup);
+        // Non un diario: lì la colonna Note non c'è (onda "Giornata", Task 13).
+        vm.Home.SelectedRow = vm.Home.Rows.First(r => !r.IsGroup && r.HabitType != Recordum.Core.Enums.HabitType.Journal);
         for (var i = 0; i < 100 && vm.Workspace.ActiveSubjectTab?.Screen is null; i++)
         {
             await Task.Delay(20);

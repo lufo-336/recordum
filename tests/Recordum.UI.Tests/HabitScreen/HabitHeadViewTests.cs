@@ -210,7 +210,7 @@ public class HabitHeadViewTests
     {
         var o = await OpenAsync(HabitCase.Journal);
         var buttons = Named<Panel>(Head(o), "ColumnButtons").GetVisualDescendants().OfType<ToggleButton>().Where(b => b.IsVisible).ToList();
-        buttons.Select(b => b.Name).Should().Equal("ChipDiario", "ChipCronologia", "ChipNote", "ChipConfigura");
+        buttons.Select(b => b.Name).Should().Equal("ChipDiario", "ChipCronologia", "ChipConfigura");   // un diario non ha Note (Task 13)
         buttons.Should().OnlyContain(b => b.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Any());
         o.View.GetVisualDescendants().OfType<TextBlock>().Should().NotContain(t => t.Text != null && t.Text.Contains('✎'));
         o.Window.Close();

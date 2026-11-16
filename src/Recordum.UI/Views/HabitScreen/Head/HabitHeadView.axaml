@@ -88,7 +88,8 @@
           <TextBlock Text="{x:Static res:Strings.HabitScreen_Column_Cronologia}"/>
         </StackPanel>
       </ToggleButton>
-      <ToggleButton x:Name="ChipNote" Classes="column" IsChecked="{CompiledBinding IsNoteOpen, Mode=TwoWay}">
+      <ToggleButton x:Name="ChipNote" Classes="column" IsChecked="{CompiledBinding IsNoteOpen, Mode=TwoWay}"
+                    IsVisible="{CompiledBinding IsNoteColumnAvailable}">
         <StackPanel Orientation="Horizontal">
           <Path Classes="column-glyph" Data="{StaticResource Icon.BookOpen}"/>
           <TextBlock Text="{x:Static res:Strings.HabitScreen_Tab_Notes}"/>

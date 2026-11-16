@@ -67,6 +67,52 @@ public class HabitScreenPerformanceTests(ITestOutputHelper output)
         warm.Should().BeLessThan(5000);
     }
 
+    /// <summary>Onda "Giornata", Task 13: le righe delle note sono rese (un DiaryEditor per riga). Si misura l'apertura
+    /// della colonna Note con cinquanta note; l'elenco virtualizza, quindi se ne costruiscono solo le visibili.</summary>
+    [AvaloniaFact]
+    public async Task Opening_the_notes_column_with_fifty_rendered_notes_is_measured()
+    {
+        using var seedScope = Host.Provider.CreateScope();
+        var s = seedScope.ServiceProvider;
+        var id = await s.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
+        {
+            NodeType = NodeType.Habit, HabitType = HabitType.Action, Name = "Cinquanta note", Color = "#E11D48",
+        });
+        for (var i = 0; i < 50; i++)
+            await s.GetRequiredService<INoteService>().CreateAsync(new Note
+            {
+                HabitNodeId = id, BodyMd = $"**Nota {i}**, con *un po'* di testo e un #tag\nseconda riga", UpdatedAtMs = Host.Clock.UtcNowMs,
+            });
+
+        async Task<(long Ms, int Editors)> OpenOnceAsync()
+        {
+            using var scope = Host.Provider.CreateScope();
+            var vm = scope.ServiceProvider.GetRequiredService<HabitScreenViewModel>();
+            var view = new HabitScreenView { DataContext = vm };
+            var w = new Window { Width = 900, Height = 900, Content = view };
+            w.Show();
+            await vm.LoadAsync(id);
+            PrivateDbHost.Pump();
+            var watch = Stopwatch.StartNew();
+            vm.IsNoteOpen = true;
+            for (var i = 0; i < 200 && !view.GetVisualDescendants().OfType<ListBoxItem>().Any(); i++)
+            { await Task.Delay(10); PrivateDbHost.Pump(); }
+            PrivateDbHost.Pump();
+            watch.Stop();
+            var editors = view.GetVisualDescendants().OfType<Recordum.UI.Controls.DiaryEditor>().Count();
+            vm.Notes.Notes.Should().HaveCount(50);
+            vm.IsNoteOpen = false;
+            w.Close();
+            return (watch.ElapsedMilliseconds, editors);
+        }
+
+        var cold = await OpenOnceAsync();
+        var warm = await OpenOnceAsync();
+        output.WriteLine($"Colonna Note con 50 note rese: freddo {cold.Ms} ms, caldo {warm.Ms} ms, editor costruiti {warm.Editors}");
+        warm.Editors.Should().BeLessThan(50, "l'elenco virtualizza: non un editor per ogni nota");
+        warm.Ms.Should().BeLessThan(2000);
+    }
+
     /// <summary>Onda 2a, Task 10: un'azione con tre anni di registrazioni giornaliere. Si misura LoadAsync con la
     /// Cronologia aperta, poi il passaggio a "Tutto" fino alle tre heatmap d'anno disegnate. Riferimento: la Home con 300
     /// righe sta sotto i 500 ms.</summary>

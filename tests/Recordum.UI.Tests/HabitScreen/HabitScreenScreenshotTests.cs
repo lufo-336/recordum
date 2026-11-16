@@ -296,11 +296,14 @@ public class HabitScreenScreenshotTests(ITestOutputHelper output)
             vm.IsNoteOpen = true;
             vm.IsConfiguraOpen = true;
         });
-        await UntilAsync(() => o.View.GetVisualDescendants().OfType<NotesColumnView>().Any());
+        // Un diario non ha la colonna Note (Task 13): le sue colonne sono tre, anche con Note nell'insieme aperto.
+        await UntilAsync(() => Named<Border>(o.View, "ConfiguraColumn").Bounds.Width >= 320);
         PrivateDbHost.Pump();
         Shoot(o, $"habit-all-columns-{variant.ToLowerInvariant()}");
-        foreach (var name in new[] { "DiarioColumn", "CronologiaColumn", "NoteColumn", "ConfiguraColumn" })
+        foreach (var name in new[] { "DiarioColumn", "CronologiaColumn", "ConfiguraColumn" })
             Named<Border>(o.View, name).Bounds.Width.Should().BeGreaterThanOrEqualTo(320, name);
+        Named<Border>(o.View, "NoteColumn").IsVisible.Should().BeFalse();
+        o.View.GetVisualDescendants().OfType<NotesColumnView>().Should().BeEmpty();
     }
 
     [AvaloniaTheory]

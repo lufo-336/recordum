@@ -39,6 +39,13 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _editorMarkdown = string.Empty;
     [ObservableProperty] private bool _isConfirmingDelete;
     [ObservableProperty] private bool _isShowingHistory;
+    // Su un diario le note di prima si mostrano, non se ne creano di nuove.
+    [ObservableProperty] private bool _isReadOnlyLegacy;
+
+    // Su un diario le voci sono Note anche loro (categoria Diario): qui farebbero doppione, e cancellarle da questa colonna
+    // lascerebbe orfana la registrazione accoppiata. Si elencano solo le note libere.
+    private List<Note> Listed(IReadOnlyList<Note> list) =>
+        IsReadOnlyLegacy ? list.Where(n => n.Category == NoteCategory.Veloce).ToList() : list.ToList();
 
     // ---- lightbox (view-only state, flat on this VM — mirrors IsShowingHistory/IsConfirmingDelete
     // rather than a child VM, matching this file's existing style) ----
@@ -118,7 +125,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         // Si rilegge l'elenco tenendo la selezione e il testo non salvato (ApplyFilter): un salvataggio fatto altrove
         // (la nota del giorno, un'altra nota) non svuota l'editor.
         var list = await _notes.ListByHabitAsync(_habitNodeId).ConfigureAwait(true);
-        _all = list.ToList();
+        _all = Listed(list);
         ApplyFilter();
     }
 
@@ -129,7 +136,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
         _habitNodeId = habitNodeId;
         _day = day;
         var list = await _notes.ListByHabitAsync(habitNodeId, ct).ConfigureAwait(true);
-        _all = list.ToList();
+        _all = Listed(list);
         ApplyFilter();
         SelectedNote = null;
         EditorMarkdown = string.Empty;
@@ -230,6 +237,7 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task New(CancellationToken ct)
     {
+        if (IsReadOnlyLegacy) return;
         var draft = new Note { HabitNodeId = _habitNodeId, BodyMd = string.Empty, UpdatedAtMs = _clock.UtcNowMs };
         await _notes.CreateAsync(draft, ct).ConfigureAwait(true);
         _all.Insert(0, draft);

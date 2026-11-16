@@ -153,8 +153,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         return true; // Cronologia, Dettaglio, Note, Configura
     }
 
-    private bool IsColumnApplicable(HabitColumn column) => Node is not null
-        && IsColumnApplicable(column, Node.NodeType, Node.HabitType);
+    private bool _journalHasQuickNotes;
+
+    // Note su un diario: solo se ha già note libere (Task 13). Il resto lo dice la regola per tipo.
+    private bool IsColumnApplicable(HabitColumn column, HabitNode node) =>
+        IsColumnApplicable(column, node.NodeType, node.HabitType)
+        && !(column == HabitColumn.Note && node.HabitType == HabitType.Journal && !_journalHasQuickNotes);
+
+    private bool IsColumnApplicable(HabitColumn column) => Node is not null && IsColumnApplicable(column, Node);
 
     // Column visibility = open flag AND applicability to the current subject, so the open
     // set survives habit↔group↔journal switches intact (spec §A.1 + §3.4).
@@ -162,11 +168,15 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     /// <summary>True only for journal habits: gates the dedicated ✎ Diario chip and editor routing.</summary>
     public bool IsJournal => Node?.HabitType == HabitType.Journal;
+
+    /// <summary>Guida il pulsante della colonna Note (nascosto sui diari senza note libere).</summary>
+    public bool IsNoteColumnAvailable => IsColumnApplicable(HabitColumn.Note);
+
     public bool ShowPanoramica => IsPanoramicaOpen && IsColumnApplicable(HabitColumn.Panoramica) && FocusAllows(HabitColumn.Panoramica);
     public bool ShowDiario => IsDiarioOpen && IsColumnApplicable(HabitColumn.Diario) && FocusAllows(HabitColumn.Diario);
     public bool ShowCronologia => IsCronologiaOpen && IsColumnApplicable(HabitColumn.Cronologia) && FocusAllows(HabitColumn.Cronologia);
     public bool ShowDettaglio => IsDettaglioOpen && IsColumnApplicable(HabitColumn.Dettaglio) && FocusAllows(HabitColumn.Dettaglio);
-    public bool ShowNote => IsNoteOpen && Node is not null && FocusAllows(HabitColumn.Note);
+    public bool ShowNote => IsNoteOpen && IsColumnApplicable(HabitColumn.Note) && FocusAllows(HabitColumn.Note);
     public bool ShowConfigura => IsConfiguraOpen && Node is not null && FocusAllows(HabitColumn.Configura);
 
     /// <summary>Total minimum width the open columns demand (each at <see cref="MinColumnWidth"/>).
@@ -193,6 +203,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(QuickEntryShownInDiario));
         OnPropertyChanged(nameof(ShowCronologia));
         OnPropertyChanged(nameof(ShowDettaglio));
+        OnPropertyChanged(nameof(IsNoteColumnAvailable));
         OnPropertyChanged(nameof(ShowNote));
         OnPropertyChanged(nameof(NotesForColumn));
         OnPropertyChanged(nameof(ShowConfigura));
@@ -216,7 +227,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         {
             _lastClosedColumn = column;
             _ = _appSettings.SetAsync(LastClosedColumnSettingKey, column.ToString()).AsTask();
-            if (Node is not null && !CanonicalOpen().Any(IsColumnApplicable))
+            if (Node is not null && !CanonicalOpen().Any(c => IsColumnApplicable(c)))
                 AllColumnsClosed?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -271,7 +282,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         }
 
         // (2) A live-carried column already applies → keep the current set as-is (additive shared behaviour).
-        if (CanonicalOpen().Any(c => IsColumnApplicable(c, node.NodeType, node.HabitType)))
+        if (CanonicalOpen().Any(c => IsColumnApplicable(c, node)))
             return;
 
         // (3) Legacy global fallback (applicable subset), opened additively.
@@ -285,14 +296,14 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         var fallback = node.NodeType == NodeType.Group ? HabitColumn.Panoramica
             : node.HabitType == HabitType.Journal ? HabitColumn.Diario
             : HabitColumn.Cronologia;
-        var target = _lastClosedColumn is { } lc && IsColumnApplicable(lc, node.NodeType, node.HabitType) ? lc : fallback;
+        var target = _lastClosedColumn is { } lc && IsColumnApplicable(lc, node) ? lc : fallback;
         OpenColumnsAdditively([target]);
     }
 
-    private static List<HabitColumn> ParseApplicableColumns(IEnumerable<string> tokens, HabitNode node)
+    private List<HabitColumn> ParseApplicableColumns(IEnumerable<string> tokens, HabitNode node)
         => tokens
             .Select(t => Enum.TryParse<HabitColumn>(t, out var c) ? c : (HabitColumn?)null)
-            .Where(c => c is not null && IsColumnApplicable(c.Value, node.NodeType, node.HabitType))
+            .Where(c => c is not null && IsColumnApplicable(c.Value, node))
             .Select(c => c!.Value)
             .ToList();
 
@@ -371,8 +382,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>Esc: closes the most recently opened column.</summary>
     public void CloseLastColumn()
     {
-        if (_openOrder.Count == 0) return;
-        SetColumnFlag(_openOrder[^1], false);
+        // L'ultima che si vede: una colonna aperta che su questo soggetto non esiste (Note su un diario) non si chiude da qui.
+        var last = _openOrder.FindLastIndex(IsColumnApplicable);
+        if (last >= 0) SetColumnFlag(_openOrder[last], false);
     }
 
     // ---- column widths (resizable via drag-thumb, spec 2026-06-11-column-resize) ----
@@ -830,7 +842,19 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         var node = await _nodes.GetAsync(habitNodeId.Value, ct).ConfigureAwait(true);
         if (generation != _loadGeneration) return; // superseded by a newer load/deselect
+
+        // Su un diario la colonna Note c'è solo se ha già note libere. Il conto si legge qui, PRIMA di cambiare soggetto:
+        // Node notifica le colonne, e col conto del soggetto di prima la colonna si chiuderebbe per riaprirsi subito dopo.
+        var isJournal = node?.HabitType == HabitType.Journal;
+        var hasQuickNotes = isJournal
+            && (await _noteService.ListByHabitAsync(node!.Id, ct).ConfigureAwait(true)).Any(n => n.Category == NoteCategory.Veloce);
+        if (generation != _loadGeneration) return;
+        _journalHasQuickNotes = hasQuickNotes;
+        Notes.IsReadOnlyLegacy = isJournal;
+        // Una colonna a tutta scheda che qui non esiste (Note su un diario, Cronologia su un gruppo) lascerebbe lo schermo vuoto.
+        if (node is not null && FocusedColumn is { } focused && !IsColumnApplicable(focused, node)) FocusedColumn = null;
         Node = node;
+        NotifyShowFlags();   // ricaricando lo stesso soggetto Node non cambia: le colonne si notificano comunque
         OnPropertyChanged(nameof(HasNode));
         OnPropertyChanged(nameof(Name));
         if (node is null) { QuickAdd = null; return; }

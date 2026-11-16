@@ -24,12 +24,14 @@
     <Border x:Name="RecordsHost"/>
     <StackPanel x:Name="DayNoteBlock" Spacing="6" Margin="0,4,0,0" IsVisible="{CompiledBinding !IsJournal}">
       <!-- La cornice tratteggiata: un Rectangle sotto la casella senza bordo (Border non tratteggia). -->
-      <Panel>
+      <Panel x:Name="DayNoteFrame" Background="Transparent">
         <Rectangle Stroke="{DynamicResource Brush.FieldBorder}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="6" RadiusY="6"/>
         <TextBox x:Name="DayNoteBox" Text="{CompiledBinding DayNote.Text, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
                  MinHeight="64" FontFamily="{DynamicResource Font.Serif}" FontSize="{DynamicResource FontSize.Body}"
                  Background="Transparent" BorderThickness="0"
                  PlaceholderText="{x:Static res:Strings.History_DayNote_Placeholder}"/>
+        <!-- La nota resa (un DiaryEditor in sola lettura): la costruisce il code-behind solo quando c'è una nota da leggere. -->
+        <Border x:Name="DayNoteRenderedHost" IsHitTestVisible="False" IsVisible="False" KeyboardNavigation.TabNavigation="None"/>
       </Panel>
       <Button x:Name="DayNoteSaveButton" Classes="primary" HorizontalAlignment="Right"
               Content="{x:Static res:Strings.HabitScreen_DayNote_Save}" Command="{CompiledBinding DayNote.SaveCommand}"

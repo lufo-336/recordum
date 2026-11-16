@@ -229,7 +229,8 @@ public class NotesColumnTests
     [AvaloniaFact]
     public async Task Four_columns_fit_with_scroll()
     {
-        var o = await OpenAsync(type: HabitType.Journal);
+        // Un diario ha la colonna Note solo se ha già note libere (Task 13).
+        var o = await OpenAsync(async (sp, id) => await SeedNote(sp, id, "di prima"), type: HabitType.Journal);
         o.Vm.IsDiarioOpen = true;
         o.Vm.IsCronologiaOpen = true;
         o.Vm.IsConfiguraOpen = true;
@@ -391,6 +392,119 @@ public class NotesColumnTests
             System.Globalization.CultureInfo.CurrentCulture = prevCurrent;
             System.Globalization.CultureInfo.CurrentUICulture = prevUi;
         }
+    }
+
+    // ---- Onda "Giornata", Task 13 (B2): voce nei diari, nota sulle altre; le note si leggono rese ----
+
+    [AvaloniaFact]
+    public async Task Note_rows_render_markdown()
+    {
+        var o = await OpenAsync(async (sp, id) => await SeedNote(sp, id, "**lenta**"));
+        var row = await RowAsync(o, "**lenta**");
+
+        var rendered = row.GetVisualDescendants().OfType<DiaryEditor>().Single();
+        rendered.IsReadOnly.Should().BeTrue("lo stesso controllo delle voci rese del diario");
+        rendered.Markdown.Should().Be("**lenta**");
+        rendered.Bounds.Height.Should().BeGreaterThan(0, "un editor 0x0 ha perso il tema");
+        row.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible)
+            .Should().NotContain(t => (t.Text ?? "").Contains('*'), "gli asterischi non si vedono");
+
+        KeyboardNavigation.GetTabNavigation(rendered).Should().Be(KeyboardNavigationMode.None, "il Tab non si ferma su ogni riga");
+        // Il testo reso non ruba il clic: la riga si sceglie cliccandoci sopra.
+        Click(o.Window, rendered);
+        await UntilAsync(() => Editor(o).Markdown == "**lenta**");
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task A_journal_has_no_note_button()
+    {
+        var o = await OpenAsync(type: HabitType.Journal);
+
+        Named<ToggleButton>(o.View, "ChipNote").IsVisible.Should().BeFalse();
+        o.View.GetVisualDescendants().OfType<NotesColumnView>().Should().BeEmpty("aperta nell'insieme, ma su un diario non c'è");
+        Named<Border>(o.View, "NoteColumn").IsVisible.Should().BeFalse();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task A_journal_with_existing_notes_shows_them_without_the_new_button()
+    {
+        var o = await OpenAsync(async (sp, id) => await SeedNote(sp, id, "di prima"), type: HabitType.Journal);
+
+        Named<ToggleButton>(o.View, "ChipNote").IsVisible.Should().BeTrue();
+        await RowAsync(o, "di prima");
+        Named<Button>(o.Column, "NewButton").IsVisible.Should().BeFalse();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task On_other_habits_the_new_button_stays()
+    {
+        var o = await OpenAsync();
+        Named<Button>(o.Column, "NewButton").IsVisible.Should().BeTrue();
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Day_block_note_renders_markdown_until_edited()
+    {
+        var o = await OpenAsync(async (sp, id) => await SeedNote(sp, id, "**lenta**", Today), openNotes: false);
+        o.Vm.IsCronologiaOpen = true;
+        var box = await UntilFoundAsync<TextBox>(o, "DayNoteBox");
+        await UntilAsync(() => box.Text == "**lenta**");
+        var rendered = await UntilFoundAsync<DiaryEditor>(o, "DayNoteRendered");
+
+        rendered.IsReadOnly.Should().BeTrue();
+        rendered.Markdown.Should().Be("**lenta**");
+        rendered.IsEffectivelyVisible.Should().BeTrue("la nota salvata si legge resa");
+        rendered.Bounds.Height.Should().BeGreaterThan(0);
+        box.IsVisible.Should().BeFalse("il Markdown grezzo solo mentre si scrive");
+
+        Click(o.Window, rendered);
+        await UntilAsync(() => box.IsVisible && box.IsFocused);
+        rendered.IsEffectivelyVisible.Should().BeFalse();
+
+        // Lasciata la casella, torna resa col testo nuovo.
+        box.Text = "*piano*";
+        Named<ToggleButton>(o.View, "ChipCronologia").Focus();
+        Pump();
+        await UntilAsync(() => rendered.IsEffectivelyVisible && !box.IsVisible);
+        rendered.Markdown.Should().Be("*piano*");
+        // Resa vuol dire salvata: uscire dalla casella scrive la nota (dalla review).
+        await UntilAsync(() => o.Notes.ListByHabitAsync(o.Id).AsTask().GetAwaiter().GetResult().Single().BodyMd == "*piano*");
+        KeyboardNavigation.GetTabNavigation((Control)rendered.Parent!).Should().Be(KeyboardNavigationMode.None,
+            "il Tab non entra nell'editor in sola lettura");
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Day_block_rendered_note_is_reachable_from_the_keyboard()
+    {
+        var o = await OpenAsync(async (sp, id) => await SeedNote(sp, id, "**lenta**", Today), openNotes: false);
+        o.Vm.IsCronologiaOpen = true;
+        var box = await UntilFoundAsync<TextBox>(o, "DayNoteBox");
+        await UntilAsync(() => !box.IsVisible);
+        var frame = Named<Panel>(o.View, "DayNoteFrame");
+        frame.Focusable.Should().BeTrue("la casella è nascosta: il Tab deve potersi fermare qui");
+
+        frame.Focus(NavigationMethod.Tab);
+        await UntilAsync(() => box.IsVisible && box.IsFocused);
+        frame.Focusable.Should().BeFalse("mentre si scrive il Tab si ferma solo sulla casella");
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Day_block_without_a_note_offers_the_box()
+    {
+        var o = await OpenAsync(openNotes: false);
+        o.Vm.IsCronologiaOpen = true;
+        var box = await UntilFoundAsync<TextBox>(o, "DayNoteBox");
+
+        box.IsVisible.Should().BeTrue("senza nota si vede la casella col suo invito");
+        o.View.GetVisualDescendants().OfType<DiaryEditor>().Should().NotContain(e => e.Name == "DayNoteRendered",
+            "senza nota da leggere l'editor che rende non si costruisce");
+        o.Window.Close();
     }
 
     private static async Task<T> UntilFoundAsync<T>(Opened o, string name) where T : Control

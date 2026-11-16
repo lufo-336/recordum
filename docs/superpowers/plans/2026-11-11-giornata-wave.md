@@ -689,13 +689,51 @@ fanno scattare `HomePerformanceTests` o rendono lenta la colonna, ci si ferma co
 - Sulle **altre** abitudini e sui gruppi la colonna resta com'è, senza l'etichetta di categoria (Task 2).
 - Le righe dell'elenco delle note e la nota nel blocco del giorno sono **rese**; il Markdown grezzo solo mentre si scrive.
 
-- [ ] **Step 1: test rossi:** `A_journal_has_no_notes_column`; `A_journal_with_existing_notes_keeps_it_read_only`
+- [x] **Step 1: test rossi:** `A_journal_has_no_notes_column`; `A_journal_with_existing_notes_keeps_it_read_only`
   (**Review Focus 6**); `..._and_it_comes_back_when_notes_appear_after_reload`; `Other_types_keep_the_notes_column`;
   `Open_columns_survive_switching_between_a_journal_and_a_habit` (Note aperta su un'azione, passo a un diario e torno: è
   ancora aperta); UI: `Note_rows_render_markdown` (una nota `**lenta**`: la riga usa lo stesso controllo delle voci
   rese, e nessun `TextBlock` della riga contiene gli asterischi) e `Day_block_note_renders_markdown_until_edited`.
-- [ ] **Step 2: implementa.** **Step 3:** verdi, PNG di un diario e di un'azione con note, commit
+- [x] **Step 2: implementa.** **Step 3:** verdi, PNG di un diario e di un'azione con note, commit
   `feat(presentation): voce nei diari, nota sulle altre abitudini; note rese (B2)`.
+
+- [x] Fatto 2026-11-16 (test, brief e correzioni di Claude; implementazione di agy Hydrogen, 186 s; review di agy Argon).
+
+**Com'è stato fatto (2026-11-16):**
+
+- **Quali note contano.** Una voce del diario è anch'essa un'entità `Note` (`NoteCategory.Diario`, accoppiata a una
+  registrazione): "il diario ha già note" vuol dire note **libere** (`NoteCategory.Veloce`). Un diario con sole voci non ha
+  la colonna. Il conto si legge in `LoadAsync` **prima** di assegnare `Node` (una lettura in più, solo per i diari): letto
+  dopo, la colonna aperta si chiudeva e si ricostruiva a ogni passaggio verso un diario con note.
+- **La colonna su un diario con note di prima** elenca solo le note libere (`NotesViewModel.Listed`): le voci farebbero
+  doppione, e cancellarle da lì lascerebbe orfana la registrazione accoppiata (prima di quest'onda la colonna le mostrava).
+  `IsReadOnlyLegacy` toglie solo "+ Nuova nota" (pulsante nascosto, guardia nel comando); modificare ed eliminare restano.
+- **L'insieme aperto non si tocca**: `IsNoteOpen` resta vero sul diario, è `ShowNote` a essere falso
+  (`IsColumnApplicable(colonna, nodo)` d'istanza completa la regola statica per tipo). Un diario che resterebbe senza
+  colonne cade sui default di sempre (l'ultima chiusa se applicabile, altrimenti Diario). `IsNoteColumnAvailable` guida il
+  pulsante. Una colonna **a tutta scheda** che sul soggetto nuovo non esiste si toglie dal fuoco (valeva già per
+  Cronologia → gruppo: schermo vuoto senza barra dei pulsanti).
+- **Righe rese**: `NoteRowViewModel.PreviewMarkdown` è la prima riga non vuota **intera** (`Summary`, tagliata a 40, avrebbe
+  spezzato i marcatori); la riga usa `DiaryEditor` in sola lettura con `IsHitTestVisible="False"` (altrimenti l'editor ruba
+  il clic e la riga non si sceglie più) e `KeyboardNavigation.TabNavigation="None"`.
+- **Blocco del giorno**: `DayNoteBox` resta la `TextBox` di prima; quando ha testo e non ha il fuoco si nasconde e al suo
+  posto c'è un `DiaryEditor` in sola lettura (`DayNoteRendered`), costruito dal code-behind **solo** quando c'è una nota da
+  leggere (non sui diari, non sui giorni vuoti). Un clic o il Tab sulla cornice riaprono la casella col cursore in fondo.
+  **Uscire dalla casella salva la nota** (scelta mia dopo la review: resa sembra salvata, quindi lo è; "Salva" resta).
+- **Misura** (in locale, `Category=Performance`): colonna Note con 50 note rese, 581 ms a freddo e 145 ms a caldo; l'elenco
+  virtualizza e costruisce 6 editor. Nessun controllo nuovo, nessuna stringa nuova.
+- **Esc** chiude l'ultima colonna che **si vede**: su un diario con Note nell'insieme aperto il primo Esc non faceva niente.
+- **Test**: 17 in `JournalNotesColumnTests` (Presentation 1527), 8 in `NotesColumnTests`; suite UI intera 837 su 838 prima
+  dell'ultimo ritocco (il rosso era `Esc_closes_the_photo_viewer_before_any_column`, che apriva un diario: ora apre un'azione). Rosso provato togliendo la regola
+  del diario, la riga resa, il modo del blocco e `IsHitTestVisible` (8 + 4 + 1 rossi); i tre della review visti rossi prima
+  della correzione. **Non visti rossi**: il Tab sulla cornice e l'attributo `TabNavigation`. Adeguati tre test che davano
+  la colonna Note a un diario (`Four_columns_fit_with_scroll` semina una nota; `Column_buttons_use_lucide_icons`;
+  `All_columns_open`: il PNG del diario ha tre colonne).
+- **Lasciato così**: eliminata l'ultima nota libera di un diario, la colonna resta (vuota, senza "+") fino al prossimo
+  caricamento: il conto si legge al caricamento, come da piano. Su un trattino `- ` l'editor non mette il pallino che mette
+  su `• ` (c'era già, si vede nel PNG delle note).
+- **Staffetta**: agy ha cambiato da solo la regola dell'ultima colonna chiusa per far passare un mio test troppo stretto:
+  annullato, corretto il test. Il resto del diff era fedele al brief (`/tmp/agy-task13-brief.md`).
 
 ### Task 14: Lo stato col numero, "+ a mano" che sembra acceso (B3, B6)
 

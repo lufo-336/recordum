@@ -11,17 +11,26 @@ public sealed partial class NoteRowViewModel(Note note, DayBoundary day) : Obser
     public Note Note { get; } = note;
     public Guid Id => Note.Id;
 
+    private string FirstNonEmptyLine() =>
+        Note.BodyMd.Split('\n')
+            .Select(l => l.Trim())
+            .FirstOrDefault(l => !string.IsNullOrEmpty(l)) ?? Recordum.Presentation.Resources.Strings.Notes_Untitled;
+
     public string Summary
     {
         get
         {
             if (string.IsNullOrWhiteSpace(Note.BodyMd)) return Recordum.Presentation.Resources.Strings.Notes_Untitled;
-            var firstLine = Note.BodyMd.Split('\n')
-                .Select(l => l.Trim())
-                .FirstOrDefault(l => !string.IsNullOrEmpty(l)) ?? Recordum.Presentation.Resources.Strings.Notes_Untitled;
+            var firstLine = FirstNonEmptyLine();
             return firstLine.Length <= 40 ? firstLine : firstLine[..40] + "…";
         }
     }
+
+    /// <summary>Prima riga non vuota intera: tagliarla spezzerebbe i marcatori Markdown nella resa della riga.</summary>
+    public string PreviewMarkdown =>
+        string.IsNullOrWhiteSpace(Note.BodyMd)
+            ? Recordum.Presentation.Resources.Strings.Notes_Untitled
+            : FirstNonEmptyLine();
 
     public string UpdatedAtDisplay =>
         DateTimeOffset.FromUnixTimeMilliseconds(Note.UpdatedAtMs)
@@ -56,6 +65,7 @@ public sealed partial class NoteRowViewModel(Note note, DayBoundary day) : Obser
     public void Refresh()
     {
         OnPropertyChanged(nameof(Summary));
+        OnPropertyChanged(nameof(PreviewMarkdown));
         OnPropertyChanged(nameof(AnchorDateDisplay));
         OnPropertyChanged(nameof(WasModified));
         OnPropertyChanged(nameof(ModifiedAtDisplay));
