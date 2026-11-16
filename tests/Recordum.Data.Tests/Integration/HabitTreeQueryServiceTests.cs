@@ -740,6 +740,34 @@ public class HabitTreeQueryServiceTests
     }
 
     [Fact]
+    public async Task GetHomeTreeAsync_the_day_of_a_lapse_is_not_a_clean_day()
+    {
+        // GIO-9: un periodo finisce due giorni fa e quel giorno stesso ne comincia un altro. Il giorno resta una
+        // ricaduta; il primo giorno pulito è il successivo.
+        var clock = new FakeClock(new DateTimeOffset(2026, 5, 20, 12, 0, 0, TimeSpan.Zero));
+        await using var fx = new DbFixture(clock);
+        var habitId = Guid.NewGuid();
+        long Ms(int daysAgo, int hour) => new DateTimeOffset(
+            clock.UtcNow.UtcDateTime.Date.AddDays(-daysAgo).AddHours(hour), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "r", NodeType = NodeType.Habit, HabitType = HabitType.Resistance });
+            db.AbstinencePeriods.Add(new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = Ms(6, 8), EndedAtMs = Ms(2, 9) });
+            db.AbstinencePeriods.Add(new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = Ms(2, 15) });
+            await db.SaveChangesAsync();
+        }
+
+        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
+        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
+
+        row.LapsesLast14Days.Should().Equal(Enumerable.Range(0, 14).Select(i => i == 11));
+        row.CompletionsLast14Days[10].Should().BeGreaterThan(0, "il giorno prima della ricaduta è pulito");
+        row.CompletionsLast14Days[11].Should().Be(0, "il giorno della ricaduta non è pulito, anche se si è ricominciato");
+        row.CompletionsLast14Days[12].Should().BeGreaterThan(0, "il primo giorno pulito è il successivo");
+        row.CompletionsLast7Days[4].Should().Be(0, "la striscia corta dice lo stesso");
+    }
+
+    [Fact]
     public async Task GetHomeTreeAsync_returns_Relapsed_for_only_closed_period()
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));

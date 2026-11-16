@@ -224,6 +224,11 @@ public sealed partial class JournalQuickEntryViewModel : ObservableObject
 
     private const string DayFormat = "yyyy-MM-dd";
 
+    /// <summary>C'è qualcosa di scritto e non salvato: testo, tag o foto della voce nuova, o una voce in modifica con
+    /// cambiamenti (una modifica aperta e intatta non conta: cambiando giorno si chiude senza perdere niente).</summary>
+    public bool HasUnsavedWriting =>
+        Draft.Length > 0 || PropertyTags.Tags.Count > 0 || PendingPhotos.Count > 0 || EditingRow is { HasChanges: true };
+
     private bool HasDraftContent => Draft.Length > 0 || PropertyTags.Tags.Count > 0 || EditingRow is not null;
 
     private string DraftKey => "diary.draft." + _habitNodeId.ToString("N");

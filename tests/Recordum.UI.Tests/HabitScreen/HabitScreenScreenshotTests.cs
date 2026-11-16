@@ -1,5 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using FluentAssertions;
@@ -198,7 +200,29 @@ public class HabitScreenScreenshotTests(ITestOutputHelper output)
         if (c is HabitCase.State)
             o.View.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "StepLabel")
                 .Should().OnlyContain(t => !t.TextLayout.TextLines.Any(l => l.HasCollapsed), "le etichette dei gradini non si troncano");
-        if (c is HabitCase.Abstinence) o.Vm.Map.Cells.Should().Contain(x => x.IsLapse, "la ricaduta è segnata");
+        if (c is HabitCase.Abstinence)
+        {
+            // GIO-9: la ricaduta è una cella vuota col contorno e una × nel colore dell'abitudine, il numero in angolo.
+            o.Vm.Map.Cells.Should().Contain(x => x.IsLapse, "la ricaduta è segnata");
+            o.Vm.Map.Cells.Where(x => x.IsLapse).Should().OnlyContain(x => x.Step == 0, "il giorno di una ricaduta non è pulito");
+            var marks = o.View.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>()
+                .Where(p => p.Name == "LapseMark" && p.IsEffectivelyVisible).ToList();
+            marks.Should().HaveCount(o.Vm.Map.Cells.Count(x => x.IsLapse));
+            var mark = marks[0];
+            var cell = mark.FindAncestorOfType<Button>()!;
+            var outline = (Border)mark.Parent!;
+            outline.BorderThickness.Should().Be(new Thickness(1.5));
+            var expected = ((ISolidColorBrush)Recordum.UI.Converters.HabitTextBrushConverter.BrushFor(o.Vm.Node!.Color, o.View.ActualThemeVariant)).Color;
+            ((ISolidColorBrush)outline.BorderBrush!).Color.Should().Be(expected, "il contorno è nel colore dell'abitudine");
+            ((ISolidColorBrush)mark.Stroke!).Color.Should().Be(expected, "la × è nel colore dell'abitudine");
+            mark.Bounds.Width.Should().BeGreaterThan(8, "la × è grande, al centro");
+            var number = cell.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "DayNumber");
+            var at = number.TranslatePoint(new Point(0, 0), cell)!.Value;
+            at.X.Should().BeLessThan(10, "il numero sta in alto a sinistra");
+            at.Y.Should().BeLessThan(8);
+            (at.X + number.Bounds.Width).Should().BeLessThan(mark.TranslatePoint(new Point(0, 0), cell)!.Value.X + 1, "il numero non copre la ×");
+            o.View.GetVisualDescendants().OfType<Border>().Should().NotContain(b => b.Name == "LapseNotch", "la tacca non c'è più");
+        }
         else o.Vm.Map.Cells.Count(x => x.Step > 0).Should().BeGreaterThan(3, "la mappa mostra i giorni registrati");
     }
 

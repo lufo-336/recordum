@@ -177,6 +177,26 @@ public sealed class HomeDayTests : IDisposable
     }
 
     [Fact]
+    public async Task A_lapse_today_is_not_done_even_after_starting_again()
+    {
+        // GIO-9: ricaduta e nuovo inizio nello stesso giorno. L'astinenza è in corso, ma oggi resta una ×: non conta
+        // nel "x di y" e "fatte" non la nasconde.
+        _query.HomeRows.Clear();
+        var group = Row("Mattina", null, null, Days());
+        _query.HomeRows.Add(group);
+        _query.HomeRows.Add(Row("Astinenza", group.HabitNodeId, HabitType.Resistance, Days(4, 0)) with
+        {
+            AbstinenceStatus = AbstinenceStatus.Abstaining,
+            LapsesLast14Days = ImmutableArray.Create(Enumerable.Range(0, 14).Select(i => i == 13).ToArray()),
+        });
+        var sut = await LoadedAsync();
+
+        RowOf(sut, "Mattina").GroupProgressText.Should().Be("0 di 1");
+        sut.HideCompletedToday = true;
+        sut.Rows.Select(r => r.Name).Should().Contain("Astinenza");
+    }
+
+    [Fact]
     public async Task A_filter_that_hides_the_selected_row_clears_the_selection()
     {
         _query.HomeRows.Clear();

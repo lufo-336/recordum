@@ -268,8 +268,16 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         await LoadAsync();
     }
 
+    /// <summary>Un clic sulla riga già scelta: <see cref="SelectedRow"/> non cambia, ma è un gesto dell'utente e la
+    /// schermata aperta torna sul giorno della Home (GIO-6).</summary>
+    public event EventHandler<Guid>? SelectedRowClicked;
+
     [RelayCommand]
-    private void SelectRow(HomeRowViewModel? row) => SelectedRow = row;
+    private void SelectRow(HomeRowViewModel? row)
+    {
+        if (row is not null && ReferenceEquals(row, SelectedRow)) SelectedRowClicked?.Invoke(this, row.HabitNodeId);
+        else SelectedRow = row;
+    }
 
     /// <summary>↓ (A2): la riga dopo quella scelta; senza una riga scelta, la prima. In fondo si resta in fondo.</summary>
     public void SelectNext() => SelectByStep(1);

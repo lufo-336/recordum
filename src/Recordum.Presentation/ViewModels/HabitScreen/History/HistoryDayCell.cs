@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Recordum.Presentation.ViewModels.HabitScreen.History;
 
 /// <summary>Un giorno della mappa. <see cref="Step"/> 0–4 è il gradino del colore dell'abitudine; <see cref="IsLapse"/> è
-/// una ricaduta (un taglio nella fascia, non un giorno rosso); <see cref="InRange"/> falso = fuori mese o fuori periodo.</summary>
+/// una ricaduta (cella vuota col contorno e una ×, non un giorno rosso né pulito); <see cref="InRange"/> falso = fuori mese o fuori periodo.</summary>
 public sealed partial class HistoryDayCell(DateOnly date, bool inRange, bool isToday, bool isFuture) : ObservableObject
 {
     public DateOnly Date { get; } = date;

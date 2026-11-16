@@ -199,6 +199,8 @@ public sealed class HabitTreeQueryService(
 
         // Resistance strip = 14-day "abstaining" band from the periods (completion buckets don't apply
         // to abstinence). A day is filled when any period covers it; an open period runs up to now.
+        // Il giorno in cui un periodo finisce è una ricaduta, non un giorno pulito (GIO-9): banda a 0 e Lapses vero,
+        // anche se quel giorno stesso ne comincia un altro.
         var nowMs = clock.UtcNowMs;
         var abstinenceBandByHabit = abstinenceRows
             .GroupBy(p => p.HabitNodeId)
@@ -214,6 +216,7 @@ public sealed class HabitTreeQueryService(
                     dayWindows[i] = (s.ToUnixTimeMilliseconds(), e.ToUnixTimeMilliseconds());
                 }
                 var arr = new int[14];
+                var lapses = new bool[14];
                 foreach (var p in g)
                 {
                     var pStart = p.StartedAtMs;
@@ -222,9 +225,12 @@ public sealed class HabitTreeQueryService(
                     {
                         var (dayStart, dayEnd) = dayWindows[i];
                         if (pStart < dayEnd && pEnd >= dayStart) arr[i] = 4; // abstaining that day → full band step
+                        if (p.EndedAtMs is { } ended && ended >= dayStart && ended < dayEnd) lapses[i] = true;
                     }
                 }
-                return ImmutableArray.Create(arr);
+                for (var i = 0; i < 14; i++)
+                    if (lapses[i]) arr[i] = 0;
+                return (Band: ImmutableArray.Create(arr), Lapses: ImmutableArray.Create(lapses));
             });
 
         var raw = await db.HabitNodes
@@ -266,6 +272,7 @@ public sealed class HabitTreeQueryService(
                 string? todayStateLabel = null;
                 var abstinenceStatus = AbstinenceStatus.NotStarted;
                 long? abstinenceOpenSinceMs = null;
+                ImmutableArray<bool> lapses14 = default;
                 int? journalEntriesThisWeek = null;
                 var values14 = default(ImmutableArray<decimal?>);
 
@@ -320,10 +327,11 @@ public sealed class HabitTreeQueryService(
                             abstinenceStatus = abst.Status;
                             abstinenceOpenSinceMs = abst.OpenSinceMs;
                         }
-                        if (abstinenceBandByHabit.TryGetValue(r.Id, out var band14))
+                        if (abstinenceBandByHabit.TryGetValue(r.Id, out var band))
                         {
-                            completions14 = band14;
-                            completions7 = ImmutableArray.Create(band14.Skip(7).ToArray());
+                            completions14 = band.Band;
+                            completions7 = ImmutableArray.Create(band.Band.Skip(7).ToArray());
+                            lapses14 = band.Lapses;
                         }
                         break;
                     case HabitType.Journal:
@@ -364,7 +372,8 @@ public sealed class HabitTreeQueryService(
                     AppDay: r.HabitType is null ? null : appDay,
                     TodayCounterUnitSymbol: todayCounterUnitSymbol,
                     TodayCounterUnitName: todayCounterUnitName,
-                    TodayCounterUnitIsOfficial: todayCounterUnitIsOfficial);
+                    TodayCounterUnitIsOfficial: todayCounterUnitIsOfficial,
+                    LapsesLast14Days: lapses14);
             })
             .ToList();
     }

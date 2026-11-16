@@ -8,12 +8,21 @@ namespace Recordum.Presentation.ViewModels;
 /// <summary>Il "x di y" di un gruppo e il "fatta" di un giorno, scritti una volta: Home e Panoramica non possono divergere.</summary>
 public static class GroupProgress
 {
-    /// <summary>Fatta oggi: registrata, oppure un'astinenza in corso (il giorno pulito è già fatto).</summary>
+    /// <summary>Fatta oggi: registrata, oppure un'astinenza in corso (il giorno pulito è già fatto). Il giorno di una
+    /// ricaduta non è pulito nemmeno se si è ricominciato subito (GIO-9): il primo giorno pulito è il successivo.</summary>
     public static bool IsDoneToday(HomeTreeRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
         return row.IsCompletedToday
-            || (row.HabitType == HabitType.Resistance && row.AbstinenceStatus == AbstinenceStatus.Abstaining);
+            || (row.HabitType == HabitType.Resistance && row.AbstinenceStatus == AbstinenceStatus.Abstaining && !IsLapseOn(row, 0));
+    }
+
+    /// <summary>Quel giorno (0 = oggi) un periodo di astinenza è finito: una ricaduta.</summary>
+    public static bool IsLapseOn(HomeTreeRow row, int cellBack)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var lapses = row.LapsesLast14Days;
+        return !lapses.IsDefault && cellBack >= 0 && cellBack < lapses.Length && lapses[^(cellBack + 1)];
     }
 
     /// <summary>Di quante celle indietro, nella striscia dell'abitudine, sta il giorno scelto nella Home (che è un giorno

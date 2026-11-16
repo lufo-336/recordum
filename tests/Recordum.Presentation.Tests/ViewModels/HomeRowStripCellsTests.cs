@@ -47,6 +47,20 @@ public class HomeRowStripCellsTests
     }
 
     [Fact]
+    public void The_day_of_a_lapse_is_a_cross_and_not_on()
+    {
+        // GIO-9: la banda dell'astinenza arriva già a 0 sul giorno della ricaduta; la cella lo dice con una ×.
+        var row = Row(HabitType.Resistance, Days(4, 0, 4)) with
+        {
+            LapsesLast14Days = ImmutableArray.Create(Enumerable.Range(0, 14).Select(i => i == 12).ToArray()),
+        };
+        var cells = Vm(row).StripCells;
+        cells.Select(c => c.Glyph).TakeLast(3).Should().Equal("✓", "×", "✓");
+        cells[^2].Should().Match<StripCell>(c => c.IsLapse && !c.On);
+        cells.Count(c => c.IsLapse).Should().Be(1);
+    }
+
+    [Fact]
     public void Counter_days_show_their_value()
     {
         decimal?[] values = [.. Enumerable.Repeat<decimal?>(null, 12), 5m, 8m];

@@ -43,4 +43,7 @@ public sealed record HomeTreeRow(
     DayBoundary? AppDay = null,
     string? TodayCounterUnitSymbol = null,
     string? TodayCounterUnitName = null,
-    bool TodayCounterUnitIsOfficial = false);
+    bool TodayCounterUnitIsOfficial = false,
+    // Astinenza: i giorni in cui un periodo è finito (stessi indici di CompletionsLast14Days, 13 = oggi). Un giorno
+    // di ricaduta non è un giorno pulito (GIO-9): lì la banda vale 0, anche se nello stesso giorno si è ricominciato.
+    ImmutableArray<bool> LapsesLast14Days = default);

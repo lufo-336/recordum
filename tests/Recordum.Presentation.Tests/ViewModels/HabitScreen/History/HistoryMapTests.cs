@@ -47,7 +47,7 @@ public class HistoryMapTests
     }
 
     [Fact]
-    public async Task Lapse_is_a_cut_not_a_red_day()
+    public async Task Lapse_is_an_empty_marked_cell_not_a_red_day()
     {
         var vm = Vm(
             new CalendarDayMarker(new(2026, 10, 20), 4, null, 0, MarkerTint.Danger),
@@ -57,11 +57,23 @@ public class HistoryMapTests
 
         var lapse = vm.Cells.Single(c => c.Date == new DateOnly(2026, 10, 20));
         lapse.IsLapse.Should().BeTrue();
-        lapse.Step.Should().Be(4);
+        lapse.Step.Should().Be(0, "il giorno di una ricaduta non ha la tinta di un giorno pulito (GIO-9)");
         var gap = vm.Cells.Single(c => c.Date == new DateOnly(2026, 10, 21));
         gap.IsLapse.Should().BeFalse();
         gap.Step.Should().Be(0);
         vm.Cells.Single(c => c.Date == new DateOnly(2026, 10, 22)).Step.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task A_lapse_outside_the_month_is_not_marked()
+    {
+        // La griglia del mese ha le code dei mesi vicini: lì resta il solo numero attenuato, anche per una ricaduta.
+        var vm = Vm(new CalendarDayMarker(new(2026, 9, 30), 4, null, 0, MarkerTint.Danger));
+        await vm.LoadAsync(new(2026, 10, 1), new(2026, 10, 31), MapShape.Month, Today, null, default);
+
+        var tail = vm.Cells.Single(c => c.Date == new DateOnly(2026, 9, 30));
+        tail.InRange.Should().BeFalse();
+        tail.IsLapse.Should().BeFalse();
     }
 
     [Fact]

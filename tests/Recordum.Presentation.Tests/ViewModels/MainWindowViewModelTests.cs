@@ -284,24 +284,59 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task Opening_from_today_leaves_the_screen_on_its_day()
+    public async Task Opening_from_today_brings_the_screen_to_today()
     {
-        // Da oggi la Home non tocca il giorno della schermata: un diario aperto sulla bozza di ieri non riceve la
-        // domanda "cambiare giorno?" a ogni apertura.
+        // GIO-6: vince il giorno della Home, oggi compreso. Aprire e registrare dalla Home riportano la schermata a oggi.
         var d = await CreateDaySutAsync(HabitType.Action);
         d.Home.SelectedRow = d.Row;
         await Task.Delay(30);
         d.Screen.SelectedDay.Should().Be(Tuesday);
         await d.Screen.SelectDayAsync(Saturday);
 
+        // Un clic sulla riga già scelta: SelectedRow non cambia, ma è un gesto dell'utente.
+        d.Home.SelectRowCommand.Execute(d.Row);
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Tuesday);
+
+        // Chiusa la selezione e riaperta la riga.
+        await d.Screen.SelectDayAsync(Saturday);
+        d.Home.SelectedRow = null;
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Tuesday);
+
+        await d.Screen.SelectDayAsync(Saturday);
+        await d.Row.QuickActionCommand.ExecuteAsync(null);
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Tuesday);
+    }
+
+    [Fact]
+    public async Task A_screen_with_writing_in_progress_stays_on_its_day()
+    {
+        // GIO-6, l'unica eccezione: una nota del giorno non salvata (o una bozza del diario) tiene la schermata sul suo
+        // giorno, da oggi come da un giorno passato, e il testo resta lì.
+        var d = await CreateDaySutAsync(HabitType.Action);
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        await d.Screen.SelectDayAsync(Saturday);
+        d.Screen.DayNote.Text = "a metà";
+        d.Screen.HasWritingInProgress.Should().BeTrue();
+
+        d.Home.SelectRowCommand.Execute(d.Row);
+        await Task.Delay(30);
+        d.Screen.SelectedDay.Should().Be(Saturday);
+
         d.Home.SelectedRow = null;
         d.Home.SelectedRow = d.Row;
         await Task.Delay(30);
         d.Screen.SelectedDay.Should().Be(Saturday);
 
+        d.Home.PreviousDayCommand.Execute(null);
         await d.Row.QuickActionCommand.ExecuteAsync(null);
         await Task.Delay(30);
         d.Screen.SelectedDay.Should().Be(Saturday);
+        d.Screen.DayNote.Text.Should().Be("a metà");
     }
 
     [Fact]

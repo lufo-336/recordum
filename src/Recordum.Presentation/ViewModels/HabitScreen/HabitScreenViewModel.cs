@@ -1441,6 +1441,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         await RefreshUndoAsync(CancellationToken.None).ConfigureAwait(true);
     }
 
+    /// <summary>Una scrittura non ancora salvata sul giorno scelto: la bozza o una modifica aperta del diario, la nota
+    /// del giorno. Chi sposta la schermata senza che l'utente l'abbia chiesto qui (la Home, GIO-6) la lascia dov'è.</summary>
+    public bool HasWritingInProgress => JournalQuickEntry is { HasUnsavedWriting: true } || DayNote.CanSave;
+
     [RelayCommand]
     private Task BackToTodayAsync() => SelectDayAsync(_dayBoundary.Today(_clock));
 

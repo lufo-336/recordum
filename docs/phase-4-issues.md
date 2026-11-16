@@ -64,8 +64,8 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
-**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-7** e **GIO-12…15** (ondata finale) `fixed`. Aperti: **GIO-1**,
-**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; **GIO-6** e **GIO-9** `triaged` (decisi il 2026-11-16, da fare). Fuori dall'onda restano **B7** e
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`. Aperti: **GIO-1**,
+**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2717,3 +2717,31 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     la tacca di oggi, che copre il numero e lascia la ricaduta come la cella più piena del mese. Da curare: la × è
     l'icona Lucide, non un carattere; per i colori chiari la correzione di contrasto già usata per i numeri delle
     strisce; i giorni scoperti restano senza tinta come sono.
+- **Fatto il 2026-11-16, task "ricaduta e giorno della Home"** (in sessione; ogni test provato rosso contro il codice
+  di prima; PNG `home-ricaduta-marks-light`, `home-ricaduta-comfortable-light`, `habit-abstinence-*`):
+  - **GIO-9 · `fixed`.** `HabitTreeQueryService` mette a 0 la banda nel giorno in cui un periodo finisce (anche se quel
+    giorno ne comincia un altro) e lo segna in `HomeTreeRow.LapsesLast14Days`; `GroupProgress.IsDoneToday` non conta
+    un'astinenza ricominciata oggi dopo una ricaduta. La cella è `StripCell.IsLapse`: "×" nel testo tenue in Larga e
+    Compatta, quadratino vuoto con la × Lucide in Segni. Test:
+    `HabitTreeQueryServiceTests.GetHomeTreeAsync_the_day_of_a_lapse_is_not_a_clean_day`,
+    `HomeRowStripCellsTests.The_day_of_a_lapse_is_a_cross_and_not_on`,
+    `HomeDayTests.A_lapse_today_is_not_done_even_after_starting_again`, `HomeRowsTests.The_day_of_a_lapse_is_a_faint_cross`.
+    Non toccata: la striscia a 7 giorni della Panoramica di un gruppo mostra quel giorno vuoto, senza ×.
+  - **Il calendario · `fixed`.** La ricaduta è una cella vuota (`Step` 0) col contorno di 1,5 e la × Lucide nella
+    variante "testo" del colore dell'abitudine, il numero a 9 in alto a sinistra; la tacca non c'è più. Le heatmap di
+    "3 mesi" e "Anno" la mostrano come giorno vuoto. Test: `HistoryMapTests.Lapse_is_an_empty_marked_cell_not_a_red_day`
+    e le asserzioni in `HabitScreenScreenshotTests.Each_case_with_the_log_open` (caso astinenza).
+  - **GIO-6 · `fixed`.** `MainWindowViewModel.LandOnHomeDayAsync` porta la schermata sul giorno della Home, oggi
+    compreso (il giorno dell'abitudine, `CurrentDay`). Resta dov'è, senza domande, se
+    `HabitScreenViewModel.HasWritingInProgress`: testo o tag della voce nuova del diario, una voce in modifica con
+    cambiamenti, una foto in attesa, la nota del giorno non salvata. Una modifica aperta e intatta non la trattiene. La ri-selezione che la
+    Home fa da sola e il cambio di giorno nella Home continuano a non spostare una schermata aperta. Test:
+    `MainWindowViewModelTests.Opening_from_today_brings_the_screen_to_today`,
+    `MainWindowViewModelTests.A_screen_with_writing_in_progress_stays_on_its_day`.
+  - **Review di Antigravity Argon** (sola lettura, 1 alta, 1 media, 2 basse, verificate nel codice). Corrette: un clic
+    sulla riga già scelta non cambiava `SelectedRow` e la schermata restava sul giorno vecchio (ora
+    `HomeViewModel.SelectedRowClicked`, raccolto da `MainWindowViewModel`); una ricaduta nelle code fuori mese della
+    griglia era segnata (`HistoryMapTests.A_lapse_outside_the_month_is_not_marked`); una foto in attesa nella voce
+    nuova conta come scrittura in corso. Non corretta, `reported` con **GIO-11**: con due righe scelte e un filtro che
+    ne nasconde una, la Home rimette la selezione sull'altra e `MainWindowViewModel` lo prende per un'apertura (la
+    schermata va sul giorno della Home); il meccanismo è precedente.

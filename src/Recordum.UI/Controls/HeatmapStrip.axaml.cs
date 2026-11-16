@@ -228,8 +228,13 @@ public partial class HeatmapStrip : UserControl
         }).ToList();
     }
 
+    internal const string LapseMarkName = "LapseMark";
+
     private List<Control> BuildMarkCells(HomeRowsMetrics metrics, int shown, IBrush empty, IBrush ink, Color pane)
     {
+        var app = global::Avalonia.Application.Current!;
+        var cross = app.TryFindResource("Icon.X", out var x) ? x as Geometry : null;
+        var faint = HabitTextBrushConverter.Resource<IBrush>(app, "Brush.TextMuted", ActualThemeVariant) ?? Brushes.Gray;
         var offset = Values.Length - shown;
         var hasFractions = !Fractions.IsDefault && Fractions.Length == Values.Length;
         var habit = HabitColors.TryParse(AccentColor, out var parsed) ? parsed : Colors.Gray;
@@ -258,6 +263,20 @@ public partial class HeatmapStrip : UserControl
                 VerticalAlignment = VerticalAlignment.Center,
                 Background = fill,
             };
+            // Il giorno di una ricaduta: quadratino vuoto con una × attenuata (GIO-9).
+            if (cell.IsLapse)
+                square.Child = new global::Avalonia.Controls.Shapes.Path
+                {
+                    Name = LapseMarkName,
+                    Data = cross,
+                    Width = 7d,
+                    Height = 7d,
+                    Stretch = Stretch.Uniform,
+                    Stroke = faint,
+                    StrokeThickness = 1.4,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
 
             if (!cell.IsSelected)
             {

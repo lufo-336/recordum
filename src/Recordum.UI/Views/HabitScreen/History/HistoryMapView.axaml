@@ -7,9 +7,11 @@
              x:DataType="hvm:HistoryMapViewModel">
   <!-- La mappa cambia forma col periodo (direzione visiva §6.1). Il gradino nel colore dell'abitudine sul pannello
        (HeatLevelBrushConverter, §4.3); la selezione è un bordo d'inchiostro, non un riempimento (F0-13); il valore solo nel
-       tooltip; la ricaduta è una tacca sulla cella piena; la nota è un punto nel suo colore. -->
+       tooltip; la ricaduta è una cella vuota col contorno e una × nel colore dell'abitudine (variante "testo", così regge
+       anche un colore chiaro), il numero piccolo in angolo (GIO-9); la nota è un punto nel suo colore. -->
   <UserControl.Resources>
     <conv:HeatLevelBrushConverter x:Key="HeatLevel"/>
+    <conv:HabitTextBrushConverter x:Key="HabitText"/>
   </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="Button.day">
@@ -53,6 +55,13 @@
       <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     </Style>
     <Style Selector="TextBlock.day-number.outside"><Setter Property="Foreground" Value="{DynamicResource Brush.TextFaint}"/></Style>
+    <Style Selector="TextBlock.day-number.lapse">
+      <Setter Property="FontSize" Value="9"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+      <Setter Property="VerticalAlignment" Value="Top"/>
+      <Setter Property="Margin" Value="5,3,0,0"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+    </Style>
   </UserControl.Styles>
 
   <StackPanel>
@@ -87,10 +96,25 @@
                     </MultiBinding>
                   </Border.Background>
                 </Border>
-                <Border x:Name="LapseNotch" Width="2" Margin="0,6" HorizontalAlignment="Center"
-                        Background="{DynamicResource Brush.Background}" IsVisible="{CompiledBinding IsLapse}"/>
+                <Border x:Name="LapseOutline" CornerRadius="5" BorderThickness="1.5" IsVisible="{CompiledBinding IsLapse}">
+                  <Border.BorderBrush>
+                    <MultiBinding Converter="{StaticResource HabitText}">
+                      <Binding Path="HabitColor" ElementName="Root"/>
+                      <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+                    </MultiBinding>
+                  </Border.BorderBrush>
+                  <Path x:Name="LapseMark" Data="{StaticResource Icon.X}" Width="12" Height="12" Stretch="Uniform"
+                        StrokeThickness="2" StrokeLineCap="Round" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path.Stroke>
+                      <MultiBinding Converter="{StaticResource HabitText}">
+                        <Binding Path="HabitColor" ElementName="Root"/>
+                        <Binding Path="ActualThemeVariant" RelativeSource="{RelativeSource Self}"/>
+                      </MultiBinding>
+                    </Path.Stroke>
+                  </Path>
+                </Border>
                 <TextBlock x:Name="DayNumber" Classes="day-number" Classes.outside="{CompiledBinding !InRange}"
-                           Text="{CompiledBinding DayNumber}"/>
+                           Classes.lapse="{CompiledBinding IsLapse}" Text="{CompiledBinding DayNumber}"/>
                 <Ellipse x:Name="NoteDot" Width="5" Height="5" Margin="0,4,4,0" HorizontalAlignment="Right" VerticalAlignment="Top"
                          IsVisible="{CompiledBinding HasNote}"
                          Fill="{Binding #Root.NoteColor, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>

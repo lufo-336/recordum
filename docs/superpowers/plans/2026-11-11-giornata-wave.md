@@ -394,7 +394,7 @@ cambio di giorno sta sul battito di `HomeClockTicker` (che `Rebuild` svuota: si 
   `HeadCommandTests.A_requested_relapse_prompt_opens_the_flyout_on_the_chosen_day` e, da capo a fondo col contenitore vero,
   `ShellIntegrationTests.Quick_action_on_an_abstinence_from_a_past_day_opens_the_relapse_prompt_on_that_day`. Sei prove del
   rosso. Scritto in sessione, senza Antigravity (task piccolo: sei file, un'ottantina di righe).
-- Resta aperto **GIO-6** (tracker): tornata la Home a oggi, una schermata aperta da un giorno passato resta su quel giorno.
+- **GIO-6** (tornata la Home a oggi, una schermata aperta da un giorno passato restava su quel giorno): deciso e corretto il 2026-11-16, vince il giorno della Home (tracker).
 
 ### Task 9: Le tre righe — preferenza, misure, striscia a segni
 

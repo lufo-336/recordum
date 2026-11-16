@@ -77,6 +77,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _lifetime = lifetime;
         Home.PropertyChanged += OnHomePropertyChanged;
         Home.HabitActivationRequested += OnHabitActivationRequested;
+        Home.SelectedRowClicked += OnSelectedRowClicked;
         Home.GroupCreated += OnHomeGroupCreated;
         // Empty-click in the tree → full-width Home, even when SelectedRow is already null (a tab can be
         // active without a tree selection): the SelectedRow setter wouldn't notify, so deactivate here.
@@ -170,20 +171,33 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     private Guid? _selectedSubject;
 
-    /// <summary>Dopo un'apertura fatta dall'utente dalla Home (onda "Giornata", A1). Su un giorno passato la schermata
-    /// dell'abitudine va su quel giorno; da oggi non si tocca (un diario aperto sulla bozza di ieri non riceve la domanda
-    /// "cambiare giorno?" a ogni apertura). Se l'utente aveva chiesto di registrare e l'astinenza è in corso, la schermata
-    /// propone la ricaduta, con quella data. Un gruppo resta su oggi, come la sua Panoramica.</summary>
+    /// <summary>Dopo un'apertura fatta dall'utente dalla Home (onda "Giornata", A1; GIO-6): vince il giorno della Home,
+    /// oggi compreso. Unica eccezione: una schermata con una scrittura in corso su un altro giorno (bozza del diario, nota
+    /// del giorno non salvata) resta dov'è, senza domande. Se l'utente aveva chiesto di registrare e l'astinenza è in
+    /// corso, la schermata propone la ricaduta, con la data su cui si trova. Un gruppo resta su oggi, come la sua
+    /// Panoramica.</summary>
     private async Task LandOnHomeDayAsync(HomeRowViewModel row, bool recording)
     {
         if (row.IsGroup) return;
         if (Workspace.Tabs.FirstOrDefault(t => t.SubjectId == row.HabitNodeId)?.Screen is not { HasNode: true } screen) return;
-        if (row.RecordDay is { } day && screen.SelectedDay != day) await screen.SelectDayAsync(day).ConfigureAwait(true);
+        var day = row.RecordDay ?? screen.CurrentDay;
+        if (screen.SelectedDay != day && !screen.HasWritingInProgress) await screen.SelectDayAsync(day).ConfigureAwait(true);
         if (recording && screen.QuickAdd is AbstinenceQuickAddViewModel abstinence) abstinence.RequestLapsePrompt();
     }
 
     private static WorkspaceTabKind KindOf(HomeRowViewModel row)
         => row.IsGroup ? WorkspaceTabKind.Group : WorkspaceTabKind.Habit;
+
+    // Clic sulla riga già scelta: niente si apre, ma la schermata torna sul giorno della Home (GIO-6).
+    private async void OnSelectedRowClicked(object? sender, Guid habitNodeId)
+    {
+        try
+        {
+            if (Home.SelectedRow is { } row && row.HabitNodeId == habitNodeId)
+                await LandOnHomeDayAsync(row, recording: false).ConfigureAwait(true);
+        }
+        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnSelectedRowClicked failed: {ex}"); }
+    }
 
     // "+" on a habit whose row is already selected, or Enter on the selected row: SelectedRow won't change, so pin
     // the subject in the workspace to keep it from being replaced by the next preview.

@@ -253,7 +253,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
     }
 
     /// <summary>The glyphs of the strip: a check mark for yes/no types (Squares, Dots, Band), the day's value for counters
-    /// and states (Bars, Ramp; a duration counter in minutes or hours), a middle dot for an empty day. Today is last.</summary>
+    /// and states (Bars, Ramp; a duration counter in minutes or hours), a middle dot for an empty day, "×" for the day of
+    /// a lapse. Today is last.</summary>
     private ImmutableArray<StripCell> ComputeStripCells(HomeTreeRow row)
     {
         if (StripCounts.IsDefaultOrEmpty) return ImmutableArray<StripCell>.Empty;
@@ -266,16 +267,18 @@ public sealed partial class HomeRowViewModel : ObservableObject
         {
             var count = StripCounts[i];
             var value = values.IsEmpty ? null : values[i];
-            var on = count > 0 || value is not null;
+            var lapse = GroupProgress.IsLapseOn(row, n - 1 - i);
+            var on = !lapse && (count > 0 || value is not null);
             string glyph;
-            if (!on) glyph = "·";
+            if (lapse) glyph = "×";
+            else if (!on) glyph = "·";
             else if (StripVisual is StripStyle.Bars or StripStyle.Ramp)
             {
                 var v = value ?? count;
                 glyph = row.TodayCounterIsDuration ? StripValueFormat.Duration(v, culture) : StripValueFormat.Compact(v, culture);
             }
             else glyph = "✓";
-            cells.Add(new StripCell(glyph, on, i == n - 1, i == n - 1 - _cellBack));
+            cells.Add(new StripCell(glyph, on, i == n - 1, i == n - 1 - _cellBack, lapse));
         }
         return cells.MoveToImmutable();
     }

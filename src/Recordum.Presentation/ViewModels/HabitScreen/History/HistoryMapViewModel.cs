@@ -90,13 +90,13 @@ public sealed partial class HistoryMapViewModel : ObservableObject
     }
 
     /// <summary>Marker → cella, in un posto solo. L'astinenza dipinge la ricaduta col pericolo a gradino 4 e il buco a
-    /// gradino 1: qui la ricaduta diventa un taglio su una cella piena e il buco una cella vuota.</summary>
+    /// gradino 1: qui la ricaduta diventa una cella vuota segnata (contorno e ×, GIO-9) e il buco una cella vuota.</summary>
     private static void Apply(HistoryDayCell c, CalendarDayMarker m)
     {
         var lapse = m.Tint == MarkerTint.Danger && m.TintStep == 4;
         var gap = m.Tint == MarkerTint.Danger && m.TintStep == 1;
-        c.IsLapse = lapse;
-        c.Step = gap ? 0 : m.TintStep;
+        c.IsLapse = lapse && c.InRange; // fuori mese resta il solo numero attenuato
+        c.Step = gap || lapse ? 0 : m.TintStep;
         c.NoteCount = m.NoteCount;
         c.Value = m.Number;
     }

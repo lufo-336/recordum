@@ -170,6 +170,42 @@ public class HomeRowsTests
         w.Close();
     }
 
+    [AvaloniaTheory]
+    [InlineData(HomeRows.Marks)]
+    [InlineData(HomeRows.Comfortable)]
+    public void The_day_of_a_lapse_is_a_faint_cross(HomeRows style)
+    {
+        // GIO-9: ieri una ricaduta. Segni: quadratino vuoto con la × dentro. Larga: una × nel testo tenue.
+        using var culture = TestCulture.Pin();
+        var lapsed = Row("Astinenza", HabitType.Resistance) with
+        {
+            CompletionsLast14Days = ImmutableArray.Create(4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 4),
+            LapsesLast14Days = ImmutableArray.Create(Enumerable.Range(0, 14).Select(i => i == 12).ToArray()),
+        };
+        var (w, view, _, _) = Show(900, style, lapsed);
+        var strip = Strip(HabitRows(view)[0]);
+
+        if (style == HomeRows.Marks)
+        {
+            var squares = Squares(strip);
+            var mark = strip.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single(p => p.Name == HeatmapStrip.LapseMarkName);
+            mark.Parent.Should().BeSameAs(squares[^2]);
+            Fill(squares[^2]).Should().Be(Token<ISolidColorBrush>("Brush.CellEmpty").Color);
+            mark.Bounds.Width.Should().BeGreaterThan(4).And.BeLessThan(14);
+            ((ISolidColorBrush)mark.Stroke!).Color.Should().Be(Token<ISolidColorBrush>("Brush.TextMuted").Color);
+            strip.GetVisualDescendants().OfType<TextBlock>().Should().BeEmpty("in Segni la striscia non scrive");
+        }
+        else
+        {
+            var texts = strip.GetVisualDescendants().OfType<TextBlock>().ToList();
+            texts[^2].Text.Should().Be("×");
+            ((ISolidColorBrush)texts[^2].Foreground!).Color.Should().Be(Token<ISolidColorBrush>("Brush.TextFaint").Color);
+            texts[^3].Text.Should().Be("✓");
+        }
+        ScreenshotProbeTests.Capture(w, $"home-ricaduta-{style.ToString().ToLowerInvariant()}-light");
+        w.Close();
+    }
+
     [AvaloniaFact]
     public void Marks_fill_follows_the_value_in_three_steps()
     {
