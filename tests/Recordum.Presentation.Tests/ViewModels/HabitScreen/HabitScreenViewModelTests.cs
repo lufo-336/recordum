@@ -79,7 +79,8 @@ public class HabitScreenViewModelTests
             settings, refData, new Recordum.Presentation.Services.RecentColorStore(settings),
             new Recordum.Presentation.Services.FavoriteColorStore(settings),
             new FakeScreenColorPicker(),
-            uiPrefs);
+            uiPrefs,
+            new FakeScaleTemplateService());
         return new HabitScreenViewModel(
             nodes, completions, timers, metrics, refData, configs,
             noteSvc, goals, new IntensityRampResolver(),

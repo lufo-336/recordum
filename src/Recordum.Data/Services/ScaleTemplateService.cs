@@ -3,10 +3,12 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.Core.Scales;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Services;
 
-public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> dbFactory) : IScaleTemplateService
+public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> dbFactory, IEventBus eventBus) : IScaleTemplateService
 {
     private const int MaxLabel = 100;
 
@@ -43,6 +45,9 @@ public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> db
         await ScaleAnchorTags.BuildAsync(db, id, draft.Anchors, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        // Le schermate aperte che leggono questa scala ricostruiscono il quick-add: lo si dice a ogni abitudine che la usa.
+        foreach (var habitId in await db.MetricDefinitions.Where(m => m.ScaleTemplateId == id).Select(m => m.HabitNodeId).Distinct().ToListAsync(ct))
+            eventBus.Publish(new HabitUpdatedPayload(habitId));
     }
 
     public async ValueTask<Guid> DuplicateAsync(Guid sourceId, string name, IReadOnlyList<ScaleAnchorDraft> anchors,
@@ -58,6 +63,9 @@ public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> db
         if (repointMetricId is { } mid)
             await db.MetricDefinitions.Where(m => m.Id == mid).ExecuteUpdateAsync(u => u.SetProperty(m => m.ScaleTemplateId, id), ct);
         await tx.CommitAsync(ct);
+        // La metrica ripuntata cambia scala: la schermata aperta di quell'abitudine ricostruisce il quick-add.
+        if (repointMetricId is { } m && await db.MetricDefinitions.Where(x => x.Id == m).Select(x => (Guid?)x.HabitNodeId).FirstOrDefaultAsync(ct) is { } habitId)
+            eventBus.Publish(new HabitUpdatedPayload(habitId));
         return id;
     }
 

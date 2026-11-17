@@ -333,21 +333,22 @@ public class HabitBuilderViewTests
             Click(window, Named<Button>(view, "AddScaleButton"));
             Click(window, VisibleNamed<Button>(view, "NewScaleButton"));
             Named<TextBox>(view, "ScaleFormName").Text = scale;
-            var steps = Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<TextBox>().ToList();
+            var labels = () => Named<ScaleLabelsEditor>(view, "ScaleFormLabels");
+            Click(window, labels().GetVisualDescendants().OfType<Button>().First(b => b.Name == "AddButton"));
+            Click(window, labels().GetVisualDescendants().OfType<Button>().First(b => b.Name == "AddButton"));
+            var steps = labels().GetVisualDescendants().OfType<TextBox>().ToList();
             steps.Should().HaveCount(2);
             steps[0].Text = "low";
             steps[1].Text = "high";
             Pump();
-            vm.ScaleForm!.Labels.Should().Equal("low", "high");
+            vm.ScaleForm!.ToDraft().Anchors.Select(x => x.Label).Should().Equal("low", "high");
 
-            // Aggiungi / togli: tre righe, poi di nuovo due; il × non scende sotto il minimo.
-            Click(window, Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<Button>().First(b => b.Name == "AddButton"));
-            Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<TextBox>().Should().HaveCount(3);
+            // Aggiungi / togli (provvisorio: l'editor completo e' il Task 7).
+            Click(window, labels().GetVisualDescendants().OfType<Button>().First(b => b.Name == "AddButton"));
+            labels().GetVisualDescendants().OfType<TextBox>().Should().HaveCount(3);
             ScreenshotProbeTests.Capture(window, "scale-labels-editor-creator");
-            Click(window, Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<Button>().Last(b => b.Name == "RemoveButton"));
-            Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<TextBox>().Should().HaveCount(2);
-            Named<ScaleLabelsEditor>(view, "ScaleFormLabels").GetVisualDescendants().OfType<Button>()
-                .Where(b => b.Name == "RemoveButton").Should().OnlyContain(b => !b.IsEnabled);
+            Click(window, labels().GetVisualDescendants().OfType<Button>().Last(b => b.Name == "RemoveButton"));
+            labels().GetVisualDescendants().OfType<TextBox>().Should().HaveCount(2);
             Click(window, Named<Button>(view, "ScaleFormConfirm"));
             vm.StagedScales.Should().ContainSingle(s => s.Name == scale);
 

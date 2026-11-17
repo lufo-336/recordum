@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Presentation.Tests.Fixtures;
@@ -11,8 +12,13 @@ namespace Recordum.Presentation.Tests.ViewModels.HabitEditor;
 [Collection(ProcessGlobalCultureCollection.Name)]
 public class ScalesSectionViewModelTests
 {
+    public ScalesSectionViewModelTests() => _scales = new FakeScaleTemplateService(_refData, _metrics);
+
+    private ScalesSectionViewModel Make() => new(_metrics, _refData, _scales);
+
     private readonly FakeMetricDefinitionService _metrics = new();
     private readonly FakeReferenceData _refData = new();
+    private readonly FakeScaleTemplateService _scales;
     private readonly HabitNode _node = new() { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.State };
 
     [Fact]
@@ -20,7 +26,7 @@ public class ScalesSectionViewModelTests
     {
         var metricId = Guid.NewGuid();
         await _metrics.CreateAsync(new MetricDefinition { Id = metricId, HabitNodeId = _node.Id, Name = "Mood", SortOrder = 0 });
-        var sut = new ScalesSectionViewModel(_metrics, _refData);
+        var sut = Make();
         await sut.LoadAsync(_node);
 
         var scaleId = Guid.NewGuid();
@@ -40,7 +46,7 @@ public class ScalesSectionViewModelTests
         {
             Id = metricId, HabitNodeId = _node.Id, Name = "Umore", SortOrder = 0, ScaleTemplateId = scaleId,
         });
-        var sut = new ScalesSectionViewModel(_metrics, _refData);
+        var sut = Make();
         await sut.LoadAsync(_node);
 
         // A live ComboBox coerces SelectedValue to null the instant its ItemsSource empties;
@@ -60,7 +66,7 @@ public class ScalesSectionViewModelTests
     [Fact]
     public void IsApplicable_only_for_State()
     {
-        var sut = new ScalesSectionViewModel(_metrics, _refData);
+        var sut = Make();
         sut.IsApplicable(NodeType.Habit, HabitType.State).Should().BeTrue();
         sut.IsApplicable(NodeType.Habit, HabitType.Counter).Should().BeFalse();
         sut.IsApplicable(NodeType.Group, null).Should().BeFalse();
@@ -69,7 +75,7 @@ public class ScalesSectionViewModelTests
     [Fact]
     public async Task Scales_LoadAsync_populates_available_scales()
     {
-        var sut = new ScalesSectionViewModel(_metrics, _refData);
+        var sut = Make();
         await sut.LoadAsync(new HabitNode { Id = Guid.NewGuid(), NodeType = NodeType.Habit, HabitType = HabitType.State });
         sut.AvailableScales.Should().ContainSingle(s => s.Code == "mood-5");
     }
@@ -91,29 +97,28 @@ public class ScalesSectionViewModelTests
         {
             Id = metricId, HabitNodeId = node.Id, Name = "Mood", SortOrder = 0, ScaleTemplateId = scaleId,
         });
-        var sut = new ScalesSectionViewModel(_metrics, _refData);
+        var sut = Make();
         await sut.LoadAsync(node);
         _lastNode = node;
         return (sut, metricId);
     }
 
     [Fact]
-    public async Task Rows_follow_the_scale_range_and_show_its_anchor_names()
+    public async Task The_editor_follows_the_picked_scale_with_its_anchor_names()
     {
         var five = AddScale("custom-5", 1, 5, "[\"a\",\"b\",\"c\",\"d\",\"e\"]");
         var three = AddScale("custom-3", 0, 2, "[\"x\",\"y\",\"z\"]");
         var (sut, _) = await OpenAsync(five.Id);
 
-        sut.LabelsEditor.Rows.Select(r => (r.Value, r.Text)).Should().Equal((1, "a"), (2, "b"), (3, "c"), (4, "d"), (5, "e"));
+        sut.Editor.Rows.Select(r => (r.Value, r.Label)).Should().Equal((1, "a"), (2, "b"), (3, "c"), (4, "d"), (5, "e"));
 
         sut.SelectedScaleTemplateId = three.Id;
-        sut.LabelsEditor.Rows.Select(r => (r.Value, r.Text)).Should().Equal((0, "x"), (1, "y"), (2, "z"));
+        sut.Editor.Rows.Select(r => (r.Value, r.Label)).Should().Equal((0, "x"), (1, "y"), (2, "z"));
     }
 
-    /// <summary>GIO-23: l'editor mostra cio' che mostra la schermata, i nomi da <c>ScaleText.Named</c>: per un'ufficiale
-    /// quelli tradotti nella lingua di adesso.</summary>
+    /// <summary>GIO-23: l'editor mostra cio' che mostra la schermata: per un'ufficiale i nomi tradotti, in sola lettura.</summary>
     [Fact]
-    public async Task An_official_scale_shows_its_translated_names_like_the_screen()
+    public async Task An_official_scale_shows_its_translated_names_read_only()
     {
         var previous = Recordum.Presentation.Resources.Strings.Culture;
         try
@@ -121,11 +126,80 @@ public class ScalesSectionViewModelTests
             var mood = AddScale("mood-5", 1, 5, "[\"Very low\",\"Low\",\"Neutral\",\"Good\",\"Very good\"]", official: true);
             Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
             var (it, _) = await OpenAsync(mood.Id);
-            it.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("Molto basso", "Basso", "Neutro", "Buono", "Molto buono");
+            it.Editor.Rows.Select(r => r.Label).Should().Equal("Molto basso", "Basso", "Neutro", "Buono", "Molto buono");
+            it.Editor.IsReadOnly.Should().BeTrue();
+            it.CanDuplicate.Should().BeTrue();
+        }
+        finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
+    }
 
-            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
-            var (en, _) = await OpenAsync(mood.Id);
-            en.LabelsEditor.Rows.Select(r => r.Text).Should().Equal("Very low", "Low", "Neutral", "Good", "Very good");
+    [Fact]
+    public async Task A_scale_used_by_two_habits_says_so()
+    {
+        var previous = Recordum.Presentation.Resources.Strings.Culture;
+        try
+        {
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+            _scales.Usage[scale.Id] = new ScaleUsage(2, null, null, false);
+            var (sut, _) = await OpenAsync(scale.Id);
+
+            sut.Editor.UsageText.Should().Be("Usata da 2 abitudini");
+        }
+        finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
+    }
+
+    [Fact]
+    public async Task A_confirmed_edit_of_a_users_scale_is_saved_and_an_invalid_one_is_not()
+    {
+        var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+        var (sut, _) = await OpenAsync(scale.Id);
+
+        sut.Editor.Rows[0].Label = "uno";
+        await Task.Delay(20);
+        _scales.Updates.Should().ContainSingle().Which.Draft.Anchors[0].Label.Should().Be("uno");
+        sut.Status.Should().Be(EditorStatus.Saved);
+
+        sut.Editor.Rows[1].Value = 3;       // due scaglioni sullo stesso valore: non si salva
+        await Task.Delay(20);
+        _scales.Updates.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task Saving_updates_the_picker_object_in_place_so_the_summary_follows()
+    {
+        var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+        var (sut, _) = await OpenAsync(scale.Id);
+
+        sut.Editor.Name = "Nuovo nome";
+        await Task.Delay(20);
+
+        sut.Summary.Should().Be("Nuovo nome");
+        sut.AvailableScales.Should().Contain(scale);
+        sut.SelectedScaleTemplateId.Should().Be(scale.Id);
+    }
+
+    [Fact]
+    public async Task Duplicate_and_edit_copies_an_official_scale_repoints_the_metric_and_shows_the_copy_editable()
+    {
+        var previous = Recordum.Presentation.Resources.Strings.Culture;
+        try
+        {
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            var nrs = AddScale("nrs-pain", 0, 10, "[\"No pain\"]", official: true);
+            var (sut, metricId) = await OpenAsync(nrs.Id);
+            sut.Editor.IsReadOnly.Should().BeTrue();
+
+            await sut.DuplicateAndEditCommand.ExecuteAsync(null);
+
+            var call = _scales.Duplicates.Should().ContainSingle().Subject;
+            call.SourceId.Should().Be(nrs.Id);
+            call.MetricId.Should().Be(metricId);
+            call.Name.Should().Be(Recordum.Presentation.Templates.OfficialTexts.ScaleName(nrs));
+            call.Anchors.Should().Contain(a => a.Value == 0 && a.Label == "Nessun dolore");
+            sut.SelectedScaleTemplateId.Should().NotBe(nrs.Id).And.Be(_metrics.Store[metricId].ScaleTemplateId);
+            sut.Editor.IsReadOnly.Should().BeFalse();
+            sut.AvailableScales.Should().HaveCount(_refData.Scales.Count);
         }
         finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
     }

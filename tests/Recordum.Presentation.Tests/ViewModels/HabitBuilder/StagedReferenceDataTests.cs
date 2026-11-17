@@ -20,30 +20,4 @@ public class StagedReferenceDataTests
         form.Name = "Tazze";
         form.CanConfirm.Should().BeTrue();
     }
-
-    [Fact]
-    public void Scale_form_requires_two_labels()
-    {
-        var form = new NewScaleFormViewModel();
-        form.Name = "Energia";
-        form.LabelsText = "Bassa";
-        form.CanConfirm.Should().BeFalse();
-        form.LabelsText = "Bassa, Alta";
-        form.CanConfirm.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Scale_form_requires_a_name_too()
-    {
-        var form = new NewScaleFormViewModel { LabelsText = "Bassa, Alta" };
-        form.CanConfirm.Should().BeFalse();
-    }
-
-    [Fact]
-    public void Scale_form_trims_labels_and_drops_the_blanks()
-    {
-        var form = new NewScaleFormViewModel { Name = "Energia", LabelsText = " Bassa , , Media ,Alta, " };
-
-        form.Labels.Should().Equal("Bassa", "Media", "Alta");
-    }
 }

@@ -84,7 +84,7 @@ public abstract partial class ScaleCursorBase : ObservableObject
         finally { _sync = false; }
     }
 
-    private static List<ScalePoint> BuildPoints(ScaleTemplate scale)
+    internal static List<ScalePoint> BuildPoints(ScaleTemplate scale)
     {
         var values = ScaleText.Named(scale).Select(a => a.Value).ToHashSet();
         if (scale.MaxValue - scale.MinValue + 1 <= ScaleRules.TickLimit)

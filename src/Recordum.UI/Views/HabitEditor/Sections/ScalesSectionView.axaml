@@ -21,6 +21,6 @@
       </ComboBox.ItemTemplate>
     </ComboBox>
     <TextBlock Text="{x:Static res:Strings.Editor_Field_Labels}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
-    <ctl:ScaleLabelsEditor x:Name="LabelsEditor" DataContext="{CompiledBinding LabelsEditor}"/>
+    <ctl:ScaleLabelsEditor x:Name="LabelsEditor" DataContext="{CompiledBinding Editor}"/>
   </StackPanel>
 </UserControl>

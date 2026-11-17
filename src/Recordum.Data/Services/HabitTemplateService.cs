@@ -214,6 +214,7 @@ public sealed class HabitTemplateService(
                     UnitOfMeasureId = unitId,
                     ScaleTemplateId = scaleId,
                 };
+                MetricDefinitionService.CoerceScaleType(metric);
                 db.MetricDefinitions.Add(metric);
                 firstMetricId ??= metric.Id;
             }

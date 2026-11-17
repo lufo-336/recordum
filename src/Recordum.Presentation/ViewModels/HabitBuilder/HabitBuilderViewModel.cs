@@ -18,6 +18,7 @@ using Recordum.Presentation.Templates;
 using Recordum.Presentation.ViewModels.HabitBuilder.Preview;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels.HabitEditor.Sections;
+using Recordum.Presentation.ViewModels.Scales;
 
 namespace Recordum.Presentation.ViewModels.HabitBuilder;
 
@@ -132,7 +133,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     /// <summary>The open micro-form, or null when none is. Bound to the popup's IsOpen; only one of
     /// the two is ever non-null.</summary>
     [ObservableProperty] private NewUnitFormViewModel? _unitForm;
-    [ObservableProperty] private NewScaleFormViewModel? _scaleForm;
+    [ObservableProperty] private ScaleEditorViewModel? _scaleForm;
 
     [RelayCommand]
     public void BeginAddCustomUnit(FieldBlockViewModel? field)
@@ -149,7 +150,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         if (field is null) return;
         UnitForm = null;
         _formTarget = field;
-        ScaleForm = new NewScaleFormViewModel();
+        ScaleForm = new ScaleEditorViewModel();
     }
 
     [RelayCommand]
@@ -187,17 +188,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
     private void ConfirmCustomScale()
     {
         if (ScaleForm is not { CanConfirm: true } form || _formTarget is null) return;
-        var labels = form.Labels;
-        var scale = new ScaleTemplate
-        {
-            Id = Guid.NewGuid(),
-            Code = ReferenceCodeSlug.From(form.Name, AvailableScales.Select(s => s.Code).ToList()),
-            Name = form.Name.Trim(),
-            MinValue = 1,
-            MaxValue = labels.Count,
-            Anchors = labels.Select((l, i) => new ScaleAnchor { Id = Guid.NewGuid(), Value = i + 1, Label = l }).ToList(),
-            IsOfficial = false,
-        };
+        // Gli scaglioni viaggiano con il nome; i tag li risolve il servizio al salvataggio (come per ogni scala in staging).
+        var scale = form.ToTemplate(Guid.NewGuid(), ReferenceCodeSlug.From(form.Name, AvailableScales.Select(x => x.Code).ToList()));
         _stagedScales.Add(scale);
         AvailableScales.Add(scale);
         _formTarget.ScaleTemplateId = scale.Id;
@@ -392,8 +384,13 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             Code = def.Code!,
             Name = string.IsNullOrWhiteSpace(def.Name) ? def.Code! : def.Name,
             MinValue = def.MinValue,
-            MaxValue = def.MaxValue,
-            Anchors = (def.Labels ?? []).Select((l, i) => new ScaleAnchor { Id = Guid.NewGuid(), Value = def.MinValue + i, Label = l }).ToList(),
+            MaxValue = def.Anchors is { Count: > 0 } ? def.MaxValue : Math.Max(def.MaxValue, def.MinValue + (def.Labels?.Count ?? 0) - 1),
+            Precision = Enum.TryParse<ScalePrecision>(def.Precision, true, out var precision) ? precision : ScalePrecision.Integer,
+            Anchors = (def.Anchors is { Count: > 0 } named
+                    ? named.Select(a => new ScaleAnchor { Id = Guid.NewGuid(), Value = a.Value, Label = a.Label })
+                    // A template saved before GIO-23 carries names in a row: position i is value MinValue + i.
+                    : (def.Labels ?? []).Select((l, i) => new ScaleAnchor { Id = Guid.NewGuid(), Value = def.MinValue + i, Label = l }))
+                .ToList(),
             IsOfficial = false,
         };
         _stagedScales.Add(scale);
@@ -899,7 +896,8 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                 Name = s.Name,
                 MinValue = s.MinValue,
                 MaxValue = s.MaxValue,
-                Labels = ScaleText.Named(s).Select(a => a.Name).ToList(),
+                Precision = s.Precision.ToString(),
+                Anchors = s.Anchors.OrderBy(a => a.Value).Select(a => new ScaleAnchorPayload { Value = a.Value, Label = a.Label }).ToList(),
             }).ToList();
 
         // Il payload config si legge dalla stessa HabitConfig che Lancia costruirebbe: così le due
@@ -1048,7 +1046,16 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
         public string? Name { get; set; }
         public int MinValue { get; set; }
         public int MaxValue { get; set; }
+        public string? Precision { get; set; }
+        public List<ScaleAnchorPayload>? Anchors { get; set; }
+        /// <summary>Read only: templates saved before GIO-23 carry the names in a row.</summary>
         public List<string>? Labels { get; set; }
+    }
+
+    private sealed class ScaleAnchorPayload
+    {
+        public int Value { get; set; }
+        public string? Label { get; set; }
     }
 
     private sealed class UiPrefsPayload

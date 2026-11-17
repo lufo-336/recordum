@@ -76,13 +76,14 @@ public static class HabitScreenViewModelFactory
         var clock = new FakeClock(now, boundary?.TimeZone);
         var bus = new FakeEventBus();
         var tree = new FakeHabitTreeQueryService();
+        var refData = new FakeReferenceData();
         var editor = new HabitEditorViewModel(
             nodes, configService, goals, metrics, new FakeNotificationService(), new FakeTagService(),
-            settings, new FakeReferenceData(), new RecentColorStore(settings), new FavoriteColorStore(settings),
-            new FakeScreenColorPicker(), uiPrefs);
+            settings, refData, new RecentColorStore(settings), new FavoriteColorStore(settings),
+            new FakeScreenColorPicker(), uiPrefs, new FakeScaleTemplateService(refData, metrics));
 
         var vm = new HabitScreenViewModel(
-            nodes, completions, timers, metrics, new FakeReferenceData(), configService,
+            nodes, completions, timers, metrics, refData, configService,
             noteService, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, bus, new FakeEditorAvailability(), settings, editor,
@@ -90,11 +91,11 @@ public static class HabitScreenViewModelFactory
             new FakeAttachmentService(), new FakePhotoImporter(), new FakeTagService(), new FakeOpenFileDialog(), uiPrefs,
             new FakeResetTimeResolver(boundary), ticks, groupHistory, new FakePurgeService(), quickActions, starts);
 
-        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus, tree, goals);
+        return new HabitScreenRig(vm, nodes, completions, noteService, configService, metrics, clock, abstinence, bus, tree, goals, refData);
     }
 }
 
 public sealed record HabitScreenRig(
     HabitScreenViewModel Vm, FakeHabitNodeService Nodes, FakeCompletionService Completions, FakeNoteService Notes,
     FakeHabitConfigService Configs, FakeMetricDefinitionService Metrics, FakeClock Clock, FakeAbstinenceService Abstinence,
-    FakeEventBus Bus, FakeHabitTreeQueryService Tree, FakeGoalService Goals);
+    FakeEventBus Bus, FakeHabitTreeQueryService Tree, FakeGoalService Goals, FakeReferenceData RefData);

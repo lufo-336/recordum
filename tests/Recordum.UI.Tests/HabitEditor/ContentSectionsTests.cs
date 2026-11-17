@@ -106,7 +106,7 @@ public class ContentSectionsTests
             boxes.Should().HaveCount(scale.MaxValue - scale.MinValue + 1);
             boxes.Select(b => b.Text).Should().OnlyContain(t => !string.IsNullOrWhiteSpace(t), "la scala porta le sue etichette");
             Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<Button>().Should().OnlyContain(b => !b.IsVisible,
-                "una scala esistente non ha aggiungi/togli");
+                "una scala ufficiale e' in sola lettura: niente aggiungi/togli");
 
             AutomationProperties.GetName(boxes[1]).Should().NotBeNullOrWhiteSpace().And.Contain("2");
             boxes[^1].BringIntoView();

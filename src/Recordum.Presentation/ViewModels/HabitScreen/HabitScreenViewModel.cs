@@ -962,14 +962,19 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     // se non cambia (rinomina, ricolora, scritture non correlate) i valori digitati restano.
     private string _quickAddShape = "";
 
-    private static string QuickAddShape(HabitConfig? cfg, IReadOnlyList<MetricDefinition> defs) =>
+    // GIO-23: la scala fa parte della forma (estremi, precisione, scaglioni): una scala modificata in Configura ricostruisce il quick-add.
+    private static string QuickAddShape(HabitConfig? cfg, IReadOnlyList<MetricDefinition> defs, IReadOnlyList<ScaleTemplate> scales) =>
         $"{cfg?.Repeatable == true}|" + string.Join(";", defs.OrderBy(m => m.SortOrder).Select(m =>
-            $"{m.Id}/{m.Type}/{m.UnitOfMeasureId}/{m.ScaleTemplateId}"));
+            $"{m.Id}/{m.Type}/{m.UnitOfMeasureId}/{m.ScaleTemplateId}"
+            + (scales.FirstOrDefault(sc => sc.Id == m.ScaleTemplateId) is { } sc
+                ? $"/{sc.MinValue}:{sc.MaxValue}:{sc.Precision}:" + string.Join(",", sc.Anchors.OrderBy(a => a.Value).Select(a => $"{a.Value}={a.Label}"))
+                : "")));
 
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)
     {
         _quickAddShape = QuickAddShape(await _configs.GetAsync(node.Id, ct).ConfigureAwait(true),
-            await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true));
+            await _metrics.ListByHabitAsync(node.Id, ct).ConfigureAwait(true),
+            await _refData.ListScalesAsync(ct).ConfigureAwait(true));
         _isQuickNoteJournal = false;
         JournalQuickEntry = null;
         if (node.HabitType == HabitType.Journal)
@@ -1170,7 +1175,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             _config = cfg;
             ScheduleLabel = ScheduleText.Describe(cfg, System.Globalization.CultureInfo.CurrentUICulture);
             await LoadFiguresAsync(CancellationToken.None).ConfigureAwait(true);
-            if (QuickAdd is not null && QuickAddShape(cfg, defs) != _quickAddShape)
+            if (QuickAdd is not null && QuickAddShape(cfg, defs, await _refData.ListScalesAsync().ConfigureAwait(true)) != _quickAddShape)
             {
                 await BuildQuickAddAsync(refreshed, CancellationToken.None).ConfigureAwait(true);
                 // Il comando ricostruito nasce su oggi: torna sul giorno scelto, o registrerebbe nel giorno sbagliato.

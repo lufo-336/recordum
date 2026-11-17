@@ -133,7 +133,7 @@ public class HabitTemplateServiceTests
         await using var db2 = await fx.Factory.CreateDbContextAsync();
         var metric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId);
         metric.Name.Should().Be("Mood");
-        metric.Type.Should().Be(MetricType.Integer);
+        metric.Type.Should().Be(MetricType.Decimal);   // GIO-23: a scale metric is always Decimal, whatever the payload says
         metric.ScaleTemplateId.Should().Be(scaleId);
         (await db2.ScaleAnchors.CountAsync(a => a.ScaleTemplateId == scaleId)).Should().BeGreaterThan(0);
     }

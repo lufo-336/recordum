@@ -1134,7 +1134,7 @@ public class HabitBuilderViewModelTests
         sut.AddFieldCommand.Execute(FieldNature.Scale);
         sut.BeginAddCustomScale(sut.Fields[0]);
         sut.ScaleForm!.Name = "Energia";
-        sut.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        FillMarks(sut.ScaleForm, "Bassa", "Media", "Alta");
         sut.ConfirmCustomScaleCommand.Execute(null);
 
         var request = sut.BuildRequestForTest();
@@ -1283,7 +1283,7 @@ public class HabitBuilderViewModelTests
         sut.AddFieldCommand.Execute(FieldNature.Scale);
         sut.BeginAddCustomScale(sut.Fields[1]);
         sut.ScaleForm!.Name = "Energia";
-        sut.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        FillMarks(sut.ScaleForm, "Bassa", "Media", "Alta");
         sut.ConfirmCustomScaleCommand.Execute(null);
 
         var payload = PayloadOf(sut);
@@ -1295,8 +1295,9 @@ public class HabitBuilderViewModelTests
         var scale = payload.GetProperty("scales").EnumerateArray().Single();
         scale.GetProperty("code").GetString().Should().Be("energia");
         scale.GetProperty("max_value").GetInt32().Should().Be(3);
-        scale.GetProperty("labels").EnumerateArray().Select(l => l.GetString())
+        scale.GetProperty("anchors").EnumerateArray().Select(a => a.GetProperty("label").GetString())
             .Should().Equal("Bassa", "Media", "Alta");
+        scale.GetProperty("precision").GetString().Should().Be("Integer");
 
         // The metrics join by code, exactly as the reader resolves them.
         payload.GetProperty("metrics").EnumerateArray().ElementAt(0)
@@ -1332,7 +1333,7 @@ public class HabitBuilderViewModelTests
 
         sut.BeginAddCustomScale(sut.Fields[0]);
         sut.ScaleForm!.Name = "Energia";
-        sut.ScaleForm.LabelsText = "Bassa, Alta";
+        FillMarks(sut.ScaleForm, "Bassa", "Alta");
         sut.ConfirmCustomScaleCommand.Execute(null);
 
         sut.CanLaunch.Should().BeTrue();
@@ -1357,6 +1358,18 @@ public class HabitBuilderViewModelTests
         finally
         {
             Strings.Culture = prev;
+        }
+    }
+
+    /// <summary>Un nome per ogni valore da 1 a n (la forma di una scala "a gradini").</summary>
+    private static void FillMarks(Recordum.Presentation.ViewModels.Scales.ScaleEditorViewModel form, params string[] names)
+    {
+        form.MinValue = 1;
+        form.MaxValue = names.Length;
+        foreach (var n in names)
+        {
+            form.AddRowCommand.Execute(null);
+            form.Rows[^1].Label = n;
         }
     }
 }

@@ -35,7 +35,7 @@ public class ScaleTemplateServiceTests
     public async Task CreateAsync_makes_the_anchors_and_their_derived_tags()
     {
         await using var fx = new DbFixture();
-        var id = await new ScaleTemplateService(fx.Factory).CreateAsync(Mood());
+        var id = await new ScaleTemplateService(fx.Factory, new RecordingEventBus()).CreateAsync(Mood());
 
         await using var db = await fx.Factory.CreateDbContextAsync();
         var anchors = await db.ScaleAnchors.Include(a => a.Tag).Where(a => a.ScaleTemplateId == id).OrderBy(a => a.Value).ToListAsync();
@@ -47,7 +47,7 @@ public class ScaleTemplateServiceTests
     public async Task UpdateAsync_rename_creates_the_new_tag_and_keeps_the_old_one()
     {
         await using var fx = new DbFixture();
-        var svc = new ScaleTemplateService(fx.Factory);
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
         var id = await svc.CreateAsync(Mood());
 
         await svc.UpdateAsync(id, Mood("Giù"));
@@ -64,7 +64,7 @@ public class ScaleTemplateServiceTests
     public async Task UpdateAsync_narrowing_below_a_recorded_value_throws_and_changes_nothing()
     {
         await using var fx = new DbFixture();
-        var svc = new ScaleTemplateService(fx.Factory);
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
         var id = await svc.CreateAsync(new("Voto", 0, 100, ScalePrecision.Integer, []));
         await HabitWithMetricAsync(fx, id, 80m);
 
@@ -79,7 +79,7 @@ public class ScaleTemplateServiceTests
     public async Task UpdateAsync_decimal_to_integer_with_a_recorded_1_37_throws_precision()
     {
         await using var fx = new DbFixture();
-        var svc = new ScaleTemplateService(fx.Factory);
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
         var id = await svc.CreateAsync(new("Voto", 0, 10, ScalePrecision.Decimal, []));
         await HabitWithMetricAsync(fx, id, 1.37m);
 
@@ -92,7 +92,7 @@ public class ScaleTemplateServiceTests
     public async Task UpdateAsync_narrowing_a_scale_without_recordings_is_fine()
     {
         await using var fx = new DbFixture();
-        var svc = new ScaleTemplateService(fx.Factory);
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
         var id = await svc.CreateAsync(new("Voto", 0, 100, ScalePrecision.Integer, []));
         await HabitWithMetricAsync(fx, id);
 
@@ -110,7 +110,7 @@ public class ScaleTemplateServiceTests
         await using (var db = await fx.Factory.CreateDbContextAsync())
             id = (await db.ScaleTemplates.FirstAsync(s => s.IsOfficial)).Id;
 
-        var act = async () => await new ScaleTemplateService(fx.Factory).UpdateAsync(id, Mood());
+        var act = async () => await new ScaleTemplateService(fx.Factory, new RecordingEventBus()).UpdateAsync(id, Mood());
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -124,7 +124,7 @@ public class ScaleTemplateServiceTests
             officialId = (await db.ScaleTemplates.SingleAsync(s => s.Code == "mood-5")).Id;
         var first = await HabitWithMetricAsync(fx, officialId);
         var second = await HabitWithMetricAsync(fx, officialId);
-        var svc = new ScaleTemplateService(fx.Factory);
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
 
         var copyId = await svc.DuplicateAsync(officialId, "Il mio umore", [new(1, "Pessimo"), new(5, "Ottimo")], first);
 
@@ -140,7 +140,7 @@ public class ScaleTemplateServiceTests
     public async Task GetUsageAsync_counts_habits_sharing_a_scale()
     {
         await using var fx = new DbFixture();
-        var svc = new ScaleTemplateService(fx.Factory);
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
         var id = await svc.CreateAsync(Mood());
         await HabitWithMetricAsync(fx, id, 2.5m);
         await HabitWithMetricAsync(fx, id, 4m);
@@ -148,5 +148,23 @@ public class ScaleTemplateServiceTests
         var usage = await svc.GetUsageAsync(id);
 
         usage.Should().Be(new ScaleUsage(2, 2.5m, 4m, true));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_announces_every_habit_that_reads_the_scale()
+    {
+        await using var fx = new DbFixture();
+        var bus = new RecordingEventBus();
+        var svc = new ScaleTemplateService(fx.Factory, bus);
+        var id = await svc.CreateAsync(Mood());
+        var m1 = await HabitWithMetricAsync(fx, id);
+        var m2 = await HabitWithMetricAsync(fx, id);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var habits = await db.MetricDefinitions.Where(m => m.Id == m1 || m.Id == m2).Select(m => m.HabitNodeId).ToListAsync();
+
+        await svc.UpdateAsync(id, Mood("Meh"));
+
+        bus.Published.OfType<Recordum.Plugins.Contracts.Events.HabitUpdatedPayload>().Select(p => p.HabitNodeId)
+            .Should().BeEquivalentTo(habits);
     }
 }

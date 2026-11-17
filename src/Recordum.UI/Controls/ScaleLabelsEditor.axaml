@@ -1,24 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:res="using:Recordum.Presentation.Resources"
-             xmlns:vm="using:Recordum.Presentation.ViewModels.HabitEditor"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.Scales"
              x:Class="Recordum.UI.Controls.ScaleLabelsEditor"
-             x:DataType="vm:ScaleLabelsEditorViewModel">
-  <!-- Le etichette di una scala come elenco di campi: il valore a sinistra, il testo a destra. Scala esistente = una riga
-       per valore, niente aggiungi/togli; scala nuova = "aggiungi etichetta" e × per togliere (CanRemove: minimo due). -->
+             x:DataType="vm:ScaleEditorViewModel">
+  <!-- Provvisorio (GIO-23 Task 6): le righe dell'editor della scala, un campo per scaglione; l'editor completo (estremi,
+       precisione, anteprima, errori) e' il Task 7. Scala ufficiale = campi in sola lettura, niente aggiungi/togli. -->
   <StackPanel Spacing="6">
     <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
       <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:ScaleLabelRowViewModel">
+        <DataTemplate x:DataType="vm:ScaleAnchorRowViewModel">
           <Grid ColumnDefinitions="28,*,Auto" Margin="0,0,0,6">
             <TextBlock Text="{CompiledBinding Value}" Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center"/>
             <!-- LostFocus: in Configura ogni modifica e' una scrittura sul DB, non una per tasto (LiveUpdate la anticipa nel creatore). -->
-            <TextBox x:Name="LabelBox" Grid.Column="1" Text="{CompiledBinding Text, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                     AutomationProperties.Name="{CompiledBinding AutomationName}"/>
+            <TextBox x:Name="LabelBox" Grid.Column="1" Text="{CompiledBinding Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     IsReadOnly="{CompiledBinding Owner.IsReadOnly}" AutomationProperties.Name="{CompiledBinding AutomationName}"/>
             <Button x:Name="RemoveButton" Grid.Column="2" Classes="ghost" Margin="4,0,0,0" Padding="6" MinHeight="0" VerticalAlignment="Center"
-                    AutomationProperties.Name="{x:Static res:Strings.Editor_ScaleLabels_Remove}"
-                    ToolTip.Tip="{x:Static res:Strings.Editor_ScaleLabels_Remove}"
-                    IsVisible="{CompiledBinding !Owner.FixedCount}" IsEnabled="{CompiledBinding Owner.CanRemove}"
+                    AutomationProperties.Name="{x:Static res:Strings.Scale_Editor_RemoveMark}"
+                    ToolTip.Tip="{x:Static res:Strings.Scale_Editor_RemoveMark}"
+                    IsVisible="{CompiledBinding !Owner.IsReadOnly}"
                     Command="{CompiledBinding Owner.RemoveRowCommand}" CommandParameter="{CompiledBinding}">
               <Path Data="{StaticResource Icon.X}" Width="12" Height="12" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
                     StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
@@ -28,11 +28,11 @@
       </ItemsControl.ItemTemplate>
     </ItemsControl>
     <Button x:Name="AddButton" Classes="ghost" HorizontalAlignment="Left" Padding="6,4"
-            IsVisible="{CompiledBinding !FixedCount}" Command="{CompiledBinding AddRowCommand}">
+            IsVisible="{CompiledBinding !IsReadOnly}" Command="{CompiledBinding AddRowCommand}">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Path Data="{StaticResource Icon.Plus}" Width="12" Height="12" Stretch="Uniform" Stroke="{DynamicResource Brush.Text}"
               StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round" VerticalAlignment="Center"/>
-        <TextBlock Text="{x:Static res:Strings.Editor_ScaleLabels_Add}"/>
+        <TextBlock Text="{x:Static res:Strings.Scale_Editor_AddMark}"/>
       </StackPanel>
     </Button>
   </StackPanel>

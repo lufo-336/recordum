@@ -36,7 +36,7 @@ public class FinalReviewFixTests
         var editor = new Recordum.Presentation.ViewModels.HabitEditor.HabitEditorViewModel(
             nodes, configs, new FakeGoalService(), metrics, new FakeNotificationService(), new FakeTagService(),
             settings, new FakeReferenceData(), new Recordum.Presentation.Services.RecentColorStore(settings),
-            new Recordum.Presentation.Services.FavoriteColorStore(settings), new FakeScreenColorPicker(), uiPrefs);
+            new Recordum.Presentation.Services.FavoriteColorStore(settings), new FakeScreenColorPicker(), uiPrefs, new FakeScaleTemplateService());
         var sut = new HabitScreenViewModel(
             nodes, completions, new FakeActiveTimerService(), metrics, new FakeReferenceData(), configs,
             notes, new FakeGoalService(), new IntensityRampResolver(),

@@ -2631,4 +2631,64 @@ Details: {0}</value>
   <data name="Home.Uncheck.Message" xml:space="preserve">
     <value>The record of {0} is deleted.</value>
   </data>
+  <data name="Scale.Editor.From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Scale.Editor.To" xml:space="preserve">
+    <value>to</value>
+  </data>
+  <data name="Scale.Editor.Precision" xml:space="preserve">
+    <value>Precision</value>
+  </data>
+  <data name="Scale.Precision.Integer" xml:space="preserve">
+    <value>Whole numbers</value>
+  </data>
+  <data name="Scale.Precision.Decimal" xml:space="preserve">
+    <value>Decimals</value>
+  </data>
+  <data name="Scale.Editor.AddMark" xml:space="preserve">
+    <value>+ Mark</value>
+  </data>
+  <data name="Scale.Editor.NameEveryValue" xml:space="preserve">
+    <value>Name every value</value>
+  </data>
+  <data name="Scale.Editor.Usage" xml:space="preserve">
+    <value>Used by {0} habits</value>
+  </data>
+  <data name="Scale.Editor.DuplicateAndEdit" xml:space="preserve">
+    <value>Duplicate and edit</value>
+  </data>
+  <data name="Scale.Editor.RemoveMark" xml:space="preserve">
+    <value>Remove mark</value>
+  </data>
+  <data name="Scale.Editor.MarkName" xml:space="preserve">
+    <value>Mark name for {0}</value>
+  </data>
+  <data name="Scale.Error.Name" xml:space="preserve">
+    <value>Give the scale a name</value>
+  </data>
+  <data name="Scale.Error.LabelLength" xml:space="preserve">
+    <value>A mark's name can be up to 100 characters</value>
+  </data>
+  <data name="Scale.Error.Range" xml:space="preserve">
+    <value>Values go from -100 to 100</value>
+  </data>
+  <data name="Scale.Error.Order" xml:space="preserve">
+    <value>The first value must be below the last</value>
+  </data>
+  <data name="Scale.Error.AnchorOutside" xml:space="preserve">
+    <value>Every mark must fall between the first and the last value</value>
+  </data>
+  <data name="Scale.Error.AnchorDuplicate" xml:space="preserve">
+    <value>Two marks have the same value</value>
+  </data>
+  <data name="Scale.Error.NarrowMin" xml:space="preserve">
+    <value>Values from {0} are already recorded</value>
+  </data>
+  <data name="Scale.Error.NarrowMax" xml:space="preserve">
+    <value>Values up to {0} are already recorded</value>
+  </data>
+  <data name="Scale.Error.Precision" xml:space="preserve">
+    <value>Values with decimals are already recorded</value>
+  </data>
 </root>
