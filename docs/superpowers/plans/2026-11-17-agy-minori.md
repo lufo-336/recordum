@@ -9,6 +9,8 @@ Branch `agy-minori`, da `main`. Descrizione dei difetti: `docs/phase-4-issues.md
 
 ## 1. GIO-1 — test instabile per la cultura
 
+- [x] Fatto 2026-11-17 (agy, parziale): file `tests/Recordum.Presentation.Tests/ViewModels/HabitBuilder/HabitBuilderViewModelTests.cs` — verifica: non eseguita (sessione isolata senza shell; fissato `Strings.Culture` a `it-IT` con ripristino in `finally` in `SaveAsTemplate_creates_custom_template_with_roundtrippable_payload`; scansione globale di `tests/Recordum.Presentation.Tests` non eseguibile senza strumenti di ricerca né shell)
+
 `tests/Recordum.Presentation.Tests/ViewModels/HabitBuilder/HabitBuilderViewModelTests.cs:253`
 (`SaveAsTemplate_creates_custom_template_with_roundtrippable_payload`) a volte legge "Quantity" dove si aspetta
 "Quantità". La classe è già in `[Collection(ProcessGlobalCultureCollection.Name)]`
@@ -25,6 +27,8 @@ classe di test che cambia `Strings.Culture` (o `CultureInfo.DefaultThreadCurrent
 - Nel resoconto: l'elenco delle classi che hai spostato o corretto, con il motivo.
 
 ## 2. GIO-5 — un filtro che svuota la lista non si può più togliere
+
+- [x] Fatto 2026-11-17 (agy): file `src/Recordum.Presentation/ViewModels/HomeState.cs`, `src/Recordum.Presentation/ViewModels/HomeViewModel.cs`, `src/Recordum.UI/Views/HomeStateTemplate.cs`, `src/Recordum.UI/Views/HomeView.axaml`, `tests/Recordum.Presentation.Tests/ViewModels/HomeNoResultsTests.cs`, `tests/Recordum.UI.Tests/HomeNoResultsViewTests.cs` — verifica: non eseguita (sessione isolata senza shell; build e test demandati al processo esterno)
 
 Oggi `HomeViewModel.Rebuild` (`src/Recordum.Presentation/ViewModels/HomeViewModel.cs`, circa riga 758) mette
 `State = HomeState.Empty` quando non resta nessuna riga, anche se le righe ci sono e le nasconde un filtro. In `Empty` la
@@ -62,6 +66,8 @@ circa riga 101, visibili solo con `State == Loaded`), quindi il filtro non si sp
 
 ## 3. GIO-8 — il secondo punto di un elenco resta "- "
 
+- [x] Fatto 2026-11-17 (agy): file `src/Recordum.UI/Controls/DiaryEditor/DiaryEditor.axaml.cs`, `tests/Recordum.UI.Tests/Controls/DiaryLineScannerTests.cs`, `tests/Recordum.UI.Tests/Controls/DiaryEditorBulletTests.cs` — verifica: non eseguita (sessione isolata senza shell; build e test demandati al processo esterno)
+
 Nell'editor del diario (colonna Note, `src/Recordum.UI/Controls/DiaryEditor/`: `DiaryEditor.axaml.cs`,
 `DiaryLineScanner.cs`, `DiaryElementGenerator.cs`) il testo "- 14 km\n- ritmo 5:40" disegna il pallino sul primo punto e
 lascia il trattino sul secondo. Il blocco di sola lettura del giorno li disegna giusti tutti e due.
@@ -74,6 +80,8 @@ lascia il trattino sul secondo. Il blocco di sola lettura del giorno li disegna 
 - Se il difetto non si riproduce con un test, **non inventare una correzione**: scrivi in "NON FATTO" cosa hai provato.
 
 ## 4. GIO-11, solo la parte sulla selezione
+
+- [x] Fatto 2026-11-17 (agy): file `src/Recordum.Presentation/ViewModels/HomeViewModel.cs`, `tests/Recordum.Presentation.Tests/ViewModels/HomeReloadSelectionTests.cs` — verifica: non eseguita (sessione isolata senza shell; build e test demandati al processo esterno)
 
 `HomeViewModel.ReloadPreservingSelectionAsync` (cerca il metodo) legge la selezione **prima** di aspettare il caricamento
 e la rimette **dopo**: se nel frattempo l'utente ha scelto altre righe, la sua scelta viene sovrascritta da quella vecchia.

@@ -64,8 +64,7 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
-**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperti: **GIO-1**,
-**GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperti: **GIO-10**, **GIO-11** (in parte) · `reported`; **GIO-1**, **GIO-5**, **GIO-8** `fixed` il 2026-11-17 (`agy-minori`); dalla revisione dei PNG con l'autore
 (2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** in
 ROADMAP, **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
@@ -2601,7 +2600,7 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
 `GiornataScreenshotTests.Home_with_values_in_ink_B9`).
 **B9 deciso dall'autore il 2026-11-16, viste le due immagini affiancate: i valori restano nel colore dell'abitudine.** Chiuso, nessun codice.
 
-- **GIO-1 — `SaveAsTemplate_creates_custom_template_with_roundtrippable_payload` è instabile** · `reported` · precedente
+- **GIO-1 — `SaveAsTemplate_creates_custom_template_with_roundtrippable_payload` è instabile** · `fixed` (2026-11-17, branch `agy-minori`: `ScaleLabelsEditorViewModelTests` cambiava `Strings.Culture` fuori da `ProcessGlobalCultureCollection`; ora è nella collection, e il test fissa it-IT) · precedente
   all'onda. `HabitBuilderViewModelTests` confronta il nome del campo con `Strings.HabitBuilder_DefaultField_Quantity`
   senza fissare la cultura: in una corsa su quattro della suite Presentation (2026-11-11, Fedora) ha letto "Quantity"
   dove si aspettava "Quantità", perché un'altra classe in parallelo aveva cambiato la cultura delle risorse. Da sola e
@@ -2637,7 +2636,7 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     pieno nel colore; solo le azioni (ricaduta, +, stato e matita sono comandi uguali ogni giorno).
     `HomeRowViewModel.IsQuickLogDone`, classe `done` su `Button.quicklog`. Test
     `HomeLayoutTests.A_done_action_has_a_tinted_quick_log_button`, rosso prima.
-- **GIO-5 — con la lista vuota per un filtro, il filtro non si può più togliere** · `reported` · precedente all'onda,
+- **GIO-5 — con la lista vuota per un filtro, il filtro non si può più togliere** · `fixed` (2026-11-17, `agy-minori`: stato `HomeState.NoResults` con "Togli i filtri", strumenti visibili; `HomeNoResultsTests`, `HomeNoResultsViewTests`) · precedente all'onda,
   letto nel codice durante il Task 7 (non provato a schermo). `HomeViewModel.Rebuild` mette `State = Empty` quando non
   resta nessuna riga, e lente, "fatte" e ordinamento si vedono solo con `State == Loaded`: con "fatte" acceso e tutto
   fatto resta lo schermo vuoto col germoglio ("crea un'abitudine") e il pulsante per spegnere il filtro non c'è. Prima del
@@ -2669,7 +2668,7 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
   - **Review dell'intero branch** (Antigravity Argon, 24 minuti; Opus su Antigravity era senza quota): 2 alte e 4 medie,
     verificate nel codice una per una. Corrette nell'ondata finale le quattro nate nell'onda (GIO-12…15); le altre sono
     qui sotto.
-  - **GIO-8 — nell'editor della colonna Note il secondo punto di un elenco resta "- "** · `reported` · precedente
+  - **GIO-8 — nell'editor della colonna Note il secondo punto di un elenco resta "- "** · `fixed` (2026-11-17, `agy-minori`: la riga del cursore resta grezza solo con l'editor a fuoco; `DiaryEditorBulletTests`, rosso provato) · precedente
     all'onda (l'editor del diario di F2d-2), visto in `habit-notes-light.png`: di "- 14 km\n- ritmo 5:40" il primo ha il
     pallino, il secondo il trattino; il blocco del giorno, sola lettura, li rende giusti tutti e due.
   - **GIO-9 — il giorno di una ricaduta è "pulito" nella striscia della Home** · `reported` · regola precedente
@@ -2686,7 +2685,7 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
   - **GIO-6, un caso in più**: Home su ieri → apro "Senza fumo" → "Torna a oggi" → log rapido della riga: il riquadro
     della ricaduta dice "La ricaduta va su lunedì 9 novembre" mentre la Home dice "Oggi". Lo dice, ma è il caso in cui
     lasciare la schermata sul giorno vecchio costa di più.
-  - **GIO-11 — minori dalla review, non corretti** · `reported`: `HomeViewModel` non rilascia le sette sottoscrizioni al
+  - **GIO-11 — minori dalla review, non corretti** · `reported`; la parte sulla selezione `fixed` (2026-11-17, `agy-minori`: `HomeReloadSelectionTests`, rosso provato): `HomeViewModel` non rilascia le sette sottoscrizioni al
     bus né `ExpandToggled` delle righe sostituite (precedente; la Home vive quanto l'app);
     `ReloadPreservingSelectionAsync` legge la selezione prima dell'attesa e la rimette sopra una scelta fatta nel
     frattempo; nel blocco del giorno, cambiando giorno dalla mappa dell'anno con la casella della nota a fuoco, la nota

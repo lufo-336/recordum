@@ -4,6 +4,7 @@ using Xunit;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitEditor;
 
+[Collection(ProcessGlobalCultureCollection.Name)]
 public class ScaleLabelsEditorViewModelTests
 {
     [Fact]

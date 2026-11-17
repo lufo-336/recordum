@@ -53,7 +53,10 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private HomeTab _activeTab = HomeTab.Active;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDayHeader))]
+    [NotifyPropertyChangedFor(nameof(ShowsTools))]
     private HomeState _state = HomeState.Loading;
+
+    public bool ShowsTools => State is HomeState.Loaded or HomeState.NoResults;
     [ObservableProperty] private string? _errorMessage;
 
     [ObservableProperty] private ImmutableHashSet<HabitType> _typeFilter = ImmutableHashSet<HabitType>.Empty;
@@ -592,6 +595,24 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     partial void OnSearchTextChanged(string? value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
     partial void OnSortOptionChanged(HomeSort value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
 
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        _suppressRebuild = true;
+        try
+        {
+            SearchText = null;
+            TypeFilter = ImmutableHashSet<HabitType>.Empty;
+            TagFilter = ImmutableHashSet<Guid>.Empty;
+            HideCompletedToday = false;
+        }
+        finally
+        {
+            _suppressRebuild = false;
+        }
+        RebuildPreservingSelection();
+    }
+
     private void ResetFilters()
     {
         _suppressRebuild = true;
@@ -620,7 +641,8 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         var keep = _selectedIds.ToList();
         await LoadAsync();
         if (generation != _reloadGeneration) return;
-        RestoreSelection(keep);
+        var target = _selectedIds.SetEquals(keep) ? keep : _selectedIds.ToList();
+        RestoreSelection(target);
     }
 
     private void RebuildPreservingSelection()
@@ -695,13 +717,14 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         }
         Rows.Clear();
         Roots.Clear();
-        IEnumerable<HomeTreeRow> q = _lastFetched;
-        q = ActiveTab switch
+        var tabRows = (ActiveTab switch
         {
-            HomeTab.Active => q.Where(r => !r.IsArchived),
-            HomeTab.Archived => q.Where(r => r.IsArchived),
-            _ => q,
-        };
+            HomeTab.Active => _lastFetched.Where(r => !r.IsArchived),
+            HomeTab.Archived => _lastFetched.Where(r => r.IsArchived),
+            _ => _lastFetched,
+        }).ToList();
+        var tabHasRows = tabRows.Count > 0;
+        IEnumerable<HomeTreeRow> q = tabRows;
         if (!TypeFilter.IsEmpty)
             q = q.Where(r => r.HabitType.HasValue && TypeFilter.Contains(r.HabitType.Value));
         if (!TagFilter.IsEmpty)
@@ -755,7 +778,13 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         ApplyDayProgress();
         RefreshHead();
         MaxVisibleStripLength = Rows.Count == 0 ? 0 : Rows.Max(r => r.StripCells.Length);
-        State = Rows.Count == 0 ? HomeState.Empty : HomeState.Loaded;
+        var hasActiveFilters = !string.IsNullOrWhiteSpace(SearchText)
+            || !TypeFilter.IsEmpty
+            || !TagFilter.IsEmpty
+            || HideCompletedToday;
+        State = Rows.Count > 0 ? HomeState.Loaded
+            : tabHasRows && hasActiveFilters ? HomeState.NoResults
+            : HomeState.Empty;
         ApplySelectionToRows();
         _ = FillKeyFiguresAsync();
     }
