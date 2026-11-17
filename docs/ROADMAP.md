@@ -4,13 +4,12 @@
 > Qui non entra cronaca (sta in `docs/MILESTONES.md`) e non entrano checklist (stanno in `docs/CHECKLIST.md`).
 > Il *perché* del prodotto è in `docs/PRODUCT.md`; i finding nel tracker `docs/phase-4-issues.md`.
 
-## Dove siamo — 2026-11-16
+## Dove siamo — 2026-11-17
 
-- **In `main`**: la shell Avalonia con Home, registrazione dei cinque tipi, creare e configurare, dati al sicuro
-  (portachiavi, backup, ripristino), diario con tag e foto, SQLite3MC, e la direzione visiva fino all'onda 2b.
-- **Branch di lavoro**: `ux3a-creator-templates` — onda 3a (creatore e selettore dei modelli) a codice completo,
-  review dell'intero branch e ondata finale fatte, CI verde su `29c051b5` (i commit dopo sono solo documenti).
-  Manca: l'autore guarda i PNG (`builder-*`, `templates-*`, `configura-scale-labels-*`) e fa il merge.
+- **In `main`** (`40c31c12`, fast-forward del 2026-11-17, CI verde): la shell Avalonia con Home, registrazione dei
+  cinque tipi, creare e configurare, dati al sicuro (portachiavi, backup, ripristino), diario con tag e foto, SQLite3MC,
+  la direzione visiva fino all'onda 2b, l'**onda 3a** (creatore e selettore dei modelli) e l'**onda "Giornata"**.
+- **Branch di lavoro**: nessuno aperto; il prossimo parte da `main`.
 - **Il percorso è stato ridisegnato il 2026-11-10**
   (`docs/superpowers/specs/2026-11-10-v1-ux-review-and-path-design.md`, con le decisioni dell'autore al §6):
   la giornata prima delle schermate; **un APK Android nella v1.0** (l'autore userà l'app soprattutto dal telefono, il
@@ -20,31 +19,19 @@
 - **WPF** è congelata: riferimento di comportamento, si spegne a F8.
 - **Dati veri**: finché le sezioni 1 e 2 di `docs/CHECKLIST.md` non sono fatte, la voce Recordum del menu apre la
   cartella dati vera — **non avviarla**.
-- **Onda "Giornata" a codice completo** (2026-11-16) sul branch `giornata-agy`, da `ux3a-creator-templates` (3a non è
-  ancora in `main`): piano `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task più l'8b. La Home ha un giorno
-  corrente (titolo, conto "x di y", ‹ ›, i giorni dell'intestazione che si cliccano, la fascia sul giorno passato), la
-  testa su una riga, tre versioni delle righe scelte in Impostazioni › Aspetto, la tastiera che registra, la spunta che
-  si toglie con conferma; la schermata dell'abitudine non ripete il giorno scelto, ha la voce nei diari e la nota sulle
-  altre, lo stato col numero; le parole sono in `docs/GLOSSARY.md` con la guardia. Scritta in cooperazione con
-  Antigravity (cronaca e cosa ha insegnato in `docs/MILESTONES.md`). Chiusura del 2026-11-16: inventario della Home
-  senza voci perse, review dell'intero branch con quattro correzioni (GIO-12…15), suite verdi.
-- **Aspetta l'autore**: guardare i PNG (`home-manifesto-*`, `habit-state-*`, `habit-session-*`, `habit-notes-*`,
-  `habit-journal-*`, `settings-appearance-*`), poi i merge: prima 3a, poi `giornata-agy`.
-- **Deciso il 2026-11-16** (tracker, in fondo alla sezione "Giornata"): B9, i valori restano nel colore
-  dell'abitudine; GIO-6, vince il giorno della Home; GIO-9, il giorno di una ricaduta è una × nella Home e una cella a
-  contorno con la × nel calendario (`docs/design/2026-11-16-ricaduta/`).
-  Fatto il 2026-11-16 nel task "ricaduta e giorno della Home" (GIO-6, GIO-9 e il calendario `fixed`, tracker).
-- **Prossimo — si riprende da qui**: (1) chiudere 3a e "Giornata" (PNG e merge dell'autore; in più
-  `home-ricaduta-*` e `habit-abstinence-*`); (2) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per
+- **Onda "Giornata" in `main`** (2026-11-17): piano `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task
+  più l'8b, scritta in cooperazione con Antigravity (cronaca in `docs/MILESTONES.md`). La revisione dei PNG con l'autore
+  (2026-11-16/17) ha chiuso GIO-2, 4, 6, 9, 12…22, 24, 25 (tracker, sezione "Giornata"); resta aperto GIO-23.
+- **Prossimo — si riprende da qui**: (1) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per
   dispositivo) e, a parte, quella delle **scale continue** (GIO-23, chiesta dall'autore il 2026-11-16: collocarsi fra
-  due scaglioni, es. 1,37; oggi il valore di una scala è un intero, quindi vuole una migrazione); (3) il passo 3, dati protetti e dogfooding sul computer.
+  due scaglioni, es. 1,37; oggi il valore di una scala è un intero, quindi vuole una migrazione); (2) il passo 3, dati protetti e dogfooding sul computer.
 
 ## Il percorso
 
 | # | Passo | Stato | Esce quando |
 |---|---|---|---|
-| 1 | **Chiudere 3a** | ◐ | PNG guardati dall'autore, merge |
-| 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; le righe della Home a scelta in Impostazioni › Aspetto, tre versioni (Compatta, Segni, Larga) su computer e telefono | ◐ | PNG della Home piena in chiaro e scuro, nelle tre versioni; CI verde |
+| 1 | **Chiudere 3a** | ✓ | PNG guardati dall'autore, merge |
+| 2 | **Onda "Giornata"** — la Home col giorno corrente e la testa su una riga; la tastiera; voce e nota; le parole (`docs/GLOSSARY.md` con la guardia); i difetti B1–B6 della revisione; la fixture "manifesto" coi PNG della Home piena; le righe della Home a scelta in Impostazioni › Aspetto, tre versioni (Compatta, Segni, Larga) su computer e telefono | ✓ | PNG della Home piena in chiaro e scuro, nelle tre versioni; CI verde |
 | 3 | **Dati protetti → ★ dogfooding sul computer** (prova generale) | ☐ | sezioni 1 e 2 della checklist; `install-linux.sh` |
 | 4 | **Testa Android** — `Recordum.UI` diventa libreria con due teste (`Recordum.Desktop`, `Recordum.Android`); avvio fuori dal thread UI con la schermata d'attesa; la cornice (barra in basso, pagine, fogli dal basso); portachiavi di Android e impronta | ☐ | l'APK apre la Home dei dati veri; tempo dall'icona alla Home misurato |
 | 5 | **Telefono: registrare tutto** — i cinque tipi, il diario in un campo di testo con la barra, la fotocamera, il timer in background → **★ dogfooding vero**, sul telefono (i dati ci passano con un ripristino) | ☐ | il manifesto di `DOGFOODING.md` coperto dal telefono |
