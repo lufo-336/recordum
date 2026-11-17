@@ -257,7 +257,7 @@ public class HomeRowsTests
     [InlineData(HomeRows.Comfortable)]
     public void The_day_of_a_lapse_is_a_faint_cross(HomeRows style)
     {
-        // GIO-9: ieri una ricaduta. Segni: quadratino vuoto con la × dentro. Larga: una × nel testo tenue.
+        // GIO-9: ieri una ricaduta. Segni: quadratino vuoto con la × dentro. Larga: una × nel testo attenuato.
         using var culture = TestCulture.Pin();
         var lapsed = Lapsed();
         var (w, view, _, _) = Show(900, style, lapsed);
@@ -277,7 +277,8 @@ public class HomeRowsTests
         {
             var texts = strip.GetVisualDescendants().OfType<TextBlock>().ToList();
             texts[^2].Text.Should().Be("×");
-            ((ISolidColorBrush)texts[^2].Foreground!).Color.Should().Be(Token<ISolidColorBrush>("Brush.TextFaint").Color);
+            // GIO-25: un gradino più scura del testo tenue dei giorni vuoti, come la × di Segni; nel tenue era un puntino.
+            ((ISolidColorBrush)texts[^2].Foreground!).Color.Should().Be(Token<ISolidColorBrush>("Brush.TextMuted").Color);
             texts[^3].Text.Should().Be("✓");
         }
         ScreenshotProbeTests.Capture(w, $"home-ricaduta-{style.ToString().ToLowerInvariant()}-light");

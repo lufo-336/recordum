@@ -123,6 +123,10 @@ public sealed partial class HomeRowViewModel : ObservableObject
     /// <summary>Il giorno scelto nella Home ha una registrazione (per oggi è <see cref="IsCompletedToday"/>).</summary>
     public bool IsDoneOnDay { get; }
 
+    /// <summary>Il log rapido di un'azione fatta nel giorno scelto si distingue da quello di una da fare (GIO-4). Gli
+    /// altri tipi hanno un comando uguale ogni giorno (ricaduta, +, stato, matita).</summary>
+    public bool IsQuickLogDone => HabitType == Core.Enums.HabitType.Action && IsDoneOnDay;
+
     /// <summary>Il giorno che il log rapido passa all'handler: null = oggi, altrimenti il giorno scelto nella Home.</summary>
     public DateOnly? RecordDay { get; init; }
 

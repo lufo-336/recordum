@@ -14,12 +14,14 @@ namespace Recordum.UI.Controls;
 public sealed class GroupFrames : Control
 {
     // Le misure sono quelle del layout annidato di WPF e del primo Avalonia: cornice con margine 1
-    // sopra e sotto, bordo 1, padding 3; figli rientrati 20 a sinistra, 2 a destra, 2 sopra, 1 sotto.
+    // sopra e sotto, bordo 1, padding 3; figli rientrati 20 a sinistra, 2 sopra, 1 sotto.
 
     /// <summary>Di quanto rientra ogni livello: bordo 1 + padding 3 + 20 di rientro dei figli.</summary>
     public const double IndentStep = 24;
-    /// <summary>Di quanto rientra a destra ogni livello: bordo 1 + padding 3 + 2 di margine dei figli.</summary>
-    public const double RightStep = 6;
+    /// <summary>Di quanto rientrano a destra tutte le card, a ogni profondità: bordo 1 + padding 3 della cornice. Le
+    /// cornici chiudono tutte sul bordo del controllo, così le strisce stanno sotto i giorni anche in un sottogruppo
+    /// (GIO-2, variante B1 scelta dall'autore il 2026-11-17).</summary>
+    public const double RightInset = 4;
     /// <summary>Distanza fra i fondi di due cornici che si chiudono sulla stessa riga, e fra la card
     /// e il fondo della cornice che si chiude: 1 sotto i figli + padding 3 + bordo 1 + margine 1.</summary>
     public const double ClosingStep = 6;
@@ -53,7 +55,7 @@ public sealed class GroupFrames : Control
             var bottom = s.IsBottom ? h - 1 - ClosingStep * closed++ : h + 2 * Radius;
             if (!Color.TryParse(s.ColorHex, out var c)) continue;
             var top = s.IsTop ? 1 : -2 * Radius;
-            var rect = new Rect(s.Level * IndentStep, top, w - s.Level * (IndentStep + RightStep), bottom - top)
+            var rect = new Rect(s.Level * IndentStep, top, w - s.Level * IndentStep, bottom - top)
                 .Deflate(0.5);   // il tratto da 1 cade sul pixel, non a cavallo di due
             // Solo il bordo nel colore del gruppo (alfa 80, come WPF): il fondo tinto è uscito con la direzione visiva
             // (§5: il gruppo non è tinto, il colore identifica e non decora).

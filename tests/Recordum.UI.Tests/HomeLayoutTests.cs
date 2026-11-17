@@ -114,24 +114,47 @@ public class HomeLayoutTests
     [AvaloniaFact]
     public void Today_column_is_aligned_across_strip_lengths()
     {
-        // Review Focus 4: 7 e 14 giorni, un gruppo senza striscia e una figlia rientrata. La figlia è rientrata anche a
-        // destra dalla cornice del gruppo (6 px): conta che il suo "oggi" stia sotto "oggi", dentro la colonna.
+        // Review Focus 4: 7 e 14 giorni, un gruppo senza striscia, una figlia e una nipote in un sottogruppo. GIO-2: le
+        // card finiscono tutte allo stesso x a ogni profondità, quindi ogni "oggi" sta sotto "oggi" entro 1 px.
         using var culture = TestCulture.Pin();
+        var sub = Guid.NewGuid();
         var (w, view, _) = Show(900,
             Row("Sette"), Row("Quattordici", HabitType.Resistance, days: 14),
-            Row("Gruppo", type: null) with { HabitNodeId = GroupId }, Row("Figlia", parent: GroupId));
+            Row("Gruppo", type: null) with { HabitNodeId = GroupId }, Row("Figlia", parent: GroupId),
+            Row("Sottogruppo", type: null, parent: GroupId) with { HabitNodeId = sub }, Row("Nipote", parent: sub));
         var today = HeaderDays(view).Last();
         today.Content.Should().Be("oggi");
         var column = BoundsIn(today, view);
 
         var strips = view.GetVisualDescendants().OfType<HabitRow>()
             .Select(r => r.GetVisualDescendants().OfType<HeatmapStrip>().Single()).ToList();
-        strips.Should().HaveCount(3);
+        strips.Should().HaveCount(4);
         foreach (var strip in strips)
         {
             var cell = BoundsIn(strip.GetVisualDescendants().OfType<TextBlock>().Last(), view);
-            cell.Center.X.Should().BeInRange(column.Left, column.Right, "l'ultima cella di ogni striscia è sotto \"oggi\"");
+            cell.Center.X.Should().BeApproximately(column.Center.X, 1.0, "l'ultima cella di ogni striscia è sotto \"oggi\"");
         }
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void A_done_action_has_a_tinted_quick_log_button()
+    {
+        // GIO-4 (variante A2 scelta dall'autore il 2026-11-17): solo un'azione fatta nel giorno scelto ha il pulsante tinto
+        // col bordo pieno; una non fatta e gli altri tipi restano a contorno sul fondo del pannello.
+        var (w, view, _) = Show(900,
+            Row("Fatta", done: true), Row("Da fare"), Row("Senza fumo", HabitType.Resistance, done: true));
+        var buttons = view.GetVisualDescendants().OfType<HabitRow>()
+            .ToDictionary(r => ((HomeRowViewModel)r.DataContext!).Name, r => r.FindControl<Button>("QuickLog")!);
+        var habit = Color.Parse("#2F7FC1");
+
+        var done = buttons["Fatta"];
+        ((ISolidColorBrush)done.Background!).Color.Should().Be(Color.FromArgb(48, habit.R, habit.G, habit.B));
+        ((ISolidColorBrush)done.BorderBrush!).Color.Should().Be(habit);
+
+        var pane = ((ISolidColorBrush)buttons["Da fare"].Background!).Color;
+        pane.A.Should().Be(255, "a contorno sul fondo opaco del pannello");
+        ((ISolidColorBrush)buttons["Senza fumo"].Background!).Color.Should().Be(pane, "la ricaduta non cambia");
         w.Close();
     }
 

@@ -212,6 +212,13 @@ public class BuilderScreenshotTests(ITestOutputHelper output)
                 .ToList();
             overflow.Should().BeEmpty("a 600 px nessun controllo esce dal bordo destro");
             host.Parent.Should().BeSameAs(BuilderBlocksTests.Named<StackPanel>(view, "BlocksStack"), "a 600 px l'anteprima sta in fondo ai blocchi");
+            // GIO-25: il titolo di una tessera sta nella sua colonna ("Testo libero" finiva sotto il "+").
+            foreach (var tile in new[] { "AddQuantityButton", "AddTimeButton", "AddScaleButton", "AddTextButton" })
+            {
+                var title = BuilderBlocksTests.Named<Button>(view, tile).GetVisualDescendants().OfType<Grid>().First()
+                    .Children.OfType<TextBlock>().Single();
+                title.TextLayout.WidthIncludingTrailingWhitespace.Should().BeLessThanOrEqualTo(title.Bounds.Width + 0.5, tile);
+            }
 
             // Di nuovo largo: l'anteprima torna colonna fissa a destra.
             w.Width = 1100;

@@ -58,7 +58,9 @@ public class HabitScreenScreenshotTests(ITestOutputHelper output)
         Host.Clock.Now = Now.AddDays(-40);
         var id = await sp.GetRequiredService<IHabitNodeService>().CreateAsync(new HabitNode
         {
-            NodeType = NodeType.Habit, HabitType = TypeOf(c), Name = $"Esempio {c}", Color = "#E11D48",
+            // GIO-25: l'astinenza in ambra; in cremisi "Segna una ricaduta…" sembrava rosso d'allarme.
+            NodeType = NodeType.Habit, HabitType = TypeOf(c), Name = $"Esempio {c}",
+            Color = c == HabitCase.Abstinence ? "#C98A1E" : "#E11D48",
         });
         var metrics = sp.GetRequiredService<IMetricDefinitionService>();
         var configs = sp.GetRequiredService<IHabitConfigService>();

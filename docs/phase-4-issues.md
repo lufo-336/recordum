@@ -64,10 +64,10 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
-**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`. Aperti: **GIO-1**,
-**GIO-2**, **GIO-4**, **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperti: **GIO-1**,
+**GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
 (2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** in
-ROADMAP, **GIO-24** `fixed`, **GIO-22**, **GIO-25** aperti. Fuori dall'onda restano **B7** e
+ROADMAP, **GIO-24**, **GIO-25** `fixed`, **GIO-22** in corso. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2610,10 +2610,13 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
   `ManifestHome`: un gruppo con tre azioni e sei abitudini sciolte, oggi 4 fatte su 9). Regge: a 900 e a 360 nessun nome
   troncato, la testa sta su una riga, i nove colori si distinguono in chiaro e in scuro, a 360 l'intestazione scende a
   quattro giorni e le righe la seguono. Tutti `reported`:
-  - **GIO-2 — le strisce dentro un gruppo non stanno sotto le colonne dell'intestazione**: le figlie sono rientrate di
-    circa 5 px per la cornice del gruppo, quindi i loro segni cadono a sinistra del giorno a cui appartengono (a livello
-    alto l'ultima cella è sotto "oggi" entro 1 px). Il test lo dichiara: ±1 px sulle righe di primo livello, "dentro la
-    colonna" per le figlie.
+  - **GIO-2 — le strisce dentro un gruppo non stanno sotto le colonne dell'intestazione** · `fixed` (2026-11-17): le
+    figlie rientravano di 6 px a destra per ogni livello di cornice, quindi in un sottogruppo lo scarto cresceva e una
+    correzione sulla sola striscia sarebbe finita sotto il log rapido. Scelta dell'autore fra tre varianti
+    (`docs/design/2026-11-17-gio2-gio4/`): **B1, bordo destro comune** — tutte le card finiscono allo stesso x
+    (`GroupFrames.RightInset` = 4) e le cornici chiudono a destra su un'unica linea; l'intestazione rientra degli stessi
+    4 px. `HomeLayoutTests.Today_column_is_aligned_across_strip_lengths` ora ha una nipote in un sottogruppo e chiede
+    ±1 px a ogni riga (rosso prima: 6 px); stessa regola in `GiornataScreenshotTests`.
   - **GIO-3 — a 900 px l'intestazione ha 14 giorni ma quasi tutte le righe ne riempiono 7** · `fixed`: solo l'astinenza disegna
     14 colonne; azioni, contatori, stato e diari usano le ultime 7 (`HomeStrip.Days7`), e le sette etichette di sinistra
     stanno sopra il vuoto. Da decidere con le tre righe del Task 9.
@@ -2628,8 +2631,12 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     `HomeLayoutTests.Every_row_has_a_cell_under_every_header_day` (rosso provato col taglio a 7 di prima),
     `HomeRowPresentationTests.ResolveStrip_is_yes_or_no`, `HomeRowSectionViewModelTests.A_seven_days_strip_saved_before_shows_as_the_strip`.
     A 660 px i nomi stanno ancora interi (PNG di prova). Resta da guardare a schermo.
-  - **GIO-4 — il pulsante di spunta è uguale per una fatta e una non fatta**: "Letto rifatto" (non fatta oggi) ha lo
-    stesso segno nel pulsante di "Stretching" (fatta); la differenza si legge solo nella cella di oggi.
+  - **GIO-4 — il pulsante di spunta è uguale per una fatta e una non fatta** · `fixed` (2026-11-17): "Letto rifatto"
+    (non fatta oggi) aveva lo stesso segno nel pulsante di "Stretching" (fatta). Scelta dell'autore fra quattro varianti
+    (`gio4-varianti.png`): **A2, tinto** — un'azione fatta nel giorno scelto ha il fondo tinto (alfa 48) e il bordo
+    pieno nel colore; solo le azioni (ricaduta, +, stato e matita sono comandi uguali ogni giorno).
+    `HomeRowViewModel.IsQuickLogDone`, classe `done` su `Button.quicklog`. Test
+    `HomeLayoutTests.A_done_action_has_a_tinted_quick_log_button`, rosso prima.
 - **GIO-5 — con la lista vuota per un filtro, il filtro non si può più togliere** · `reported` · precedente all'onda,
   letto nel codice durante il Task 7 (non provato a schermo). `HomeViewModel.Rebuild` mette `State = Empty` quando non
   resta nessuna riga, e lente, "fatte" e ordinamento si vedono solo con `State == Loaded`: con "fatte" acceso e tutto
@@ -2802,6 +2809,8 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     contrasta di più con la cella; cella vuota, fuori mese e ricaduta tengono il colore dello stile. Sui toni medi
     nessun colore arriva a 4,5:1: il peggiore misurato è 3,7. Test `HeatLevelTextTests`, rossi prima. Non toccata la
     heatmap a colonne (`HeatGrid`), che non scrive numeri.
-  - **GIO-25 — minori dai fogli** · `reported`: nel creatore stretto "Testo libero" è tagliato dal "+" della tessera
-    (`builder-narrow-*`); la × della ricaduta in Larga è quasi un puntino (`home-ricaduta-comfortable-light`); in
-    `habit-abstinence-*` "Segna una ricaduta…" sembra rosso solo perché la fixture è cremisi.
+  - **GIO-25 — minori dai fogli** · `fixed` (2026-11-17): nel creatore stretto "Testo libero" finiva sotto il "+"
+    della tessera (`builder-narrow-*`): i titoli delle tessere vanno a capo, e il test del creatore stretto misura che il
+    testo stia nella sua colonna; la × della ricaduta in Larga era quasi un puntino (`home-ricaduta-comfortable-light`):
+    ora `Brush.TextMuted`, un gradino sopra il tenue, come la × di Segni; in `habit-abstinence-*` "Segna una ricaduta…"
+    sembrava rosso solo perché la fixture era cremisi: l'astinenza della fixture ora è ambra.

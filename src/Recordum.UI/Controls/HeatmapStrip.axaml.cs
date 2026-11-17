@@ -192,6 +192,7 @@ public partial class HeatmapStrip : UserControl
         var values = Values[^shown..];   // oggi è l'ultima: si tengono i giorni più recenti
         var on = HabitTextBrushConverter.BrushFor(AccentColor, ActualThemeVariant);
         var off = Token("Brush.TextFaint");
+        var lapseText = Token("Brush.TextMuted");   // GIO-25: la × un gradino sopra il tenue, come in Segni
         // Fondo opaco sul pannello per il giorno scelto, così resta leggibile anche con la tinta della riga.
         IBrush? selectedBg = null;
         if (HabitColors.TryParse(AccentColor, out var habit) && paneBrush is { } pane)
@@ -215,7 +216,7 @@ public partial class HeatmapStrip : UserControl
                 FontSize = 13d,
                 FontWeight = cell.On ? FontWeight.SemiBold : FontWeight.Normal,
                 FontFeatures = new FontFeatureCollection { FontFeature.Parse("+tnum") },
-                Foreground = cell.On ? on : off,
+                Foreground = cell.On ? on : cell.IsLapse ? lapseText : off,
             };
             Control content = text;
             if (cell.IsSelected)

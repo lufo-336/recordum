@@ -76,10 +76,10 @@ public class GiornataScreenshotTests
             .GetVisualDescendants().OfType<TextBlock>().Last(), view);
         lastCell.Center.X.Should().BeApproximately(column.Center.X, 1.0, "la colonna di oggi sta sopra l'ultima cella");
 
-        // Le figlie del gruppo sono rientrate (cornice del gruppo): la loro ultima cella resta dentro la colonna di oggi.
+        // Anche le figlie del gruppo: le card finiscono tutte allo stesso x (GIO-2).
         var firstStrip = habitRows[0].GetVisualDescendants().OfType<HeatmapStrip>().Single();
         BoundsIn(firstStrip.GetVisualDescendants().OfType<TextBlock>().Last(), view).Center.X
-            .Should().BeInRange(column.Left, column.Right);
+            .Should().BeApproximately(column.Center.X, 1.0);
 
         ScreenshotProbeTests.Capture(w, $"home-manifesto-{theme}-{width}");
         w.Close();
@@ -149,8 +149,7 @@ public class GiornataScreenshotTests
         days[^1].Content.Should().Be(metrics.HeaderInitials ? "m" : "oggi");   // martedì 10 novembre
         BoundsIn(days[0], view).Left.Should().BeGreaterThanOrEqualTo(0, "l'intestazione sta nella finestra");
 
-        // Ogni riga di primo livello ha le sue colonne sotto i giorni; le figlie del gruppo, rientrate, dentro la colonna.
-        var topLevelIds = rows.Where(r => r.ParentId is null).Select(r => r.HabitNodeId).ToHashSet();
+        // Ogni riga, figlie del gruppo comprese (GIO-2), ha le sue colonne sotto i giorni.
         foreach (var row in habitRows)
         {
             var strip = row.GetVisualDescendants().OfType<HeatmapStrip>().Single();
@@ -159,15 +158,11 @@ public class GiornataScreenshotTests
                 : strip.GetVisualDescendants().OfType<TextBlock>().Cast<Control>().ToList();
             // Le azioni hanno sette giorni, l'astinenza quattordici: si confrontano le colonne da oggi all'indietro.
             cells.Should().HaveCount(Math.Min(columns, ((HomeRowViewModel)row.DataContext!).StripCells.Length));
-            var topLevel = topLevelIds.Contains(((HomeRowViewModel)row.DataContext!).HabitNodeId);
             for (var back = 1; back <= cells.Count; back++)
             {
                 var center = BoundsIn(cells[^back], view).Center.X;
                 var column = BoundsIn(days[^back], view);
-                if (topLevel)
-                    center.Should().BeApproximately(column.Center.X, 1.0, $"{back - 1} giorni fa");
-                else
-                    center.Should().BeInRange(column.Left - metrics.Gap, column.Right + metrics.Gap, $"{back - 1} giorni fa");
+                center.Should().BeApproximately(column.Center.X, 1.0, $"{back - 1} giorni fa");
             }
             // Il nome resta leggibile: la riga non è mangiata dalle colonne.
             BoundsIn(strip, view).Left.Should().BeGreaterThan(width * 0.3);

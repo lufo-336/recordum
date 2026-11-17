@@ -91,7 +91,7 @@ public partial class HomeView : UserControl
         var longest = vm?.MaxVisibleStripLength ?? 0;
         var headerDays = Math.Max(1, Math.Min(days, longest > 0 ? longest : days));
         HeatmapStrip.SetVisibleDays(DayHeader, headerDays);
-        DayHeader.Margin = new Thickness(0, 0, HomeRowsMetrics.For(style).Command + 15, 2);
+        DayHeader.Margin = new Thickness(0, 0, HomeRowsMetrics.For(style).Command + 15 + Controls.GroupFrames.RightInset, 2);
         // Con zero righe non si tocca: una ricerca senza risultati non deve riportare a oggi.
         if (vm is not null && longest > 0) vm.MaxDaysBack = headerDays - 1;
 

@@ -63,6 +63,13 @@
     <Setter Property="Foreground"
             Value="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
   </Style>
+  <!-- GIO-4 (variante A2): un'azione fatta ha il fondo tinto e il bordo pieno nel colore. -->
+  <Style Selector="Button.quicklog.done" x:DataType="vm:HomeRowViewModel">
+    <Setter Property="Background"
+            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HabitTintConverter.Instance}, ConverterParameter=48}"/>
+    <Setter Property="BorderBrush"
+            Value="{CompiledBinding ColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+  </Style>
   <Style Selector="Button.quicklog Path">
     <Setter Property="Width" Value="14"/>
     <Setter Property="Height" Value="14"/>

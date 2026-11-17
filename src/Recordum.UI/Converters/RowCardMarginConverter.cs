@@ -6,9 +6,9 @@ using Recordum.UI.Controls;
 
 namespace Recordum.UI.Converters;
 
-/// <summary>Il margine della card di una riga della Home piatta: il rientro del livello, il padding
-/// della propria cornice per un gruppo, e sotto lo spazio delle cornici che si chiudono su questa
-/// riga. Riproduce le distanze del layout annidato di WPF (vedi <see cref="GroupFrames"/>).</summary>
+/// <summary>Il margine della card di una riga della Home piatta: a sinistra il rientro del livello e il padding
+/// della propria cornice per un gruppo, a destra lo stesso per tutte (<see cref="GroupFrames.RightInset"/>), e sotto
+/// lo spazio delle cornici che si chiudono su questa riga (vedi <see cref="GroupFrames"/>).</summary>
 public sealed class RowCardMarginConverter : IValueConverter
 {
     public static readonly RowCardMarginConverter Instance = new();
@@ -29,7 +29,7 @@ public sealed class RowCardMarginConverter : IValueConverter
         return new Thickness(
             row.IndentLevel * GroupFrames.IndentStep + inset,
             row.IsGroup ? GroupInsetVertical : 1,
-            row.IndentLevel * GroupFrames.RightStep + inset,
+            GroupFrames.RightInset,
             bottom + GroupFrames.ClosingStep * closing);
     }
 
