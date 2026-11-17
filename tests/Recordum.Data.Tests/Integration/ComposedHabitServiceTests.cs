@@ -102,4 +102,22 @@ public class ComposedHabitServiceTests
         (await db.HabitNodes.AnyAsync(n => n.Id == id)).Should().BeTrue();
         (await db.Goals.AnyAsync(g => g.HabitNodeId == id)).Should().BeFalse();
     }
+
+    [Fact]
+    public async Task CreateComposedHabitAsync_two_new_scales_sharing_a_label_share_one_tag()
+    {
+        await using var fx = new DbFixture();
+        var nodeId = Guid.NewGuid();
+        ScaleTemplate Sc(string code) => new() { Id = Guid.NewGuid(), Code = code, Name = code, MinValue = 1, MaxValue = 3,
+            Anchors = [new ScaleAnchor { Value = 1, Label = "Bene" }] };
+        var request = new ComposedHabitRequest(
+            Node: new HabitNode { Id = nodeId, NodeType = NodeType.Habit, HabitType = HabitType.State, Name = "S", Color = "#123456" },
+            Config: null, Metrics: [], NewScales: [Sc("a"), Sc("b")]);
+
+        await new ComposedHabitService(fx.Factory).CreateComposedHabitAsync(request);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.Tags.CountAsync(t => t.Name == "bene")).Should().Be(1);
+        (await db.ScaleAnchors.Where(a => a.Label == "Bene").Select(a => a.TagId).Distinct().CountAsync()).Should().Be(1);
+    }
 }

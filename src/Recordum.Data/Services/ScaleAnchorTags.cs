@@ -22,7 +22,10 @@ internal static class ScaleAnchorTags
             {
                 if (!tags.TryGetValue(name, out var id))
                 {
-                    id = await db.Tags.Where(t => t.Name == name).Select(t => t.Id).FirstOrDefaultAsync(ct);
+                    // Un tag creato da una chiamata precedente (altra scala, stesso SaveChanges) è solo in Local.
+                    id = db.Tags.Local.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase))?.Id ?? Guid.Empty;
+                    if (id == Guid.Empty)
+                        id = await db.Tags.Where(t => t.Name == name).Select(t => t.Id).FirstOrDefaultAsync(ct);
                     if (id == Guid.Empty)
                     {
                         id = Guid.NewGuid();

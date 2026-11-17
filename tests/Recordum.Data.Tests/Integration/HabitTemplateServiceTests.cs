@@ -651,4 +651,31 @@ public class HabitTemplateServiceTests
         new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
         new HabitUiPrefsService(fx.Factory),
         NullLogger<HabitTemplateService>.Instance);
+
+    [Fact]
+    public async Task InstantiateAsync_two_embedded_scales_sharing_a_label_share_one_tag()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Due", IsOfficial = false,
+                PayloadJson = """
+                    {"node":{"name":"Due","node_type":"Habit","habit_type":"State","color":"#123456"},
+                     "config":{"schedule_type":"Daily","streak_mode":"Daily","streak_recovery":"GraceDay"},
+                     "metrics":[{"name":"X","type":"Decimal","scale_code":"s1"}],"segments":[],
+                     "scales":[{"code":"s1","name":"S1","min_value":1,"max_value":3,"anchors":[{"value":1,"label":"Bene"}]},
+                               {"code":"s2","name":"S2","min_value":1,"max_value":3,"anchors":[{"value":1,"label":"Bene"}]}]}
+                    """,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await CreateSut(fx).InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        (await db2.Tags.CountAsync(t => t.Name == "bene")).Should().Be(1);
+    }
 }
