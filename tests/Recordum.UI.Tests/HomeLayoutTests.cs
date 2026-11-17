@@ -434,7 +434,8 @@ public class HomeLayoutTests
         var flyout = (MenuFlyout)more.Flyout!;
         flyout.ShowAt(more);
         Pump();
-        var items = flyout.Items.OfType<MenuItem>().ToList();
+        // "Tag" (GIO-22) resta nascosta: nessuna riga di questo test ha tag. HomeTagFilterViewTests la guarda accesa.
+        var items = flyout.Items.OfType<MenuItem>().Where(i => i.IsVisible).ToList();
         items.Select(i => i.Header).Should().Equal("Attive", "Archiviate", "Cestino");
         items.Select(i => i.IsChecked).Should().Equal(new[] { true, false, false }, "la spunta è sulla scheda attiva");
         var back = view.FindControl<Button>("BackToActiveButton")!;
@@ -455,7 +456,7 @@ public class HomeLayoutTests
         back.Content.Should().Be("Torna alle abitudini");
         flyout.ShowAt(more);
         Pump();
-        flyout.Items.OfType<MenuItem>().Select(i => i.IsChecked).Should().Equal(false, true, false);
+        flyout.Items.OfType<MenuItem>().Where(i => i.IsVisible).Select(i => i.IsChecked).Should().Equal(false, true, false);
         flyout.Hide();
 
         Click(w, back);
