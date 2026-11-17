@@ -540,12 +540,12 @@ public class ConfiguraBlocksTests(ITestOutputHelper output)
             var scale = editor.Scales.AvailableScales.First(t => t.Code == "mood-5");
             Named<ComboBox>(pane, "ScaleBox").SelectedItem = scale;
             PrivateDbHost.Pump();
-            Named<ScaleLabelsEditor>(pane, "LabelsEditor").BringIntoView();
+            Named<ScaleEditor>(pane, "LabelsEditor").BringIntoView();
             output.WriteLine(await CaptureAsync(o.Window, $"configura-scale-labels-{v}"));
 
-            var labels = Named<ScaleLabelsEditor>(pane, "LabelsEditor");
+            var labels = Named<ScaleEditor>(pane, "LabelsEditor");
             labels.IsEffectivelyVisible.Should().BeTrue();
-            var boxes = labels.GetVisualDescendants().OfType<TextBox>().ToList();
+            var boxes = labels.GetVisualDescendants().OfType<TextBox>().Where(b => b.Name == "LabelBox").ToList();
             boxes.Should().HaveCount(5, "un campo per gradino");
             boxes.Should().OnlyContain(b => b.IsEffectivelyVisible && b.Bounds.Height > 20 && b.Bounds.Width > 60, "ogni campo e' disegnato");
             boxes.Select(b => b.Text).Should().Equal("Molto basso", "Basso", "Neutro", "Buono", "Molto buono");

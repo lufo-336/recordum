@@ -119,6 +119,28 @@ public sealed class ScaleRecordingTests : IDisposable
         completions.LastValues!.Single().ValueDecimal.Should().Be((decimal)expected);
     }
 
+    [Theory]
+    [InlineData("it-IT", "1.5")]
+    [InlineData("en-US", "1,37")]
+    public async Task The_exact_field_does_not_accept_thousands_separators(string culture, string typed)
+    {
+        Use(culture);
+        var (sut, _, _, _) = await OpenAsync(Umore(0, 1000, ScalePrecision.Integer));
+        sut.ValueText = "7";
+
+        sut.ValueText = typed;
+
+        sut.SliderValue.Should().Be(7, "un separatore delle migliaia non e' un numero: resta il valore di prima");
+    }
+
+    [Fact]
+    public async Task The_exact_field_still_reads_the_decimal_comma_in_italian()
+    {
+        var (sut, _, _, _) = await OpenAsync(Umore(0, 10, ScalePrecision.Decimal));
+        sut.ValueText = "1,5";
+        sut.SliderValue.Should().BeApproximately(1.5, 1e-9);
+    }
+
     [Fact]
     public async Task The_exact_field_rounds_clamps_and_ignores_garbage()
     {

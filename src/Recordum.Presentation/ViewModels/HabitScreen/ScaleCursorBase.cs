@@ -64,7 +64,7 @@ public abstract partial class ScaleCursorBase : ObservableObject
     partial void OnValueTextChanged(string value)
     {
         if (_sync) return;
-        if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.CurrentCulture, out var parsed))
+        if (decimal.TryParse(value, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.CurrentCulture, out var parsed))
         {
             var v = Scale is null ? parsed : ScaleRules.Normalize(parsed, Scale.MinValue, Scale.MaxValue, Scale.Precision);
             SliderValue = (double)v;
@@ -86,11 +86,12 @@ public abstract partial class ScaleCursorBase : ObservableObject
 
     internal static List<ScalePoint> BuildPoints(ScaleTemplate scale)
     {
-        var values = ScaleText.Named(scale).Select(a => a.Value).ToHashSet();
+        var named = ScaleText.Named(scale).Select(a => a.Value).ToHashSet();
+        var values = new HashSet<int>(named);
         if (scale.MaxValue - scale.MinValue + 1 <= ScaleRules.TickLimit)
             for (var v = scale.MinValue; v <= scale.MaxValue; v++) values.Add(v);
         return values.Order()
-            .Select(v => new ScalePoint(ScaleText.Short(scale, v), ScaleText.Fraction(scale, v), v))
+            .Select(v => new ScalePoint(ScaleText.Short(scale, v), ScaleText.Fraction(scale, v), v, named.Contains(v)))
             .ToList();
     }
 }

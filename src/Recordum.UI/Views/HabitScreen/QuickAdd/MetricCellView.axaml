@@ -2,6 +2,7 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
              xmlns:core="using:Recordum.Core.Enums"
+             xmlns:ctl="using:Recordum.UI.Controls"
              xmlns:conv="using:Recordum.UI.Converters"
              x:Name="Root"
              x:Class="Recordum.UI.Views.HabitScreen.QuickAdd.MetricCellView"
@@ -33,10 +34,11 @@
         <TextBlock x:Name="ScaleCaption" Text="{CompiledBinding CurrentLabel}" HorizontalAlignment="Center"
                    Margin="0,0,0,2" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Accent}"/>
         <!-- Il VM semina il minimo, quindi lo slider non e' mai null: si registra il valore vero (GIO-23). Le tacche
-             (una per intero, o per scaglione) sono lavoro del Task 7: con 0,01 di passo TickPlacement ne disegnerebbe migliaia. -->
+             (una per intero se sono al piu' 12, altrimenti gli scaglioni) vengono da Points, non dal passo. -->
         <Slider x:Name="ScaleSlider" Minimum="{CompiledBinding Min}" Maximum="{CompiledBinding Max}"
                 Value="{CompiledBinding SliderValue, Mode=TwoWay}"
                 IsSnapToTickEnabled="True" TickFrequency="{CompiledBinding Step}"/>
+        <ctl:ScaleMarksBar x:Name="ScaleMarks" Margin="10,-6,10,0" ShowNames="False" Points="{CompiledBinding Points}"/>
         <TextBox x:Name="ScaleValueBox" Width="72" HorizontalAlignment="Center" Margin="0,2,0,0"
                  Text="{CompiledBinding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
         <Grid Margin="8,1,8,0" IsVisible="{CompiledBinding ShowReferencePoints}">

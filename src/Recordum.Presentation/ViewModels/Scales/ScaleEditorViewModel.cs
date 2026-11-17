@@ -148,7 +148,8 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
         if (row is not null) Rows.Remove(row);
     }
 
-    private bool CanFill => !IsReadOnly && MaxValue > MinValue && MaxValue - MinValue + 1 <= ScaleRules.TickLimit;
+    /// <summary>"Un nome per ogni valore" c'è solo se la scala è modificabile e ha al più 12 valori.</summary>
+    public bool CanFill => !IsReadOnly && MaxValue > MinValue && MaxValue - MinValue + 1 <= ScaleRules.TickLimit;
 
     [RelayCommand(CanExecute = nameof(CanFill))]
     private void FillEveryValue()
@@ -188,6 +189,7 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
         OnPropertyChanged(nameof(CanConfirm));
         OnPropertyChanged(nameof(Preview));
         OnPropertyChanged(nameof(UsageText));
+        OnPropertyChanged(nameof(CanFill));
         FillEveryValueCommand.NotifyCanExecuteChanged();
     }
 

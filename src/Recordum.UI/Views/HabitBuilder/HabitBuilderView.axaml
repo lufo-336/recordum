@@ -292,10 +292,7 @@
             <Border Classes="card" Padding="12" IsVisible="{CompiledBinding ScaleForm, Converter={x:Static ObjectConverters.IsNotNull}}">
               <StackPanel>
                 <TextBlock Text="{x:Static res:Strings.HabitBuilder_NewScale}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"/>
-                <TextBox x:Name="ScaleFormName" Margin="0,0,0,8" Text="{CompiledBinding ScaleForm.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewScale_Steps}"/>
-                <ctl:ScaleLabelsEditor x:Name="ScaleFormLabels" Margin="0,0,0,10" LiveUpdate="True" DataContext="{CompiledBinding ScaleForm}"/>
+                <ctl:ScaleEditor x:Name="ScaleFormEditor" Margin="0,0,0,10" LiveUpdate="True" DataContext="{CompiledBinding ScaleForm}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                   <Button x:Name="ScaleFormCancel" Classes="ghost" Content="{x:Static res:Strings.HabitBuilder_New_Cancel}" Padding="12,5" Command="{CompiledBinding CancelCustomFormCommand}"/>
                   <Button x:Name="ScaleFormConfirm" Content="{x:Static res:Strings.HabitBuilder_New_Confirm}" Padding="12,5"

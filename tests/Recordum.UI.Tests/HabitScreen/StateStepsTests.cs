@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Presentation.Formatting;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 using Recordum.UI.Tests.Fixtures;
@@ -239,7 +240,15 @@ public class StateStepsTests
 
         var metrics = o.Scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>();
         var metric = (await metrics.ListByHabitAsync(o.Id)).Single();
-        await metrics.UpdateAsync(metric.Id, m => m.Type = MetricType.Decimal);
+        // Una scala si legge sempre in decimale (GIO-23): cambiare il tipo della metrica non e' piu' un cambio di forma.
+        // Il cambio vero e' quello della scala: la metrica passa a una copia dell'utente con un nome di scaglione diverso
+        // (stessi estremi, quindi lo stesso valore registrato resta sul gradino).
+        var sp = o.Scope.ServiceProvider;
+        var scale = (await sp.GetRequiredService<IReferenceDataQueryService>().ListScalesAsync()).Single(t => t.Id == metric.ScaleTemplateId);
+        var anchors = ScaleText.Named(scale).Select(a => new ScaleAnchorDraft(a.Value, a.Name)).ToList();
+        anchors[0] = new ScaleAnchorDraft(anchors[0].Value, "Rinominato");
+        var copy = await sp.GetRequiredService<IScaleTemplateService>().CreateAsync(new ScaleDraft("Copia", scale.MinValue, scale.MaxValue, scale.Precision, anchors));
+        await metrics.UpdateAsync(metric.Id, m => m.ScaleTemplateId = copy);
         await UntilAsync(() => !ReferenceEquals(o.Vm.QuickAdd, before));
         await UntilAsync(() => o.QuickAdd.Steps.Count == before.Steps.Count && o.QuickAdd.Steps[2].IsCurrent);
 

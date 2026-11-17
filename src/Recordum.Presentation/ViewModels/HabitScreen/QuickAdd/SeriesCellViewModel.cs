@@ -14,8 +14,10 @@ public sealed record ScaleInfo(ScaleTemplate Scale);
 /// <summary>One stepped-slider caption with its position along the track as a 0..1 fraction
 /// (0 = first step / left thumb stop, 1 = last), the true <see cref="Value"/> it records,
 /// and whether it is the value currently recorded on the selected day.</summary>
-public sealed partial class ScalePoint(string label, double fraction, decimal value) : ObservableObject
+public sealed partial class ScalePoint(string label, double fraction, decimal value, bool isNamed = false) : ObservableObject
 {
+    /// <summary>Il valore e' uno scaglione con nome (le altre sono solo tacche).</summary>
+    public bool IsNamed { get; } = isNamed;
     public string Label { get; } = label;
     public double Fraction { get; } = fraction;
     /// <summary>Il valore vero della scala che il gradino registra.</summary>
