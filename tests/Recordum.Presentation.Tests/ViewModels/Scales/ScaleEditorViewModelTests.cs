@@ -108,6 +108,27 @@ public class ScaleEditorViewModelTests
     }
 
     [Fact]
+    public void Each_error_lands_in_the_area_that_causes_it()
+    {
+        InIt(() =>
+        {
+            var sut = new ScaleEditorViewModel();
+            sut.Load(Mood(min: 1, max: 100, names: ["a", "b"]), new ScaleUsage(1, 1m, 80m, true));
+            sut.MaxValue = 50;                       // narrow-max -> range area
+            sut.Precision = Recordum.Core.Enums.ScalePrecision.Integer;   // precision (recorded decimals) -> precision area
+            sut.Rows[0].Value = sut.Rows[1].Value;   // duplicate -> anchors area
+            sut.Name = "";                           // name error -> name area
+
+            sut.RangeErrors.Should().ContainSingle().Which.Should().Contain("80");
+            sut.PrecisionErrors.Should().ContainSingle();
+            sut.AnchorErrors.Should().ContainSingle().Which.Should().Contain("stesso valore");
+            sut.NameErrors.Should().ContainSingle();
+            sut.Errors.Should().HaveCount(4, "Errors resta l'elenco completo");
+            return 0;
+        });
+    }
+
+    [Fact]
     public void Two_rows_with_the_same_value_are_an_error()
     {
         InIt(() =>

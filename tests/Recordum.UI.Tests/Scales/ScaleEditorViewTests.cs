@@ -128,6 +128,29 @@ public class ScaleEditorViewTests
     }
 
     [AvaloniaFact]
+    public void A_narrow_max_error_shows_under_the_range_row_not_under_the_rows()
+    {
+        using var _ = TestCulture.Pin();
+        var vm = new ScaleEditorViewModel();
+        vm.Load(Umore(), new Core.Abstractions.Services.ScaleUsage(1, 1m, 80m, false));
+        var editor = new ScaleEditor { DataContext = vm };
+        var w = Show(editor, width: 900, height: 900);
+        try
+        {
+            vm.MaxValue = 50;
+            Pump();
+            double Top(Control c) => c.TranslatePoint(new Point(0, 0), w)!.Value.Y;
+            var error = Named<ItemsControl>(editor, "RangeErrorList").GetVisualDescendants().OfType<TextBlock>().Single();
+            error.Text.Should().Contain("80");
+            Top(error).Should().BeGreaterThanOrEqualTo(Top(Named<TextBox>(editor, "MaxBox")) + Named<TextBox>(editor, "MaxBox").Bounds.Height);
+            Top(error).Should().BeLessThan(Top(AllNamed<TextBox>(editor, "LabelBox")[0]), "l'errore sta sopra le righe, non sotto");
+            // 75 e 100 restano fuori dal nuovo massimo: quello e' un errore degli scaglioni, e sta sotto le righe.
+            Named<ItemsControl>(editor, "AnchorErrorList").GetVisualDescendants().OfType<TextBlock>().Should().ContainSingle().Which.Text.Should().NotContain("80");
+        }
+        finally { w.Close(); }
+    }
+
+    [AvaloniaFact]
     public void The_precision_is_a_two_segment_choice_bound_to_the_view_model()
     {
         using var _ = TestCulture.Pin();

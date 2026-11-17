@@ -26,6 +26,14 @@
       <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"/>
       <TextBox x:Name="NameBox" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                IsReadOnly="{CompiledBinding IsReadOnly}" MaxLength="100"/>
+      <ItemsControl x:Name="NameErrorList" ItemsSource="{CompiledBinding NameErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
     </StackPanel>
 
     <WrapPanel Orientation="Horizontal">
@@ -46,6 +54,22 @@
                      IsChecked="{CompiledBinding Precision, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScalePrecision.Decimal}}"/>
       </StackPanel>
     </WrapPanel>
+    <ItemsControl x:Name="RangeErrorList" ItemsSource="{CompiledBinding RangeErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <ItemsControl x:Name="PrecisionErrorList" ItemsSource="{CompiledBinding PrecisionErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
 
     <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
       <ItemsControl.ItemTemplate>
@@ -80,7 +104,7 @@
               IsVisible="{CompiledBinding CanFill}" Content="{x:Static res:Strings.Scale_Editor_NameEveryValue}"/>
     </WrapPanel>
 
-    <ItemsControl x:Name="ErrorList" ItemsSource="{CompiledBinding Errors}">
+    <ItemsControl x:Name="AnchorErrorList" ItemsSource="{CompiledBinding AnchorErrors}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="x:String">
           <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"

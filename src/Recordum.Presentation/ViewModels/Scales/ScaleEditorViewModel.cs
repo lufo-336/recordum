@@ -68,6 +68,12 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
     public bool IsReadOnly => _source?.IsOfficial == true;
 
     public IReadOnlyList<string> Errors { get; private set; } = [];
+
+    // Gli stessi errori, divisi per zona dell'editor: ognuno si legge sotto il campo che lo causa.
+    public IReadOnlyList<string> NameErrors { get; private set; } = [];
+    public IReadOnlyList<string> RangeErrors { get; private set; } = [];
+    public IReadOnlyList<string> PrecisionErrors { get; private set; } = [];
+    public IReadOnlyList<string> AnchorErrors { get; private set; } = [];
     public bool CanConfirm { get; private set; }
     public IReadOnlyList<ScalePoint> Preview { get; private set; } = [];
 
@@ -168,24 +174,29 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
 
     private void Refresh()
     {
-        var errors = new List<string>();
+        List<string> name = [], range = [], precision = [], anchors = [];
         if (!IsReadOnly)
         {
             var values = Rows.Select(r => r.Value).ToList();
             var shape = ScaleRules.ShapeErrors(MinValue, MaxValue, values);
-            if (string.IsNullOrWhiteSpace(Name)) errors.Add(Strings.Scale_Error_Name);
-            if (Rows.Any(r => r.Label.Trim().Length > 100)) errors.Add(Strings.Scale_Error_LabelLength);
-            errors.AddRange(shape.Select(c => Text(c)));
+            if (string.IsNullOrWhiteSpace(Name)) name.Add(Strings.Scale_Error_Name);
+            if (Rows.Any(r => r.Label.Trim().Length > 100)) anchors.Add(Strings.Scale_Error_LabelLength);
+            foreach (var c in shape) (c.StartsWith("anchor", StringComparison.Ordinal) ? anchors : range).Add(Text(c));
             if (_usage is { } u)
-                errors.AddRange(ScaleRules.EditErrors(MinValue, MaxValue, Precision, u.RecordedMin, u.RecordedMax, u.RecordedHasDecimals)
-                    .Select(c => Text(c, c == "narrow-min" ? u.RecordedMin : u.RecordedMax)));
+                foreach (var c in ScaleRules.EditErrors(MinValue, MaxValue, Precision, u.RecordedMin, u.RecordedMax, u.RecordedHasDecimals))
+                    (c == "precision" ? precision : range).Add(Text(c, c == "narrow-min" ? u.RecordedMin : u.RecordedMax));
             Preview = shape.Count == 0 ? ScaleCursorBase.BuildPoints(ToTemplate()) : [];
         }
         else
             Preview = ScaleCursorBase.BuildPoints(ToTemplate());
-        Errors = errors;
-        CanConfirm = !IsReadOnly && errors.Count == 0;
+        (NameErrors, RangeErrors, PrecisionErrors, AnchorErrors) = (name, range, precision, anchors);
+        Errors = [.. name, .. range, .. precision, .. anchors];
+        CanConfirm = !IsReadOnly && Errors.Count == 0;
         OnPropertyChanged(nameof(Errors));
+        OnPropertyChanged(nameof(NameErrors));
+        OnPropertyChanged(nameof(RangeErrors));
+        OnPropertyChanged(nameof(PrecisionErrors));
+        OnPropertyChanged(nameof(AnchorErrors));
         OnPropertyChanged(nameof(CanConfirm));
         OnPropertyChanged(nameof(Preview));
         OnPropertyChanged(nameof(UsageText));
