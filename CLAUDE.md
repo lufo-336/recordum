@@ -77,7 +77,7 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   enum TEXT + CHECK; JSON in TEXT. `Note` ha solo `updated_at_ms`.
 - `created_by_plugin_id` solo sulle entità top-level (`habit_node`, `habit_template`, `export_template`, `chart`), mai
   sugli eventi figli. Soft delete solo su `HabitNode` (filtro globale; `IgnoreQueryFilters()` per cestino e diagnostica).
-- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.18**. Chi scrive `HabitConfig`/`Goal` fuori dai
+- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.19**. Chi scrive `HabitConfig`/`Goal` fuori dai
   servizi si porta il proprio gate (`ValidateCrossFields`, `ck_goal_period_consistency`).
 - **Migrazioni**: `dotnet ef migrations add <Nome> --project src/Recordum.Data --startup-project src/Recordum.Data`
   (startup = Data, non WPF). Nel file generato aggiungere `#pragma warning disable CA1861` dopo `#nullable disable`. Un
