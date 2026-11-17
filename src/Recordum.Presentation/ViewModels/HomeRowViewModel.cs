@@ -318,7 +318,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
     {
         KeyFigureKind.DoneToday or KeyFigureKind.JournalToday => IsDoneOnDay ? "✓" : "—",
         KeyFigureKind.CounterTotal => FormatCounterTotal(row, DayCounterTotal(row)),
-        //         KeyFigureKind.StateValue when _cellBack > 0 => StateText(row, GroupProgress.ValueOn(row, _cellBack)),
+        KeyFigureKind.StateValue when _cellBack > 0 => StateText(row, GroupProgress.ValueOn(row, _cellBack)),
         KeyFigureKind.StateValue => StateText(row, row.TodayStateValue),
         KeyFigureKind.JournalEntriesWeek => (row.JournalEntriesThisWeek ?? 0) > 0
 #pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string

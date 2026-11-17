@@ -196,6 +196,22 @@ public class HomeRowViewModelTests
     }
 
     [Fact]
+    public void State_key_figure_on_a_past_cell_reads_that_days_value_not_todays()
+    {
+        var scale = new ScaleTemplate { MinValue = 1, MaxValue = 5, Anchors = TestScales.Anchors(1, "Male", "Così", "Bene") };
+        var values = ImmutableArray.CreateRange(new decimal?[] { null, null, null, null, null, null, null, null, null, null, null, null, 1m, 3m });
+        var row = StateRow(Guid.NewGuid(), 3m, scale) with
+        {
+            CompletionsLast14Days = ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1),
+            ValuesLast14Days = values,
+        };
+
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService(), daysBack: 1);
+
+        sut.KeyFigureText.Should().Be("Male");   // yesterday = 1, today = 3 ("Bene")
+    }
+
+    [Fact]
     public void State_key_figure_without_scale_is_the_bare_number()
     {
         var sut = new HomeRowViewModel(StateRow(Guid.NewGuid(), 3), 0, new FakeHabitNodeService(), new FakePurgeService());
