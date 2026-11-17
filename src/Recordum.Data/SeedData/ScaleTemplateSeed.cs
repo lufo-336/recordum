@@ -32,6 +32,9 @@ public static class ScaleTemplateSeed
     private const string MoodLabels =
         "[\"Very low\",\"Low\",\"Neutral\",\"Good\",\"Very good\"]";
 
+    // Nello stesso ordine di All: i nomi inglesi degli scaglioni, solo ripiego (GIO-23: la colonna labels_json non c'è più).
+    private static readonly string[] SeededLabels = [BristolLabels, MayoLabels, NrsPainLabels, LikertLabels, SleepQualityLabels, StressLabels, MoodLabels];
+
     public static IReadOnlyList<ScaleTemplate> All { get; } =
     [
         new ScaleTemplate
@@ -41,7 +44,6 @@ public static class ScaleTemplateSeed
             Name = "Bristol Stool Scale",
             MinValue = 1,
             MaxValue = 7,
-            LabelsJson = BristolLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -52,7 +54,6 @@ public static class ScaleTemplateSeed
             Name = "Mayo Rectal Bleeding Score",
             MinValue = 0,
             MaxValue = 3,
-            LabelsJson = MayoLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -63,7 +64,6 @@ public static class ScaleTemplateSeed
             Name = "NRS Pain Scale",
             MinValue = 0,
             MaxValue = 10,
-            LabelsJson = NrsPainLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -74,7 +74,6 @@ public static class ScaleTemplateSeed
             Name = "Likert Scale (1–5)",
             MinValue = 1,
             MaxValue = 5,
-            LabelsJson = LikertLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -85,7 +84,6 @@ public static class ScaleTemplateSeed
             Name = "Sleep Quality (1–5)",
             MinValue = 1,
             MaxValue = 5,
-            LabelsJson = SleepQualityLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -96,7 +94,6 @@ public static class ScaleTemplateSeed
             Name = "Stress Level (1–10)",
             MinValue = 1,
             MaxValue = 10,
-            LabelsJson = StressLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -107,7 +104,6 @@ public static class ScaleTemplateSeed
             Name = "Mood Scale (1–5)",
             MinValue = 1,
             MaxValue = 5,
-            LabelsJson = MoodLabels,
             IsOfficial = true,
             CreatedAt = SeedDate,
         },
@@ -118,7 +114,7 @@ public static class ScaleTemplateSeed
     /// <c>00000003-SSSS-0000-0000-VVVVVVVVVVVV</c> (S = numero della scala, V = valore): il secondo gruppo non è mai
     /// zero, così non si confondono coi modelli <c>00000003-0000-…</c>.</summary>
     public static IReadOnlyList<ScaleAnchor> Anchors { get; } = All
-        .SelectMany((scale, i) => JsonSerializer.Deserialize<string[]>(scale.LabelsJson)!
+        .SelectMany((scale, i) => JsonSerializer.Deserialize<string[]>(SeededLabels[i])!
             .Select((label, p) => new ScaleAnchor
             {
                 Id = Guid.Parse($"00000003-{i + 1:D4}-0000-0000-{scale.MinValue + p:D12}"),

@@ -166,12 +166,15 @@ public sealed class HabitFiguresTests : IDisposable
         vm.DailyTarget.Should().BeNull();
     }
 
-    private Guid ScaleMetric(string labelsJson = "[\"male\",\"così così\",\"ok\",\"bene\",\"molto bene\"]")
+    private Guid ScaleMetric(params string[] names)
     {
+        if (names.Length == 0) names = ["male", "così così", "ok", "bene", "molto bene"];
+        var scale = _refData.Scales[0];
+        scale.MinValue = 1; scale.MaxValue = names.Length; scale.Anchors = TestScales.Anchors(1, names);
         var m = new MetricDefinition
         {
             Id = Guid.NewGuid(), HabitNodeId = _id, Name = "umore", Type = MetricType.Integer,
-            ScaleTemplateId = _refData.Scales[0].Id, LabelsJson = labelsJson,
+            ScaleTemplateId = _refData.Scales[0].Id,
         };
         _metrics.Store[m.Id] = m;
         return m.Id;
@@ -195,15 +198,15 @@ public sealed class HabitFiguresTests : IDisposable
     }
 
     [Fact]
-    public async Task State_today_figure_with_a_blank_label_shows_the_step_number()
+    public async Task State_today_figure_on_an_unnamed_step_reads_the_nearest_name_and_the_number()
     {
-        var metric = ScaleMetric("[\"male\",\"\",\"ok\"]");
+        var metric = ScaleMetric("male", "", "ok");
         _completions.DailySumByKey[(_id, metric)] = [new DailyValue(Today, 2)];
 
         var vm = Vm();
         await vm.LoadAsync(Node(HabitType.State), Daily(), HabitCase.State, Boundary);
 
-        vm.Items[0].Value.Should().Be("2");
+        vm.Items[0].Value.Should().Be("male · 2");
     }
 
     [Theory]

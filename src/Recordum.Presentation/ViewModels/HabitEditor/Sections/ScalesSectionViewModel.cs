@@ -1,20 +1,17 @@
 using System.Collections.ObjectModel;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Templates;
 
 namespace Recordum.Presentation.ViewModels.HabitEditor.Sections;
 
 /// <summary>
-/// Scales section for HabitType.State. Edits the primary metric's ScaleTemplateId + LabelsJson override; the labels
-/// are a list of fields (<see cref="LabelsEditor"/>, one per value of the chosen scale), not a JSON array. The rows show
-/// the metric's override if it has one, else the scale's own labels: the same fallback every display path uses, so
-/// Configura and the habit screen always say the same thing.
+/// Scales section for HabitType.State. Edits the primary metric's ScaleTemplateId. The names are the scale's anchors (GIO-23: no per-metric
+/// override any more); the rows (<see cref="LabelsEditor"/>) show them, read from <see cref="ScaleText"/>.
 /// </summary>
 public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metrics, IReferenceDataQueryService refData) : SectionViewModelBase
 {
@@ -26,7 +23,6 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     private readonly IMetricDefinitionService _metrics = metrics;
     private readonly IReferenceDataQueryService _refData = refData;
     private bool _loading;
-    private bool _subscribed;
     private MetricDefinition? _primary;
     internal Guid NodeId { get; private set; }
 
@@ -35,37 +31,20 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     [NotifyPropertyChangedFor(nameof(Summary))]
     private Guid? _selectedScaleTemplateId;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScalePreview))]
-    private string? _labelsJson;
-
     public ObservableCollection<ScaleTemplate> AvailableScales { get; } = new();
 
     public ScaleLabelsEditorViewModel LabelsEditor { get; } = new();
 
-    // Relaxed: le etichette italiane ("Qualità") restano leggibili invece di \u00E0.
-    private static readonly JsonSerializerOptions s_labelsJsonOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
-    /// <summary>Readable preview of the effective scale labels ("value  label" per step), so the user can see
-    /// what the scale means without parsing the raw JSON. The local override wins over the template's labels
-    /// (same precedence as recording); null when no scale / no labels so the view collapses it.</summary>
+    /// <summary>Readable preview of the scale's named anchors ("value  name"); null when none, so the view collapses it.</summary>
     public string? ScalePreview
     {
         get
         {
             var tmpl = AvailableScales.FirstOrDefault(s => s.Id == SelectedScaleTemplateId);
             if (tmpl is null) return null;
-            var labels = ParseLabels(LabelsJson) ?? ParseLabels(tmpl.LabelsJson);
-            if (labels is not { Length: > 0 }) return null;
-            return string.Join("    ", labels.Select((l, i) => $"{tmpl.MinValue + i}  {l}"));
+            var named = ScaleText.Named(tmpl);
+            return named.Count == 0 ? null : string.Join("    ", named.Select(a => $"{a.Value}  {a.Name}"));
         }
-    }
-
-    private static string[]? ParseLabels(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return JsonSerializer.Deserialize<string[]>(json); }
-        catch (JsonException) { return null; }
     }
 
     public async Task LoadAsync(HabitNode node)
@@ -73,7 +52,6 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
         // _loading must already cover the Clear(): emptying the bound ItemsSource makes the
         // ComboBox coerce SelectedValue to null, and the changed-handler would persist that
         // null onto the previous load's _primary — silently wiping the metric's scale.
-        if (!_subscribed) { LabelsEditor.LabelsChanged += OnEditorLabelsChanged; _subscribed = true; }
         _loading = true;
         try
         {
@@ -84,7 +62,6 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
             var list = await _metrics.ListByHabitAsync(node.Id);
             _primary = list.OrderBy(m => m.SortOrder).FirstOrDefault();
             SelectedScaleTemplateId = _primary?.ScaleTemplateId;
-            LabelsJson = _primary?.LabelsJson;
         }
         finally { _loading = false; }
         RebuildEditor();
@@ -94,43 +71,23 @@ public sealed partial class ScalesSectionViewModel(IMetricDefinitionService metr
     public override bool IsApplicable(NodeType node, HabitType? habit) =>
         node == NodeType.Habit && habit == HabitType.State;
 
-    /// <summary>Le righe seguono la scala scelta: una per valore, con le etichette della metrica se ne ha, se no quelle seminate
-    /// della scala (<c>m.LabelsJson ?? tmpl.LabelsJson</c>, come la schermata: niente traduzione qui, UX3A-2). È un
+    /// <summary>Le righe seguono la scala scelta: una per valore, con i nomi degli scaglioni della scala
+    /// (da <c>ScaleText.Named</c>, come la schermata). È un
     /// caricamento: il VM dell'elenco non solleva niente, quindi niente viene scritto.</summary>
     private void RebuildEditor()
     {
         var tmpl = AvailableScales.FirstOrDefault(s => s.Id == SelectedScaleTemplateId);
         if (tmpl is null) { LabelsEditor.LoadFixed(0, -1, []); return; }
-        var labels = ParseLabels(LabelsJson) ?? ParseLabels(tmpl.LabelsJson) ?? [];
+        var named = ScaleText.Named(tmpl).ToDictionary(a => a.Value, a => a.Name);
+        var labels = Enumerable.Range(tmpl.MinValue, tmpl.MaxValue - tmpl.MinValue + 1).Select(v => named.GetValueOrDefault(v, string.Empty)).ToArray();
         LabelsEditor.LoadFixed(tmpl.MinValue, tmpl.MaxValue, labels);
-    }
-
-    private void OnEditorLabelsChanged(object? sender, EventArgs e)
-    {
-        // Tutte vuote = nessun override: vince quello del modello di scala (CLAUDE.md §5), e le righe lo mostrano.
-        LabelsJson = LabelsEditor.Labels is { Count: > 0 } l ? JsonSerializer.Serialize(l, s_labelsJsonOptions) : null;
-        if (LabelsJson is null) RebuildEditor();
     }
 
     partial void OnSelectedScaleTemplateIdChanged(Guid? value)
     {
         if (_loading) return;
-        // Le etichette personalizzate sono di una scala, non della metrica: cambiare scala le azzera (un override di cinque
-        // etichette su una scala di dieci gradini darebbe uno slider di cinque). Una scala ufficiale nasce con le sue etichette
-        // nella lingua di adesso (Decisione 3, UX3A-2): ogni schermata ripiega sulle seminate, inglesi. Lo stesso UpdateAsync.
-        var tmpl = AvailableScales.FirstOrDefault(s => s.Id == value);
-        var born = tmpl is not null && OfficialTexts.ScaleLabels(tmpl) is { } t ? JsonSerializer.Serialize(t, s_labelsJsonOptions) : null;
-        _loading = true;
-        try { LabelsJson = born; }
-        finally { _loading = false; }
         RebuildEditor();
         if (_primary is null) return;
-        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => { m.ScaleTemplateId = value; m.LabelsJson = born; }).AsTask());
-    }
-
-    partial void OnLabelsJsonChanged(string? value)
-    {
-        if (_loading || _primary is null) return;
-        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => m.LabelsJson = value).AsTask());
+        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => m.ScaleTemplateId = value).AsTask());
     }
 }

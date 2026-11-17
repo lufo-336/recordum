@@ -294,6 +294,11 @@ public sealed partial class HomeRowViewModel : ObservableObject
     {
         if (StripCounts.IsDefaultOrEmpty) return ImmutableArray<double>.Empty;
 
+        // A State reads its intensity from where the value sits on its scale (0 on −3…+3 is the middle, a recorded 0
+        // on 0…10 is intensity 0 but still a recorded cell: StripCells.On carries the presence).
+        if (row.StateScale is { } scale && !row.ValuesLast14Days.IsDefaultOrEmpty)
+            return ImmutableArray.CreateRange(row.ValuesLast14Days.Select(v => v is { } d ? ScaleText.Fraction(scale, d) : 0d));
+
         if (StripVisual is StripStyle.Bars or StripStyle.Ramp && !row.ValuesLast14Days.IsDefaultOrEmpty)
         {
             var values14 = row.ValuesLast14Days;
@@ -313,11 +318,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
     {
         KeyFigureKind.DoneToday or KeyFigureKind.JournalToday => IsDoneOnDay ? "✓" : "—",
         KeyFigureKind.CounterTotal => FormatCounterTotal(row, DayCounterTotal(row)),
-        // L'etichetta dello stato c'è solo per oggi: di un giorno passato si scrive il valore.
-        KeyFigureKind.StateValue when _cellBack > 0 =>
-            GroupProgress.ValueOn(row, _cellBack)?.ToString("0.##", CultureInfo.CurrentCulture) ?? string.Empty,
-        KeyFigureKind.StateValue => row.TodayStateValue?.ToString("0.##", CultureInfo.CurrentCulture)
-            ?? string.Empty,
+        //         KeyFigureKind.StateValue when _cellBack > 0 => StateText(row, GroupProgress.ValueOn(row, _cellBack)),
+        KeyFigureKind.StateValue => StateText(row, row.TodayStateValue),
         KeyFigureKind.JournalEntriesWeek => (row.JournalEntriesThisWeek ?? 0) > 0
 #pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string
             ? string.Format(CultureInfo.CurrentCulture, Strings.Home_KeyFigure_EntriesWeek, row.JournalEntriesThisWeek)
@@ -326,6 +328,12 @@ public sealed partial class HomeRowViewModel : ObservableObject
         KeyFigureKind.LiveClock => FormatClock(),
         _ => string.Empty, // Streak / None: async or nothing
     };
+
+    /// <summary>The reading of a State value: the scale's name (or "name · number"), else the bare number.</summary>
+    private static string StateText(HomeTreeRow row, decimal? v) =>
+        v is not { } d ? string.Empty
+        : row.StateScale is { } scale ? ScaleText.Short(scale, d)
+        : d.ToString("0.##", CultureInfo.CurrentCulture);
 
     /// <summary>Il totale del contatore nel giorno scelto, nell'unità della metrica. I valori dei giorni passati sono grezzi
     /// (secondi, per una durata) e si convertono come la query converte quello di oggi; un contatore senza metriche conta

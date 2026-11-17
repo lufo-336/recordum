@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FluentAssertions;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
@@ -24,15 +23,17 @@ public class StateTodayContentTests
         return (new StateTodayContent(completions, metrics, refData, clock), completions, metrics, refData, node);
     }
 
-    private static MetricDefinition ScaleMetric(Guid habitId, Guid scaleId, string? labelsJson)
-        => new() { Id = Guid.NewGuid(), HabitNodeId = habitId, SortOrder = 0, ScaleTemplateId = scaleId, LabelsJson = labelsJson, Name = "mood" };
+    private static MetricDefinition ScaleMetric(Guid habitId, ScaleTemplate scale, params string[] names)
+    {
+        scale.MinValue = 1; scale.MaxValue = names.Length; scale.Anchors = TestScales.Anchors(1, names);
+        return new() { Id = Guid.NewGuid(), HabitNodeId = habitId, SortOrder = 0, ScaleTemplateId = scale.Id, Name = "mood" };
+    }
 
     [Fact]
     public async Task Slider_bounds_come_from_the_metric_scale()
     {
         var (sut, _, metrics, refData, node) = NewSut();
-        var scaleId = refData.Scales[0].Id;
-        metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, scaleId, JsonSerializer.Serialize(new[] { "Bad", "OK", "Good" }));
+        metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, refData.Scales[0], "Bad", "OK", "Good");
 
         await sut.LoadAsync(node, DayBoundary.Utc);
 
@@ -42,29 +43,15 @@ public class StateTodayContentTests
     }
 
     [Fact]
-    public async Task CurrentLabel_uses_the_metric_override_over_the_template()
+    public async Task CurrentLabel_on_an_unnamed_step_reads_the_nearest_name_and_the_number()
     {
         var (sut, _, metrics, refData, node) = NewSut();
-        var scale = refData.Scales[0];
-        scale.LabelsJson = JsonSerializer.Serialize(new[] { "X", "Y", "Z" });        // template labels
-        metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, scale.Id, JsonSerializer.Serialize(new[] { "A", "B", "C" })); // override
-
-        await sut.LoadAsync(node, DayBoundary.Utc);
-
-        sut.SliderValue = 0;
-        sut.CurrentLabel.Should().Be("A");   // metric override wins over template
-    }
-
-    [Fact]
-    public async Task CurrentLabel_with_a_blank_label_shows_the_step_number()
-    {
-        var (sut, _, metrics, refData, node) = NewSut();
-        metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, refData.Scales[0].Id, JsonSerializer.Serialize(new[] { "A", "", "C" }));
+        metrics.Store[Guid.NewGuid()] = ScaleMetric(node.Id, refData.Scales[0], "A", "", "C");
 
         await sut.LoadAsync(node, DayBoundary.Utc);
 
         sut.SliderValue = 1;
-        sut.CurrentLabel.Should().Be("2");
+        sut.CurrentLabel.Should().Be("A · 2");
         sut.SliderValue = 2;
         sut.CurrentLabel.Should().Be("C");
     }
@@ -73,8 +60,7 @@ public class StateTodayContentTests
     public async Task Record_replaces_todays_value_and_stores_the_1_based_index()
     {
         var (sut, completions, metrics, refData, node) = NewSut();
-        var scaleId = refData.Scales[0].Id;
-        var metric = ScaleMetric(node.Id, scaleId, JsonSerializer.Serialize(new[] { "Bad", "OK", "Good" }));
+        var metric = ScaleMetric(node.Id, refData.Scales[0], "Bad", "OK", "Good");
         metrics.Store[metric.Id] = metric;
         // A pre-existing completion today must be dropped (last-wins).
         var priorId = Guid.NewGuid();

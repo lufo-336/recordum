@@ -93,7 +93,7 @@ public class ContentSectionsTests
     }
 
     [AvaloniaFact]
-    public async Task Scale_labels_are_a_list_of_fields_one_per_value_and_an_edit_reaches_the_db()
+    public async Task Scale_labels_are_a_list_of_fields_one_per_value()
     {
         var (o, _, s, v) = await OpenSectionAsync<ScalesSectionViewModel, ScalesSectionView>(e => e.Scales, "SclLbl", HabitType.State,
             async id => await AddMetricAsync(id, MetricType.Integer));
@@ -108,17 +108,7 @@ public class ContentSectionsTests
             Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<Button>().Should().OnlyContain(b => !b.IsVisible,
                 "una scala esistente non ha aggiungi/togli");
 
-            boxes[1].Focus();
-            boxes[1].Text = "Custom";
-            PrivateDbHost.Pump();
-            await Task.Delay(150);
-            // La scala ufficiale e' nata con le sue etichette (UX3A-2); la modifica non c'e' ancora.
-            (await MetricsAsync(o.Id)).Single().LabelsJson.Should().NotBeNull()
-                .And.NotContain("Custom", "il testo si conferma uscendo dal campo, non a ogni tasto");
             AutomationProperties.GetName(boxes[1]).Should().NotBeNullOrWhiteSpace().And.Contain("2");
-            boxes[0].Focus();                                  // esce dal campo: la conferma
-            PrivateDbHost.Pump();
-            await UntilAsync(() => MetricsAsync(o.Id).GetAwaiter().GetResult() is [{ } m] && m.LabelsJson is { } j && j.Contains("Custom"));
             boxes[^1].BringIntoView();
             PrivateDbHost.Pump();
             await Task.Delay(150);

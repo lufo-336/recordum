@@ -4,6 +4,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data;
+using Recordum.Data.SeedData;
 using Recordum.Core.Time;
 
 namespace Recordum.Presentation.Bootstrap;
@@ -119,8 +120,8 @@ public sealed class DemoDataSeeder(
         {
             HabitNodeId = mood,
             Name = "Umore",
-            Type = MetricType.Integer,
-            LabelsJson = """["Pessimo","Giù","Ok","Bene","Ottimo"]""",
+            Type = MetricType.Decimal,
+            ScaleTemplateId = ScaleTemplateSeed.All.First(x => x.Code == "mood-5").Id,
         }, ct).ConfigureAwait(false);
 
         // ---- goal ----
@@ -267,8 +268,8 @@ public sealed class DemoDataSeeder(
     private CompletionValue MakeValue(MetricDefinition def, int seriesIndex, double progress)
     {
         var v = new CompletionValue { MetricDefinitionId = def.Id, SeriesIndex = seriesIndex };
-        bool isScale = def.ScaleTemplateId is not null || def.LabelsJson is not null;
-        if (isScale) v.ValueInteger = WeightedMood();                          // 1-based scale value
+        bool isScale = def.ScaleTemplateId is not null;
+        if (isScale) v.ValueDecimal = WeightedMood();                          // the true value on the scale
         else switch (def.Type)
         {
             case MetricType.Seconds: v.ValueSeconds = 20 + _rng.Next(0, 100) + (int)(progress * 30); break;

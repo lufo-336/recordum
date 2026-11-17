@@ -11,7 +11,6 @@ public sealed class MetricDefinitionConfiguration : IEntityTypeConfiguration<Met
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Name).IsRequired().HasMaxLength(100);
         builder.Property(m => m.Type).HasConversion<string>().HasMaxLength(16);
-        builder.Ignore(m => m.LabelsJson); // la scala è l'unica fonte dei nomi (GIO-23); la proprietà sparisce col Task 4
 
         builder.HasOne(m => m.HabitNode)
             .WithMany(n => n.Metrics)

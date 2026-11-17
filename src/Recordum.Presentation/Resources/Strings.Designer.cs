@@ -874,6 +874,8 @@ public static class Strings
     public static string Scale_Stress10_Labels => Get("Scale.stress-10.Labels");
     public static string Scale_Mood5_Name => Get("Scale.mood-5.Name");
     public static string Scale_Mood5_Labels => Get("Scale.mood-5.Labels");
+    public static string Scale_Reading_Short => Get("Scale.Reading.Short");
+    public static string Scale_Reading_Between => Get("Scale.Reading.Between");
     public static string Unit_Km_Name => Get("Unit.km.Name");
     public static string Unit_M_Name => Get("Unit.m.Name");
     public static string Unit_Kg_Name => Get("Unit.kg.Name");

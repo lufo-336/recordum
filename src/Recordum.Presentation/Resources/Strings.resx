@@ -2430,6 +2430,12 @@ Details: {0}</value>
   <data name="Scale.mood-5.Labels" xml:space="preserve">
     <value>Very low|Low|Neutral|Good|Very good</value>
   </data>
+  <data name="Scale.Reading.Short" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Scale.Reading.Between" xml:space="preserve">
+    <value>{0}, between {1} and {2}</value>
+  </data>
   <data name="Unit.km.Name" xml:space="preserve">
     <value>Kilometre</value>
   </data>

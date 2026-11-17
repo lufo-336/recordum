@@ -332,7 +332,6 @@ public class BuilderTemplateParityTests : IDisposable
         sr.Node.Name.Should().Be("Monitor del sonno");
         sr.Node.Description.Should().NotBe(sleep.Description).And.NotBeNullOrWhiteSpace();
         sr.Metrics.Select(m => m.Name).Should().Equal("Ore dormite", "Qualità del sonno");
-        sr.Metrics[1].LabelsJson.Should().Be("""["Pessima","Scarsa","Discreta","Buona","Ottima"]""");
         sr.Config!.SeriesLabelsJson.Should().Be("""["Notte","Pisolino"]""");
 
         var w = NewVm(templates);

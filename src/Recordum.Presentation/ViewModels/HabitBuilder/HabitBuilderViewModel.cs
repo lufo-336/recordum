@@ -12,6 +12,7 @@ using Recordum.Core.Enums;
 using Recordum.Core.Errors;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
+using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Templates;
 using Recordum.Presentation.ViewModels.HabitBuilder.Preview;
@@ -194,7 +195,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             Name = form.Name.Trim(),
             MinValue = 1,
             MaxValue = labels.Count,
-            LabelsJson = JsonSerializer.Serialize(labels),
+            Anchors = labels.Select((l, i) => new ScaleAnchor { Id = Guid.NewGuid(), Value = i + 1, Label = l }).ToList(),
             IsOfficial = false,
         };
         _stagedScales.Add(scale);
@@ -392,7 +393,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             Name = string.IsNullOrWhiteSpace(def.Name) ? def.Code! : def.Name,
             MinValue = def.MinValue,
             MaxValue = def.MaxValue,
-            LabelsJson = JsonSerializer.Serialize(def.Labels ?? []),
+            Anchors = (def.Labels ?? []).Select((l, i) => new ScaleAnchor { Id = Guid.NewGuid(), Value = def.MinValue + i, Label = l }).ToList(),
             IsOfficial = false,
         };
         _stagedScales.Add(scale);
@@ -798,9 +799,6 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             Type = f.MetricType,
             UnitOfMeasureId = f.UnitOfMeasureId,
             ScaleTemplateId = f.ScaleTemplateId,
-            // Snapshot of the scale's steps, as the template reader does — the State quick-add reads
-            // the labels from the metric, not from the scale.
-            LabelsJson = LabelsOfScale(f.ScaleTemplateId),
             SortOrder = i,
         }).ToList();
         var config = BuildConfig(nodeId);
@@ -862,31 +860,11 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
             : [],
         GoalTarget: GoalBrick.HasGoal ? GoalBrick.Target : null);
 
-    private List<string> ScaleLabelsOf(Guid? scaleId)
-    {
-        if (LabelsOfScale(scaleId) is not { Length: > 0 } json) return [];
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
-        }
-        catch (JsonException)
-        {
-            // A malformed labels blob is a preview detail, never a reason to break the builder.
-            return [];
-        }
-    }
-
-    // Una scala ufficiale nasce con le etichette nella lingua di adesso (UX-11); una dell'utente tiene le sue.
-    // Relaxed: le etichette italiane ("Qualità", "D'accordo") restano leggibili invece di \u00E0 / \u0027.
-    private string? LabelsOfScale(Guid? scaleId)
-    {
-        if (scaleId is not { } id || AvailableScales.FirstOrDefault(s => s.Id == id) is not { } scale) return null;
-        return OfficialTexts.ScaleLabels(scale) is { } translated
-            ? JsonSerializer.Serialize(translated, s_labelsJsonOptions)
-            : scale.LabelsJson;
-    }
-
-    private static readonly JsonSerializerOptions s_labelsJsonOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    // One reading per value of the scale (GIO-23: the names live in the scale's anchors, read through ScaleText).
+    private List<string> ScaleLabelsOf(Guid? scaleId) =>
+        scaleId is { } id && AvailableScales.FirstOrDefault(x => x.Id == id) is { } scale
+            ? Enumerable.Range(scale.MinValue, scale.MaxValue - scale.MinValue + 1).Select(v => ScaleText.Short(scale, v)).ToList()
+            : [];
 
     /// <summary>The series labels the user actually named: blank rows are an in-progress edit, not an
     /// unnamed entry. Shared by <see cref="BuildConfig"/> and the template payload so a launched habit
@@ -921,7 +899,7 @@ public sealed partial class HabitBuilderViewModel : ObservableObject
                 Name = s.Name,
                 MinValue = s.MinValue,
                 MaxValue = s.MaxValue,
-                Labels = JsonSerializer.Deserialize<List<string>>(s.LabelsJson) ?? [],
+                Labels = ScaleText.Named(s).Select(a => a.Name).ToList(),
             }).ToList();
 
         // Il payload config si legge dalla stessa HabitConfig che Lancia costruirebbe: così le due

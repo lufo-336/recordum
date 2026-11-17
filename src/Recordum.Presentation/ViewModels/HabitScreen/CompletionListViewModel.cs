@@ -147,10 +147,8 @@ public sealed partial class CompletionListViewModel : ObservableObject
         foreach (var m in metrics)
         {
             string? unit = m.UnitOfMeasureId is { } uid && units.TryGetValue(uid, out var c) ? c : null;
-            IReadOnlyList<string>? labels = null;
-            if (m.ScaleTemplateId is { } sid && scales.TryGetValue(sid, out var tmpl))
-                labels = ParseLabels(m.LabelsJson) ?? ParseLabels(tmpl.LabelsJson);
-            map[m.Id] = new MetricDisplay(m.Name, unit, labels, m.SortOrder);
+            ScaleTemplate? scale = m.ScaleTemplateId is { } sid && scales.TryGetValue(sid, out var tmpl) ? tmpl : null;
+            map[m.Id] = new MetricDisplay(m.Name, unit, scale, m.SortOrder);
         }
         return map;
     }
@@ -197,9 +195,9 @@ public sealed partial class CompletionListViewModel : ObservableObject
 
     private static string? FormatValue(CompletionValue v, MetricDisplay m)
     {
-        // Scale → label at the 1-based stored value (falls back to the bare number).
-        if (m.ScaleLabels is { Count: > 0 } labels && v.ValueInteger is { } val)
-            return val >= 1 && val <= labels.Count ? ScaleLabelText.At(labels, (int)val - 1) : val.ToString(CultureInfo.CurrentCulture);
+        // Scale → the reading of the true stored value (GIO-23): name, "name · number" or the bare number.
+        if (m.Scale is { } scale && (v.ValueDecimal ?? v.ValueInteger) is { } val)
+            return ScaleText.Short(scale, val);
         if (v.ValueText is { } t) return t;
         // Duration metrics store ValueSeconds only; without this branch a series with just a time
         // (e.g. 1:30) rendered as a blank field in Cronologia/Records despite being saved (CR13).
@@ -219,5 +217,5 @@ public sealed partial class CompletionListViewModel : ObservableObject
         catch (JsonException) { return null; }
     }
 
-    private sealed record MetricDisplay(string Name, string? Unit, IReadOnlyList<string>? ScaleLabels, int SortOrder);
+    private sealed record MetricDisplay(string Name, string? Unit, ScaleTemplate? Scale, int SortOrder);
 }

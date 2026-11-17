@@ -75,7 +75,7 @@ public class MeasuredQuickAddViewModelTests
         var (sut, cs, ms, rd) = Build(node);
         rd.Scales.Clear();
         var scaleId = Guid.NewGuid();
-        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood-5", Name = "Mood", MinValue = 1, MaxValue = 5, LabelsJson = "[\"Bad\",\"Meh\",\"Ok\",\"Good\",\"Great\"]" });
+        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood-5", Name = "Mood", MinValue = 1, MaxValue = 5, Anchors = TestScales.Anchors(1, "Bad", "Meh", "Ok", "Good", "Great") });
         await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scaleId, SortOrder = 0 });
         await sut.LoadMetricsAsync();
 
@@ -95,8 +95,8 @@ public class MeasuredQuickAddViewModelTests
         var (sut, cs, ms, rd) = Build(node);
         rd.Scales.Clear();
         var s1 = Guid.NewGuid(); var s2 = Guid.NewGuid();
-        rd.Scales.Add(new ScaleTemplate { Id = s1, Code = "a", Name = "A", MinValue = 1, MaxValue = 3, LabelsJson = "[\"x\",\"y\",\"z\"]" });
-        rd.Scales.Add(new ScaleTemplate { Id = s2, Code = "b", Name = "B", MinValue = 1, MaxValue = 3, LabelsJson = "[\"x\",\"y\",\"z\"]" });
+        rd.Scales.Add(new ScaleTemplate { Id = s1, Code = "a", Name = "A", MinValue = 1, MaxValue = 3, Anchors = TestScales.Anchors(1, "x", "y", "z") });
+        rd.Scales.Add(new ScaleTemplate { Id = s2, Code = "b", Name = "B", MinValue = 1, MaxValue = 3, Anchors = TestScales.Anchors(1, "x", "y", "z") });
         await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Energy", Type = MetricType.Integer, ScaleTemplateId = s1, SortOrder = 0 });
         await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Focus", Type = MetricType.Integer, ScaleTemplateId = s2, SortOrder = 1 });
         await sut.LoadMetricsAsync();

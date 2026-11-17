@@ -18,7 +18,6 @@ public sealed class MetricDefinitionService(
     public async ValueTask<Guid> CreateAsync(MetricDefinition draft, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
-        ValidateLabels(draft);
         if (draft.Id == Guid.Empty) draft.Id = Guid.NewGuid();
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         db.MetricDefinitions.Add(draft);
@@ -35,7 +34,6 @@ public sealed class MetricDefinitionService(
         var m = await db.MetricDefinitions.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (m is null) return;
         mutate(m);
-        ValidateLabels(m);
         await db.SaveChangesAsync(ct);
         Announce(m.HabitNodeId);
     }
@@ -60,11 +58,4 @@ public sealed class MetricDefinitionService(
     // La forma del quick-add di una schermata aperta (tocco/serie, unita', scala) dipende dalle metriche: chi le scrive lo dice.
     private void Announce(Guid habitNodeId) => eventBus.Publish(new HabitUpdatedPayload(habitNodeId));
 
-    private static void ValidateLabels(MetricDefinition m)
-    {
-        if (m.LabelsJson is null) return;
-        using var doc = JsonDocument.Parse(m.LabelsJson);
-        if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            throw new InvalidOperationException("LabelsJson must be a JSON array.");
-    }
 }

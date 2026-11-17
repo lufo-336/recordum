@@ -327,7 +327,7 @@ public class CompletionListViewModelTests
         var rd = new FakeReferenceData();
         rd.Scales.Clear();
         var scaleId = Guid.NewGuid();
-        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood", Name = "Mood", MinValue = 1, MaxValue = 3, LabelsJson = "[\"Low\",\"Neutral\",\"High\"]" });
+        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood", Name = "Mood", MinValue = 1, MaxValue = 3, Anchors = TestScales.Anchors(1, "Low", "Neutral", "High") });
         var habit = Guid.NewGuid();
         var moodId = Guid.NewGuid();
         await ms.CreateAsync(new MetricDefinition { Id = moodId, HabitNodeId = habit, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scaleId, SortOrder = 0 });
@@ -348,14 +348,14 @@ public class CompletionListViewModelTests
     }
 
     [Fact]
-    public async Task LoadDayAsync_shows_the_step_number_for_a_blank_scale_label()
+    public async Task LoadDayAsync_reads_an_unnamed_step_as_the_nearest_name_and_the_number()
     {
         var cs = new FakeCompletionService();
         var ms = new FakeMetricDefinitionService();
         var rd = new FakeReferenceData();
         rd.Scales.Clear();
         var scaleId = Guid.NewGuid();
-        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood", Name = "Mood", MinValue = 1, MaxValue = 3, LabelsJson = "[\"Low\",\"\",\"High\"]" });
+        rd.Scales.Add(new ScaleTemplate { Id = scaleId, Code = "mood", Name = "Mood", MinValue = 1, MaxValue = 3, Anchors = TestScales.Anchors(1, "Low", "", "High") });
         var habit = Guid.NewGuid();
         var moodId = Guid.NewGuid();
         await ms.CreateAsync(new MetricDefinition { Id = moodId, HabitNodeId = habit, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scaleId, SortOrder = 0 });
@@ -370,7 +370,7 @@ public class CompletionListViewModelTests
         var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, new DateOnly(2026, 6, 1));
 
-        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Mood: 2");
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Mood: Low · 2");
     }
 
     [Fact]

@@ -1,5 +1,7 @@
 using System.Globalization;
 using Recordum.Core.Enums;
+using Recordum.Core.Models;
+using Recordum.Presentation.Formatting;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen;
 
@@ -14,25 +16,21 @@ public static class DaySummaryFormatter
     /// <param name="durationText">Pre-rendered h:mm:ss for a Counter whose duration total is still raw
     /// seconds (no time unit to convert into). Wins over the number+unit form, but never resurrects a
     /// day with nothing in it.</param>
-    public static string? Label(HabitType type, decimal mag, string? unit, IReadOnlyList<string>? scaleLabels,
+    public static string? Label(HabitType type, decimal mag, string? unit, ScaleTemplate? scale,
         string? durationText = null)
     {
+        // A State is recorded at every value, 0 included: its reading is never hidden by the <= 0 guard (the caller says
+        // whether a value exists).
+        if (type == HabitType.State && scale is not null) return ScaleText.Long(scale, mag);
         if (mag <= 0) return null;
         if (durationText is not null) return durationText;
         return type switch
         {
-            HabitType.State => ScaleLabel(mag, scaleLabels) ?? FormatMag(mag),
+            HabitType.State => FormatMag(mag),
             HabitType.Counter => unit is { Length: > 0 } ? $"{FormatMag(mag)} {unit}" : FormatMag(mag),
             HabitType.Resistance => mag > 1 ? FormatMag(mag) : null,
             _ => mag > 1 ? $"{FormatMag(mag)}×" : null, // Action/Journal: hidden unless multiple
         };
-    }
-
-    private static string? ScaleLabel(decimal mag, IReadOnlyList<string>? labels)
-    {
-        if (labels is not { Count: > 0 }) return null;
-        var val = (int)mag; // 1-based scale value
-        return val >= 1 && val <= labels.Count && !string.IsNullOrWhiteSpace(labels[val - 1]) ? labels[val - 1] : null;
     }
 
     private static string FormatMag(decimal mag) =>

@@ -239,7 +239,7 @@ public class StateStepsTests
 
         var metrics = o.Scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>();
         var metric = (await metrics.ListByHabitAsync(o.Id)).Single();
-        await metrics.UpdateAsync(metric.Id, m => m.LabelsJson = "[\"a\",\"b\",\"c\",\"d\"]");
+        await metrics.UpdateAsync(metric.Id, m => m.Type = MetricType.Decimal);
         await UntilAsync(() => !ReferenceEquals(o.Vm.QuickAdd, before));
         await UntilAsync(() => o.QuickAdd.Steps.Count == 4 && o.QuickAdd.Steps[2].IsCurrent);
 

@@ -964,7 +964,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
     private static string QuickAddShape(HabitConfig? cfg, IReadOnlyList<MetricDefinition> defs) =>
         $"{cfg?.Repeatable == true}|" + string.Join(";", defs.OrderBy(m => m.SortOrder).Select(m =>
-            $"{m.Id}/{m.Type}/{m.UnitOfMeasureId}/{m.ScaleTemplateId}/{m.LabelsJson}"));
+            $"{m.Id}/{m.Type}/{m.UnitOfMeasureId}/{m.ScaleTemplateId}"));
 
     private async Task BuildQuickAddAsync(HabitNode node, CancellationToken ct)
     {
@@ -1228,6 +1228,8 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
 
         var rangeMax = magByDate.Count > 0 ? magByDate.Values.Max() : 0m;
         var type = node.HabitType ?? HabitType.Action;
+        // A State's intensity is where the value sits on its scale, not how it compares to the month's best.
+        var stateScale = type == HabitType.State ? (await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true)).scale : null;
 
         var days = new List<CalendarDayMarker>();
         foreach (var date in magByDate.Keys.Union(noteByDate.Keys).Distinct())
@@ -1238,7 +1240,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             var hasCompletion = magByDate.TryGetValue(date, out var mv);
             var mag = hasCompletion ? mv : 0m;
             var noteCount = noteByDate.TryGetValue(date, out var nc) ? nc : 0;
-            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, rangeMax, hasCompletion), NumberFor(type, mag, hasCompletion), noteCount));
+            days.Add(new CalendarDayMarker(date, TintStepFor(type, mag, rangeMax, hasCompletion, stateScale), NumberFor(type, mag, hasCompletion), noteCount));
         }
         return new CalendarMarkers(days);
     }
@@ -1349,10 +1351,12 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         return new CalendarMarkers(days);
     }
 
-    private static int TintStepFor(HabitType type, decimal mag, decimal monthMax, bool hasCompletion)
+    private static int TintStepFor(HabitType type, decimal mag, decimal monthMax, bool hasCompletion, ScaleTemplate? stateScale = null)
     {
         if (!hasCompletion) return 0; // only a note that day, no completion → no tint
         if (type is HabitType.Action or HabitType.Journal) return 4; // binario: fatto = pieno
+        // State: the intensity is the scale's own fraction; a recorded 0 still gets the lowest step (CR5).
+        if (stateScale is not null) return Math.Clamp((int)Math.Ceiling(ScaleText.Fraction(stateScale, mag) * 4), 1, 4);
         // A recorded day always gets at least the lowest non-empty step. State on a 0-based (or
         // negative) scale can legitimately record mag <= 0 yet must still show as filled (CR5);
         // Counter/Resistance always floor at 1.
@@ -1491,7 +1495,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         string? durationText = null;
         // Enrich the aggregate with the primary metric's unit (Counter) or scale label (State) so the
         // strip reads "4 km" / "Good" instead of a bare number (R-daySummaryUnits).
-        var (unitCode, unitLabel, scaleLabels, primaryMetric) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
+        var (unitCode, unitLabel, scale, primaryMetric) = await ResolvePrimaryDisplayAsync(node, ct).ConfigureAwait(true);
         if (node.HabitType == HabitType.Counter && primaryMetric is not null)
         {
             // A Counter's displayed total is the primary metric's sum, not the occurrence count — same
@@ -1507,7 +1511,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             // than letting the strip print "720" where the records list reads "12:00" (W23-VF2).
             durationText = CounterTotalDisplay.AsRawDuration(isDuration, unitCode, mag);
         }
-        var label = DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unitLabel, scaleLabels, durationText);
+        // A State reads at every recorded value, 0 included (the guard on mag lives in the formatter): no completion, no label.
+        var label = node.HabitType == HabitType.State && dayMag is null
+            ? null
+            : DaySummaryFormatter.Label(node.HabitType ?? HabitType.Action, mag, unitLabel, scale, durationText);
         var notes = await _noteService.ListByHabitAndDateAsync(node.Id, date, ct).ConfigureAwait(true);
         // Presence (a completion exists) drives the strip, not the value: a State 0 still counts (CR5).
         DayNote.SetDaySummary(dayMag is not null, label, notes.Count);
@@ -1516,7 +1523,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     /// <summary>Resolves the primary (lowest SortOrder) metric's unit code and label (Counter) or scale labels
     /// (State) for the day-summary strip, plus the metric itself (Counter needs its id for the day sum).
     /// Returns nulls for other types or when none apply.</summary>
-    private async Task<(string? unitCode, string? unitLabel, IReadOnlyList<string>? scaleLabels, MetricDefinition? primary)> ResolvePrimaryDisplayAsync(HabitNode node, CancellationToken ct)
+    private async Task<(string? unitCode, string? unitLabel, ScaleTemplate? scale, MetricDefinition? primary)> ResolvePrimaryDisplayAsync(HabitNode node, CancellationToken ct)
     {
         var type = node.HabitType ?? HabitType.Action;
         if (type is not (HabitType.Counter or HabitType.State)) return (null, null, null, null);
@@ -1537,16 +1544,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         if (primary.ScaleTemplateId is not { } sid) return (null, null, null, primary);
         var scales = await _refData.ListScalesAsync(ct).ConfigureAwait(true);
         var tmpl = scales.FirstOrDefault(s => s.Id == sid);
-        var labels = ParseScaleLabels(primary.LabelsJson) ?? ParseScaleLabels(tmpl?.LabelsJson);
-        return (null, null, labels, primary);
+        return (null, null, tmpl, primary);
     }
 
-    private static string[]? ParseScaleLabels(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return System.Text.Json.JsonSerializer.Deserialize<string[]>(json); }
-        catch (System.Text.Json.JsonException) { return null; }
-    }
 
     [RelayCommand]
     private void Export() => ExportRequested?.Invoke(this, EventArgs.Empty);

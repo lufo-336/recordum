@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.Text.Json;
+using Recordum.Presentation.Formatting;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
@@ -82,9 +82,12 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
         {
             var scales = await _refData.ListScalesAsync(ct).ConfigureAwait(true);
             var tmpl = scales.FirstOrDefault(s => s.Id == sid);
-            var labels = ParseLabels(primary.LabelsJson) ?? ParseLabels(tmpl?.LabelsJson);
-            if (labels is { Length: > 0 }) { _labels = labels; stepCount = labels.Length; }
-            else if (tmpl is not null) { _labels = []; stepCount = Math.Max(1, tmpl.MaxValue - tmpl.MinValue + 1); }
+            if (tmpl is not null)
+            {
+                // One reading per value, from ScaleText (GIO-23); recording by true value is Task 5.
+                _labels = Enumerable.Range(tmpl.MinValue, tmpl.MaxValue - tmpl.MinValue + 1).Select(v => ScaleText.Short(tmpl, v)).ToArray();
+                stepCount = Math.Max(1, _labels.Length);
+            }
         }
         else
         {
@@ -109,14 +112,8 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
     partial void OnSliderValueChanged(int value) => CurrentLabel = LabelFor(value);
 
     private string LabelFor(int index)
-        => ScaleLabelText.At(_labels, index);
+        => index >= 0 && index < _labels.Length ? _labels[index] : (index + 1).ToString(CultureInfo.CurrentCulture);
 
-    private static string[]? ParseLabels(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return JsonSerializer.Deserialize<string[]>(json); }
-        catch (JsonException) { return null; }
-    }
 
     [RelayCommand]
     private async Task RecordAsync()

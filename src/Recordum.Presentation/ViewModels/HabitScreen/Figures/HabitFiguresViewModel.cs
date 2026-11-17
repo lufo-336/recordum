@@ -7,6 +7,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Core.Time;
+using Recordum.Presentation.Formatting;
 using Recordum.Presentation.Resources;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.Figures;
@@ -146,13 +147,13 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
 
     private async Task<ImmutableArray<HabitFigure>> StateAsync(Ctx c, CancellationToken ct)
     {
-        var (metric, labels) = await ScaleAsync(c.Node.Id, ct).ConfigureAwait(true);
+        var (metric, scale) = await ScaleAsync(c.Node.Id, ct).ConfigureAwait(true);
         var start = c.WindowStart(30);
         var values = metric is null
             ? new Dictionary<DateOnly, decimal>()
             : (await _completions.GetDailySumAsync(c.Node.Id, metric.Id, start, c.Today, ct).ConfigureAwait(true))
                 .Where(v => v.Date >= start && v.Date <= c.Today).ToDictionary(v => v.Date, v => v.Sum);
-        var todayLabel = values.TryGetValue(c.Today, out var tv) ? LabelFor(labels, (int)tv) : "—";
+        var todayLabel = values.TryGetValue(c.Today, out var tv) ? LabelFor(scale, tv) : "—";
         var mean = values.Count == 0 ? (decimal?)null : values.Values.Average();
         var weekStart = c.Today.AddDays(-6);
         var last = values.Where(v => v.Key >= weekStart).Select(v => v.Value).ToList();
@@ -350,26 +351,18 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
             cfg?.ScheduleEveryXDays, cfg?.ScheduleMonthlyDaysJson, c.Created));
     }
 
-    private async Task<(MetricDefinition? Metric, string[] Labels)> ScaleAsync(Guid habitId, CancellationToken ct)
+    private async Task<(MetricDefinition? Metric, ScaleTemplate? Scale)> ScaleAsync(Guid habitId, CancellationToken ct)
     {
         var metrics = await _metrics.ListByHabitAsync(habitId, ct).ConfigureAwait(true);
         var primary = metrics.Where(m => m.ScaleTemplateId is not null).OrderBy(m => m.SortOrder).FirstOrDefault()
                       ?? metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
-        if (primary?.ScaleTemplateId is not { } sid) return (primary, []);
+        if (primary?.ScaleTemplateId is not { } sid) return (primary, null);
         var tmpl = (await _refData.ListScalesAsync(ct).ConfigureAwait(true)).FirstOrDefault(s => s.Id == sid);
-        return (primary, ParseLabels(primary.LabelsJson) ?? ParseLabels(tmpl?.LabelsJson) ?? []);
+        return (primary, tmpl);
     }
 
-    /// <summary>Il valore salvato della scala è 1-based (come in <c>StateTodayContent</c>).</summary>
-    private static string LabelFor(string[] labels, int value)
-        => value >= 1 && value <= labels.Length ? ScaleLabelText.At(labels, value - 1) : Int(value);
-
-    private static string[]? ParseLabels(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return JsonSerializer.Deserialize<string[]>(json); }
-        catch (JsonException) { return null; }
-    }
+    private static string LabelFor(ScaleTemplate? scale, decimal value)
+        => scale is null ? Int((int)value) : ScaleText.Short(scale, value);
 
     private async Task<string?> UsualHourAsync(Ctx c, CancellationToken ct)
     {

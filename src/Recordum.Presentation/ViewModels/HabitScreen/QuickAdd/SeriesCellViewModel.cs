@@ -103,9 +103,13 @@ public sealed partial class SeriesCellViewModel : ObservableObject
         get
         {
             if (SelectedScaleIndex is not { } i) return string.Empty;
-            return ScaleLabelText.At(ScaleLabels, i);
+            return StepName(ScaleLabels, i);
         }
     }
+
+    // A blank or missing name falls back to the 1-based step number (positional; Task 5 replaces this with true values).
+    private static string StepName(IReadOnlyList<string> labels, int i) =>
+        i >= 0 && i < labels.Count && !string.IsNullOrWhiteSpace(labels[i]) ? labels[i] : (i + 1).ToString(CultureInfo.CurrentCulture);
 
     public static MetricInputKind ResolveKind(MetricDefinition metric)
     {
@@ -133,7 +137,7 @@ public sealed partial class SeriesCellViewModel : ObservableObject
             StepCount = scale.Labels.Count > 0 ? scale.Labels.Count : Math.Max(1, scale.Max - scale.Min + 1);
             // Scales are 1-based for the user: step i records value i+1, so the first step is 1 (never 0).
             ReferencePoints = scale.Labels.Count > 0
-                ? Enumerable.Range(0, scale.Labels.Count).Select(i => ScaleLabelText.At(scale.Labels, i)).ToList()
+                ? Enumerable.Range(0, scale.Labels.Count).Select(i => StepName(scale.Labels, i)).ToList()
                 : Enumerable.Range(1, StepCount).Select(n => n.ToString(CultureInfo.CurrentCulture)).ToList();
             var lastStep = Math.Max(1, StepCount - 1);
             ScalePoints = ReferencePoints

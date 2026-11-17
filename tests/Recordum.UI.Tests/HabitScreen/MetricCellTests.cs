@@ -214,7 +214,6 @@ public class MetricCellTests
             await scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition
             {
                 HabitNodeId = id, Name = "Mood", Type = MetricType.Integer, ScaleTemplateId = scales[0].Id,
-                LabelsJson = "[\"Awful\",\"Poor\",\"Fair\",\"Good\",\"Great\"]",   // etichette diverse dai numeri
             });
             // Una seconda cella: con la scala sola la testa mostrerebbe i gradini (HeadCommandTests), non il cursore.
             await scope.ServiceProvider.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition

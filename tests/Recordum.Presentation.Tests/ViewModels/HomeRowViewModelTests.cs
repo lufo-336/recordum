@@ -148,10 +148,10 @@ public class HomeRowViewModelTests
             CompletionsLast14Days: ImmutableArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
             TodayCounterTotal: total, TodayCounterUnitCode: unit);
 
-    private static HomeTreeRow StateRow(Guid id, int value, string label) =>
+    private static HomeTreeRow StateRow(Guid id, decimal value, ScaleTemplate? scale = null) =>
         new(id, null, "s", "#000000", HabitType.State, null, 0, true, PinScope.None, 0, false,
             ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty,
-            TodayStateValue: value); // GIO-23: l'etichetta la legge Presentation (Task 4); label resta nel chiamante
+            TodayStateValue: value, StateScale: scale);
 
     [Fact]
     public void Counter_key_figure_shows_total_with_unit()
@@ -188,11 +188,40 @@ public class HomeRowViewModelTests
     [Fact]
     public void State_key_figure_shows_scale_label()
     {
-        var sut = new HomeRowViewModel(StateRow(Guid.NewGuid(), 3, "Bene"), 0,
+        var sut = new HomeRowViewModel(StateRow(Guid.NewGuid(), 3, new ScaleTemplate { MinValue = 1, MaxValue = 5, Anchors = TestScales.Anchors(1, "Male", "Così", "Bene") }), 0,
             new FakeHabitNodeService(), new FakePurgeService());
 
         sut.KeyFigureKind.Should().Be(KeyFigureKind.StateValue);
         sut.KeyFigureText.Should().Be("Bene");
+    }
+
+    [Fact]
+    public void State_key_figure_without_scale_is_the_bare_number()
+    {
+        var sut = new HomeRowViewModel(StateRow(Guid.NewGuid(), 3), 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureText.Should().Be("3");
+    }
+
+    [Fact]
+    public void A_State_at_zero_today_is_a_recorded_cell_with_zero_intensity_and_the_zero_name()
+    {
+        // Review Focus 1: 0..10 scale (NRS-like). A recorded 0 is not an empty day, and the figure says the name of 0.
+        var scale = new ScaleTemplate { MinValue = 0, MaxValue = 10, Anchors = TestScales.Anchors(0, "Niente dolore") };
+        var values = ImmutableArray.CreateRange(new decimal?[] { null, null, null, null, null, null, null, null, null, null, null, null, 5m, 0m });
+        var row = StateRow(Guid.NewGuid(), 0m, scale) with
+        {
+            CompletionsLast14Days = ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1),
+            ValuesLast14Days = values,
+        };
+
+        var sut = new HomeRowViewModel(row, 0, new FakeHabitNodeService(), new FakePurgeService());
+
+        sut.KeyFigureText.Should().Be("Niente dolore");
+        sut.StripCells[^1].On.Should().BeTrue("a recorded 0 is registered");
+        sut.StripCells[^3].On.Should().BeFalse("no value is not registered");
+        sut.StripFractions[^1].Should().Be(0d);
+        sut.StripFractions[^2].Should().Be(0.5d);
     }
 
     [Fact]
