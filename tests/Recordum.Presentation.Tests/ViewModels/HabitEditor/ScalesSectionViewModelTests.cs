@@ -166,6 +166,30 @@ public class ScalesSectionViewModelTests
     }
 
     [Fact]
+    public async Task Removing_a_mark_is_saved_without_that_anchor()
+    {
+        var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+        var (sut, _) = await OpenAsync(scale.Id);
+
+        sut.Editor.RemoveRowCommand.Execute(sut.Editor.Rows[1]);
+        await Task.Delay(20);
+
+        _scales.Updates.Should().ContainSingle().Which.Draft.Anchors.Select(a => a.Value).Should().Equal(1, 3);
+    }
+
+    [Fact]
+    public async Task Adding_a_mark_and_naming_every_value_are_saved()
+    {
+        var scale = AddScale("custom-3", 1, 3, "[\"a\"]");
+        var (sut, _) = await OpenAsync(scale.Id);
+
+        sut.Editor.FillEveryValueCommand.Execute(null);
+        await Task.Delay(20);
+
+        _scales.Updates.Should().ContainSingle().Which.Draft.Anchors.Select(a => a.Value).Should().Equal(1, 2, 3);
+    }
+
+    [Fact]
     public async Task Saving_updates_the_picker_object_in_place_so_the_summary_follows()
     {
         var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");

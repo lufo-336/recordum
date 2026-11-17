@@ -52,7 +52,7 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
     private ScaleTemplate? _source;
     private ScaleUsage? _usage;
 
-    public ScaleEditorViewModel() => Rows.CollectionChanged += (_, _) => Refresh();
+    public ScaleEditorViewModel() => Rows.CollectionChanged += (_, _) => Edited();
 
     public ObservableCollection<ScaleAnchorRowViewModel> Rows { get; } = [];
 
@@ -155,8 +155,14 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
     {
         if (!CanFill) return;
         var taken = Rows.Select(r => r.Value).ToHashSet();
-        for (var v = MinValue; v <= MaxValue; v++)
-            if (!taken.Contains(v)) Rows.Add(new ScaleAnchorRowViewModel(this, v, string.Empty));
+        _loading = true;   // one Changed for the whole fill, not one per row
+        try
+        {
+            for (var v = MinValue; v <= MaxValue; v++)
+                if (!taken.Contains(v)) Rows.Add(new ScaleAnchorRowViewModel(this, v, string.Empty));
+        }
+        finally { _loading = false; }
+        Edited();
     }
 
     private void Refresh()
