@@ -23,6 +23,7 @@ public sealed class DemoDataSeeder(
     INoteService notes,
     IDiaryService diary,
     ITagService tags,
+    IScaleTemplateService scales,
     IAppSettingService settings,
     IHabitTreeQueryService tree,
     IClock clock,
@@ -116,12 +117,18 @@ public sealed class DemoDataSeeder(
         var mMinuti = await MetricAsync(allenamento, "Minuti", ct).ConfigureAwait(false);
         var mBicchieri = await MetricAsync(acqua, "Bicchieri", ct).ConfigureAwait(false);
         var mPagine = await MetricAsync(lettura, "Pagine", ct).ConfigureAwait(false);
+        // L'umore è uno Stato su una scala dell'utente 1–100 con cinque scaglioni (GIO-23 §7): valori veri.
+        var umoreScale = await scales.CreateAsync(new ScaleDraft("Umore", 1, 100, ScalePrecision.Integer,
+        [
+            new ScaleAnchorDraft(1, "Malissimo"), new ScaleAnchorDraft(25, "Male"), new ScaleAnchorDraft(50, "Così così"),
+            new ScaleAnchorDraft(75, "Bene"), new ScaleAnchorDraft(100, "Benissimo"),
+        ]), ct).ConfigureAwait(false);
         var mUmore = await metrics.CreateAsync(new MetricDefinition
         {
             HabitNodeId = mood,
             Name = "Umore",
             Type = MetricType.Decimal,
-            ScaleTemplateId = ScaleTemplateSeed.All.First(x => x.Code == "mood-5").Id,
+            ScaleTemplateId = umoreScale,
         }, ct).ConfigureAwait(false);
 
         // ---- goal ----
@@ -151,7 +158,7 @@ public sealed class DemoDataSeeder(
             if (Chance(0.55))
                 await ValueAsync(lettura, mPagine, _rng.Next(8, 51), day, 22, 23, ct).ConfigureAwait(false);
             if (Chance(0.85))
-                await ValueAsync(mood, mUmore, WeightedMood(), day, 21, 22, ct).ConfigureAwait(false);
+                await ScaleValueAsync(mood, mUmore, MoodOn100(), day, 21, 22, ct).ConfigureAwait(false);
             if (Chance(0.35))
                 await diary.SaveEntryAsync(diario, day, JournalEntries[_rng.Next(JournalEntries.Length)], ct)
                     .ConfigureAwait(false);
@@ -233,7 +240,10 @@ public sealed class DemoDataSeeder(
                     await SeriesDayAsync(row.HabitNodeId, defs, _rng.Next(1, 5), progress, day, ct).ConfigureAwait(false);
                     break;
                 case HabitType.State when defs.Count > 0 && Chance(0.85):
-                    await ValueAsync(row.HabitNodeId, defs[0].Id, WeightedMood(), day, 20, 22, ct).ConfigureAwait(false);
+                    if (defs[0].ScaleTemplateId is null)
+                        await ValueAsync(row.HabitNodeId, defs[0].Id, WeightedMood(), day, 20, 22, ct).ConfigureAwait(false);
+                    else   // 1..5 sta in ogni scala ufficiale e in quelle dell'utente che partono da 1
+                        await ScaleValueAsync(row.HabitNodeId, defs[0].Id, WeightedMood(), day, 20, 22, ct).ConfigureAwait(false);
                     break;
             }
         }
@@ -309,6 +319,9 @@ public sealed class DemoDataSeeder(
     private bool Chance(double p) => _rng.NextDouble() < p;
 
     // Mostly 3-4, occasionally extremes.
+    // The same shape on the 1–100 mood scale: a true value near the five marks, never the mark itself.
+    private int MoodOn100() => Math.Clamp(WeightedMood() * 20 - _rng.Next(0, 12), 1, 100);
+
     private int WeightedMood() => _rng.Next(10) switch { 0 => 1, 1 => 2, 2 or 3 => 5, 4 or 5 or 6 => 4, _ => 3 };
 
     private ValueTask<Guid> GroupAsync(string name, string color, string icon, Guid? parent, CancellationToken ct) =>
@@ -339,6 +352,13 @@ public sealed class DemoDataSeeder(
 
     private async Task ActionAsync(Guid habitId, DateOnly day, int fromHour, int toHour, CancellationToken ct) =>
         await completions.RecordAsync(Draft(habitId, day, fromHour, toHour), ct: ct).ConfigureAwait(false);
+
+    /// <summary>Un valore vero su una scala: in <c>ValueDecimal</c>, mai una posizione (GIO-23).</summary>
+    private async Task ScaleValueAsync(Guid habitId, Guid metricId, int value, DateOnly day, int fromHour, int toHour, CancellationToken ct) =>
+        await completions.RecordAsync(
+            Draft(habitId, day, fromHour, toHour),
+            values: [new CompletionValue { MetricDefinitionId = metricId, SeriesIndex = 0, ValueDecimal = value }],
+            ct: ct).ConfigureAwait(false);
 
     private async Task ValueAsync(Guid habitId, Guid metricId, int value, DateOnly day, int fromHour, int toHour, CancellationToken ct) =>
         await completions.RecordAsync(

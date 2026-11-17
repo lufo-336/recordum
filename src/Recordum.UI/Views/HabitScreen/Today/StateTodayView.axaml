@@ -13,8 +13,13 @@
            provvisorio. -->
       <Slider x:Name="ValueSlider" Minimum="{CompiledBinding Min}" Maximum="{CompiledBinding Max}"
               Value="{CompiledBinding SliderValue, Mode=TwoWay}"
-              IsSnapToTickEnabled="True" TickFrequency="1"
+              IsSnapToTickEnabled="True" TickFrequency="{CompiledBinding Step}"
               Width="220" VerticalAlignment="Center" Margin="0,0,12,0"/>
+      <!-- Il valore esatto: su 1-100 col dito non si centra il 62. Si conferma uscendo dal campo (digitando, un testo a
+           meta' verrebbe riformattato sotto le dita). -->
+      <TextBox x:Name="ValueBox" Text="{CompiledBinding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+               Width="72" VerticalAlignment="Center" Margin="0,0,12,0"
+               AutomationProperties.Name="{CompiledBinding CurrentLabel}"/>
       <Button x:Name="SaveButton" Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
               Command="{CompiledBinding RecordCommand}" IsEnabled="{CompiledBinding CanRecord}"
               Padding="12,6" Margin="0,0,16,0" VerticalAlignment="Center"/>

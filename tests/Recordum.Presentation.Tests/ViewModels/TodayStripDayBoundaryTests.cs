@@ -132,7 +132,7 @@ public class TodayStripDayBoundaryTests
         await sut.LoadAsync(node, LateReset);
 
         sut.LastValueLabel.Should().NotBeNull();
-        sut.SliderValue.Should().Be(2);   // magnitudine 3 = indice 2 (il valore memorizzato è 1-based)
+        sut.SliderValue.Should().Be(3);   // il valore vero 3, senza "− 1" (GIO-23)
     }
 
     [Fact]

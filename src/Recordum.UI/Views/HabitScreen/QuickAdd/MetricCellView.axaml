@@ -30,12 +30,15 @@
                IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Text}}"/>
       <StackPanel x:Name="ScalePanel" MinWidth="200" MaxWidth="300"
                   IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Scale}}">
-        <TextBlock x:Name="ScaleCaption" Text="{CompiledBinding SelectedScaleLabel}" HorizontalAlignment="Center"
+        <TextBlock x:Name="ScaleCaption" Text="{CompiledBinding CurrentLabel}" HorizontalAlignment="Center"
                    Margin="0,0,0,2" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Accent}"/>
-        <!-- Il VM semina l'indice 0, quindi lo slider non e' mai null: l'intero salvato e' indice+1 (CLAUDE.md §5). -->
-        <Slider x:Name="ScaleSlider" Minimum="0" Maximum="{CompiledBinding SliderMax}"
-                Value="{CompiledBinding SelectedScaleIndex, Mode=TwoWay}"
-                IsSnapToTickEnabled="True" TickFrequency="1" TickPlacement="BottomRight"/>
+        <!-- Il VM semina il minimo, quindi lo slider non e' mai null: si registra il valore vero (GIO-23). Le tacche
+             (una per intero, o per scaglione) sono lavoro del Task 7: con 0,01 di passo TickPlacement ne disegnerebbe migliaia. -->
+        <Slider x:Name="ScaleSlider" Minimum="{CompiledBinding Min}" Maximum="{CompiledBinding Max}"
+                Value="{CompiledBinding SliderValue, Mode=TwoWay}"
+                IsSnapToTickEnabled="True" TickFrequency="{CompiledBinding Step}"/>
+        <TextBox x:Name="ScaleValueBox" Width="72" HorizontalAlignment="Center" Margin="0,2,0,0"
+                 Text="{CompiledBinding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
         <Grid Margin="8,1,8,0" IsVisible="{CompiledBinding ShowReferencePoints}">
           <TextBlock x:Name="ScaleMin" Text="{CompiledBinding ScaleMinLabel}" HorizontalAlignment="Left"
                      FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>

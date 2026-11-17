@@ -241,7 +241,7 @@ public class StateStepsTests
         var metric = (await metrics.ListByHabitAsync(o.Id)).Single();
         await metrics.UpdateAsync(metric.Id, m => m.Type = MetricType.Decimal);
         await UntilAsync(() => !ReferenceEquals(o.Vm.QuickAdd, before));
-        await UntilAsync(() => o.QuickAdd.Steps.Count == 4 && o.QuickAdd.Steps[2].IsCurrent);
+        await UntilAsync(() => o.QuickAdd.Steps.Count == before.Steps.Count && o.QuickAdd.Steps[2].IsCurrent);
 
         DateOnly.FromDateTime(o.QuickAdd.CompletionDate).Should().Be(yesterday);
         o.Window.Close();

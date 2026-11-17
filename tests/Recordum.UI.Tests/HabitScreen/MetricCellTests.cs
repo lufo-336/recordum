@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Presentation.Formatting;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.QuickAdd;
 using Recordum.UI.Tests.Fixtures;
@@ -206,7 +207,7 @@ public class MetricCellTests
     // ---- 5.2 / 5.3 ----------------------------------------------------------------------------------------
 
     [AvaloniaFact]
-    public async Task The_scale_saves_the_step_integer()
+    public async Task The_scale_saves_the_true_value()
     {
         var o = await OpenAsync(HabitType.State, async (scope, id) =>
         {
@@ -224,15 +225,22 @@ public class MetricCellTests
         try
         {
             // Ogni cella porta i controlli (nascosti) degli altri tipi: si prende quello visibile.
+            var scale = (await o.Scope.ServiceProvider.GetRequiredService<IReferenceDataQueryService>().ListScalesAsync())[0];
             var slider = o.View.GetVisualDescendants().OfType<Slider>().Single(s => s.Name == "ScaleSlider" && s.IsEffectivelyVisible);
-            slider.Maximum.Should().Be(4);
-            slider.Value = 2;   // il terzo passo
+            slider.Minimum.Should().Be(scale.MinValue);
+            slider.Maximum.Should().Be(scale.MaxValue);
+            var third = scale.MinValue + 2;   // il terzo valore, che non coincide con la sua posizione se la scala non parte da 1
+            slider.Value = third;
             Pump();
             o.View.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ScaleCaption" && t.IsEffectivelyVisible)
-                .Text.Should().Be("Fair");
+                .Text.Should().Be(ScaleText.Long(scale, third));
+            o.View.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "ScaleValueBox" && t.IsEffectivelyVisible)
+                .Text.Should().Be(ScaleText.Number(scale, third));
             Click(o.Window, Named<Button>(o.View, "SaveButton"));
             await UntilAsync(() => o.SavedValuesAsync().GetAwaiter().GetResult().Count == 1);
-            (await o.SavedValuesAsync()).Single().ValueInteger.Should().Be(3, "il passo 3 salva l'intero 3, non l'etichetta ne' l'indice");
+            var saved = (await o.SavedValuesAsync()).Single();
+            saved.ValueDecimal.Should().Be(third, "si salva il valore vero, non l'etichetta ne' la posizione");
+            saved.ValueInteger.Should().BeNull();
         }
         finally { o.Window.Close(); }
     }

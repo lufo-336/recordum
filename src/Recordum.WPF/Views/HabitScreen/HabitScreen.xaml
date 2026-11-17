@@ -375,19 +375,17 @@
                             </Style>
                         </StackPanel.Style>
                         <!-- Current value -->
-                        <TextBlock Text="{Binding SelectedScaleLabel}" HorizontalAlignment="Center"
+                        <TextBlock Text="{Binding CurrentLabel}" HorizontalAlignment="Center"
                                    Margin="0,0,0,2" FontWeight="SemiBold"
                                    Foreground="{DynamicResource Brush.Accent}"/>
-                        <!-- No TargetNullValue: it is bidirectional, so a thumb resting at 0 (== the null
-                             sentinel) would write null back to SelectedScaleIndex and the first step would
-                             fail to save ("value required"). The VM seeds index 0, so the slider is never null. -->
-                        <Slider Minimum="0" Maximum="{Binding SliderMax}"
-                                Value="{Binding SelectedScaleIndex}"
-                                IsSnapToTickEnabled="True" TickFrequency="1"/>
+                        <!-- WPF e' congelata: legge il valore vero dallo stesso cursore, senza campo numerico. -->
+                        <Slider Minimum="{Binding Min}" Maximum="{Binding Max}"
+                                Value="{Binding SliderValue}"
+                                IsSnapToTickEnabled="True" TickFrequency="{Binding Step}"/>
                         <!-- Step ticks: one per stop, slid onto its thumb position via the offset converter
                              (a single-cell Grid lets each tick render at the same origin then translate).
                              Captions are NOT per-tick — worded labels centred on every stop collide. -->
-                        <ItemsControl ItemsSource="{Binding ScalePoints}" Margin="0,3,0,0"
+                        <ItemsControl ItemsSource="{Binding Points}" Margin="0,3,0,0"
                                       Visibility="{Binding ShowReferencePoints, Converter={StaticResource BoolToVisible}}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate><Grid/></ItemsPanelTemplate>

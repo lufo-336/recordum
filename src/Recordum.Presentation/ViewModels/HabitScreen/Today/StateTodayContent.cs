@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Core.Scales;
 using Recordum.Core.Time;
 
 namespace Recordum.Presentation.ViewModels.HabitScreen.Today;
@@ -12,28 +13,22 @@ namespace Recordum.Presentation.ViewModels.HabitScreen.Today;
 /// <summary>State "Oggi" content (spec §1): a quick stepped slider for today plus the last recorded value.
 /// Resolves the scale the same way the quick-add cell does — the metric's <c>LabelsJson</c> override wins
 /// over the <see cref="ScaleTemplate"/> (CSS-style specificity). Recording is last-wins for the day.
-/// Degrades to a bare numeric slider (0–10) when the scale is missing (e.g. data wiped by 4d01f9c).</summary>
-public sealed partial class StateTodayContent : ObservableObject, ITodayContent
+/// Records the TRUE value on the scale (GIO-23). Degrades to a bare numeric slider (0–10) that cannot record when
+/// the scale is missing (e.g. data wiped by 4d01f9c).</summary>
+public sealed partial class StateTodayContent : ScaleCursorBase, ITodayContent
 {
-    private const int FallbackMax = 10;
-
     private readonly ICompletionService _completions;
     private readonly IMetricDefinitionService _metrics;
     private readonly IReferenceDataQueryService _refData;
     private readonly IClock _clock;
     private Guid _habitId;
     private Guid? _metricId;
-    private string[] _labels = [];
 
-    [ObservableProperty] private int _min;
-    [ObservableProperty] private int _max = FallbackMax;
-    [ObservableProperty] private int _sliderValue;
-    [ObservableProperty] private string _currentLabel = string.Empty;
     [ObservableProperty] private string? _lastValueLabel;
 
     /// <summary>False when the scale could not be resolved to a real metric — the record button is disabled
     /// (the slider still moves so the strip never looks broken).</summary>
-    public bool CanRecord => _metricId is not null;
+    public bool CanRecord => _metricId is not null && Scale is not null;
 
     public StateTodayContent(
         ICompletionService completions, IMetricDefinitionService metrics,
@@ -62,11 +57,10 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
 
         await ResolveScaleAsync(ct).ConfigureAwait(true);
 
-        // Seed the slider from today's recorded value (if any); Max is set before Value so it isn't coerced.
-        var (index, hasValue) = await ReadTodayIndexAsync(ct).ConfigureAwait(true);
-        SliderValue = hasValue ? Math.Clamp(index, Min, Max) : Min;
-        LastValueLabel = hasValue ? LabelFor(index) : null;
-        CurrentLabel = LabelFor(SliderValue);
+        // Seed the cursor from today's recorded value (if any); the scale is set before the value so it isn't coerced.
+        var today = await ReadTodayAsync(ct).ConfigureAwait(true);
+        SetValue(today is { } v ? (double)v : Min);
+        LastValueLabel = today is { } t && Scale is not null ? ScaleText.Long(Scale, t) : null;
     }
 
     private async Task ResolveScaleAsync(CancellationToken ct)
@@ -75,50 +69,30 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
         var primary = metrics.Where(m => m.ScaleTemplateId is not null).OrderBy(m => m.SortOrder).FirstOrDefault()
                       ?? metrics.OrderBy(m => m.SortOrder).FirstOrDefault();
         _metricId = primary?.Id;
-        OnPropertyChanged(nameof(CanRecord));
 
-        var stepCount = FallbackMax + 1;
+        ScaleTemplate? tmpl = null;
         if (primary?.ScaleTemplateId is { } sid)
-        {
-            var scales = await _refData.ListScalesAsync(ct).ConfigureAwait(true);
-            var tmpl = scales.FirstOrDefault(s => s.Id == sid);
-            if (tmpl is not null)
-            {
-                // One reading per value, from ScaleText (GIO-23); recording by true value is Task 5.
-                _labels = Enumerable.Range(tmpl.MinValue, tmpl.MaxValue - tmpl.MinValue + 1).Select(v => ScaleText.Short(tmpl, v)).ToArray();
-                stepCount = Math.Max(1, _labels.Length);
-            }
-        }
-        else
-        {
-            _labels = [];
-        }
-
-        Min = 0;
-        Max = Math.Max(0, stepCount - 1);
+            tmpl = (await _refData.ListScalesAsync(ct).ConfigureAwait(true)).FirstOrDefault(s => s.Id == sid);
+        UseScale(tmpl);
+        OnPropertyChanged(nameof(CanRecord));
     }
 
-    /// <summary>Today's recorded scale index (stored value is 1-based, so index = value − 1), and whether
-    /// a value exists. Reads the day magnitude (same source the calendar uses).</summary>
-    private async Task<(int Index, bool HasValue)> ReadTodayIndexAsync(CancellationToken ct)
+    /// <summary>Today's recorded value on the scale (the true value, not a position), or null. Reads the day magnitude
+    /// (same source the calendar uses).</summary>
+    private async Task<decimal?> ReadTodayAsync(CancellationToken ct)
     {
+        if (Scale is null) return null;
         var today = _day.Today(_clock);
         var mags = await _completions.GetDailyMagnitudeAsync(_habitId, today.Year, today.Month, ct).ConfigureAwait(true);
         var todayMag = mags.FirstOrDefault(m => m.Date == today);
-        if (todayMag is null) return (0, false);
-        return ((int)todayMag.Magnitude - 1, true);
+        return todayMag is null ? null : ScaleRules.Normalize((decimal)todayMag.Magnitude, Scale.MinValue, Scale.MaxValue, Scale.Precision);
     }
-
-    partial void OnSliderValueChanged(int value) => CurrentLabel = LabelFor(value);
-
-    private string LabelFor(int index)
-        => index >= 0 && index < _labels.Length ? _labels[index] : (index + 1).ToString(CultureInfo.CurrentCulture);
-
 
     [RelayCommand]
     private async Task RecordAsync()
     {
-        if (_metricId is not { } metricId) return;
+        // AsyncRelayCommand.ExecuteAsync non consulta CanExecute: la guardia sta anche qui.
+        if (_metricId is not { } metricId || Scale is null) return;
 
         // Last-wins for the day: drop any existing completion(s) recorded today, then record the new value.
         var today = _day.Today(_clock);
@@ -139,10 +113,10 @@ public sealed partial class StateTodayContent : ObservableObject, ITodayContent
         {
             MetricDefinitionId = metricId,
             SeriesIndex = 0,
-            ValueInteger = SliderValue + 1, // 1-based, mirroring the quick-add cell
+            ValueDecimal = CurrentValue,   // the true value, never a position
         };
         await _completions.RecordAsync(draft, new[] { value }).ConfigureAwait(true);
 
-        LastValueLabel = LabelFor(SliderValue);
+        LastValueLabel = ScaleText.Long(Scale, CurrentValue);
     }
 }

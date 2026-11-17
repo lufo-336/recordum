@@ -16,7 +16,7 @@
             <!-- quick stepped slider for today -->
             <Slider Minimum="{Binding Min}" Maximum="{Binding Max}"
                     Value="{Binding SliderValue, Mode=TwoWay}"
-                    IsSnapToTickEnabled="True" TickFrequency="1"
+                    IsSnapToTickEnabled="True" TickFrequency="{Binding Step}"
                     Width="220" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
             <!-- record today's value (last-wins) -->

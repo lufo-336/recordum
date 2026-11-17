@@ -1,4 +1,3 @@
-using Recordum.Presentation.Formatting;
 using System.Text.Json;
 using Recordum.Core.Models;
 
@@ -27,9 +26,7 @@ public sealed class MetricCellFactory
         ScaleInfo? scale = null;
         if (m.ScaleTemplateId is { } sid && _scaleById.TryGetValue(sid, out var tmpl))
         {
-            // One reading per value of the scale, from ScaleText (GIO-23); recording by true value is Task 5.
-            var labels = Enumerable.Range(tmpl.MinValue, tmpl.MaxValue - tmpl.MinValue + 1).Select(v => ScaleText.Short(tmpl, v)).ToArray();
-            scale = new ScaleInfo(tmpl.MinValue, tmpl.MaxValue, labels);
+            scale = new ScaleInfo(tmpl);
         }
         return new SeriesCellViewModel(m, unit?.Code, scale, unit is null ? null : Recordum.Presentation.Templates.UnitLabel.For(unit));
     }

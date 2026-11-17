@@ -69,7 +69,7 @@ public class MeasuredQuickAddViewModelTests
     }
 
     [Fact]
-    public async Task Scale_cell_records_selected_index_and_loads_labels()
+    public async Task Scale_cell_records_the_true_value_and_loads_the_points()
     {
         var node = Guid.NewGuid();
         var (sut, cs, ms, rd) = Build(node);
@@ -80,12 +80,12 @@ public class MeasuredQuickAddViewModelTests
         await sut.LoadMetricsAsync();
 
         sut.Row.Cells[0].Kind.Should().Be(MetricInputKind.Scale);
-        sut.Row.Cells[0].ScaleLabels.Should().HaveCount(5);
-        sut.Row.Cells[0].SelectedScaleIndex = 3;
+        sut.Row.Cells[0].Points.Should().HaveCount(5);
+        sut.Row.Cells[0].SliderValue = 4;
         await sut.SaveAsync();
 
         cs.LastValues.Should().ContainSingle();
-        cs.LastValues![0].ValueInteger.Should().Be(4); // 1-based: step index 3 → value 4
+        cs.LastValues![0].ValueDecimal.Should().Be(4m); // the true value on the scale
     }
 
     [Fact]
@@ -101,8 +101,8 @@ public class MeasuredQuickAddViewModelTests
         await ms.CreateAsync(new MetricDefinition { HabitNodeId = node, Name = "Focus", Type = MetricType.Integer, ScaleTemplateId = s2, SortOrder = 1 });
         await sut.LoadMetricsAsync();
 
-        sut.Row.Cells[0].SelectedScaleIndex = 1;
-        sut.Row.Cells[1].SelectedScaleIndex = 2;
+        sut.Row.Cells[0].SliderValue = 2;
+        sut.Row.Cells[1].SliderValue = 3;
         await sut.SaveAsync();
 
         cs.LastValues.Should().HaveCount(2);
@@ -175,7 +175,7 @@ public class MeasuredQuickAddStepsTests
 
         await sut.RecordStepCommand.ExecuteAsync(sut.Steps[2]);
 
-        cs.LastValues.Should().ContainSingle().Which.ValueInteger.Should().Be(3);
+        cs.LastValues.Should().ContainSingle().Which.ValueDecimal.Should().Be(3m);
     }
 
     [Theory]

@@ -37,8 +37,8 @@ public class StateTodayContentTests
 
         await sut.LoadAsync(node, DayBoundary.Utc);
 
-        sut.Min.Should().Be(0);
-        sut.Max.Should().Be(2);           // 3 labels → indices 0..2
+        sut.Min.Should().Be(1);
+        sut.Max.Should().Be(3);           // the true range of the scale, not positions
         sut.CanRecord.Should().BeTrue();
     }
 
@@ -50,14 +50,14 @@ public class StateTodayContentTests
 
         await sut.LoadAsync(node, DayBoundary.Utc);
 
-        sut.SliderValue = 1;
-        sut.CurrentLabel.Should().Be("A · 2");
         sut.SliderValue = 2;
+        sut.CurrentLabel.Should().Be(string.Format(System.Globalization.CultureInfo.CurrentCulture, Recordum.Presentation.Resources.Strings.Scale_Reading_Between, "2", "A", "C"));
+        sut.SliderValue = 3;
         sut.CurrentLabel.Should().Be("C");
     }
 
     [Fact]
-    public async Task Record_replaces_todays_value_and_stores_the_1_based_index()
+    public async Task Record_replaces_todays_value_and_stores_the_true_value()
     {
         var (sut, completions, metrics, refData, node) = NewSut();
         var metric = ScaleMetric(node.Id, refData.Scales[0], "Bad", "OK", "Good");
@@ -68,11 +68,11 @@ public class StateTodayContentTests
         { Id = priorId, HabitNodeId = node.Id, CompletedAt = Now.UtcDateTime, CompletedAtMs = Now.ToUnixTimeMilliseconds() };
 
         await sut.LoadAsync(node, DayBoundary.Utc);
-        sut.SliderValue = 2;
+        sut.SliderValue = 3;
         await sut.RecordCommand.ExecuteAsync(null);
 
         completions.DeleteCalls.Should().Contain(priorId);
-        completions.LastValues.Should().ContainSingle(v => v.MetricDefinitionId == metric.Id && v.ValueInteger == 3);
+        completions.LastValues.Should().ContainSingle(v => v.MetricDefinitionId == metric.Id && v.ValueDecimal == 3m && v.ValueInteger == null);
     }
 
     [Fact]
