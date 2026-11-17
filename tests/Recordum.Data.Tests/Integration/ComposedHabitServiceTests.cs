@@ -59,7 +59,8 @@ public class ComposedHabitServiceTests
         var nodeId = Guid.NewGuid();
         var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Code = "tazze", Name = "Tazze", IsOfficial = false };
         var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "energia-3", Name = "Energia",
-            MinValue = 1, MaxValue = 3, LabelsJson = """["Bassa","Media","Alta"]""", IsOfficial = false };
+            MinValue = 1, MaxValue = 3, IsOfficial = false,
+            Anchors = [new ScaleAnchor { Value = 1, Label = "Bassa" }, new ScaleAnchor { Value = 3, Label = "Alta" }] };
         var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = nodeId, Name = "Tazze",
             Type = MetricType.Decimal, UnitOfMeasureId = unit.Id, SortOrder = 0 };
         var request = new ComposedHabitRequest(

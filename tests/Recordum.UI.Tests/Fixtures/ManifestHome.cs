@@ -47,7 +47,6 @@ internal static class ManifestHome
                 TodayCounterUnitName: b.UnitCode,
                 TodayCounterUnitIsOfficial: b.UnitCode is not null,
                 TodayStateValue: b.StateValue,
-                TodayStateLabel: b.StateLabel,
                 AbstinenceStatus: b.Abstinence,
                 AbstinenceOpenSinceMs: b.Abstinence == AbstinenceStatus.Abstaining ? open : null,
                 JournalEntriesThisWeek: b.JournalThisWeek,

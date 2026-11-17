@@ -16,7 +16,14 @@ public sealed class ComposedHabitService(IDbContextFactory<RecordumDbContext> db
         // that reference them by Id (no code-based resolution on this path — that lives only
         // in HabitTemplateService.InstantiateAsync).
         foreach (var u in request.NewUnits ?? []) db.UnitsOfMeasure.Add(u);
-        foreach (var s in request.NewScales ?? []) db.ScaleTemplates.Add(s);
+        foreach (var s in request.NewScales ?? [])
+        {
+            // Gli scaglioni arrivano con il nome e senza tag: li costruisce ScaleAnchorTags (trova-o-crea i tag).
+            var drafts = s.Anchors.Select(a => new ScaleAnchorDraft(a.Value, a.Label)).ToList();
+            s.Anchors.Clear();
+            db.ScaleTemplates.Add(s);
+            await ScaleAnchorTags.BuildAsync(db, s.Id, drafts, ct);
+        }
         // ui_prefs is serialized onto the node before Add, inside this transaction — no post-hoc
         // write (closes W24-R1).
         if (request.UiPrefs is { } prefs) request.Node.UiPrefsJson = HabitUiPrefsJson.Serialize(prefs);

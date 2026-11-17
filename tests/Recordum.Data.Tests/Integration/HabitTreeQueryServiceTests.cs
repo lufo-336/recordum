@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.Services.Queries;
@@ -571,8 +572,7 @@ public class HabitTreeQueryServiceTests
         row.ValuesLast14Days.IsDefaultOrEmpty.Should().BeTrue();
     }
 
-    [Fact]
-    public async Task GetHomeTreeAsync_returns_TodayStateValue_and_label_from_latest_completion()
+    private static async Task<HomeTreeRow> StateRowAsync(string scaleCode, decimal? decimalValue, long? intValue)
     {
         var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
         await using var fx = new DbFixture(clock);
@@ -581,115 +581,47 @@ public class HabitTreeQueryServiceTests
         var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
         await using (var db = await fx.Factory.CreateDbContextAsync())
         {
+            var scale = await db.ScaleTemplates.SingleAsync(s => s.Code == scaleCode);
             db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
             db.MetricDefinitions.Add(new MetricDefinition
             {
-                Id = metricId,
-                HabitNodeId = habitId,
-                Name = "Mood",
-                Type = MetricType.Integer,
-                LabelsJson = "[\"Male\",\"Così\",\"Bene\"]",
-                SortOrder = 0,
+                Id = metricId, HabitNodeId = habitId, Name = "S", Type = MetricType.Decimal,
+                ScaleTemplateId = scale.Id, SortOrder = 0,
             });
             var earlier = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
             var latest = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs + 100 };
             db.Completions.AddRange(earlier, latest);
             db.CompletionValues.AddRange(
-                new CompletionValue { Id = Guid.NewGuid(), CompletionId = earlier.Id, MetricDefinitionId = metricId, ValueInteger = 1 },
-                new CompletionValue { Id = Guid.NewGuid(), CompletionId = latest.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = earlier.Id, MetricDefinitionId = metricId, ValueDecimal = 9 },
+                new CompletionValue { Id = Guid.NewGuid(), CompletionId = latest.Id, MetricDefinitionId = metricId, ValueDecimal = decimalValue, ValueInteger = intValue });
             await db.SaveChangesAsync();
         }
-
         var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
-        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
-        row.TodayStateValue.Should().Be(3);
-        row.TodayStateLabel.Should().Be("Bene");
+        return (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
     }
 
     [Fact]
-    public async Task GetHomeTreeAsync_resolves_TodayStateLabel_from_ScaleTemplate_when_metric_has_no_override()
+    public async Task GetHomeTreeAsync_State_zero_on_NRS_returns_value_0_and_the_scale_with_anchors()
     {
-        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
-        await using var fx = new DbFixture(clock);
-        var habitId = Guid.NewGuid();
-        var metricId = Guid.NewGuid();
-        var scaleId = Guid.NewGuid();
-        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
-        await using (var db = await fx.Factory.CreateDbContextAsync())
-        {
-            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
-            db.ScaleTemplates.Add(new ScaleTemplate
-            {
-                Id = scaleId,
-                Code = "test-mood",
-                Name = "Test Mood",
-                MinValue = 1,
-                MaxValue = 3,
-                LabelsJson = "[\"Male\",\"Così\",\"Bene\"]",
-            });
-            db.MetricDefinitions.Add(new MetricDefinition
-            {
-                Id = metricId,
-                HabitNodeId = habitId,
-                Name = "Mood",
-                Type = MetricType.Integer,
-                ScaleTemplateId = scaleId,
-                LabelsJson = null, // no metric-level override → must fall back to the template
-                SortOrder = 0,
-            });
-            var completion = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
-            db.Completions.Add(completion);
-            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completion.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
-            await db.SaveChangesAsync();
-        }
-
-        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
-        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
-        row.TodayStateValue.Should().Be(3);
-        row.TodayStateLabel.Should().Be("Bene");
+        var row = await StateRowAsync("nrs-pain", 0m, null);
+        row.TodayStateValue.Should().Be(0m);
+        row.StateScale!.Code.Should().Be("nrs-pain");
+        row.StateScale.Anchors.Should().NotBeEmpty();
     }
 
     [Fact]
-    public async Task GetHomeTreeAsync_metric_LabelsJson_wins_over_ScaleTemplate()
+    public async Task GetHomeTreeAsync_State_takes_the_latest_true_value_with_decimals()
     {
-        var clock = new FakeClock(new DateTimeOffset(2026, 5, 10, 12, 0, 0, TimeSpan.Zero));
-        await using var fx = new DbFixture(clock);
-        var habitId = Guid.NewGuid();
-        var metricId = Guid.NewGuid();
-        var scaleId = Guid.NewGuid();
-        var todayMs = new DateTimeOffset(clock.UtcNow.UtcDateTime.Date, TimeSpan.Zero).ToUnixTimeMilliseconds();
-        await using (var db = await fx.Factory.CreateDbContextAsync())
-        {
-            db.HabitNodes.Add(new HabitNode { Id = habitId, Name = "s", NodeType = NodeType.Habit, HabitType = HabitType.State });
-            db.ScaleTemplates.Add(new ScaleTemplate
-            {
-                Id = scaleId,
-                Code = "test-generic",
-                Name = "Test Generic",
-                MinValue = 1,
-                MaxValue = 3,
-                LabelsJson = "[\"TmplA\",\"TmplB\",\"TmplC\"]",
-            });
-            db.MetricDefinitions.Add(new MetricDefinition
-            {
-                Id = metricId,
-                HabitNodeId = habitId,
-                Name = "Mood",
-                Type = MetricType.Integer,
-                ScaleTemplateId = scaleId,
-                LabelsJson = "[\"Male\",\"Così\",\"Bene\"]", // override must win
-                SortOrder = 0,
-            });
-            var completion = new Completion { Id = Guid.NewGuid(), HabitNodeId = habitId, CompletedAt = clock.UtcNow.UtcDateTime, CompletedAtMs = todayMs };
-            db.Completions.Add(completion);
-            db.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = completion.Id, MetricDefinitionId = metricId, ValueInteger = 3 });
-            await db.SaveChangesAsync();
-        }
+        var row = await StateRowAsync("mood-5", 3.5m, null);
+        row.TodayStateValue.Should().Be(3.5m);
+        row.StateScale!.Code.Should().Be("mood-5");
+    }
 
-        var q = new HabitTreeQueryService(fx.Factory, clock, fx.ResetTimes);
-        var row = (await q.GetHomeTreeAsync()).Single(r => r.HabitNodeId == habitId);
-        row.TodayStateValue.Should().Be(3);
-        row.TodayStateLabel.Should().Be("Bene");
+    [Fact]
+    public async Task GetHomeTreeAsync_State_still_reads_a_legacy_integer_value()
+    {
+        var row = await StateRowAsync("mood-5", null, 4);
+        row.TodayStateValue.Should().Be(4m);
     }
 
     [Fact]

@@ -151,7 +151,7 @@ public class HomeRowViewModelTests
     private static HomeTreeRow StateRow(Guid id, int value, string label) =>
         new(id, null, "s", "#000000", HabitType.State, null, 0, true, PinScope.None, 0, false,
             ImmutableArray.Create(0, 0, 0, 0, 0, 0, 0), ImmutableArray<Guid>.Empty,
-            TodayStateValue: value, TodayStateLabel: label);
+            TodayStateValue: value); // GIO-23: l'etichetta la legge Presentation (Task 4); label resta nel chiamante
 
     [Fact]
     public void Counter_key_figure_shows_total_with_unit()

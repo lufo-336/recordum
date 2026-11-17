@@ -37,6 +37,8 @@ public sealed class TagService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.HabitNodeTags.Where(x => x.TagId == id).ExecuteDeleteAsync(ct);
+        // Esplicito > implicito: lo scaglione resta col suo nome, perde solo il tag.
+        await db.ScaleAnchors.Where(a => a.TagId == id).ExecuteUpdateAsync(u => u.SetProperty(a => a.TagId, (Guid?)null), ct);
         await db.Tags.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
         await tx.CommitAsync(ct);
     }

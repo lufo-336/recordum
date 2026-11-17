@@ -114,6 +114,13 @@ public sealed class HabitTreeQueryService(
             .GroupBy(m => m.HabitNodeId)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.SortOrder).First());
         var primaryMetricIds = primaryMetricByHabit.Values.Select(m => m.Id).ToHashSet();
+        // Le scale degli Stati (con gli scaglioni): la lettura del nome la fa Presentation (GIO-23).
+        var stateScaleIds = primaryMetricByHabit.Values.Where(m => m.ScaleTemplateId != null)
+            .Select(m => m.ScaleTemplateId!.Value).Distinct().ToList();
+        var scalesById = stateScaleIds.Count == 0
+            ? new Dictionary<Guid, ScaleTemplate>()
+            : (await db.ScaleTemplates.AsNoTracking().Include(s => s.Anchors)
+                .Where(s => stateScaleIds.Contains(s.Id)).ToListAsync(ct)).ToDictionary(s => s.Id);
 
         // CompletionValues on each node's primary metric over the whole 14-day window — feeds the
         // counter total / state value of today AND the per-day value strip (2.1-bis: counter
@@ -259,8 +266,8 @@ public sealed class HabitTreeQueryService(
                 string? todayCounterUnitName = null;
                 bool todayCounterUnitIsOfficial = false;
                 bool todayCounterIsDuration = false;
-                int? todayStateValue = null;
-                string? todayStateLabel = null;
+                decimal? todayStateValue = null;
+                ScaleTemplate? stateScale = null;
                 var abstinenceStatus = AbstinenceStatus.NotStarted;
                 long? abstinenceOpenSinceMs = null;
                 ImmutableArray<bool> lapses14 = default;
@@ -296,11 +303,11 @@ public sealed class HabitTreeQueryService(
                         break;
                     case HabitType.State:
                         if (stateDailyLastByHabit.TryGetValue(r.Id, out var lastVals)) values14 = lastVals;
-                        if (stateLatestByHabit.TryGetValue(r.Id, out var latest) && latest.ValueInteger is long v)
-                        {
-                            todayStateValue = (int)v;
-                            // GIO-23: le etichette non stanno più nel DB; la lettura per scaglioni la scrive il Task 3.
-                        }
+                        if (stateLatestByHabit.TryGetValue(r.Id, out var latest))
+                            todayStateValue = latest.ValueDecimal ?? latest.ValueInteger;
+                        if (primaryMetricByHabit.TryGetValue(r.Id, out var stateMetric)
+                            && stateMetric.ScaleTemplateId is { } stateScaleId)
+                            scalesById.TryGetValue(stateScaleId, out stateScale);
                         break;
                     case HabitType.Resistance:
                         if (abstinenceByHabit.TryGetValue(r.Id, out var abst))
@@ -341,7 +348,7 @@ public sealed class HabitTreeQueryService(
                     TodayCounterTotal: todayCounterTotal,
                     TodayCounterUnitCode: todayCounterUnitCode,
                     TodayStateValue: todayStateValue,
-                    TodayStateLabel: todayStateLabel,
+                    StateScale: stateScale,
                     AbstinenceStatus: abstinenceStatus,
                     AbstinenceOpenSinceMs: abstinenceOpenSinceMs,
                     JournalEntriesThisWeek: journalEntriesThisWeek,

@@ -118,4 +118,29 @@ public class TagServiceTests
         (await db.HabitNodeTags.AnyAsync(l => l.HabitNodeId == habitId)).Should().BeFalse();
         await fx.DisposeAsync();
     }
+
+    [Fact]
+    public async Task DeleteAsync_of_an_anchor_tag_nulls_TagId_and_keeps_the_label()
+    {
+        await using var fx = new DbFixture();
+        var svc = new TagService(fx.Factory, fx.Clock, NullLogger<TagService>.Instance);
+        var tagId = await svc.CreateAsync(new Tag { Name = "male" });
+        Guid anchorId;
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "t", Name = "T", MinValue = 1, MaxValue = 3 };
+            var anchor = new ScaleAnchor { Id = Guid.NewGuid(), ScaleTemplateId = scale.Id, Value = 1, Label = "Male", TagId = tagId };
+            anchorId = anchor.Id;
+            db.ScaleTemplates.Add(scale);
+            db.ScaleAnchors.Add(anchor);
+            await db.SaveChangesAsync();
+        }
+
+        await svc.DeleteAsync(tagId);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var a = await db2.ScaleAnchors.AsNoTracking().SingleAsync(x => x.Id == anchorId);
+        a.TagId.Should().BeNull();
+        a.Label.Should().Be("Male");
+    }
 }

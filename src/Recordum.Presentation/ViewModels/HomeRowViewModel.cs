@@ -316,8 +316,7 @@ public sealed partial class HomeRowViewModel : ObservableObject
         // L'etichetta dello stato c'è solo per oggi: di un giorno passato si scrive il valore.
         KeyFigureKind.StateValue when _cellBack > 0 =>
             GroupProgress.ValueOn(row, _cellBack)?.ToString("0.##", CultureInfo.CurrentCulture) ?? string.Empty,
-        KeyFigureKind.StateValue => row.TodayStateLabel
-            ?? row.TodayStateValue?.ToString(CultureInfo.CurrentCulture)
+        KeyFigureKind.StateValue => row.TodayStateValue?.ToString("0.##", CultureInfo.CurrentCulture)
             ?? string.Empty,
         KeyFigureKind.JournalEntriesWeek => (row.JournalEntriesThisWeek ?? 0) > 0
 #pragma warning disable CA1863 // CompositeFormat caching not worth it for a once-per-build UI string
