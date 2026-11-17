@@ -47,21 +47,27 @@ abitudini, e "i giorni in cui sono stato male" deve poterla attraversare.
 - `LabelsJson` sparisce: i nomi stanno negli scaglioni.
 
 **Scaglione** (`ScaleAnchor`, tabella nuova `scale_anchor`)
-- `scale_template_id` (FK, cascade dalla scala), `value` **intero** in [Min, Max], `tag_id` (FK nullable verso `tag`,
-  **SET NULL** alla cancellazione del tag), `updated_at_ms` come le altre entità (LWW per la sync futura) [scelta di
-  Claude].
+- `scale_template_id` (FK, cascade dalla scala), `value` **intero** in [Min, Max], `label` (il **nome libero**, testo,
+  nullable, max 100), `tag_id` (FK nullable verso `tag`, **SET NULL** alla cancellazione del tag), `updated_at_ms` come
+  le altre entità (LWW per la sync futura) [scelta di Claude].
+- **Nome e tag** (decisione dell'autore, 2026-11-17): il nome è quello che si vede ovunque ("Sto malissimo"). Il tag
+  l'app lo **ricava dal nome** (`#sto-malissimo`), perché un tag segue la regola del diario (`InlineTags.IsValidName`:
+  niente spazi né punteggiatura). Regola del tag ricavato: minuscolo; spazi (anche più di uno) → un trattino; via ogni
+  carattere fuori da lettere, cifre, `_` e `-`; trattini ripetuti fusi e tolti ai bordi; al più 64 caratteri. Se il
+  risultato non passa `InlineTags.IsValidName` (vuoto, solo cifre) lo scaglione ha il nome ma **niente tag**. Un tag con
+  quel nome già esistente si riusa (`ix_tag_name` è unico e `NOCASE`), se no si crea.
 - Gli scaglioni stanno **solo sugli interi**, anche nelle scale a decimali: così il caso "1 e 1,2" non esiste.
 - Unici per valore nella scala. Lo stesso tag può stare su due scaglioni della stessa scala: la lettura funziona
   comunque, e la migrazione non deve perdere etichette ripetute (§8) [scelta di Claude].
-- Lo scaglione **senza tag** esiste: è quello che resta quando si cancella il suo tag (decisione dell'autore). È un
-  punto senza nome. La lettura della zona (§4) lo ignora [scelta di Claude].
-- **Scaglione con nome** = con un tag (scale dell'utente) o con un testo di `OfficialTexts` (scale ufficiali). È su
+- Lo scaglione **senza tag** esiste: nome che non dà un tag valido, o tag cancellato. Tiene il suo nome.
+- Lo scaglione **senza nome** è una tacca: la lettura della zona (§4) lo ignora [scelta di Claude].
+- **Scaglione con nome** = con un `label` (scale dell'utente) o con un testo di `OfficialTexts` (scale ufficiali). È su
   questi che lavora la lettura del §4.
 
 **Scale ufficiali** (le sette seminate). I loro scaglioni **non hanno tag**: il nome viene da `OfficialTexts` per
 (codice della scala, valore), nella lingua dell'interfaccia, come oggi per indice. Un'ufficiale non si modifica: si
-**duplica**, e la copia diventa una scala dell'utente con i nomi convertiti in tag (nella lingua del momento). Un tag
-con lo stesso nome già esistente si riusa (`ix_tag_name` è unico e `NOCASE`). Conseguenza voluta: le registrazioni su
+**duplica**, e la copia diventa una scala dell'utente: i nomi tradotti (nella lingua del momento) diventano i suoi
+`label`, e i tag si ricavano come sopra. Conseguenza voluta: le registrazioni su
 una scala ufficiale si leggono per zona ("Male · 37"), ma **non portano tag** e restano fuori dalla rete dei tag e dal
 "Cerca" per tag. Chi le vuole nella rete duplica la scala.
 
@@ -93,15 +99,18 @@ Ci sono due letture, prodotte da una sola regola in Core:
 
 ## 5. Tag: la rete
 
-- Lo scaglione di una scala dell'utente **è** un tag. Rinominare il tag (da qualunque parte) rinomina lo scaglione.
-- Cancellare un tag lascia lo scaglione senza nome. Non si blocca la cancellazione.
+- Lo scaglione di una scala dell'utente porta un tag, ricavato dal suo nome (§3).
+- **Rinominare lo scaglione** ricava il tag nuovo e ripunta lo scaglione; il tag vecchio resta (altre cose possono usarlo).
+- **Rinominare il tag** da altrove (quando esisterà una gestione dei tag) non cambia il nome dello scaglione: il
+  collegamento resta.
+- **Cancellare il tag** lascia lo scaglione col suo nome e senza tag (`tag_id` a null). Non si blocca la cancellazione.
 - Una registrazione porta il tag della sua zona (§4). Il tag sta sulla **registrazione**, non sull'abitudine: il filtro
   per tag della Home (GIO-22, che filtra abitudini) **non** vede i tag delle zone. Altrimenti "Umore" comparirebbe
   sotto Male, Bene e Così così insieme.
-- Lo stesso tag in due scale è lo stesso tag: "Male" collega umore, dolore, sonno. Se per l'utente sono cose diverse,
+- Lo stesso tag in due scale è lo stesso tag: `#male` collega umore, dolore, sonno. Se per l'utente sono cose diverse,
   usa due tag. Per restringere combina (vedi §9).
-- In questa spec i tag delle zone **si vedono** nella pagina dell'abitudine e nell'elenco delle registrazioni (il nome
-  della zona è già il tag). La ricerca che li attraversa arriva col "Cerca".
+- In questa spec il tag di uno scaglione **si vede** nell'editor della scala (sotto il nome). La ricerca che attraversa
+  i tag delle zone arriva col "Cerca".
 
 ## 6. Modificare una scala
 
@@ -124,18 +133,18 @@ Nome        [Umore            ]
 Da / a      [ 1 ] – [ 100 ]
 Precisione  (Interi | Decimali)
 
-[  1 ]  (Malissimo)   ×
-[ 25 ]  (Male)        ×
-[ 50 ]  (Così così)   ×
-[ 75 ]  (Bene)        ×
-[100 ]  (Benissimo)   ×
+[  1 ]  [Malissimo   ]  #malissimo   ×
+[ 25 ]  [Male        ]  #male        ×
+[ 50 ]  [Così così   ]  #così-così   ×
+[ 75 ]  [Bene        ]  #bene        ×
+[100 ]  [Benissimo   ]  #benissimo   ×
 + Scaglione     [Un nome per ogni valore]
 
 ━●━━━━━━━━━●━━━━━━━━━━●━━━━━━━━━━●━━━━━━━━━━●   ← anteprima, solo i nomi degli scaglioni
 ```
 
-- Ogni riga: valore (campo numerico intero) e tag. Il tag si sceglie fra quelli esistenti o se ne scrive uno nuovo,
-  con lo stesso selettore dei tag già in uso [scelta di Claude].
+- Ogni riga: valore (campo numerico intero), nome (testo libero) e, in piccolo, il tag che ne ricava l'app
+  (nessun tag mostrato se il nome non ne dà uno). Il tag non si sceglie a mano: segue il nome (decisione dell'autore).
 - **"Un nome per ogni valore"**: crea una riga vuota per ogni intero. C'è solo se la scala ha **al più 12 valori**
   [scelta di Claude: copre la scala medica 1–12, il dolore 0–10, lo stress].
 - **Tacche** sulla barra (anteprima e cursore di registrazione): una per intero solo se i valori sono al più 12;
@@ -162,10 +171,9 @@ le etichette: l'etichetta in posizione *p* va sullo scaglione `min + p − 1`.
    `value_decimal = min + value_integer − 1`, `value_integer = NULL`. Sul dolore 0–10, il 6 salvato diventa 5. La
    metrica diventa `Decimal`. Le scale esistenti diventano a precisione `Integer`.
 2. **Scale ufficiali**: i loro scaglioni si seminano (uno per valore, senza tag). `labels_json` si toglie.
-3. **Scale dell'utente**: ogni etichetta diventa uno scaglione col tag dello stesso nome (riusato se c'è, `NOCASE`,
-   creato se no). Un'etichetta vuota, o uguale al proprio numero ("2", "3"…), non crea lo scaglione. Le etichette
-   ripetute (anche solo nel maiuscolo) danno lo stesso tag su due scaglioni, ed è permesso (§3). Un nome oltre i 64
-   caratteri del tag si accorcia a 64 [scelte di Claude].
+3. **Scale dell'utente**: ogni etichetta diventa uno scaglione con quel `label` e col tag ricavato (§3: riusato se
+   c'è, creato se no). Un'etichetta vuota, o uguale al proprio numero ("2", "3"…), non crea lo scaglione. Le etichette
+   ripetute danno lo stesso tag su due scaglioni, ed è permesso (§3) [scelte di Claude].
 4. **Copie per abitudine** (`metric_definition.labels_json`). Il creatore e Configura le scrivono **sempre**, nella lingua
    dell'interfaccia (`HabitBuilderViewModel.cs:803`, `ScalesSectionViewModel.cs:127`). Una copia è **vera** solo se,
    confrontata come elenco (non come testo JSON), è diversa sia dalle etichette della scala sia da quelle ufficiali di
@@ -239,7 +247,9 @@ test). Noti al 2026-11-17:
   conversione sbagliata (per esempio senza `− 1`).
 - **Regole di modifica** nel servizio: stringere → rifiutato, decimali → interi con storico → rifiutato, scaglione
   fuori estremi o doppio → rifiutato.
-- **Tag**: rinomina riflessa nella lettura; cancellazione → scaglione senza nome, registrazioni intatte.
+- **Tag ricavato**: "Sto malissimo" → `sto-malissimo`, "Così  così!" → `così-così`, "7" → nessun tag, nome di 80
+  caratteri → 64; tag esistente riusato (anche con maiuscole diverse). Rinomina dello scaglione → tag nuovo, il vecchio
+  resta. Cancellazione del tag → lo scaglione tiene il nome, registrazioni intatte.
 - **Cursore**: su una scala a decimali registra 1,37 e lo rilegge 1,37. Su una scala a interi non produce decimali
   (parametro muto: la precisione di default deve rispondere diverso).
 - **Parità creatore ↔ modelli**: fixture nuova (Principio 8).
