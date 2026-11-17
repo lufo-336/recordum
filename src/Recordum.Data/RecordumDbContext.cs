@@ -1,16 +1,23 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Models;
 
 namespace Recordum.Data;
 
-public sealed class RecordumDbContext(DbContextOptions<RecordumDbContext> options)
-    : DbContext(options)
+public sealed class RecordumDbContext : DbContext
 {
+    public RecordumDbContext(DbContextOptions<RecordumDbContext> options) : base(options)
+    {
+        // Le migrazioni in SQL puro chiamano funzioni C# (SqliteFunctions): si registrano su ogni connessione.
+        if (Database.GetDbConnection() is SqliteConnection connection) SqliteFunctions.Register(connection);
+    }
+
     public DbSet<HabitNode> HabitNodes => Set<HabitNode>();
     public DbSet<HabitConfig> HabitConfigs => Set<HabitConfig>();
     public DbSet<HabitConfigHistory> HabitConfigHistories => Set<HabitConfigHistory>();
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<ScaleTemplate> ScaleTemplates => Set<ScaleTemplate>();
+    public DbSet<ScaleAnchor> ScaleAnchors => Set<ScaleAnchor>();
     public DbSet<MetricDefinition> MetricDefinitions => Set<MetricDefinition>();
     public DbSet<SegmentDefinition> SegmentDefinitions => Set<SegmentDefinition>();
     public DbSet<Completion> Completions => Set<Completion>();

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Recordum.Core.Models;
 
 namespace Recordum.Data.SeedData;
@@ -111,4 +112,21 @@ public static class ScaleTemplateSeed
             CreatedAt = SeedDate,
         },
     ];
+
+    /// <summary>Gli scaglioni delle scale ufficiali: uno per valore, <c>Label</c> = l'etichetta inglese seminata
+    /// (solo ripiego: il nome mostrato viene da <c>OfficialTexts</c>), nessun tag. GUID costanti
+    /// <c>00000003-SSSS-0000-0000-VVVVVVVVVVVV</c> (S = numero della scala, V = valore): il secondo gruppo non è mai
+    /// zero, così non si confondono coi modelli <c>00000003-0000-…</c>.</summary>
+    public static IReadOnlyList<ScaleAnchor> Anchors { get; } = All
+        .SelectMany((scale, i) => JsonSerializer.Deserialize<string[]>(scale.LabelsJson)!
+            .Select((label, p) => new ScaleAnchor
+            {
+                Id = Guid.Parse($"00000003-{i + 1:D4}-0000-0000-{scale.MinValue + p:D12}"),
+                ScaleTemplateId = scale.Id,
+                Value = scale.MinValue + p,
+                Label = label,
+                CreatedAt = SeedDate,
+                UpdatedAtMs = new DateTimeOffset(SeedDate).ToUnixTimeMilliseconds(),
+            }))
+        .ToList();
 }

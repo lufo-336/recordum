@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Linq.Expressions;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
@@ -104,7 +103,6 @@ public sealed class HabitTreeQueryService(
                 m.HabitNodeId,
                 m.SortOrder,
                 m.Type,
-                m.LabelsJson,
                 m.ScaleTemplateId,
                 UnitCode = m.UnitOfMeasure != null ? m.UnitOfMeasure.Code : null,
                 UnitSymbol = m.UnitOfMeasure != null ? m.UnitOfMeasure.Symbol : null,
@@ -116,13 +114,6 @@ public sealed class HabitTreeQueryService(
             .GroupBy(m => m.HabitNodeId)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.SortOrder).First());
         var primaryMetricIds = primaryMetricByHabit.Values.Select(m => m.Id).ToHashSet();
-
-        // Shared scale-template labels — the fallback when a metric has no own LabelsJson override
-        // (metric override wins, CSS-style specificity — matches MetricCellFactory/CompletionList precedent).
-        var templateLabelsById = await db.ScaleTemplates
-            .AsNoTracking()
-            .Select(s => new { s.Id, s.LabelsJson })
-            .ToDictionaryAsync(s => s.Id, s => s.LabelsJson, ct);
 
         // CompletionValues on each node's primary metric over the whole 14-day window — feeds the
         // counter total / state value of today AND the per-day value strip (2.1-bis: counter
@@ -308,17 +299,7 @@ public sealed class HabitTreeQueryService(
                         if (stateLatestByHabit.TryGetValue(r.Id, out var latest) && latest.ValueInteger is long v)
                         {
                             todayStateValue = (int)v;
-                            if (primaryMetricByHabit.TryGetValue(r.Id, out var stateMetric))
-                            {
-                                var labelsJson = stateMetric.LabelsJson;
-                                if (string.IsNullOrWhiteSpace(labelsJson)
-                                    && stateMetric.ScaleTemplateId is Guid tid
-                                    && templateLabelsById.TryGetValue(tid, out var tmplLabels))
-                                {
-                                    labelsJson = tmplLabels;
-                                }
-                                todayStateLabel = ResolveLabel(labelsJson, todayStateValue.Value);
-                            }
+                            // GIO-23: le etichette non stanno più nel DB; la lettura per scaglioni la scrive il Task 3.
                         }
                         break;
                     case HabitType.Resistance:
@@ -376,22 +357,5 @@ public sealed class HabitTreeQueryService(
                     LapsesLast14Days: lapses14);
             })
             .ToList();
-    }
-
-    private static string? ResolveLabel(string? labelsJson, int value)
-    {
-        if (string.IsNullOrWhiteSpace(labelsJson)) return null;
-        string[]? labels;
-        try
-        {
-            labels = JsonSerializer.Deserialize<string[]>(labelsJson);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-        return labels is not null && value >= 1 && value <= labels.Length
-            ? labels[value - 1]
-            : null;
     }
 }

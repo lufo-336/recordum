@@ -154,7 +154,7 @@ public sealed class HabitTemplateService(
         var unitsByCode = await db.UnitsOfMeasure.AsNoTracking()
             .ToDictionaryAsync(u => u.Code, u => u.Id, StringComparer.OrdinalIgnoreCase, ct);
         var scalesByCode = await db.ScaleTemplates.AsNoTracking()
-            .ToDictionaryAsync(s => s.Code, s => (Id: s.Id, Labels: (string?)s.LabelsJson), StringComparer.OrdinalIgnoreCase, ct);
+            .ToDictionaryAsync(s => s.Code, s => (Id: s.Id, Labels: (string?)null), StringComparer.OrdinalIgnoreCase, ct); // GIO-23: niente più etichette sulla scala, gli scaglioni li scrive il Task 3
 
         // Risolvi-o-crea (Onda 2.5 T8): un template composto nel builder può portarsi dietro le unità
         // e le scale che ha inventato. Un codice già nel catalogo vince sempre sulla definizione

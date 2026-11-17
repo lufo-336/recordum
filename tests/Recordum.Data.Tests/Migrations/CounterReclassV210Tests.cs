@@ -1,7 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Enums;
-using Recordum.Core.Models;
 using Recordum.Data.Tests.Fixtures;
 using Xunit;
 
@@ -25,25 +24,25 @@ public sealed class CounterReclassV210Tests
         Guid flessioni, nientefumo, voglie;
 
         // Seed against the schema just BEFORE the reclass migration runs.
-        await using (var seed = TestDbHelper.CreateAtMigration(connection, "NoteHistoryV29"))
+        await using (TestDbHelper.CreateAtMigration(connection, "NoteHistoryV29"))
         {
             flessioni = Guid.NewGuid(); nientefumo = Guid.NewGuid(); voglie = Guid.NewGuid();
             await TestDbHelper.RawInsertHabitNodeAsync(connection, flessioni, "Flessioni", "Resistance");
             await TestDbHelper.RawInsertHabitNodeAsync(connection, nientefumo, "Niente fumo", "Resistance");
             await TestDbHelper.RawInsertHabitNodeAsync(connection, voglie, "Voglie", "Resistance");
 
-            seed.MetricDefinitions.Add(new MetricDefinition
-            {
-                Id = Guid.NewGuid(), HabitNodeId = flessioni, Name = "Ripetizioni",
-                Type = MetricType.Integer, SortOrder = 0,
-            });
-            seed.MetricDefinitions.Add(new MetricDefinition
-            {
-                Id = Guid.NewGuid(), HabitNodeId = voglie, Name = "Intensità",
-                Type = MetricType.Integer, SortOrder = 0,
-                LabelsJson = "[\"Bassa\",\"Media\",\"Alta\"]",
-            });
-            await seed.SaveChangesAsync();
+            // Raw SQL: labels_json no longer exists in the current EF model (ScaleAnchorsV220 drops it).
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO metric_definitions (id, habit_node_id, name, type, sort_order, labels_json) VALUES
+                ($m1, $flessioni, 'Ripetizioni', 'Integer', 0, NULL),
+                ($m2, $voglie, 'Intensità', 'Integer', 0, '["Bassa","Media","Alta"]');
+                """;
+            cmd.Parameters.AddWithValue("$m1", Guid.NewGuid().ToString("D").ToUpperInvariant());
+            cmd.Parameters.AddWithValue("$m2", Guid.NewGuid().ToString("D").ToUpperInvariant());
+            cmd.Parameters.AddWithValue("$flessioni", flessioni.ToString("D").ToUpperInvariant());
+            cmd.Parameters.AddWithValue("$voglie", voglie.ToString("D").ToUpperInvariant());
+            await cmd.ExecuteNonQueryAsync();
         }
 
         // Apply the remaining migrations (CounterReclassV210).
@@ -58,6 +57,6 @@ public sealed class CounterReclassV210Tests
         Assert.Equal(HabitType.Resistance, nodes.Single(n => n.Id == voglie).HabitType);
 
         var version = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.19", version.Value);
+        Assert.Equal("2.20", version.Value);
     }
 }

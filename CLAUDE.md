@@ -69,7 +69,7 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   reinterpreta lo storico.
 - **Mai `DateTime.UtcNow/Now`**: il tempo passa da `IClock`.
 - `TimestampInterceptor` compila `CreatedAt`, `UpdatedAt`, `UpdatedAtMs` e `CreatedByPluginId`: i servizi non li scrivono.
-- Scale: `labels_json` della metrica vince su quello del template di scala; il valore salvato è sempre l'intero.
+- Scale: gli scaglioni (`scale_anchors`) sono l'unica fonte dei nomi; il valore salvato è il valore vero in `value_decimal`.
 - `active_timer`: un solo timer per abitudine (UNIQUE), ed è il perno del recupero dopo un crash.
 - `HabitConfigHistory` fotografa ogni modifica della config (tranne id, timestamp, `quick_complete`, `ai_data_sharing`,
   `reset_time`, `streak_broken_at`).
@@ -77,7 +77,7 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   enum TEXT + CHECK; JSON in TEXT. `Note` ha solo `updated_at_ms`.
 - `created_by_plugin_id` solo sulle entità top-level (`habit_node`, `habit_template`, `export_template`, `chart`), mai
   sugli eventi figli. Soft delete solo su `HabitNode` (filtro globale; `IgnoreQueryFilters()` per cestino e diagnostica).
-- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.19**. Chi scrive `HabitConfig`/`Goal` fuori dai
+- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.20**. Chi scrive `HabitConfig`/`Goal` fuori dai
   servizi si porta il proprio gate (`ValidateCrossFields`, `ck_goal_period_consistency`).
 - **Migrazioni**: `dotnet ef migrations add <Nome> --project src/Recordum.Data --startup-project src/Recordum.Data`
   (startup = Data, non WPF). Nel file generato aggiungere `#pragma warning disable CA1861` dopo `#nullable disable`. Un
