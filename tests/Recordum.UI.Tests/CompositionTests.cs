@@ -83,6 +83,16 @@ public class CompositionTests
     }
 
     [AvaloniaFact]
+    public void The_home_from_the_container_gets_the_tag_service()
+    {
+        // GIO-22: il parametro è opzionale, quindi un contenitore senza ITagService compilerebbe e la Home resterebbe senza
+        // menu dei tag in silenzio. Il contenitore è condiviso: si guarda il campo invece di creare tag nel DB dei test.
+        using var home = ShellFixture.Shared.Services.GetRequiredService<HomeViewModel>();
+        typeof(HomeViewModel).GetField("_tags", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(home).Should().NotBeNull();
+    }
+
+    [AvaloniaFact]
     public void Every_deferred_service_has_a_double_so_nothing_throws_when_it_is_touched()
     {
         var services = ShellFixture.Shared.Services;

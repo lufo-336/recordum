@@ -34,7 +34,10 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private readonly IResetTimeResolver? _resetTimes;
     private readonly HomeClockTicker _clockTicker;
     private readonly HomeRowsPreference? _rowsPreference;
+    private readonly ITagService? _tags;
     private Dictionary<Guid, HabitUiPrefs> _prefsByNode = new();
+    private Dictionary<Guid, string> _tagNames = new();
+    private IReadOnlyList<Tag> _availableTags = Array.Empty<Tag>();
     private IReadOnlyList<HomeTreeRow> _lastFetched = Array.Empty<HomeTreeRow>();
     private bool _suppressRebuild;
     private readonly HashSet<Guid> _collapsedGroupIds = [];
@@ -54,8 +57,17 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     [ObservableProperty] private string? _errorMessage;
 
     [ObservableProperty] private ImmutableHashSet<HabitType> _typeFilter = ImmutableHashSet<HabitType>.Empty;
-    [ObservableProperty] private ImmutableHashSet<Guid> _tagFilter = ImmutableHashSet<Guid>.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTagFilterOn))]
+    private ImmutableHashSet<Guid> _tagFilter = ImmutableHashSet<Guid>.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTagOptions))]
+    private IReadOnlyList<HomeTagOption> _tagOptions = Array.Empty<HomeTagOption>();
+    [ObservableProperty] private string? _activeTagName;
     [ObservableProperty] private bool _hideCompletedToday;
+
+    public bool HasTagOptions => TagOptions.Count > 1;
+    public bool IsTagFilterOn => !TagFilter.IsEmpty;
 
     // Il giorno dell'app risolto all'ultimo caricamento; null senza orologio o se il confine non si legge.
     private DayBoundary? _appDay;
@@ -135,7 +147,8 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         IClock? clock = null,
         IResetTimeResolver? resetTimes = null,
         ITickSourceFactory? ticks = null,
-        HomeRowsPreference? rows = null)
+        HomeRowsPreference? rows = null,
+        ITagService? tags = null)
     {
         _query = query;
         _nodes = nodes;
@@ -148,6 +161,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         _resetTimes = resetTimes;
         _clockTicker = new HomeClockTicker(ticks);
         _rowsPreference = rows;
+        _tags = tags;
         if (rows is not null)
         {
             RowsStyle = rows.Current;
@@ -185,6 +199,7 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
                 : await _query.GetHomeTreeAsync();
             await PrefetchPrefsAsync();
             await ResolveAppDayAsync();
+            await LoadTagsAsync();
             Rebuild();
         }
         catch (Exception ex)
@@ -225,6 +240,69 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         _suppressRebuild = true;
         try { DaysBack = value; }
         finally { _suppressRebuild = false; }
+    }
+
+    private void SetTagFilterQuietly(ImmutableHashSet<Guid> value)
+    {
+        _suppressRebuild = true;
+        try { TagFilter = value; }
+        finally { _suppressRebuild = false; }
+    }
+
+    private async Task LoadTagsAsync()
+    {
+        if (_tags is null)
+        {
+            _availableTags = Array.Empty<Tag>();
+            _tagNames = new();
+        }
+        else
+        {
+            try
+            {
+                var all = await _tags.ListAsync().ConfigureAwait(true);
+                var used = new HashSet<Guid>();
+                foreach (var row in _lastFetched)
+                {
+                    if (row.TagIds.IsDefaultOrEmpty) continue;
+                    foreach (var id in row.TagIds) used.Add(id);
+                }
+                var names = new Dictionary<Guid, string>(all.Count);
+                var available = new List<Tag>();
+                foreach (var t in all)
+                {
+                    names[t.Id] = t.Name;
+                    if (used.Contains(t.Id)) available.Add(t);
+                }
+                _tagNames = names;
+                _availableTags = available;
+            }
+            catch (Exception)
+            {
+                // Un servizio dei tag che fallisce lascia la Home caricata e senza menu (come ResolveAppDayAsync).
+                _availableTags = Array.Empty<Tag>();
+                _tagNames = new();
+            }
+        }
+
+        if (!TagFilter.IsEmpty && !TagFilter.All(id => _availableTags.Any(t => t.Id == id)))
+            SetTagFilterQuietly(ImmutableHashSet<Guid>.Empty);
+
+        RefreshTagOptions();
+    }
+
+    private void RefreshTagOptions()
+    {
+        var opts = new List<HomeTagOption>(_availableTags.Count + 1)
+        {
+            new(null, Strings.Home_TagMenu_All, TagFilter.IsEmpty),
+        };
+        foreach (var t in _availableTags)
+            opts.Add(new HomeTagOption(t.Id, t.Name, TagFilter.Contains(t.Id)));
+        TagOptions = opts;
+
+        // Un filtro su un tag che non è più fra le opzioni lo svuota LoadTagsAsync: il nome c'è sempre.
+        ActiveTagName = _availableTags.FirstOrDefault(t => TagFilter.Contains(t.Id))?.Name;
     }
 
     private bool CanChangeDay => ActiveTab == HomeTab.Active && _today is not null;
@@ -500,8 +578,16 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
     private void ToggleTypeFilter(HabitType type) =>
         TypeFilter = TypeFilter.SymmetricExcept(new[] { type });
 
+    [RelayCommand]
+    private void FilterByTag(Guid? id) =>
+        TagFilter = id is { } g ? ImmutableHashSet.Create(g) : ImmutableHashSet<Guid>.Empty;
+
     partial void OnTypeFilterChanged(ImmutableHashSet<HabitType> value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
-    partial void OnTagFilterChanged(ImmutableHashSet<Guid> value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
+    partial void OnTagFilterChanged(ImmutableHashSet<Guid> value)
+    {
+        RefreshTagOptions();
+        if (!_suppressRebuild) RebuildPreservingSelection();
+    }
     partial void OnHideCompletedTodayChanged(bool value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
     partial void OnSearchTextChanged(string? value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
     partial void OnSortOptionChanged(HomeSort value) { if (!_suppressRebuild) RebuildPreservingSelection(); }
@@ -619,13 +705,16 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         if (!TypeFilter.IsEmpty)
             q = q.Where(r => r.HabitType.HasValue && TypeFilter.Contains(r.HabitType.Value));
         if (!TagFilter.IsEmpty)
-            q = q.Where(r => r.TagIds.Any(TagFilter.Contains));
+            q = q.Where(r => !r.TagIds.IsDefaultOrEmpty && r.TagIds.Any(TagFilter.Contains));
         if (HideCompletedToday && ActiveTab == HomeTab.Active)
             q = q.Where(r => !GroupProgress.IsDoneOn(r, GroupProgress.CellBack(r, DaysBack, _clock)));
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var needle = SearchText.Trim();
-            q = q.Where(r => r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase));
+            q = q.Where(r => r.Name.Contains(needle, StringComparison.OrdinalIgnoreCase)
+                || (!r.TagIds.IsDefaultOrEmpty && r.TagIds.Any(id =>
+                    _tagNames.TryGetValue(id, out var tagName)
+                    && tagName.Contains(needle, StringComparison.OrdinalIgnoreCase))));
         }
         _rebuilding = true;
         _clockTicker.Clear();

@@ -1960,7 +1960,16 @@ Dettagli: {0}</value>
     <value>Cerca</value>
   </data>
   <data name="Home.More" xml:space="preserve">
-    <value>Archivio e cestino</value>
+    <value>Archivio, cestino e tag</value>
+  </data>
+  <data name="Home.TagMenu" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="Home.TagMenu.All" xml:space="preserve">
+    <value>Tutti i tag</value>
+  </data>
+  <data name="Home.TagFilter.Clear" xml:space="preserve">
+    <value>Mostra tutte le abitudini</value>
   </data>
   <data name="Home.NewMenu.Label" xml:space="preserve">
     <value>Nuova</value>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels"
+             xmlns:vmhome="using:Recordum.Presentation.ViewModels.Home"
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:conv="using:Recordum.UI.Converters"
              xmlns:v="using:Recordum.UI.Views"
@@ -16,7 +17,7 @@
     <Style Selector="ToggleButton#DoneToggle Path">
       <Setter Property="Stroke" Value="{DynamicResource Brush.TextMuted}"/>
     </Style>
-    <Style Selector="ToggleButton#DoneToggle:checked Path">
+    <Style Selector="ToggleButton#DoneToggle:checked Path, ToggleButton#TagChip Path">
       <Setter Property="Stroke" Value="{DynamicResource Brush.OnAccent}"/>
     </Style>
     <!-- ‹ › spente (su oggi non c'è un giorno dopo): niente cornice del pulsante disabilitato di Fluent, solo l'icona tenue. -->
@@ -120,6 +121,23 @@
                          FontSize="{StaticResource FontSize.Label}"/>
             </StackPanel>
           </ToggleButton>
+          <ToggleButton x:Name="TagChip" Classes="pill" Padding="8,5"
+                        IsVisible="{CompiledBinding IsTagFilterOn}"
+                        IsChecked="{CompiledBinding IsTagFilterOn, Mode=OneWay}"
+                        Command="{CompiledBinding FilterByTagCommand}"
+                        ToolTip.Tip="{x:Static res:Strings.Home_TagFilter_Clear}"
+                        AutomationProperties.Name="{x:Static res:Strings.Home_TagFilter_Clear}">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"
+                    StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="{StaticResource Icon.Tag}"/>
+              <TextBlock Text="{CompiledBinding ActiveTagName}" VerticalAlignment="Center"
+                         FontSize="{StaticResource FontSize.Label}"/>
+              <Path Width="10" Height="10" Stretch="Uniform" VerticalAlignment="Center"
+                    StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="{StaticResource Icon.X}"/>
+            </StackPanel>
+          </ToggleButton>
           <ComboBox x:Name="SortBox" VerticalAlignment="Center"
                     ItemsSource="{CompiledBinding AvailableSorts}"
                     SelectedItem="{CompiledBinding SortOption}">
@@ -153,6 +171,21 @@
                         IsChecked="{CompiledBinding ActiveTab, Mode=OneWay, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeTab.Trash}}"
                         Command="{CompiledBinding SwitchTabCommand}"
                         CommandParameter="{x:Static vm:HomeTab.Trash}"/>
+              <Separator IsVisible="{CompiledBinding HasTagOptions}"/>
+              <MenuItem x:Name="TagMenu"
+                        Header="{x:Static res:Strings.Home_TagMenu}"
+                        IsVisible="{CompiledBinding HasTagOptions}"
+                        ItemsSource="{CompiledBinding TagOptions}">
+                <MenuItem.Styles>
+                  <Style Selector="MenuItem#TagMenu MenuItem" x:DataType="vmhome:HomeTagOption">
+                    <Setter Property="Header" Value="{CompiledBinding Name}"/>
+                    <Setter Property="ToggleType" Value="Radio"/>
+                    <Setter Property="IsChecked" Value="{CompiledBinding IsSelected, Mode=OneWay}"/>
+                    <Setter Property="Command" Value="{CompiledBinding #MoreButton.((vm:HomeViewModel)DataContext).FilterByTagCommand}"/>
+                    <Setter Property="CommandParameter" Value="{CompiledBinding Id}"/>
+                  </Style>
+                </MenuItem.Styles>
+              </MenuItem>
             </MenuFlyout>
           </Button.Flyout>
         </Button>

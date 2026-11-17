@@ -67,7 +67,7 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperti: **GIO-1**,
 **GIO-5**, **GIO-8**, **GIO-10**, **GIO-11** · `reported`; dalla revisione dei PNG con l'autore
 (2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** in
-ROADMAP, **GIO-24**, **GIO-25** `fixed`, **GIO-22** in corso. Fuori dall'onda restano **B7** e
+ROADMAP, **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2795,9 +2795,14 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     aggregatore né il timer della sessione li legge (cercati in `src`, fuori da creatore, Configura e modelli). L'autore
     chiede una riga di spiegazione e l'unità a scelta (minuti anche per il riposo). Da decidere: nasconderli finché non
     hanno effetto, oppure "In arrivo" come "Richiesta automatica".
-  - **GIO-22 — i tag di un'abitudine non servono a niente che si veda** · `verified` · Configura › Tag li assegna e
-    `HomeViewModel.TagFilter` filtra le righe, ma la Home su Avalonia non ha un comando per sceglierli, e la ricerca
-    guarda solo il nome. (I tag delle voci del diario sono un'altra cosa.)
+  - **GIO-22 — i tag di un'abitudine non servono a niente che si veda** · `fixed` (2026-11-17) · Configura › Tag li
+    assegna e `HomeViewModel.TagFilter` filtra le righe, ma la Home su Avalonia non aveva un comando per sceglierli, e
+    la ricerca guardava solo il nome. (I tag delle voci del diario sono un'altra cosa.) Ora: voce "Tag" nel menu ⋯ (solo
+    i tag che qualche riga ha, scelta singola), pastiglia col nome del tag accanto a "fatte" che toglie il filtro, la
+    ricerca legge anche i nomi dei tag; un filtro su un tag sparito si svuota al ricaricamento; un servizio dei tag che
+    fallisce lascia la Home caricata. Scritto da agy (Hydrogen) dal brief
+    `docs/superpowers/plans/2026-11-17-gio22-tag-filter.md`; test `HomeTagFilterTests`, `HomeTagFilterViewTests`,
+    `CompositionTests.The_home_from_the_container_gets_the_tag_service` (rosso provato), PNG `home-tag-*`.
   - **GIO-23 — scale continue** (richiesta dell'autore) · `triaged`, spec a parte dopo i merge (deciso il 2026-11-16, in
     ROADMAP "Prossimo") · oggi `ScaleTemplate` ha
     `MinValue`/`MaxValue` interi e il valore salvato è sempre l'intero (§5 di CLAUDE.md). Chiesto: una scala su cui ci si
