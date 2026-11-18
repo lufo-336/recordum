@@ -167,4 +167,23 @@ public class ScaleTemplateServiceTests
         bus.Published.OfType<Recordum.Plugins.Contracts.Events.HabitUpdatedPayload>().Select(p => p.HabitNodeId)
             .Should().BeEquivalentTo(habits);
     }
+
+    // GIO-23 review finale: "Usata da N abitudini" non conta quelle nel cestino.
+    [Fact]
+    public async Task GetUsageAsync_does_not_count_habits_in_the_trash()
+    {
+        await using var fx = new DbFixture();
+        var svc = new ScaleTemplateService(fx.Factory, new RecordingEventBus());
+        var id = await svc.CreateAsync(new("Voto", 0, 10, ScalePrecision.Integer, []));
+        await HabitWithMetricAsync(fx, id);
+        var trashed = await HabitWithMetricAsync(fx, id);
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var habitId = await db.MetricDefinitions.Where(m => m.Id == trashed).Select(m => m.HabitNodeId).SingleAsync();
+            (await db.HabitNodes.SingleAsync(h => h.Id == habitId)).DeletedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        (await svc.GetUsageAsync(id)).HabitCount.Should().Be(1);
+    }
 }

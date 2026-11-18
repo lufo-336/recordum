@@ -35,7 +35,10 @@ public sealed class MetricDefinitionService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var m = await db.MetricDefinitions.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (m is null) return;
+        var scaleBefore = m.ScaleTemplateId;
         mutate(m);
+        // Cambiare scala e' come stringere la propria (GIO-23, spec §6): i valori gia' registrati devono starci.
+        if (m.ScaleTemplateId is { } target && target != scaleBefore) await EnsureRecordedFitAsync(db, id, target, ct);
         CoerceScaleType(m);
         await db.SaveChangesAsync(ct);
         Announce(m.HabitNodeId);
@@ -56,6 +59,17 @@ public sealed class MetricDefinitionService(
             .Where(m => m.HabitNodeId == habitNodeId)
             .OrderBy(m => m.SortOrder)
             .ToListAsync(ct);
+    }
+
+    private static async Task EnsureRecordedFitAsync(RecordumDbContext db, Guid metricId, Guid scaleId, CancellationToken ct)
+    {
+        var scale = await db.ScaleTemplates.AsNoTracking().FirstOrDefaultAsync(s => s.Id == scaleId, ct)
+            ?? throw new InvalidOperationException("scale-missing");
+        var values = await db.CompletionValues
+            .Where(cv => cv.MetricDefinitionId == metricId && cv.ValueDecimal != null)
+            .Select(cv => cv.ValueDecimal!.Value).ToListAsync(ct);
+        if (ScaleTemplateService.Recorded(values) is { } r)
+            ScaleTemplateService.ThrowIfRecordedOutside(scale.MinValue, scale.MaxValue, scale.Precision, r.Min, r.Max, r.HasDecimals);
     }
 
     // GIO-23: una scala si legge in decimale (una scala a decimali non sta in un intero): la metrica con scala e' sempre Decimal.

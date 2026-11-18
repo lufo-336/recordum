@@ -228,6 +228,54 @@ public class ScalesSectionViewModelTests
         finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
     }
 
+    // GIO-23 review finale: cambiare scala con valori registrati che non ci stanno si rifiuta (il servizio lo dice col codice):
+    // il picker torna alla scala di prima e l'errore e' la frase tradotta, non il codice.
+    [Fact]
+    public async Task Picking_a_scale_that_cannot_hold_the_recorded_values_puts_the_previous_one_back_with_the_reason()
+    {
+        var previous = (Recordum.Presentation.Resources.Strings.Culture, System.Globalization.CultureInfo.CurrentCulture);
+        try
+        {
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.CurrentCulture =
+                System.Globalization.CultureInfo.GetCultureInfo("en-US");
+            var wide = AddScale("custom-100", 0, 100, "[]");
+            var narrow = AddScale("custom-5", 1, 5, "[]");
+            var (sut, metricId) = await OpenAsync(wide.Id);
+            _metrics.NextException = new InvalidOperationException("narrow-max") { Data = { ["recorded"] = 80m } };
+
+            sut.SelectedScaleTemplateId = narrow.Id;
+            await Task.Delay(20);
+
+            sut.SelectedScaleTemplateId.Should().Be(wide.Id);
+            _metrics.Store[metricId].ScaleTemplateId.Should().Be(wide.Id);
+            sut.Status.Should().Be(EditorStatus.Error);
+            sut.ErrorMessage.Should().Be("Values up to 80 are already recorded");
+            sut.Editor.Name.Should().Be(wide.Name);
+            sut.AvailableScales.Should().Contain([wide, narrow]);
+        }
+        finally { (Recordum.Presentation.Resources.Strings.Culture, System.Globalization.CultureInfo.CurrentCulture) = previous; }
+    }
+
+    [Fact]
+    public async Task A_refused_scale_edit_shows_the_translated_reason_not_the_code()
+    {
+        var previous = Recordum.Presentation.Resources.Strings.Culture;
+        try
+        {
+            Recordum.Presentation.Resources.Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+            var scale = AddScale("custom-3", 1, 3, "[\"a\",\"b\",\"c\"]");
+            var (sut, _) = await OpenAsync(scale.Id);
+            _scales.NextException = new InvalidOperationException("precision");
+
+            sut.Editor.Rows[0].Label = "uno";
+            await Task.Delay(20);
+
+            sut.Status.Should().Be(EditorStatus.Error);
+            sut.ErrorMessage.Should().Be("Values with decimals are already recorded");
+        }
+        finally { Recordum.Presentation.Resources.Strings.Culture = previous; }
+    }
+
     [Fact]
     public async Task Loading_does_not_write()
     {

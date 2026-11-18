@@ -49,10 +49,13 @@ public abstract partial class SectionViewModelBase : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            ErrorMessage = Describe(ex);
             Status = EditorStatus.Error;
         }
     }
+
+    /// <summary>The on-screen text of a failed save; a section whose service speaks in codes translates them here.</summary>
+    protected virtual string Describe(Exception ex) => ex.Message;
 
     /// <summary>
     /// Returns true when this section is relevant for the given node/habit kind.

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Enums;
 using Recordum.Core.Formatting;
 using Recordum.Core.Models;
 using Recordum.Core.Scales;
@@ -32,9 +33,7 @@ public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> db
         if (scale.IsOfficial) throw new InvalidOperationException("official");
 
         var usage = await UsageAsync(db, id, ct);
-        var edit = ScaleRules.EditErrors(draft.MinValue, draft.MaxValue, draft.Precision,
-            usage.RecordedMin, usage.RecordedMax, usage.RecordedHasDecimals);
-        if (edit.Count > 0) throw new InvalidOperationException(edit[0]);
+        ThrowIfRecordedOutside(draft.MinValue, draft.MaxValue, draft.Precision, usage.RecordedMin, usage.RecordedMax, usage.RecordedHasDecimals);
 
         scale.Name = draft.Name.Trim();
         scale.MinValue = draft.MinValue;
@@ -75,6 +74,22 @@ public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> db
         return await UsageAsync(db, id, ct);
     }
 
+    /// <summary>Rifiuta una scala che non contiene i valori registrati: il messaggio e' il codice di
+    /// <see cref="ScaleRules.EditErrors"/>, e <c>Data["recorded"]</c> porta il valore che sborda (per il testo a schermo).</summary>
+    internal static void ThrowIfRecordedOutside(int min, int max, ScalePrecision precision,
+        decimal? recordedMin, decimal? recordedMax, bool recordedHasDecimals)
+    {
+        var edit = ScaleRules.EditErrors(min, max, precision, recordedMin, recordedMax, recordedHasDecimals);
+        if (edit.Count == 0) return;
+        var ex = new InvalidOperationException(edit[0]);
+        ex.Data["recorded"] = edit[0] == "narrow-min" ? recordedMin : recordedMax;
+        throw ex;
+    }
+
+    /// <summary>I valori registrati: il minimo, il massimo, e se qualcuno ha i decimali (null = nessun valore).</summary>
+    internal static (decimal Min, decimal Max, bool HasDecimals)? Recorded(IReadOnlyCollection<decimal> values) =>
+        values.Count == 0 ? null : (values.Min(), values.Max(), values.Any(v => v != decimal.Truncate(v)));
+
     private static void Validate(ScaleDraft d)
     {
         ArgumentNullException.ThrowIfNull(d);
@@ -105,13 +120,14 @@ public sealed class ScaleTemplateService(IDbContextFactory<RecordumDbContext> db
 
     private static async Task<ScaleUsage> UsageAsync(RecordumDbContext db, Guid id, CancellationToken ct)
     {
-        var habits = await db.MetricDefinitions.Where(m => m.ScaleTemplateId == id)
+        // Le abitudini nel cestino non contano fra chi la usa; i loro valori si', se ripristinate devono starci.
+        var habits = await db.MetricDefinitions.Where(m => m.ScaleTemplateId == id && m.HabitNode.DeletedAt == null)
             .Select(m => m.HabitNodeId).Distinct().CountAsync(ct);
         var values = await db.CompletionValues
             .Where(cv => cv.MetricDefinition.ScaleTemplateId == id && cv.ValueDecimal != null)
             .Select(cv => cv.ValueDecimal!.Value).ToListAsync(ct);
-        return values.Count == 0
-            ? new ScaleUsage(habits, null, null, false)
-            : new ScaleUsage(habits, values.Min(), values.Max(), values.Any(v => v != decimal.Truncate(v)));
+        return Recorded(values) is { } r
+            ? new ScaleUsage(habits, r.Min, r.Max, r.HasDecimals)
+            : new ScaleUsage(habits, null, null, false);
     }
 }

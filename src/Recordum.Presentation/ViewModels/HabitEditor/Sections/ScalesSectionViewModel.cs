@@ -148,11 +148,26 @@ public sealed partial class ScalesSectionViewModel : SectionViewModelBase
         NotifySummary();
     }
 
-    partial void OnSelectedScaleTemplateIdChanged(Guid? value)
+    partial void OnSelectedScaleTemplateIdChanged(Guid? oldValue, Guid? newValue)
     {
         if (_loading) return;
         _ = RebuildEditorAsync();
         if (_primary is null) return;
-        _ = ApplyAsync(() => _metrics.UpdateAsync(_primary.Id, m => m.ScaleTemplateId = value).AsTask());
+        _ = ChangeScaleAsync(_primary.Id, oldValue, newValue);
     }
+
+    /// <summary>Il servizio rifiuta una scala che non contiene i valori registrati (GIO-23, spec §6): allora il picker torna
+    /// alla scala che la metrica ha ancora (si cambia la scelta, non la collezione: CLAUDE.md §8) e resta il perché.</summary>
+    private async Task ChangeScaleAsync(Guid metricId, Guid? previous, Guid? value)
+    {
+        await ApplyAsync(() => _metrics.UpdateAsync(metricId, m => m.ScaleTemplateId = value).AsTask()).ConfigureAwait(true);
+        if (Status != EditorStatus.Error || SelectedScaleTemplateId != value) return;
+        _loading = true;
+        try { SelectedScaleTemplateId = previous; }
+        finally { _loading = false; }
+        await RebuildEditorAsync().ConfigureAwait(true);
+    }
+
+    protected override string Describe(Exception ex) =>
+        ex is InvalidOperationException ? ScaleEditorViewModel.Text(ex.Message, ex.Data["recorded"] as decimal?) : ex.Message;
 }

@@ -204,8 +204,11 @@ public sealed partial class ScaleEditorViewModel : ObservableObject
         FillEveryValueCommand.NotifyCanExecuteChanged();
     }
 
-    private static string Text(string code, decimal? recorded = null) => code switch
+    /// <summary>La frase a schermo di un codice d'errore di una scala (quelli di <see cref="ScaleRules"/> e dei servizi).</summary>
+    internal static string Text(string code, decimal? recorded = null) => code switch
     {
+        "name" => Strings.Scale_Error_Name,
+        "label-length" => Strings.Scale_Error_LabelLength,
         "range" => Strings.Scale_Error_Range,
         "order" => Strings.Scale_Error_Order,
         "anchor-outside" => Strings.Scale_Error_AnchorOutside,
