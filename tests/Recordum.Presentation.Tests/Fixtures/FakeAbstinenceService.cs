@@ -1,5 +1,7 @@
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Models;
+using Recordum.Plugins.Contracts.Events;
+using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Presentation.Tests.Fixtures;
 
@@ -11,6 +13,13 @@ public sealed class FakeAbstinenceService : IAbstinenceService
 {
     public Dictionary<Guid, AbstinenceState> States { get; } = new();
     public Dictionary<Guid, List<AbstinencePeriod>> Periods { get; } = new();
+
+    /// <summary>Se valorizzato, Start/Lapse/DeletePeriod annunciano sul bus come il servizio vero.</summary>
+    public IEventBus? Events { get; set; }
+
+    public int ListPeriodsCalls { get; private set; }
+
+    private void Publish(Guid habitNodeId, EventName name) => Events?.Publish(new AbstinenceChangedPayload(habitNodeId, name));
 
     public Task<AbstinenceState> GetStateAsync(Guid habitNodeId, CancellationToken ct = default)
     {
@@ -28,6 +37,7 @@ public sealed class FakeAbstinenceService : IAbstinenceService
             Id = Guid.NewGuid(), HabitNodeId = habitNodeId, StartedAtMs = nowMs, EndedAtMs = null,
         });
         Recompute(habitNodeId);
+        Publish(habitNodeId, WellKnownEvents.AbstinenceStarted);
         return Task.CompletedTask;
     }
 
@@ -49,6 +59,7 @@ public sealed class FakeAbstinenceService : IAbstinenceService
             // No period modelled (States-only tests): preserve the simple relapse transition.
             States[habitNodeId] = new AbstinenceState(AbstinenceStatus.Relapsed, null, nowMs);
         }
+        Publish(habitNodeId, WellKnownEvents.AbstinenceLapsed);
         return Task.CompletedTask;
     }
 
@@ -72,6 +83,7 @@ public sealed class FakeAbstinenceService : IAbstinenceService
     public Task<IReadOnlyList<AbstinencePeriod>> ListPeriodsAsync(
         Guid habitNodeId, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
+        ListPeriodsCalls++;
         if (!Periods.TryGetValue(habitNodeId, out var periods))
             return Task.FromResult<IReadOnlyList<AbstinencePeriod>>([]);
 
@@ -89,7 +101,11 @@ public sealed class FakeAbstinenceService : IAbstinenceService
     {
         foreach (var (habitId, list) in Periods)
         {
-            if (list.RemoveAll(p => p.Id == periodId) > 0) Recompute(habitId);
+            if (list.RemoveAll(p => p.Id == periodId) > 0)
+            {
+                Recompute(habitId);
+                Publish(habitId, WellKnownEvents.AbstinencePeriodDeleted);
+            }
         }
         return Task.CompletedTask;
     }

@@ -748,7 +748,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Availability = availability;
         CompletionList = new CompletionListViewModel(completions, metrics, refData, diary);
         _periodList = new AbstinencePeriodListViewModel(abstinence, confirmationDialog, clock, ticks);
-        _periodList.Changed += OnAbstinenceChanged;
         Records = new HabitRecordsViewModel(new CompletionListViewModel(completions, metrics, refData, diary, confirmationDialog), _periodList, clock);
         PeriodRecords = new HabitRecordsViewModel(
             new CompletionListViewModel(completions, metrics, refData, diary, confirmationDialog),
@@ -772,9 +771,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         };
         GroupFigures = groupHistory is null ? null : new Figures.GroupFiguresViewModel(groupHistory, clock);
         Figures = new Figures.HabitFiguresViewModel(completions, streaks, abstinence, metrics, refData, goals, hourly, clock, ticks: ticks);
-        // The strip's own Inizio/Ricaduta mutate abstinence state without a bus event, same as the
-        // quick-add: reuse OnAbstinenceChanged to reload Detail/calendar/records/quick-add.
-        TodayStrip.Changed += OnAbstinenceChanged;
         // "+ Registra" / journal gestures ask the host to open the matching column.
         TodayStrip.ActionRequested += OnTodayStripAction;
         Calendar = new CalendarNavigatorViewModel(clock) { MarkerProvider = LoadMarkersAsync };
@@ -791,7 +787,9 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteUpdated, OnNoteEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.NoteDeleted, OnNoteEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.HabitUpdated, OnHabitUpdatedEvent));
-        // Inizia/Ricaduta di una figlia (dalla riga del gruppo, dalla Home, da un'altra scheda) non scrive registrazioni.
+        // Inizia/Ricaduta/eliminazione di un periodo non scrivono registrazioni: il servizio le annuncia sempre sul bus,
+        // da qualunque punto partano (Home, riga del gruppo, casella, striscia, elenchi dei periodi). È l'unico segnale
+        // che ricarica la schermata, così un gesto fatto qui non la ricarica due volte (GIO-10).
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.AbstinenceStarted, OnAbstinenceEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.AbstinenceLapsed, OnAbstinenceEvent));
         _subscriptions.Add(events.SubscribeOnUi(WellKnownEvents.AbstinencePeriodDeleted, OnAbstinenceEvent));
@@ -804,10 +802,7 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         Map.DaySelected -= OnCalendarDateSelected;
         Figures.Dispose();
         Panoramica.Dispose();
-        _periodList.Changed -= OnAbstinenceChanged;
-        TodayStrip.Changed -= OnAbstinenceChanged;
         TodayStrip.ActionRequested -= OnTodayStripAction;
-        if (QuickAdd is AbstinenceQuickAddViewModel ab) ab.Changed -= OnAbstinenceChanged;
         if (QuickAdd is IDisposable qd) qd.Dispose();
         Notes.Dispose();
         Detail.Dispose();
@@ -1012,7 +1007,6 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
             case CounterTapQuickAddViewModel tap: await tap.LoadDayAsync(ct).ConfigureAwait(true); break;
         }
         QuickAdd = vm;
-        if (vm is AbstinenceQuickAddViewModel abst) abst.Changed += OnAbstinenceChanged;
 
         // Counter splits by shape: bare (no metrics) records single-tap occurrences; with
         // metrics it records valid series rows (spec multivalue §4.1).
@@ -1065,39 +1059,31 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnCompletionEvent failed: {ex}"); }
     }
 
-    /// <summary>Abstinence Start/Lapse/Delete write no completions so the EventBus never fires; refresh
-    /// everything that reads abstinence state here instead (CR15 async-void pattern): the Detail streak
-    /// summary, the calendar markers, the Cronologia records list (so a just-lapsed period stops showing
-    /// "In corso"), and the quick-add itself (so deleting the open period from the list flips it back to
-    /// "Not started" instead of a stale running clock).</summary>
-    private async void OnAbstinenceChanged(object? sender, EventArgs e)
+    /// <summary>Rilegge tutto ciò che legge lo stato dell'astinenza: il riepilogo del Dettaglio, i segni del
+    /// calendario, gli elenchi della Cronologia (un periodo chiuso smette di dire "In corso"), la striscia, le
+    /// cifre e la casella (eliminato il periodo aperto torna "Non iniziata" invece di un orologio che corre).</summary>
+    private async Task ReloadAbstinenceAsync(HabitNode node)
     {
-        try
+        var reloads = new List<Task>
         {
-            if (Node is null) return;
-            if (IsGroupNode) { await ReloadGroupAsync().ConfigureAwait(true); return; }
-            var reloads = new List<Task>
-            {
-                Detail.LoadAsync(Node, _dayBoundary, CancellationToken.None),
-                Calendar.JumpAsync(),
-                ReloadHistoryAsync(CancellationToken.None),
-                Records.ReloadAsync(),
-                TodayStrip.LoadAsync(Node, _dayBoundary),
-                LoadFiguresAsync(CancellationToken.None),
-            };
-            if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync(_dayBoundary));
-            await Task.WhenAll(reloads).ConfigureAwait(true);
-        }
-        catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceChanged failed: {ex}"); }
+            Detail.LoadAsync(node, _dayBoundary, CancellationToken.None),
+            Calendar.JumpAsync(),
+            ReloadHistoryAsync(CancellationToken.None),
+            Records.ReloadAsync(),
+            TodayStrip.LoadAsync(node, _dayBoundary),
+            LoadFiguresAsync(CancellationToken.None),
+        };
+        if (QuickAdd is AbstinenceQuickAddViewModel ab) reloads.Add(ab.LoadAsync(_dayBoundary));
+        await Task.WhenAll(reloads).ConfigureAwait(true);
     }
 
-    // Sull'abitudine sola le sorgenti della schermata alzano già OnAbstinenceChanged; qui serve al gruppo.
     private async void OnAbstinenceEvent(EventEnvelope envelope)
     {
         try
         {
-            if (IsGroupNode && envelope.Payload is AbstinenceChangedPayload a)
-                await ReloadGroupIfDescendantAsync(a.HabitNodeId).ConfigureAwait(true);
+            if (envelope.Payload is not AbstinenceChangedPayload a || Node is not { } node) return;
+            if (IsGroupNode) await ReloadGroupIfDescendantAsync(a.HabitNodeId).ConfigureAwait(true);
+            else if (a.HabitNodeId == node.Id) await ReloadAbstinenceAsync(node).ConfigureAwait(true);
         }
         catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"OnAbstinenceEvent failed: {ex}"); }
     }
