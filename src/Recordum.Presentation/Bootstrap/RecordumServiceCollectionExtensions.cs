@@ -102,6 +102,7 @@ public static class RecordumServiceCollectionExtensions
         services.AddScoped<IChartService, ChartService>();
         services.AddScoped<IExportTemplateService, ExportTemplateService>();
         services.AddScoped<ITagService, TagService>();
+        services.AddScoped<IScaleTemplateService, ScaleTemplateService>();
         services.AddScoped<IStreakPauseService, StreakPauseService>();
         services.AddScoped<IAbstinenceService, Data.Services.AbstinenceService>();
         services.AddScoped<IStreakService, StreakService>();

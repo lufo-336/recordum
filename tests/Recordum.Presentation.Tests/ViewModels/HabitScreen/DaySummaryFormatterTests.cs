@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.Core.Enums;
+using Recordum.Core.Models;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Xunit;
 
@@ -7,6 +8,9 @@ namespace Recordum.Presentation.Tests.ViewModels.HabitScreen;
 
 public class DaySummaryFormatterTests
 {
+    private static ScaleTemplate Scale(int min, params string[] names) =>
+        new() { MinValue = min, MaxValue = min + names.Length - 1, Anchors = TestScales.Anchors(min, names) };
+
     [Fact]
     public void Counter_appends_the_primary_unit()
         => DaySummaryFormatter.Label(HabitType.Counter, 4m, "km", null).Should().Be("4 km");
@@ -26,15 +30,19 @@ public class DaySummaryFormatterTests
 
     [Fact]
     public void State_with_a_blank_label_shows_the_bare_number()
-        => DaySummaryFormatter.Label(HabitType.State, 1m, null, new[] { "", "Ok", "Good" }).Should().Be("1");
+        => DaySummaryFormatter.Label(HabitType.State, 1m, null, Scale(1, "", "Ok", "Good")).Should().Be("Ok · 1");
 
     [Fact]
     public void State_maps_the_one_based_value_to_the_scale_label()
-        => DaySummaryFormatter.Label(HabitType.State, 3m, null, new[] { "Bad", "Ok", "Good" }).Should().Be("Good");
+        => DaySummaryFormatter.Label(HabitType.State, 3m, null, Scale(1, "Bad", "Ok", "Good")).Should().Be("Good");
 
     [Fact]
-    public void State_out_of_range_falls_back_to_the_number()
-        => DaySummaryFormatter.Label(HabitType.State, 9m, null, new[] { "Bad", "Ok", "Good" }).Should().Be("9");
+    public void State_out_of_range_reads_the_nearest_name_and_the_number()
+        => DaySummaryFormatter.Label(HabitType.State, 9m, null, Scale(1, "Bad", "Ok", "Good")).Should().Be("Good · 9");
+
+    [Fact]
+    public void State_zero_on_a_zero_based_scale_reads_its_name()
+        => DaySummaryFormatter.Label(HabitType.State, 0m, null, Scale(0, "No pain", "1", "2")).Should().Be("No pain");
 
     [Fact]
     public void State_without_scale_is_the_bare_number()

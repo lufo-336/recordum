@@ -1136,43 +1136,24 @@ public class HabitBuilderViewModelTests
     }
 
     [Fact]
-    public async Task A_metric_on_a_staged_scale_snapshots_its_labels()
+    public async Task A_metric_on_a_staged_scale_carries_its_names_as_anchors()
     {
         var sut = await InitializedVmAsync();
         sut.Name = "Energia";
         sut.AddFieldCommand.Execute(FieldNature.Scale);
         sut.BeginAddCustomScale(sut.Fields[0]);
         sut.ScaleForm!.Name = "Energia";
-        sut.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        FillMarks(sut.ScaleForm, "Bassa", "Media", "Alta");
         sut.ConfirmCustomScaleCommand.Execute(null);
 
         var request = sut.BuildRequestForTest();
 
-        request.Metrics.Single().LabelsJson.Should().Be("""["Bassa","Media","Alta"]""");
         var scale = request.NewScales!.Single();
+        scale.Anchors.Select(a => a.Label).Should().Equal("Bassa", "Media", "Alta");
         scale.Code.Should().Be("energia");
         scale.MinValue.Should().Be(1);
         scale.MaxValue.Should().Be(3);
         scale.IsOfficial.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task A_metric_on_an_official_scale_snapshots_its_labels_too()
-    {
-        // Mirror of the template reader (HabitTemplateService.MaterializeMetricsSegmentsGoalAsync):
-        // it snapshots the scale's labels onto every metric so the State quick-add can show them.
-        // A habit launched from the builder must not be poorer than the same one instantiated from a
-        // template — the T10 parity guard compares the two.
-        var refData = new FakeReferenceData();
-        refData.Scales[0].LabelsJson = """["Terribile","Male","Cosi cosi","Bene","Ottimo"]""";
-        var sut = NewSut(refData: refData);
-        await sut.InitializeAsync();
-        sut.Name = "Umore";
-        sut.AddFieldCommand.Execute(FieldNature.Scale);
-        sut.Fields[0].ScaleTemplateId = refData.Scales[0].Id;
-
-        sut.BuildRequestForTest().Metrics.Single().LabelsJson
-            .Should().Be("""["Terribile","Male","Cosi cosi","Bene","Ottimo"]""");
     }
 
     [Fact]
@@ -1311,7 +1292,7 @@ public class HabitBuilderViewModelTests
         sut.AddFieldCommand.Execute(FieldNature.Scale);
         sut.BeginAddCustomScale(sut.Fields[1]);
         sut.ScaleForm!.Name = "Energia";
-        sut.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        FillMarks(sut.ScaleForm, "Bassa", "Media", "Alta");
         sut.ConfirmCustomScaleCommand.Execute(null);
 
         var payload = PayloadOf(sut);
@@ -1323,8 +1304,9 @@ public class HabitBuilderViewModelTests
         var scale = payload.GetProperty("scales").EnumerateArray().Single();
         scale.GetProperty("code").GetString().Should().Be("energia");
         scale.GetProperty("max_value").GetInt32().Should().Be(3);
-        scale.GetProperty("labels").EnumerateArray().Select(l => l.GetString())
+        scale.GetProperty("anchors").EnumerateArray().Select(a => a.GetProperty("label").GetString())
             .Should().Equal("Bassa", "Media", "Alta");
+        scale.GetProperty("precision").GetString().Should().Be("Integer");
 
         // The metrics join by code, exactly as the reader resolves them.
         payload.GetProperty("metrics").EnumerateArray().ElementAt(0)
@@ -1360,7 +1342,7 @@ public class HabitBuilderViewModelTests
 
         sut.BeginAddCustomScale(sut.Fields[0]);
         sut.ScaleForm!.Name = "Energia";
-        sut.ScaleForm.LabelsText = "Bassa, Alta";
+        FillMarks(sut.ScaleForm, "Bassa", "Alta");
         sut.ConfirmCustomScaleCommand.Execute(null);
 
         sut.CanLaunch.Should().BeTrue();
@@ -1385,6 +1367,18 @@ public class HabitBuilderViewModelTests
         finally
         {
             Strings.Culture = prev;
+        }
+    }
+
+    /// <summary>Un nome per ogni valore da 1 a n (la forma di una scala "a gradini").</summary>
+    private static void FillMarks(Recordum.Presentation.ViewModels.Scales.ScaleEditorViewModel form, params string[] names)
+    {
+        form.MinValue = 1;
+        form.MaxValue = names.Length;
+        foreach (var n in names)
+        {
+            form.AddRowCommand.Execute(null);
+            form.Rows[^1].Label = n;
         }
     }
 }

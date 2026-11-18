@@ -14,7 +14,5 @@
             <TextBlock Text="{Binding ScalePreview}" TextWrapping="Wrap"
                        FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.Text}"/>
         </Border>
-        <TextBlock Text="{x:Static res:Strings.Editor_Field_CustomLabels}" Foreground="{DynamicResource Brush.TextMuted}"/>
-        <TextBox Text="{Binding LabelsJson, UpdateSourceTrigger=LostFocus, TargetNullValue=''}" AcceptsReturn="True" MinHeight="48"/>
     </StackPanel>
 </UserControl>

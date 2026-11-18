@@ -98,7 +98,7 @@ public sealed class SamplePreviewFactory(IClock clock)
     /// <summary>A scale field samples its second step — the first would look like an unset control.</summary>
     private static string SampleStep(PreviewField? field) =>
         field?.ScaleLabels is { Count: > 1 } labels
-            ? ScaleLabelText.At(labels, 1)
+            ? (string.IsNullOrWhiteSpace(labels[1]) ? "2" : labels[1])
             : SampleValue.ToString(CultureInfo.CurrentCulture);
 
     private ITodayContent? BuildToday(BuilderPreviewInput input)

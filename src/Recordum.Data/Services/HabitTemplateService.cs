@@ -154,7 +154,7 @@ public sealed class HabitTemplateService(
         var unitsByCode = await db.UnitsOfMeasure.AsNoTracking()
             .ToDictionaryAsync(u => u.Code, u => u.Id, StringComparer.OrdinalIgnoreCase, ct);
         var scalesByCode = await db.ScaleTemplates.AsNoTracking()
-            .ToDictionaryAsync(s => s.Code, s => (Id: s.Id, Labels: (string?)s.LabelsJson), StringComparer.OrdinalIgnoreCase, ct);
+            .ToDictionaryAsync(s => s.Code, s => s.Id, StringComparer.OrdinalIgnoreCase, ct);
 
         // Risolvi-o-crea (Onda 2.5 T8): un template composto nel builder può portarsi dietro le unità
         // e le scale che ha inventato. Un codice già nel catalogo vince sempre sulla definizione
@@ -177,19 +177,20 @@ public sealed class HabitTemplateService(
         foreach (var s in payload.Scales ?? [])
         {
             if (string.IsNullOrWhiteSpace(s.Code) || scalesByCode.ContainsKey(s.Code)) continue;
-            var labels = JsonSerializer.Serialize(s.Labels ?? []);
+            var (anchors, max) = ReadAnchors(s);
             var scale = new ScaleTemplate
             {
                 Id = Guid.NewGuid(),
                 Code = s.Code,
                 Name = string.IsNullOrWhiteSpace(s.Name) ? s.Code : s.Name,
                 MinValue = s.MinValue,
-                MaxValue = s.MaxValue,
-                LabelsJson = labels,
+                MaxValue = max,
+                Precision = ParseEnum(s.Precision, ScalePrecision.Integer),
                 IsOfficial = false,
             };
             db.ScaleTemplates.Add(scale);
-            scalesByCode[scale.Code] = (scale.Id, labels);
+            await ScaleAnchorTags.BuildAsync(db, scale.Id, anchors, ct);
+            scalesByCode[scale.Code] = scale.Id;
         }
 
         Guid? firstMetricId = null;
@@ -200,13 +201,7 @@ public sealed class HabitTemplateService(
                 var m = payload.Metrics[i];
                 if (string.IsNullOrWhiteSpace(m.Name)) continue;
 
-                Guid? scaleId = null;
-                string? labels = null;
-                if (m.ScaleCode is { } sc && scalesByCode.TryGetValue(sc, out var scale))
-                {
-                    scaleId = scale.Id;
-                    labels = scale.Labels;
-                }
+                Guid? scaleId = m.ScaleCode is { } sc && scalesByCode.TryGetValue(sc, out var scaleFound) ? scaleFound : null;
                 Guid? unitId = m.Unit is { } uc && unitsByCode.TryGetValue(uc, out var u) ? u : null;
 
                 var metric = new MetricDefinition
@@ -218,8 +213,8 @@ public sealed class HabitTemplateService(
                     SortOrder = i,
                     UnitOfMeasureId = unitId,
                     ScaleTemplateId = scaleId,
-                    LabelsJson = labels,
                 };
+                MetricDefinitionService.CoerceScaleType(metric);
                 db.MetricDefinitions.Add(metric);
                 firstMetricId ??= metric.Id;
             }
@@ -336,7 +331,26 @@ public sealed class HabitTemplateService(
         public string? Name { get; set; }
         public int MinValue { get; set; }
         public int MaxValue { get; set; }
+        public string? Precision { get; set; }
+        public List<AnchorPayload>? Anchors { get; set; }
+        /// <summary>Lettura dei template vecchi: nomi in fila, scaglioni da <c>MinValue</c> in su.</summary>
         public List<string>? Labels { get; set; }
+    }
+
+    private sealed class AnchorPayload
+    {
+        public int Value { get; set; }
+        public string? Label { get; set; }
+    }
+
+    // Un payload vecchio (solo Labels) vale scaglioni MinValue + i; se sono più dei valori, Max si allarga
+    // (stessa regola della migrazione 2.20).
+    private static (List<ScaleAnchorDraft> Anchors, int Max) ReadAnchors(ScaleDefPayload s)
+    {
+        if (s.Anchors is { Count: > 0 } a) return (a.Select(x => new ScaleAnchorDraft(x.Value, x.Label)).ToList(), s.MaxValue);
+        var labels = s.Labels ?? [];
+        return (labels.Select((l, i) => new ScaleAnchorDraft(s.MinValue + i, l)).ToList(),
+            Math.Max(s.MaxValue, s.MinValue + labels.Count - 1));
     }
 
     private sealed class GoalPayload

@@ -22,8 +22,7 @@ public sealed record HomeTreeRow(
     ImmutableArray<int> CompletionsLast14Days = default,
     decimal? TodayCounterTotal = null,
     string? TodayCounterUnitCode = null,
-    int? TodayStateValue = null,
-    string? TodayStateLabel = null,
+    decimal? TodayStateValue = null,
     AbstinenceStatus AbstinenceStatus = AbstinenceStatus.NotStarted,
     long? AbstinenceOpenSinceMs = null,
     int? JournalEntriesThisWeek = null,
@@ -46,4 +45,6 @@ public sealed record HomeTreeRow(
     bool TodayCounterUnitIsOfficial = false,
     // Astinenza: i giorni in cui un periodo è finito (stessi indici di CompletionsLast14Days, 13 = oggi). Un giorno
     // di ricaduta non è un giorno pulito (GIO-9): lì la banda vale 0, anche se nello stesso giorno si è ricominciato.
-    ImmutableArray<bool> LapsesLast14Days = default);
+    ImmutableArray<bool> LapsesLast14Days = default,
+    // Lo Stato: la scala della metrica primaria, con gli scaglioni (il nome del valore lo legge Presentation).
+    Recordum.Core.Models.ScaleTemplate? StateScale = null);

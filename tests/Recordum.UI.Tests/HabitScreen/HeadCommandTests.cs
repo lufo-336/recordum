@@ -201,10 +201,12 @@ public class HeadCommandTests
     [AvaloniaFact]
     public async Task State_step_click_records_that_value()
     {
+        decimal expected = 0;
         var o = await OpenAsync(HabitType.State, async (sp, id) =>
         {
             var scale = (await sp.GetRequiredService<IReferenceDataQueryService>().ListScalesAsync())
                 .First(s => s.MaxValue - s.MinValue + 1 is >= 3 and <= 10);
+            expected = scale.MinValue + 2;   // the third value of the scale
             await sp.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition
             {
                 HabitNodeId = id, Name = "umore", Type = MetricType.Integer, SortOrder = 0, ScaleTemplateId = scale.Id,
@@ -217,7 +219,7 @@ public class HeadCommandTests
         var third = steps.GetVisualDescendants().OfType<Button>().ElementAt(2);
         Click(o.Window, third);
         await UntilAsync(() => ListAsync(o).Result.Count == 1);
-        (await ListAsync(o)).Single().Values.Should().ContainSingle().Which.ValueInteger.Should().Be(3);
+        (await ListAsync(o)).Single().Values.Should().ContainSingle().Which.ValueDecimal.Should().Be(expected);
         o.Window.Close();
     }
 

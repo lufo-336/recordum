@@ -27,19 +27,22 @@ public class SectionVisibilityMatrixTests
     public void Matrix_matches_spec(NodeType node, HabitType? habit, string expectedSections)
     {
         var fakeSettings = new FakeAppSettingService();
+        var refData = new FakeReferenceData();
+        var metrics = new FakeMetricDefinitionService();
         var sut = new HabitEditorViewModel(
             new FakeHabitNodeService(),
             new FakeHabitConfigService(),
             new FakeGoalService(),
-            new FakeMetricDefinitionService(),
+            metrics,
             new FakeNotificationService(),
             new FakeTagService(),
             fakeSettings,
-            new FakeReferenceData(),
+            refData,
             new RecentColorStore(fakeSettings),
             new FavoriteColorStore(fakeSettings),
             new FakeScreenColorPicker(),
-            new FakeHabitUiPrefsService());
+            new FakeHabitUiPrefsService(),
+            new FakeScaleTemplateService(refData, metrics));
 
         var applicable = new List<string> { "L1" };
         if (sut.Scheduling.IsApplicable(node, habit)) applicable.Add("Scheduling");

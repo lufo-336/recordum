@@ -298,8 +298,8 @@ namespace Recordum.Data.Migrations
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 10, 21, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.19"
+                            UpdatedAt = new DateTime(2026, 11, 17, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2.20"
                         });
                 });
 
@@ -1424,11 +1424,6 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("habit_node_id");
 
-                    b.Property<string>("LabelsJson")
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("labels_json");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1624,6 +1619,476 @@ namespace Recordum.Data.Migrations
                     b.ToTable("notifications", (string)null);
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.ScaleAnchor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label");
+
+                    b.Property<Guid>("ScaleTemplateId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("scale_template_id");
+
+                    b.Property<Guid?>("TagId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tag_id");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id")
+                        .HasName("pk_scale_anchors");
+
+                    b.HasIndex("TagId")
+                        .HasDatabaseName("ix_scale_anchors_tag_id");
+
+                    b.HasIndex("ScaleTemplateId", "Value")
+                        .IsUnique()
+                        .HasDatabaseName("ix_scale_anchors_scale_value");
+
+                    b.ToTable("scale_anchors", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Hard pellets",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Lumpy sausage",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Cracked sausage",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Smooth sausage",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Soft blobs",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Mushy",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 6
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0001-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Liquid",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000001"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 7
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0002-0000-0000-000000000000"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "No bleeding",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000002"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0002-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Streaks on tissue",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000002"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0002-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Visible blood with stool",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000002"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0002-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Bleeding without stool",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000002"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000000"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "No pain",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "1",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "2",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "3",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "4",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "5",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "6",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 6
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "7",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 7
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "8",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 8
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "9",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 9
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0003-0000-0000-000000000010"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Worst pain",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000003"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 10
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0004-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Strongly disagree",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000004"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0004-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Disagree",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000004"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0004-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Neutral",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000004"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0004-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Agree",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000004"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0004-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Strongly agree",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000004"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0005-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Very poor",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000005"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0005-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Poor",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000005"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0005-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Fair",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000005"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0005-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Good",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000005"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0005-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Excellent",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000005"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Calm",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "2",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "3",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "4",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "5",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "6",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 6
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "7",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 7
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "8",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 8
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "9",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 9
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0006-0000-0000-000000000010"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Overwhelmed",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000006"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 10
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0007-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Very low",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000007"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0007-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Low",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000007"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0007-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Neutral",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000007"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0007-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Good",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000007"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000003-0007-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Label = "Very good",
+                            ScaleTemplateId = new Guid("00000002-0000-0000-0000-000000000007"),
+                            UpdatedAtMs = 1778716800000L,
+                            Value = 5
+                        });
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.ScaleTemplate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1645,12 +2110,6 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_official");
 
-                    b.Property<string>("LabelsJson")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("labels_json");
-
                     b.Property<int>("MaxValue")
                         .HasColumnType("INTEGER")
                         .HasColumnName("max_value");
@@ -1665,6 +2124,14 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("name");
 
+                    b.Property<string>("Precision")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Integer")
+                        .HasColumnName("precision");
+
                     b.HasKey("Id")
                         .HasName("pk_scale_templates");
 
@@ -1672,7 +2139,10 @@ namespace Recordum.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_scale_templates_code");
 
-                    b.ToTable("scale_templates", (string)null);
+                    b.ToTable("scale_templates", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_scale_templates_precision", "precision IN ('Integer','Decimal')");
+                        });
 
                     b.HasData(
                         new
@@ -1681,10 +2151,10 @@ namespace Recordum.Data.Migrations
                             Code = "bristol",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"Hard pellets\",\"Lumpy sausage\",\"Cracked sausage\",\"Smooth sausage\",\"Soft blobs\",\"Mushy\",\"Liquid\"]",
                             MaxValue = 7,
                             MinValue = 1,
-                            Name = "Bristol Stool Scale"
+                            Name = "Bristol Stool Scale",
+                            Precision = "Integer"
                         },
                         new
                         {
@@ -1692,10 +2162,10 @@ namespace Recordum.Data.Migrations
                             Code = "mayo-rectal-bleeding",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"No bleeding\",\"Streaks on tissue\",\"Visible blood with stool\",\"Bleeding without stool\"]",
                             MaxValue = 3,
                             MinValue = 0,
-                            Name = "Mayo Rectal Bleeding Score"
+                            Name = "Mayo Rectal Bleeding Score",
+                            Precision = "Integer"
                         },
                         new
                         {
@@ -1703,10 +2173,10 @@ namespace Recordum.Data.Migrations
                             Code = "nrs-pain",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"No pain\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"Worst pain\"]",
                             MaxValue = 10,
                             MinValue = 0,
-                            Name = "NRS Pain Scale"
+                            Name = "NRS Pain Scale",
+                            Precision = "Integer"
                         },
                         new
                         {
@@ -1714,10 +2184,10 @@ namespace Recordum.Data.Migrations
                             Code = "likert-5",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"Strongly disagree\",\"Disagree\",\"Neutral\",\"Agree\",\"Strongly agree\"]",
                             MaxValue = 5,
                             MinValue = 1,
-                            Name = "Likert Scale (1–5)"
+                            Name = "Likert Scale (1–5)",
+                            Precision = "Integer"
                         },
                         new
                         {
@@ -1725,10 +2195,10 @@ namespace Recordum.Data.Migrations
                             Code = "sleep-quality",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"Very poor\",\"Poor\",\"Fair\",\"Good\",\"Excellent\"]",
                             MaxValue = 5,
                             MinValue = 1,
-                            Name = "Sleep Quality (1–5)"
+                            Name = "Sleep Quality (1–5)",
+                            Precision = "Integer"
                         },
                         new
                         {
@@ -1736,10 +2206,10 @@ namespace Recordum.Data.Migrations
                             Code = "stress-10",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"Calm\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"Overwhelmed\"]",
                             MaxValue = 10,
                             MinValue = 1,
-                            Name = "Stress Level (1–10)"
+                            Name = "Stress Level (1–10)",
+                            Precision = "Integer"
                         },
                         new
                         {
@@ -1747,10 +2217,10 @@ namespace Recordum.Data.Migrations
                             Code = "mood-5",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            LabelsJson = "[\"Very low\",\"Low\",\"Neutral\",\"Good\",\"Very good\"]",
                             MaxValue = 5,
                             MinValue = 1,
-                            Name = "Mood Scale (1–5)"
+                            Name = "Mood Scale (1–5)",
+                            Precision = "Integer"
                         });
                 });
 
@@ -2429,6 +2899,26 @@ namespace Recordum.Data.Migrations
                     b.Navigation("HabitNode");
                 });
 
+            modelBuilder.Entity("Recordum.Core.Models.ScaleAnchor", b =>
+                {
+                    b.HasOne("Recordum.Core.Models.ScaleTemplate", "ScaleTemplate")
+                        .WithMany("Anchors")
+                        .HasForeignKey("ScaleTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_scale_anchors_scale_templates_scale_template_id");
+
+                    b.HasOne("Recordum.Core.Models.Tag", "Tag")
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_scale_anchors_tags_tag_id");
+
+                    b.Navigation("ScaleTemplate");
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("Recordum.Core.Models.SegmentDefinition", b =>
                 {
                     b.HasOne("Recordum.Core.Models.HabitNode", "HabitNode")
@@ -2519,6 +3009,8 @@ namespace Recordum.Data.Migrations
 
             modelBuilder.Entity("Recordum.Core.Models.ScaleTemplate", b =>
                 {
+                    b.Navigation("Anchors");
+
                     b.Navigation("Metrics");
                 });
 

@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Linq.Expressions;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
@@ -104,7 +103,6 @@ public sealed class HabitTreeQueryService(
                 m.HabitNodeId,
                 m.SortOrder,
                 m.Type,
-                m.LabelsJson,
                 m.ScaleTemplateId,
                 UnitCode = m.UnitOfMeasure != null ? m.UnitOfMeasure.Code : null,
                 UnitSymbol = m.UnitOfMeasure != null ? m.UnitOfMeasure.Symbol : null,
@@ -116,13 +114,13 @@ public sealed class HabitTreeQueryService(
             .GroupBy(m => m.HabitNodeId)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.SortOrder).First());
         var primaryMetricIds = primaryMetricByHabit.Values.Select(m => m.Id).ToHashSet();
-
-        // Shared scale-template labels — the fallback when a metric has no own LabelsJson override
-        // (metric override wins, CSS-style specificity — matches MetricCellFactory/CompletionList precedent).
-        var templateLabelsById = await db.ScaleTemplates
-            .AsNoTracking()
-            .Select(s => new { s.Id, s.LabelsJson })
-            .ToDictionaryAsync(s => s.Id, s => s.LabelsJson, ct);
+        // Le scale degli Stati (con gli scaglioni): la lettura del nome la fa Presentation (GIO-23).
+        var stateScaleIds = primaryMetricByHabit.Values.Where(m => m.ScaleTemplateId != null)
+            .Select(m => m.ScaleTemplateId!.Value).Distinct().ToList();
+        var scalesById = stateScaleIds.Count == 0
+            ? new Dictionary<Guid, ScaleTemplate>()
+            : (await db.ScaleTemplates.AsNoTracking().Include(s => s.Anchors)
+                .Where(s => stateScaleIds.Contains(s.Id)).ToListAsync(ct)).ToDictionary(s => s.Id);
 
         // CompletionValues on each node's primary metric over the whole 14-day window — feeds the
         // counter total / state value of today AND the per-day value strip (2.1-bis: counter
@@ -268,8 +266,8 @@ public sealed class HabitTreeQueryService(
                 string? todayCounterUnitName = null;
                 bool todayCounterUnitIsOfficial = false;
                 bool todayCounterIsDuration = false;
-                int? todayStateValue = null;
-                string? todayStateLabel = null;
+                decimal? todayStateValue = null;
+                ScaleTemplate? stateScale = null;
                 var abstinenceStatus = AbstinenceStatus.NotStarted;
                 long? abstinenceOpenSinceMs = null;
                 ImmutableArray<bool> lapses14 = default;
@@ -305,21 +303,11 @@ public sealed class HabitTreeQueryService(
                         break;
                     case HabitType.State:
                         if (stateDailyLastByHabit.TryGetValue(r.Id, out var lastVals)) values14 = lastVals;
-                        if (stateLatestByHabit.TryGetValue(r.Id, out var latest) && latest.ValueInteger is long v)
-                        {
-                            todayStateValue = (int)v;
-                            if (primaryMetricByHabit.TryGetValue(r.Id, out var stateMetric))
-                            {
-                                var labelsJson = stateMetric.LabelsJson;
-                                if (string.IsNullOrWhiteSpace(labelsJson)
-                                    && stateMetric.ScaleTemplateId is Guid tid
-                                    && templateLabelsById.TryGetValue(tid, out var tmplLabels))
-                                {
-                                    labelsJson = tmplLabels;
-                                }
-                                todayStateLabel = ResolveLabel(labelsJson, todayStateValue.Value);
-                            }
-                        }
+                        if (stateLatestByHabit.TryGetValue(r.Id, out var latest))
+                            todayStateValue = latest.ValueDecimal ?? latest.ValueInteger;
+                        if (primaryMetricByHabit.TryGetValue(r.Id, out var stateMetric)
+                            && stateMetric.ScaleTemplateId is { } stateScaleId)
+                            scalesById.TryGetValue(stateScaleId, out stateScale);
                         break;
                     case HabitType.Resistance:
                         if (abstinenceByHabit.TryGetValue(r.Id, out var abst))
@@ -360,7 +348,7 @@ public sealed class HabitTreeQueryService(
                     TodayCounterTotal: todayCounterTotal,
                     TodayCounterUnitCode: todayCounterUnitCode,
                     TodayStateValue: todayStateValue,
-                    TodayStateLabel: todayStateLabel,
+                    StateScale: stateScale,
                     AbstinenceStatus: abstinenceStatus,
                     AbstinenceOpenSinceMs: abstinenceOpenSinceMs,
                     JournalEntriesThisWeek: journalEntriesThisWeek,
@@ -376,22 +364,5 @@ public sealed class HabitTreeQueryService(
                     LapsesLast14Days: lapses14);
             })
             .ToList();
-    }
-
-    private static string? ResolveLabel(string? labelsJson, int value)
-    {
-        if (string.IsNullOrWhiteSpace(labelsJson)) return null;
-        string[]? labels;
-        try
-        {
-            labels = JsonSerializer.Deserialize<string[]>(labelsJson);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-        return labels is not null && value >= 1 && value <= labels.Length
-            ? labels[value - 1]
-            : null;
     }
 }

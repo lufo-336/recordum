@@ -16,6 +16,10 @@ public sealed class ReferenceDataQueryService(IDbContextFactory<RecordumDbContex
     public async ValueTask<IReadOnlyList<ScaleTemplate>> ListScalesAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.ScaleTemplates.AsNoTracking().OrderBy(s => s.Name).ToListAsync(ct);
+        var scales = await db.ScaleTemplates.AsNoTracking()
+            .Include(s => s.Anchors).ThenInclude(a => a.Tag)
+            .OrderBy(s => s.Name).ToListAsync(ct);
+        foreach (var s in scales) s.Anchors.Sort((a, b) => a.Value.CompareTo(b.Value));
+        return scales;
     }
 }

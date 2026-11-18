@@ -58,8 +58,10 @@ public class HabitScreenViewModelTests
         out FakeNoteService noteSvc,
         out FakeAbstinenceService abstinence,
         out FakeHabitUiPrefsService uiPrefs,
-        bool editorAvailable = true)
+        bool editorAvailable = true,
+        FakeReferenceData? refData = null)
     {
+        refData ??= new FakeReferenceData();
         nodes = new FakeHabitNodeService();
         completions = new FakeCompletionService();
         timers = new FakeActiveTimerService();
@@ -74,12 +76,13 @@ public class HabitScreenViewModelTests
         var settings = new FakeAppSettingService();
         var editor = new Recordum.Presentation.ViewModels.HabitEditor.HabitEditorViewModel(
             nodes, configs, goals, metrics, new FakeNotificationService(), new FakeTagService(),
-            settings, new FakeReferenceData(), new Recordum.Presentation.Services.RecentColorStore(settings),
+            settings, refData, new Recordum.Presentation.Services.RecentColorStore(settings),
             new Recordum.Presentation.Services.FavoriteColorStore(settings),
             new FakeScreenColorPicker(),
-            uiPrefs);
+            uiPrefs,
+            new FakeScaleTemplateService());
         return new HabitScreenViewModel(
-            nodes, completions, timers, metrics, new FakeReferenceData(), configs,
+            nodes, completions, timers, metrics, refData, configs,
             noteSvc, goals, new IntensityRampResolver(),
             new FakeStreakAggregator(), new FakeTrendQueryService(), new FakeHourlyDistributionQueryService(),
             abstinence, clock, bus, new FakeEditorAvailability(editorAvailable), settings, editor,
@@ -307,6 +310,33 @@ public class HabitScreenViewModelTests
         var lapseDay = sut.Calendar.Cells.Single(c => c.Date == new DateOnly(2026, 5, 12));
         lapseDay.Number.Should().BeNull();
         lapseDay.TintStep.Should().Be(4); // danger, full intensity
+    }
+
+    [Fact]
+    public async Task Markers_state_intensity_comes_from_the_scale_fraction_and_a_recorded_zero_is_marked()
+    {
+        var refData = new FakeReferenceData();
+        var sut = CreateSut(out var nodes, out var completions, out _, out var metrics, out _, out _, out _, out _, out _, refData: refData);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.State, Name = "Umore", Color = "#3366cc" };
+        // -3..+3: 0 sits in the middle (fraction 0.5 -> step 2). Against the month's best it would be the lowest step.
+        var scale = refData.Scales[0];
+        scale.MinValue = -3; scale.MaxValue = 3;
+        metrics.Store[Guid.NewGuid()] = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = id, Name = "Umore", ScaleTemplateId = scale.Id, SortOrder = 0 };
+        completions.MagnitudeByHabit[id] =
+        [
+            new DailyMagnitude(new DateOnly(2026, 5, 10), -3m),
+            new DailyMagnitude(new DateOnly(2026, 5, 11), 0m),
+            new DailyMagnitude(new DateOnly(2026, 5, 12), 3m),
+        ];
+
+        await sut.LoadAsync(id);
+
+        int Step(int d) => sut.Calendar.Cells.Single(c => c.Date == new DateOnly(2026, 5, d)).TintStep;
+        Step(10).Should().Be(1);   // fraction 0: still recorded, lowest step
+        Step(11).Should().Be(2);   // a recorded 0 is marked, at the scale's middle
+        Step(12).Should().Be(4);
+        Step(13).Should().Be(0);   // no value, no tint
     }
 
     [Fact]

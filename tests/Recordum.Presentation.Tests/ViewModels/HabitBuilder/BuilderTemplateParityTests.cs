@@ -57,7 +57,7 @@ public class BuilderTemplateParityTests : IDisposable
         // goal
         "target", "period_type", "rolling_days",
         // unit / scale definitions
-        "code", "min_value", "max_value", "labels", "symbol",
+        "code", "min_value", "max_value", "labels", "symbol", "precision", "anchors", "value", "label",
     };
 
     /// <summary>How each official template is composed in the builder. Written by hand on purpose:
@@ -182,7 +182,7 @@ public class BuilderTemplateParityTests : IDisposable
         AddField(vm, FieldNature.Scale, "Energia");
         vm.BeginAddCustomScale(vm.Fields[1]);
         vm.ScaleForm!.Name = "Energia";
-        vm.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        FillSparseDecimalScale(vm.ScaleForm);
         vm.ConfirmCustomScaleCommand.Execute(null);
         vm.Repeatable = true;
         AddSeriesLabel(vm, "Mattina");
@@ -228,8 +228,14 @@ public class BuilderTemplateParityTests : IDisposable
         config.GetProperty("rest_timer_seconds").GetInt32().Should().Be(45);
         config.GetProperty("timer_auto_prompt").GetBoolean().Should().BeTrue();
         payload.GetProperty("units").EnumerateArray().Single().GetProperty("code").GetString().Should().Be("tazze");
-        payload.GetProperty("scales").EnumerateArray().Single().GetProperty("labels")
-            .EnumerateArray().Select(l => l.GetString()).Should().Equal("Bassa", "Media", "Alta");
+        // Una scala a decimali con tre scaglioni sparsi: la posizione conta, i nomi non la dicono piu' (GIO-23).
+        var scale = payload.GetProperty("scales").EnumerateArray().Single();
+        scale.GetProperty("precision").GetString().Should().Be("Decimal");
+        scale.GetProperty("min_value").GetInt32().Should().Be(0);
+        scale.GetProperty("max_value").GetInt32().Should().Be(10);
+        scale.GetProperty("anchors").EnumerateArray().Select(a => (a.GetProperty("value").GetInt32(), a.GetProperty("label").GetString()))
+            .Should().Equal((0, "Bassa"), (5, "Media"), (10, "Alta"));
+        scale.TryGetProperty("labels", out _).Should().BeFalse("the old name-row would drop unnamed positions");
 
         // And the launched habit says the same thing as the saved template.
         var request = vm.BuildRequestForTest();
@@ -245,7 +251,25 @@ public class BuilderTemplateParityTests : IDisposable
         request.Config.RestTimerSeconds.Should().Be(45);
         request.Config.TimerAutoPrompt.Should().BeTrue();
         request.NewUnits!.Single().Code.Should().Be("tazze");
-        request.NewScales!.Single().Code.Should().Be("energia");
+        var staged = request.NewScales!.Single();
+        staged.Code.Should().Be("energia");
+        staged.Precision.Should().Be(ScalePrecision.Decimal);
+        staged.Anchors.OrderBy(a => a.Value).Select(a => (a.Value, a.Label)).Should().Equal((0, "Bassa"), (5, "Media"), (10, "Alta"));
+    }
+
+    /// <summary>Principio 8, fixture "scala a decimali con scaglioni sparsi": cio' che il creatore sa fare (estremi, precisione,
+    /// scaglioni solo dove servono) un modello salvato lo ripete.</summary>
+    internal static void FillSparseDecimalScale(Recordum.Presentation.ViewModels.Scales.ScaleEditorViewModel form)
+    {
+        form.MinValue = 0;
+        form.MaxValue = 10;
+        form.Precision = ScalePrecision.Decimal;
+        foreach (var (value, label) in new[] { (0, "Bassa"), (5, "Media"), (10, "Alta") })
+        {
+            form.AddRowCommand.Execute(null);
+            form.Rows[^1].Value = value;
+            form.Rows[^1].Label = label;
+        }
     }
 
     [Fact]
@@ -332,7 +356,6 @@ public class BuilderTemplateParityTests : IDisposable
         sr.Node.Name.Should().Be("Monitor del sonno");
         sr.Node.Description.Should().NotBe(sleep.Description).And.NotBeNullOrWhiteSpace();
         sr.Metrics.Select(m => m.Name).Should().Equal("Ore dormite", "Qualità del sonno");
-        sr.Metrics[1].LabelsJson.Should().Be("""["Pessima","Scarsa","Discreta","Buona","Ottima"]""");
         sr.Config!.SeriesLabelsJson.Should().Be("""["Notte","Pisolino"]""");
 
         var w = NewVm(templates);
@@ -388,7 +411,7 @@ public class BuilderTemplateParityTests : IDisposable
         AddField(first, FieldNature.Scale, "Energia");
         first.BeginAddCustomScale(first.Fields[1]);
         first.ScaleForm!.Name = "Energia";
-        first.ScaleForm.LabelsText = "Bassa, Media, Alta";
+        FillSparseDecimalScale(first.ScaleForm);
         first.ConfirmCustomScaleCommand.Execute(null);
         AddField(first, FieldNature.Time, "Durata", unit: "minutes");
         first.Repeatable = true;

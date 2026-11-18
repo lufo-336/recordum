@@ -1,0 +1,124 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.Scales"
+             xmlns:core="using:Recordum.Core.Enums"
+             xmlns:conv="using:Recordum.UI.Converters"
+             xmlns:ctl="using:Recordum.UI.Controls"
+             x:Class="Recordum.UI.Controls.ScaleEditor"
+             x:DataType="vm:ScaleEditorViewModel">
+  <!-- L'editor di una scala (GIO-23 §7, opzione B): nome, "da a", precisione, l'elenco degli scaglioni, e sotto la barra
+       come anteprima. Lo stesso controllo nel creatore e in Configura. In Configura ogni modifica valida e' una scrittura:
+       i campi si confermano uscendo (o con Invio), non a ogni tasto; LiveUpdate (il creatore) li conferma a ogni tasto.
+       Sul telefono (< 480 px, classe "narrow") il tag va a capo sotto il nome. -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.marktag"><Setter Property="Grid.Column" Value="2"/><Setter Property="Margin" Value="8,0,0,0"/></Style>
+    <Style Selector="ctl|ScaleEditor.narrow TextBox.markname"><Setter Property="Grid.ColumnSpan" Value="2"/></Style>
+    <Style Selector="ctl|ScaleEditor.narrow TextBlock.marktag">
+      <Setter Property="Grid.Row" Value="1"/>
+      <Setter Property="Grid.Column" Value="1"/>
+      <Setter Property="Grid.ColumnSpan" Value="2"/>
+    </Style>
+    <Style Selector="ctl|ScaleEditor.narrow TextBlock.marktag"><Setter Property="Margin" Value="4,0,0,0"/></Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="8">
+    <StackPanel Spacing="2">
+      <TextBlock Classes="caption" Text="{x:Static res:Strings.HabitBuilder_NewUnit_Name}"/>
+      <TextBox x:Name="NameBox" Text="{CompiledBinding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+               IsReadOnly="{CompiledBinding IsReadOnly}" MaxLength="100"/>
+      <ItemsControl x:Name="NameErrorList" ItemsSource="{CompiledBinding NameErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    </StackPanel>
+
+    <WrapPanel Orientation="Horizontal">
+      <TextBlock Text="{x:Static res:Strings.Scale_Editor_From}" VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,6,0"/>
+      <TextBox x:Name="MinBox" Width="72" Margin="0,0,8,0" IsReadOnly="{CompiledBinding IsReadOnly}"
+               AutomationProperties.Name="{x:Static res:Strings.Scale_Editor_From}"
+               Text="{CompiledBinding MinValue, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+      <TextBlock Text="{x:Static res:Strings.Scale_Editor_To}" VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,6,0"/>
+      <TextBox x:Name="MaxBox" Width="72" Margin="0,0,16,0" IsReadOnly="{CompiledBinding IsReadOnly}"
+               AutomationProperties.Name="{x:Static res:Strings.Scale_Editor_To}"
+               Text="{CompiledBinding MaxValue, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <RadioButton x:Name="IntegerPrecision" Classes="segment" GroupName="scaleprecision" Content="{x:Static res:Strings.Scale_Precision_Integer}"
+                     IsEnabled="{CompiledBinding !IsReadOnly}"
+                     IsChecked="{CompiledBinding Precision, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScalePrecision.Integer}}"/>
+        <RadioButton x:Name="DecimalPrecision" Classes="segment" GroupName="scaleprecision" Content="{x:Static res:Strings.Scale_Precision_Decimal}"
+                     IsEnabled="{CompiledBinding !IsReadOnly}"
+                     IsChecked="{CompiledBinding Precision, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static core:ScalePrecision.Decimal}}"/>
+      </StackPanel>
+    </WrapPanel>
+    <ItemsControl x:Name="RangeErrorList" ItemsSource="{CompiledBinding RangeErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <ItemsControl x:Name="PrecisionErrorList" ItemsSource="{CompiledBinding PrecisionErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <ItemsControl x:Name="RowsList" ItemsSource="{CompiledBinding Rows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:ScaleAnchorRowViewModel">
+          <Grid ColumnDefinitions="64,*,110,Auto" RowDefinitions="Auto,Auto" Margin="0,0,0,6">
+            <TextBox x:Name="ValueBox" Width="56" HorizontalAlignment="Left" IsReadOnly="{CompiledBinding Owner.IsReadOnly}"
+                     AutomationProperties.Name="{CompiledBinding AutomationName}"
+                     Text="{CompiledBinding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+            <TextBox x:Name="LabelBox" Classes="markname" Grid.Column="1" MaxLength="100"
+                     Text="{CompiledBinding Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     IsReadOnly="{CompiledBinding Owner.IsReadOnly}" AutomationProperties.Name="{CompiledBinding AutomationName}"/>
+            <TextBlock x:Name="TagText" Classes="marktag" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                       FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"
+                       Text="{CompiledBinding TagPreview}"
+                       IsVisible="{CompiledBinding TagPreview, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            <Button x:Name="RemoveButton" Grid.Column="3" Classes="ghost" Margin="4,0,0,0" Padding="6" MinHeight="0" VerticalAlignment="Center"
+                    AutomationProperties.Name="{x:Static res:Strings.Scale_Editor_RemoveMark}"
+                    ToolTip.Tip="{x:Static res:Strings.Scale_Editor_RemoveMark}"
+                    IsVisible="{CompiledBinding !Owner.IsReadOnly}"
+                    Command="{CompiledBinding Owner.RemoveRowCommand}" CommandParameter="{CompiledBinding}">
+              <Path Data="{StaticResource Icon.X}" Width="12" Height="12" Stretch="Uniform" Stroke="{DynamicResource Brush.TextMuted}"
+                    StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Button>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <WrapPanel Orientation="Horizontal" IsVisible="{CompiledBinding !IsReadOnly}">
+      <Button x:Name="AddButton" Classes="ghost" Padding="8,4" Command="{CompiledBinding AddRowCommand}" Content="{x:Static res:Strings.Scale_Editor_AddMark}"/>
+      <Button x:Name="FillButton" Classes="ghost" Padding="8,4" Command="{CompiledBinding FillEveryValueCommand}"
+              IsVisible="{CompiledBinding CanFill}" Content="{x:Static res:Strings.Scale_Editor_NameEveryValue}"/>
+    </WrapPanel>
+
+    <ItemsControl x:Name="AnchorErrorList" ItemsSource="{CompiledBinding AnchorErrors}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:String">
+          <TextBlock Text="{CompiledBinding}" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap"
+                     FontSize="{StaticResource FontSize.Small}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBlock x:Name="UsageLabel" Text="{CompiledBinding UsageText}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{StaticResource FontSize.Small}"
+               IsVisible="{CompiledBinding UsageText, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+    <Border Margin="8,0,8,4">
+      <ctl:ScaleMarksBar x:Name="PreviewBar" Points="{CompiledBinding Preview}"/>
+    </Border>
+  </StackPanel>
+</UserControl>

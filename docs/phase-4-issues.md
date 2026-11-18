@@ -64,9 +64,8 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
-**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperti: **GIO-10**, **GIO-11** (in parte) · `reported`; **GIO-1**, **GIO-5**, **GIO-8** `fixed` il 2026-11-17 (`agy-minori`); dalla revisione dei PNG con l'autore
-(2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** in
-ROADMAP, **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda restano **B7** e
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperto: **GIO-11** (in parte) · `reported`; **GIO-1**, **GIO-5**, **GIO-8** `fixed` il 2026-11-17 (`agy-minori`), **GIO-10** `fixed` il 2026-11-18 (`gio10-abstinence-screen`); dalla revisione dei PNG con l'autore
+(2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** `fixed` (2026-11-18, `gio23-scales`), **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
@@ -2802,7 +2801,7 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     fallisce lascia la Home caricata. Scritto da agy (Hydrogen) dal brief
     `docs/superpowers/plans/2026-11-17-gio22-tag-filter.md`; test `HomeTagFilterTests`, `HomeTagFilterViewTests`,
     `CompositionTests.The_home_from_the_container_gets_the_tag_service` (rosso provato), PNG `home-tag-*`.
-  - **GIO-23 — scale continue** (richiesta dell'autore) · `triaged`, spec a parte dopo i merge (deciso il 2026-11-16, in
+  - **GIO-23 — scale continue** (richiesta dell'autore) · `fixed` (2026-11-18, branch `gio23-scales`: spec `docs/superpowers/specs/2026-11-17-gio23-scales-design.md`, piano `docs/superpowers/plans/2026-11-17-gio23-scales.md`; schema 2.20, scaglioni con nome libero e tag ricavato, valore vero in `value_decimal`, lettura "Male · 37" / "37, fra Male e Così così", editor B; PNG `scale-editor-*`, `state-umore-37-*`, `state-nrs-0-*`, `home-state-umore-*`) · era `triaged`, spec a parte dopo i merge (deciso il 2026-11-16, in
     ROADMAP "Prossimo") · oggi `ScaleTemplate` ha
     `MinValue`/`MaxValue` interi e il valore salvato è sempre l'intero (§5 di CLAUDE.md). Chiesto: una scala su cui ci si
     colloca fra due scaglioni (1,37 fra "Sto malissimo" e "Sto male"), o 0–100.

@@ -31,7 +31,8 @@ public class SectionVisibilityReactivityTests
             new RecentColorStore(fakeSettings),
             new FavoriteColorStore(fakeSettings),
             new FakeScreenColorPicker(),
-            new FakeHabitUiPrefsService());
+            new FakeHabitUiPrefsService(),
+            new FakeScaleTemplateService());
     }
 
     private static (HabitEditorViewModel Sut, Guid Id) Load(NodeType node, HabitType? habit)

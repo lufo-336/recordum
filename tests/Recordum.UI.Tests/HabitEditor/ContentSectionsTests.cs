@@ -93,7 +93,7 @@ public class ContentSectionsTests
     }
 
     [AvaloniaFact]
-    public async Task Scale_labels_are_a_list_of_fields_one_per_value_and_an_edit_reaches_the_db()
+    public async Task Scale_labels_are_a_list_of_fields_one_per_value()
     {
         var (o, _, s, v) = await OpenSectionAsync<ScalesSectionViewModel, ScalesSectionView>(e => e.Scales, "SclLbl", HabitType.State,
             async id => await AddMetricAsync(id, MetricType.Integer));
@@ -102,28 +102,50 @@ public class ContentSectionsTests
             var scale = s.AvailableScales.First(t => t.Code == "mood-5");
             Named<ComboBox>(v, "ScaleBox").SelectedItem = scale;
             PrivateDbHost.Pump();
-            var boxes = Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<TextBox>().ToList();
+            var boxes = Named<ScaleEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<TextBox>().Where(b => b.Name == "LabelBox").ToList();
             boxes.Should().HaveCount(scale.MaxValue - scale.MinValue + 1);
             boxes.Select(b => b.Text).Should().OnlyContain(t => !string.IsNullOrWhiteSpace(t), "la scala porta le sue etichette");
-            Named<ScaleLabelsEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<Button>().Should().OnlyContain(b => !b.IsVisible,
-                "una scala esistente non ha aggiungi/togli");
+            Named<ScaleEditor>(v, "LabelsEditor").GetVisualDescendants().OfType<Button>().Where(b => b.Name is "AddButton" or "RemoveButton" or "FillButton").Should().OnlyContain(b => !b.IsEffectivelyVisible,
+                "una scala ufficiale e' in sola lettura: niente aggiungi/togli");
 
-            boxes[1].Focus();
-            boxes[1].Text = "Custom";
-            PrivateDbHost.Pump();
-            await Task.Delay(150);
-            // La scala ufficiale e' nata con le sue etichette (UX3A-2); la modifica non c'e' ancora.
-            (await MetricsAsync(o.Id)).Single().LabelsJson.Should().NotBeNull()
-                .And.NotContain("Custom", "il testo si conferma uscendo dal campo, non a ogni tasto");
             AutomationProperties.GetName(boxes[1]).Should().NotBeNullOrWhiteSpace().And.Contain("2");
-            boxes[0].Focus();                                  // esce dal campo: la conferma
-            PrivateDbHost.Pump();
-            await UntilAsync(() => MetricsAsync(o.Id).GetAwaiter().GetResult() is [{ } m] && m.LabelsJson is { } j && j.Contains("Custom"));
             boxes[^1].BringIntoView();
             PrivateDbHost.Pump();
             await Task.Delay(150);
             PrivateDbHost.Pump();
             ScreenshotProbeTests.Capture(o.Window, "scale-labels-editor-configura");
+        }
+        finally { o.Window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task Renaming_a_user_scale_updates_the_picker_without_reopening_it()
+    {
+        var name = $"Fatica-{Guid.NewGuid():N}"[..14];
+        var (o, _, s, v) = await OpenSectionAsync<ScalesSectionViewModel, ScalesSectionView>(e => e.Scales, "SclRen", HabitType.State,
+            async id => await InScope(async sp =>
+            {
+                var scaleId = await sp.GetRequiredService<IScaleTemplateService>().CreateAsync(new ScaleDraft(name, 1, 5, ScalePrecision.Integer, []));
+                await sp.GetRequiredService<IMetricDefinitionService>().CreateAsync(new MetricDefinition
+                {
+                    Id = Guid.NewGuid(), HabitNodeId = id, Name = "M", Type = MetricType.Decimal, SortOrder = 0, ScaleTemplateId = scaleId,
+                });
+                return 0;
+            }));
+        try
+        {
+            var box = Named<ComboBox>(v, "ScaleBox");
+            await UntilAsync(() => (box.SelectedItem as ScaleTemplate)?.Name == name);
+            var count = s.AvailableScales.Count;
+            Scales.ScaleFixtures.TypeAndEnter(o.Window, Named<TextBox>(Named<ScaleEditor>(v, "LabelsEditor"), "NameBox"), "Rinominata");
+            await UntilAsync(() => ((ScaleTemplate)box.SelectedItem!).Name == "Rinominata");
+            PrivateDbHost.Pump();
+            s.AvailableScales.Should().HaveCount(count, "il picker non si svuota ne' si ricostruisce (CLAUDE.md 8)");
+            box.SelectedItem.Should().NotBeNull();
+            box.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text)
+                .Should().Contain("Rinominata", "la casella chiusa mostra il nome nuovo");
+            (await InScope(sp => sp.GetRequiredService<IReferenceDataQueryService>().ListScalesAsync().AsTask()))
+                .Should().Contain(t => t.Name == "Rinominata");
         }
         finally { o.Window.Close(); }
     }

@@ -32,56 +32,55 @@ public class SeriesCellViewModelTests
         cell.BuildValue(0)!.ValueInteger.Should().Be(30);
     }
 
-    [Fact]
-    public void Scale_cell_builds_one_based_value()
+    private static ScaleInfo Info(int min, int max, params string[] names)
     {
-        var info = new ScaleInfo(1, 5, new[] { "Bad", "Meh", "Ok", "Good", "Great" });
-        var cell = new SeriesCellViewModel(Scale(), scale: info);
-
-        cell.Kind.Should().Be(MetricInputKind.Scale);
-        cell.StepCount.Should().Be(5);
-        cell.ShowReferencePoints.Should().BeTrue();                       // small scale → caption every step
-        cell.ReferencePoints.Should().Equal("Bad", "Meh", "Ok", "Good", "Great");
-        cell.SelectedScaleIndex.Should().Be(0);                           // first step selected by default
-        cell.BuildValue(0)!.ValueInteger.Should().Be(1);                  // 1-based: first step records 1, not 0
-
-        cell.SelectedScaleIndex = 3;
-        cell.BuildValue(0)!.ValueInteger.Should().Be(4); // 1-based: step index 3 → value 4
+        var t = new ScaleTemplate { Id = Guid.NewGuid(), Code = "s", Name = "s", MinValue = min, MaxValue = max, Precision = ScalePrecision.Integer };
+        t.Anchors = names.Select((n, i) => new ScaleAnchor { Id = Guid.NewGuid(), Value = min + i, Label = n }).ToList();
+        return new ScaleInfo(t);
     }
 
     [Fact]
-    public void A_blank_label_falls_back_to_its_step_number()
+    public void Scale_cell_builds_the_true_value()
     {
-        var info = new ScaleInfo(1, 3, new[] { "", "Ok", " " });
-        var cell = new SeriesCellViewModel(Scale(), scale: info);
+        var cell = new SeriesCellViewModel(Scale(), scale: Info(1, 5, "Bad", "Meh", "Ok", "Good", "Great"));
 
-        cell.ReferencePoints.Should().Equal("1", "Ok", "3");
-        cell.SelectedScaleIndex = 2;
-        cell.SelectedScaleLabel.Should().Be("3");
-        cell.SelectedScaleIndex = 1;
-        cell.SelectedScaleLabel.Should().Be("Ok");
+        cell.Kind.Should().Be(MetricInputKind.Scale);
+        cell.StepCount.Should().Be(5);
+        cell.ShowReferencePoints.Should().BeTrue();                       // small scale → tick per value
+        cell.Points.Select(p => p.Label).Should().Equal("Bad", "Meh", "Ok", "Good", "Great");
+        cell.SliderValue.Should().Be(1);                                  // rests on the first value by default
+        cell.BuildValue(0)!.ValueDecimal.Should().Be(1m);
+
+        cell.SliderValue = 4;
+        cell.BuildValue(0)!.ValueDecimal.Should().Be(4m);                  // the value, not a position
+        cell.BuildValue(0)!.ValueInteger.Should().BeNull();
+    }
+
+    [Fact]
+    public void A_scale_starting_at_zero_records_zero_at_the_first_stop()
+    {
+        var cell = new SeriesCellViewModel(Scale(), scale: Info(0, 10));
+        cell.BuildValue(0)!.ValueDecimal.Should().Be(0m);
     }
 
     [Fact]
     public void Labelless_scale_uses_its_bare_numbers_as_reference_points()
     {
-        var info = new ScaleInfo(1, 10, Array.Empty<string>());
-        var cell = new SeriesCellViewModel(Scale(), scale: info);
+        var cell = new SeriesCellViewModel(Scale(), scale: Info(1, 10));
 
         cell.StepCount.Should().Be(10);
         cell.ShowReferencePoints.Should().BeTrue();
-        cell.ReferencePoints.Should().Equal("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+        cell.Points.Select(p => p.Label).Should().Equal("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
     }
 
     [Fact]
-    public void A_large_scale_hides_per_step_captions()
+    public void A_large_scale_hides_the_reference_points()
     {
-        var info = new ScaleInfo(1, 100, Array.Empty<string>());
-        var cell = new SeriesCellViewModel(Scale(), scale: info);
+        var cell = new SeriesCellViewModel(Scale(), scale: Info(1, 100));
 
         cell.StepCount.Should().Be(100);
-        cell.ShowReferencePoints.Should().BeFalse();                      // too many to caption
-        cell.SliderMax.Should().Be(99);
+        cell.ShowReferencePoints.Should().BeFalse();                      // too many values for a tick each
+        cell.Max.Should().Be(100);
     }
 
     [Fact]

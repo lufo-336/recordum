@@ -2,6 +2,7 @@
              xmlns:res="using:Recordum.Presentation.Resources"
              xmlns:qa="using:Recordum.Presentation.ViewModels.HabitScreen.QuickAdd"
              xmlns:core="using:Recordum.Core.Enums"
+             xmlns:ctl="using:Recordum.UI.Controls"
              xmlns:conv="using:Recordum.UI.Converters"
              x:Name="Root"
              x:Class="Recordum.UI.Views.HabitScreen.QuickAdd.MetricCellView"
@@ -30,12 +31,16 @@
                IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Text}}"/>
       <StackPanel x:Name="ScalePanel" MinWidth="200" MaxWidth="300"
                   IsVisible="{CompiledBinding Kind, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static qa:MetricInputKind.Scale}}">
-        <TextBlock x:Name="ScaleCaption" Text="{CompiledBinding SelectedScaleLabel}" HorizontalAlignment="Center"
+        <TextBlock x:Name="ScaleCaption" Text="{CompiledBinding CurrentLabel}" HorizontalAlignment="Center"
                    Margin="0,0,0,2" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Accent}"/>
-        <!-- Il VM semina l'indice 0, quindi lo slider non e' mai null: l'intero salvato e' indice+1 (CLAUDE.md §5). -->
-        <Slider x:Name="ScaleSlider" Minimum="0" Maximum="{CompiledBinding SliderMax}"
-                Value="{CompiledBinding SelectedScaleIndex, Mode=TwoWay}"
-                IsSnapToTickEnabled="True" TickFrequency="1" TickPlacement="BottomRight"/>
+        <!-- Il VM semina il minimo, quindi lo slider non e' mai null: si registra il valore vero (GIO-23). Le tacche
+             (una per intero se sono al piu' 12, altrimenti gli scaglioni) vengono da Points, non dal passo. -->
+        <Slider x:Name="ScaleSlider" Minimum="{CompiledBinding Min}" Maximum="{CompiledBinding Max}"
+                Value="{CompiledBinding SliderValue, Mode=TwoWay}"
+                IsSnapToTickEnabled="True" TickFrequency="{CompiledBinding Step}"/>
+        <ctl:ScaleMarksBar x:Name="ScaleMarks" Margin="10,-6,10,0" ShowNames="False" Points="{CompiledBinding Points}"/>
+        <TextBox x:Name="ScaleValueBox" Width="72" HorizontalAlignment="Center" Margin="0,2,0,0"
+                 Text="{CompiledBinding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
         <Grid Margin="8,1,8,0" IsVisible="{CompiledBinding ShowReferencePoints}">
           <TextBlock x:Name="ScaleMin" Text="{CompiledBinding ScaleMinLabel}" HorizontalAlignment="Left"
                      FontSize="{StaticResource FontSize.Small}" Foreground="{DynamicResource Brush.TextMuted}"/>

@@ -166,12 +166,15 @@ public sealed class HabitFiguresTests : IDisposable
         vm.DailyTarget.Should().BeNull();
     }
 
-    private Guid ScaleMetric(string labelsJson = "[\"male\",\"così così\",\"ok\",\"bene\",\"molto bene\"]")
+    private Guid ScaleMetric(params string[] names)
     {
+        if (names.Length == 0) names = ["male", "così così", "ok", "bene", "molto bene"];
+        var scale = _refData.Scales[0];
+        scale.MinValue = 1; scale.MaxValue = names.Length; scale.Anchors = TestScales.Anchors(1, names);
         var m = new MetricDefinition
         {
             Id = Guid.NewGuid(), HabitNodeId = _id, Name = "umore", Type = MetricType.Integer,
-            ScaleTemplateId = _refData.Scales[0].Id, LabelsJson = labelsJson,
+            ScaleTemplateId = _refData.Scales[0].Id,
         };
         _metrics.Store[m.Id] = m;
         return m.Id;
@@ -182,8 +185,8 @@ public sealed class HabitFiguresTests : IDisposable
     {
         var metric = ScaleMetric();
         // 27 giorni segnati su 30, tutti a 4 ("bene") tranne oggi a 4 → media 4; oggi "bene".
-        var rows = Days(Today.AddDays(-26), Today).Select(d => new DailyValue(d.Item1, 4)).ToList();
-        _completions.DailySumByKey[(_id, metric)] = rows;
+        var rows = Days(Today.AddDays(-26), Today).Select(d => new DailyMagnitude(d.Item1, 4)).ToList();
+        _completions.MagnitudeByHabit[_id] = rows;
 
         var vm = Vm();
         await vm.LoadAsync(Node(HabitType.State), Daily(), HabitCase.State, Boundary);
@@ -194,16 +197,34 @@ public sealed class HabitFiguresTests : IDisposable
         vm.Items.Select(f => f.Caption).Should().Equal("oggi", "media 30 g", "andamento", "giorni segnati");
     }
 
+    // GIO-23 review finale: uno Stato e' una lettura, non una quantita': "oggi" e la media leggono l'ultima del giorno.
     [Fact]
-    public async Task State_today_figure_with_a_blank_label_shows_the_step_number()
+    public async Task State_today_and_mean_read_the_last_reading_of_the_day_not_the_sum()
     {
-        var metric = ScaleMetric("[\"male\",\"\",\"ok\"]");
-        _completions.DailySumByKey[(_id, metric)] = [new DailyValue(Today, 2)];
+        var metric = ScaleMetric();
+        var scale = _refData.Scales[0];
+        scale.MinValue = 1; scale.MaxValue = 100; scale.Anchors = [];
+        // Due letture oggi, 80 e poi 50: la somma del giorno e' 130, l'ultima lettura e' 50.
+        _completions.DailySumByKey[(_id, metric)] = [new DailyValue(Today, 130)];
+        _completions.MagnitudeByHabit[_id] = [new DailyMagnitude(Today, 50)];
 
         var vm = Vm();
         await vm.LoadAsync(Node(HabitType.State), Daily(), HabitCase.State, Boundary);
 
-        vm.Items[0].Value.Should().Be("2");
+        vm.Items[0].Value.Should().Be("50");
+        vm.Items[1].Value.Should().Be("50");
+    }
+
+    [Fact]
+    public async Task State_today_figure_on_an_unnamed_step_reads_the_nearest_name_and_the_number()
+    {
+        var metric = ScaleMetric("male", "", "ok");
+        _completions.MagnitudeByHabit[_id] = [new DailyMagnitude(Today, 2)];
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.State), Daily(), HabitCase.State, Boundary);
+
+        vm.Items[0].Value.Should().Be("male · 2");
     }
 
     [Theory]
@@ -213,9 +234,9 @@ public sealed class HabitFiguresTests : IDisposable
     public async Task State_trend_arrows(int before, int lastWeek, string arrow)
     {
         var metric = ScaleMetric();
-        var rows = Days(Today.AddDays(-29), Today.AddDays(-7)).Select(d => new DailyValue(d.Item1, before))
-            .Concat(Days(Today.AddDays(-6), Today).Select(d => new DailyValue(d.Item1, lastWeek))).ToList();
-        _completions.DailySumByKey[(_id, metric)] = rows;
+        var rows = Days(Today.AddDays(-29), Today.AddDays(-7)).Select(d => new DailyMagnitude(d.Item1, before))
+            .Concat(Days(Today.AddDays(-6), Today).Select(d => new DailyMagnitude(d.Item1, lastWeek))).ToList();
+        _completions.MagnitudeByHabit[_id] = rows;
 
         var vm = Vm();
         await vm.LoadAsync(Node(HabitType.State), Daily(), HabitCase.State, Boundary);
@@ -227,7 +248,7 @@ public sealed class HabitFiguresTests : IDisposable
     public async Task State_trend_without_one_side_is_a_dash()
     {
         var metric = ScaleMetric();
-        _completions.DailySumByKey[(_id, metric)] = [new DailyValue(Today, 3)];
+        _completions.MagnitudeByHabit[_id] = [new DailyMagnitude(Today, 3)];
 
         var vm = Vm();
         await vm.LoadAsync(Node(HabitType.State), Daily(), HabitCase.State, Boundary);

@@ -34,7 +34,7 @@ public sealed partial class MeasuredQuickAddViewModel(
     /// <summary>I gradini del comando in testa (direzione visiva §6.2): solo con una cella scala sola e al più
     /// <see cref="MaxSteps"/> gradini; altrimenti vuoto e la testa mostra le celle con "Registra".</summary>
     public IReadOnlyList<ScalePoint> Steps =>
-        Row.Cells is [{ Kind: MetricInputKind.Scale, StepCount: > 0 and <= MaxSteps } cell] ? cell.ScalePoints : [];
+        Row.Cells is [{ Kind: MetricInputKind.Scale, StepCount: > 0 and <= MaxSteps } cell] ? cell.Points : [];
 
     public bool HasSteps => Steps.Count > 0;
 
@@ -42,9 +42,8 @@ public sealed partial class MeasuredQuickAddViewModel(
     [RelayCommand]
     private Task RecordStep(ScalePoint? step, CancellationToken ct)
     {
-        var index = step is null ? -1 : Steps.ToList().IndexOf(step);
-        if (index < 0) return Task.CompletedTask;
-        Row.Cells[0].SelectedScaleIndex = index;
+        if (step is null || !Steps.Contains(step)) return Task.CompletedTask;
+        Row.Cells[0].SliderValue = (double)step.Value;
         return SaveAsync(ct);
     }
 
@@ -76,7 +75,7 @@ public sealed partial class MeasuredQuickAddViewModel(
         if (day != CompletionDay || !HasSteps) return;
         var metricId = Row.Cells[0].Metric.Id;
         var value = list.OrderByDescending(c => c.CompletedAtMs).SelectMany(c => c.Values)
-            .FirstOrDefault(v => v.MetricDefinitionId == metricId)?.ValueInteger;
+            .FirstOrDefault(v => v.MetricDefinitionId == metricId)?.ValueDecimal;
         foreach (var step in Steps) step.IsCurrent = step.Value == value;
     }
 

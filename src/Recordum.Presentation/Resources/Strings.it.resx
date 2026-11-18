@@ -2418,6 +2418,12 @@ Dettagli: {0}</value>
   <data name="Scale.mood-5.Labels" xml:space="preserve">
     <value>Molto basso|Basso|Neutro|Buono|Molto buono</value>
   </data>
+  <data name="Scale.Reading.Short" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Scale.Reading.Between" xml:space="preserve">
+    <value>{0}, fra {1} e {2}</value>
+  </data>
   <data name="Unit.km.Name" xml:space="preserve">
     <value>Chilometro</value>
   </data>
@@ -2618,5 +2624,65 @@ Dettagli: {0}</value>
   </data>
   <data name="Home.NoResults.Clear" xml:space="preserve">
     <value>Togli i filtri</value>
+  </data>
+  <data name="Scale.Editor.From" xml:space="preserve">
+    <value>Da</value>
+  </data>
+  <data name="Scale.Editor.To" xml:space="preserve">
+    <value>a</value>
+  </data>
+  <data name="Scale.Editor.Precision" xml:space="preserve">
+    <value>Precisione</value>
+  </data>
+  <data name="Scale.Precision.Integer" xml:space="preserve">
+    <value>Interi</value>
+  </data>
+  <data name="Scale.Precision.Decimal" xml:space="preserve">
+    <value>Decimali</value>
+  </data>
+  <data name="Scale.Editor.AddMark" xml:space="preserve">
+    <value>+ Scaglione</value>
+  </data>
+  <data name="Scale.Editor.NameEveryValue" xml:space="preserve">
+    <value>Un nome per ogni valore</value>
+  </data>
+  <data name="Scale.Editor.Usage" xml:space="preserve">
+    <value>Usata da {0} abitudini</value>
+  </data>
+  <data name="Scale.Editor.DuplicateAndEdit" xml:space="preserve">
+    <value>Duplica e modifica</value>
+  </data>
+  <data name="Scale.Editor.RemoveMark" xml:space="preserve">
+    <value>Togli scaglione</value>
+  </data>
+  <data name="Scale.Editor.MarkName" xml:space="preserve">
+    <value>Nome dello scaglione per {0}</value>
+  </data>
+  <data name="Scale.Error.Name" xml:space="preserve">
+    <value>Dai un nome alla scala</value>
+  </data>
+  <data name="Scale.Error.LabelLength" xml:space="preserve">
+    <value>Il nome di uno scaglione può avere al più 100 caratteri</value>
+  </data>
+  <data name="Scale.Error.Range" xml:space="preserve">
+    <value>I valori vanno da -100 a 100</value>
+  </data>
+  <data name="Scale.Error.Order" xml:space="preserve">
+    <value>Il primo valore deve stare sotto l'ultimo</value>
+  </data>
+  <data name="Scale.Error.AnchorOutside" xml:space="preserve">
+    <value>Ogni scaglione deve stare fra il primo e l'ultimo valore</value>
+  </data>
+  <data name="Scale.Error.AnchorDuplicate" xml:space="preserve">
+    <value>Due scaglioni hanno lo stesso valore</value>
+  </data>
+  <data name="Scale.Error.NarrowMin" xml:space="preserve">
+    <value>Ci sono già valori da {0}</value>
+  </data>
+  <data name="Scale.Error.NarrowMax" xml:space="preserve">
+    <value>Ci sono già valori fino a {0}</value>
+  </data>
+  <data name="Scale.Error.Precision" xml:space="preserve">
+    <value>Ci sono già valori con i decimali</value>
   </data>
 </root>

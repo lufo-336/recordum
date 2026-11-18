@@ -1,26 +1,38 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:ctl="using:Recordum.UI.Controls"
              xmlns:tvm="using:Recordum.Presentation.ViewModels.HabitScreen.Today"
              x:Class="Recordum.UI.Views.HabitScreen.Today.StateTodayView"
              x:DataType="tvm:StateTodayContent">
   <Border Padding="14,10">
-    <WrapPanel Orientation="Horizontal">
-      <TextBlock x:Name="CurrentLabel" Text="{CompiledBinding CurrentLabel}" FontWeight="SemiBold" MinWidth="64"
-                 Foreground="{DynamicResource Brush.Accent}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-      <!-- L'accento dello slider lo da' la schermata (chiavi Fluent): niente tinta qui. Min e Max prima di
-           Value, cosi' il valore non viene mai coartato (e riscritto nel ViewModel) da un intervallo
-           provvisorio. -->
-      <Slider x:Name="ValueSlider" Minimum="{CompiledBinding Min}" Maximum="{CompiledBinding Max}"
-              Value="{CompiledBinding SliderValue, Mode=TwoWay}"
-              IsSnapToTickEnabled="True" TickFrequency="1"
-              Width="220" VerticalAlignment="Center" Margin="0,0,12,0"/>
-      <Button x:Name="SaveButton" Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
-              Command="{CompiledBinding RecordCommand}" IsEnabled="{CompiledBinding CanRecord}"
-              Padding="12,6" Margin="0,0,16,0" VerticalAlignment="Center"/>
-      <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"
-                 IsVisible="{CompiledBinding LastValueLabel, Converter={x:Static ObjectConverters.IsNotNull}}"
-                 Text="{CompiledBinding LastValueLabel, StringFormat={x:Static res:Strings.Today_State_LastValue}}"/>
-    </WrapPanel>
+    <StackPanel Spacing="6">
+      <!-- La lettura lunga sopra: il numero in serif, come le cifre della pagina. -->
+      <TextBlock x:Name="CurrentLabel" Text="{CompiledBinding CurrentLabel}" FontFamily="{DynamicResource Font.Serif}"
+                 FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold" TextWrapping="Wrap"
+                 Foreground="{DynamicResource Brush.Accent}"/>
+      <!-- Il cursore con le sue tacche e, a destra, il valore esatto: su 1-100 col dito non si centra il 62. Il campo si
+           conferma uscendo o con Invio (digitando, un testo a meta' verrebbe riformattato sotto le dita). L'accento dello
+           slider lo da' la schermata (chiavi Fluent). Min e Max prima di Value, cosi' il valore non viene coartato. -->
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel VerticalAlignment="Center">
+          <Slider x:Name="ValueSlider" Minimum="{CompiledBinding Min}" Maximum="{CompiledBinding Max}"
+                  Value="{CompiledBinding SliderValue, Mode=TwoWay}"
+                  IsSnapToTickEnabled="True" TickFrequency="{CompiledBinding Step}"/>
+          <ctl:ScaleMarksBar x:Name="Marks" Margin="10,-6,10,0" Points="{CompiledBinding Points}"/>
+        </StackPanel>
+        <TextBox x:Name="ValueBox" Grid.Column="1" Text="{CompiledBinding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                 Width="84" VerticalAlignment="Top" Margin="12,0,0,0" FontFamily="{DynamicResource Font.Serif}"
+                 AutomationProperties.Name="{CompiledBinding CurrentLabel}"/>
+      </Grid>
+      <WrapPanel Orientation="Horizontal">
+        <Button x:Name="SaveButton" Content="{x:Static res:Strings.HabitScreen_QuickAdd_Save}"
+                Command="{CompiledBinding RecordCommand}" IsEnabled="{CompiledBinding CanRecord}"
+                Padding="12,6" Margin="0,0,16,0" VerticalAlignment="Center"/>
+        <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}"
+                   IsVisible="{CompiledBinding LastValueLabel, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   Text="{CompiledBinding LastValueLabel, StringFormat={x:Static res:Strings.Today_State_LastValue}}"/>
+      </WrapPanel>
+    </StackPanel>
   </Border>
 </UserControl>

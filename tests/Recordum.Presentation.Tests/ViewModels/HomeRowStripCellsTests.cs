@@ -75,6 +75,18 @@ public class HomeRowStripCellsTests
             .Should().Equal("45m", "1,5h");
     }
 
+    // GIO-23 review finale: la cella di uno Stato a decimali arrotonda (1,37 e' "1,4", non "1,3"; 37,5 e' "38").
+    [Fact]
+    public void A_decimal_state_day_is_rounded_not_truncated()
+    {
+        decimal?[] values = [.. Enumerable.Repeat<decimal?>(null, 11), 1.37m, 37.5m, -1.37m];
+        var row = Row(HabitType.State, Days(1, 1, 1), values) with
+        {
+            StateScale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "s", Name = "s", MinValue = -100, MaxValue = 100, Precision = ScalePrecision.Decimal },
+        };
+        Vm(row).StripCells.Select(c => c.Glyph).TakeLast(3).Should().Equal("1,4", "38", "-1,4");
+    }
+
     [Fact]
     public void Today_is_the_last_cell()
     {

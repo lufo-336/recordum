@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Abstractions.Services.Dtos;
 using Recordum.Core.Enums;
+using Recordum.Core.Models;
 using Recordum.Core.Time;
 using Recordum.Presentation.Services;
 using Recordum.Presentation.ViewModels;
@@ -28,6 +29,13 @@ internal static class ManifestHome
     private const string Teal = "#2F9C8C", Green = "#5F9A3C", Cyan = "#2F8FB0", Amber = "#C98A1E",
         Indigo = "#4F63C4", Pink = "#C2508A", Orange = "#D0603A", Olive = "#9A9A2A", Violet = "#7A5BC4", Grey = "#6B7280";
 
+    // Umore 1..5 con nomi per gli scaglioni 1, 3, 4: il 4 di oggi si legge "Bene".
+    private static readonly ScaleTemplate MoodScale = new()
+    {
+        Code = "mood", Name = "Umore", MinValue = 1, MaxValue = 5,
+        Anchors = [new() { Value = 1, Label = "Male" }, new() { Value = 3, Label = "Così così" }, new() { Value = 4, Label = "Bene" }],
+    };
+
     /// <summary>Le righe nell'ordine della Home: il gruppo, le sue tre azioni, poi le altre sei. Indice 13 dei 14 giorni = oggi.</summary>
     public static IReadOnlyList<HomeTreeRow> Rows(DateOnly today)
     {
@@ -47,7 +55,7 @@ internal static class ManifestHome
                 TodayCounterUnitName: b.UnitCode,
                 TodayCounterUnitIsOfficial: b.UnitCode is not null,
                 TodayStateValue: b.StateValue,
-                TodayStateLabel: b.StateLabel,
+                StateScale: b.StateScale,
                 AbstinenceStatus: b.Abstinence,
                 AbstinenceOpenSinceMs: b.Abstinence == AbstinenceStatus.Abstaining ? open : null,
                 JournalEntriesThisWeek: b.JournalThisWeek,
@@ -71,7 +79,7 @@ internal static class ManifestHome
                 more: b => { b.CounterTotal = 0m; b.UnitCode = "pages"; }),
             Make("Umore", Pink, HabitType.State, null, [1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1], true,
                 values: [4, 3, null, 4, 5, null, null, 3, 4, null, 4, 3, null, 4],
-                more: b => { b.StateValue = 4; b.StateLabel = "Bene"; }),
+                more: b => { b.StateValue = 4; b.StateScale = MoodScale; }),
             Make("Allenamento", Orange, HabitType.Counter, null, [0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0], false,
                 values: [null, 12, null, 14, null, null, null, 12, null, 14, null, null, null, null],
                 more: b => { b.CounterTotal = 0m; b.UnitCode = "sets"; }),
@@ -99,7 +107,7 @@ internal static class ManifestHome
         /// <summary>Codice di un'unità ufficiale senza simbolo: la riga ne scrive il nome tradotto.</summary>
         public string? UnitCode;
         public int? StateValue;
-        public string? StateLabel;
+        public ScaleTemplate? StateScale;
         public AbstinenceStatus Abstinence = AbstinenceStatus.NotStarted;
         public int? JournalThisWeek;
     }

@@ -110,7 +110,7 @@ public class HabitTemplateServiceTests
     }
 
     [Fact]
-    public async Task InstantiateAsync_materializes_metric_with_scale_and_snapshots_labels()
+    public async Task InstantiateAsync_materializes_metric_pointing_at_the_seeded_scale()
     {
         await using var fx = new DbFixture();
         var tmplId = Guid.NewGuid();
@@ -133,9 +133,9 @@ public class HabitTemplateServiceTests
         await using var db2 = await fx.Factory.CreateDbContextAsync();
         var metric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId);
         metric.Name.Should().Be("Mood");
-        metric.Type.Should().Be(MetricType.Integer);
+        metric.Type.Should().Be(MetricType.Decimal);   // GIO-23: a scale metric is always Decimal, whatever the payload says
         metric.ScaleTemplateId.Should().Be(scaleId);
-        metric.LabelsJson.Should().Contain("Very good");
+        (await db2.ScaleAnchors.CountAsync(a => a.ScaleTemplateId == scaleId)).Should().BeGreaterThan(0);
     }
 
     [Fact]
@@ -537,14 +537,50 @@ public class HabitTemplateServiceTests
         unit.IsOfficial.Should().BeFalse();
         var scale = await db2.ScaleTemplates.SingleAsync(s => s.Code == "energia-3");
         scale.MaxValue.Should().Be(3);
-        scale.LabelsJson.Should().Be("""["Bassa","Media","Alta"]""");
+        var anchors = await db2.ScaleAnchors.Where(a => a.ScaleTemplateId == scale.Id).OrderBy(a => a.Value).ToListAsync();
+        anchors.Select(a => (a.Value, a.Label)).Should().Equal((1, "Bassa"), (2, "Media"), (3, "Alta"));
+        anchors.Should().OnlyContain(a => a.TagId != null);
+        scale.Precision.Should().Be(ScalePrecision.Integer);
         scale.IsOfficial.Should().BeFalse();
 
         var metric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId && m.Name == "Tazze");
         metric.UnitOfMeasureId.Should().Be(unit.Id);
         var scaleMetric = await db2.MetricDefinitions.SingleAsync(m => m.HabitNodeId == newId && m.Name == "Energia");
         scaleMetric.ScaleTemplateId.Should().Be(scale.Id);
-        scaleMetric.LabelsJson.Should().Be("""["Bassa","Media","Alta"]""");
+    }
+
+    [Fact]
+    public async Task InstantiateAsync_reads_old_labels_widening_max_and_new_anchors_with_precision()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Due", IsOfficial = false,
+                PayloadJson = """
+                    {"node":{"name":"Due","node_type":"Habit","habit_type":"State","color":"#123456"},
+                     "config":{"schedule_type":"Daily","streak_mode":"Daily","streak_recovery":"GraceDay"},
+                     "metrics":[{"name":"X","type":"Decimal","scale_code":"nuova"}],"segments":[],
+                     "scales":[{"code":"vecchia","name":"Vecchia","min_value":1,"max_value":2,"labels":["A","B","C"]},
+                               {"code":"nuova","name":"Nuova","min_value":0,"max_value":10,"precision":"Decimal",
+                                "anchors":[{"value":0,"label":"Niente"},{"value":10,"label":null}]}]}
+                    """,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await CreateSut(fx).InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        var old = await db2.ScaleTemplates.Include(s => s.Anchors).SingleAsync(s => s.Code == "vecchia");
+        old.MaxValue.Should().Be(3);
+        old.Anchors.OrderBy(a => a.Value).Select(a => (a.Value, a.Label)).Should().Equal((1, "A"), (2, "B"), (3, "C"));
+        var nu = await db2.ScaleTemplates.Include(s => s.Anchors).SingleAsync(s => s.Code == "nuova");
+        nu.Precision.Should().Be(ScalePrecision.Decimal);
+        nu.Anchors.Should().HaveCount(2);
+        nu.Anchors.Single(a => a.Value == 10).TagId.Should().BeNull();
     }
 
     [Fact]
@@ -615,4 +651,31 @@ public class HabitTemplateServiceTests
         new HabitConfigService(fx.Factory, fx.Clock, NullLogger<HabitConfigService>.Instance, new Recordum.Data.Tests.Fixtures.RecordingEventBus()),
         new HabitUiPrefsService(fx.Factory),
         NullLogger<HabitTemplateService>.Instance);
+
+    [Fact]
+    public async Task InstantiateAsync_two_embedded_scales_sharing_a_label_share_one_tag()
+    {
+        await using var fx = new DbFixture();
+        var tmplId = Guid.NewGuid();
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.HabitTemplates.Add(new HabitTemplate
+            {
+                Id = tmplId, Name = "Due", IsOfficial = false,
+                PayloadJson = """
+                    {"node":{"name":"Due","node_type":"Habit","habit_type":"State","color":"#123456"},
+                     "config":{"schedule_type":"Daily","streak_mode":"Daily","streak_recovery":"GraceDay"},
+                     "metrics":[{"name":"X","type":"Decimal","scale_code":"s1"}],"segments":[],
+                     "scales":[{"code":"s1","name":"S1","min_value":1,"max_value":3,"anchors":[{"value":1,"label":"Bene"}]},
+                               {"code":"s2","name":"S2","min_value":1,"max_value":3,"anchors":[{"value":1,"label":"Bene"}]}]}
+                    """,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        await CreateSut(fx).InstantiateAsync(tmplId, parentId: null);
+
+        await using var db2 = await fx.Factory.CreateDbContextAsync();
+        (await db2.Tags.CountAsync(t => t.Name == "bene")).Should().Be(1);
+    }
 }

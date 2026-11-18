@@ -44,6 +44,17 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
     }
 
     [Fact]
+    public void Scale_template_service_resolves_from_core()
+    {
+        var services = new ServiceCollection();
+        services.AddRecordumCore(Options());
+        services.AddShellDoubles();
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        Assert.IsType<Data.Services.ScaleTemplateService>(scope.ServiceProvider.GetRequiredService<Recordum.Core.Abstractions.Services.IScaleTemplateService>());
+    }
+
+    [Fact]
     public void Every_service_registered_by_core_resolves_with_shell_doubles()
     {
         var services = new ServiceCollection();
@@ -176,7 +187,7 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
 
         await using var scope = provider.CreateAsyncScope();
         var settings = scope.ServiceProvider.GetRequiredService<IAppSettingService>();
-        Assert.Equal("2.19", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
+        Assert.Equal("2.20", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
         Assert.Equal("true", await settings.GetAsync("maintenance.retro_noon_backfill_done")); // il backfill R9 ha girato
         Assert.Equal(1, steps.Calls);                                          // gli step opzionali, una volta
     }

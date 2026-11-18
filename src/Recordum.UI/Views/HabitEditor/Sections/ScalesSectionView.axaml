@@ -20,7 +20,9 @@
         </DataTemplate>
       </ComboBox.ItemTemplate>
     </ComboBox>
-    <TextBlock Text="{x:Static res:Strings.Editor_Field_Labels}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,4,0,0"/>
-    <ctl:ScaleLabelsEditor x:Name="LabelsEditor" DataContext="{CompiledBinding LabelsEditor}"/>
+    <Button x:Name="DuplicateButton" Classes="ghost" HorizontalAlignment="Left" Padding="8,4" Margin="0,4,0,0"
+            Content="{x:Static res:Strings.Scale_Editor_DuplicateAndEdit}"
+            IsVisible="{CompiledBinding CanDuplicate}" Command="{CompiledBinding DuplicateAndEditCommand}"/>
+    <ctl:ScaleEditor x:Name="LabelsEditor" Margin="0,6,0,0" DataContext="{CompiledBinding Editor}"/>
   </StackPanel>
 </UserControl>

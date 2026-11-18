@@ -10,7 +10,6 @@ public sealed class MetricDefinition
     public MetricType Type { get; set; }
     public Guid? UnitOfMeasureId { get; set; }
     public Guid? ScaleTemplateId { get; set; }
-    public string? LabelsJson { get; set; }
     public int SortOrder { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;

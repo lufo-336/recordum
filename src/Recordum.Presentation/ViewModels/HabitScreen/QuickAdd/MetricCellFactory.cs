@@ -26,17 +26,9 @@ public sealed class MetricCellFactory
         ScaleInfo? scale = null;
         if (m.ScaleTemplateId is { } sid && _scaleById.TryGetValue(sid, out var tmpl))
         {
-            // metric.LabelsJson (local override) wins over the template's labels (CSS-style specificity, spec §5)
-            var labels = ParseLabels(m.LabelsJson) ?? ParseLabels(tmpl.LabelsJson) ?? [];
-            scale = new ScaleInfo(tmpl.MinValue, tmpl.MaxValue, labels);
+            scale = new ScaleInfo(tmpl);
         }
         return new SeriesCellViewModel(m, unit?.Code, scale, unit is null ? null : Recordum.Presentation.Templates.UnitLabel.For(unit));
     }
 
-    private static string[]? ParseLabels(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return JsonSerializer.Deserialize<string[]>(json); }
-        catch (JsonException) { return null; }
-    }
 }

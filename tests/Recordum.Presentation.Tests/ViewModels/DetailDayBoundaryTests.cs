@@ -328,7 +328,7 @@ public class DetailDayBoundaryTests
         var editor = new Recordum.Presentation.ViewModels.HabitEditor.HabitEditorViewModel(
             nodes, configs, goals, metrics, new FakeNotificationService(), new FakeTagService(),
             settings, new FakeReferenceData(), new Recordum.Presentation.Services.RecentColorStore(settings),
-            new Recordum.Presentation.Services.FavoriteColorStore(settings), new FakeScreenColorPicker(), uiPrefs);
+            new Recordum.Presentation.Services.FavoriteColorStore(settings), new FakeScreenColorPicker(), uiPrefs, new FakeScaleTemplateService());
         var vm = new HabitScreenViewModel(
             nodes, new FakeCompletionService(), new FakeActiveTimerService(), metrics, new FakeReferenceData(), configs,
             new FakeNoteService(), goals, new IntensityRampResolver(),

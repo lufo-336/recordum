@@ -11,7 +11,6 @@ public sealed class MetricDefinitionConfiguration : IEntityTypeConfiguration<Met
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Name).IsRequired().HasMaxLength(100);
         builder.Property(m => m.Type).HasConversion<string>().HasMaxLength(16);
-        builder.Property(m => m.LabelsJson).HasMaxLength(2000);
 
         builder.HasOne(m => m.HabitNode)
             .WithMany(n => n.Metrics)

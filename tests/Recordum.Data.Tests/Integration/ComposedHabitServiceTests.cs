@@ -59,7 +59,8 @@ public class ComposedHabitServiceTests
         var nodeId = Guid.NewGuid();
         var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Code = "tazze", Name = "Tazze", IsOfficial = false };
         var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "energia-3", Name = "Energia",
-            MinValue = 1, MaxValue = 3, LabelsJson = """["Bassa","Media","Alta"]""", IsOfficial = false };
+            MinValue = 1, MaxValue = 3, IsOfficial = false,
+            Anchors = [new ScaleAnchor { Value = 1, Label = "Bassa" }, new ScaleAnchor { Value = 3, Label = "Alta" }] };
         var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = nodeId, Name = "Tazze",
             Type = MetricType.Decimal, UnitOfMeasureId = unit.Id, SortOrder = 0 };
         var request = new ComposedHabitRequest(
@@ -100,5 +101,68 @@ public class ComposedHabitServiceTests
         await using var db = await fx.Factory.CreateDbContextAsync();
         (await db.HabitNodes.AnyAsync(n => n.Id == id)).Should().BeTrue();
         (await db.Goals.AnyAsync(g => g.HabitNodeId == id)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CreateComposedHabitAsync_two_new_scales_sharing_a_label_share_one_tag()
+    {
+        await using var fx = new DbFixture();
+        var nodeId = Guid.NewGuid();
+        ScaleTemplate Sc(string code) => new() { Id = Guid.NewGuid(), Code = code, Name = code, MinValue = 1, MaxValue = 3,
+            Anchors = [new ScaleAnchor { Value = 1, Label = "Bene" }] };
+        var request = new ComposedHabitRequest(
+            Node: new HabitNode { Id = nodeId, NodeType = NodeType.Habit, HabitType = HabitType.State, Name = "S", Color = "#123456" },
+            Config: null, Metrics: [], NewScales: [Sc("a"), Sc("b")]);
+
+        await new ComposedHabitService(fx.Factory).CreateComposedHabitAsync(request);
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.Tags.CountAsync(t => t.Name == "bene")).Should().Be(1);
+        (await db.ScaleAnchors.Where(a => a.Label == "Bene").Select(a => a.TagId).Distinct().CountAsync()).Should().Be(1);
+    }
+
+    private static (HabitNode Node, MetricDefinition Metric, ScaleTemplate Scale) ScaleRequest(
+        int min, int max, ScalePrecision precision, params (int Value, string? Label)[] anchors)
+    {
+        var nodeId = Guid.NewGuid();
+        var scale = new ScaleTemplate
+        {
+            Id = Guid.NewGuid(), Code = "sparsa", Name = "Sparsa", MinValue = min, MaxValue = max, Precision = precision,
+            Anchors = anchors.Select(a => new ScaleAnchor { Id = Guid.NewGuid(), Value = a.Value, Label = a.Label }).ToList(),
+        };
+        var node = new HabitNode { Id = nodeId, NodeType = NodeType.Habit, HabitType = HabitType.State, Name = "Umore", Color = "#808080" };
+        var metric = new MetricDefinition { Id = Guid.NewGuid(), HabitNodeId = nodeId, Name = "Umore", Type = MetricType.Integer, ScaleTemplateId = scale.Id };
+        return (node, metric, scale);
+    }
+
+    [Fact]
+    public async Task A_staged_scale_keeps_its_scattered_anchors_tags_and_precision_and_its_metric_is_decimal()
+    {
+        await using var fx = new DbFixture();
+        var (node, metric, scale) = ScaleRequest(-5, 5, ScalePrecision.Decimal, (-5, "Giu"), (0, "Meh"), (5, "Su"));
+
+        await new ComposedHabitService(fx.Factory).CreateComposedHabitAsync(
+            new ComposedHabitRequest(node, null, new[] { metric }, NewScales: new[] { scale }));
+
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var saved = await db.ScaleTemplates.Include(s => s.Anchors).SingleAsync(s => s.Id == scale.Id);
+        saved.Precision.Should().Be(ScalePrecision.Decimal);
+        saved.Anchors.OrderBy(a => a.Value).Select(a => (a.Value, a.Label)).Should().Equal((-5, "Giu"), (0, "Meh"), (5, "Su"));
+        saved.Anchors.Should().OnlyContain(a => a.TagId != null);
+        (await db.MetricDefinitions.SingleAsync(m => m.Id == metric.Id)).Type.Should().Be(MetricType.Decimal);
+    }
+
+    [Fact]
+    public async Task A_staged_scale_with_a_bad_shape_is_refused_and_nothing_is_saved()
+    {
+        await using var fx = new DbFixture();
+        var (node, metric, scale) = ScaleRequest(1, 5, ScalePrecision.Integer, (1, "a"), (9, "b"));
+
+        var act = async () => await new ComposedHabitService(fx.Factory).CreateComposedHabitAsync(
+            new ComposedHabitRequest(node, null, new[] { metric }, NewScales: new[] { scale }));
+
+        (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("anchor-outside*");
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        (await db.HabitNodes.FindAsync(node.Id)).Should().BeNull();
     }
 }

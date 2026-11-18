@@ -99,11 +99,11 @@ public sealed class OfficialTextsTests : IDisposable
     {
         foreach (var s in ScaleTemplateSeed.All)
         {
-            var seeded = JsonSerializer.Deserialize<List<string>>(s.LabelsJson)!;
+            var seeded = ScaleTemplateSeed.Anchors.Where(a => a.ScaleTemplateId == s.Id).OrderBy(a => a.Value).Select(a => a.Label).ToList();
             Pin("en-US");
-            OfficialTexts.ScaleLabels(s).Should().Equal(seeded, s.Code);
+            Enumerable.Range(s.MinValue, seeded.Count).Select(v => OfficialTexts.ScaleAnchorLabel(s, v)).Should().Equal(seeded, s.Code);
             Pin("it-IT");
-            var italian = OfficialTexts.ScaleLabels(s)!;
+            var italian = Enumerable.Range(s.MinValue, seeded.Count).Select(v => OfficialTexts.ScaleAnchorLabel(s, v)!).ToList();
             italian.Should().HaveCount(seeded.Count, s.Code);
             italian.Should().OnlyContain(l => !string.IsNullOrWhiteSpace(l));
             italian.Should().NotEqual(seeded, s.Code);
@@ -135,11 +135,11 @@ public sealed class OfficialTextsTests : IDisposable
     public void User_scales_and_units_keep_their_names_and_have_no_translated_labels()
     {
         Pin("it-IT");
-        var scale = new ScaleTemplate { Code = "mood-5", Name = "Mio umore", LabelsJson = """["a","b"]""", IsOfficial = false };
+        var scale = new ScaleTemplate { Code = "mood-5", Name = "Mio umore", IsOfficial = false };
         var unit = new UnitOfMeasure { Code = "l", Name = "Bicchieri", IsOfficial = false };
 
         OfficialTexts.ScaleName(scale).Should().Be("Mio umore");
-        OfficialTexts.ScaleLabels(scale).Should().BeNull();
+        OfficialTexts.ScaleAnchorLabel(scale, 1).Should().BeNull();
         OfficialTexts.UnitName(unit).Should().Be("Bicchieri");
     }
 }

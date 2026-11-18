@@ -97,10 +97,15 @@ public static class OfficialTexts
     public static string ScaleName(ScaleTemplate s) =>
         s.IsOfficial && s_scales.TryGetValue(s.Code, out var x) ? x.Name() : s.Name;
 
-    /// <summary>Le etichette tradotte di una scala ufficiale; null per una scala dell'utente o senza traduzione
-    /// (chi chiama ripiega sulle etichette che la scala porta).</summary>
-    public static IReadOnlyList<string>? ScaleLabels(ScaleTemplate s) =>
-        s.IsOfficial && s_scales.TryGetValue(s.Code, out var x) ? x.Labels().Split('|') : null;
+    /// <summary>Il nome tradotto dello scaglione <paramref name="value"/> di una scala ufficiale (posizione
+    /// <c>value - MinValue</c>); null per una scala dell'utente, senza traduzione o fuori range.</summary>
+    public static string? ScaleAnchorLabel(ScaleTemplate s, int value)
+    {
+        if (!s.IsOfficial || !s_scales.TryGetValue(s.Code, out var x)) return null;
+        var labels = x.Labels().Split('|');
+        var p = value - s.MinValue;
+        return p >= 0 && p < labels.Length ? labels[p] : null;
+    }
 
     public static string UnitName(string code, string name, bool isOfficial) =>
         isOfficial && s_units.TryGetValue(code, out var x) ? x() : name;

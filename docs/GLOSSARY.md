@@ -44,3 +44,4 @@ come proposte).
 | backup | backup | il file cifrato `.recbak` | |
 | restore | ripristino | riportare i dati da un backup | |
 | passphrase | passphrase | la frase che protegge dati e backup; persa quella, persi i dati | |
+| mark | scaglione | un valore intero della scala con un nome (e il suo tag): "Bene" a 4. Senza nome è una tacca | gradino, step, etichetta (per un valore di scala) |

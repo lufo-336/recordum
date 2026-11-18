@@ -20,6 +20,7 @@ public partial class MetricCellView : UserControl
     public MetricCellView()
     {
         InitializeComponent();
+        CommitOnEnter.Watch(this);
         RejectedTextGuard.Watch<SeriesCellViewModel>(IntegerBox, this, vm => vm.IntegerValue = null);
         RejectedTextGuard.Watch<SeriesCellViewModel>(DecimalBox, this, vm => vm.DecimalValue = null);
         RejectedTextGuard.Watch<SeriesCellViewModel>(DurationBox, this, vm => vm.DurationValue = null);

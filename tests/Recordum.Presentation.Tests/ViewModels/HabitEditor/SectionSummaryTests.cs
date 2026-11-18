@@ -166,7 +166,7 @@ public class SectionSummaryTests : IDisposable
     {
         var node = Habit(HabitType.State);
         var refData = new FakeReferenceData();
-        var sut = new ScalesSectionViewModel(new FakeMetricDefinitionService(), refData);
+        var sut = new ScalesSectionViewModel(new FakeMetricDefinitionService(), refData, new FakeScaleTemplateService(refData, new FakeMetricDefinitionService()));
         await sut.LoadAsync(node);
         var scale = new ScaleTemplate { Id = Guid.NewGuid(), Name = "Umore" };
         sut.AvailableScales.Add(scale);
@@ -178,7 +178,7 @@ public class SectionSummaryTests : IDisposable
     [Fact]
     public async Task Scales_summary_translates_an_official_scale_like_its_menu()
     {
-        var sut = new ScalesSectionViewModel(new FakeMetricDefinitionService(), new FakeReferenceData());
+        var sut = new ScalesSectionViewModel(new FakeMetricDefinitionService(), new FakeReferenceData(), new FakeScaleTemplateService(new FakeReferenceData(), new FakeMetricDefinitionService()));
         await sut.LoadAsync(Habit(HabitType.State));
         var scale = new ScaleTemplate { Id = Guid.NewGuid(), Code = "mood-5", Name = "Mood Scale (1–5)", IsOfficial = true };
         sut.AvailableScales.Add(scale);

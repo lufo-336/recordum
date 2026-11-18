@@ -136,7 +136,6 @@ public class BuilderTemplateRoundTripE2ETests
                 m.Type,
                 m.SortOrder,
                 Unit = m.UnitOfMeasureId is { } uid ? units[uid] : null,
-                m.LabelsJson,
             }).ToList(),
             Segments = segments.Select(s => new { s.Name, s.IsRest, s.SortOrder }).ToList(),
             Goal = goal is null ? null : new { goal.Name, goal.TargetValue, goal.PeriodType },

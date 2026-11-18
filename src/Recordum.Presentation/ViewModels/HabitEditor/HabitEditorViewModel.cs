@@ -95,6 +95,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         IFavoriteColorStore favoriteColors,
         IScreenColorPicker screenPicker,
         IHabitUiPrefsService uiPrefs,
+        IScaleTemplateService scaleTemplates,
         IEventBus? events = null,
         IResetTimeResolver? resetTimes = null)
     {
@@ -114,7 +115,7 @@ public sealed partial class HabitEditorViewModel : ObservableObject
         Streak = new StreakSectionViewModel(configs);
         Timer = new TimerSectionViewModel(configs);
         Metrics = new MetricsSectionViewModel(metrics, refData);
-        Scales = new ScalesSectionViewModel(metrics, refData);
+        Scales = new ScalesSectionViewModel(metrics, refData, scaleTemplates);
         Registration = new RegistrationSectionViewModel(configs, uiPrefs);
         Goal = new GoalSectionViewModel(goals, metrics, refData);
         Notifications = new NotificationsSectionViewModel(notifications);

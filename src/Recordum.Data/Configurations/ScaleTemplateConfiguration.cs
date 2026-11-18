@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.SeedData;
 
@@ -12,7 +13,9 @@ public sealed class ScaleTemplateConfiguration : IEntityTypeConfiguration<ScaleT
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Code).IsRequired().HasMaxLength(64);
         builder.Property(s => s.Name).IsRequired().HasMaxLength(100);
-        builder.Property(s => s.LabelsJson).IsRequired().HasMaxLength(2000);
+        builder.Property(s => s.Precision).HasConversion<string>().HasMaxLength(16).HasDefaultValue(ScalePrecision.Integer);
+
+        builder.ToTable(t => t.HasCheckConstraint("ck_scale_templates_precision", "precision IN ('Integer','Decimal')"));
 
         builder.HasIndex(s => s.Code).IsUnique();
 
