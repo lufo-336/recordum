@@ -851,3 +851,19 @@ su brief, coi test provati rossi — "fatte" su oggi non nascondeva un'astinenza
 clic su un pulsante della testa (GIO-13), la riga scelta staccata dopo un filtro (GIO-14), la nota del giorno che poteva
 nascere due volte (GIO-15); gli altri nel tracker (GIO-9, GIO-10, GIO-11). Suite su Linux: Presentation 1532, UI 856
 (suite intere), Data 677 (+2 saltati, `Category!=WindowsOnly`).
+
+## GIO-23 — scale continue e personalizzabili (2026-11-17/18, branch `gio23-scales`)
+
+*Cosa*: una scala ha estremi interi fra −100 e 100, precisione a interi o a due decimali e scaglioni con un nome libero
+da cui l'app ricava un tag (`#sto-malissimo`); il valore registrato è il valore vero (`value_decimal`), letto "Male · 37"
+in Home e "37, fra Male e Così così" nella pagina dell'abitudine. Estremi solo allargabili, decimali → interi vietato,
+cambio di scala bloccato se lo storico non ci sta. Editor nel creatore e in Configura (impostazione B, scelta su mockup).
+*Cosa ha insegnato*: oggi si salvava la **posizione** dell'etichetta, non il valore: la migrazione 2.20 converte tutto in
+SQL dentro la sua transazione, con due funzioni SQLite registrate da C# (tag ricavato, GUID) e le traduzioni ufficiali
+en/it congelate; le colonne si tolgono con `ALTER TABLE` perché la ricostruzione di EF fa un COMMIT a metà. I tag del
+diario non ammettono spazi: da qui il nome libero con tag ricavato. Eseguito subagent-driven (Sonnet per i task, Opus
+per migrazione e review finale), review per task che hanno trovato cinque difetti veri prima del merge.
+*Note per le versioni*: l'export CSV/JSON di una scala porta ora il valore vero (prima la posizione).
+*Non consegnato*: la heatmap dell'export, i grafici e la mappa annuale di WPF sommano ancora le letture di uno Stato
+(F6/F7); la modifica di una scala ricava di nuovo tutti i tag dal nome (da rivedere con la gestione dei tag).
+
