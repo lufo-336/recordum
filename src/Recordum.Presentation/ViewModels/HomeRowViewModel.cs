@@ -279,6 +279,8 @@ public sealed partial class HomeRowViewModel : ObservableObject
             else if (StripVisual is StripStyle.Bars or StripStyle.Ramp)
             {
                 var v = value ?? count;
+                // Uno Stato e' una lettura, non una quantita': si arrotonda (1,37 → 1,4; 37,5 → 38), Compact poi non tronca piu'.
+                if (row.StateScale is not null) v = Math.Round(v, Math.Abs(v) < 10m ? 1 : 0, MidpointRounding.AwayFromZero);
                 glyph = row.TodayCounterIsDuration ? StripValueFormat.Duration(v, culture) : StripValueFormat.Compact(v, culture);
             }
             else glyph = "✓";
