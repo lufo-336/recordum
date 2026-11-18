@@ -27,7 +27,7 @@
   `value_decimal`. In parallelo `agy-minori` (GIO-1, 5, 8, 11 in parte), CI verde, attende il merge.
 - **Prossimo — si riprende da qui**: (1) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per dispositivo; le
   righe di `scale_anchors` e i tag ricavati viaggiano coi dati); (2) il passo 3, dati protetti e dogfooding sul computer.
-  Restano da decidere dall'autore: GIO-6, GIO-9; obiettivi su una metrica di scala non convertiti dalla 2.20 (nessuna
+  Resta da decidere dall'autore: obiettivi su una metrica di scala non convertiti dalla 2.20 (nessuna
   strada di oggi ne crea uno).
 
 ## Il percorso
