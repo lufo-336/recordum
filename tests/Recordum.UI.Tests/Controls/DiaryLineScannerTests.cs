@@ -85,4 +85,15 @@ public class DiaryLineScannerTests
         scan.Spans.Should().Equal(new InlineSpan(2, 3, true), new InlineSpan(9, 10, false));
         scan.Markers.Select(m => (m.Start, m.Length)).Should().Equal((0, 2), (3, 2), (8, 1), (10, 1));
     }
+
+    [Theory]
+    [InlineData("- 14 km\n- ritmo 5:40", 2)]
+    [InlineData("- a\n- b\n- c", 3)]
+    public void Every_line_of_a_bullet_list_is_scanned_as_a_bullet(string text, int expectedCount)
+    {
+        var scans = text.Split('\n').Select(DiaryLineScanner.Scan).ToList();
+
+        scans.Should().HaveCount(expectedCount);
+        scans.Should().OnlyContain(s => s.Block == DiaryBlock.Bullet && s.Markers.Count == 1 && s.Markers[0].Kind == DiaryMarkerKind.Bullet);
+    }
 }

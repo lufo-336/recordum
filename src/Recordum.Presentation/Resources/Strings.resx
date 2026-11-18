@@ -2631,6 +2631,12 @@ Details: {0}</value>
   <data name="Home.Uncheck.Message" xml:space="preserve">
     <value>The record of {0} is deleted.</value>
   </data>
+  <data name="Home.NoResults" xml:space="preserve">
+    <value>No habits match these filters</value>
+  </data>
+  <data name="Home.NoResults.Clear" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
   <data name="Scale.Editor.From" xml:space="preserve">
     <value>From</value>
   </data>

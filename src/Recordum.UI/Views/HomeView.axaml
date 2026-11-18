@@ -98,7 +98,7 @@
 
       <WrapPanel x:Name="HomeTools" Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" ItemsAlignment="End" VerticalAlignment="Center">
         <StackPanel Orientation="Horizontal" Spacing="6"
-                    IsVisible="{CompiledBinding State, Converter={x:Static conv:EnumToBoolConverter.Instance}, ConverterParameter={x:Static vm:HomeState.Loaded}}">
+                    IsVisible="{CompiledBinding ShowsTools}">
           <Button x:Name="SearchButton" Classes="ghost" Width="28" Height="28" Padding="0"
                   ToolTip.Tip="{x:Static res:Strings.Home_Search}"
                   AutomationProperties.Name="{x:Static res:Strings.Home_Search}"
@@ -259,6 +259,21 @@
                 <v:EmptyState DataContext="{Binding $parent[v:HomeView].DataContext}"/>
               </DataTemplate>
             </v:HomeStateTemplate.Empty>
+            <v:HomeStateTemplate.NoResults>
+              <DataTemplate>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            DataContext="{Binding $parent[v:HomeView].DataContext}"
+                            x:DataType="vm:HomeViewModel">
+                  <TextBlock Text="{x:Static res:Strings.Home_NoResults}"
+                             HorizontalAlignment="Center"
+                             Foreground="{DynamicResource Brush.TextMuted}"/>
+                  <Button x:Name="ClearFiltersButton" Classes="ghost"
+                          Content="{x:Static res:Strings.Home_NoResults_Clear}"
+                          Command="{CompiledBinding ClearFiltersCommand}"
+                          Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+              </DataTemplate>
+            </v:HomeStateTemplate.NoResults>
             <v:HomeStateTemplate.Error>
               <DataTemplate>
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"

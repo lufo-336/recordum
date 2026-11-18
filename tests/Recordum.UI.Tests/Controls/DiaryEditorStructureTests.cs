@@ -44,6 +44,9 @@ public class DiaryEditorStructureTests
         var editor = control.GetLogicalDescendants().OfType<TextEditor>().Single();
         editor.TextArea.TextView.Bounds.Width.Should().BeGreaterThan(0,
             "il template di AvaloniaEdit dev'essere negli stili dell'app: una TextView 0x0 non mostra niente");
+        // La riga del cursore resta grezza solo mentre si scrive, cioè con l'editor a fuoco (GIO-8).
+        editor.TextArea.Focus();
+        Settle();
         return (editor, control, window);
     }
 

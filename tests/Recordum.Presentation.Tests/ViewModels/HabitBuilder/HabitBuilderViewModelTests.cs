@@ -252,27 +252,36 @@ public class HabitBuilderViewModelTests
     [Fact]
     public async Task SaveAsTemplate_creates_custom_template_with_roundtrippable_payload()
     {
-        var fakeTemplates = new FakeHabitTemplateService();
-        var sut = NewSut(templates: fakeTemplates);
-        sut.Name = "Flessioni";
-        sut.AddFieldCommand.Execute(FieldNature.Quantity);
+        var previousCulture = Strings.Culture;
+        try
+        {
+            Strings.Culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            var fakeTemplates = new FakeHabitTemplateService();
+            var sut = NewSut(templates: fakeTemplates);
+            sut.Name = "Flessioni";
+            sut.AddFieldCommand.Execute(FieldNature.Quantity);
 
-        await sut.SaveAsTemplateCommand.ExecuteAsync(null);
+            await sut.SaveAsTemplateCommand.ExecuteAsync(null);
 
-        var saved = fakeTemplates.Created.Single();
-        saved.IsOfficial.Should().BeFalse();
-        saved.Name.Should().Be("Flessioni");
-        saved.PayloadJson.Should().NotBe("{}");
+            var saved = fakeTemplates.Created.Single();
+            saved.IsOfficial.Should().BeFalse();
+            saved.Name.Should().Be("Flessioni");
+            saved.PayloadJson.Should().NotBe("{}");
 
-        // Round-trip: the payload must match the shape HabitTemplateService.InstantiateAsync reads
-        // (snake_case keys: node.habit_type + metrics[].name/type). Quantity → Counter.
-        using var doc = JsonDocument.Parse(saved.PayloadJson);
-        var root = doc.RootElement;
-        root.GetProperty("node").GetProperty("habit_type").GetString().Should().Be("Counter");
-        var metrics = root.GetProperty("metrics");
-        metrics.GetArrayLength().Should().Be(1);
-        metrics[0].GetProperty("name").GetString().Should().Be(Strings.HabitBuilder_DefaultField_Quantity); // check via parsed JSON (not raw)
-        metrics[0].GetProperty("type").GetString().Should().Be("Integer"); // no unit → Integer
+            // Round-trip: the payload must match the shape HabitTemplateService.InstantiateAsync reads
+            // (snake_case keys: node.habit_type + metrics[].name/type). Quantity → Counter.
+            using var doc = JsonDocument.Parse(saved.PayloadJson);
+            var root = doc.RootElement;
+            root.GetProperty("node").GetProperty("habit_type").GetString().Should().Be("Counter");
+            var metrics = root.GetProperty("metrics");
+            metrics.GetArrayLength().Should().Be(1);
+            metrics[0].GetProperty("name").GetString().Should().Be(Strings.HabitBuilder_DefaultField_Quantity); // check via parsed JSON (not raw)
+            metrics[0].GetProperty("type").GetString().Should().Be("Integer"); // no unit → Integer
+        }
+        finally
+        {
+            Strings.Culture = previousCulture;
+        }
     }
 
     [Fact]

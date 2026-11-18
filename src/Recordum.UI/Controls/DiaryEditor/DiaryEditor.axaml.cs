@@ -101,6 +101,9 @@ public partial class DiaryEditor : UserControl
 
         Editor.TextArea.AddHandler(KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
 
+        Editor.TextArea.GotFocus += (_, _) => RedrawLine(_caretLine);
+        Editor.TextArea.LostFocus += (_, _) => RedrawLine(_caretLine);
+
         Editor.TextArea.Caret.PositionChanged += (_, _) =>
         {
             var newLine = Editor.TextArea.Caret.Line;
@@ -158,7 +161,7 @@ public partial class DiaryEditor : UserControl
         CaretOffset = caret;
     }
 
-    private int RawLine() => IsReadOnly ? -1 : _caretLine;
+    private int RawLine() => IsReadOnly || !Editor.TextArea.IsFocused ? -1 : _caretLine;
 
     private IBrush? Brush(string key) =>
         this.TryFindResource(key, ActualThemeVariant, out var value) ? value as IBrush : null;

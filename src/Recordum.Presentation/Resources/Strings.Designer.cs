@@ -207,6 +207,8 @@ public static class Strings
     public static string Home_More => Get("Home.More");
     public static string Home_TagMenu => Get("Home.TagMenu");
     public static string Home_TagMenu_All => Get("Home.TagMenu.All");
+    public static string Home_NoResults => Get("Home.NoResults");
+    public static string Home_NoResults_Clear => Get("Home.NoResults.Clear");
     public static string Home_TagFilter_Clear => Get("Home.TagFilter.Clear");
     public static string Home_NewMenu_Label => Get("Home.NewMenu.Label");
     public static string Rail_Diary_ComingSoon => Get("Rail.Diary.ComingSoon");

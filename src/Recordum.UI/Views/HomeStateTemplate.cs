@@ -15,6 +15,7 @@ public sealed class HomeStateTemplate : IDataTemplate
     public IDataTemplate? Loaded { get; set; }
     public IDataTemplate? Empty { get; set; }
     public IDataTemplate? Error { get; set; }
+    public IDataTemplate? NoResults { get; set; }
 
     public bool Match(object? data) => data is HomeState;
 
@@ -24,6 +25,7 @@ public sealed class HomeStateTemplate : IDataTemplate
         HomeState.Loaded => Loaded?.Build(param),
         HomeState.Empty => Empty?.Build(param),
         HomeState.Error => Error?.Build(param),
+        HomeState.NoResults => NoResults?.Build(param),
         _ => null,
     };
 }

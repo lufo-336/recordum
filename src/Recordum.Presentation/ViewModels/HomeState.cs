@@ -6,4 +6,5 @@ public enum HomeState
     Loaded,
     Empty,
     Error,
+    NoResults,
 }

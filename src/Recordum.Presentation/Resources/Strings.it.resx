@@ -2619,6 +2619,12 @@ Dettagli: {0}</value>
   <data name="Home.Uncheck.Message" xml:space="preserve">
     <value>La registrazione di {0} viene cancellata.</value>
   </data>
+  <data name="Home.NoResults" xml:space="preserve">
+    <value>Nessuna abitudine con questi filtri</value>
+  </data>
+  <data name="Home.NoResults.Clear" xml:space="preserve">
+    <value>Togli i filtri</value>
+  </data>
   <data name="Scale.Editor.From" xml:space="preserve">
     <value>Da</value>
   </data>
