@@ -2677,7 +2677,13 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
     quindi il giorno della ricaduta conta come fatto, mentre la schermata dell'abitudine lo segna come ricaduta
     (`BuildAbstinenceMarkersAsync`). **Da decidere con l'autore**: se la ricaduta svuota la cella, cosa mostra un giorno
     con ricaduta e nuovo inizio.
-  - **GIO-10 — la schermata di un'astinenza non segue ciò che succede fuori da lei** · `reported` · precedente.
+  - **GIO-10 — la schermata di un'astinenza non segue ciò che succede fuori da lei** · `fixed` (2026-11-18, branch
+    `gio10-abstinence-screen`): il servizio annuncia sul bus ogni inizio, ricaduta ed eliminazione, da dovunque partano;
+    la schermata di un'abitudine sola ora ascolta il bus per sé (prima solo i gruppi) e non più i segnali interni della
+    casella, della striscia e dell'elenco del giorno, che con il bus avrebbero ricaricato due volte. Test:
+    `HabitScreenAbstinenceFollowTests` (Inizia dalla Home; periodo aperto eliminato dall'elenco della Cronologia; una
+    ricaduta dalla casella rilegge quanto una da fuori: 9 letture, 18 col segnale interno rimesso). Il finto servizio
+    dei test annuncia sul bus come quello vero. Difetto di prima:
     `OnAbstinenceEvent` ascolta il bus solo per i gruppi: "Inizia" dalla riga della Home con la scheda aperta lascia la
     scheda su "Inizia". E l'elenco dei periodi in fondo alla Cronologia (`PeriodRecords.Periods`) non è collegato a
     `OnAbstinenceChanged`: eliminato da lì il periodo aperto, l'orologio in testa continua a correre. Letto nel codice,
