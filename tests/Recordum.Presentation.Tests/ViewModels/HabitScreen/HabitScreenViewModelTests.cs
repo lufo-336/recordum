@@ -69,7 +69,7 @@ public class HabitScreenViewModelTests
         clock = new FakeClock(new DateTimeOffset(2026, 5, 21, 12, 0, 0, TimeSpan.Zero));
         bus = new FakeEventBus();
         noteSvc = new FakeNoteService();
-        abstinence = new FakeAbstinenceService();
+        abstinence = new FakeAbstinenceService { Events = bus };
         uiPrefs = new FakeHabitUiPrefsService();
         var configs = new FakeHabitConfigService();
         var goals = new FakeGoalService();
@@ -384,10 +384,10 @@ public class HabitScreenViewModelTests
         var list = (AbstinencePeriodListViewModel)sut.Records.CurrentList;
         list.Rows.Should().Contain(r => r.IsCurrent); // "In corso" shown after load
 
-        // Lapse through the quick-add: closes the open period + raises Changed → OnAbstinenceChanged → records reload.
+        // Lapse through the quick-add: the service announces it on the bus → the screen reloads the records.
         var quick = (AbstinenceQuickAddViewModel)sut.QuickAdd!;
         await quick.LapseCommand.ExecuteAsync(null);
-        await Task.Delay(50); // OnAbstinenceChanged is async void
+        await Task.Delay(50); // OnAbstinenceEvent is async void
 
         list = (AbstinencePeriodListViewModel)sut.Records.CurrentList;
         list.Rows.Any(r => r.IsCurrent).Should().BeFalse(); // the just-lapsed period no longer shows "In corso"
