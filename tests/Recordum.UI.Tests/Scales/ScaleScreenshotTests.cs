@@ -45,7 +45,14 @@ public class ScaleScreenshotTests
         {
             ScreenshotProbeTests.Capture(w, $"scale-editor-umore-{theme}-{width}");
             AllNamed<TextBox>(editor, "LabelBox").Should().HaveCount(5).And.OnlyContain(b => b.Bounds.Height > 20 && b.Bounds.Width > 60);
-            VisibleNames(Named<ScaleMarksBar>(editor, "PreviewBar")).Should().Equal("Malissimo", "Male", "Così così", "Bene", "Benissimo");
+            var shown = VisibleNames(Named<ScaleMarksBar>(editor, "PreviewBar"));
+            if (width < 480)
+            {
+                // A 360 i nomi fitti non si sfiorano: gli estremi restano, quelli che collidono si sfumano (come nella vista dello Stato).
+                shown.Should().Contain("Malissimo").And.Contain("Benissimo").And.HaveCountLessThan(5);
+                shown.Should().BeSubsetOf(["Malissimo", "Male", "Così così", "Bene", "Benissimo"]);
+            }
+            else shown.Should().Equal("Malissimo", "Male", "Così così", "Bene", "Benissimo");
             AllNamed<TextBlock>(editor, "TagText").Select(t => t.Text).Should().Equal("#malissimo", "#male", "#così-così", "#bene", "#benissimo");
             Inside(Named<TextBox>(editor, "NameBox"), w);
             Inside(Named<ScaleMarksBar>(editor, "PreviewBar"), w);

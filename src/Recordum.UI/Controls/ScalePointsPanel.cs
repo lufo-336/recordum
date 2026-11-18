@@ -10,6 +10,9 @@ namespace Recordum.UI.Controls;
 /// <c>IsVisible</c>, perché cambiare la visibilità rimisurerebbe il pannello).</summary>
 public sealed class ScalePointsPanel : Panel
 {
+    /// <summary>Lo spazio minimo fra due nomi visibili: sotto, due nomi si leggono come uno.</summary>
+    private const double MinGap = 10;
+
     public static readonly StyledProperty<bool> HideOverlapsProperty =
         AvaloniaProperty.Register<ScalePointsPanel, bool>(nameof(HideOverlaps));
 
@@ -46,7 +49,7 @@ public sealed class ScalePointsPanel : Panel
             shown.Add(last);
             var lastRight = xs[first] + placed[first].W;
             foreach (var i in sized.Skip(1).Take(Math.Max(0, sized.Count - 2)))
-                if (xs[i] >= lastRight + 4 && xs[i] + placed[i].W <= xs[last] - 4) { shown.Add(i); lastRight = xs[i] + placed[i].W; }
+                if (xs[i] >= lastRight + MinGap && xs[i] + placed[i].W <= xs[last] - MinGap) { shown.Add(i); lastRight = xs[i] + placed[i].W; }
         }
         for (var i = 0; i < placed.Count; i++)
         {
