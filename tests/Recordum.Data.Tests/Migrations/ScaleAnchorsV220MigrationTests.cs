@@ -181,6 +181,19 @@ public sealed class ScaleAnchorsV220MigrationTests
         (await ScalarAsync(conn, "SELECT count(*) FROM tags")).Should().Be(1L);
     }
 
+    // GIO-23 review finale: il nome dello scaglione si salva senza gli spazi ai bordi (come lo salva ScaleTemplateService).
+    [Fact]
+    public async Task An_anchor_label_is_saved_trimmed()
+    {
+        await using var conn = await OpenAt219Async();
+        var s = await ScaleAsync(conn, "Come sto", 1, 2, """["Male"," Bene "]""");
+
+        await MigrateAsync(conn);
+
+        var anchors = await AnchorsWithTagsAsync(conn, G(s));
+        anchors.Select(a => (a.Value, a.Label, a.Tag)).Should().Equal((1L, "Male", "male"), (2L, "Bene", "bene"));
+    }
+
     [Fact]
     public async Task An_existing_tag_is_reused_not_duplicated()
     {

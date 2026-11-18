@@ -262,7 +262,7 @@ namespace Recordum.Data.Migrations
             //     Poi i tag ricavati: trovati per nome (ix_tag_name è NOCASE) o creati.
             yield return $"""
                 INSERT INTO scale_anchors (id, scale_template_id, value, label, tag_id, created_at, updated_at_ms)
-                SELECT recordum_new_guid(), s.id, s.min_value + j.key, substr(j.value, 1, 100), NULL, {now}, {nowMs}
+                SELECT recordum_new_guid(), s.id, s.min_value + j.key, substr(trim(j.value), 1, 100), NULL, {now}, {nowMs}
                 FROM scale_templates s
                 JOIN _m220_scale ss ON ss.id = s.id
                 JOIN json_each(ss.labels) j
