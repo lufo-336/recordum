@@ -149,10 +149,12 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
     {
         var (metric, scale) = await ScaleAsync(c.Node.Id, ct).ConfigureAwait(true);
         var start = c.WindowStart(30);
-        var values = metric is null
-            ? new Dictionary<DateOnly, decimal>()
-            : (await _completions.GetDailySumAsync(c.Node.Id, metric.Id, start, c.Today, ct).ConfigureAwait(true))
-                .Where(v => v.Date >= start && v.Date <= c.Today).ToDictionary(v => v.Date, v => v.Sum);
+        // Uno Stato e' una lettura: il giorno vale la sua ultima (GetDailyMagnitudeAsync, come la schermata di oggi), non la somma.
+        var values = new Dictionary<DateOnly, decimal>();
+        if (metric is not null)
+            for (var month = new DateOnly(start.Year, start.Month, 1); month <= c.Today; month = month.AddMonths(1))
+                foreach (var v in await _completions.GetDailyMagnitudeAsync(c.Node.Id, month.Year, month.Month, ct).ConfigureAwait(true))
+                    if (v.Date >= start && v.Date <= c.Today) values[v.Date] = v.Magnitude;
         var todayLabel = values.TryGetValue(c.Today, out var tv) ? LabelFor(scale, tv) : "—";
         var mean = values.Count == 0 ? (decimal?)null : values.Values.Average();
         var weekStart = c.Today.AddDays(-6);

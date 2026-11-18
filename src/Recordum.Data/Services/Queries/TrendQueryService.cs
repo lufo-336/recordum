@@ -58,8 +58,9 @@ public sealed class TrendQueryService(
 
         if (type == HabitType.State)
         {
-            var ints = values.Where(v => v.ValueInteger.HasValue).Select(v => (decimal)v.ValueInteger!.Value).ToList();
-            return ints.Count == 0 ? 0m : ints.Sum() / ints.Count;
+            // GIO-23: uno Stato scrive in ValueDecimal; ValueInteger resta per le righe di prima.
+            var readings = values.Select(v => v.ValueDecimal ?? (decimal?)v.ValueInteger).OfType<decimal>().ToList();
+            return readings.Count == 0 ? 0m : readings.Sum() / readings.Count;
         }
 
         return values.Sum(v =>

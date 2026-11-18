@@ -124,21 +124,22 @@ public sealed class TrendQueryServiceTests
     }
 
     [Fact]
-    public async Task State_averages_value_integer_per_day()
+    public async Task State_averages_the_recorded_decimal_value_per_day()
     {
         var (fx, habit, primaryMetricId) = await SeedHabitOfType(HabitType.State);
         var d = new DateOnly(2026, 1, 5);
         var svc = NewCompletionService(fx);
         await svc.RecordAsync(
             new Completion { HabitNodeId = habit.Id, CompletedAt = UtcAt(d, 9), CompletedAtMs = MsAt(d, 9) },
-            new[] { new CompletionValue { MetricDefinitionId = primaryMetricId!.Value, ValueInteger = 2 } });
+            new[] { new CompletionValue { MetricDefinitionId = primaryMetricId!.Value, ValueDecimal = 2.5m } });
         await svc.RecordAsync(
             new Completion { HabitNodeId = habit.Id, CompletedAt = UtcAt(d, 12), CompletedAtMs = MsAt(d, 12) },
-            new[] { new CompletionValue { MetricDefinitionId = primaryMetricId.Value, ValueInteger = 4 } });
+            new[] { new CompletionValue { MetricDefinitionId = primaryMetricId.Value, ValueDecimal = 4m } });
 
         var rows = await NewSut(fx).GetTrendAsync(habit.Id, d, d, TrendGranularity.Daily);
 
-        Assert.Equal(3m, rows.Single().Value);
+        // GIO-23: uno Stato scrive in ValueDecimal (la metrica con scala e' sempre Decimal).
+        Assert.Equal(3.25m, rows.Single().Value);
         await fx.DisposeAsync();
     }
 
