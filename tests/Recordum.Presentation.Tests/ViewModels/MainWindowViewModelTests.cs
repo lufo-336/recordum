@@ -312,6 +312,25 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task A_filter_that_shrinks_a_multi_selection_to_one_row_does_not_move_its_screen()
+    {
+        // GIO-11: con due righe scelte, un filtro che ne nasconde una lascia scelta l'altra. Non è l'utente che la apre:
+        // la sua schermata resta sul giorno che aveva.
+        var d = await CreateDaySutAsync(HabitType.Action, alsoRow: "Altra");
+        d.Home.SelectedRow = d.Row;
+        await Task.Delay(30);
+        await d.Screen.SelectDayAsync(Saturday);
+        d.Home.SelectInteractive(d.Home.Rows.Single(r => r.Name == "Altra"), ctrl: true, shift: false);
+        d.Home.HasMultiSelection.Should().BeTrue();
+
+        d.Home.SearchText = "Soggetto";
+        await Task.Delay(30);
+
+        d.Home.SelectedRow.Should().BeSameAs(d.Row);
+        d.Screen.SelectedDay.Should().Be(Saturday);
+    }
+
+    [Fact]
     public async Task A_screen_with_writing_in_progress_stays_on_its_day()
     {
         // GIO-6, l'unica eccezione: una nota del giorno non salvata (o una bozza del diario) tiene la schermata sul suo
@@ -455,7 +474,7 @@ public class MainWindowViewModelTests
 
     /// <summary>Una Home col suo orologio e un'abitudine sola, il cui log rapido risponde sempre "non da qui"; le
     /// schermate hanno lo stesso orologio e conoscono l'abitudine (in astinenza, se chiesto).</summary>
-    private static async Task<DaySut> CreateDaySutAsync(HabitType? type, bool abstaining = false)
+    private static async Task<DaySut> CreateDaySutAsync(HabitType? type, bool abstaining = false, string? alsoRow = null)
     {
         var id = Guid.NewGuid();
         var node = new HabitNode
@@ -465,6 +484,9 @@ public class MainWindowViewModelTests
         var query = new FakeHabitTreeQueryService();
         query.HomeRows.Add(new HomeTreeRow(id, null, node.Name, node.Color, type, null, 0, false, PinScope.None, 0, false,
             ImmutableArray.Create(new int[7]), ImmutableArray<Guid>.Empty, CompletionsLast14Days: ImmutableArray.Create(new int[14])));
+        if (alsoRow is not null)
+            query.HomeRows.Add(new HomeTreeRow(Guid.NewGuid(), null, alsoRow, node.Color, type, null, 1, false, PinScope.None, 0, false,
+                ImmutableArray.Create(new int[7]), ImmutableArray<Guid>.Empty, CompletionsLast14Days: ImmutableArray.Create(new int[14])));
         var handler = new DecliningHandler(type ?? HabitType.Action);
         var clock = new FakeClock(TuesdayMorning);
         var nodes = new FakeHabitNodeService();

@@ -186,6 +186,38 @@ public class CronologiaColumnTests
     }
 
     [AvaloniaFact]
+    public async Task A_day_chosen_on_the_year_map_shows_its_note_rendered_even_from_the_focused_box()
+    {
+        // GIO-11: con la casella della nota a fuoco, un giorno scelto dalla mappa dell'anno mostrava la sua nota in
+        // Markdown grezzo finché la casella non perdeva il fuoco.
+        var target = new DateOnly(2026, 10, 25);
+        var o = await OpenAsync(seed: (sp, id) => sp.GetRequiredService<INoteService>().CreateAsync(new Note
+        {
+            HabitNodeId = id, BodyMd = "**forte**", TargetDate = target, UpdatedAtMs = Now.ToUnixTimeMilliseconds(),
+        }).AsTask(), createdAt: new DateTimeOffset(2026, 1, 5, 12, 0, 0, TimeSpan.Zero));
+        Named<RadioButton>(o.Column, "YearPeriod").IsChecked = true;
+        await UntilAsync(() => Heat(o).Any(g => g.Name == "Weeks" && g.Bounds.Width > 0));
+        var box = Named<TextBox>(o.Column, "DayNoteBox");
+        box.Focus();
+        Pump();
+        box.IsFocused.Should().BeTrue();
+
+        var grid = Named<HeatGrid>(o.Column, "Weeks");
+        var x = grid.Weeks!.ToList().FindIndex(w => w.Any(c => c.Date == target));
+        var y = grid.Weeks[x].ToList().FindIndex(c => c.Date == target);
+        var p = grid.TranslatePoint(new Point((x + 0.5) * (HeatGrid.Cell + HeatGrid.Gap), (y + 0.5) * (HeatGrid.Cell + HeatGrid.Gap)), o.Window)!.Value;
+        o.Window.MouseDown(p, MouseButton.Left);
+        o.Window.MouseUp(p, MouseButton.Left);
+        await UntilAsync(() => o.Vm.SelectedDay == target && o.Vm.DayNote.Text == "**forte**");
+        Pump();
+
+        box.IsVisible.Should().BeFalse("la nota del giorno nuovo si legge resa, non in Markdown");
+        Named<Border>(o.Column, "DayNoteRenderedHost").IsVisible.Should().BeTrue();
+        box.IsFocused.Should().BeFalse("una casella nascosta non deve ricevere quello che si scrive");
+        o.Window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task A_closed_cronologia_is_collected()
     {
         // Review dell'onda 2a: DayBlockView e PeriodListView restavano iscritte ai Records della schermata, che vive più della

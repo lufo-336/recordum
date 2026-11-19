@@ -64,7 +64,7 @@ veloce durante una modifica · **F2d2-11** minori rimandati.
 Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione nel creatore e i minori **UX3A-M1…M6** ·
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
-**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperto: **GIO-11** (in parte) · `reported`; **GIO-1**, **GIO-5**, **GIO-8** `fixed` il 2026-11-17 (`agy-minori`), **GIO-10** `fixed` il 2026-11-18 (`gio10-abstinence-screen`); dalla revisione dei PNG con l'autore
+**Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperto: **GIO-11**, solo le sottoscrizioni della Home · `reported` (per la testa Android); **GIO-1**, **GIO-5**, **GIO-8** `fixed` il 2026-11-17 (`agy-minori`), **GIO-10** `fixed` il 2026-11-18 (`gio10-abstinence-screen`); dalla revisione dei PNG con l'autore
 (2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** `fixed` (2026-11-18, `gio23-scales`), **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda restano **B7** e
 **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
@@ -2690,7 +2690,16 @@ Fuori dall'onda, restano aperti: B7, B8; B9 ha la sua immagine di confronto
   - **GIO-6, un caso in più**: Home su ieri → apro "Senza fumo" → "Torna a oggi" → log rapido della riga: il riquadro
     della ricaduta dice "La ricaduta va su lunedì 9 novembre" mentre la Home dice "Oggi". Lo dice, ma è il caso in cui
     lasciare la schermata sul giorno vecchio costa di più.
-  - **GIO-11 — minori dalla review, non corretti** · `reported`; la parte sulla selezione `fixed` (2026-11-17, `agy-minori`: `HomeReloadSelectionTests`, rosso provato): `HomeViewModel` non rilascia le sette sottoscrizioni al
+  - **GIO-11 — minori dalla review** · `fixed` tranne le sottoscrizioni (2026-11-19, branch `gio11-minori`). La selezione
+    sovrascritta dal ricaricamento `fixed` il 2026-11-17 (`agy-minori`: `HomeReloadSelectionTests`, rosso provato). Il
+    filtro che riduce due righe scelte a una non porta più la sua schermata sul giorno della Home: la Home alza
+    `IsRestoringSelection` mentre rimette la selezione e `MainWindowViewModel` non lo prende per un'apertura se la scheda
+    c'era già (`MainWindowViewModelTests.A_filter_that_shrinks_a_multi_selection_to_one_row_does_not_move_its_screen`,
+    rosso provato). La nota in Markdown grezzo **non si riproduce**: un clic sulla mappa le prende il fuoco e la casella
+    torna resa, e i tasti della Home si fermano in una casella di testo; resta la guardia
+    `CronologiaColumnTests.A_day_chosen_on_the_year_map_shows_its_note_rendered_even_from_the_focused_box` (mai rossa).
+    Ancora `reported`, da fare con la testa Android (lì le pagine si aprono e chiudono): `HomeViewModel` non rilascia
+    le sette sottoscrizioni al bus né `ExpandToggled` delle righe sostituite. Testo di prima: `HomeViewModel` non rilascia le sette sottoscrizioni al
     bus né `ExpandToggled` delle righe sostituite (precedente; la Home vive quanto l'app);
     `ReloadPreservingSelectionAsync` legge la selezione prima dell'attesa e la rimette sopra una scelta fatta nel
     frattempo; nel blocco del giorno, cambiando giorno dalla mappa dell'anno con la casella della nota a fuoco, la nota
