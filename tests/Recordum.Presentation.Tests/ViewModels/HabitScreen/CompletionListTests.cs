@@ -377,7 +377,7 @@ public class CompletionListViewModelTests
     public async Task LoadDayAsync_renders_a_duration_field_value()
     {
         // CR13: a series with only a duration (ValueSeconds) used to show a blank field because
-        // FormatValue had no Seconds branch. 90s must render as "1:30" via DurationFormat.
+        // FormatValue had no Seconds branch. 90s must render as "1 min 30 s" (B7: in parole, non un orario).
         var cs = new FakeCompletionService();
         var ms = new FakeMetricDefinitionService();
         var rd = new FakeReferenceData();
@@ -397,13 +397,13 @@ public class CompletionListViewModelTests
         var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, day);
 
-        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Time: 1:30");
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Time: 1 min 30 s");
     }
 
     [Fact]
-    public async Task LoadDayAsync_reads_a_duration_as_a_clock_even_when_the_metric_has_a_unit()
+    public async Task LoadDayAsync_reads_a_duration_in_words_even_when_the_metric_has_a_unit()
     {
-        // A single recording reads as a duration, not as a decimal: 27000s is "7:30:00" whatever unit
+        // A single recording reads as a duration, not as a decimal: 27000s is "7 h 30 min" whatever unit
         // the metric declares. The unit governs AGGREGATES — day total, goal, export — where a number
         // is what you compare against a target. Before this, a metric with a unit read "7,5 ore" here
         // and one without read "7:30:00": two layouts for the same fact.
@@ -427,7 +427,7 @@ public class CompletionListViewModelTests
         var sut = new CompletionListViewModel(cs, ms, rd, new FakeDiaryService());
         await sut.LoadDayAsync(habit, day);
 
-        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Slept: 7:30:00");
+        sut.Rows[0].FieldDisplays.Should().ContainSingle().Which.Should().Be("Slept: 7 h 30 min");
     }
 
     [Fact]

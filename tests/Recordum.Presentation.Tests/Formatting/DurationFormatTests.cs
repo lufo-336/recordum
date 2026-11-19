@@ -43,6 +43,21 @@ public class DurationFormatTests
     public void FormatStopwatch_formats_days_h_mm_ss(int d, int h, int m, int s, string expected)
         => DurationFormat.FormatStopwatch(new TimeSpan(d, h, m, s)).Should().Be(expected);
 
+    /// <summary>B7: una registrazione sola si legge in parole, come le cifre in testa ("20 min"): "20:00" sembrava un orario.</summary>
+    [Theory]
+    [InlineData(0, "0 s")]
+    [InlineData(45, "45 s")]
+    [InlineData(1200, "20 min")]
+    [InlineData(1230, "20 min 30 s")]
+    [InlineData(3600, "1 h")]
+    [InlineData(3900, "1 h 05 min")]
+    [InlineData(3930, "1 h 05 min")]
+    [InlineData(27000, "7 h 30 min")]
+    [InlineData(86400 + 7200, "1g 2h")]
+    [InlineData(-5, "0 s")]
+    public void FormatWords_reads_a_single_duration_without_a_clock(int seconds, string expected)
+        => DurationFormat.FormatWords(seconds).Should().Be(expected);
+
     [Fact]
     public void FormatStopwatch_clamps_negative_to_zero()
         => DurationFormat.FormatStopwatch(TimeSpan.FromSeconds(-5)).Should().Be("0:00:00");

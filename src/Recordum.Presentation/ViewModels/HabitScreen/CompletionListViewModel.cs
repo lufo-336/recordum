@@ -201,9 +201,9 @@ public sealed partial class CompletionListViewModel : ObservableObject
         if (v.ValueText is { } t) return t;
         // Duration metrics store ValueSeconds only; without this branch a series with just a time
         // (e.g. 1:30) rendered as a blank field in Cronologia/Records despite being saved (CR13).
-        // A single recording always reads as a clock — the metric's unit governs aggregates (day
-        // total, goal, export), where the value is a number you compare against a target.
-        if (v.ValueSeconds is { } secs) return DurationFormat.Format(secs);
+        // A single recording reads as a duration in words ("20 min", B7: the clock "20:00" read as a time of day)
+        // — the metric's unit governs aggregates (day total, goal, export), where the value is compared to a target.
+        if (v.ValueSeconds is { } secs) return DurationFormat.FormatWords(secs);
         var unit = m.Unit is { } u ? " " + u : string.Empty;
         if (v.ValueDecimal is { } d) return d.ToString(CultureInfo.CurrentCulture) + unit;
         if (v.ValueInteger is { } i) return i.ToString(CultureInfo.CurrentCulture) + unit;
