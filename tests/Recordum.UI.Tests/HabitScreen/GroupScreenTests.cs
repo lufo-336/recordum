@@ -237,7 +237,45 @@ public class GroupScreenTests(ITestOutputHelper output)
         Named<RadioButton>(o.Column, "YearPeriod").IsChecked = true;
         await UntilAsync(() => grid.Rows![0].Cells.Count == 365);
         grid.ShowHeader.Should().BeFalse();
-        grid.CellSize.Should().BeLessThan(TogetherGrid.MaxCell);
+        // B8 (variante A): un anno è una cella per settimana, i mesi sopra, e ci sta senza scorrere.
+        grid.Weekly.Should().BeTrue();
+        grid.Columns.Should().BeInRange(53, 54);
+        grid.Months.Should().HaveCount(12);
+        await UntilAsync(() => grid.Scroll.Viewport.Width > 0 && grid.Scroll.Extent.Width > grid.Scroll.Viewport.Width - grid.Pitch);
+        grid.Scroll.Extent.Width.Should().BeLessThanOrEqualTo(grid.Scroll.Viewport.Width + 0.5, "niente scorrimento né linea orfana");
+        grid.Scroll.Extent.Width.Should().BeGreaterThan(grid.Scroll.Viewport.Width - grid.Pitch, "le settimane arrivano al bordo");
+    }
+
+    [AvaloniaFact]
+    public async Task Together_year_opens_day_by_day_and_back()
+    {
+        // B8 (variante C dietro un pulsante): "Mostra i giorni" apre ogni figlia nella sua mappa 7 × settimane.
+        using var o = await OpenAsync(rich: true);
+        var grid = Named<TogetherGrid>(o.Column, "Together");
+        await UntilAsync(() => grid.Days == 365 && grid.RowCount == 3);
+        var toggle = Named<Button>(o.Column, "TogetherToggle");
+        toggle.IsEffectivelyVisible.Should().BeTrue("su un anno le righe sono settimane e si possono aprire");
+        var weeksHeight = grid.Bounds.Height;
+
+        Click(o.Window, toggle);
+        await UntilAsync(() => grid.Expanded);
+        Pump();
+        grid.Bounds.Height.Should().BeGreaterThan(3 * 7 * grid.Pitch, "tre mappe di sette righe");
+        grid.Bounds.Height.Should().BeGreaterThan(weeksHeight * 3);
+        grid.CellSize.Should().BeLessThanOrEqualTo(TogetherGrid.MaxDayMapCell);
+        toggle.GetVisualDescendants().OfType<TextBlock>().Single(t => t.IsEffectivelyVisible).Text
+            .Should().Be(Recordum.Presentation.Resources.Strings.Group_Together_ShowWeeks);
+        Shoot(o, "group-together-year-days-light");
+
+        Click(o.Window, toggle);
+        await UntilAsync(() => !grid.Expanded);
+        Pump();
+        grid.Bounds.Height.Should().BeApproximately(weeksHeight, 0.5);
+
+        Named<RadioButton>(o.Column, "MonthPeriod").IsChecked = true;
+        await UntilAsync(() => grid.Days == 31);
+        Pump();
+        toggle.IsEffectivelyVisible.Should().BeFalse("un mese è già giorno per giorno");
     }
 
     [AvaloniaFact]
@@ -248,7 +286,7 @@ public class GroupScreenTests(ITestOutputHelper output)
         await UntilAsync(() => grid.Days == 365);
         grid.CellSize.Should().BeGreaterThanOrEqualTo(4, "(460-140)/365 sarebbe 0,9 px: si scorre, non si rimpicciolisce");
         var cells = grid.Scroll.Content as Control;
-        cells!.Bounds.Width.Should().BeGreaterThanOrEqualTo(365 * 4);
+        cells!.Bounds.Width.Should().BeGreaterThanOrEqualTo(grid.Columns * 4);
         Shoot(o, "group-together-year-narrow-light");
         o.Window.RequestedThemeVariant = ThemeVariant.Dark;
         Pump();
@@ -258,13 +296,14 @@ public class GroupScreenTests(ITestOutputHelper output)
     [AvaloniaFact]
     public async Task Together_long_periods_scroll_to_today()
     {
-        using var o = await OpenAsync(rich: true);
+        // Stretta: anche a settimane un anno non ci sta e si scorre.
+        using var o = await OpenAsync(rich: true, width: 400);
         var grid = Named<TogetherGrid>(o.Column, "Together");
         await UntilAsync(() => grid.Days == 365);
         await UntilAsync(() => grid.Scroll.Extent.Width > grid.Scroll.Viewport.Width);
         await UntilAsync(() => grid.Scroll.Offset.X > 0);
-        var pitch = grid.CellSize + grid.CellGap;
-        var today = grid.Rows![0].Cells.ToList().FindIndex(c => c.IsToday);
+        var pitch = grid.Pitch;
+        var today = grid.ColumnOf(grid.Rows![0].Cells.ToList().FindIndex(c => c.IsToday));
         var x = today * pitch;
         x.Should().BeInRange(grid.Scroll.Offset.X, grid.Scroll.Offset.X + grid.Scroll.Viewport.Width - grid.CellSize, "oggi sta nella finestra");
         ((today + 1) * pitch).Should().BeApproximately(grid.Scroll.Offset.X + grid.Scroll.Viewport.Width, pitch + 1, "oggi è all'estremo destro");
@@ -343,6 +382,11 @@ public class GroupScreenTests(ITestOutputHelper output)
                 grid.BringIntoView();
                 Shoot(o, $"group-brief-together-{name}-{v}");
             }
+            grid.Expanded = true;
+            Pump();
+            grid.BringIntoView();
+            Shoot(o, $"group-brief-together-year-days-{v}");
+            grid.Expanded = false;
         }
 
         using (var e = await OpenAsync(empty: true, theme: theme))

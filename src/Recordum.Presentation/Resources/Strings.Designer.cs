@@ -803,6 +803,8 @@ public static class Strings
     public static string Group_Head_Subtitle => Get("Group.Head.Subtitle");
     public static string Group_Section_Today => Get("Group.Section.Today");
     public static string Group_Section_Together => Get("Group.Section.Together");
+    public static string Group_Together_ShowDays => Get("Group.Together.ShowDays");
+    public static string Group_Together_ShowWeeks => Get("Group.Together.ShowWeeks");
     public static string Group_Map_Legend => Get("Group.Map.Legend");
     public static string Editor_Summary_Custom => Get("Editor.Summary.Custom");
     public static string Editor_Summary_NoGoal => Get("Editor.Summary.NoGoal");

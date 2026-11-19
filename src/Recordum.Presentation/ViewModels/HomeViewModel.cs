@@ -658,8 +658,15 @@ public sealed partial class HomeViewModel : ObservableObject, IRowSelectionHost,
         foreach (var id in keep.Where(id => Rows.Any(r => r.HabitNodeId == id)))
             _selectedIds.Add(id);
         ApplySelectionToRows();
-        SyncSelectedRowFromSet();
+        IsRestoringSelection = true;
+        try { SyncSelectedRowFromSet(); }
+        finally { IsRestoringSelection = false; }
     }
+
+    /// <summary>Vero mentre la Home rimette la selezione dopo aver rifatto le righe (un filtro, una ricarica): il cambio di
+    /// <see cref="SelectedRow"/> che ne segue non è un'apertura dell'utente (GIO-11). Come <see cref="RecordRequestedFor"/>,
+    /// l'host lo legge in modo sincrono dentro il cambio.</summary>
+    public bool IsRestoringSelection { get; private set; }
 
     // A row mutated its membership/position (delete/archive/restore/purge/move/pin).
     private async void OnRowChanged(object? sender, EventArgs e) => await ReloadPreservingSelectionAsync();

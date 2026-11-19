@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Recordum.Presentation.ViewModels.HabitScreen.History;
 using Recordum.UI.Converters;
 
@@ -13,10 +14,24 @@ namespace Recordum.UI.Views.HabitScreen.History;
 /// <summary>Una heatmap a colonne di settimana (tre mesi, anno, "Tutto"), disegnata in un solo controllo. Era un pulsante
 /// per cella: tre anni erano ~1500 pulsanti e "Tutto" impiegava ~3,5 s a disegnarsi (misurato, onda 2a Task 10). Stesse
 /// regole della cella di prima: il gradino nel colore dell'abitudine (HeatLevelBrushConverter), i giorni fuori periodo non
-/// si vedono, la selezione è un bordo d'inchiostro, il valore nel tooltip, clic o frecce per scegliere un giorno.</summary>
+/// si vedono, la selezione è un bordo d'inchiostro, il valore nel tooltip, clic o frecce per scegliere un giorno.
+/// B8 (variante A dell'autore): le iniziali dei mesi sopra le colonne, e le celle che si allargano (da <see cref="Cell"/> a
+/// <see cref="MaxCell"/>) fino a riempire lo ScrollViewer che la contiene; sotto le 11 px si scorre come prima.</summary>
 public sealed class HeatGrid : Control
 {
-    public const double Cell = 11, Gap = 2;
+    public const double Cell = 11, MaxCell = 18, Gap = 2, MonthsHeight = 16;
+
+    /// <summary>Lato della cella più lo spazio, con la larghezza di adesso.</summary>
+    public double Pitch => _cell + Gap;
+
+    /// <summary>Dove cominciano le celle: sotto le etichette dei mesi.</summary>
+    public double Top => Months.Count > 0 ? MonthsHeight : 0;
+
+    /// <summary>Le etichette dei mesi: la colonna della settimana che contiene il primo del mese, e il nome corto.</summary>
+    public IReadOnlyList<(int Column, string Text)> Months { get; private set; } = [];
+
+    private double _cell = Cell;
+    private ScrollViewer? _host;
 
     public static readonly StyledProperty<IReadOnlyList<IReadOnlyList<HistoryDayCell>>?> WeeksProperty =
         AvaloniaProperty.Register<HeatGrid, IReadOnlyList<IReadOnlyList<HistoryDayCell>>?>(nameof(Weeks));
@@ -71,6 +86,14 @@ public sealed class HeatGrid : Control
         base.OnAttachedToVisualTree(e);
         _attached = true;
         Hook(Weeks, true);
+        _host = this.FindAncestorOfType<ScrollViewer>();
+        if (_host is not null) _host.PropertyChanged += OnHostChanged;
+    }
+
+    // Lo ScrollViewer misura il contenuto con larghezza infinita: la larghezza da riempire è la sua.
+    private void OnHostChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == BoundsProperty) InvalidateMeasure();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -78,6 +101,8 @@ public sealed class HeatGrid : Control
         base.OnDetachedFromVisualTree(e);
         _attached = false;
         Hook(Weeks, false);
+        if (_host is not null) _host.PropertyChanged -= OnHostChanged;
+        _host = null;
     }
 
     private readonly List<HistoryDayCell> _cells = [];
@@ -107,8 +132,25 @@ public sealed class HeatGrid : Control
 
     private void OnCellChanged(object? sender, PropertyChangedEventArgs e) => InvalidateVisual();
 
-    protected override Size MeasureOverride(Size availableSize) =>
-        new((Weeks?.Count ?? 0) * (Cell + Gap), 7 * (Cell + Gap));
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var count = Weeks?.Count ?? 0;
+        var room = double.IsFinite(availableSize.Width) ? availableSize.Width : _host?.Bounds.Width ?? 0;
+        _cell = count > 0 && room > 0 ? Math.Clamp(room / count - Gap, Cell, MaxCell) : Cell;
+        Months = MonthsOf(Weeks);
+        return new Size(count * Pitch, Top + 7 * Pitch);
+    }
+
+    private static List<(int, string)> MonthsOf(IReadOnlyList<IReadOnlyList<HistoryDayCell>>? weeks)
+    {
+        var months = new List<(int, string)>();
+        if (weeks is null) return months;
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        for (var x = 0; x < weeks.Count; x++)
+            if (weeks[x].FirstOrDefault(c => c.InRange && c.Date.Day == 1) is { } first)
+                months.Add((x, culture.DateTimeFormat.GetAbbreviatedMonthName(first.Date.Month).TrimEnd('.')));
+        return months;
+    }
 
     public override void Render(DrawingContext context)
     {
@@ -116,6 +158,18 @@ public sealed class HeatGrid : Control
         var theme = ActualThemeVariant;
         var ink = this.TryFindResource("Brush.Ink", theme, out var i) && i is IBrush b ? b : Avalonia.Media.Brushes.Black;
         var selected = new Pen(ink, 2);
+        var muted = this.TryFindResource("Brush.TextMuted", theme, out var m) && m is IBrush mb ? mb : Avalonia.Media.Brushes.Gray;
+        var typeface = new Typeface(FontFamily.Default);
+        var free = double.MinValue; // un nome che toccherebbe il precedente (celle strette) si salta
+        foreach (var (column, text) in Months)
+        {
+            var label = new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                typeface, 11, muted);
+            var x = column * Pitch + Gap / 2;
+            if (x < free) continue;
+            context.DrawText(label, new Point(x, 0));
+            free = x + label.Width + 6;
+        }
         var fills = Enumerable.Range(0, 5).Select(step => (IBrush?)Brushes.Convert([step, HabitColor, theme], typeof(IBrush), null,
             System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         for (var x = 0; x < weeks.Count; x++)
@@ -124,7 +178,7 @@ public sealed class HeatGrid : Control
                 var cell = weeks[x][y];
                 if (!cell.InRange) continue;
                 var fill = fills[Math.Clamp(cell.Step, 0, 4)];
-                var rect = new Rect(x * (Cell + Gap) + Gap / 2, y * (Cell + Gap) + Gap / 2, Cell, Cell);
+                var rect = new Rect(x * Pitch + Gap / 2, Top + y * Pitch + Gap / 2, _cell, _cell);
                 context.DrawRectangle(fill, cell.IsSelected ? selected : null, rect.Deflate(cell.IsSelected ? 1 : 0), 2, 2);
             }
     }
@@ -132,7 +186,8 @@ public sealed class HeatGrid : Control
     private HistoryDayCell? CellAt(Point p)
     {
         if (Weeks is not { } weeks) return null;
-        var (x, y) = ((int)(p.X / (Cell + Gap)), (int)(p.Y / (Cell + Gap)));
+        if (p.Y < Top) return null;
+        var (x, y) = ((int)(p.X / Pitch), (int)((p.Y - Top) / Pitch));
         return x >= 0 && x < weeks.Count && y >= 0 && y < weeks[x].Count && weeks[x][y] is { InRange: true } c ? c : null;
     }
 

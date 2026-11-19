@@ -158,10 +158,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             if (e.PropertyName != nameof(HomeViewModel.SelectedRow)) return;
             if (Home.SelectedRow is not { } row) { _selectedSubject = null; Workspace.ActivatePanoramica(); return; }
-            // La Home rifà le righe a ogni registrazione e a ogni cambio di giorno, e ri-seleziona la stessa abitudine con
-            // una riga nuova: non è l'utente che apre, e il giorno che ha scelto nella schermata non si tocca.
+            // La Home rifà le righe a ogni registrazione, cambio di giorno o filtro e rimette la selezione (anche su una riga
+            // sola rimasta da due scelte, GIO-11): non è l'utente che apre, e il giorno scelto nella schermata non si tocca.
             var recording = Home.RecordRequestedFor == row.HabitNodeId;
-            var opened = recording || _selectedSubject != row.HabitNodeId;
+            // Una scheda che nasce adesso parte comunque dal giorno della Home.
+            var restoredOpenTab = Home.IsRestoringSelection && Workspace.Tabs.Any(t => t.SubjectId == row.HabitNodeId);
+            var opened = recording || (_selectedSubject != row.HabitNodeId && !restoredOpenTab);
             _selectedSubject = row.HabitNodeId;
             await Workspace.OpenSubjectAsync(row.HabitNodeId, KindOf(row), row.Name).ConfigureAwait(true);
             if (opened) await LandOnHomeDayAsync(row, recording).ConfigureAwait(true);

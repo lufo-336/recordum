@@ -61,6 +61,19 @@ public static class DurationFormat
         return string.Create(CultureInfo.InvariantCulture, $"{seconds / 60}:{seconds % 60:00}");
     }
 
+    /// <summary>Una durata registrata, letta in parole come le cifre in testa (B7): "45 s", "20 min 30 s", "1 h 05 min"
+    /// (da un'ora in su i secondi cadono), "1g 2h" dal giorno in su. L'orologio "20:00" si leggeva "alle venti".</summary>
+    public static string FormatWords(int seconds)
+    {
+        if (seconds < 0) seconds = 0;
+        if (seconds >= 86400) return FormatElapsed(TimeSpan.FromSeconds(seconds));
+        int h = seconds / 3600, m = seconds % 3600 / 60, s = seconds % 60;
+        var inv = CultureInfo.InvariantCulture;
+        if (h > 0) return m > 0 ? string.Create(inv, $"{h} h {m:00} min") : string.Create(inv, $"{h} h");
+        if (m > 0) return s > 0 ? string.Create(inv, $"{m} min {s} s") : string.Create(inv, $"{m} min");
+        return string.Create(inv, $"{s} s");
+    }
+
     /// <summary>"41g", "2a 41g" — usato anche dalla streak Resistance in formato tempo-trascorso.</summary>
     public static string FormatDays(int days)
     {

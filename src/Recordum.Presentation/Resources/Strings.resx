@@ -2214,6 +2214,12 @@ Details: {0}</value>
   <data name="Group.Section.Together" xml:space="preserve">
     <value>Together</value>
   </data>
+  <data name="Group.Together.ShowDays" xml:space="preserve">
+    <value>Show days</value>
+  </data>
+  <data name="Group.Together.ShowWeeks" xml:space="preserve">
+    <value>Show weeks</value>
+  </data>
   <data name="Group.Map.Legend" xml:space="preserve">
     <value>intensity = how many children that day; full = all</value>
   </data>
