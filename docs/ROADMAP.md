@@ -21,11 +21,11 @@
   cartella dati vera — **non avviarla**.
 - **Onda "Giornata" in `main`** (2026-11-17): piano `docs/superpowers/plans/2026-11-11-giornata-wave.md`, 15 task
   più l'8b, scritta in cooperazione con Antigravity (cronaca in `docs/MILESTONES.md`). La revisione dei PNG con l'autore
-  (2026-11-16/17) ha chiuso GIO-2, 4, 6, 9, 12…22, 24, 25 (tracker, sezione "Giornata"); GIO-23 (scale continue), GIO-1, 5, 8, 10 in main il
-  2026-11-18; di GIO-11 restano le sottoscrizioni della Home, da fare con la testa Android.
-- **Scale continue (GIO-23) a codice completo** su `gio23-scales` (2026-11-18, CI verde, attende i PNG e il merge
-  dell'autore): schema **2.20**, scaglioni con nome libero e tag ricavato (`scale_anchors`), valore vero in
-  `value_decimal`. In parallelo `agy-minori` (GIO-1, 5, 8, 11 in parte), CI verde, attende il merge.
+  (2026-11-16/17) ha chiuso GIO-2, 4, 6, 9, 12…22, 24, 25 (tracker, sezione "Giornata"); GIO-23 (scale continue:
+  schema **2.20**, scaglioni con nome libero e tag ricavato in `scale_anchors`, valore vero in `value_decimal`), GIO-1,
+  5, 8, 10 in main il 2026-11-18; GIO-11 (selezione), B7 (durate in parole) e B8 (mappa dell'anno coi mesi, "Insieme"
+  a settimane con "Mostra i giorni") in main il 2026-11-19 (PR #1, `d27df7f0`). Di GIO-11 restano le sottoscrizioni
+  della Home, da fare con la testa Android.
 - **Prossimo — si riprende da qui**: (1) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per dispositivo; le
   righe di `scale_anchors` e i tag ricavati viaggiano coi dati); (2) il passo 3, dati protetti e dogfooding sul computer.
   Resta da decidere dall'autore: obiettivi su una metrica di scala non convertiti dalla 2.20 (nessuna
