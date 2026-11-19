@@ -23,8 +23,18 @@
       </StackPanel>
 
       <StackPanel x:Name="TogetherSection" Spacing="8" IsVisible="{CompiledBinding Panoramica.HasChildren}">
-        <TextBlock Text="{x:Static res:Strings.Group_Section_Together}" FontSize="{DynamicResource FontSize.Label}"
-                   FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}"/>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{x:Static res:Strings.Group_Section_Together}" FontSize="{DynamicResource FontSize.Label}"
+                     FontWeight="SemiBold" Foreground="{DynamicResource Brush.Text}" VerticalAlignment="Center"/>
+          <!-- B8: su un periodo lungo le righe sono settimane; qui si aprono giorno per giorno, una mappa per figlia. -->
+          <Button x:Name="TogetherToggle" Grid.Column="1" Classes="ghost" Click="OnTogetherToggle"
+                  IsVisible="{Binding #Together.Weekly}">
+            <Panel>
+              <TextBlock Text="{x:Static res:Strings.Group_Together_ShowDays}" IsVisible="{Binding !#Together.Expanded}"/>
+              <TextBlock Text="{x:Static res:Strings.Group_Together_ShowWeeks}" IsVisible="{Binding #Together.Expanded}"/>
+            </Panel>
+          </Button>
+        </Grid>
         <hist:PeriodBarView x:Name="PeriodBar" DataContext="{CompiledBinding Period}"/>
         <grp:TogetherGrid x:Name="Together" Rows="{CompiledBinding Panoramica.Together.Rows}"/>
       </StackPanel>

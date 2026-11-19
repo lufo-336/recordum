@@ -17,6 +17,8 @@ public partial class PanoramicaColumnView : UserControl
         AddHandler(PointerReleasedEvent, OnPointerReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
 
+    private void OnTogetherToggle(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Together.Expanded = !Together.Expanded;
+
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (e.InitialPressMouseButton != MouseButton.Left || DataContext is not HabitScreenViewModel vm) return;

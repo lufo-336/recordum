@@ -2202,6 +2202,12 @@ Dettagli: {0}</value>
   <data name="Group.Section.Together" xml:space="preserve">
     <value>Insieme</value>
   </data>
+  <data name="Group.Together.ShowDays" xml:space="preserve">
+    <value>Mostra i giorni</value>
+  </data>
+  <data name="Group.Together.ShowWeeks" xml:space="preserve">
+    <value>Mostra le settimane</value>
+  </data>
   <data name="Group.Map.Legend" xml:space="preserve">
     <value>intensità = quante figlie quel giorno; pieno = tutte</value>
   </data>

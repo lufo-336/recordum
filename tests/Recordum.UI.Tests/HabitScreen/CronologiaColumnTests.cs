@@ -113,7 +113,7 @@ public class CronologiaColumnTests
         var target = new DateOnly(2026, 10, 25);
         var x = grid.Weeks!.ToList().FindIndex(w => w.Any(c => c.Date == target));
         var y = grid.Weeks[x].ToList().FindIndex(c => c.Date == target);
-        var p = grid.TranslatePoint(new Point((x + 0.5) * (HeatGrid.Cell + HeatGrid.Gap), (y + 0.5) * (HeatGrid.Cell + HeatGrid.Gap)), o.Window)!.Value;
+        var p = grid.TranslatePoint(new Point((x + 0.5) * grid.Pitch, grid.Top + (y + 0.5) * grid.Pitch), o.Window)!.Value;
         o.Window.MouseDown(p, MouseButton.Left);
         o.Window.MouseUp(p, MouseButton.Left);
         await UntilAsync(() => o.Vm.SelectedDay == target);
@@ -137,7 +137,9 @@ public class CronologiaColumnTests
         var bytes = new byte[fb.RowBytes * fb.Size.Height];
         System.Runtime.InteropServices.Marshal.Copy(fb.Address, bytes, 0, bytes.Length);
         var n = 0;
-        for (var y = (int)r.Top; y < (int)r.Bottom; y++)
+        // Solo le celle: il testo dei mesi sopra ha bordi colorati (antialias) che si contavano come colore dell'abitudine.
+        var top = (grid as HeatGrid)?.Top ?? 0;
+        for (var y = (int)(r.Top + top); y < (int)r.Bottom; y++)
             for (var x = (int)r.Left; x < (int)r.Right; x++)
             {
                 var i = y * fb.RowBytes + x * 4;   // Bgra o Rgba: conta solo che blu e rosso si stacchino
@@ -205,7 +207,7 @@ public class CronologiaColumnTests
         var grid = Named<HeatGrid>(o.Column, "Weeks");
         var x = grid.Weeks!.ToList().FindIndex(w => w.Any(c => c.Date == target));
         var y = grid.Weeks[x].ToList().FindIndex(c => c.Date == target);
-        var p = grid.TranslatePoint(new Point((x + 0.5) * (HeatGrid.Cell + HeatGrid.Gap), (y + 0.5) * (HeatGrid.Cell + HeatGrid.Gap)), o.Window)!.Value;
+        var p = grid.TranslatePoint(new Point((x + 0.5) * grid.Pitch, grid.Top + (y + 0.5) * grid.Pitch), o.Window)!.Value;
         o.Window.MouseDown(p, MouseButton.Left);
         o.Window.MouseUp(p, MouseButton.Left);
         await UntilAsync(() => o.Vm.SelectedDay == target && o.Vm.DayNote.Text == "**forte**");
@@ -287,7 +289,14 @@ public class CronologiaColumnTests
         Days(o).Should().BeEmpty();
         var weeks = Named<HeatGrid>(o.Column, "Weeks");
         weeks.Weeks!.Count.Should().BeGreaterThanOrEqualTo(52, "l'anno è a colonne di settimana");
-        weeks.Bounds.Width.Should().Be(weeks.Weeks.Count * (HeatGrid.Cell + HeatGrid.Gap), "una colonna disegnata per settimana");
+        weeks.Bounds.Width.Should().Be(weeks.Weeks.Count * weeks.Pitch, "una colonna disegnata per settimana");
+        // B8 (scelta dell'autore, variante A): i mesi sopra le colonne e le celle allargate fino al bordo della colonna.
+        weeks.Pitch.Should().BeGreaterThan(HeatGrid.Cell + HeatGrid.Gap, "a questa larghezza le celle si allargano");
+        var host = weeks.FindAncestorOfType<ScrollViewer>()!;
+        weeks.Bounds.Width.Should().BeGreaterThan(host.Bounds.Width - weeks.Pitch, "la mappa arriva al bordo")
+            .And.BeLessThanOrEqualTo(host.Bounds.Width, "e non lo passa: niente scorrimento");
+        weeks.Months.Select(m => m.Text).Should().HaveCount(12, "un'etichetta per mese dell'anno");
+        weeks.Top.Should().BeGreaterThan(0, "le etichette stanno sopra le celle");
 
         Named<RadioButton>(o.Column, "AllPeriod").IsChecked = true;
         await UntilAsync(() => Named<ItemsControl>(o.Column, "Years").IsVisible && Heat(o).Any(g => g.Classes.Contains("year")));

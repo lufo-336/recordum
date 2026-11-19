@@ -65,7 +65,7 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
 `reported`; accettati **UX3A-A1…A4** · `triaged`.
 
 **Onda "Giornata" (sezione in fondo)** — **A1–A4** e **B1–B6** `fixed`; **GIO-3**, **GIO-6**, **GIO-7**, **GIO-9** e **GIO-12…15** `fixed`; **GIO-2**, **GIO-4** `fixed` il 2026-11-17. Aperto: **GIO-11**, solo le sottoscrizioni della Home · `reported` (per la testa Android); **GIO-1**, **GIO-5**, **GIO-8** `fixed` il 2026-11-17 (`agy-minori`), **GIO-10** `fixed` il 2026-11-18 (`gio10-abstinence-screen`); dalla revisione dei PNG con l'autore
-(2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** `fixed` (2026-11-18, `gio23-scales`), **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda: **B7** `fixed` il 2026-11-19 (`gio11-minori`), resta **B8**; **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
+(2026-11-16) **GIO-16…20** `fixed`, **GIO-21** nascosto e in ROADMAP, **GIO-23** `fixed` (2026-11-18, `gio23-scales`), **GIO-22**, **GIO-24**, **GIO-25** `fixed`. Fuori dall'onda: **B7** e **B8** `fixed` il 2026-11-19 (`gio11-minori`); **B9** chiuso dall'autore il 2026-11-16 (i valori restano nel colore dell'abitudine).
 
 **Trovati in F2a (sezione "Onda F2a")**
 - **F2a-WPF1** — il ✎ delle registrazioni in WPF non fa nulla · `reported`
@@ -2599,7 +2599,17 @@ dell'Appendice A "Creare") e nelle review per task; tutti `reported` salvo dove 
   usata da `CompletionListViewModel.FormatValue`; nella casella si scrive ancora mm:ss. Test:
   `DurationFormatTests.FormatWords_reads_a_single_duration_without_a_clock`, `CompletionListTests` (due casi aggiornati).
 
-Fuori dall'onda, resta aperto: B8; B9 ha la sua immagine di confronto
+- **B8 — la mappa dell'anno** · `fixed` (2026-11-19, `gio11-minori`; l'autore ha scelto fra tre varianti disegnate su un
+  banco di prova: "A e C, con un tasto che da settimane passa a giorni"). `HeatGrid` (Cronologia, mappa del gruppo,
+  "Tutto") mette le iniziali dei mesi sopra le colonne e allarga le celle da 11 fino a 18 px per riempire lo ScrollViewer
+  (sotto 11 px si scorre come prima). "Insieme" del gruppo, oltre i tre mesi: una cella per settimana (più piena quanti
+  più giorni fatti), larga fino al bordo, i mesi sopra, niente scorrimento né linea orfana a 1000 px; "Mostra i giorni"
+  (`TogetherGrid.Expanded`) apre ogni figlia nella sua mappa 7 × settimane, "Mostra le settimane" la richiude. Fino a tre
+  mesi resta giorno per giorno. Test: `CronologiaColumnTests.Period_bar_switches_the_map_shape` (mesi, larghezza),
+  `GroupScreenTests.Together_follows_the_period`, `GroupScreenTests.Together_year_opens_day_by_day_and_back`; PNG
+  `group-brief-together-year-*`, `group-brief-together-year-days-*`, `habit-period-year-*`.
+
+Fuori dall'onda non resta niente di aperto; B9 ha la sua immagine di confronto
 (`home-manifesto-comfortable-light-900-inchiostro.png` accanto a `home-manifesto-comfortable-light-900.png`,
 `GiornataScreenshotTests.Home_with_values_in_ink_B9`).
 **B9 deciso dall'autore il 2026-11-16, viste le due immagini affiancate: i valori restano nel colore dell'abitudine.** Chiuso, nessun codice.
