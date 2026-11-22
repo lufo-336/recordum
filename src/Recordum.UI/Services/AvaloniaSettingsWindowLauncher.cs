@@ -21,7 +21,9 @@ public sealed class AvaloniaSettingsWindowLauncher(IServiceProvider services, Fu
         await vm.LoadAsync().ConfigureAwait(true);
         var appearance = scope.ServiceProvider.GetRequiredService<SettingsViewModel>();
         await appearance.InitializeAsync().ConfigureAwait(true);
-        var window = new SettingsWindow { DataContext = vm, Appearance = appearance };
+        var sync = scope.ServiceProvider.GetRequiredService<SyncSettingsViewModel>();
+        await sync.LoadAsync().ConfigureAwait(true);
+        var window = new SettingsWindow { DataContext = vm, Appearance = appearance, Sync = sync };
         window.ShowPage(initialCategory);
         WindowCreatedForTests?.Invoke(window);
         if (ownerResolver() is { } owner)

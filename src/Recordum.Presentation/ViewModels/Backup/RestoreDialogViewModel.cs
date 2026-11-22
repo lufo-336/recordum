@@ -2,13 +2,15 @@ using System.Globalization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Backup;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.Backup;
 
-public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpenFileDialog openDialog) : ObservableObject
+// ponytail: sync optional until ISyncService is registered (Task 9)
+public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpenFileDialog openDialog, ISyncService? sync = null) : ObservableObject
 {
     [ObservableProperty] private string _sourcePath = string.Empty;
     [ObservableProperty] private string _passphrase = string.Empty;
@@ -54,6 +56,8 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
             foreach (var id in p.InactivePlugins)
                 Warnings.Add(string.Format(CultureInfo.CurrentCulture, Strings.Restore_PluginInactive, id));
 #pragma warning restore CA1863
+            if (sync is not null && await sync.GetJoinStateAsync(CancellationToken.None) == SyncJoinState.Joined)
+                Warnings.Add(Strings.Restore_SyncActiveNote);
             IsPreviewLoaded = true;
             RunCommand.NotifyCanExecuteChanged();
         }

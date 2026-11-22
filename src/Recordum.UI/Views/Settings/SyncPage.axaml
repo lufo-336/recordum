@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Recordum.Presentation.ViewModels.Settings"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             x:Class="Recordum.UI.Views.Settings.SyncPage"
+             x:DataType="vm:SyncSettingsViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="24" Spacing="6">
+      <TextBlock Classes="h1" FontFamily="{DynamicResource Font.Serif}" FontSize="22" Margin="0,0,0,8"
+                 Text="{x:Static res:Strings.Settings_Category_Sync}"/>
+
+      <!-- 1. Unisci automaticamente -->
+      <CheckBox x:Name="AutoMergeBox" Content="{x:Static res:Strings.Sync_AutoMerge_Label}"
+                IsChecked="{CompiledBinding AutoMerge, Mode=TwoWay}"/>
+      <TextBlock x:Name="AutoMergeHint" Classes="hint" Text="{x:Static res:Strings.Sync_AutoMerge_Hint}"/>
+
+      <!-- 2. Unisci ora -->
+      <StackPanel Spacing="4" Margin="0,8,0,0">
+        <Button x:Name="MergeNowButton" Classes="primary" HorizontalAlignment="Left"
+                Content="{x:Static res:Strings.Sync_MergeNow_Label}"
+                Command="{CompiledBinding MergeNowCommand}"/>
+        <TextBlock x:Name="MergeNowHint" Classes="hint" Text="{x:Static res:Strings.Sync_MergeNow_Hint}"/>
+      </StackPanel>
+
+      <!-- 3. Unisci anche le foto -->
+      <CheckBox x:Name="IncludePhotosBox" Margin="0,8,0,0"
+                Content="{x:Static res:Strings.Sync_IncludePhotos_Label}"
+                IsChecked="{CompiledBinding IncludePhotos, Mode=TwoWay}"/>
+      <TextBlock x:Name="IncludePhotosHint" Classes="hint" Text="{x:Static res:Strings.Sync_IncludePhotos_Hint}"/>
+
+      <!-- 4. Cartella -->
+      <TextBlock FontWeight="SemiBold" Margin="0,12,0,0" Text="{x:Static res:Strings.Sync_Folder_Label}"/>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox x:Name="FolderBox" IsReadOnly="True" Text="{CompiledBinding Folder}"
+                 PlaceholderText="{x:Static res:Strings.Sync_Folder_None}"
+                 AutomationProperties.Name="{x:Static res:Strings.Sync_Folder_Label}">
+          <TextBox.Styles>
+            <Style Selector="TextBox#FolderBox /template/ TextBlock#PART_Placeholder">
+              <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+              <Setter Property="MaxWidth" Value="{Binding $parent[ScrollViewer].Bounds.Width}"/>
+            </Style>
+          </TextBox.Styles>
+        </TextBox>
+        <Button x:Name="ChooseFolderButton" Grid.Column="1" Content="{x:Static res:Strings.Sync_Folder_Choose}"
+                Command="{CompiledBinding ChooseFolderCommand}"/>
+      </Grid>
+      <TextBlock x:Name="FolderHint" Classes="hint" Text="{x:Static res:Strings.Sync_Folder_Hint}"/>
+
+      <!-- 5. Frase dell'unione -->
+      <TextBlock FontWeight="SemiBold" Margin="0,12,0,0" Text="{x:Static res:Strings.Sync_Passphrase_Label}"/>
+      <TextBlock x:Name="PassphraseHint" Classes="hint" Text="{x:Static res:Strings.Sync_Passphrase_Hint}"/>
+      <TextBox x:Name="NewPassphraseBox" PasswordChar="●" Text="{CompiledBinding NewPassphrase, Mode=TwoWay}"
+               PlaceholderText="{x:Static res:Strings.Backup_Create_Passphrase}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Passphrase}"/>
+      <TextBox x:Name="ConfirmPassphraseBox" PasswordChar="●" Text="{CompiledBinding ConfirmPassphrase, Mode=TwoWay}"
+               PlaceholderText="{x:Static res:Strings.Backup_Create_Confirm}"
+               AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Confirm}"/>
+      <Button x:Name="SetPassphraseButton" HorizontalAlignment="Left"
+              Content="{x:Static res:Strings.Sync_Passphrase_Set}"
+              Command="{CompiledBinding SetPassphraseCommand}"/>
+      <TextBlock x:Name="PassphraseFeedback" Classes="hint"
+                 IsVisible="{CompiledBinding PassphraseMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                 Text="{CompiledBinding PassphraseMessage}"/>
+
+      <!-- 6. Apri in chiaro / Ricifra -->
+      <TextBlock FontWeight="SemiBold" Margin="0,12,0,0" Text="{x:Static res:Strings.Sync_Plain_Label}"/>
+      <TextBlock x:Name="PlainHint" Classes="hint" Text="{x:Static res:Strings.Sync_Plain_Hint}"/>
+      <TextBox x:Name="PlainPassphraseBox" PasswordChar="●" Text="{CompiledBinding PlainPassphrase, Mode=TwoWay}"
+               PlaceholderText="{x:Static res:Strings.Backup_Create_Passphrase}"
+               AutomationProperties.Name="{x:Static res:Strings.Sync_Plain_Label}"/>
+      <WrapPanel Orientation="Horizontal">
+        <Button x:Name="ExportPlainButton" Margin="0,0,8,4"
+                Content="{x:Static res:Strings.Sync_Plain_Export}"
+                Command="{CompiledBinding ExportPlainCommand}"/>
+        <Button x:Name="ReencryptButton" Margin="0,0,0,4"
+                Content="{x:Static res:Strings.Sync_Plain_Reencrypt}"
+                Command="{CompiledBinding ReencryptCommand}"/>
+      </WrapPanel>
+
+      <!-- 7. Collegamento (solo se JoinState == NeedsChoice) -->
+      <Border x:Name="JoinSection" IsVisible="{CompiledBinding NeedsJoinChoice}"
+              Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+        <StackPanel Spacing="6">
+          <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Sync_Join_Label}"/>
+          <TextBlock x:Name="JoinHint" Classes="hint" Text="{x:Static res:Strings.Sync_Join_Hint}"/>
+          <Button x:Name="JoinStartFromOthersButton" Classes="primary" HorizontalAlignment="Left" Margin="0,4,0,0"
+                  Content="{x:Static res:Strings.Sync_Join_StartFromOthers}"
+                  Command="{CompiledBinding JoinStartFromOthersCommand}"/>
+          <TextBlock x:Name="JoinStartFromOthersHint" Classes="hint"
+                     Text="{x:Static res:Strings.Sync_Join_StartFromOthers_Hint}"/>
+          <Button x:Name="JoinKeepBothButton" HorizontalAlignment="Left" Margin="0,6,0,0"
+                  Content="{x:Static res:Strings.Sync_Join_KeepBoth}"
+                  Command="{CompiledBinding JoinKeepBothCommand}"/>
+          <TextBlock x:Name="JoinKeepBothHint" Classes="hint"
+                     Text="{x:Static res:Strings.Sync_Join_KeepBoth_Hint}"/>
+        </StackPanel>
+      </Border>
+
+      <!-- 8. Scollega questo dispositivo -->
+      <StackPanel Spacing="4" Margin="0,12,0,0">
+        <Button x:Name="DisconnectButton" HorizontalAlignment="Left"
+                Content="{x:Static res:Strings.Sync_Disconnect_Label}"
+                Command="{CompiledBinding DisconnectCommand}"/>
+        <TextBlock x:Name="DisconnectHint" Classes="hint" Text="{x:Static res:Strings.Sync_Disconnect_Hint}"/>
+      </StackPanel>
+
+      <TextBlock x:Name="ErrorText" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Danger}"
+                 IsVisible="{CompiledBinding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                 Text="{CompiledBinding ErrorMessage}"/>
+
+      <!-- Stato -->
+      <StackPanel x:Name="StatusSection" Spacing="4" Margin="0,12,0,0">
+        <TextBlock FontWeight="SemiBold" Text="{x:Static res:Strings.Sync_Status_Label}"/>
+        <TextBlock x:Name="StatusHint" Classes="hint" Text="{x:Static res:Strings.Sync_Status_Hint}"/>
+        <ItemsControl x:Name="StatusList" ItemsSource="{CompiledBinding Status}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock TextWrapping="Wrap" Text="{CompiledBinding}" Margin="0,2,0,0"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

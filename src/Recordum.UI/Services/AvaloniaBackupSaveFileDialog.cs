@@ -13,7 +13,7 @@ public sealed class AvaloniaBackupSaveFileDialog(Func<Window?> ownerResolver) : 
         var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             SuggestedFileName = defaultFileName,
-            DefaultExtension = "recbak",
+            DefaultExtension = Path.GetExtension(defaultFileName) is { Length: > 1 } ext ? ext[1..] : "recbak",
             FileTypeChoices = AvaloniaFileDialogs.ParseFilter(filter),
         });
         return file is null ? null : await AvaloniaFileDialogs.LocalPathOrNoticeAsync(file, owner);

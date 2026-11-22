@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Backup;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Tests.Fixtures;
@@ -67,5 +68,36 @@ public class RestoreDialogViewModelTests
 
         vm.ErrorMessage.Should().Be(code == "busy" ? Strings.Restore_Errors_Busy : Strings.Restore_Errors_SwapFailed);
         vm.IsCompleted.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(SyncJoinState.Joined, true)]
+    [InlineData(SyncJoinState.NotConfigured, false)]
+    public async Task RestoreConfirmationMentionsSyncWhenActive(SyncJoinState state, bool expectedMention)
+    {
+        var sync = new StubSyncService(state);
+        var vm = new RestoreDialogViewModel(new FakeRestoreService(), new FakeOpenFileDialog { Result = "x.recbak" }, sync);
+        vm.BrowseCommand.Execute(null);
+        vm.Passphrase = "a-passphrase-long";
+
+        await vm.PreviewCommand.ExecuteAsync(null);
+
+        vm.IsPreviewLoaded.Should().BeTrue();
+        if (expectedMention)
+            vm.Warnings.Should().Contain(Strings.Restore_SyncActiveNote);
+        else
+            vm.Warnings.Should().NotContain(Strings.Restore_SyncActiveNote);
+    }
+
+    private sealed class StubSyncService(SyncJoinState state) : ISyncService
+    {
+        public Task<SyncRunResult> RunAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<SyncStatus> GetStatusAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task SetPassphraseAsync(string passphrase, CancellationToken ct) => throw new NotSupportedException();
+        public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => Task.FromResult(state);
+        public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct) => throw new NotSupportedException();
+        public Task DisconnectAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task ExportPlainAsync(Stream rcsync, Stream zipOut, string passphrase, CancellationToken ct) => throw new NotSupportedException();
+        public Task ReencryptAsync(Stream zipIn, Stream rcsyncOut, string passphrase, CancellationToken ct) => throw new NotSupportedException();
     }
 }

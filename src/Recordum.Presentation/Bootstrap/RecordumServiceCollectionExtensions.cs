@@ -160,6 +160,7 @@ public static class RecordumServiceCollectionExtensions
         services.AddTransient<HomeViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<Recordum.Presentation.ViewModels.Settings.GeneralSettingsViewModel>();
+        services.AddTransient<Recordum.Presentation.ViewModels.Settings.SyncSettingsViewModel>();
         services.AddTransient<Recordum.Presentation.ViewModels.Settings.SettingsWindowViewModel>();
         services.AddTransient<HabitEditorViewModel>();
         services.AddTransient<HabitTemplatePickerViewModel>();

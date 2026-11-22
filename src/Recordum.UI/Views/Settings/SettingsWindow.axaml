@@ -17,11 +17,14 @@
                    Content="{x:Static res:Strings.Settings_Category_Appearance}"/>
       <RadioButton x:Name="DataTab" Classes="segment" GroupName="settingspage" IsChecked="True"
                    Content="{x:Static res:Strings.Settings_DataAndBackup}"/>
+      <RadioButton x:Name="SyncTab" Classes="segment" GroupName="settingspage" IsVisible="False"
+                   Content="{x:Static res:Strings.Settings_Category_Sync}"/>
     </StackPanel>
     <Panel>
       <!-- DataContext nullo finche' non arriva il suo: non eredita quello della finestra, che e' di un altro tipo. -->
       <s:AppearancePage x:Name="AppearancePage" DataContext="{x:Null}" IsVisible="{Binding #AppearanceTab.IsChecked}"/>
       <s:DataAndBackupPage Name="Page" IsVisible="{Binding #DataTab.IsChecked}"/>
+      <s:SyncPage x:Name="SyncPage" DataContext="{x:Null}" IsVisible="{Binding #SyncTab.IsChecked}"/>
     </Panel>
   </DockPanel>
 </v:RecordumWindow>
