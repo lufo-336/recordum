@@ -202,6 +202,13 @@ con una sola ora per riga non è vero senza base, e le ore di modifica possono v
   `docs/formats/sync-file.md`) e lo stato conta le voci che lo contengono ("N voci da sistemare"). Se il testo è
   cambiato da una parte sola, vince quella senza conflitto. Vale per `note.body` e per ogni altro campo di testo
   libero lungo che chi costruisce classifica come "testo" nella mappatura.
+  (corretto il 2026-11-23 durante l'implementazione: il testo unito, diverso da tutte e due le versioni, prende
+  `updated_at_ms` = massimo + 1 come ogni riga unita che tiene un valore di qui, così batte le due versioni anche dove
+  manca la base; con il massimo uno scambio incrociato lascia le due ore diverse di uno per un giro, perché il nome del
+  dispositivo tenuto di qui le sposta. Un testo si legge a pezzi (la cima e il corpo di ogni blocco): si aggiungono
+  solo i pezzi che il vincente non ha, e i blocchi stanno in ordine d'ora, così una versione non compare mai due
+  volte, neanche quando torna indietro un testo già unito. La copia di un testo cancellato è una nota rapida con un id
+  deterministico, `docs/formats/sync-file.md` §6.)
 - **Invarianti di dominio che la riga non vede** (*mia scelta*): il motore le rende coerenti in modo deterministico
   senza cancellare dati, e le conta fra le "voci da sistemare":
   - due periodi di astinenza aperti sulla stessa abitudine: resta aperto quello iniziato prima; l'altro, che gli sta

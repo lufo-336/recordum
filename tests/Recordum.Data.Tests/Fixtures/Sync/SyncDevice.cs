@@ -14,11 +14,11 @@ public sealed class SyncDevice : IAsyncDisposable
     // Chiave fissa al posto di Argon2id: i test dell'unione non provano la busta (lo fa SyncFileCipherTests).
     private static readonly SyncFileCipher Cipher = new((_, _, _, _, _) => Task.FromResult(Enumerable.Range(1, 32).Select(i => (byte)i).ToArray()));
 
-    public SyncDevice(string name, long startMs = 1_000)
+    public SyncDevice(string name, long startMs = 1_000, TimeZoneInfo? localTimeZone = null)
     {
         Name = name;
         DeviceId = $"device-{name}";
-        Clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(startMs));
+        Clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(startMs), localTimeZone);
         Fixture = new DbFixture(Clock);
         Fixture.DeviceIdentity.DeviceName = name;
     }
@@ -80,7 +80,7 @@ public sealed class SyncDevice : IAsyncDisposable
         zip.Position = 0;
         using var snapshot = SyncArchiveReader.Open(zip);
         await using var db = await Fixture.Factory.CreateDbContextAsync();
-        return await SyncMerger.MergeAsync(db, snapshot, DeviceId, receivePhotos, afterEntity, CancellationToken.None);
+        return await SyncMerger.MergeAsync(db, snapshot, DeviceId, receivePhotos, Clock, afterEntity, CancellationToken.None);
     }
 
     /// <summary>Tutte le righe pubbliche ordinate, l'hash di ogni foto e le lapidi: due dispositivi convergono quando

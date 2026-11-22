@@ -517,7 +517,7 @@ public sealed class SyncMergerTests
         return ms.ToArray();
     }
 
-    [Fact(Skip = "Task 7")]
+    [Fact]
     public async Task TextChangedOnBothSidesKeepsBoth()
     {
         await using var a = new SyncDevice("a");
