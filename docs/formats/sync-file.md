@@ -597,6 +597,8 @@ Used only to break ties deterministically. The canonical form of a row is a byte
 3. The value text is: for a JSON string, the string's text (unescaped); for a JSON number, its shortest round-trip invariant form (integers as plain digits without exponent or fraction; other numbers as the shortest string that parses back to the same double, like JavaScript `Number.prototype.toString`); `true` or `false`; `null` for JSON null.
 4. Two rows are compared by their canonical byte strings, ordinally (bytewise); the smaller wins a tie.
 
+When a merger compares two rows, it builds both canonical forms over the same fields only: those that its own catalog knows and that both rows carry. Unknown fields from a newer minor version and fields absent from an older one are left out, so devices on different minor versions break the tie the same way.
+
 Example: the fields `{"id":"X","b":2,"a":"x","c":true,"d":null}` give the bytes `a 00 x 00 b 00 2 00 c 00 true 00 d 00 null 00` (spaces added for reading).
 
 ## 6. Merge Rules Summary (§8.3)
@@ -608,6 +610,9 @@ Merging is **idempotent** and **commutative**: applying the same peer archive tw
    - Compared field-by-field against `sync_base` (the last merged snapshot for that `(peer_device_id, entity, entity_id)`).
    - If a field changed on only one side relative to the base, that change wins even if the other side has a newer `updated_at_ms` from editing a different field.
    - If the same field changed on both sides (or no base exists yet), the row with the higher `updated_at_ms` wins; ties break deterministically by the **smaller canonical form** of the row (see "Canonical form of a row" below), compared as ordinal byte strings; if the two canonical forms are equal the rows are identical and either wins.
+   - `updated_at_ms` is not merged as a field. If the merged row equals the remote row in every field the remote carries, it takes `max(local, remote)`. If it keeps at least one local value that differs from the remote, it keeps the local `updated_at_ms` when that is strictly the newer one, and otherwise takes `max(local, remote) + 1`. Without the `+ 1`, a peer with no base for this device could see a tie and keep its own version through the tie-break, while this device keeps the combined row because of its base. The two would then never converge. (Rule 3 sets its own timestamp for merged text.)
+   - The base for `(peer_device_id, entity, entity_id)` is the remote row as last merged, in public form, with photo fields stored as the lowercase hex SHA-256 of the photo bytes in the archive. A remote row whose `updated_at_ms` is lower than the base's is stale (an older file from the same peer) and is ignored entirely.
+   - Photos (`Photo` fields) follow the same per-field rule, compared by hash. A photo missing from the archive is not a change (a device that does not keep originals leaves them where they are). A merger that does not receive photos never writes originals, only thumbnails. A local photo that is missing is filled from the archive.
 3. **Rule B — Free-Form Text (`Text` fields: `note.body_md`, `completion.notes`)**:
    - Diary and note text is never silently discarded.
    - If a `Text` field changed on both sides relative to `sync_base` (or differs on first merge without a base), both versions are preserved in the same record: the winning version (higher `updated_at_ms`, tie-broken by the smaller canonical form of the row) remains at the top, and the losing version is appended at the bottom using the fixed conflict block format:
@@ -618,9 +623,10 @@ Merging is **idempotent** and **commutative**: applying the same peer archive tw
    - A text "already contains the block" when some line starts (anchored at line start) with the pattern `— <x> · \d{4}-\d{2}-\d{2} \d{2}:\d{2} —` (em dashes U+2014, middle dot U+00B7, `<x>` any text without a line break) and the part after that line equals the losing text.
    - If the winning text already contains that block, it is not appended again. The merged row takes `updated_at_ms = max(local, remote)`.
 4. **Delete vs. Edit**:
-   - `tombstone.deleted_at_ms` is compared against `row.updated_at_ms`. The newer action wins.
+   - `tombstone.deleted_at_ms` is compared against `row.updated_at_ms`. The newer action wins; on a tie the deletion wins.
+   - Remote tombstones are always copied (two tombstones for the same row keep the later `deleted_at_ms`). After the merge, a tombstone whose row exists locally with a newer `updated_at_ms` is dropped, so every device ends up with the same set.
    - If deletion wins against a row whose `Text` field contains text that was not present before deletion, the losing text becomes a **new quick note** (`note`) on the same habit and the same day, carrying the rule-B block (so the text is never lost).
-   - **Parent deleted, children follow**: if a parent row stays deleted, its child rows (those that reference it) are deleted with it, as the local cascade would, even if they were edited elsewhere afterwards. A `habit_node` goes to the trash (soft delete) instead, and restoring it is an edit that wins if newer.
+   - **Parent deleted, children follow**: if a parent row stays deleted, its child rows (those that reference it) are deleted with it, as the local cascade would, even if they were edited elsewhere afterwards. This also covers a child that arrives from a peer after its parent was deleted here. A reference whose local cascade is `SET NULL` is set to null instead. A `habit_node` goes to the trash (soft delete) instead, and restoring it is an edit that wins if newer.
    - Soft-deleted `habit_node` rows travel normally via `deleted_at`; restoring from trash updates `updated_at_ms` and wins as a normal edit.
 5. **Natural Keys & Deduplication**:
    - `tag` (`name`, case-insensitive), `unit_of_measure` (`code`), and `scale_template` (`code`): when two devices create rows with different GUIDs and the same natural key, the lexicographically smaller GUID wins, all foreign-key references are rewritten to the winning GUID, and the discarded GUID is recorded in `tombstones.jsonl` with `alias_of` pointing to the winning GUID.

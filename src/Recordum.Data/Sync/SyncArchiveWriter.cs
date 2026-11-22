@@ -108,7 +108,7 @@ public static class SyncArchiveWriter
         }
     }
 
-    private static async Task<List<SyncRow>> ReadEntityRowsAsync(
+    internal static async Task<List<SyncRow>> ReadEntityRowsAsync(
         SqliteConnection conn,
         SqliteTransaction tx,
         SyncRowCodec codec,
