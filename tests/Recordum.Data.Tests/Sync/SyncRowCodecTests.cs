@@ -25,6 +25,23 @@ public sealed class SyncRowCodecTests
         SyncRowCodec.Canonical(row).Should().Equal(expected);
     }
 
+    [Theory]
+    [InlineData("1E+15", "1000000000000000")] // sotto la soglia: notazione fissa
+    [InlineData("1E+16", "10000000000000000")]
+    [InlineData("1E+17", "1E+17")] // dalla x = 17 scientifica
+    [InlineData("1.5E-05", "1.5E-05")] // x = -5: scientifica
+    [InlineData("0.0001", "0.0001")] // x = -4: fissa
+    [InlineData("0.00001", "1E-05")]
+    [InlineData("12345678901234567000", "1.2345678901234567E+19")]
+    [InlineData("18446744073709551616", "1.8446744073709552E+19")] // intero oltre Int64
+    [InlineData("-9223372036854775808", "-9223372036854775808")] // intero che entra in Int64: cifre
+    [InlineData("1.5", "1.5")]
+    public void CanonicalNumberFormIsTheDotNetRoundTripForm(string json, string expectedText)
+    {
+        var expected = Encoding.UTF8.GetBytes("n\0" + expectedText + "\0");
+        SyncRowCodec.Canonical(Row(("n", json))).Should().Equal(expected);
+    }
+
     [Fact]
     public void CanonicalOrdersFieldNamesByUtf8Bytes()
     {

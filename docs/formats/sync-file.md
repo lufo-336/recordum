@@ -594,7 +594,15 @@ Used only to break ties deterministically. The canonical form of a row is a byte
 
 1. Take the row's fields (all the fields present in the row as read, `id` excluded) and sort them by public name, comparing the **UTF-8 bytes** of the names ordinally.
 2. For each field in that order emit, as UTF-8: the field name, one `0x00` byte, the value text, one `0x00` byte.
-3. The value text is: for a JSON string, the string's text (unescaped); for a JSON number, its shortest round-trip invariant form (integers as plain digits without exponent or fraction; other numbers as the shortest string that parses back to the same double, like JavaScript `Number.prototype.toString`); `true` or `false`; `null` for JSON null.
+3. The value text is:
+   - JSON string: the string's text (unescaped).
+   - JSON `true` / `false` / `null`: `true`, `false`, `null`.
+   - JSON number that is an integer fitting a signed 64-bit integer (written without fraction or exponent): plain decimal digits with an optional leading `-` (e.g. `-12`, `0`).
+   - Any other JSON number (a fraction, an exponent, or an integer beyond signed 64 bits): the number is read as an IEEE-754 double and written exactly as .NET `double.ToString("R", CultureInfo.InvariantCulture)` does: the shortest digit string that parses back to the same double, `.` as decimal separator, a leading `-` for negatives, and
+     - **fixed notation** when the decimal exponent `x` of the value (value = `d.ddd × 10^x`) satisfies `-4 <= x <= 16`, with no trailing zeros and no trailing `.` (e.g. `0.0001`, `1000000000000000` for `1E+15`, `10000000000000000` for `1E+16`, `99999999999999980`);
+     - **scientific notation** otherwise (`x <= -5` or `x >= 17`): the shortest digits as `d` or `d.ddd`, then `E`, an explicit sign (`+` or `-`) and at least two exponent digits (e.g. `1E-05` for `0.00001`, `1.5E-05`, `1E+17`, `1.2345678901234567E+19` for `12345678901234567000`, `1.8446744073709552E+19` for the integer `18446744073709551616`, `1E+300`).
+     Thresholds measured, not derived: `0.0001` fixed, `0.00001` scientific; `99999999999999980` fixed, `1E+17` scientific. This is *not* JavaScript's rule (JavaScript switches at `1e21` and `1e-7`); implement it as stated.
+   - JSON object or array: the raw JSON text of the value as it appears in the file. No column uses object or array values today.
 4. Two rows are compared by their canonical byte strings, ordinally (bytewise); the smaller wins a tie.
 
 When a merger compares two rows, it builds both canonical forms over the same fields only: those that its own catalog knows and that both rows carry. Unknown fields from a newer minor version and fields absent from an older one are left out, so devices on different minor versions break the tie the same way.
