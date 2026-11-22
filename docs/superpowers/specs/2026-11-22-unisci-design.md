@@ -1,6 +1,7 @@
 # "Unisci" — sincronizzazione fra dispositivi attraverso un file di scambio
 
-> Spec del passo 6 della ROADMAP. Conversazione con l'autore del 2026-11-19/22 (sessione `unisci-spec`).
+> Spec del passo 6 della ROADMAP. Conversazione con l'autore del 2026-11-19/22 (sessione `unisci-spec`). Letta da un
+> revisore esterno il 2026-11-22; le sue domande sono risolte qui (scelte dell'autore o marcate *mia scelta*).
 > Sonda collegata: `docs/design/2026-11-22-saf-drive-probe.md`. Decisioni del 2026-11-10:
 > `2026-11-10-v1-ux-review-and-path-design.md` §6.
 
@@ -71,10 +72,16 @@ Scartati anche: **un unico file condiviso da tutti** (con i ritardi di Drive due
    intermediario. Il telefono sceglie il proprio file e almeno il file di un computer, e può aggiungerne altri.
 4. **Conflitti**:
    - numeri, spunte, impostazioni dell'abitudine: **vince la modifica più recente, campo per campo**;
-   - **diario e note: si tengono tutte e due le versioni** (una resta, l'altra diventa una copia segnata
-     "modificata anche su <dispositivo>"); l'app avvisa, l'utente unisce a mano.
+   - **diario e note: si tengono tutte e due le versioni**; l'app avvisa, l'utente unisce a mano. La versione in più
+     sta **in coda alla stessa voce**, in un blocco segnato ("— Scritto anche su <dispositivo>, alle HH:MM —"):
+     niente registrazioni in più, niente conti falsati (scelta (a) dell'autore, 2026-11-22). Quale versione resta in
+     testa è deciso allo stesso modo su tutti i dispositivi (§8.3).
 5. **Foto nello stesso file** del resto; in Impostazioni l'utente può escluderle ("Unisci anche le foto").
 6. **Formato B** (§6).
+7. **Collegare un dispositivo che ha già dati suoi**: l'utente sceglie fra "Parti dai dati degli altri" (consigliata: i
+   dati di questo dispositivo vanno in un backup e non si uniscono) e "Tieni anche i dati di questo dispositivo" (si
+   uniscono tutti; eventuali doppioni li sistema l'utente). Nessun riconoscimento automatico di abitudini omonime
+   nella v1.0.
 
 ## 6. Il formato di scambio
 
@@ -175,10 +182,30 @@ stesso stato.
 - **Cancellazione di una madre** con figlie modificate altrove dopo: se la madre resta cancellata, le figlie seguono
   (come la cascade locale). Per le abitudini il "cancellato" è il cestino (soft delete): il ripristino è una modifica
   più recente e vince.
-- **Diario e note (B)**: se il testo è cambiato da **tutte e due** le parti rispetto alla base, la versione locale resta
-  e quella remota diventa una **nota copia** collegata alla stessa abitudine e allo stesso giorno, segnata "modificata
-  anche su <dispositivo>" (campo o tag di sistema: scelta di chi costruisce). Lo stato conta le copie da sistemare.
-  Se è cambiato da una parte sola, vince quella senza conflitto.
+- **Diario e note (B)**: se il testo è cambiato da **tutte e due** le parti rispetto alla base, il testo unito è
+  `vincente + blocco segnato + perdente`, dove **vincente** = `updated_at_ms` più recente, a parità `device_id` minore.
+  Il risultato è una funzione deterministica delle due versioni (stesso testo, stesso `updated_at_ms` = il massimo dei
+  due) così che tutti i dispositivi convergano allo stesso testo senza generare copie nuove; un testo che contiene già
+  il blocco di quella versione non lo riaggiunge. Il blocco ha un formato fisso e riconoscibile (documentato in
+  `docs/formats/sync-file.md`) e lo stato conta le voci che lo contengono ("N voci da sistemare"). Se il testo è
+  cambiato da una parte sola, vince quella senza conflitto. Vale per `note.body` e per ogni altro campo di testo
+  libero lungo che chi costruisce classifica come "testo" nella mappatura.
+- **Invarianti di dominio che la riga non vede** (*mia scelta*): il motore le rende coerenti in modo deterministico
+  senza cancellare dati, e le conta fra le "voci da sistemare":
+  - due periodi di astinenza aperti sulla stessa abitudine: resta aperto quello iniziato prima; l'altro, che gli sta
+    tutto dentro, si chiude al proprio inizio (durata zero), resta visibile con le sue note e si conta fra le voci da
+    sistemare (chi costruisce verifica che un periodo di durata zero non sporchi "di fila" e statistiche);
+  - un ciclo nell'albero (`parent_id` spostati su due dispositivi): perde lo spostamento più recente, il nodo torna
+    sotto la madre di prima (o in radice se non esiste più).
+- **Chiavi naturali uniche** (*mia scelta*): due righe con GUID diversi e la stessa chiave naturale sono **la stessa
+  cosa**:
+  - `tag` (nome, senza distinzione di maiuscole), `unit_of_measure.code`, `scale_template.code`: si tiene il GUID
+    minore; i riferimenti (`note_tag`, `habit_node_tag`, `scale_anchor.tag_id`, `metric_definition`, …) si riscrivono;
+    il GUID scartato diventa una lapide con `alias_of` (campo in `sync_tombstone`), così chi lo riceve più tardi lo
+    riscrive allo stesso modo;
+  - `scale_anchor`: si confronta per (`scale_template_id`, `value`), non per id (gli scaglioni si ricostruiscono con
+    GUID nuovi a ogni modifica della scala).
+  Ogni indice unico del modello EF va classificato (chiave naturale gestita / impossibile da duplicare): test di guardia.
 - `HabitConfigHistory` e `NoteHistory` sono storici: si uniscono come insiemi (righe nuove si aggiungono).
 
 ### 8.4 La base
@@ -186,6 +213,21 @@ Per riconoscere "cambiato da tutte e due le parti" serve sapere com'era la riga 
 dispositivo. Tabella locale `sync_base` (non viaggia): per (`peer_device_id`, `entity`, `entity_id`) l'hash della riga
 o dei campi rilevanti all'ultima unione. Senza base (prima unione con quel dispositivo) le differenze di testo si
 trattano come conflitto (nessun testo scartato).
+
+Senza base, per i campi **non di testo** si ricade sull'intera riga "vince la più recente" (*mia scelta*): due
+modifiche a campi diversi della stessa riga fatte su due dispositivi prima di un'unione ne perdono una. È raro
+(richiede modifiche concorrenti alla stessa riga) e non tocca testo; se l'uso lo mostra, il rimedio è un'ora per campo
+tenuta in una tabella locale e scritta nel formato (versione minore). `ponytail:` nel codice.
+
+### 8.4-bis Identità del dispositivo e ripristino (*mia scelta*)
+- `device_id` sta in `sync_meta`, dentro il database. Dopo un **ripristino** da `.recbak` (o una copia del DB su un'altra
+  macchina) il dispositivo **rigenera** `device_id`, azzera `sync_base`, e rientra come un dispositivo nuovo con dati
+  vecchi: le modifiche e le cancellazioni più recenti degli altri vincono. Un ripristino quindi **non annulla** nulla
+  sugli altri dispositivi; lo dice la spiegazione del ripristino quando l'unione è attiva. ("Ripristina per tutti" è
+  fuori dalla v1.0.)
+- Il ripristino tiene le lapidi presenti nel backup; quelle successive arrivano dagli altri file.
+- Il backup prima della prima unione (§9) protegge i dati di **questo** dispositivo; non è un modo di annullare
+  l'unione per tutti.
 
 ### 8.5 Il segreto: la frase dell'unione
 - Scelta sul primo dispositivo, scritta una volta su ogni altro. Conservata **dentro il database cifrato** (chiave
@@ -213,7 +255,7 @@ Ogni voce ha **una riga di spiegazione** sotto (`.resx` inglese + italiano).
 |---|---|
 | Unisci automaticamente | acceso di partenza; all'apertura, al ritorno nell'app, ogni qualche minuto se è aperta; spento = solo a mano |
 | Unisci ora | un giro subito |
-| Unisci anche le foto | acceso di partenza; spento = viaggiano solo le miniature; sugli altri la foto appare piccola con "originale su <dispositivo>", mai come cancellata |
+| Unisci anche le foto | acceso di partenza; spento = questo dispositivo **non scrive** originali nel suo file e **non tiene** gli originali degli altri, solo le miniature (risparmia spazio e dati sul telefono); sugli altri la foto appare piccola con "originale su <dispositivo>", mai come cancellata. La riga di spiegazione avverte che gli originali fatti qui restano solo qui. Una foto senza originale non si considera modificata: chi l'ha ancora la tiene |
 | Stato | ultima unione; per ogni altro dispositivo l'ora del suo ultimo file; "N voci da sistemare" (le copie B), che apre l'elenco; errori in parole ("Il file del telefono non si apre: la frase è cambiata?") |
 | Dove sono i file | computer: la cartella; telefono: il proprio file e i file degli altri, con "Aggiungi", "Cambia", "Scollega questo dispositivo" |
 | Frase dell'unione | imposta / cambia |
@@ -221,8 +263,13 @@ Ogni voce ha **una riga di spiegazione** sotto (`.resx` inglese + italiano).
 
 Il proprio file si scrive quando l'app va in secondo piano e, se qualcosa è cambiato, al più ogni qualche minuto.
 
-**Prima unione con un dispositivo che ha già dati suoi**: si uniscono, niente si scarta. Prima di applicarla si fa un
-backup locale automatico (*mia scelta*: è il momento più rischioso).
+**Collegare un dispositivo che ha già dati suoi**: la scelta del §5.7. In tutti e due i casi prima si fa un backup
+locale automatico (*mia scelta*: è il momento più rischioso).
+
+**Peso del file con le foto** (*mia scelta*, coerente con la decisione 5): ogni scrittura ricarica il file intero, foto
+comprese. Si scrive solo se qualcosa è cambiato, quando l'app va in secondo piano o al più ogni qualche minuto. Lo stato
+mostra la dimensione del file. Se cresce troppo (centinaia di MB), il rimedio è un file foto separato scritto solo
+quando cambiano le foto: versione minore del formato, fuori dalla v1.0.
 
 **Dopo** (fuori da questa spec): "Esporta tutto" e "Importa" nello stesso formato; collegamento diretto a Drive.
 
