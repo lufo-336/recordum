@@ -74,19 +74,25 @@ public sealed partial class SyncSettingsViewModel(
     partial void OnAutoMergeChanged(bool value)
     {
         if (_loading) return;
-        _ = PersistAutoMergeAsync(value);
+        _ = PersistAsync(AutoMergeKey, value, nudge: value);
     }
 
-    private async Task PersistAutoMergeAsync(bool value)
+    private async Task PersistAsync(string key, bool value, bool nudge = false)
     {
-        await settings.SetAsync(AutoMergeKey, value ? "true" : "false").ConfigureAwait(true);
-        if (value) scheduler?.Nudge();
+        try
+        {
+            await settings.SetAsync(key, value ? "true" : "false").ConfigureAwait(true);
+            if (nudge) scheduler?.Nudge();
+        }
+#pragma warning disable CA1031 // fire-and-forget: l'errore si mostra nella pagina invece di perdersi
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+#pragma warning restore CA1031
     }
 
     partial void OnIncludePhotosChanged(bool value)
     {
         if (_loading) return;
-        _ = settings.SetAsync(IncludePhotosKey, value ? "true" : "false");
+        _ = PersistAsync(IncludePhotosKey, value);
     }
 
     partial void OnPlainPassphraseChanged(string value) => NotifyPlainCommandsCanExecuteChanged();
@@ -124,9 +130,11 @@ public sealed partial class SyncSettingsViewModel(
         }
     }
 
-    private bool CanMergeNow() => !_isMerging;
+    private bool CanMergeNow() => !_isMerging && sync is not null;
 
-    [RelayCommand]
+    private bool HasSync() => sync is not null;
+
+    [RelayCommand(CanExecute = nameof(HasSync))]
     private async Task SetPassphraseAsync(CancellationToken ct)
     {
         PassphraseMessage = null;
@@ -177,6 +185,7 @@ public sealed partial class SyncSettingsViewModel(
 #pragma warning restore CA1031
         finally
         {
+            PlainPassphrase = string.Empty;   // la frase non resta in memoria ne' nel campo dopo l'uso
             _isPlainBusy = false;
             NotifyPlainCommandsCanExecuteChanged();
         }
@@ -205,12 +214,13 @@ public sealed partial class SyncSettingsViewModel(
 #pragma warning restore CA1031
         finally
         {
+            PlainPassphrase = string.Empty;   // la frase non resta in memoria ne' nel campo dopo l'uso
             _isPlainBusy = false;
             NotifyPlainCommandsCanExecuteChanged();
         }
     }
 
-    private bool CanRunPlain() => !_isPlainBusy && !string.IsNullOrEmpty(PlainPassphrase);
+    private bool CanRunPlain() => !_isPlainBusy && sync is not null && !string.IsNullOrEmpty(PlainPassphrase);
 
     private void NotifyPlainCommandsCanExecuteChanged()
     {
@@ -218,7 +228,7 @@ public sealed partial class SyncSettingsViewModel(
         ReencryptCommand.NotifyCanExecuteChanged();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSync))]
     private async Task DisconnectAsync(CancellationToken ct)
     {
         if (sync is null) return;
@@ -235,7 +245,7 @@ public sealed partial class SyncSettingsViewModel(
 #pragma warning restore CA1031
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSync))]
     private async Task JoinStartFromOthersAsync(CancellationToken ct)
     {
         if (sync is null) return;
@@ -252,7 +262,7 @@ public sealed partial class SyncSettingsViewModel(
 #pragma warning restore CA1031
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSync))]
     private async Task JoinKeepBothAsync(CancellationToken ct)
     {
         if (sync is null) return;

@@ -89,12 +89,26 @@ public class RestoreDialogViewModelTests
             vm.Warnings.Should().NotContain(Strings.Restore_SyncActiveNote);
     }
 
-    private sealed class StubSyncService(SyncJoinState state) : ISyncService
+    [Fact]
+    public async Task SyncServiceFailureDoesNotBreakRestorePreview()
+    {
+        var vm = new RestoreDialogViewModel(new FakeRestoreService(), new FakeOpenFileDialog { Result = "x.recbak" }, new StubSyncService(SyncJoinState.Joined, throws: true));
+        vm.BrowseCommand.Execute(null);
+        vm.Passphrase = "a-passphrase-long";
+
+        await vm.PreviewCommand.ExecuteAsync(null);
+
+        vm.IsPreviewLoaded.Should().BeTrue();
+        vm.ErrorMessage.Should().BeNullOrEmpty();
+        vm.Warnings.Should().NotContain(Strings.Restore_SyncActiveNote);
+    }
+
+    private sealed class StubSyncService(SyncJoinState state, bool throws = false) : ISyncService
     {
         public Task<SyncRunResult> RunAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<SyncStatus> GetStatusAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task SetPassphraseAsync(string passphrase, CancellationToken ct) => throw new NotSupportedException();
-        public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => Task.FromResult(state);
+        public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => throws ? throw new InvalidOperationException("boom") : Task.FromResult(state);
         public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct) => throw new NotSupportedException();
         public Task DisconnectAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task ExportPlainAsync(Stream rcsync, Stream zipOut, string passphrase, CancellationToken ct) => throw new NotSupportedException();

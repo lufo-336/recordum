@@ -56,12 +56,21 @@ public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpe
             foreach (var id in p.InactivePlugins)
                 Warnings.Add(string.Format(CultureInfo.CurrentCulture, Strings.Restore_PluginInactive, id));
 #pragma warning restore CA1863
-            if (sync is not null && await sync.GetJoinStateAsync(CancellationToken.None) == SyncJoinState.Joined)
+            if (await IsSyncJoinedAsync())
                 Warnings.Add(Strings.Restore_SyncActiveNote);
             IsPreviewLoaded = true;
             RunCommand.NotifyCanExecuteChanged();
         }
         catch (RestoreException ex) { ErrorMessage = Readable(ex.Code); }
+    }
+
+    private async Task<bool> IsSyncJoinedAsync()
+    {
+        if (sync is null) return false;
+        try { return await sync.GetJoinStateAsync(CancellationToken.None) == SyncJoinState.Joined; }
+#pragma warning disable CA1031 // la nota e' di cortesia: un errore del servizio non deve rompere l'anteprima
+        catch (Exception) { return false; }
+#pragma warning restore CA1031
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]

@@ -55,7 +55,6 @@
 
       <!-- 5. Frase dell'unione -->
       <TextBlock FontWeight="SemiBold" Margin="0,12,0,0" Text="{x:Static res:Strings.Sync_Passphrase_Label}"/>
-      <TextBlock x:Name="PassphraseHint" Classes="hint" Text="{x:Static res:Strings.Sync_Passphrase_Hint}"/>
       <TextBox x:Name="NewPassphraseBox" PasswordChar="●" Text="{CompiledBinding NewPassphrase, Mode=TwoWay}"
                PlaceholderText="{x:Static res:Strings.Backup_Create_Passphrase}"
                AutomationProperties.Name="{x:Static res:Strings.Backup_Create_Passphrase}"/>
@@ -68,10 +67,10 @@
       <TextBlock x:Name="PassphraseFeedback" Classes="hint"
                  IsVisible="{CompiledBinding PassphraseMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
                  Text="{CompiledBinding PassphraseMessage}"/>
+      <TextBlock x:Name="PassphraseHint" Classes="hint" Text="{x:Static res:Strings.Sync_Passphrase_Hint}"/>
 
       <!-- 6. Apri in chiaro / Ricifra -->
       <TextBlock FontWeight="SemiBold" Margin="0,12,0,0" Text="{x:Static res:Strings.Sync_Plain_Label}"/>
-      <TextBlock x:Name="PlainHint" Classes="hint" Text="{x:Static res:Strings.Sync_Plain_Hint}"/>
       <TextBox x:Name="PlainPassphraseBox" PasswordChar="●" Text="{CompiledBinding PlainPassphrase, Mode=TwoWay}"
                PlaceholderText="{x:Static res:Strings.Backup_Create_Passphrase}"
                AutomationProperties.Name="{x:Static res:Strings.Sync_Plain_Label}"/>
@@ -83,6 +82,7 @@
                 Content="{x:Static res:Strings.Sync_Plain_Reencrypt}"
                 Command="{CompiledBinding ReencryptCommand}"/>
       </WrapPanel>
+      <TextBlock x:Name="PlainHint" Classes="hint" Text="{x:Static res:Strings.Sync_Plain_Hint}"/>
 
       <!-- 7. Collegamento (solo se JoinState == NeedsChoice) -->
       <Border x:Name="JoinSection" IsVisible="{CompiledBinding NeedsJoinChoice}"

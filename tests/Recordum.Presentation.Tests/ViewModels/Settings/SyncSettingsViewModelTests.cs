@@ -360,14 +360,33 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         await vm.ExportPlainCommand.ExecuteAsync(null);
 
         sync.LastPlainPassphrase.Should().Be("plain-passphrase-123");
+        vm.PlainPassphrase.Should().BeEmpty("la frase in chiaro non resta dopo l'uso");
         Encoding.UTF8.GetString(sync.ExportedPlainBytes!).Should().Be("rcsync-input");
         Encoding.UTF8.GetString(await File.ReadAllBytesAsync(zipOut)).Should().Be("plain-zip-payload");
 
         open.Result = zipOut;
         save.Result = rcsyncOut;
+        vm.PlainPassphrase = "plain-passphrase-123";
         await vm.ReencryptCommand.ExecuteAsync(null);
 
+        vm.PlainPassphrase.Should().BeEmpty();
         Encoding.UTF8.GetString(sync.ReencryptedBytes!).Should().Be("plain-zip-payload");
         Encoding.UTF8.GetString(await File.ReadAllBytesAsync(rcsyncOut)).Should().Be("encrypted-rcsync-payload");
+    }
+
+    [Fact]
+    public async Task CommandsAreDisabledWithoutSyncService()
+    {
+        var vm = CreateVm(sync: null);
+        await vm.LoadAsync();
+        vm.PlainPassphrase = "plain-passphrase-123";
+
+        vm.MergeNowCommand.CanExecute(null).Should().BeFalse();
+        vm.SetPassphraseCommand.CanExecute(null).Should().BeFalse();
+        vm.ExportPlainCommand.CanExecute(null).Should().BeFalse();
+        vm.ReencryptCommand.CanExecute(null).Should().BeFalse();
+        vm.DisconnectCommand.CanExecute(null).Should().BeFalse();
+        vm.JoinStartFromOthersCommand.CanExecute(null).Should().BeFalse();
+        vm.JoinKeepBothCommand.CanExecute(null).Should().BeFalse();
     }
 }
