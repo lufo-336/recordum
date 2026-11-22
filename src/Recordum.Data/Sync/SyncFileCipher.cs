@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Recordum.Data.Backup;
@@ -14,7 +13,8 @@ public sealed class SyncFileCipher
 {
     private const int MaxCachedKeys = 16;
     private readonly byte[] _processSalt = RandomNumberGenerator.GetBytes(AesGcmEnvelope.SaltLen);
-    private readonly ConcurrentDictionary<CacheKey, byte[]> _keyCache = new();
+    private readonly object _cacheLock = new();
+    private readonly Dictionary<CacheKey, byte[]> _keyCache = new();
     private readonly Func<string, byte[], ushort, byte, byte, Task<byte[]>> _deriveKey;
     private readonly AesGcmEnvelope _envelope;
 
@@ -43,22 +43,41 @@ public sealed class SyncFileCipher
         byte iters,
         byte parallel)
     {
-        var passHash = SHA256.HashData(Encoding.UTF8.GetBytes(passphrase));
+        var passBytes = Encoding.UTF8.GetBytes(passphrase);
+        byte[] passHash;
+        try { passHash = SHA256.HashData(passBytes); }
+        finally { CryptographicOperations.ZeroMemory(passBytes); }
         var cacheKey = new CacheKey(salt, memMib, iters, parallel, passHash);
-        if (_keyCache.TryGetValue(cacheKey, out var cached))
-            return (byte[])cached.Clone();
 
-        var derived = await _deriveKey(passphrase, salt, memMib, iters, parallel).ConfigureAwait(false);
-        // ponytail: bound naive (svuota tutto al limite), basta per un salt di scrittura + pochi salt di altri dispositivi; LRU se servisse.
-        if (_keyCache.Count >= MaxCachedKeys)
+        // Lookup, clone, insert ed eviction stanno tutti sotto lo stesso lock: nessuno clona una chiave che un altro sta azzerando.
+        lock (_cacheLock)
         {
-            foreach (var k in _keyCache.Keys)
-                if (_keyCache.TryRemove(k, out var old))
-                    CryptographicOperations.ZeroMemory(old);
+            if (_keyCache.TryGetValue(cacheKey, out var cached))
+                return (byte[])cached.Clone();
         }
-        var canonical = _keyCache.GetOrAdd(cacheKey, _ => (byte[])derived.Clone());
-        CryptographicOperations.ZeroMemory(derived);
-        return (byte[])canonical.Clone();
+
+        // Argon2id fuori dal lock: una derivazione doppia concorrente è innocua.
+        var derived = await _deriveKey(passphrase, salt, memMib, iters, parallel).ConfigureAwait(false);
+        lock (_cacheLock)
+        {
+            if (_keyCache.TryGetValue(cacheKey, out var existing))
+            {
+                CryptographicOperations.ZeroMemory(derived);
+                return (byte[])existing.Clone();
+            }
+            // ponytail: bound naive (al limite si tolgono tutte le chiavi dei salt altrui, quelle del salt di scrittura restano); LRU se servisse.
+            if (_keyCache.Count >= MaxCachedKeys)
+            {
+                foreach (var k in _keyCache.Keys.Where(k => !k.HasSalt(_processSalt)).ToList())
+                {
+                    CryptographicOperations.ZeroMemory(_keyCache[k]);
+                    _keyCache.Remove(k);
+                }
+            }
+            var result = (byte[])derived.Clone();
+            _keyCache[cacheKey] = derived;
+            return result;
+        }
     }
 
     private static SyncFileException CreateException(EnvelopeErrorKind kind, string message) =>
@@ -106,6 +125,8 @@ public sealed class SyncFileCipher
             hc.AddBytes(passphraseSha256);
             _hashCode = hc.ToHashCode();
         }
+
+        public bool HasSalt(byte[] salt) => _salt.AsSpan().SequenceEqual(salt);
 
         public bool Equals(CacheKey other) =>
             _memMib == other._memMib &&

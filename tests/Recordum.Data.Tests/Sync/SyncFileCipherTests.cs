@@ -135,4 +135,42 @@ public class SyncFileCipherTests
             () => cipher.DecryptAsync(new MemoryStream(bytes), decrypted, Pass));
         ex.Error.Should().Be(SyncFileError.UnsupportedEnvelope);
     }
+
+    [Fact]
+    public async Task EvictionKeepsWriteSaltAndForeignKeysRederive()
+    {
+        var count = 0;
+        var cipher = new SyncFileCipher((_, _, _, _, _) =>
+        {
+            Interlocked.Increment(ref count);
+            return Task.FromResult(new byte[32].Select((_, i) => (byte)(i + 1)).ToArray());
+        });
+        var payload = Encoding.UTF8.GetBytes("x");
+
+        using var mine = new MemoryStream();
+        await cipher.EncryptAsync(new MemoryStream(payload), mine, Pass);
+        count.Should().Be(1);
+
+        // 20 file di altri dispositivi (salt diversi): superano il limite e fanno evictare.
+        var foreign = new List<byte[]>();
+        for (var n = 0; n < 20; n++)
+        {
+            var other = new SyncFileCipher((_, _, _, _, _) => Task.FromResult(new byte[32].Select((_, i) => (byte)(i + 1)).ToArray()));
+            using var ms = new MemoryStream();
+            await other.EncryptAsync(new MemoryStream(payload), ms, Pass);
+            foreign.Add(ms.ToArray());
+        }
+        foreach (var f in foreign)
+            await cipher.DecryptAsync(new MemoryStream(f), new MemoryStream(), Pass);
+        var afterForeign = count;
+        afterForeign.Should().Be(21);
+
+        // il salt di scrittura è sopravvissuto: nessuna nuova derivazione
+        await cipher.DecryptAsync(new MemoryStream(mine.ToArray()), new MemoryStream(), Pass);
+        count.Should().Be(afterForeign);
+
+        // la prima chiave altrui è stata evictata: si ricalcola
+        await cipher.DecryptAsync(new MemoryStream(foreign[0]), new MemoryStream(), Pass);
+        count.Should().Be(afterForeign + 1);
+    }
 }

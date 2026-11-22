@@ -111,6 +111,9 @@ internal sealed class AesGcmEnvelope
         var key = await _deriveKey(passphrase, salt, memMib, iters, parallel).ConfigureAwait(false);
         try
         {
+            // Difesa in profondità: una chiave tutta a zero (cache azzerata altrove) non cifra mai.
+            if (CryptographicOperations.FixedTimeEquals(key, new byte[key.Length]))
+                throw new CryptographicException("Derived key is all zero.");
             // Materialize plaintext (backups and sync files are bounded; streaming GCM here would add ad-hoc framing).
             using var ms = new MemoryStream();
             await input.CopyToAsync(ms, ct).ConfigureAwait(false);
