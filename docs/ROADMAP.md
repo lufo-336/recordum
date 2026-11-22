@@ -26,8 +26,11 @@
   5, 8, 10 in main il 2026-11-18; GIO-11 (selezione), B7 (durate in parole) e B8 (mappa dell'anno coi mesi, "Insieme"
   a settimane con "Mostra i giorni") in main il 2026-11-19 (PR #1, `d27df7f0`). Di GIO-11 restano le sottoscrizioni
   della Home, da fare con la testa Android.
-- **Prossimo — si riprende da qui**: (1) scrivere la spec dell'"unisci" (dentro: `home.rows` vale per dispositivo; le
-  righe di `scale_anchors` e i tag ricavati viaggiano coi dati); (2) il passo 3, dati protetti e dogfooding sul computer.
+- **Prossimo — si riprende da qui**: (1) spec dell'"unisci" **approvata** il 2026-11-22
+  (`docs/superpowers/specs/2026-11-22-unisci-design.md`, formato pubblico `recordum-sync`, trasporto via cartella e
+  selettore di sistema sul telefono — sonda `docs/design/2026-11-22-saf-drive-probe.md`) e **piano della parte computer
+  scritto** (`docs/superpowers/plans/2026-11-22-unisci.md`, 12 task; il telefono ha un piano a parte dopo la testa
+  Android). Resta da decidere dall'autore quando eseguirlo rispetto ai passi 3–5; (2) il passo 3, dati protetti e dogfooding sul computer.
   Resta da decidere dall'autore: obiettivi su una metrica di scala non convertiti dalla 2.20 (nessuna
   strada di oggi ne crea uno).
 
