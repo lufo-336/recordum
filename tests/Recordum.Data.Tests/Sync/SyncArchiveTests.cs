@@ -88,7 +88,7 @@ public sealed class SyncArchiveTests
         }
 
         // Verifica foto e miniatura byte per byte
-        var attachmentId = SyncSeed.AttachmentId.ToString();
+        var attachmentId = SyncSeed.Stored(SyncSeed.AttachmentId);
         await using (var photoStream = snapshot.OpenPhoto(attachmentId, thumbnail: false))
         {
             photoStream.Should().NotBeNull();
@@ -109,9 +109,9 @@ public sealed class SyncArchiveTests
         snapshot.Tombstones.Should().ContainSingle();
         var tomb = snapshot.Tombstones[0];
         tomb.Entity.Should().Be("tag");
-        tomb.EntityId.Should().Be("99999999-0000-0000-0000-000000000099");
+        tomb.EntityId.Should().Be("9ABCDEF9-0000-0000-0000-000000000099");
         tomb.DeviceId.Should().Be("device-seed-a");
-        tomb.AliasOf.Should().Be(SyncSeed.TagId.ToString());
+        tomb.AliasOf.Should().Be(SyncSeed.Stored(SyncSeed.TagId));
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public sealed class SyncArchiveTests
         using var zipStream = new MemoryStream();
         await SyncArchiveWriter.WriteAsync(db, zipStream, DefaultOptions(includePhotos: false));
 
-        var attachmentId = SyncSeed.AttachmentId.ToString();
+        var attachmentId = SyncSeed.Stored(SyncSeed.AttachmentId);
 
         zipStream.Position = 0;
         using (var rawZip = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true))
@@ -255,7 +255,7 @@ public sealed class SyncArchiveTests
         snapshot.Rows.Should().NotContainKey("future_thing");
 
         var tagEntity = SyncCatalog.Get("tag");
-        var tagRow = snapshot.Rows["tag"].Single(r => r.Id == SyncSeed.TagId.ToString());
+        var tagRow = snapshot.Rows["tag"].Single(r => r.Id == SyncSeed.Stored(SyncSeed.TagId));
         tagRow.Fields.Should().ContainKey("future_field");
 
         var codec = new SyncRowCodec(db.Model);
@@ -364,7 +364,7 @@ public sealed class SyncArchiveTests
         await using var fx = new DbFixture();
         await SyncSeed.SeedAsync(fx);
 
-        var valueId = new Guid("10000000-0000-0000-0000-000000000099");
+        var valueId = new Guid("ABCDEF01-0000-0000-0000-000000000099");
         await using var db = await fx.Factory.CreateDbContextAsync();
         db.CompletionValues.Add(new CompletionValue
         {
@@ -383,7 +383,7 @@ public sealed class SyncArchiveTests
 
         using var snapshot = SyncArchiveReader.Open(zipStream);
         var row = snapshot.Rows["completion_value"].Single(r =>
-            string.Equals(r.Id, valueId.ToString(), StringComparison.OrdinalIgnoreCase));
+            r.Id == SyncSeed.Stored(valueId));
         var field = row.Fields["value_decimal"];
         field.ValueKind.Should().Be(JsonValueKind.String);
         field.GetString().Should().Be(exactDecimalText);
@@ -391,6 +391,108 @@ public sealed class SyncArchiveTests
         var codec = new SyncRowCodec(db.Model);
         var dbRow = codec.ToDb(SyncCatalog.Get("completion_value"), row);
         dbRow["value_decimal"].Should().Be(exactDecimalText);
+    }
+
+    [Fact]
+    public async Task InvalidUtf8IsRejected() =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+        {
+            // 0xFF dentro un valore stringa: con un decoder permissivo diventerebbe U+FFFD e il JSON resterebbe valido.
+            var copy = (byte[])bytes.Clone();
+            copy[Array.IndexOf(copy, (byte)'d', Array.IndexOf(copy, (byte)'-') - 4)] = 0xFF;
+            return copy;
+        });
+
+    [Fact]
+    public async Task DuplicateIdIsRejected() =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+        {
+            var line = Encoding.UTF8.GetString(bytes).TrimEnd('\n').Split('\n')[0];
+            return Encoding.UTF8.GetBytes(line + "\n" + line + "\n");
+        });
+
+    [Fact]
+    public async Task RowIdNotMatchingItsKeyFieldsIsRejected() =>
+        await AssertEditRejectedAsync("data/habit_node_tag.jsonl", bytes =>
+            Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes).Replace(
+                "\"tag_id\":\"" + SyncSeed.Stored(SyncSeed.TagId) + "\"",
+                "\"tag_id\":\"ABCDEF01-0000-0000-0000-00000000FFFF\"", StringComparison.Ordinal)));
+
+    [Fact]
+    public async Task DuplicateZipEntryIsRejected()
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var src = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, src, DefaultOptions());
+        src.Position = 0;
+
+        using var dup = new MemoryStream();
+        using (var inZip = new ZipArchive(src, ZipArchiveMode.Read, leaveOpen: true))
+        using (var outZip = new ZipArchive(dup, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var e in inZip.Entries)
+            {
+                using var ms = new MemoryStream();
+                using (var s = e.Open()) await s.CopyToAsync(ms);
+                for (var n = 0; n < (e.FullName == "data/tag.jsonl" ? 2 : 1); n++)
+                {
+                    using var o = outZip.CreateEntry(e.FullName).Open();
+                    o.Write(ms.ToArray());
+                }
+            }
+        }
+
+        dup.Position = 0;
+        var act = () => SyncArchiveReader.Open(dup);
+        act.Should().Throw<SyncFormatException>();
+    }
+
+    [Fact]
+    public async Task NonAsciiTextIsWrittenUnescaped()
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        db.Tags.Add(new Tag { Id = Guid.NewGuid(), Name = "perche\u0301 è \"così\"", UpdatedAtMs = 1 });
+        await db.SaveChangesAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zip, DefaultOptions());
+        zip.Position = 0;
+        using var raw = new ZipArchive(zip, ZipArchiveMode.Read);
+        using var r = new StreamReader(raw.GetEntry("data/tag.jsonl")!.Open(), Encoding.UTF8);
+        var text = await r.ReadToEndAsync();
+        text.Should().Contain("è").And.NotContain("\\u00E8").And.NotContain("\\u00e8");
+    }
+
+    private static async Task AssertEditRejectedAsync(string entryName, Func<byte[], byte[]> edit)
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zip, DefaultOptions());
+        zip.Position = 0;
+        using (var edit0 = new ZipArchive(zip, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            var entry = edit0.GetEntry(entryName)!;
+            byte[] bytes;
+            using (var s = entry.Open())
+            using (var ms = new MemoryStream())
+            {
+                await s.CopyToAsync(ms);
+                bytes = ms.ToArray();
+            }
+
+            entry.Delete();
+            using var o = edit0.CreateEntry(entryName).Open();
+            o.Write(edit(bytes));
+        }
+
+        zip.Position = 0;
+        var act = () => SyncArchiveReader.Open(zip);
+        act.Should().Throw<SyncFormatException>();
     }
 
     private static bool IsDefault(object? v) => v is null or 0L or 0.0 or "";

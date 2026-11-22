@@ -17,15 +17,15 @@ Total header length: **41 bytes**, followed by the AES-256-GCM ciphertext and a 
 | Byte Offset | Length | Type / Endianness | Value / Meaning |
 |---|---|---|---|
 | `0..3` | 4 B | ASCII | Magic bytes `"RCSY"` (`0x52 0x43 0x53 0x59`). |
-| `4` | 1 B | `uint8` | Envelope version (`0x01`). |
+| `4` | 1 B | `uint8` | Envelope version. MUST be `0x01`; any other value is rejected. |
 | `5..7` | 3 B | `byte[3]` | Reserved (writers emit `0x00 0x00 0x00`; readers do not check them). |
-| `8` | 1 B | `uint8` | KDF identifier (`0x01` = Argon2id). |
-| `9..10` | 2 B | `uint16` big-endian | Argon2id memory cost in MiB (writer default: `64` MiB = `65536` KiB; valid reader range: `8..1024`). |
+| `8` | 1 B | `uint8` | KDF identifier. MUST be `0x01` (Argon2id, Argon2 version `0x13`, no secret, no associated data); any other value is rejected. |
+| `9..10` | 2 B | `uint16` big-endian | Argon2id memory cost in MiB (writer default: `64`; valid reader range: `8..1024`). The memory parameter given to Argon2 is this value in KiB, i.e. header value × 1024 (`64` → `65536` KiB). |
 | `11` | 1 B | `uint8` | Argon2id iteration count (writer default: `4`; valid reader range: `1..24`). |
 | `12` | 1 B | `uint8` | Argon2id degree of parallelism (writer default: `2`; valid reader range: `1..8`). |
-| `13..28` | 16 B | `byte[16]` | Random 128-bit Argon2id salt (one salt per writer process, cached in memory by `(salt, kdf_params, sha256(passphrase))`). |
+| `13..28` | 16 B | `byte[16]` | Random 128-bit Argon2id salt. |
 | `29..40` | 12 B | `byte[12]` | Random 96-bit AES-GCM nonce (regenerated on every write). |
-| `41..(N-17)` | `N - 57` B | `byte[]` | AES-256-GCM ciphertext of the inner ZIP archive (hard ceiling: `2 GiB`; 32-byte key derived from UTF-8 passphrase; empty AAD). |
+| `41..(N-17)` | `N - 57` B | `byte[]` | AES-256-GCM ciphertext of the inner ZIP archive (32-byte key = Argon2id of the UTF-8 passphrase with this header's salt and parameters; empty AAD). The hard ceiling of `2 GiB` covers ciphertext plus tag together (everything after byte 40). |
 | `(N-16)..(N-1)` | 16 B | `byte[16]` | 128-bit AES-256-GCM authentication tag. |
 
 A truncated file, a partially uploaded cloud file, or a file encrypted with a different passphrase fails the AES-GCM tag check before any plaintext is parsed.
@@ -102,21 +102,20 @@ UTF-8 JSON object without BOM at the root of the ZIP:
 
 ### 2.2 JSON Lines (`data/<entity>.jsonl` and `tombstones.jsonl`)
 
-- **Encoding**: UTF-8 without BOM, `\n` (`0x0A`) line terminator, compact JSON (one object per line).
-- **Row Identifier (`"id"`)**: Every line in `data/<entity>.jsonl` has `"id"` as its first property, equal to the entity's primary key column values joined with `"|"` as stored in SQLite, followed by all public non-photo fields of the entity.
+- **Encoding**: UTF-8 without BOM (invalid UTF-8 rejects the file), `\n` (`0x0A`) line terminator, compact JSON (one object per line). Writers do not escape non-ASCII characters or HTML-sensitive characters (`<`, `>`, `&`, `'`, `+`) as `\uXXXX`, so files diff readably; the file is never embedded in HTML. Readers accept any valid JSON escaping.
+- **Row Identifier (`"id"`)**: Every line in `data/<entity>.jsonl` has `"id"` as its first property, equal to the entity's primary key column values joined with `"|"` as stored in SQLite, followed by all public non-photo fields of the entity. Readers reject a row whose `"id"` differs from its key fields joined with `"|"`, a duplicate `"id"` within one entity file, and a duplicate ZIP entry name.
 - **Deterministic Ordering**: Every `data/<entity>.jsonl` file is sorted ordinally (`StringComparer.Ordinal`) by `"id"`. `tombstones.jsonl` is sorted ordinally by `("entity", "entity_id")`.
 - **Value Types**:
-  - Booleans (stored as SQLite `INTEGER` `0`/`1`; measured) → JSON `true` / `false`.
-  - Integers (`int`, `long`) → JSON integer number.
+  - Writers MUST emit exactly the forms below. They are the forms EF Core stores in SQLite (measured), and readers validate them: a value that is well-formed JSON but not in the exact form for its column is rejected (`SyncFormatException`), because the app could not load it afterwards.
+  - Booleans (SQLite `INTEGER` `0`/`1`) → JSON `true` / `false`.
+  - Integers (`int`, `long`, `short`, `byte`) → JSON integer number, within the range of the column type (`int` 32-bit, `short` 16-bit, `byte` 8-bit, `long` 64-bit).
   - Floating-point (`double`, `float`) → JSON number.
-  - Exact decimals (`decimal`, stored as SQLite `TEXT`) → JSON **string** identical to the stored representation (zero precision loss).
-  - Dates and times → JSON string, copied verbatim from the stored value, which is the form EF Core writes to SQLite (measured, not ISO `T`/`Z`):
-    - `DateTime` (UTC): `yyyy-MM-dd HH:mm:ss` with a space separator and no zone suffix, e.g. `"2026-01-01 00:00:00"` (fractional digits follow only when non-zero).
-    - `DateOnly`: `yyyy-MM-dd`, e.g. `"2026-02-03"`.
-    - `TimeOnly`: `HH:mm:ss`, e.g. `"04:30:00"`.
-    Readers MUST treat these as opaque strings to write back unchanged, and MAY also accept ISO 8601 `T`/`Z` forms on input.
-  - GUIDs (`Guid`) → JSON string as stored.
-  - Enums → JSON string as stored.
+  - Decimals → JSON **string**, invariant culture, `.` as separator, no exponent, no thousands separator, with the scale as stored (e.g. `"125.75"`, `"0.1000000000000000055511151231"`); parsing it as a decimal and writing it back must give the same string.
+  - GUIDs → JSON string, format `D` in **UPPERCASE** hex (e.g. `"ABCDEF01-0000-0000-0000-000000000002"`). Lowercase is rejected.
+  - `DateTime` (UTC) → `yyyy-MM-dd HH:mm:ss[.FFFFFFF]`: space separator, no zone suffix, fractional digits only when non-zero and without trailing zeros (e.g. `"2026-02-10 14:30:00"`, `"2026-02-10 14:30:00.1234567"`).
+  - `DateOnly` → `yyyy-MM-dd` (e.g. `"2026-02-03"`).
+  - `TimeOnly` → `HH:mm:ss[.FFFFFFF]` (e.g. `"04:30:00"`).
+  - Enums → JSON string with the member name, exactly as defined (e.g. `"Habit"`); unknown names are rejected.
   - JSON-in-TEXT columns → JSON string containing the raw JSON payload.
   - Photos (`attachment.content` and `attachment.thumbnail`, binary) → omitted from JSON rows; externalized as binary entries under `photos/`.
 
@@ -589,7 +588,18 @@ Table: `chart_series` · Key: `id`.
 
 ---
 
-## 5. Merge Rules Summary (§8.3)
+## 5. Canonical Form of a Row
+
+Used only to break ties deterministically. The canonical form of a row is a byte string built as follows:
+
+1. Take the row's fields (all the fields present in the row as read, `id` excluded) and sort them by public name, comparing the **UTF-8 bytes** of the names ordinally.
+2. For each field in that order emit, as UTF-8: the field name, one `0x00` byte, the value text, one `0x00` byte.
+3. The value text is: for a JSON string, the string's text (unescaped); for a JSON number, its shortest round-trip invariant form (integers as plain digits without exponent or fraction; other numbers as the shortest string that parses back to the same double, like JavaScript `Number.prototype.toString`); `true` or `false`; `null` for JSON null.
+4. Two rows are compared by their canonical byte strings, ordinally (bytewise); the smaller wins a tie.
+
+Example: the fields `{"id":"X","b":2,"a":"x","c":true,"d":null}` give the bytes `a 00 x 00 b 00 2 00 c 00 true 00 d 00 null 00` (spaces added for reading).
+
+## 6. Merge Rules Summary (§8.3)
 
 Merging is **idempotent** and **commutative**: applying the same peer archive twice or merging peer archives in any order converges to the exact same database state.
 
@@ -597,18 +607,20 @@ Merging is **idempotent** and **commutative**: applying the same peer archive tw
 2. **Concurrent Updates to the Same Row (`Plain` fields)**:
    - Compared field-by-field against `sync_base` (the last merged snapshot for that `(peer_device_id, entity, entity_id)`).
    - If a field changed on only one side relative to the base, that change wins even if the other side has a newer `updated_at_ms` from editing a different field.
-   - If the same field changed on both sides (or no base exists yet), the row with the higher `updated_at_ms` wins; ties break deterministically by lexicographically smaller `device_id` (`StringComparer.Ordinal`).
+   - If the same field changed on both sides (or no base exists yet), the row with the higher `updated_at_ms` wins; ties break deterministically by the **smaller canonical form** of the row (see "Canonical form of a row" below), compared as ordinal byte strings; if the two canonical forms are equal the rows are identical and either wins.
 3. **Rule B — Free-Form Text (`Text` fields: `note.body_md`, `completion.notes`)**:
    - Diary and note text is never silently discarded.
-   - If a `Text` field changed on both sides relative to `sync_base` (or differs on first merge without a base), both versions are preserved in the same record: the winning version (higher `updated_at_ms`, tie-broken by smaller `device_id`) remains at the top, and the losing version is appended at the bottom using the fixed conflict block format:
+   - If a `Text` field changed on both sides relative to `sync_base` (or differs on first merge without a base), both versions are preserved in the same record: the winning version (higher `updated_at_ms`, tie-broken by the smaller canonical form of the row) remains at the top, and the losing version is appended at the bottom using the fixed conflict block format:
      ```text
      "\n\n— <device> · yyyy-MM-dd HH:mm —\n<text>"
      ```
-     where `<device>` is the losing version's `last_edited_device_name` (or `manifest.device_name`), `yyyy-MM-dd HH:mm` is formatted from the losing version's `updated_at_ms`, and `<text>` is the losing text.
+     where `<device>` is the losing version's `last_edited_device_name`, or the literal `?` when it is null or empty; `yyyy-MM-dd HH:mm` is the losing version's `updated_at_ms` formatted in the **merging device's local time zone**; and `<text>` is the losing text. Because the time zone is the merger's, two devices can write slightly different blocks; the next round converges through the tie rule (the smaller canonical form wins and the other block is recognised, not duplicated).
+   - A text "already contains the block" when some line starts (anchored at line start) with the pattern `— <x> · \d{4}-\d{2}-\d{2} \d{2}:\d{2} —` (em dashes U+2014, middle dot U+00B7, `<x>` any text without a line break) and the part after that line equals the losing text.
    - If the winning text already contains that block, it is not appended again. The merged row takes `updated_at_ms = max(local, remote)`.
 4. **Delete vs. Edit**:
    - `tombstone.deleted_at_ms` is compared against `row.updated_at_ms`. The newer action wins.
-   - If deletion wins against a row whose `Text` field contains text that was not present before deletion, that text is rescued as a copy under Rule B.
+   - If deletion wins against a row whose `Text` field contains text that was not present before deletion, the losing text becomes a **new quick note** (`note`) on the same habit and the same day, carrying the rule-B block (so the text is never lost).
+   - **Parent deleted, children follow**: if a parent row stays deleted, its child rows (those that reference it) are deleted with it, as the local cascade would, even if they were edited elsewhere afterwards. A `habit_node` goes to the trash (soft delete) instead, and restoring it is an edit that wins if newer.
    - Soft-deleted `habit_node` rows travel normally via `deleted_at`; restoring from trash updates `updated_at_ms` and wins as a normal edit.
 5. **Natural Keys & Deduplication**:
    - `tag` (`name`, case-insensitive), `unit_of_measure` (`code`), and `scale_template` (`code`): when two devices create rows with different GUIDs and the same natural key, the lexicographically smaller GUID wins, all foreign-key references are rewritten to the winning GUID, and the discarded GUID is recorded in `tombstones.jsonl` with `alias_of` pointing to the winning GUID.

@@ -53,11 +53,11 @@ public sealed class SyncArchivePerformanceTests(Xunit.Abstractions.ITestOutputHe
                 cmd.CommandText = """
                     INSERT INTO "attachment"
                     ("id", "note_id", "filename", "mime_type", "file_size_bytes", "content", "thumbnail", "is_missing", "created_at", "updated_at", "updated_at_ms")
-                    VALUES (@id, @noteId, @filename, 'image/jpeg', @size, @content, @thumb, 0, '2026-02-10T14:30:00.0000000Z', '2026-02-10T15:00:00.0000000Z', 1770735600000)
+                    VALUES (@id, @noteId, @filename, 'image/jpeg', @size, @content, @thumb, 0, '2026-02-10 14:30:00', '2026-02-10 15:00:00', 1770735600000)
                     """;
 
                 var pId = cmd.Parameters.Add("@id", SqliteType.Text);
-                cmd.Parameters.AddWithValue("@noteId", SyncSeed.NoteId.ToString());
+                cmd.Parameters.AddWithValue("@noteId", SyncSeed.Stored(SyncSeed.NoteId));
                 var pFile = cmd.Parameters.Add("@filename", SqliteType.Text);
                 cmd.Parameters.AddWithValue("@size", PhotoSizeBytes);
                 cmd.Parameters.AddWithValue("@content", sharedPhoto);
@@ -65,7 +65,7 @@ public sealed class SyncArchivePerformanceTests(Xunit.Abstractions.ITestOutputHe
 
                 for (var i = 0; i < PhotoCount; i++)
                 {
-                    var id = new Guid(i + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x99).ToString();
+                    var id = SyncSeed.Stored(new Guid(unchecked((int)0xABCDEF00) + i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x99));
                     attachmentIds.Add(id);
                     pId.Value = id;
                     pFile.Value = $"photo-{i:D3}.jpg";

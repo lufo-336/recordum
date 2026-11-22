@@ -1,8 +1,10 @@
 using System.Data;
 using System.IO.Compression;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Recordum.Data.Sync;
 
@@ -11,7 +13,7 @@ public sealed record SyncWriteOptions(
     string DeviceName,
     string AppVersion,
     bool IncludePhotos,
-    long WrittenAtMs = 0);
+    long WrittenAtMs);
 
 /// <summary>
 /// Scrive lo stato completo del database in un archivio ZIP <c>recordum-sync</c> versione <c>1.0</c>.
@@ -23,6 +25,10 @@ public static class SyncArchiveWriter
     public const string CurrentFormatVersion = "1.0";
 
     private static readonly byte[] NewLine = [(byte)'\n'];
+
+    // Il file non e' mai HTML: niente \u00e8 per le lettere accentate, i diff restano leggibili.
+    private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonWriterOptions WriterOptions = new() { Indented = false, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static async Task WriteAsync(
         RecordumDbContext db,
@@ -38,6 +44,29 @@ public static class SyncArchiveWriter
         if (conn.State != ConnectionState.Open)
             await conn.OpenAsync(ct).ConfigureAwait(false);
 
+        // Una sola transazione di lettura: righe, lapidi e foto vengono dallo stesso istante.
+        var ownTx = db.Database.CurrentTransaction is null;
+        var efTx = db.Database.CurrentTransaction ?? await db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+        var tx = (SqliteTransaction)efTx.GetDbTransaction();
+        try
+        {
+            await WriteCoreAsync(db, conn, tx, zipOut, options, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (ownTx)
+                await efTx.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async Task WriteCoreAsync(
+        RecordumDbContext db,
+        SqliteConnection conn,
+        SqliteTransaction tx,
+        Stream zipOut,
+        SyncWriteOptions options,
+        CancellationToken ct)
+    {
         var codec = new SyncRowCodec(db.Model);
         var entityCounts = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -45,7 +74,7 @@ public static class SyncArchiveWriter
 
         foreach (var entity in SyncCatalog.Entities)
         {
-            var rows = await ReadEntityRowsAsync(conn, codec, entity, ct).ConfigureAwait(false);
+            var rows = await ReadEntityRowsAsync(conn, tx, codec, entity, ct).ConfigureAwait(false);
             entityCounts[entity.PublicName] = rows.Count;
 
             var entry = archive.CreateEntry($"data/{entity.PublicName}.jsonl", CompressionLevel.Optimal);
@@ -53,14 +82,14 @@ public static class SyncArchiveWriter
             await WriteEntityJsonLinesAsync(entryStream, rows, ct).ConfigureAwait(false);
         }
 
-        var tombstones = await ReadTombstonesAsync(conn, ct).ConfigureAwait(false);
+        var tombstones = await ReadTombstonesAsync(conn, tx, ct).ConfigureAwait(false);
         {
             var tombstoneEntry = archive.CreateEntry("tombstones.jsonl", CompressionLevel.Optimal);
             await using var tombstoneStream = tombstoneEntry.Open();
             await WriteTombstonesJsonLinesAsync(tombstoneStream, tombstones, ct).ConfigureAwait(false);
         }
 
-        await WritePhotosAsync(conn, archive, options.IncludePhotos, ct).ConfigureAwait(false);
+        await WritePhotosAsync(conn, tx, archive, options.IncludePhotos, ct).ConfigureAwait(false);
 
         var manifest = new SyncManifest(
             Format: FormatName,
@@ -75,12 +104,13 @@ public static class SyncArchiveWriter
         var manifestEntry = archive.CreateEntry("manifest.json", CompressionLevel.Optimal);
         await using (var manifestStream = manifestEntry.Open())
         {
-            await JsonSerializer.SerializeAsync(manifestStream, manifest, cancellationToken: ct).ConfigureAwait(false);
+            await JsonSerializer.SerializeAsync(manifestStream, manifest, JsonOptions, ct).ConfigureAwait(false);
         }
     }
 
     private static async Task<List<SyncRow>> ReadEntityRowsAsync(
         SqliteConnection conn,
+        SqliteTransaction tx,
         SyncRowCodec codec,
         SyncEntity entity,
         CancellationToken ct)
@@ -94,6 +124,7 @@ public static class SyncArchiveWriter
         var orderCols = string.Join(", ", entity.KeyColumns.Select(QuoteIdentifier));
 
         await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
         string sql;
         if (string.Equals(entity.PublicName, "app_setting", StringComparison.Ordinal))
         {
@@ -142,7 +173,7 @@ public static class SyncArchiveWriter
     {
         foreach (var row in rows)
         {
-            await using (var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = false }))
+            await using (var writer = new Utf8JsonWriter(output, WriterOptions))
             {
                 writer.WriteStartObject();
                 writer.WriteString("id", row.Id);
@@ -166,9 +197,11 @@ public static class SyncArchiveWriter
 
     private static async Task<List<SyncTombstoneRow>> ReadTombstonesAsync(
         SqliteConnection conn,
+        SqliteTransaction tx,
         CancellationToken ct)
     {
         await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = "SELECT \"entity\", \"entity_id\", \"deleted_at_ms\", \"device_id\", \"alias_of\" FROM \"sync_tombstone\" ORDER BY \"entity\", \"entity_id\"";
 
         var list = new List<SyncTombstoneRow>();
@@ -198,18 +231,20 @@ public static class SyncArchiveWriter
     {
         foreach (var t in tombstones)
         {
-            await JsonSerializer.SerializeAsync(output, t, cancellationToken: ct).ConfigureAwait(false);
+            await JsonSerializer.SerializeAsync(output, t, JsonOptions, ct).ConfigureAwait(false);
             await output.WriteAsync(NewLine, ct).ConfigureAwait(false);
         }
     }
 
     private static async Task WritePhotosAsync(
         SqliteConnection conn,
+        SqliteTransaction tx,
         ZipArchive archive,
         bool includePhotos,
         CancellationToken ct)
     {
         await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = includePhotos
             ? "SELECT \"id\", \"mime_type\", \"content\", \"thumbnail\" FROM \"attachment\" ORDER BY \"id\""
             : "SELECT \"id\", \"thumbnail\" FROM \"attachment\" ORDER BY \"id\"";

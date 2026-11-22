@@ -13,6 +13,7 @@ namespace Recordum.Data.Sync;
 public static class SyncArchiveReader
 {
     private const int SupportedMajorVersion = 1;
+    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
     public static SyncSnapshot Open(Stream zipIn)
     {
@@ -32,10 +33,22 @@ public static class SyncArchiveReader
 
         try
         {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var e in archive.Entries)
+            {
+                if (!seen.Add(e.FullName))
+                    throw new SyncFormatException($"Duplicate entry '{e.FullName}' in sync archive.");
+            }
+
             var manifest = ReadAndValidateManifest(archive);
             var rows = ReadAllEntityRows(archive);
             var tombstones = ReadTombstones(archive);
             return new SyncSnapshot(archive, manifest, rows, tombstones);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            archive.Dispose();
+            throw new SyncFormatException("Invalid UTF-8 in sync archive.", ex);
         }
         catch
         {
@@ -111,7 +124,7 @@ public static class SyncArchiveReader
             var isKnown = knownEntities.TryGetValue(publicName, out var entity);
             var hasIdField = isKnown && entity!.Fields.Any(f => string.Equals(f.PublicName, "id", StringComparison.Ordinal));
 
-            var parsedRows = ParseEntityJsonLines(entry, keepIdInFields: !isKnown || hasIdField);
+            var parsedRows = ParseEntityJsonLines(entry, keepIdInFields: !isKnown || hasIdField, isKnown ? entity : null);
             if (isKnown)
             {
                 result[publicName] = parsedRows;
@@ -127,11 +140,12 @@ public static class SyncArchiveReader
         return result;
     }
 
-    private static List<SyncRow> ParseEntityJsonLines(ZipArchiveEntry entry, bool keepIdInFields)
+    private static List<SyncRow> ParseEntityJsonLines(ZipArchiveEntry entry, bool keepIdInFields, SyncEntity? entity)
     {
         var rows = new List<SyncRow>();
+        var ids = new HashSet<string>(StringComparer.Ordinal);
         using var stream = entry.Open();
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+        using var reader = new StreamReader(stream, StrictUtf8, detectEncodingFromByteOrderMarks: false);
 
         var lineNumber = 0;
         string? line;
@@ -173,11 +187,39 @@ public static class SyncArchiveReader
                     fields[prop.Name] = prop.Value.Clone();
                 }
 
+                if (!ids.Add(id))
+                    throw new SyncFormatException($"Duplicate id '{id}' in '{entry.FullName}' at line {lineNumber}.");
+
+                if (entity is not null)
+                    CheckIdMatchesKey(entity, id, root, entry.FullName, lineNumber);
+
                 rows.Add(new SyncRow(id, fields));
             }
         }
 
         return rows;
+    }
+
+    // L'id di riga e' la chiave composta dai valori dei campi chiave uniti con '|'.
+    private static void CheckIdMatchesKey(SyncEntity entity, string id, JsonElement root, string file, int lineNumber)
+    {
+        var parts = new string[entity.KeyColumns.Count];
+        for (var i = 0; i < parts.Length; i++)
+        {
+            var publicName = entity.Fields.First(f => f.Column == entity.KeyColumns[i]).PublicName;
+            if (!root.TryGetProperty(publicName, out var v))
+                throw new SyncFormatException($"Missing key field '{publicName}' in '{file}' at line {lineNumber}.");
+
+            parts[i] = v.ValueKind switch
+            {
+                JsonValueKind.String => v.GetString()!,
+                JsonValueKind.Number => v.GetRawText(),
+                _ => throw new SyncFormatException($"Invalid key field '{publicName}' in '{file}' at line {lineNumber}."),
+            };
+        }
+
+        if (!string.Equals(string.Join('|', parts), id, StringComparison.Ordinal))
+            throw new SyncFormatException($"Row id '{id}' does not match its key fields in '{file}' at line {lineNumber}.");
     }
 
     private static List<SyncTombstoneRow> ReadTombstones(ZipArchive archive)
@@ -188,7 +230,7 @@ public static class SyncArchiveReader
 
         var tombstones = new List<SyncTombstoneRow>();
         using var stream = entry.Open();
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+        using var reader = new StreamReader(stream, StrictUtf8, detectEncodingFromByteOrderMarks: false);
 
         var lineNumber = 0;
         string? line;

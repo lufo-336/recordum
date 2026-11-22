@@ -13,29 +13,32 @@ namespace Recordum.Data.Tests.Fixtures.Sync;
 /// </summary>
 public static class SyncSeed
 {
-    public static readonly Guid UnitOfMeasureId = new("10000000-0000-0000-0000-000000000001");
-    public static readonly Guid TagId = new("10000000-0000-0000-0000-000000000002");
-    public static readonly Guid ScaleTemplateId = new("10000000-0000-0000-0000-000000000003");
-    public static readonly Guid ScaleAnchorId = new("10000000-0000-0000-0000-000000000004");
-    public static readonly Guid HabitNodeId = new("10000000-0000-0000-0000-000000000005");
-    public static readonly Guid HabitConfigId = new("10000000-0000-0000-0000-000000000006");
-    public static readonly Guid HabitConfigHistoryId = new("10000000-0000-0000-0000-000000000007");
-    public static readonly Guid MetricDefinitionId = new("10000000-0000-0000-0000-000000000008");
-    public static readonly Guid SegmentDefinitionId = new("10000000-0000-0000-0000-000000000009");
-    public static readonly Guid GoalId = new("10000000-0000-0000-0000-000000000010");
-    public static readonly Guid NotificationId = new("10000000-0000-0000-0000-000000000011");
-    public static readonly Guid StreakPauseId = new("10000000-0000-0000-0000-000000000012");
-    public static readonly Guid AbstinencePeriodId = new("10000000-0000-0000-0000-000000000013");
-    public static readonly Guid CompletionId = new("10000000-0000-0000-0000-000000000014");
-    public static readonly Guid CompletionSegmentId = new("10000000-0000-0000-0000-000000000015");
-    public static readonly Guid CompletionValueId = new("10000000-0000-0000-0000-000000000016");
-    public static readonly Guid NoteId = new("10000000-0000-0000-0000-000000000017");
-    public static readonly Guid NoteHistoryId = new("10000000-0000-0000-0000-000000000018");
-    public static readonly Guid AttachmentId = new("10000000-0000-0000-0000-000000000019");
-    public static readonly Guid HabitTemplateId = new("10000000-0000-0000-0000-000000000020");
-    public static readonly Guid ExportTemplateId = new("10000000-0000-0000-0000-000000000021");
-    public static readonly Guid ChartId = new("10000000-0000-0000-0000-000000000022");
-    public static readonly Guid ChartSeriesId = new("10000000-0000-0000-0000-000000000023");
+    public static readonly Guid UnitOfMeasureId = new("ABCDEF01-0000-0000-0000-000000000001");
+    public static readonly Guid TagId = new("ABCDEF01-0000-0000-0000-000000000002");
+    public static readonly Guid ScaleTemplateId = new("ABCDEF01-0000-0000-0000-000000000003");
+    public static readonly Guid ScaleAnchorId = new("ABCDEF01-0000-0000-0000-000000000004");
+    public static readonly Guid HabitNodeId = new("ABCDEF01-0000-0000-0000-000000000005");
+    public static readonly Guid HabitConfigId = new("ABCDEF01-0000-0000-0000-000000000006");
+    public static readonly Guid HabitConfigHistoryId = new("ABCDEF01-0000-0000-0000-000000000007");
+    public static readonly Guid MetricDefinitionId = new("ABCDEF01-0000-0000-0000-000000000008");
+    public static readonly Guid SegmentDefinitionId = new("ABCDEF01-0000-0000-0000-000000000009");
+    public static readonly Guid GoalId = new("ABCDEF01-0000-0000-0000-000000000010");
+    public static readonly Guid NotificationId = new("ABCDEF01-0000-0000-0000-000000000011");
+    public static readonly Guid StreakPauseId = new("ABCDEF01-0000-0000-0000-000000000012");
+    public static readonly Guid AbstinencePeriodId = new("ABCDEF01-0000-0000-0000-000000000013");
+    public static readonly Guid CompletionId = new("ABCDEF01-0000-0000-0000-000000000014");
+    public static readonly Guid CompletionSegmentId = new("ABCDEF01-0000-0000-0000-000000000015");
+    public static readonly Guid CompletionValueId = new("ABCDEF01-0000-0000-0000-000000000016");
+    public static readonly Guid NoteId = new("ABCDEF01-0000-0000-0000-000000000017");
+    public static readonly Guid NoteHistoryId = new("ABCDEF01-0000-0000-0000-000000000018");
+    public static readonly Guid AttachmentId = new("ABCDEF01-0000-0000-0000-000000000019");
+    public static readonly Guid HabitTemplateId = new("ABCDEF01-0000-0000-0000-000000000020");
+    public static readonly Guid ExportTemplateId = new("ABCDEF01-0000-0000-0000-000000000021");
+    public static readonly Guid ChartId = new("ABCDEF01-0000-0000-0000-000000000022");
+    public static readonly Guid ChartSeriesId = new("ABCDEF01-0000-0000-0000-000000000023");
+
+    /// <summary>Forma salvata da EF/SQLite per un GUID: "D" maiuscolo (misurata).</summary>
+    public static string Stored(Guid g) => g.ToString("D").ToUpperInvariant();
 
     public static byte[] CreateSamplePhotoBytes(int sizeBytes = 4096)
     {
@@ -473,16 +476,16 @@ public static class SyncSeed
         db.SyncTombstones.Add(new SyncTombstone
         {
             Entity = "tag",
-            EntityId = "99999999-0000-0000-0000-000000000099",
+            EntityId = "9ABCDEF9-0000-0000-0000-000000000099",
             DeletedAtMs = t1Ms,
             DeviceId = "device-seed-a",
-            AliasOf = TagId.ToString(),
+            AliasOf = Stored(TagId),
         });
 
         await db.SaveChangesAsync();
 
         // Impostiamo parent_id sulla riga di habit_nodes così anche parent_id è non-null senza aggiungere una seconda riga
         await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"habit_nodes\" SET \"parent_id\" = {HabitNodeId.ToString()} WHERE \"id\" = {HabitNodeId.ToString()}");
+            $"UPDATE \"habit_nodes\" SET \"parent_id\" = {Stored(HabitNodeId)} WHERE \"id\" = {Stored(HabitNodeId)}");
     }
 }

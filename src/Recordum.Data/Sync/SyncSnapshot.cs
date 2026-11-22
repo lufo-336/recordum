@@ -47,10 +47,10 @@ public sealed class SyncSnapshot : IDisposable
         Rows = rows;
         Tombstones = tombstones;
 
-        _photoEntries = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);
+        _photoEntries = new Dictionary<string, ZipArchiveEntry>(StringComparer.Ordinal);
         foreach (var entry in archive.Entries)
         {
-            if (entry.FullName.StartsWith("photos/", StringComparison.OrdinalIgnoreCase))
+            if (entry.FullName.StartsWith("photos/", StringComparison.Ordinal))
             {
                 _photoEntries[entry.FullName] = entry;
             }

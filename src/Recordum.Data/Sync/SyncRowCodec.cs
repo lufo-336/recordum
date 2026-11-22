@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -13,7 +14,7 @@ namespace Recordum.Data.Sync;
 /// </summary>
 public sealed class SyncRowCodec
 {
-    private readonly Dictionary<string, Dictionary<string, ColumnCodecKind>> _tableColumns = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Dictionary<string, ColumnInfo>> _tableColumns = new(StringComparer.Ordinal);
 
     public SyncRowCodec(IModel model)
     {
@@ -28,7 +29,7 @@ public sealed class SyncRowCodec
             var storeObject = StoreObjectIdentifier.Table(tableName, entityType.GetSchema());
             if (!_tableColumns.TryGetValue(tableName, out var colMap))
             {
-                colMap = new Dictionary<string, ColumnCodecKind>(StringComparer.Ordinal);
+                colMap = new Dictionary<string, ColumnInfo>(StringComparer.Ordinal);
                 _tableColumns[tableName] = colMap;
             }
 
@@ -64,11 +65,11 @@ public sealed class SyncRowCodec
                 if (!dbRow.TryGetValue(field.Column, out var rawValue))
                     continue;
 
-                if (!colMap.TryGetValue(field.Column, out var kind))
+                if (!colMap.TryGetValue(field.Column, out var info))
                     throw new InvalidOperationException($"Column '{entity.Table}.{field.Column}' is not present in EF model.");
 
                 writer.WritePropertyName(field.PublicName);
-                WriteJsonValue(writer, kind, rawValue);
+                WriteJsonValue(writer, info.Kind, rawValue);
             }
 
             writer.WriteEndObject();
@@ -100,10 +101,10 @@ public sealed class SyncRowCodec
             if (!row.Fields.TryGetValue(field.PublicName, out var element))
                 continue;
 
-            if (!colMap.TryGetValue(field.Column, out var kind))
+            if (!colMap.TryGetValue(field.Column, out var info))
                 throw new InvalidOperationException($"Column '{entity.Table}.{field.Column}' is not present in EF model.");
 
-            dbRow[field.Column] = ReadDbValue(entity.PublicName, field.PublicName, kind, element);
+            dbRow[field.Column] = ReadDbValue(entity.PublicName, field.PublicName, info, element);
         }
 
         return dbRow;
@@ -177,65 +178,130 @@ public sealed class SyncRowCodec
         }
     }
 
-    private static object? ReadDbValue(string entityName, string fieldName, ColumnCodecKind kind, JsonElement element)
+    private static object? ReadDbValue(string entityName, string fieldName, ColumnInfo info, JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.Null)
             return null;
 
-        return kind switch
+        var where = $"Field '{entityName}.{fieldName}'";
+        switch (info.Kind)
         {
-            ColumnCodecKind.Boolean => element.ValueKind switch
+            case ColumnCodecKind.Boolean:
+                return element.ValueKind switch
+                {
+                    JsonValueKind.True => 1L,
+                    JsonValueKind.False => 0L,
+                    _ => throw new SyncFormatException($"{where} must be a boolean."),
+                };
+            case ColumnCodecKind.Integer:
             {
-                JsonValueKind.True => 1L,
-                JsonValueKind.False => 0L,
-                _ => throw new SyncFormatException($"Field '{entityName}.{fieldName}' must be a boolean."),
-            },
-            ColumnCodecKind.Integer => element.ValueKind == JsonValueKind.Number && element.TryGetInt64(out var l)
-                ? l
-                : throw new SyncFormatException($"Field '{entityName}.{fieldName}' must be an integer."),
-            ColumnCodecKind.Real => element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out var d)
-                ? d
-                : throw new SyncFormatException($"Field '{entityName}.{fieldName}' must be a number."),
-            ColumnCodecKind.Text => element.ValueKind == JsonValueKind.String
-                ? element.GetString()!
-                : throw new SyncFormatException($"Field '{entityName}.{fieldName}' must be a string."),
-            _ => throw new InvalidOperationException($"Unsupported column codec kind '{kind}'."),
-        };
+                if (element.ValueKind != JsonValueKind.Number || !element.TryGetInt64(out var l))
+                    throw new SyncFormatException($"{where} must be an integer.");
+                var fits = info.ProviderType == typeof(int) ? l is >= int.MinValue and <= int.MaxValue
+                    : info.ProviderType == typeof(short) ? l is >= short.MinValue and <= short.MaxValue
+                    : info.ProviderType != typeof(byte) || l is >= byte.MinValue and <= byte.MaxValue;
+                return fits ? l : throw new SyncFormatException($"{where} is out of range for {info.ProviderType.Name}.");
+            }
+            case ColumnCodecKind.Real:
+                return element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out var d)
+                    ? d
+                    : throw new SyncFormatException($"{where} must be a number.");
+            case ColumnCodecKind.Text:
+            {
+                if (element.ValueKind != JsonValueKind.String)
+                    throw new SyncFormatException($"{where} must be a string.");
+                var text = element.GetString()!;
+                return IsCanonicalText(info.ModelType, text) ? text : throw new SyncFormatException($"{where} is not a valid {info.ModelType.Name} in canonical form.");
+            }
+            default:
+                throw new InvalidOperationException($"Unsupported column codec kind '{info.Kind}'.");
+        }
+    }
+
+    // Il testo deve coincidere con la forma salvata da EF: si interpreta con il formato esatto e lo si riscrive.
+    private static bool IsCanonicalText(Type type, string text)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        if (type == typeof(Guid))
+            return Guid.TryParseExact(text, "D", out var g) && string.Equals(g.ToString("D").ToUpperInvariant(), text, StringComparison.Ordinal);
+        if (type == typeof(DateTime))
+            return DateTime.TryParseExact(text, DateTimeFormat, inv, DateTimeStyles.None, out var dt) && dt.ToString(DateTimeFormat, inv) == text;
+        if (type == typeof(DateOnly))
+            return DateOnly.TryParseExact(text, DateOnlyFormat, inv, DateTimeStyles.None, out var d) && d.ToString(DateOnlyFormat, inv) == text;
+        if (type == typeof(TimeOnly))
+            return TimeOnly.TryParseExact(text, TimeOnlyFormat, inv, DateTimeStyles.None, out var t) && t.ToString(TimeOnlyFormat, inv) == text;
+        if (type == typeof(decimal))
+            return decimal.TryParse(text, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, inv, out var m) && m.ToString(inv) == text;
+        if (type.IsEnum)
+            return Array.IndexOf(Enum.GetNames(type), text) >= 0;
+        return true;
+    }
+
+    private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.FFFFFFF";
+    private const string DateOnlyFormat = "yyyy-MM-dd";
+    private const string TimeOnlyFormat = "HH:mm:ss.FFFFFFF";
+
+    /// <summary>
+    /// Forma canonica di una riga (per lo spareggio di §8.3): i campi senza <c>id</c>, ordinati per nome
+    /// (byte UTF-8, ordinale), ciascuno come <c>nome 0x00 valore 0x00</c> in UTF-8.
+    /// Valore: testo della stringa; numero come cifre intere o double "R" invariante; <c>true</c>/<c>false</c>/<c>null</c>.
+    /// </summary>
+    public static byte[] Canonical(SyncRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        var utf8 = new UTF8Encoding(false);
+        var names = row.Fields.Keys.Where(k => k != "id").Select(k => (Name: k, Bytes: utf8.GetBytes(k))).ToList();
+        names.Sort(static (a, b) => a.Bytes.AsSpan().SequenceCompareTo(b.Bytes));
+
+        using var ms = new MemoryStream();
+        foreach (var (name, nameBytes) in names)
+        {
+            var el = row.Fields[name];
+            var value = el.ValueKind switch
+            {
+                JsonValueKind.String => el.GetString()!,
+                JsonValueKind.Number => el.TryGetInt64(out var l)
+                    ? l.ToString(CultureInfo.InvariantCulture)
+                    : el.GetDouble().ToString("R", CultureInfo.InvariantCulture),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                JsonValueKind.Null => "null",
+                _ => el.GetRawText(),
+            };
+            ms.Write(nameBytes);
+            ms.WriteByte(0);
+            ms.Write(utf8.GetBytes(value));
+            ms.WriteByte(0);
+        }
+
+        return ms.ToArray();
     }
 
     private static string FormatRawAsString(object rawValue) =>
         rawValue switch
         {
             string s => s,
-            decimal dec => dec.ToString("0.0###########################", CultureInfo.InvariantCulture),
-            DateTime dt => dt.ToString("O", CultureInfo.InvariantCulture),
-            DateTimeOffset dto => dto.ToString("O", CultureInfo.InvariantCulture),
-            DateOnly d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            TimeOnly t => t.ToString("HH:mm:ss.fffffff", CultureInfo.InvariantCulture),
-            IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-            _ => rawValue.ToString() ?? string.Empty,
+            long or int or short or byte => Convert.ToString(rawValue, CultureInfo.InvariantCulture)!,
+            _ => throw new InvalidOperationException($"Unexpected stored value type '{rawValue.GetType().Name}'."),
         };
 
-    private static ColumnCodecKind ClassifyProperty(IProperty property)
+    private static ColumnInfo ClassifyProperty(IProperty property)
     {
-        var clrType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
+        var modelType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
+        var providerType = property.GetProviderClrType() ?? property.ClrType;
+        providerType = Nullable.GetUnderlyingType(providerType) ?? providerType;
 
-        if (clrType == typeof(bool))
-            return ColumnCodecKind.Boolean;
-
-        if (clrType == typeof(int) || clrType == typeof(long) || clrType == typeof(short) || clrType == typeof(byte))
-            return ColumnCodecKind.Integer;
-
-        if (clrType == typeof(double) || clrType == typeof(float))
-            return ColumnCodecKind.Real;
-
-        if (clrType == typeof(byte[]))
-            return ColumnCodecKind.Blob;
-
-        return ColumnCodecKind.Text;
+        var kind = providerType == typeof(bool) ? ColumnCodecKind.Boolean
+            : providerType == typeof(int) || providerType == typeof(long) || providerType == typeof(short) || providerType == typeof(byte) ? ColumnCodecKind.Integer
+            : providerType == typeof(double) || providerType == typeof(float) ? ColumnCodecKind.Real
+            : providerType == typeof(byte[]) ? ColumnCodecKind.Blob
+            : ColumnCodecKind.Text;
+        return new ColumnInfo(kind, modelType, providerType);
     }
 
-    private Dictionary<string, ColumnCodecKind> GetTableColumnMap(string tableName) =>
+    private readonly record struct ColumnInfo(ColumnCodecKind Kind, Type ModelType, Type ProviderType);
+
+    private Dictionary<string, ColumnInfo> GetTableColumnMap(string tableName) =>
         _tableColumns.TryGetValue(tableName, out var map)
             ? map
             : throw new InvalidOperationException($"Table '{tableName}' is not present in EF model.");
