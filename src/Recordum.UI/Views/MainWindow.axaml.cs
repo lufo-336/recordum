@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.ViewModels;
 using Recordum.Presentation.ViewModels.Workspace;
 
@@ -17,14 +18,16 @@ public partial class MainWindow : Window
     private static readonly Geometry RestoreGlyph = Geometry.Parse("M8 5h11v11 M5 8h11v11H5z");
 
     private readonly MainWindowViewModel _viewModel;
+    private readonly SyncSchedulerHost? _syncScheduler;
 
     // Serve solo per il pubblico designer/preview di Avalonia e per i test che costruiscono la
     // finestra senza contenitore: la strada vera e' il costruttore con il ViewModel.
     public MainWindow() : this(null!) { }
 
-    public MainWindow(MainWindowViewModel viewModel)
+    public MainWindow(MainWindowViewModel viewModel, SyncSchedulerHost? syncScheduler = null)
     {
         _viewModel = viewModel;
+        _syncScheduler = syncScheduler;
         // InitializeComponent(), NON AvaloniaXamlLoader.Load(this): senza di esso i campi x:Name
         // restano null e il guasto arriva a runtime, muto.
         InitializeComponent();
@@ -43,6 +46,7 @@ public partial class MainWindow : Window
         // scheda cambiava ma il workspace non tornava alla Home).
         AddHandler(KeyDownEvent, OnWindowKeyDownTunnel, RoutingStrategies.Tunnel, handledEventsToo: true);
         Opened += OnOpened;
+        Activated += OnActivated;
         Closed += OnClosed;
     }
 
@@ -141,8 +145,11 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnActivated(object? sender, EventArgs e) => _syncScheduler?.Nudge();
+
     private void OnClosed(object? sender, EventArgs e)
     {
+        Activated -= OnActivated;
         if (_viewModel is not null)
             _viewModel.Workspace.PropertyChanged -= OnWorkspacePropertyChanged;
     }

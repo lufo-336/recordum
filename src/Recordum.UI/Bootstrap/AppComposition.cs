@@ -59,12 +59,14 @@ public static class AppComposition
         else services.AddSingleton<IAutoBackupKeyStore>(sp => new SecretStoreAutoBackupKeyStore(sp.GetRequiredService<ISecretStore>()));
     }
 
-    /// <summary>L'avvio della shell: <c>CoreInitializer</c>, poi lo scheduler dell'auto-backup. Un solo punto, cosi' un
-    /// test passa dallo stesso percorso di <c>App</c>.</summary>
+    /// <summary>L'avvio della shell: <c>CoreInitializer</c>, poi lo scheduler dell'auto-backup e quello dell'unione.
+    /// Un solo punto, cosi' un test passa dallo stesso percorso di <c>App</c>.</summary>
     public static async Task InitializeAsync(IServiceProvider services)
     {
         await services.GetRequiredService<CoreInitializer>().InitializeAsync().ConfigureAwait(true);
         StartBackupScheduler(services);
+        // Il primo giro non si attende: l'avvio non aspetta la cartella di scambio (il giro non lancia, logga).
+        _ = StartSyncSchedulerAsync(services);
     }
 
     /// <summary>Avvia lo scheduler dell'auto-backup: dopo <c>CoreInitializer</c> (il DB e' migrato), con l'attesa del
@@ -72,6 +74,9 @@ public static class AppComposition
     /// della passphrase dal portachiavi non tocca mai il thread dell'interfaccia. Si ferma con il Dispose del contenitore.</summary>
     public static void StartBackupScheduler(IServiceProvider services) =>
         services.GetRequiredService<BackupSchedulerHost>().Initialize();
+
+    public static Task StartSyncSchedulerAsync(IServiceProvider services, CancellationToken ct = default) =>
+        services.GetRequiredService<SyncSchedulerHost>().StartAsync(ct);
 
     /// <summary>Il servizio di sblocco che gira prima del contenitore. Il logger scrive nel log di
     /// <see cref="CrashLogger"/>: la causa di uno sblocco fallito (disco, permessi, salt rovinato) non

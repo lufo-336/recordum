@@ -36,9 +36,24 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.Exit += (_, _) =>
             {
-                // finally: il lock della cartella dati si rilascia anche se la chiusura del contenitore lancia.
-                try { _services?.Dispose(); }
-                finally { _dataLock?.Dispose(); }
+                // Alla chiusura un giro scrive il proprio file se e' cambiato; poi il lock della cartella dati si
+                // rilascia nel finally anche se il flush o la chiusura del contenitore lanciano.
+                try
+                {
+                    // Limitato a 10 s: la chiusura non resta appesa a una cartella di scambio lenta. Il giro gira sul
+                    // pool (ConfigureAwait(false)), quindi attenderlo qui non puo' bloccarsi sul thread dell'interfaccia.
+                    using var flushCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    _services?.GetService<SyncSchedulerHost>()?.FlushAsync(flushCts.Token).Wait(TimeSpan.FromSeconds(11));
+                }
+                catch (Exception ex)
+                {
+                    CrashLogger.Log("App.Exit (sync flush)", ex);
+                }
+                finally
+                {
+                    try { _services?.Dispose(); }
+                    finally { _dataLock?.Dispose(); }
+                }
             };
             _ = StartAsync(desktop);
         }
