@@ -80,7 +80,10 @@ public sealed class PinScopeMigrationTests
 
         await using var db = TestDbHelper.CreateAtMigration(connection, "PinScopeV24");
 
-        var setting = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.4", setting.Value);
+        // SQL grezzo: il modello EF di oggi ha colonne che alla 2.4 non ci sono ancora.
+        var version = await db.Database
+            .SqlQueryRaw<string>("SELECT value AS Value FROM app_settings WHERE key = 'schema_version'")
+            .SingleAsync();
+        Assert.Equal("2.4", version);
     }
 }

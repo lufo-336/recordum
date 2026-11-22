@@ -10,6 +10,7 @@ public sealed class Notification
     public TimeOnly? NotifyTime { get; set; }
     public bool IsEnabled { get; set; } = true;
     public DateTime CreatedAt { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
 }

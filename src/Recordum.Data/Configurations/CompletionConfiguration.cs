@@ -10,6 +10,7 @@ public sealed class CompletionConfiguration : IEntityTypeConfiguration<Completio
     {
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Notes).HasMaxLength(4000);
+        builder.Property(c => c.LastEditedDeviceName).HasMaxLength(200);
 
         builder.HasOne(c => c.HabitNode)
             .WithMany(n => n.Completions)

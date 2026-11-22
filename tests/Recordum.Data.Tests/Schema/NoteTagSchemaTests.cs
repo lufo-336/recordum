@@ -98,7 +98,7 @@ public sealed class NoteTagSchemaTests
         await db.SaveChangesAsync();
 
         var ex = await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlAsync(
-            $"INSERT INTO note_tag (note_id, tag_id, source) VALUES ({noteId}, {tag}, 'Altro')"));
+            $"INSERT INTO note_tag (note_id, tag_id, source, updated_at_ms) VALUES ({noteId}, {tag}, 'Altro', 0)"));
         Assert.Contains("ck_note_tag_source", ex.Message, StringComparison.Ordinal);
     }
 

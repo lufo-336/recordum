@@ -119,7 +119,7 @@ public class DiaryServiceTagTests
         using var conn = new SqliteConnection("DataSource=:memory:");
         conn.Open();
         var thrower = new ThrowingInterceptor();
-        var factory = new Factory(conn, new TimestampInterceptor(fx.Clock, fx.PluginContext), thrower);
+        var factory = new Factory(conn, new TimestampInterceptor(fx.Clock, fx.PluginContext, new FakeDeviceIdentity()), thrower);
         await using (var setup = factory.CreateDbContext())
         {
             await setup.Database.EnsureCreatedAsync();

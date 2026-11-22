@@ -282,12 +282,12 @@ public sealed class ScaleAnchorsV220MigrationTests
     }
 
     [Fact]
-    public async Task Labels_and_columns_are_gone_and_schema_version_is_2_20()
+    public async Task Labels_and_columns_are_gone_and_schema_version_is_2_21()
     {
         await using var conn = await OpenAt219Async();
         await MigrateAsync(conn);
 
-        (await ScalarAsync(conn, "SELECT value FROM app_settings WHERE key = 'schema_version'")).Should().Be("2.20");
+        (await ScalarAsync(conn, "SELECT value FROM app_settings WHERE key = 'schema_version'")).Should().Be("2.21");
         (await ScalarAsync(conn, "SELECT count(*) FROM pragma_table_info('scale_templates') WHERE name = 'labels_json'")).Should().Be(0L);
         (await ScalarAsync(conn, "SELECT count(*) FROM pragma_table_info('metric_definitions') WHERE name = 'labels_json'")).Should().Be(0L);
         (await ScalarAsync(conn, "SELECT count(*) FROM scale_templates WHERE precision <> 'Integer'")).Should().Be(0L);
@@ -360,7 +360,7 @@ public sealed class ScaleAnchorsV220MigrationTests
                 var v = await db.CompletionValues.SingleAsync(x => x.Id == valueId);
                 v.ValueDecimal.Should().Be(5m);
                 v.ValueInteger.Should().BeNull();
-                (await db.AppSettings.SingleAsync(s => s.Key == "schema_version")).Value.Should().Be("2.20");
+                (await db.AppSettings.SingleAsync(s => s.Key == "schema_version")).Value.Should().Be("2.21");
             }
         }
         finally { await fixture.DisposeAsync(); }

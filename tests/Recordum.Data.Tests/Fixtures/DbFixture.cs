@@ -24,6 +24,8 @@ public sealed class DbFixture : IAsyncDisposable
 
     public FakePluginContext PluginContext { get; }
 
+    public FakeDeviceIdentity DeviceIdentity { get; }
+
     public IDbContextFactory<RecordumDbContext> Factory { get; }
 
     /// <summary>Il resolver reale sul DB della fixture: i servizi che risolvono il confine di giornata
@@ -38,17 +40,19 @@ public sealed class DbFixture : IAsyncDisposable
     public DbFixture(
         FakeClock? clock = null,
         FakePluginContext? pluginContext = null,
-        bool enableHistory = true)
+        bool enableHistory = true,
+        FakeDeviceIdentity? deviceIdentity = null)
     {
         Clock = clock ?? new FakeClock();
         PluginContext = pluginContext ?? new FakePluginContext();
+        DeviceIdentity = deviceIdentity ?? new FakeDeviceIdentity();
         _connection = new SqliteConnection("DataSource=:memory:;Cache=Shared");
         _connection.Open();
         var history = enableHistory
             ? new HabitConfigHistoryInterceptor(
                 Clock, NullLogger<HabitConfigHistoryInterceptor>.Instance)
             : null;
-        var timestamp = new TimestampInterceptor(Clock, PluginContext);
+        var timestamp = new TimestampInterceptor(Clock, PluginContext, DeviceIdentity);
         Factory = new FixtureFactory(_connection, history, timestamp, _counter);
         using var db = Factory.CreateDbContext();
         db.Database.EnsureCreated();

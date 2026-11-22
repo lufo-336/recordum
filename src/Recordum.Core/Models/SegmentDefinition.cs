@@ -10,6 +10,7 @@ public sealed class SegmentDefinition
     public bool IsRest { get; set; }
     /// <summary>Optional countdown length for the segment. Null = manual/lap (user advances). Set = auto-advancing interval.</summary>
     public int? DurationSeconds { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
 }

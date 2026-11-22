@@ -137,6 +137,33 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
     }
 
     [Fact]
+    public async Task Saving_a_text_change_resolves_the_device_identity_without_a_DI_cycle()
+    {
+        // DeviceIdentity chiede la factory del contesto, le cui opzioni contengono TimestampInterceptor, che chiede
+        // IDeviceIdentity: il ciclo si rompe leggendo la factory in modo pigro, alla prima nota con testo.
+        var options = Options();
+        var key = new byte[KeyMaterial.LengthBytes];
+        for (var i = 0; i < key.Length; i++) key[i] = (byte)(i + 1);
+        var services = new ServiceCollection();
+        services.AddRecordumCore(options);
+        services.AddShellDoubles(new FixedKeyProvider(key));
+        await using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<CoreInitializer>().InitializeAsync();
+
+        var habitId = Guid.NewGuid();
+        var completionId = Guid.NewGuid();
+        await using var db = await provider.GetRequiredService<IDbContextFactory<Recordum.Data.RecordumDbContext>>().CreateDbContextAsync();
+        db.HabitNodes.Add(new Recordum.Core.Models.HabitNode { Id = habitId, NodeType = Recordum.Core.Enums.NodeType.Habit, HabitType = Recordum.Core.Enums.HabitType.Journal, Name = "j" });
+        db.Completions.Add(new Recordum.Core.Models.Completion { Id = completionId, HabitNodeId = habitId, CompletedAt = DateTime.UnixEpoch, CompletedAtMs = 0, Notes = "testo" });
+        await db.SaveChangesAsync();
+
+        var saved = await db.Completions.AsNoTracking().SingleAsync(c => c.Id == completionId);
+        Assert.True(saved.UpdatedAtMs > 0);
+        Assert.Null(saved.LastEditedDeviceName); // nessuna identità creata: sync_meta è vuota
+        Assert.Same(provider.GetRequiredService<IDeviceIdentity>(), provider.GetRequiredService<Recordum.Data.Sync.DeviceIdentity>());
+    }
+
+    [Fact]
     public async Task The_database_gate_singleton_is_among_the_interceptors_of_the_context_factory()
     {
         // F2c-2: se la factory avesse un'altra istanza (o nessuna), il restore chiuderebbe un cancello che nessuna
@@ -187,7 +214,7 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
 
         await using var scope = provider.CreateAsyncScope();
         var settings = scope.ServiceProvider.GetRequiredService<IAppSettingService>();
-        Assert.Equal("2.20", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
+        Assert.Equal("2.21", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
         Assert.Equal("true", await settings.GetAsync("maintenance.retro_noon_backfill_done")); // il backfill R9 ha girato
         Assert.Equal(1, steps.Calls);                                          // gli step opzionali, una volta
     }

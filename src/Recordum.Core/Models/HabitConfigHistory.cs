@@ -30,6 +30,7 @@ public sealed class HabitConfigHistory
 
     public bool Repeatable { get; set; }
     public string? SeriesLabelsJson { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
 }

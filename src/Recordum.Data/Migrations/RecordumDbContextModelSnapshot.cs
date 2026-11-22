@@ -182,6 +182,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("updated_at");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.Property<string>("Value")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -197,109 +201,127 @@ namespace Recordum.Data.Migrations
                         {
                             Key = "language",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "en"
                         },
                         new
                         {
                             Key = "daily_reset_time",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "00:00"
                         },
                         new
                         {
                             Key = "theme",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "system"
                         },
                         new
                         {
                             Key = "onboarding_complete",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "false"
                         },
                         new
                         {
                             Key = "ai_mode",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "disabled"
                         },
                         new
                         {
                             Key = "ai_default_sharing",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "none"
                         },
                         new
                         {
                             Key = "notifications_enabled",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "true"
                         },
                         new
                         {
                             Key = "app_lock_enabled",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "false"
                         },
                         new
                         {
                             Key = "app_lock_type",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "pin"
                         },
                         new
                         {
                             Key = "inactivity_timeout_minutes",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "5"
                         },
                         new
                         {
                             Key = "monthly_summary_day",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "1"
                         },
                         new
                         {
                             Key = "monthly_summary_time",
                             UpdatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "09:00"
                         },
                         new
                         {
                             Key = "backup.auto.enabled",
                             UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "true"
                         },
                         new
                         {
                             Key = "backup.auto.frequency_days",
                             UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "7"
                         },
                         new
                         {
                             Key = "backup.auto.retention_count",
                             UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = "8"
                         },
                         new
                         {
                             Key = "backup.auto.last_run_utc",
                             UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = ""
                         },
                         new
                         {
                             Key = "backup.auto.path",
                             UpdatedAt = new DateTime(2026, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
                             Value = ""
                         },
                         new
                         {
                             Key = "schema_version",
-                            UpdatedAt = new DateTime(2026, 11, 17, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "2.20"
+                            UpdatedAt = new DateTime(2026, 11, 22, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAtMs = 0L,
+                            Value = "2.21"
                         });
                 });
 
@@ -443,6 +465,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("sort_order");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_chart_series");
 
@@ -493,6 +519,11 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_retroactive");
 
+                    b.Property<string>("LastEditedDeviceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_edited_device_name");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(4000)
                         .HasColumnType("TEXT")
@@ -505,6 +536,10 @@ namespace Recordum.Data.Migrations
                     b.Property<long?>("StartedAtMs")
                         .HasColumnType("INTEGER")
                         .HasColumnName("started_at_ms");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.HasKey("Id")
                         .HasName("pk_completions");
@@ -566,6 +601,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("started_at_ms");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_completion_segments");
 
@@ -600,6 +639,10 @@ namespace Recordum.Data.Migrations
                     b.Property<int>("SeriesIndex")
                         .HasColumnType("INTEGER")
                         .HasColumnName("series_index");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.Property<decimal?>("ValueDecimal")
                         .HasPrecision(18, 6)
@@ -835,6 +878,10 @@ namespace Recordum.Data.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("TEXT")
                         .HasColumnName("target_value");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.HasKey("Id")
                         .HasName("pk_goals");
@@ -1082,6 +1129,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("timer_target_seconds");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.Property<DateTime>("ValidFrom")
                         .HasColumnType("TEXT")
                         .HasColumnName("valid_from");
@@ -1247,6 +1298,10 @@ namespace Recordum.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.HasKey("HabitNodeId", "TagId")
                         .HasName("pk_habit_node_tags");
@@ -1448,6 +1503,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("unit_of_measure_id");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_metric_definitions");
 
@@ -1499,6 +1558,11 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_sensitive");
 
+                    b.Property<string>("LastEditedDeviceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_edited_device_name");
+
                     b.Property<DateOnly?>("TargetDate")
                         .HasColumnType("TEXT")
                         .HasColumnName("target_date");
@@ -1545,6 +1609,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("note_id");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_note_histories");
 
@@ -1568,6 +1636,10 @@ namespace Recordum.Data.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("TEXT")
                         .HasColumnName("source");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.HasKey("NoteId", "TagId", "Source")
                         .HasName("pk_note_tag");
@@ -1609,6 +1681,10 @@ namespace Recordum.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("TEXT")
                         .HasColumnName("notify_type");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.HasKey("Id")
                         .HasName("pk_notifications");
@@ -2132,6 +2208,10 @@ namespace Recordum.Data.Migrations
                         .HasDefaultValue("Integer")
                         .HasColumnName("precision");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_scale_templates");
 
@@ -2154,7 +2234,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 7,
                             MinValue = 1,
                             Name = "Bristol Stool Scale",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2165,7 +2246,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 3,
                             MinValue = 0,
                             Name = "Mayo Rectal Bleeding Score",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2176,7 +2258,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 10,
                             MinValue = 0,
                             Name = "NRS Pain Scale",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2187,7 +2270,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 5,
                             MinValue = 1,
                             Name = "Likert Scale (1–5)",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2198,7 +2282,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 5,
                             MinValue = 1,
                             Name = "Sleep Quality (1–5)",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2209,7 +2294,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 10,
                             MinValue = 1,
                             Name = "Stress Level (1–10)",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2220,7 +2306,8 @@ namespace Recordum.Data.Migrations
                             MaxValue = 5,
                             MinValue = 1,
                             Name = "Mood Scale (1–5)",
-                            Precision = "Integer"
+                            Precision = "Integer",
+                            UpdatedAtMs = 0L
                         });
                 });
 
@@ -2258,6 +2345,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("sort_order");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_segment_definitions");
 
@@ -2294,6 +2385,10 @@ namespace Recordum.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT")
                         .HasColumnName("reason");
+
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
 
                     b.HasKey("Id")
                         .HasName("pk_streak_pauses");
@@ -2366,6 +2461,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnName("name")
                         .UseCollation("NOCASE");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_tags");
 
@@ -2408,6 +2507,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("symbol");
 
+                    b.Property<long>("UpdatedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("updated_at_ms");
+
                     b.HasKey("Id")
                         .HasName("pk_units_of_measure");
 
@@ -2425,7 +2528,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Kilometre",
-                            Symbol = "km"
+                            Symbol = "km",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2434,7 +2538,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Metre",
-                            Symbol = "m"
+                            Symbol = "m",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2443,7 +2548,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Kilogram",
-                            Symbol = "kg"
+                            Symbol = "kg",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2452,7 +2558,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Gram",
-                            Symbol = "g"
+                            Symbol = "g",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2461,7 +2568,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Millilitre",
-                            Symbol = "ml"
+                            Symbol = "ml",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2470,7 +2578,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Litre",
-                            Symbol = "l"
+                            Symbol = "l",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2479,7 +2588,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Kilocalorie",
-                            Symbol = "kcal"
+                            Symbol = "kcal",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2487,7 +2597,8 @@ namespace Recordum.Data.Migrations
                             Code = "steps",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            Name = "Steps"
+                            Name = "Steps",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2496,7 +2607,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Hours",
-                            Symbol = "h"
+                            Symbol = "h",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2505,7 +2617,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Minutes",
-                            Symbol = "min"
+                            Symbol = "min",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2514,7 +2627,8 @@ namespace Recordum.Data.Migrations
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
                             Name = "Seconds",
-                            Symbol = "s"
+                            Symbol = "s",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2522,7 +2636,8 @@ namespace Recordum.Data.Migrations
                             Code = "pages",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            Name = "Pages"
+                            Name = "Pages",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2530,7 +2645,8 @@ namespace Recordum.Data.Migrations
                             Code = "reps",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            Name = "Repetitions"
+                            Name = "Repetitions",
+                            UpdatedAtMs = 0L
                         },
                         new
                         {
@@ -2538,7 +2654,8 @@ namespace Recordum.Data.Migrations
                             Code = "sets",
                             CreatedAt = new DateTime(2026, 5, 14, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsOfficial = true,
-                            Name = "Sets"
+                            Name = "Sets",
+                            UpdatedAtMs = 0L
                         });
                 });
 
@@ -2603,6 +2720,63 @@ namespace Recordum.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_attachment_size", "file_size_bytes >= 0");
                         });
+                });
+
+            modelBuilder.Entity("Recordum.Data.Models.SyncBase", b =>
+                {
+                    b.Property<string>("PeerDeviceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("peer_device_id");
+
+                    b.Property<string>("Entity")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity");
+
+                    b.Property<string>("EntityId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("RowJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("row_json");
+
+                    b.HasKey("PeerDeviceId", "Entity", "EntityId")
+                        .HasName("pk_sync_base");
+
+                    b.ToTable("sync_base", (string)null);
+                });
+
+            modelBuilder.Entity("Recordum.Data.Models.SyncTombstone", b =>
+                {
+                    b.Property<string>("Entity")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity");
+
+                    b.Property<string>("EntityId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("AliasOf")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("alias_of");
+
+                    b.Property<long>("DeletedAtMs")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("deleted_at_ms");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("device_id");
+
+                    b.HasKey("Entity", "EntityId")
+                        .HasName("pk_sync_tombstone");
+
+                    b.ToTable("sync_tombstone", (string)null);
                 });
 
             modelBuilder.Entity("Recordum.Core.Models.AIInsight", b =>

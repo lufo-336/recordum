@@ -8,4 +8,5 @@ public sealed class UnitOfMeasure
     public string? Symbol { get; set; }
     public bool IsOfficial { get; set; }
     public DateTime CreatedAt { get; set; }
+    public long UpdatedAtMs { get; set; }
 }

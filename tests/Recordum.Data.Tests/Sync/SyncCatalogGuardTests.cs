@@ -110,6 +110,19 @@ public sealed partial class SyncCatalogGuardTests
     }
 
     [Fact]
+    public async Task EveryLocalTableExistsInTheModel()
+    {
+        await using var fx = new DbFixture();
+        await using var db = await fx.Factory.CreateDbContextAsync();
+
+        var modelTables = db.Model.GetEntityTypes().Select(e => e.GetTableName()).ToHashSet(StringComparer.Ordinal);
+        foreach (var table in SyncCatalog.LocalTables)
+        {
+            modelTables.Should().Contain(table, $"'{table}' in LocalTables deve essere una tabella del modello EF (niente nomi morti)");
+        }
+    }
+
+    [Fact]
     public async Task TravellingAndLocalSetsMatchSpec()
     {
         await using var fx = new DbFixture();

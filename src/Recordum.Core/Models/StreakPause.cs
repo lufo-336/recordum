@@ -8,6 +8,7 @@ public sealed class StreakPause
     public DateOnly PauseTo { get; set; }
     public string? Reason { get; set; }
     public DateTime CreatedAt { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
 }

@@ -12,7 +12,9 @@ public sealed class Completion
     public long? EndedAtMs { get; set; }
     public int? DurationSeconds { get; set; }
     public string? Notes { get; set; }
+    public string? LastEditedDeviceName { get; set; }
     public bool IsRetroactive { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
     public List<CompletionValue> Values { get; set; } = [];

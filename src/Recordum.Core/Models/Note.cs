@@ -16,6 +16,7 @@ public sealed class Note
     public Guid? CompletionId { get; set; }
 
     public string BodyMd { get; set; } = string.Empty;
+    public string? LastEditedDeviceName { get; set; }
     public bool IsSensitive { get; set; }
     /// <summary>Optional logical day this note belongs to (calendar "note of the day"). Null = free/un-anchored note.</summary>
     public DateOnly? TargetDate { get; set; }

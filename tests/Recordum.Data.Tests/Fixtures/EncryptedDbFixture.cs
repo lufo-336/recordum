@@ -32,6 +32,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
     public IDbKeyProvider KeyProvider { get; }
     public IBackupLogService LogService { get; }
     public FakeClock Clock { get; }
+    public FakeDeviceIdentity DeviceIdentity { get; }
     public IPluginManager PluginManager { get; }
 
     private EncryptedDbFixture(
@@ -41,6 +42,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         IDbKeyProvider keyProvider,
         IBackupLogService logService,
         FakeClock clock,
+        FakeDeviceIdentity deviceIdentity,
         IPluginManager pluginManager)
     {
         RootDir = rootDir;
@@ -49,6 +51,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         KeyProvider = keyProvider;
         LogService = logService;
         Clock = clock;
+        DeviceIdentity = deviceIdentity;
         PluginManager = pluginManager;
     }
 
@@ -86,15 +89,16 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         }
         SqliteConnection.ClearAllPools();
 
+        var deviceIdentity = new FakeDeviceIdentity();
         var gate = new DatabaseGate();
         var dbFactory = new EncryptedDbContextFactory(dbPath, keyProvider,
-            new TimestampInterceptor(clock, new FakePluginContext()),
+            new TimestampInterceptor(clock, new FakePluginContext(), deviceIdentity),
             new HabitConfigHistoryInterceptor(clock, NullLogger<HabitConfigHistoryInterceptor>.Instance), gate);
 
         var logService = new EncryptedBackupLogService(dbFactory);
         var pluginManager = new StubPluginManager();
 
-        return new EncryptedDbFixture(rootDir, options, dbFactory, keyProvider, logService, clock, pluginManager) { Gate = gate };
+        return new EncryptedDbFixture(rootDir, options, dbFactory, keyProvider, logService, clock, deviceIdentity, pluginManager) { Gate = gate };
     }
 
     // ── Backup/Restore helpers ──────────────────────────────────────────────

@@ -13,6 +13,7 @@ public sealed class CompletionSegment
     public int? DurationSeconds { get; set; }
     public bool IsManualEdit { get; set; }
     public string? Note { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public Completion Completion { get; set; } = null!;
     public SegmentDefinition SegmentDefinition { get; set; } = null!;

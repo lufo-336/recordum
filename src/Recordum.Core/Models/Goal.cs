@@ -16,6 +16,7 @@ public sealed class Goal
     public bool IsClosed { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
     public MetricDefinition? MetricDefinition { get; set; }

@@ -8,4 +8,5 @@ public sealed class NoteTag
     public Guid NoteId { get; set; }
     public Guid TagId { get; set; }
     public NoteTagSource Source { get; set; }
+    public long UpdatedAtMs { get; set; }
 }

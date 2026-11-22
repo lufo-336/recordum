@@ -27,7 +27,7 @@ public class BackupServiceTests
             File.Exists(dest).Should().BeTrue();
             new FileInfo(dest).Length.Should().BeGreaterThan(0);
             result.Manifest.Kind.Should().Be(BackupKind.Manual);
-            result.Manifest.SchemaVersion.Should().Be("2.20");
+            result.Manifest.SchemaVersion.Should().Be("2.21");
 
             (await fixture.LogService.ListAsync(10)).Should().ContainSingle(r => r.Path == dest && r.Kind == "Manual");
 

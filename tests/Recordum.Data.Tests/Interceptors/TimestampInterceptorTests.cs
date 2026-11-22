@@ -5,6 +5,8 @@ using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data;
 using Recordum.Data.Interceptors;
+using Recordum.Data.Sync;
+using Recordum.Data.Tests.Fixtures;
 using Xunit;
 
 namespace Recordum.Data.Tests.Interceptors;
@@ -14,6 +16,7 @@ public class TimestampInterceptorTests : IDisposable
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"recordum-ts-{Guid.NewGuid():N}.db");
     private readonly FakeClock _clock = new();
     private readonly AmbientPluginContext _pluginCtx = new();
+    private readonly FakeDeviceIdentity _deviceIdentity = new();
     private readonly RecordumDbContext _db;
 
     public TimestampInterceptorTests()
@@ -21,7 +24,7 @@ public class TimestampInterceptorTests : IDisposable
         var options = new DbContextOptionsBuilder<RecordumDbContext>()
             .UseSqlite($"Data Source={_dbPath}")
             .UseSnakeCaseNamingConvention()
-            .AddInterceptors(new TimestampInterceptor(_clock, _pluginCtx))
+            .AddInterceptors(new TimestampInterceptor(_clock, _pluginCtx, _deviceIdentity))
             .Options;
         _db = new RecordumDbContext(options);
         _db.Database.EnsureCreated();
@@ -109,6 +112,145 @@ public class TimestampInterceptorTests : IDisposable
         _db.SaveChanges();
 
         Assert.Equal(_clock.Now.ToUnixTimeMilliseconds(), note.UpdatedAtMs);
+    }
+
+    [Fact]
+    public void StampsLastEditedDeviceNameOnlyWhenTextChanges()
+    {
+        var spy = new SpyDeviceIdentity { DeviceName = "Fedora" };
+        using var db = CreateSpyContext(spy);
+
+        var parent = new HabitNode { Id = Guid.NewGuid(), Name = "p", NodeType = NodeType.Habit, HabitType = HabitType.Journal };
+        db.HabitNodes.Add(parent);
+        db.SaveChanges();
+        Assert.Equal(0, spy.Reads);
+
+        // Added con testo vuoto / nullo: non legge DeviceIdentity né stampa.
+        var emptyNote = new Note { Id = Guid.NewGuid(), HabitNodeId = parent.Id, BodyMd = string.Empty };
+        var bareCompletion = new Completion
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = parent.Id,
+            CompletedAt = _clock.Now.UtcDateTime,
+            CompletedAtMs = _clock.UtcNowMs,
+        };
+        db.Notes.Add(emptyNote);
+        db.Completions.Add(bareCompletion);
+        db.SaveChanges();
+        Assert.Null(emptyNote.LastEditedDeviceName);
+        Assert.Null(bareCompletion.LastEditedDeviceName);
+        Assert.Equal(0, spy.Reads);
+
+        // Added con testo non vuoto: legge e stampa "Fedora".
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = parent.Id, BodyMd = "v1" };
+        var completion = new Completion
+        {
+            Id = Guid.NewGuid(),
+            HabitNodeId = parent.Id,
+            CompletedAt = _clock.Now.UtcDateTime,
+            CompletedAtMs = _clock.UtcNowMs,
+            Notes = "c1",
+        };
+        db.Notes.Add(note);
+        db.Completions.Add(completion);
+        db.SaveChanges();
+        Assert.Equal("Fedora", note.LastEditedDeviceName);
+        Assert.Equal("Fedora", completion.LastEditedDeviceName);
+        Assert.Equal(1, spy.Reads);
+
+        // Modifica di altri campi: DeviceIdentity non viene letto, LastEditedDeviceName resta "Fedora".
+        spy.DeviceName = "Mac";
+        note.IsSensitive = true;
+        note.TargetDate = new DateOnly(2026, 5, 14);
+        completion.IsRetroactive = true;
+        db.SaveChanges();
+        Assert.Equal("Fedora", note.LastEditedDeviceName);
+        Assert.Equal("Fedora", completion.LastEditedDeviceName);
+        Assert.Equal(1, spy.Reads);
+
+        // Modifica solo di BodyMd: ora aggiorna solo la nota.
+        note.BodyMd = "v2";
+        db.SaveChanges();
+        Assert.Equal("Mac", note.LastEditedDeviceName);
+        Assert.Equal("Fedora", completion.LastEditedDeviceName);
+        Assert.Equal(2, spy.Reads);
+
+        // Modifica solo di Completion.Notes: ora aggiorna la completion.
+        spy.DeviceName = "Linux";
+        completion.Notes = "c2";
+        db.SaveChanges();
+        Assert.Equal("Linux", completion.LastEditedDeviceName);
+        Assert.Equal("Mac", note.LastEditedDeviceName);
+        Assert.Equal(3, spy.Reads);
+    }
+
+    [Fact]
+    public async Task DeviceIdentity_reads_sync_meta_lazily_caches_and_reloads_after_invalidate()
+    {
+        await using var fx = new DbFixture();
+        var identity = new DeviceIdentity(new FactoryServiceProvider(fx.Factory));
+
+        // Tabella sync_meta vuota -> null.
+        Assert.Null(identity.DeviceName);
+
+        // Anche inserendo la riga, resta in cache finché non si chiama Invalidate().
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.SyncMeta.Add(new SyncMeta
+            {
+                Id = Guid.NewGuid(),
+                DeviceId = "dev-1",
+                DeviceName = "Fedora",
+                CreatedAt = _clock.Now.UtcDateTime,
+            });
+            await db.SaveChangesAsync();
+        }
+        Assert.Null(identity.DeviceName);
+
+        identity.Invalidate();
+        Assert.Equal("Fedora", identity.DeviceName);
+
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            var meta = await db.SyncMeta.SingleAsync();
+            meta.DeviceName = "Fedora-Renamed";
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal("Fedora", identity.DeviceName);
+
+        identity.Invalidate();
+        Assert.Equal("Fedora-Renamed", identity.DeviceName);
+    }
+
+    private RecordumDbContext CreateSpyContext(IDeviceIdentity identity)
+    {
+        var options = new DbContextOptionsBuilder<RecordumDbContext>()
+            .UseSqlite($"Data Source={_dbPath}")
+            .UseSnakeCaseNamingConvention()
+            .AddInterceptors(new TimestampInterceptor(_clock, _pluginCtx, identity))
+            .Options;
+        return new RecordumDbContext(options);
+    }
+
+    private sealed class SpyDeviceIdentity : IDeviceIdentity
+    {
+        private string? _deviceName;
+        public int Reads { get; private set; }
+        public string? DeviceName
+        {
+            get
+            {
+                Reads++;
+                return _deviceName;
+            }
+            set => _deviceName = value;
+        }
+    }
+
+    private sealed class FactoryServiceProvider(IDbContextFactory<RecordumDbContext> factory) : IServiceProvider
+    {
+        public object? GetService(Type serviceType) =>
+            serviceType == typeof(IDbContextFactory<RecordumDbContext>) ? factory : null;
     }
 
     public void Dispose()

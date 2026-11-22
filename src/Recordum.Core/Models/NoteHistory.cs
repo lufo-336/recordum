@@ -7,6 +7,7 @@ public sealed class NoteHistory
     public Guid NoteId { get; set; }
     public string BodyMd { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public Note Note { get; set; } = null!;
 }

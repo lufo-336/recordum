@@ -14,6 +14,7 @@ using Recordum.Data.Security;
 using Recordum.Data.Services;
 using Recordum.Core.Services;
 using Recordum.Data.Services.Queries;
+using Recordum.Data.Sync;
 using Recordum.Plugins.ChartEngine;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.ExportEngine;
@@ -71,6 +72,8 @@ public static class ServiceRegistrar
 #pragma warning restore CA1416
 
         // Interceptors — registration order = invocation order in EF Core.
+        services.AddSingleton<DeviceIdentity>();
+        services.AddSingleton<IDeviceIdentity>(sp => sp.GetRequiredService<DeviceIdentity>());
         services.AddSingleton<HabitConfigHistoryInterceptor>();
         services.AddSingleton<TimestampInterceptor>();
         services.AddSingleton<SqlCipherKeyConnectionInterceptor>();

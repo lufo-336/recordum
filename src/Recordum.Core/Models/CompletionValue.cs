@@ -11,6 +11,7 @@ public sealed class CompletionValue
     public decimal? ValueDecimal { get; set; }
     public int? ValueSeconds { get; set; }
     public string? ValueText { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public Completion Completion { get; set; } = null!;
     public MetricDefinition MetricDefinition { get; set; } = null!;

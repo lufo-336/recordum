@@ -43,28 +43,7 @@ public static class SyncCatalog
     /// Colonne già presenti nel contratto ma aggiunte fisicamente al DB dal Task 2;
     /// il Task 2 svuota questo elenco appena migra lo schema.
     /// </summary>
-    public static IReadOnlySet<string> PendingColumns { get; } = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "app_settings.updated_at_ms",
-        "units_of_measure.updated_at_ms",
-        "tags.updated_at_ms",
-        "scale_templates.updated_at_ms",
-        "habit_config_histories.updated_at_ms",
-        "metric_definitions.updated_at_ms",
-        "segment_definitions.updated_at_ms",
-        "goals.updated_at_ms",
-        "notifications.updated_at_ms",
-        "streak_pauses.updated_at_ms",
-        "habit_node_tags.updated_at_ms",
-        "completions.updated_at_ms",
-        "completions.last_edited_device_name",
-        "completion_segments.updated_at_ms",
-        "completion_values.updated_at_ms",
-        "notes.last_edited_device_name",
-        "note_histories.updated_at_ms",
-        "note_tag.updated_at_ms",
-        "chart_series.updated_at_ms",
-    };
+    public static IReadOnlySet<string> PendingColumns { get; } = new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>Indici unici non-PK che non possono generare duplicati tra dispositivi diversi.</summary>
     public static IReadOnlyDictionary<string, string> UniqueIndexExceptions { get; } =

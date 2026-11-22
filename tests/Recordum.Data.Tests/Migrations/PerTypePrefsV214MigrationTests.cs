@@ -15,7 +15,7 @@ namespace Recordum.Data.Tests.Migrations;
 public sealed class PerTypePrefsV214MigrationTests
 {
     [Fact]
-    public async Task Schema_version_is_2_20_after_full_migration()
+    public async Task Schema_version_is_2_21_after_full_migration()
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         await connection.OpenAsync();
@@ -23,7 +23,7 @@ public sealed class PerTypePrefsV214MigrationTests
         await db.Database.MigrateAsync();
 
         var setting = await db.AppSettings.SingleAsync(s => s.Key == "schema_version");
-        Assert.Equal("2.20", setting.Value);
+        Assert.Equal("2.21", setting.Value);
     }
 
     [Fact]
@@ -95,19 +95,18 @@ public sealed class PerTypePrefsV214MigrationTests
             await TestDbHelper.RawInsertHabitConfigAsync(connection, Guid.NewGuid(), multi);
             await TestDbHelper.RawInsertHabitConfigAsync(connection, Guid.NewGuid(), single);
 
-            // completions + completion_values are unchanged by this migration → EF-seed them.
+            // SQL grezzo: alla 2.13 metriche, completions e valori non hanno ancora le colonne di sync (2.21),
+            // che il modello EF di oggi invece scrive.
             var metricMulti = Guid.NewGuid();
             var metricSingle = Guid.NewGuid();
-            seed.MetricDefinitions.Add(new MetricDefinition { Id = metricMulti, HabitNodeId = multi, Name = "reps", Type = MetricType.Integer, SortOrder = 0 });
-            seed.MetricDefinitions.Add(new MetricDefinition { Id = metricSingle, HabitNodeId = single, Name = "reps", Type = MetricType.Integer, SortOrder = 0 });
-
             var compMulti = Guid.NewGuid();
             var compSingle = Guid.NewGuid();
-            seed.Completions.Add(new Completion { Id = compMulti, HabitNodeId = multi, CompletedAt = DateTime.UtcNow, CompletedAtMs = 1 });
-            seed.Completions.Add(new Completion { Id = compSingle, HabitNodeId = single, CompletedAt = DateTime.UtcNow, CompletedAtMs = 2 });
-            seed.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = compMulti, MetricDefinitionId = metricMulti, SeriesIndex = 1, ValueInteger = 10 });
-            seed.CompletionValues.Add(new CompletionValue { Id = Guid.NewGuid(), CompletionId = compSingle, MetricDefinitionId = metricSingle, SeriesIndex = 0, ValueInteger = 5 });
-            await seed.SaveChangesAsync();
+            await ExecAsync(connection, "INSERT INTO metric_definitions (id, habit_node_id, name, type, sort_order) VALUES ($id, $h, 'reps', 'Integer', 0)", ("$id", metricMulti), ("$h", multi));
+            await ExecAsync(connection, "INSERT INTO metric_definitions (id, habit_node_id, name, type, sort_order) VALUES ($id, $h, 'reps', 'Integer', 0)", ("$id", metricSingle), ("$h", single));
+            await ExecAsync(connection, "INSERT INTO completions (id, habit_node_id, completed_at, completed_at_ms, is_retroactive) VALUES ($id, $h, '2026-06-01 00:00:00', 1, 0)", ("$id", compMulti), ("$h", multi));
+            await ExecAsync(connection, "INSERT INTO completions (id, habit_node_id, completed_at, completed_at_ms, is_retroactive) VALUES ($id, $h, '2026-06-01 00:00:00', 2, 0)", ("$id", compSingle), ("$h", single));
+            await ExecAsync(connection, "INSERT INTO completion_values (id, completion_id, metric_definition_id, series_index, value_integer) VALUES ($id, $c, $m, 1, 10)", ("$id", Guid.NewGuid()), ("$c", compMulti), ("$m", metricMulti));
+            await ExecAsync(connection, "INSERT INTO completion_values (id, completion_id, metric_definition_id, series_index, value_integer) VALUES ($id, $c, $m, 0, 5)", ("$id", Guid.NewGuid()), ("$c", compSingle), ("$m", metricSingle));
         }
 
         // Apply the remaining migration (PerTypePrefsV214 + its backfill).
@@ -118,5 +117,13 @@ public sealed class PerTypePrefsV214MigrationTests
         var configs = await db.HabitConfigs.ToDictionaryAsync(c => c.HabitNodeId, c => c.Repeatable);
         Assert.True(configs[multi]);
         Assert.False(configs[single]);
+    }
+
+    private static async Task ExecAsync(SqliteConnection conn, string sql, params (string Name, Guid Value)[] args)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        foreach (var (n, v) in args) cmd.Parameters.AddWithValue(n, v.ToString("D").ToUpperInvariant());
+        await cmd.ExecuteNonQueryAsync();
     }
 }

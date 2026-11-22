@@ -11,6 +11,7 @@ public sealed class NoteConfiguration : IEntityTypeConfiguration<Note>
     {
         builder.HasKey(n => n.Id);
         // BodyMd has no max length (TEXT column)
+        builder.Property(n => n.LastEditedDeviceName).HasMaxLength(200);
 
         builder.Property(n => n.Category)
             .HasConversion<string>()

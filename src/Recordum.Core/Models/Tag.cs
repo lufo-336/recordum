@@ -6,6 +6,7 @@ public sealed class Tag
     public string Name { get; set; } = string.Empty;
     public string? Color { get; set; }
     public DateTime CreatedAt { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public List<HabitNodeTag> HabitNodeTags { get; set; } = [];
 }

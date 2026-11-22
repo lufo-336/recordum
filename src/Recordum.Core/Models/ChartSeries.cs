@@ -9,6 +9,7 @@ public sealed class ChartSeries
     public string? Label { get; set; }
     public string? Color { get; set; }
     public int SortOrder { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public Chart Chart { get; set; } = null!;
     public HabitNode HabitNode { get; set; } = null!;

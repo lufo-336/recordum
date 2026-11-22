@@ -2,10 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Recordum.Core.Abstractions;
+using Recordum.Core.Models;
 
 namespace Recordum.Data.Interceptors;
 
-public sealed class TimestampInterceptor(IClock clock, IPluginContext pluginContext) : SaveChangesInterceptor
+public sealed class TimestampInterceptor(
+    IClock clock,
+    IPluginContext pluginContext,
+    IDeviceIdentity deviceIdentity) : SaveChangesInterceptor
 {
     private static readonly HashSet<string> ProvenanceTypes =
         ["HabitNode", "HabitTemplate", "ExportTemplate", "Chart"];
@@ -29,6 +33,8 @@ public sealed class TimestampInterceptor(IClock clock, IPluginContext pluginCont
         var nowDt = clock.UtcNow.UtcDateTime;
         var nowMs = clock.UtcNowMs;
         var pluginId = pluginContext.PluginId;
+        var deviceNameLoaded = false;
+        string? deviceName = null;
 
         foreach (var entry in db.ChangeTracker.Entries())
         {
@@ -47,10 +53,40 @@ public sealed class TimestampInterceptor(IClock clock, IPluginContext pluginCont
 
             TrySet(entry, "UpdatedAt", nowDt);
             TrySet(entry, "UpdatedAtMs", nowMs);
+
+            if (ShouldStampDeviceName(entry))
+            {
+                // Pigro: IDeviceIdentity.DeviceName può aprire il DB alla prima lettura.
+                if (!deviceNameLoaded)
+                {
+                    deviceName = deviceIdentity.DeviceName;
+                    deviceNameLoaded = true;
+                }
+                TrySet(entry, "LastEditedDeviceName", deviceName);
+            }
         }
     }
 
-    private static void TrySet(EntityEntry entry, string propertyName, object value)
+    private static bool ShouldStampDeviceName(EntityEntry entry)
+    {
+        var textPropertyName = entry.Entity switch
+        {
+            Note => nameof(Note.BodyMd),
+            Completion => nameof(Completion.Notes),
+            _ => null,
+        };
+        if (textPropertyName is null) return false;
+
+        var prop = entry.Property(textPropertyName);
+        if (entry.State == EntityState.Added)
+        {
+            return prop.CurrentValue is string text && !string.IsNullOrEmpty(text);
+        }
+
+        return prop.IsModified && !Equals(prop.OriginalValue, prop.CurrentValue);
+    }
+
+    private static void TrySet(EntityEntry entry, string propertyName, object? value)
     {
         var prop = entry.Metadata.FindProperty(propertyName);
         if (prop is null) return;

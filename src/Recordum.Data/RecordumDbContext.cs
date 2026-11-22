@@ -43,6 +43,8 @@ public sealed class RecordumDbContext : DbContext
     public DbSet<BackupLog> BackupLogs => Set<BackupLog>();
     public DbSet<AbstinencePeriod> AbstinencePeriods => Set<AbstinencePeriod>();
     public DbSet<SyncMeta> SyncMeta => Set<SyncMeta>();
+    public DbSet<Models.SyncTombstone> SyncTombstones => Set<Models.SyncTombstone>();
+    public DbSet<Models.SyncBase> SyncBases => Set<Models.SyncBase>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -11,6 +11,7 @@ public sealed class MetricDefinition
     public Guid? UnitOfMeasureId { get; set; }
     public Guid? ScaleTemplateId { get; set; }
     public int SortOrder { get; set; }
+    public long UpdatedAtMs { get; set; }
 
     public HabitNode HabitNode { get; set; } = null!;
     public UnitOfMeasure? UnitOfMeasure { get; set; }

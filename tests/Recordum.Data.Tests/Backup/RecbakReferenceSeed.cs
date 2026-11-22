@@ -52,12 +52,14 @@ public static class RecbakReferenceSeed
             .Select(h => (h.Name, h.HabitType)).Should().Equal(
                 ("Diary", HabitType.Journal), ("Morning run", HabitType.Action),
                 ("No smoking", HabitType.Resistance), ("Water", HabitType.Counter));
-        var run = await db.Completions.OrderBy(c => c.CompletedAtMs).Where(c => c.HabitNodeId == RunId).ToListAsync();
+        // Proiezioni: il file di riferimento è di uno schema vecchio e le colonne nuove (2.21) non ci sono.
+        var run = await db.Completions.OrderBy(c => c.CompletedAtMs).Where(c => c.HabitNodeId == RunId)
+            .Select(c => new { c.Id, c.Notes, c.CompletedAt }).ToListAsync();
         run.Select(c => c.Id).Should().Equal(RunDone1, RunDone2);
         run[0].Notes.Should().Be(RunNotes);
         run[0].CompletedAt.Should().Be(Noon1);
-        (await db.Completions.SingleAsync(c => c.Id == WaterDone)).DurationSeconds.Should().Be(90);
-        (await db.Notes.SingleAsync(n => n.Id == NoteId)).BodyMd.Should().Be(NoteBody);
+        (await db.Completions.Where(c => c.Id == WaterDone).Select(c => c.DurationSeconds).SingleAsync()).Should().Be(90);
+        (await db.Notes.Where(n => n.Id == NoteId).Select(n => n.BodyMd).SingleAsync()).Should().Be(NoteBody);
         var period = await db.AbstinencePeriods.SingleAsync();
         (period.StartedAtMs, period.EndedAtMs).Should().Be((PeriodStartMs, (long?)null));
     }

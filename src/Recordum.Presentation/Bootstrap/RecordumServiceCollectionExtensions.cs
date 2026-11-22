@@ -14,6 +14,7 @@ using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
 using Recordum.Data.Services;
 using Recordum.Data.Services.Queries;
+using Recordum.Data.Sync;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Events;
 using Recordum.Plugins.ExtensionPoints;
@@ -65,6 +66,8 @@ public static class RecordumServiceCollectionExtensions
         services.AddSingleton<ICultureService, CultureService>();
 
         // Interceptors — registration order = invocation order in EF Core.
+        services.AddSingleton<DeviceIdentity>();
+        services.AddSingleton<IDeviceIdentity>(sp => sp.GetRequiredService<DeviceIdentity>());
         services.AddSingleton<HabitConfigHistoryInterceptor>();
         services.AddSingleton<TimestampInterceptor>();
         services.AddSingleton<SqlCipherKeyConnectionInterceptor>();

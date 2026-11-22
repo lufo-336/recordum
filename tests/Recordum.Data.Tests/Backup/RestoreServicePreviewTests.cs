@@ -22,7 +22,7 @@ public class RestoreServicePreviewTests
 
             var preview = await restore.PreviewAsync(bk.Path, Pass);
 
-            preview.Manifest.SchemaVersion.Should().Be("2.20");
+            preview.Manifest.SchemaVersion.Should().Be("2.21");
             preview.InactivePlugins.Should().BeEmpty();
         }
         finally { await fixture.DisposeAsync(); }
