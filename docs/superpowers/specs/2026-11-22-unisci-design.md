@@ -167,8 +167,16 @@ classificazione rompe il test di guardia (§8.6).
 2. Per ogni file, in **una transazione**: per ogni entità e riga, confronto con la riga locale e con le lapidi.
 3. Scrittura del proprio file con lo stato intero unito (atomica sui computer: file temporaneo nella stessa cartella e
    rinomina; sul telefono sovrascrittura `"wt"` del documento SAF).
-L'unione è **idempotente** e **commutativa**: rileggere lo stesso file o leggere i file in un altro ordine porta allo
-stesso stato.
+L'unione è **idempotente** e **convergente**:
+- rileggere lo stesso file non cambia nulla;
+- i dispositivi che continuano a scambiarsi i file arrivano allo stesso stato;
+- quando ogni coppia di dispositivi ha la base, i valori dei campi non dipendono dall'ordine dei file
+  (`updated_at_ms` sì);
+- senza base, il limite di §8.4 può far perdere, a seconda dell'ordine, una modifica concorrente diversa della
+  stessa riga: mai una riga, mai un testo (regola B), mai una cancellazione.
+
+(corretto il 2026-11-22 durante l'implementazione: prima diceva "commutativa: in un altro ordine lo stesso stato";
+con una sola ora per riga non è vero senza base, e le ore di modifica possono variare per il `+1` di §8.3.)
 
 ### 8.3 Regole
 - **Riga nuova** (id sconosciuto, nessuna lapide più recente): si inserisce. Le righe figlie arrivano dopo le madri
@@ -176,6 +184,10 @@ stesso stato.
 - **Stessa riga su tutti e due**: campo per campo vince l'`updated_at_ms` più recente della riga; a parità vince il
   `device_id` minore (deterministico). *Nota per chi costruisce*: con un solo `updated_at_ms` per riga il "campo per
   campo" si ottiene confrontando i valori con la **base** (§8.4): un campo cambiato da una parte sola vince comunque.
+  (corretto il 2026-11-22 durante l'implementazione: a parità vince la riga con la forma canonica minore,
+  `docs/formats/sync-file.md` §5, non il `device_id`. Una riga unita che tiene un valore di qui diverso dalla remota
+  prende `updated_at_ms` = massimo dei due + 1, salvo che l'ora locale sia già la più recente: deve battere le due
+  versioni anche su un dispositivo che non ha ancora la base, altrimenti i due non convergono.)
 - **Cancellazione contro modifica**: vince l'azione più recente (`deleted_at_ms` contro `updated_at_ms`). Se vince la
   cancellazione ma dall'altra parte c'è **testo di diario o nota** che il cancellato non aveva, quel testo si salva
   come copia (regola B).
@@ -219,6 +231,11 @@ modifiche a campi diversi della stessa riga fatte su due dispositivi prima di un
 (richiede modifiche concorrenti alla stessa riga) e non tocca testo; se l'uso lo mostra, il rimedio è un'ora per campo
 tenuta in una tabella locale e scritta nel formato (versione minore). `ponytail:` nel codice.
 
+La base è la riga **remota** com'era all'ultima unione (forma pubblica; le foto come SHA-256). Una riga remota con
+`updated_at_ms` minore di quello della base viene da un file vecchio dello stesso dispositivo e si ignora. (corretto il
+2026-11-22 durante l'implementazione: poiché la base è la riga remota e non quella unita, una riga unita prende
+massimo + 1 come in §8.3.)
+
 ### 8.4-bis Identità del dispositivo e ripristino (*mia scelta*)
 - `device_id` sta in `sync_meta`, dentro il database. Dopo un **ripristino** da `.recbak` (o una copia del DB su un'altra
   macchina) il dispositivo **rigenera** `device_id`, azzera `sync_base`, e rientra come un dispositivo nuovo con dati
@@ -243,7 +260,11 @@ tenuta in una tabella locale e scritta nel formato (versione minore). `ponytail:
 - Ogni tabella che viaggia ha i due trigger (test sul DB migrato).
 - Andata e ritorno: stato → file → stato vuoto = stato uguale (ogni entità, foto comprese).
 - Convergenza: tre dispositivi simulati con modifiche, cancellazioni e conflitti incrociati, unioni in ordini diversi
-  → stesso stato; nessuna riga persa; nessuna cancellata che ritorna. Con `IClock` finto.
+  → stesso stato in ogni ordine; nessuna riga persa; nessuna cancellata che ritorna. Con `IClock` finto. Con la
+  base fra ogni coppia, stessi valori dei campi fra ordini diversi (tolto `updated_at_ms`). Senza base, in ogni
+  ordine nessuna riga persa.
+  (corretto il 2026-11-22 durante l'implementazione: il confronto fra ordini vale per i valori dei campi con la base,
+  non per l'intero stato; vedi §8.2.)
 - Ritardo: un dispositivo che unisce un file vecchio non torna indietro.
 - Compatibilità: un file con campi ed entità sconosciuti si legge; un `format_version` maggiore diverso si rifiuta.
 

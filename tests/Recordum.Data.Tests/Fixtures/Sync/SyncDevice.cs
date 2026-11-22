@@ -53,15 +53,22 @@ public sealed class SyncDevice : IAsyncDisposable
         return await query(db);
     }
 
-    public async Task<byte[]> WriteFileAsync(bool includePhotos = true)
+    public async Task<byte[]> WriteFileAsync(bool includePhotos = true) => await SealAsync(await WriteZipAsync(includePhotos));
+
+    /// <summary>Lo ZIP in chiaro, per i test che fabbricano un file del pari a mano (poi <see cref="SealAsync"/>).</summary>
+    public async Task<byte[]> WriteZipAsync(bool includePhotos = true)
     {
         await using var db = await Fixture.Factory.CreateDbContextAsync();
         using var zip = new MemoryStream();
         await SyncArchiveWriter.WriteAsync(
             db, zip, new SyncWriteOptions(DeviceId, Name, "test", includePhotos, Clock.UtcNowMs));
-        zip.Position = 0;
+        return zip.ToArray();
+    }
+
+    public static async Task<byte[]> SealAsync(byte[] zip)
+    {
         using var file = new MemoryStream();
-        await Cipher.EncryptAsync(zip, file, Passphrase);
+        await Cipher.EncryptAsync(new MemoryStream(zip), file, Passphrase);
         return file.ToArray();
     }
 

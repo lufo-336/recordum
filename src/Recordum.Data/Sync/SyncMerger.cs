@@ -156,7 +156,7 @@ public static class SyncMerger
                 if (!local.TryGetValue(row.Id, out var l))
                 {
                     await InsertAsync(entity, row.Id, r).ConfigureAwait(false);
-                    await MergePhotosAsync(entity, row.Id, r, inserted: true, remoteWins: true, null, newBase).ConfigureAwait(false);
+                    await MergePhotosAsync(entity, row.Id, r, inserted: true, remoteWins: true, rms, null, newBase).ConfigureAwait(false);
                     _inserted++;
                     _touched.Add(entity.Table);
                 }
@@ -170,10 +170,10 @@ public static class SyncMerger
 
                     var lms = l.Fields[Ms].GetInt64();
                     var remoteWins = rms > lms || (rms == lms && CompareCanonical(r, l.Fields) < 0);
-                    var changes = MergeFields(entity, l.Fields, r, b, remoteWins, lms, rms);
-                    var photo = await MergePhotosAsync(entity, row.Id, r, inserted: false, remoteWins, b, newBase).ConfigureAwait(false);
+                    var photo = await MergePhotosAsync(entity, row.Id, r, inserted: false, remoteWins, rms, b, newBase).ConfigureAwait(false);
+                    var changes = MergeFields(entity, l.Fields, r, b, remoteWins, lms, rms, photo);
                     if (changes.Count > 0) await UpdateAsync(entity, r, changes).ConfigureAwait(false);
-                    if (changes.Count > 0 || photo)
+                    if (changes.Count > 0 || photo.TookRemote)
                     {
                         _updated++;
                         _touched.Add(entity.Table);
@@ -193,10 +193,10 @@ public static class SyncMerger
         /// la riga vincente. Torna i campi da scrivere (pubblici), <c>updated_at_ms</c> compreso se cambia.</summary>
         private Dictionary<string, JsonElement> MergeFields(
             SyncEntity entity, IReadOnlyDictionary<string, JsonElement> l, Dictionary<string, JsonElement> r,
-            Dictionary<string, JsonElement>? b, bool remoteWins, long lms, long rms)
+            Dictionary<string, JsonElement>? b, bool remoteWins, long lms, long rms, (bool TookRemote, bool KeptLocal) photo)
         {
             var changes = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-            var keptLocal = false;
+            var keptLocal = photo.KeptLocal;
             foreach (var field in entity.Fields)
             {
                 var name = field.PublicName;
@@ -228,8 +228,9 @@ public static class SyncMerger
 
             // Uguale alla remota → il massimo delle due ore. Diversa dalla remota (ha tenuto qualcosa di qui): deve
             // battere tutte e due le versioni anche dove manca la base, quindi resta l'ora locale solo se è già la più
-            // recente, altrimenti massimo + 1.
-            var ms = !keptLocal ? Math.Max(lms, rms) : changes.Count == 0 && lms > rms ? lms : Math.Max(lms, rms) + 1;
+            // recente, altrimenti massimo + 1. Le foto contano come i campi.
+            var tookRemote = changes.Count > 0 || photo.TookRemote;
+            var ms = !keptLocal ? Math.Max(lms, rms) : !tookRemote && lms > rms ? lms : Math.Max(lms, rms) + 1;
             if (ms != lms) changes[Ms] = JsonSerializer.SerializeToElement(ms);
             return changes;
         }
@@ -237,15 +238,24 @@ public static class SyncMerger
         /// <summary>Le foto: viaggiano a parte, una per volta. Nella base si salva lo SHA-256 (esadecimale minuscolo)
         /// di ogni foto presente nel file. Una foto che il file non porta (o un originale con <c>receivePhotos</c>
         /// spento) non è un cambiamento; una foto che qui manca si riempie da quella remota.</summary>
-        private async Task<bool> MergePhotosAsync(
-            SyncEntity entity, string id, Dictionary<string, JsonElement> r, bool inserted, bool remoteWins,
+        private async Task<(bool TookRemote, bool KeptLocal)> MergePhotosAsync(
+            SyncEntity entity, string id, Dictionary<string, JsonElement> r, bool inserted, bool remoteWins, long rms,
             Dictionary<string, JsonElement>? b, Dictionary<string, JsonElement> newBase)
         {
             var wrote = false;
+            var keptLocal = false;
+            var unchangedSinceBase = b is not null && b.TryGetValue(Ms, out var bms) && bms.GetInt64() == rms;
             foreach (var field in entity.Fields.Where(f => f.Kind == SyncFieldKind.Photo))
             {
                 var thumbnail = field.PublicName == "thumbnail"; // l'altra colonna Photo (content) è l'originale
                 if (!thumbnail && !receivePhotos) continue;
+                // La riga remota è quella della base (stessa ora) e qui la foto c'è: niente da leggere né da hashare.
+                if (!inserted && unchangedSinceBase && await LocalPhotoPresentAsync(entity, field, r).ConfigureAwait(false))
+                {
+                    if (b!.TryGetValue(field.PublicName, out var oldHash)) newBase[field.PublicName] = oldHash;
+                    continue;
+                }
+
                 var stream = remote.OpenPhoto(id, thumbnail);
                 if (stream is null) continue;
                 byte[] bytes;
@@ -259,23 +269,33 @@ public static class SyncMerger
                 var remoteHash = Convert.ToHexStringLower(SHA256.HashData(bytes));
                 newBase[field.PublicName] = JsonSerializer.SerializeToElement(remoteHash);
 
-                var write = inserted;
                 if (!inserted)
                 {
                     var localHash = await LocalPhotoHashAsync(entity, field, r).ConfigureAwait(false);
-                    write = localHash is null
-                        || (localHash != remoteHash && (b is not null && b.TryGetValue(field.PublicName, out var bh)
+                    if (localHash == remoteHash) continue;
+                    var useRemote = localHash is null
+                        || (b is not null && b.TryGetValue(field.PublicName, out var bh)
                             ? localHash == bh.GetString() || (remoteHash != bh.GetString() && remoteWins)
-                            : remoteWins));
+                            : remoteWins);
+                    if (!useRemote)
+                    {
+                        keptLocal = true;
+                        continue;
+                    }
                 }
 
-                if (!write) continue;
                 var (where, keys) = KeyWhere(entity, r);
                 await ExecAsync($"UPDATE {Q(entity.Table)} SET {Q(field.Column)} = @blob WHERE {where}", [.. keys, ("@blob", bytes)]).ConfigureAwait(false);
                 wrote = true;
             }
 
-            return wrote;
+            return (wrote, keptLocal);
+        }
+
+        private async Task<bool> LocalPhotoPresentAsync(SyncEntity entity, SyncField field, Dictionary<string, JsonElement> r)
+        {
+            var (where, keys) = KeyWhere(entity, r);
+            return await ScalarAsync($"SELECT {Q(field.Column)} IS NOT NULL FROM {Q(entity.Table)} WHERE {where}", keys).ConfigureAwait(false) is 1L;
         }
 
         private async Task<string?> LocalPhotoHashAsync(SyncEntity entity, SyncField field, Dictionary<string, JsonElement> r)

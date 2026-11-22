@@ -603,7 +603,12 @@ Example: the fields `{"id":"X","b":2,"a":"x","c":true,"d":null}` give the bytes 
 
 ## 6. Merge Rules Summary (§8.3)
 
-Merging is **idempotent** and **commutative**: applying the same peer archive twice or merging peer archives in any order converges to the exact same database state.
+Merging is **idempotent** and **convergent**:
+
+- Applying the same peer archive twice changes nothing the second time.
+- Devices that keep exchanging archives reach the same state.
+- When every pair of devices has a base (rule 2), the field values do not depend on the order the archives are read in. `updated_at_ms` may depend on it (see the `+ 1` in rule 2).
+- Without a base, the whole-row rule (§8.4 of the design) may drop a different concurrent edit to the same row depending on the order. It never drops a row, never drops text (rule 3), and never brings back a deletion.
 
 1. **New Rows**: A row whose `"id"` does not exist locally and has no tombstone with `deleted_at_ms >= row.updated_at_ms` is inserted (entities are processed in foreign-key dependency order, parents before children).
 2. **Concurrent Updates to the Same Row (`Plain` fields)**:

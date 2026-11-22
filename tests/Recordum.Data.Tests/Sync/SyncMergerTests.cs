@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using System.Text;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Enums;
@@ -427,6 +430,91 @@ public sealed class SyncMergerTests
         await a.MergeAsync(await phone.WriteFileAsync(includePhotos: false));
         (await a.QueryAsync(db => db.Attachments.AsNoTracking().SingleAsync())).Content
             .Should().Equal(content, "a photo without its original is not a change: whoever has it keeps it");
+    }
+
+    [Fact]
+    public async Task PeerCannotSetLocalOnlySettings()
+    {
+        // Un file fabbricato a mano: chiavi di dispositivo (privacy, sync, layout) e una lapide su "language".
+        // Solo le chiavi che viaggiano (daily_reset_time qui) possono cambiare.
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        var before = await SettingsAsync(b);
+        var forged = Rewrite(await a.WriteZipAsync(), "data/app_setting.jsonl", lines =>
+        {
+            var template = JsonNode.Parse(lines.First(l => l.Contains("\"daily_reset_time\"", StringComparison.Ordinal)))!;
+            string Row(string key, string value)
+            {
+                var o = template.DeepClone().AsObject();
+                o["id"] = key;
+                o["key"] = key;
+                o["value"] = value;
+                o["updated_at_ms"] = 9_999_999L;
+                return o.ToJsonString();
+            }
+            return [Row("ai_default_sharing", "cloud"), Row("ai_mode", "cloud"), Row("daily_reset_time", "05:00"),
+                Row("home.rows", "[]"), Row("sync.passphrase", "stolen")];
+        });
+        forged = Rewrite(forged, "tombstones.jsonl", _ =>
+            ["{\"entity\":\"app_setting\",\"entity_id\":\"language\",\"deleted_at_ms\":9999999,\"device_id\":null,\"alias_of\":null}"]);
+
+        await b.MergeAsync(await SyncDevice.SealAsync(forged));
+
+        var after = await SettingsAsync(b);
+        after["daily_reset_time"].Should().Be("05:00", "a travelling key does merge");
+        after.Remove("daily_reset_time");
+        before.Remove("daily_reset_time");
+        after.Should().BeEquivalentTo(before, "local-only keys are never written, created or deleted by a peer");
+
+        static Task<Dictionary<string, string?>> SettingsAsync(SyncDevice d) =>
+            d.QueryAsync(db => db.AppSettings.AsNoTracking().ToDictionaryAsync(s => s.Key, s => (string?)s.Value));
+    }
+
+    [Fact]
+    public async Task ChildOfDeletedParentWithSetNullLosesTheReference()
+    {
+        // scale_anchor.tag_id è SET NULL: B aggancia uno scaglione a un tag che A ha già cancellato.
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        var scale = Guid.NewGuid();
+        var anchor = Guid.NewGuid();
+        await a.EditAsync(100, db =>
+        {
+            db.ScaleTemplates.Add(new ScaleTemplate { Id = scale, Code = "mood-x", Name = "Mood", MinValue = 1, MaxValue = 5 });
+            db.Tags.Add(new Tag { Id = N, Name = "calm" });
+        });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.EditAsync(200, db => db.Tags.Where(t => t.Id == N).ExecuteDeleteAsync());
+        await b.EditAsync(300, db =>
+            db.ScaleAnchors.Add(new ScaleAnchor { Id = anchor, ScaleTemplateId = scale, Value = 3, Label = "ok", TagId = N }));
+
+        await ExchangeAsync(a, b);
+        await ExchangeAsync(a, b);
+
+        foreach (var d in new[] { a, b })
+        {
+            var x = await d.QueryAsync(db => db.ScaleAnchors.AsNoTracking().SingleAsync(s => s.Id == anchor));
+            x.TagId.Should().BeNull("the reference follows the deleted parent as the local SET NULL would");
+            (await d.QueryAsync(db => db.Tags.AnyAsync(t => t.Id == N))).Should().BeFalse();
+        }
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    private static byte[] Rewrite(byte[] zip, string entryName, Func<List<string>, IEnumerable<string>> edit)
+    {
+        using var ms = new MemoryStream();
+        ms.Write(zip);
+        using (var archive = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            var entry = archive.GetEntry(entryName)!;
+            List<string> lines;
+            using (var reader = new StreamReader(entry.Open()))
+                lines = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+            entry.Delete();
+            using var writer = new StreamWriter(archive.CreateEntry(entryName).Open(), new UTF8Encoding(false));
+            foreach (var line in edit(lines)) writer.Write(line + "\n");
+        }
+        return ms.ToArray();
     }
 
     [Fact(Skip = "Task 7")]
