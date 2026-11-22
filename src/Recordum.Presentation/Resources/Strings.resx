@@ -2703,4 +2703,121 @@ Details: {0}</value>
   <data name="Scale.Error.Precision" xml:space="preserve">
     <value>Values with decimals are already recorded</value>
   </data>
+  <data name="Sync.AutoMerge.Label" xml:space="preserve">
+    <value>Sync automatically</value>
+  </data>
+  <data name="Sync.AutoMerge.Hint" xml:space="preserve">
+    <value>When the app opens, when you come back to it and every 5 minutes. Off: only with “Sync now”.</value>
+  </data>
+  <data name="Sync.MergeNow.Label" xml:space="preserve">
+    <value>Sync now</value>
+  </data>
+  <data name="Sync.MergeNow.Hint" xml:space="preserve">
+    <value>Reads the other devices' files right away and updates yours.</value>
+  </data>
+  <data name="Sync.IncludePhotos.Label" xml:space="preserve">
+    <value>Sync photos too</value>
+  </data>
+  <data name="Sync.IncludePhotos.Hint" xml:space="preserve">
+    <value>Off: only thumbnails travel, and photos taken here stay only here.</value>
+  </data>
+  <data name="Sync.Folder.Label" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="Sync.Folder.Hint" xml:space="preserve">
+    <value>The folder your cloud service keeps in step. Each device writes its own file there.</value>
+  </data>
+  <data name="Sync.Folder.Choose" xml:space="preserve">
+    <value>Choose…</value>
+  </data>
+  <data name="Sync.Folder.None" xml:space="preserve">
+    <value>No folder chosen</value>
+  </data>
+  <data name="Sync.Passphrase.Label" xml:space="preserve">
+    <value>Sync passphrase</value>
+  </data>
+  <data name="Sync.Passphrase.Hint" xml:space="preserve">
+    <value>The same on every device. It stays on this device and never travels.</value>
+  </data>
+  <data name="Sync.Passphrase.Set" xml:space="preserve">
+    <value>Set…</value>
+  </data>
+  <data name="Sync.Plain.Label" xml:space="preserve">
+    <value>Open in plain / Re-encrypt</value>
+  </data>
+  <data name="Sync.Plain.Hint" xml:space="preserve">
+    <value>To read or edit the file with other programs. The plain ZIP goes only where you choose.</value>
+  </data>
+  <data name="Sync.Plain.Export" xml:space="preserve">
+    <value>Open in plain…</value>
+  </data>
+  <data name="Sync.Plain.Reencrypt" xml:space="preserve">
+    <value>Re-encrypt…</value>
+  </data>
+  <data name="Sync.Disconnect.Label" xml:space="preserve">
+    <value>Disconnect this device</value>
+  </data>
+  <data name="Sync.Disconnect.Hint" xml:space="preserve">
+    <value>Stops syncing. The data stays here; its last file stays in the folder.</value>
+  </data>
+  <data name="Sync.Join.Label" xml:space="preserve">
+    <value>Connect this device</value>
+  </data>
+  <data name="Sync.Join.Hint" xml:space="preserve">
+    <value>This device already has data of its own. In both cases a backup is made first.</value>
+  </data>
+  <data name="Sync.Join.StartFromOthers" xml:space="preserve">
+    <value>Start from the other devices' data</value>
+  </data>
+  <data name="Sync.Join.StartFromOthers.Hint" xml:space="preserve">
+    <value>Recommended: this device's data goes into a backup and is not merged.</value>
+  </data>
+  <data name="Sync.Join.KeepBoth" xml:space="preserve">
+    <value>Keep this device's data too</value>
+  </data>
+  <data name="Sync.Join.KeepBoth.Hint" xml:space="preserve">
+    <value>Everything is merged; any duplicates are yours to tidy up.</value>
+  </data>
+  <data name="Sync.Join.Confirm.Title" xml:space="preserve">
+    <value>Start from the other devices' data?</value>
+  </data>
+  <data name="Sync.Join.Confirm.Message" xml:space="preserve">
+    <value>This device's data goes into a backup and is replaced by the other devices' data.</value>
+  </data>
+  <data name="Sync.Status.Label" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Sync.Status.Hint" xml:space="preserve">
+    <value>When the last sync ran and when each device last wrote its file.</value>
+  </data>
+  <data name="Sync.Status.LastRun" xml:space="preserve">
+    <value>Last sync: {0}</value>
+  </data>
+  <data name="Sync.Status.Never" xml:space="preserve">
+    <value>Not synced yet</value>
+  </data>
+  <data name="Sync.Status.Peer" xml:space="preserve">
+    <value>{0} — file from {1}</value>
+  </data>
+  <data name="Sync.Status.Problem.CannotOpen" xml:space="preserve">
+    <value>{0}'s file won't open: the passphrase changed or the file hasn't fully arrived yet.</value>
+  </data>
+  <data name="Sync.Status.Problem.NewerFormat" xml:space="preserve">
+    <value>Update Recordum on {0}.</value>
+  </data>
+  <data name="Sync.Status.Problem.BrokenFile" xml:space="preserve">
+    <value>{0}'s file is damaged: was it edited by hand?</value>
+  </data>
+  <data name="Sync.Status.Problem.SameIdentity" xml:space="preserve">
+    <value>Two devices have the same identity: restore a backup on one of them or disconnect it.</value>
+  </data>
+  <data name="Sync.Status.Conflicts" xml:space="preserve">
+    <value>Entries to tidy up: {0}</value>
+  </data>
+  <data name="Sync.Status.FileSize" xml:space="preserve">
+    <value>Your file: {0}</value>
+  </data>
+  <data name="Restore.SyncActiveNote" xml:space="preserve">
+    <value>The other devices don't go back: this one rejoins the sync as a new device.</value>
+  </data>
 </root>

@@ -351,7 +351,7 @@ Dettagli: {0}</value>
     <value>Diagnostica</value>
   </data>
   <data name="Settings.Category.Sync" xml:space="preserve">
-    <value>Sincronizzazione</value>
+    <value>Unisci</value>
   </data>
   <data name="Settings.Category.Plugins" xml:space="preserve">
     <value>Plugin</value>
@@ -2690,5 +2690,122 @@ Dettagli: {0}</value>
   </data>
   <data name="Scale.Error.Precision" xml:space="preserve">
     <value>Ci sono già valori con i decimali</value>
+  </data>
+  <data name="Sync.AutoMerge.Label" xml:space="preserve">
+    <value>Unisci automaticamente</value>
+  </data>
+  <data name="Sync.AutoMerge.Hint" xml:space="preserve">
+    <value>All'apertura, quando torni all'app e ogni 5 minuti. Spento: solo con “Unisci ora”.</value>
+  </data>
+  <data name="Sync.MergeNow.Label" xml:space="preserve">
+    <value>Unisci ora</value>
+  </data>
+  <data name="Sync.MergeNow.Hint" xml:space="preserve">
+    <value>Legge subito i file degli altri dispositivi e aggiorna il tuo.</value>
+  </data>
+  <data name="Sync.IncludePhotos.Label" xml:space="preserve">
+    <value>Unisci anche le foto</value>
+  </data>
+  <data name="Sync.IncludePhotos.Hint" xml:space="preserve">
+    <value>Spento: viaggiano solo le miniature, e le foto fatte qui restano solo qui.</value>
+  </data>
+  <data name="Sync.Folder.Label" xml:space="preserve">
+    <value>Cartella</value>
+  </data>
+  <data name="Sync.Folder.Hint" xml:space="preserve">
+    <value>La cartella che il tuo servizio cloud tiene allineata. Ogni dispositivo ci scrive il suo file.</value>
+  </data>
+  <data name="Sync.Folder.Choose" xml:space="preserve">
+    <value>Scegli…</value>
+  </data>
+  <data name="Sync.Folder.None" xml:space="preserve">
+    <value>Nessuna cartella scelta</value>
+  </data>
+  <data name="Sync.Passphrase.Label" xml:space="preserve">
+    <value>Frase dell'unione</value>
+  </data>
+  <data name="Sync.Passphrase.Hint" xml:space="preserve">
+    <value>La stessa su tutti i dispositivi. Resta su questo dispositivo, non viaggia mai.</value>
+  </data>
+  <data name="Sync.Passphrase.Set" xml:space="preserve">
+    <value>Imposta…</value>
+  </data>
+  <data name="Sync.Plain.Label" xml:space="preserve">
+    <value>Apri in chiaro / Ricifra</value>
+  </data>
+  <data name="Sync.Plain.Hint" xml:space="preserve">
+    <value>Per leggere o modificare il file con altri programmi. Lo ZIP in chiaro va solo dove scegli tu.</value>
+  </data>
+  <data name="Sync.Plain.Export" xml:space="preserve">
+    <value>Apri in chiaro…</value>
+  </data>
+  <data name="Sync.Plain.Reencrypt" xml:space="preserve">
+    <value>Ricifra…</value>
+  </data>
+  <data name="Sync.Disconnect.Label" xml:space="preserve">
+    <value>Scollega questo dispositivo</value>
+  </data>
+  <data name="Sync.Disconnect.Hint" xml:space="preserve">
+    <value>Smette di unire. I dati restano qui; il suo ultimo file resta nella cartella.</value>
+  </data>
+  <data name="Sync.Join.Label" xml:space="preserve">
+    <value>Collega questo dispositivo</value>
+  </data>
+  <data name="Sync.Join.Hint" xml:space="preserve">
+    <value>Questo dispositivo ha già dati suoi. In tutti e due i casi prima si fa un backup.</value>
+  </data>
+  <data name="Sync.Join.StartFromOthers" xml:space="preserve">
+    <value>Parti dai dati degli altri</value>
+  </data>
+  <data name="Sync.Join.StartFromOthers.Hint" xml:space="preserve">
+    <value>Consigliata: i dati di questo dispositivo vanno in un backup e non si uniscono.</value>
+  </data>
+  <data name="Sync.Join.KeepBoth" xml:space="preserve">
+    <value>Tieni anche i dati di questo dispositivo</value>
+  </data>
+  <data name="Sync.Join.KeepBoth.Hint" xml:space="preserve">
+    <value>Si unisce tutto; eventuali doppioni li sistemi tu.</value>
+  </data>
+  <data name="Sync.Join.Confirm.Title" xml:space="preserve">
+    <value>Partire dai dati degli altri?</value>
+  </data>
+  <data name="Sync.Join.Confirm.Message" xml:space="preserve">
+    <value>I dati di questo dispositivo vanno in un backup e lasciano il posto a quelli degli altri dispositivi.</value>
+  </data>
+  <data name="Sync.Status.Label" xml:space="preserve">
+    <value>Stato</value>
+  </data>
+  <data name="Sync.Status.Hint" xml:space="preserve">
+    <value>Quando è avvenuta l'ultima unione e quando ogni dispositivo ha scritto il suo file.</value>
+  </data>
+  <data name="Sync.Status.LastRun" xml:space="preserve">
+    <value>Ultima unione: {0}</value>
+  </data>
+  <data name="Sync.Status.Never" xml:space="preserve">
+    <value>Nessuna unione finora</value>
+  </data>
+  <data name="Sync.Status.Peer" xml:space="preserve">
+    <value>{0} — file delle {1}</value>
+  </data>
+  <data name="Sync.Status.Problem.CannotOpen" xml:space="preserve">
+    <value>Il file di {0} non si apre: la frase è cambiata o il file non è ancora arrivato del tutto.</value>
+  </data>
+  <data name="Sync.Status.Problem.NewerFormat" xml:space="preserve">
+    <value>Aggiorna Recordum su {0}.</value>
+  </data>
+  <data name="Sync.Status.Problem.BrokenFile" xml:space="preserve">
+    <value>Il file di {0} è rovinato: è stato modificato a mano?</value>
+  </data>
+  <data name="Sync.Status.Problem.SameIdentity" xml:space="preserve">
+    <value>Due dispositivi hanno la stessa identità: su uno dei due ripristina un backup o scollegalo.</value>
+  </data>
+  <data name="Sync.Status.Conflicts" xml:space="preserve">
+    <value>Voci da sistemare: {0}</value>
+  </data>
+  <data name="Sync.Status.FileSize" xml:space="preserve">
+    <value>Il tuo file: {0}</value>
+  </data>
+  <data name="Restore.SyncActiveNote" xml:space="preserve">
+    <value>Gli altri dispositivi non tornano indietro: questo rientra nell'unione come un dispositivo nuovo.</value>
   </data>
 </root>
