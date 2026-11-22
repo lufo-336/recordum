@@ -222,6 +222,29 @@ public class TimestampInterceptorTests : IDisposable
         Assert.Equal("Fedora-Renamed", identity.DeviceName);
     }
 
+    [Fact]
+    public void DeviceIdentity_read_failure_returns_null_and_retries_instead_of_failing_the_save()
+    {
+        // Ruling 9: la lettura di sync_meta passa da una seconda connessione dentro SavingChanges; se quella fallisce
+        // (busy_timeout scaduto dietro una transazione grande) il salvataggio dell'utente non deve morire.
+        var factory = new ThrowingFactory();
+        var identity = new DeviceIdentity(new FactoryServiceProvider(factory));
+
+        Assert.Null(identity.DeviceName);
+        Assert.Null(identity.DeviceName);
+        Assert.Equal(2, factory.Calls);   // un fallimento non si mette in cache: si riprova
+    }
+
+    private sealed class ThrowingFactory : IDbContextFactory<RecordumDbContext>
+    {
+        public int Calls { get; private set; }
+        public RecordumDbContext CreateDbContext()
+        {
+            Calls++;
+            throw new Microsoft.Data.Sqlite.SqliteException("database is locked", 5);
+        }
+    }
+
     private RecordumDbContext CreateSpyContext(IDeviceIdentity identity)
     {
         var options = new DbContextOptionsBuilder<RecordumDbContext>()

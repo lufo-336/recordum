@@ -8,6 +8,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Data;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Services;
+using Recordum.Data.Sync;
 
 namespace Recordum.Data.Tests.Fixtures;
 
@@ -48,6 +49,8 @@ public sealed class DbFixture : IAsyncDisposable
         DeviceIdentity = deviceIdentity ?? new FakeDeviceIdentity();
         _connection = new SqliteConnection("DataSource=:memory:;Cache=Shared");
         _connection.Open();
+        // La connessione è aperta qui, non da EF: SyncConnectionInterceptor non la vede aprirsi.
+        SyncConnectionInterceptor.Register(_connection, Clock);
         var history = enableHistory
             ? new HabitConfigHistoryInterceptor(
                 Clock, NullLogger<HabitConfigHistoryInterceptor>.Instance)
@@ -56,6 +59,7 @@ public sealed class DbFixture : IAsyncDisposable
         Factory = new FixtureFactory(_connection, history, timestamp, _counter);
         using var db = Factory.CreateDbContext();
         db.Database.EnsureCreated();
+        SyncTriggerInstaller.EnsureAsync(db, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <summary>Conta i comandi SQL eseguiti finché non viene disposto. Per i test che devono

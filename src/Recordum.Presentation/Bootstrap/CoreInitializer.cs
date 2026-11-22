@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Data;
+using Recordum.Core.Abstractions;
 using Recordum.Data.Maintenance;
+using Recordum.Data.Sync;
 using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Presentation.Bootstrap;
@@ -20,12 +22,21 @@ public sealed class CoreInitializer(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IServiceScopeFactory scopes,
     IPluginManager pluginManager,
-    IEnumerable<IStartupStep> steps)
+    IEnumerable<IStartupStep> steps,
+    IDeviceIdentity deviceIdentity)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
+        {
             await db.Database.MigrateAsync(ct).ConfigureAwait(false);
+            // I trigger della sync si ricreano dal catalogo, prima di ogni altra scrittura dell'avvio.
+            await SyncTriggerInstaller.EnsureAsync(db, ct).ConfigureAwait(false);
+        }
+
+        // Il nome del dispositivo in cache ora, a DB libero: letto pigramente dentro un SavingChanges con una
+        // transazione grande aperta, aspetterebbe il busy_timeout (ruling 9).
+        _ = deviceIdentity.DeviceName;
 
         // Manutenzione una tantum R9. Dopo le migrazioni (serve lo schema aggiornato), prima di
         // tutto ciò che legge giorni. Nessun try/catch: se fallisce deve fallire l'avvio come una

@@ -72,6 +72,7 @@ public static class RecordumServiceCollectionExtensions
         services.AddSingleton<TimestampInterceptor>();
         services.AddSingleton<SqlCipherKeyConnectionInterceptor>();
         services.AddSingleton<DatabaseGate>();   // F2c-2: il restore lo chiude per lo scambio dei file
+        services.AddSingleton<SyncConnectionInterceptor>();   // le funzioni dei trigger della sync, a ogni apertura
 
         services.AddDbContextFactory<RecordumDbContext>((sp, builder) =>
         {
@@ -79,10 +80,11 @@ public static class RecordumServiceCollectionExtensions
             var timestamp = sp.GetRequiredService<TimestampInterceptor>();
             var cipher = sp.GetRequiredService<SqlCipherKeyConnectionInterceptor>();
             var gate = sp.GetRequiredService<DatabaseGate>();
+            var sync = sp.GetRequiredService<SyncConnectionInterceptor>();
             builder
                 .UseSqlite(options.ConnectionString)
                 .UseSnakeCaseNamingConvention()
-                .AddInterceptors(history, timestamp, gate, cipher);
+                .AddInterceptors(history, timestamp, gate, cipher, sync);
         });
 
         // 14 aggregate/query services + 1 key transition (Task 32). Scoped — per-operation IPluginContext capture.

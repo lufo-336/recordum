@@ -12,6 +12,7 @@ using Recordum.Core.Models;
 using Recordum.Data.Backup;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
+using Recordum.Data.Sync;
 using Recordum.Plugins.Contracts.Hosting;
 using Recordum.Plugins.Contracts.Manifest;
 
@@ -93,7 +94,10 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         var gate = new DatabaseGate();
         var dbFactory = new EncryptedDbContextFactory(dbPath, keyProvider,
             new TimestampInterceptor(clock, new FakePluginContext(), deviceIdentity),
-            new HabitConfigHistoryInterceptor(clock, NullLogger<HabitConfigHistoryInterceptor>.Instance), gate);
+            new HabitConfigHistoryInterceptor(clock, NullLogger<HabitConfigHistoryInterceptor>.Instance), gate,
+            new SyncConnectionInterceptor(clock));
+        await using (var db = await dbFactory.CreateDbContextAsync())
+            await SyncTriggerInstaller.EnsureAsync(db, CancellationToken.None);
 
         var logService = new EncryptedBackupLogService(dbFactory);
         var pluginManager = new StubPluginManager();
@@ -234,7 +238,8 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
         IDbKeyProvider keyProvider,
         TimestampInterceptor timestamp,
         HabitConfigHistoryInterceptor history,
-        DatabaseGate gate) : IDbContextFactory<RecordumDbContext>
+        DatabaseGate gate,
+        SyncConnectionInterceptor sync) : IDbContextFactory<RecordumDbContext>
     {
         // Use connection-string based access so EF Core owns the connection pool.
         // The key is applied via SqlCipherKeyConnectionInterceptor whenever the connection opens.
@@ -243,7 +248,7 @@ public sealed class EncryptedDbFixture : IAsyncDisposable
             var opts = new DbContextOptionsBuilder<RecordumDbContext>()
                 .UseSqlite($"Data Source={dbPath}")
                 .UseSnakeCaseNamingConvention()
-                .AddInterceptors(history, timestamp, gate, new SqlCipherKeyConnectionInterceptor(keyProvider))
+                .AddInterceptors(history, timestamp, gate, new SqlCipherKeyConnectionInterceptor(keyProvider), sync)
                 .Options;
             return new RecordumDbContext(opts);
         }

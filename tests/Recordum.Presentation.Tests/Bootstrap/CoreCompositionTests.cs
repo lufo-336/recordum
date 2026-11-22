@@ -217,6 +217,15 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         Assert.Equal("2.21", await settings.GetAsync("schema_version"));       // MigrateAsync ha girato
         Assert.Equal("true", await settings.GetAsync("maintenance.retro_noon_backfill_done")); // il backfill R9 ha girato
         Assert.Equal(1, steps.Calls);                                          // gli step opzionali, una volta
+
+        // I trigger della sync ci sono (EnsureAsync dopo le migrazioni) e la factory della DI registra le loro
+        // funzioni: senza SyncConnectionInterceptor questo DELETE morirebbe con "no such function".
+        var factory = provider.GetRequiredService<IDbContextFactory<Recordum.Data.RecordumDbContext>>();
+        await using (var db = await factory.CreateDbContextAsync())
+        {
+            await db.AppSettings.Where(s => s.Key == "daily_reset_time").ExecuteDeleteAsync();
+            Assert.Equal(1, await db.SyncTombstones.CountAsync(t => t.Entity == "app_setting" && t.EntityId == "daily_reset_time"));
+        }
     }
 
     [Fact]
