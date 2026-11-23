@@ -41,6 +41,7 @@ public sealed partial class SyncService(
     public const string JoinedSettingKey = "sync.joined";
     public const string LastWrittenSignatureSettingKey = "sync.last_written_signature";
     public const string LastWrittenHashSettingKey = "sync.last_written_hash";
+    public const string PendingWrittenHashSettingKey = "sync.pending_written_hash";
 
     private const long SignatureModulus = 1_000_000_007;
 
@@ -152,6 +153,11 @@ public sealed partial class SyncService(
                 .Where(s => s.Key == FolderSettingKey || s.Key == JoinedSettingKey)
                 .ExecuteDeleteAsync(ct)
                 .ConfigureAwait(false);
+            // Anche la via d'uscita da un'identità doppia: ricollegato, il dispositivo rientra come nuovo (nome di file
+            // nuovo, nessuna base), come dopo un ripristino.
+            await db.SyncMeta.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+            await db.SyncBases.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+            deviceIdentity.Invalidate();
             runState.SetPeers([]);
         }
         finally
@@ -205,9 +211,7 @@ public sealed partial class SyncService(
         // su una macchina con lo stesso nome): non si sovrascrive e lo stato lo dice.
         // ponytail: il proprio file letto come file della cartella; lo store SAF del telefono vorrà un membro esiste/dimensione.
         var ownPath = Path.Combine(folder, ownFileName);
-        var ownHash = await HashOfAsync(ownPath, ct).ConfigureAwait(false);
-        var ownFileIsForeign = ownHash is not null && !string.Equals(
-            ownHash, await settings.GetAsync(LastWrittenHashSettingKey, ct).ConfigureAwait(false), StringComparison.Ordinal);
+        var ownFileIsForeign = await OwnFileIsForeignAsync(ownPath, ct).ConfigureAwait(false);
         if (ownFileIsForeign)
             peers.Add(new SyncPeerStatus(deviceName, File.GetLastWriteTimeUtc(ownPath), SyncPeerProblem.SameIdentity));
         var merged = false;
@@ -316,6 +320,8 @@ public sealed partial class SyncService(
             return false;
 
         var tempZip = NewTempPath("out");
+        var tempSealed = NewTempPath("sealed");
+        string pendingHash;
         try
         {
             await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
@@ -325,20 +331,57 @@ public sealed partial class SyncService(
                 await SyncArchiveWriter.WriteAsync(db, zip, options, ct).ConfigureAwait(false);
             }
 
+            // Cifrato prima su un temporaneo: la sua impronta si salva come "in sospeso" prima della rinomina, così un
+            // arresto fra la rinomina e la promozione non fa sembrare estraneo il file appena scritto.
+            await using (var zip = new FileStream(tempZip, FileMode.Open, FileAccess.Read, FileShare.Read))
+            await using (var sealedFile = new FileStream(tempSealed, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                await cipher.EncryptAsync(zip, sealedFile, passphrase, ct).ConfigureAwait(false);
+            pendingHash = (await HashOfAsync(tempSealed, ct).ConfigureAwait(false))!;
+            await settings.SetAsync(PendingWrittenHashSettingKey, pendingHash, ct).ConfigureAwait(false);
+
             await store.WriteOwnAsync(async target =>
             {
-                await using var zip = new FileStream(tempZip, FileMode.Open, FileAccess.Read, FileShare.Read);
-                await cipher.EncryptAsync(zip, target, passphrase, ct).ConfigureAwait(false);
+                await using var sealedFile = new FileStream(tempSealed, FileMode.Open, FileAccess.Read, FileShare.Read);
+                await sealedFile.CopyToAsync(target, ct).ConfigureAwait(false);
             }, ct).ConfigureAwait(false);
         }
         finally
         {
             SecureWipe.DeleteFile(tempZip);
+            SecureWipe.DeleteFile(tempSealed);
         }
 
-        await settings.SetAsync(LastWrittenHashSettingKey, (await HashOfAsync(ownPath, ct).ConfigureAwait(false))!, ct).ConfigureAwait(false);
+        await PromoteHashAsync(pendingHash, ct).ConfigureAwait(false);
         await settings.SetAsync(LastWrittenSignatureSettingKey, signature, ct).ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>Vero se il proprio file nella cartella non l'ha scritto questo dispositivo: un altro con la stessa
+    /// identità (un database copiato su una macchina con lo stesso nome).</summary>
+    private async Task<bool> OwnFileIsForeignAsync(string ownPath, CancellationToken ct)
+    {
+        var ownHash = await HashOfAsync(ownPath, ct).ConfigureAwait(false);
+        if (ownHash is null) return false;
+        var last = await settings.GetAsync(LastWrittenHashSettingKey, ct).ConfigureAwait(false);
+        if (string.Equals(ownHash, last, StringComparison.Ordinal)) return false;
+
+        var pending = await settings.GetAsync(PendingWrittenHashSettingKey, ct).ConfigureAwait(false);
+        // Scritto qui, poi un arresto prima della promozione; oppure nessuna impronta (impostazioni perse, il primo giro
+        // di un database copiato): si adotta.
+        // ponytail: senza impronta un clone vero non si distingue; se ne accorge l'altro, al suo giro dopo.
+        if (string.Equals(ownHash, pending, StringComparison.Ordinal) || (string.IsNullOrEmpty(last) && string.IsNullOrEmpty(pending)))
+        {
+            await PromoteHashAsync(ownHash, ct).ConfigureAwait(false);
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task PromoteHashAsync(string hash, CancellationToken ct)
+    {
+        await settings.SetAsync(LastWrittenHashSettingKey, hash, ct).ConfigureAwait(false);
+        await settings.SetAsync(PendingWrittenHashSettingKey, "", ct).ConfigureAwait(false);
     }
 
     // ponytail: legge per intero il proprio file a ogni giro; con file da centinaia di MB, prima un confronto di dimensione e data.

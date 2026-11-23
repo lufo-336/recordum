@@ -301,6 +301,21 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public async Task IncludePhotos_is_on_until_turned_off(string? stored, bool expected)
+    {
+        var settings = new FakeAppSettingService();
+        if (stored is not null) settings.Store[SyncSettingsViewModel.IncludePhotosKey] = stored;
+        var vm = CreateVm(settings: settings);
+
+        await vm.LoadAsync();
+
+        vm.IncludePhotos.Should().Be(expected);
+    }
+
     [Fact]
     public async Task IncludePhotos_persists_setting()
     {

@@ -686,25 +686,95 @@ public sealed class SyncServiceTests : IDisposable
         await a.Service.RunAsync(CancellationToken.None);
         var ownPath = await a.GetOwnFilePathAsync();
         (await clone.GetOwnFilePathAsync()).Should().Be(ownPath, "same identity, same machine name: the same file");
-        var aBytes = await File.ReadAllBytesAsync(ownPath);
 
-        // Il clone non ha scritto quel file: non lo sovrascrive e lo stato lo dice.
+        // Il clone, senza impronta, adotta il file (non si distingue da una perdita delle impostazioni) e lo riscrive.
         await clone.EditAsync(2_100, db => db.HabitNodes.Add(NewHabit(H2, "From Clone")));
-        var cloneRun = await clone.Service.RunAsync(CancellationToken.None);
-        cloneRun.OwnFileWritten.Should().BeFalse();
-        cloneRun.Peers.Should().ContainSingle(p => p.Problem == SyncPeerProblem.SameIdentity);
-        (await clone.Service.GetStatusAsync(CancellationToken.None)).Peers.Should().Contain(p => p.Problem == SyncPeerProblem.SameIdentity);
-        (await File.ReadAllBytesAsync(ownPath)).Should().Equal(aBytes);
-
-        // Il clone si porta anche l'impronta di A (una copia vera del database): scrive per primo, poi è A ad accorgersene.
-        await clone.Settings.SetAsync(SyncService.LastWrittenHashSettingKey, (await a.Settings.GetAsync(SyncService.LastWrittenHashSettingKey))!);
         (await clone.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
         var cloneBytes = await File.ReadAllBytesAsync(ownPath);
+
+        // A trova il suo file scritto da un altro: non lo sovrascrive e lo stato lo dice.
         await a.EditAsync(3_000, db => db.HabitNodes.Add(NewHabit(H3, "Later On A")));
         var aRun = await a.Service.RunAsync(CancellationToken.None);
         aRun.OwnFileWritten.Should().BeFalse();
         aRun.Peers.Should().ContainSingle(p => p.Problem == SyncPeerProblem.SameIdentity);
+        (await a.Service.GetStatusAsync(CancellationToken.None)).Peers.Should().Contain(p => p.Problem == SyncPeerProblem.SameIdentity);
         (await File.ReadAllBytesAsync(ownPath)).Should().Equal(cloneBytes);
+
+        // La via d'uscita: scollegato e ricollegato, A rientra come un dispositivo nuovo con un file nuovo.
+        await a.Service.DisconnectAsync(CancellationToken.None);
+        await a.Settings.SetAsync(SyncService.FolderSettingKey, _sharedFolder);
+        (await a.Service.GetJoinStateAsync(CancellationToken.None)).Should().Be(SyncJoinState.NeedsChoice);
+        await a.Service.JoinAsync(SyncJoinChoice.KeepThisDeviceToo, CancellationToken.None);
+
+        var meta = await a.QueryAsync(db => db.SyncMeta.AsNoTracking().SingleAsync());
+        meta.DeviceId.Should().NotBe(sharedId);
+        var newPath = await a.GetOwnFilePathAsync();
+        newPath.Should().NotBe(ownPath);
+        File.Exists(newPath).Should().BeTrue();
+        a.RunState.Peers.Should().NotContain(p => p.Problem == SyncPeerProblem.SameIdentity);
+        (await a.QueryAsync(db => db.HabitNodes.Select(n => n.Name).OrderBy(n => n).ToListAsync()))
+            .Should().Equal("From A", "From Clone", "Later On A");
+    }
+
+    [Fact]
+    public async Task CrashBetweenRenameAndPromoteRecovers()
+    {
+        var crashAfterRename = false;
+        await using var a = await CreateNodeAsync(
+            "Fedora",
+            _sharedFolder,
+            joined: true,
+            startMs: 1_000,
+            storeFactory: (folder, own) => new CrashAfterWriteStore(new FolderSyncFileStore(folder, own), () => crashAfterRename));
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "First")));
+        await a.Service.RunAsync(CancellationToken.None);
+
+        await a.EditAsync(2_000, db => db.HabitNodes.Add(NewHabit(H2, "Second")));
+        crashAfterRename = true;
+        await FluentActions.Awaiting(() => a.Service.RunAsync(CancellationToken.None)).Should().ThrowAsync<IOException>();
+        crashAfterRename = false;
+
+        var run = await a.Service.RunAsync(CancellationToken.None);
+
+        run.Peers.Should().NotContain(p => p.Problem == SyncPeerProblem.SameIdentity, "the file was written here");
+        run.OwnFileWritten.Should().BeTrue("the crashed round never recorded its signature");
+        (await a.Settings.GetAsync(SyncService.LastWrittenHashSettingKey)).Should().Be(HashOf(await a.GetOwnFilePathAsync()));
+        (await a.Settings.GetAsync(SyncService.PendingWrittenHashSettingKey)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AbsentHashAdoptsExistingOwnFile()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "First")));
+        await a.Service.RunAsync(CancellationToken.None);
+        // Impostazioni perse, sync_meta rimasta: nessuna impronta né in sospeso.
+        await a.QueryAsync(db => db.AppSettings
+            .Where(s => s.Key == SyncService.LastWrittenHashSettingKey || s.Key == SyncService.PendingWrittenHashSettingKey)
+            .ExecuteDeleteAsync());
+        var ownPath = await a.GetOwnFilePathAsync();
+
+        var adopt = await a.Service.RunAsync(CancellationToken.None);
+        adopt.Peers.Should().NotContain(p => p.Problem == SyncPeerProblem.SameIdentity);
+        (await a.Settings.GetAsync(SyncService.LastWrittenHashSettingKey)).Should().Be(HashOf(ownPath));
+
+        await a.EditAsync(2_000, db => db.HabitNodes.Add(NewHabit(H2, "Second")));
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+    }
+
+    private static string HashOf(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+
+    private sealed class CrashAfterWriteStore(ISyncFileStore inner, Func<bool> crash) : ISyncFileStore
+    {
+        public Task<IReadOnlyList<SyncPeerFile>> ListPeerFilesAsync(CancellationToken ct) => inner.ListPeerFilesAsync(ct);
+
+        public Task<Stream> OpenReadAsync(SyncPeerFile file, CancellationToken ct) => inner.OpenReadAsync(file, ct);
+
+        public async Task WriteOwnAsync(Func<Stream, Task> write, CancellationToken ct)
+        {
+            await inner.WriteOwnAsync(write, ct);   // rinominato: il file nuovo è al suo posto
+            if (crash()) throw new IOException("simulated crash before the hash is promoted");
+        }
     }
 
     [Fact]
@@ -888,7 +958,7 @@ public sealed class SyncServiceTests : IDisposable
             storeFactory: storeFactory,
             machineName: machineName ?? deviceName);
 
-        return new TestNode(fixture, clock, settings, backups, paths, realDeviceIdentity, service, sharedFolder);
+        return new TestNode(fixture, clock, settings, backups, paths, realDeviceIdentity, service, sharedFolder, runState);
     }
 
     private sealed class TestNode(
@@ -899,8 +969,10 @@ public sealed class SyncServiceTests : IDisposable
         EncryptedDbFixture.TestBackupPaths paths,
         DeviceIdentity realDeviceIdentity,
         SyncService service,
-        string sharedFolder) : IAsyncDisposable
+        string sharedFolder,
+        SyncRunState runState) : IAsyncDisposable
     {
+        public SyncRunState RunState { get; } = runState;
         public DbFixture Fixture { get; } = fixture;
         public FakeClock Clock { get; } = clock;
         public IAppSettingService Settings { get; } = settings;
