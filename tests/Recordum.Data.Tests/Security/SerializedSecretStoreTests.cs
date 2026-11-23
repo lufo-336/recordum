@@ -20,7 +20,9 @@ public sealed class SerializedSecretStoreTests
         public void Write(SecretKind kind, string value)
         {
             WriteEntered.Set();
-            ReleaseWrite.Wait(TimeSpan.FromSeconds(10));
+            // Tetto largo: su un runner saturo il test può riprendere dopo secondi, e una scrittura che si chiude da
+            // sola per tempo lascia finire la cancellazione (falso rosso visto in CI Windows).
+            ReleaseWrite.Wait(TimeSpan.FromSeconds(120));
             lock (_items) _items[kind] = value;
         }
         public void Delete(SecretKind kind) { lock (_items) _items.Remove(kind); }
