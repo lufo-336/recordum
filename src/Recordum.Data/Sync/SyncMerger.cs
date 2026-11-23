@@ -87,10 +87,12 @@ public static class SyncMerger
         // SalvageTextAsync (regola 4, Ruling 17): capire se il pari aveva visto una nostra riga prima di cancellarla.
         private const string LocalMsKey = "_local_ms";
         private const string MergedAtKey = "_merged_at";
+        private const string PrevParentKey = "_prev_parent_id";
 
         private const string Ms = "updated_at_ms";
         private const string DeviceName = "last_edited_device_name";
         private const string SettingsEntity = "app_setting";
+        private const string HabitNodeEntity = "habit_node";
         private const string NoteEntity = "note";
         private const string HistoryEntity = "note_history";
 
@@ -98,8 +100,11 @@ public static class SyncMerger
         private readonly string _peer = remote.Manifest.DeviceId;
         private readonly Dictionary<string, string[]> _pk = PrimaryKeys(model);
         private readonly List<Fk> _fks = ForeignKeys(model);
+        private readonly Dictionary<string, SyncEntity> _entityByTable =
+            SyncCatalog.Entities.ToDictionary(e => e.Table, StringComparer.Ordinal);
+        private readonly Dictionary<(string Entity, string Id), string> _aliases = [];
         private readonly HashSet<string> _touched = new(StringComparer.Ordinal);
-        private int _inserted, _updated, _deleted, _textConflicts, _rescued;
+        private int _inserted, _updated, _deleted, _textConflicts, _repaired, _rescued;
 
         // merged_from del pari per noi: il written_at_ms (orologio di qui) dell'ultimo nostro file che ha unito.
         private readonly long? _seenUntil = remote.Manifest.MergedFrom.TryGetValue(localDeviceId, out var seen) ? seen : null;
@@ -114,17 +119,50 @@ public static class SyncMerger
             foreach (var t in remote.Tombstones.Where(t => index.ContainsKey(t.Entity)).OrderByDescending(t => index[t.Entity]))
                 await ApplyTombstoneAsync(SyncCatalog.Entities[index[t.Entity]], t, remoteById[t.Entity]).ConfigureAwait(false);
 
-            foreach (var entity in SyncCatalog.Entities)
+            await ReloadAliasesAsync().ConfigureAwait(false);
+
+            var droppedUniqueIndexes = new List<string>();
+            foreach (var entity in SyncCatalog.Entities.Where(e => e.NaturalKey.Count > 0))
+                droppedUniqueIndexes.AddRange(await NaturalKeyUnifier.DropUniqueIndexesAsync(conn, tx, entity.Table, ct).ConfigureAwait(false));
+
+            try
             {
-                await MergeRowsAsync(entity).ConfigureAwait(false);
-                afterEntity?.Invoke(entity.PublicName);
+                foreach (var entity in SyncCatalog.Entities)
+                {
+                    await MergeRowsAsync(entity).ConfigureAwait(false);
+                    if (entity.NaturalKey.Count > 0)
+                    {
+                        var unified = await NaturalKeyUnifier.UnifyAsync(conn, tx, model, entity, ct).ConfigureAwait(false);
+                        if (unified > 0)
+                        {
+                            _repaired += unified;
+                            await ReloadAliasesAsync().ConfigureAwait(false);
+                        }
+                    }
+                    afterEntity?.Invoke(entity.PublicName);
+                }
+
+                foreach (var entity in SyncCatalog.Entities.Where(e => e.NaturalKey.Count > 0))
+                {
+                    var unified = await NaturalKeyUnifier.UnifyAsync(conn, tx, model, entity, ct).ConfigureAwait(false);
+                    if (unified > 0)
+                    {
+                        _repaired += unified;
+                        await ReloadAliasesAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var sql in droppedUniqueIndexes)
+                    await ExecAsync(sql).ConfigureAwait(false);
             }
 
             await SweepOrphansAsync().ConfigureAwait(false);
             foreach (var entity in SyncCatalog.Entities)
             {
                 await ExecAsync(
-                    $"DELETE FROM sync_tombstone WHERE entity = @e AND EXISTS (SELECT 1 FROM {Q(entity.Table)} AS r " +
+                    $"DELETE FROM sync_tombstone WHERE entity = @e AND alias_of IS NULL AND EXISTS (SELECT 1 FROM {Q(entity.Table)} AS r " +
                     $"WHERE {Identity(entity, "r")} = sync_tombstone.entity_id AND r.updated_at_ms > sync_tombstone.deleted_at_ms)",
                     ("@e", entity.PublicName)).ConfigureAwait(false);
                 await ExecAsync(
@@ -133,14 +171,28 @@ public static class SyncMerger
                     ("@e", entity.PublicName)).ConfigureAwait(false);
             }
 
-            return new SyncMergeReport(_inserted, _updated, _deleted, _textConflicts, Repaired: 0, _rescued);
+            _repaired += await DomainInvariantRepair.RepairAsync(conn, tx, clock, ct).ConfigureAwait(false);
+
+            return new SyncMergeReport(_inserted, _updated, _deleted, _textConflicts, _repaired, _rescued);
         }
 
         // Spec §8.3 "cancellazione contro modifica": vince l'azione più recente; a parità la cancellazione.
         // La lapide si copia sempre (si tiene la più recente): se qui la riga vince, il passo 4 la toglie.
+        // Una lapide con alias_of non è una cancellazione: la riga locale (e i suoi riferimenti) viene unificata da NaturalKeyUnifier.
         private async Task ApplyTombstoneAsync(SyncEntity entity, SyncTombstoneRow t, Dictionary<string, SyncRow> remoteRows)
         {
             if (!Travels(entity, t.EntityId)) return;
+            if (t.AliasOf is not null)
+            {
+                await ExecAsync(
+                    "INSERT INTO sync_tombstone (entity, entity_id, deleted_at_ms, device_id, alias_of) VALUES (@e, @id, @at, @dev, @alias) " +
+                    "ON CONFLICT (entity, entity_id) DO UPDATE SET deleted_at_ms = excluded.deleted_at_ms, " +
+                    "device_id = excluded.device_id, alias_of = excluded.alias_of " +
+                    "WHERE excluded.deleted_at_ms >= sync_tombstone.deleted_at_ms OR sync_tombstone.alias_of IS NULL",
+                    ("@e", entity.PublicName), ("@id", t.EntityId), ("@at", t.DeletedAtMs), ("@dev", t.DeviceId), ("@alias", t.AliasOf)).ConfigureAwait(false);
+                return;
+            }
+
             // Il pari ha cancellato e poi rifatto la riga: decide la riga, al passo 2.
             if (remoteRows.TryGetValue(t.EntityId, out var again) && RowMs(entity, again) > t.DeletedAtMs) return;
 
@@ -182,10 +234,11 @@ public static class SyncMerger
             {
                 if (!Travels(entity, row.Id)) continue;
                 var r = Known(entity, row);
+                var rowId = RewriteAliases(entity, row.Id, r);
                 var rms = RowMs(entity, row);
-                if (tombs.TryGetValue(row.Id, out var deletedAt) && deletedAt >= rms)
+                if (tombs.TryGetValue(rowId, out var deletedAt) && deletedAt >= rms)
                 {
-                    await SalvageTextAsync(entity, row.Id, r, bases.GetValueOrDefault(row.Id), deletedAt, deletedHere: true).ConfigureAwait(false);
+                    await SalvageTextAsync(entity, rowId, r, bases.GetValueOrDefault(rowId), deletedAt, deletedHere: true).ConfigureAwait(false);
                     continue;
                 }
 
@@ -193,18 +246,22 @@ public static class SyncMerger
                 var after = r;
                 var produced = true; // questa unione ha dato alla riga la sua versione attuale
                 Dictionary<string, JsonElement>? oldBase = null;
-                if (!local.TryGetValue(row.Id, out var l))
+                if (!local.TryGetValue(rowId, out var l))
                 {
-                    await InsertAsync(entity, row.Id, r).ConfigureAwait(false);
-                    await MergePhotosAsync(entity, row.Id, r, inserted: true, rms, row.FieldMs, mergedFieldMs: null, b: null, newBase).ConfigureAwait(false);
-                    await WriteFieldMsAsync(entity.PublicName, row.Id, row.FieldMs.Where(kv => kv.Value < rms)).ConfigureAwait(false);
+                    await InsertAsync(entity, rowId, r).ConfigureAwait(false);
+                    await MergePhotosAsync(entity, rowId, r, inserted: true, rms, row.FieldMs, mergedFieldMs: null, b: null, newBase).ConfigureAwait(false);
+                    var insertedFieldMs = row.FieldMs
+                        .Where(kv => kv.Value < rms)
+                        .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+                    await WriteFieldMsAsync(entity.PublicName, rowId, insertedFieldMs).ConfigureAwait(false);
                     _inserted++;
                     _touched.Add(entity.Table);
+                    local[rowId] = new SyncRow(rowId, after) { FieldMs = insertedFieldMs };
                 }
                 else
                 {
                     if (entity.IsHistory) continue; // storici: insiemi, una riga che c'è già non cambia
-                    var b = oldBase = bases.GetValueOrDefault(row.Id);
+                    var b = oldBase = bases.GetValueOrDefault(rowId);
                     // Un file vecchio dello stesso pari (la base ha già visto una versione più recente) non fa tornare
                     // indietro nulla.
                     if (b is not null && b.TryGetValue(Ms, out var bms) && bms.GetInt64() > rms) continue;
@@ -215,13 +272,15 @@ public static class SyncMerger
                     foreach (var tf in timedFields)
                         mergedFieldMs[tf.PublicName] = l.FieldMs.TryGetValue(tf.PublicName, out var lfm) ? lfm : lms;
 
-                    var tookRemotePhoto = await MergePhotosAsync(entity, row.Id, r, inserted: false, rms, row.FieldMs, mergedFieldMs, b, newBase).ConfigureAwait(false);
-                    var seen = await TextSeenAsync(entity, row.Id, l.Fields, r, lms).ConfigureAwait(false);
+                    var tookRemotePhoto = await MergePhotosAsync(entity, rowId, r, inserted: false, rms, row.FieldMs, mergedFieldMs, b, newBase).ConfigureAwait(false);
+                    var seen = await TextSeenAsync(entity, rowId, l.Fields, r, lms).ConfigureAwait(false);
                     var (changes, newRowMs) = MergeFields(entity, l.Fields, r, row.FieldMs, b, lms, rms, mergedFieldMs, seen);
+                    if (entity.PublicName == HabitNodeEntity && changes.ContainsKey("parent_id") && l.Fields.TryGetValue("parent_id", out var prevParent))
+                        newBase[PrevParentKey] = prevParent;
                     if (changes.Count > 0) await UpdateAsync(entity, r, changes).ConfigureAwait(false);
                     var desiredFieldMs = mergedFieldMs.Where(kv => kv.Value < newRowMs).ToList();
                     if (FieldMsDiffers(l.FieldMs, desiredFieldMs))
-                        await WriteFieldMsAsync(entity.PublicName, row.Id, desiredFieldMs).ConfigureAwait(false);
+                        await WriteFieldMsAsync(entity.PublicName, rowId, desiredFieldMs).ConfigureAwait(false);
 
                     produced = changes.Count > 0 || tookRemotePhoto;
                     if (produced)
@@ -232,12 +291,16 @@ public static class SyncMerger
                         await ExecAsync(
                             $"UPDATE sync_base SET row_json = json_remove(row_json, '$.{LocalMsKey}') " +
                             "WHERE entity = @e AND entity_id = @id AND peer_device_id <> @p",
-                            ("@e", entity.PublicName), ("@id", row.Id), ("@p", _peer)).ConfigureAwait(false);
+                            ("@e", entity.PublicName), ("@id", rowId), ("@p", _peer)).ConfigureAwait(false);
                     }
 
                     var merged = new Dictionary<string, JsonElement>(l.Fields, StringComparer.Ordinal);
                     foreach (var (k, v) in changes) merged[k] = v;
                     after = merged;
+                    local[rowId] = new SyncRow(rowId, after)
+                    {
+                        FieldMs = desiredFieldMs.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal),
+                    };
                 }
 
                 if (!entity.IsHistory)
@@ -254,7 +317,8 @@ public static class SyncMerger
 
                     await ExecAsync(
                         "INSERT OR REPLACE INTO sync_base (peer_device_id, entity, entity_id, row_json) VALUES (@p, @e, @id, @json)",
-                        ("@p", _peer), ("@e", entity.PublicName), ("@id", row.Id), ("@json", JsonSerializer.Serialize(newBase))).ConfigureAwait(false);
+                        ("@p", _peer), ("@e", entity.PublicName), ("@id", rowId), ("@json", JsonSerializer.Serialize(newBase))).ConfigureAwait(false);
+                    bases[rowId] = newBase;
                 }
             }
         }
@@ -685,11 +749,62 @@ public static class SyncMerger
 
         private async Task<Dictionary<string, long>> TombstonesAsync(SyncEntity entity)
         {
-            await using var cmd = Command("SELECT entity_id, deleted_at_ms FROM sync_tombstone WHERE entity = @e", ("@e", entity.PublicName));
+            await using var cmd = Command("SELECT entity_id, deleted_at_ms FROM sync_tombstone WHERE entity = @e AND alias_of IS NULL", ("@e", entity.PublicName));
             await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             var map = new Dictionary<string, long>(StringComparer.Ordinal);
             while (await reader.ReadAsync(ct).ConfigureAwait(false)) map[reader.GetString(0)] = reader.GetInt64(1);
             return map;
+        }
+
+        private async Task ReloadAliasesAsync()
+        {
+            _aliases.Clear();
+            await using var cmd = Command("SELECT entity, entity_id, alias_of FROM sync_tombstone WHERE alias_of IS NOT NULL");
+            await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
+                _aliases[(reader.GetString(0), reader.GetString(1))] = reader.GetString(2);
+        }
+
+        private string ResolveAlias(string entityName, string id)
+        {
+            var visited = new HashSet<string>(StringComparer.Ordinal) { id };
+            while (_aliases.TryGetValue((entityName, id), out var next) && visited.Add(next))
+                id = next;
+            return id;
+        }
+
+        private string RewriteAliases(SyncEntity entity, string rowId, Dictionary<string, JsonElement> r)
+        {
+            if (_aliases.Count == 0) return rowId;
+
+            foreach (var fk in _fks.Where(f => f.DepTable == entity.Table && f.DepCols.Length == 1))
+            {
+                if (!_entityByTable.TryGetValue(fk.PrincipalTable, out var principal)) continue;
+                var fkField = entity.Fields.FirstOrDefault(f => f.Column == fk.DepCols[0])?.PublicName;
+                if (fkField is null || !r.TryGetValue(fkField, out var val) || val.ValueKind != JsonValueKind.String) continue;
+                var oldTarget = val.GetString()!;
+                var newTarget = ResolveAlias(principal.PublicName, oldTarget);
+                if (!string.Equals(newTarget, oldTarget, StringComparison.Ordinal))
+                    r[fkField] = JsonSerializer.SerializeToElement(newTarget);
+            }
+
+            if (entity.KeyColumns.Count == 1)
+            {
+                var keyField = entity.Fields.First(f => f.Column == entity.KeyColumns[0]).PublicName;
+                var resolved = ResolveAlias(entity.PublicName, rowId);
+                if (!string.Equals(resolved, rowId, StringComparison.Ordinal))
+                {
+                    r[keyField] = JsonSerializer.SerializeToElement(resolved);
+                    return resolved;
+                }
+                return rowId;
+            }
+
+            return string.Join("|", entity.KeyColumns.Select(c =>
+            {
+                var pub = entity.Fields.First(f => f.Column == c).PublicName;
+                return Str(r[pub]);
+            }));
         }
 
         private async Task<Dictionary<string, Dictionary<string, JsonElement>>> BasesAsync(SyncEntity entity)

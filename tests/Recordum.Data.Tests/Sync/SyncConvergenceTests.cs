@@ -259,8 +259,15 @@ public sealed class SyncConvergenceTests
         }
     }
 
-    private static string WithoutTimestamps(string dump) =>
-        System.Text.RegularExpressions.Regex.Replace(dump, "updated_at_ms=-?[0-9]+", "updated_at_ms=*");
+    // Fra ordini diversi le ore possono differire (i + 1 delle unioni, l'ora di una lapide-alias è quella dell'unione che
+    // l'ha fatta), i valori no: si tolgono le ore della riga, dei campi e delle lapidi.
+    private static string WithoutTimestamps(string dump)
+    {
+        var s = System.Text.RegularExpressions.Regex.Replace(dump, "updated_at_ms=-?[0-9]+", "updated_at_ms=*");
+        s = System.Text.RegularExpressions.Regex.Replace(s, "_field_ms=[^\n]*", "_field_ms=*");
+        return System.Text.RegularExpressions.Regex.Replace(s, "^(tombstone \\S+ \\S+) -?[0-9]+", "$1 *",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+    }
 
 
     [Fact]
@@ -297,6 +304,79 @@ public sealed class SyncConvergenceTests
         var dump = await a.CanonicalDumpAsync();
         (await b.CanonicalDumpAsync()).Should().Be(dump);
         (await phone.CanonicalDumpAsync()).Should().Be(dump);
+    }
+
+    [Fact]
+    public async Task CrossedTagsAndScalesConvergeInAnyOrder()
+    {
+        var scaleId = new Guid("22222222-0000-0000-0000-000000000020");
+        var tagA = new Guid("11111111-0000-0000-0000-000000000091");
+        var tagB = new Guid("55555555-0000-0000-0000-000000000092");
+        var tagC = new Guid("99999999-0000-0000-0000-000000000093");
+        var anchorA1 = new Guid("11111111-0000-0000-0000-000000000081");
+        var anchorB1 = new Guid("55555555-0000-0000-0000-000000000082");
+        var anchorC1 = new Guid("99999999-0000-0000-0000-000000000083");
+        var noteA = new Guid("22222222-0000-0000-0000-000000000071");
+        var noteB = new Guid("22222222-0000-0000-0000-000000000072");
+
+        var dumps = new List<string>();
+        foreach (var order in AllOrders)
+        {
+            await using var a = new SyncDevice("a");
+            await using var b = new SyncDevice("b");
+            await using var c = new SyncDevice("c");
+            var devices = new Dictionary<char, SyncDevice> { ['a'] = a, ['b'] = b, ['c'] = c };
+
+            await a.EditAsync(100, db =>
+            {
+                db.HabitNodes.Add(Habit(H1, "Run"));
+                db.ScaleTemplates.Add(new ScaleTemplate
+                {
+                    Id = scaleId, Code = "effort-x", Name = "Effort", MinValue = 1, MaxValue = 3,
+                });
+            });
+            var files = new Dictionary<char, byte[]>();
+            foreach (var d in devices) files[d.Key] = await d.Value.WriteFileAsync();
+            for (var i = 0; i < 2; i++) await RoundAsync(devices, files, "abc");
+
+            await a.EditAsync(200, db =>
+            {
+                db.Tags.Add(new Tag { Id = tagB, Name = "Cardio", Color = "#111111" });
+                db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = H1, TagId = tagB });
+                db.Notes.Add(new Note { Id = noteA, HabitNodeId = H1, BodyMd = "note a" });
+                db.NoteTags.Add(new NoteTag { NoteId = noteA, TagId = tagB, Source = Recordum.Core.Enums.NoteTagSource.Property });
+                db.ScaleAnchors.Add(new ScaleAnchor { Id = anchorB1, ScaleTemplateId = scaleId, Value = 1, Label = "Easy A", TagId = tagB });
+            });
+            await b.EditAsync(250, db =>
+            {
+                db.Tags.Add(new Tag { Id = tagC, Name = "cardio", Color = "#222222" });
+                db.Notes.Add(new Note { Id = noteB, HabitNodeId = H1, BodyMd = "note b" });
+                db.NoteTags.Add(new NoteTag { NoteId = noteB, TagId = tagC, Source = Recordum.Core.Enums.NoteTagSource.Inline });
+                db.ScaleAnchors.Add(new ScaleAnchor { Id = anchorA1, ScaleTemplateId = scaleId, Value = 1, Label = "Easy B", TagId = tagC });
+            });
+            await c.EditAsync(300, db =>
+            {
+                db.Tags.Add(new Tag { Id = tagA, Name = "CARDIO", Color = "#333333" });
+                db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = H1, TagId = tagA });
+                db.ScaleAnchors.Add(new ScaleAnchor { Id = anchorC1, ScaleTemplateId = scaleId, Value = 1, Label = "Easy C", TagId = tagA });
+            });
+
+            foreach (var d in devices) files[d.Key] = await d.Value.WriteFileAsync();
+            await RunToFixedPointAsync(devices, files, order);
+
+            foreach (var d in devices.Values)
+            {
+                (await d.QueryAsync(db => db.Tags.AsNoTracking().SingleAsync())).Id.Should().Be(tagA);
+                var anchor = await d.QueryAsync(db => db.ScaleAnchors.AsNoTracking().SingleAsync(x => x.ScaleTemplateId == scaleId));
+                anchor.Id.Should().Be(anchorA1);
+                anchor.TagId.Should().Be(tagA);
+                anchor.Label.Should().Be("Easy C");
+            }
+
+            dumps.Add(WithoutTimestamps(await a.CanonicalDumpAsync()));
+        }
+
+        dumps.Distinct().Should().ContainSingle();
     }
 
     /// <summary>Un giro: ogni dispositivo, nell'ordine dato, legge i file più recenti degli altri e riscrive il suo.</summary>
