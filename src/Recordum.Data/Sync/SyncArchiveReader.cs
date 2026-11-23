@@ -238,7 +238,8 @@ public static class SyncArchiveReader
             if (ms > rowMs.Value)
                 throw new SyncFormatException($"Invalid '_field_ms.{prop.Name}' in '{file}' at line {lineNumber}: timestamp {ms} exceeds 'updated_at_ms' ({rowMs.Value}).");
 
-            if (timedFieldNames is not null && timedFieldNames.Contains(prop.Name))
+            // Un'ora uguale a quella della riga è la stessa cosa di nessuna ora: non entra.
+            if (timedFieldNames is not null && timedFieldNames.Contains(prop.Name) && ms < rowMs.Value)
                 result[prop.Name] = ms;
         }
 

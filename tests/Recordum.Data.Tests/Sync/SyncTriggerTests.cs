@@ -141,8 +141,8 @@ public sealed class SyncTriggerTests
         await using var fx = new DbFixture(clock);
         var (_, pause) = await SeedPauseAsync(fx);
         await using var db = await fx.Factory.CreateDbContextAsync();
-        await db.Database.ExecuteSqlRawAsync("UPDATE streak_pauses SET updated_at_ms = 5;");
-        (await db.StreakPauses.AsNoTracking().SingleAsync()).UpdatedAtMs.Should().Be(5, "chi scrive l'ora la tiene");
+        await db.Database.ExecuteSqlRawAsync("UPDATE streak_pauses SET updated_at_ms = 1500;");
+        (await db.StreakPauses.AsNoTracking().SingleAsync()).UpdatedAtMs.Should().Be(1500, "chi scrive un'ora più alta la tiene");
 
         clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(2_000));
         await db.StreakPauses.Where(p => p.Id == pause.Id)
@@ -157,8 +157,20 @@ public sealed class SyncTriggerTests
         await using var fx = new DbFixture(ClockAt(1_000));
         await SeedPauseAsync(fx);
         await using var db = await fx.Factory.CreateDbContextAsync();
+        await db.Database.ExecuteSqlRawAsync("UPDATE streak_pauses SET reason = 'y', updated_at_ms = 4200;");
+        (await db.StreakPauses.AsNoTracking().SingleAsync()).UpdatedAtMs.Should().Be(4200);
+    }
+
+    /// <summary>Ruling 20, review 7b: una modifica batte sempre la versione che modifica, anche se chi scrive dà un'ora più
+    /// bassa (un orologio indietro rispetto a una riga arrivata da un pari).</summary>
+    [Fact]
+    public async Task LowerUpdatedAtMsBecomesTheOldPlusOne()
+    {
+        await using var fx = new DbFixture(ClockAt(1_000));
+        await SeedPauseAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
         await db.Database.ExecuteSqlRawAsync("UPDATE streak_pauses SET reason = 'y', updated_at_ms = 42;");
-        (await db.StreakPauses.AsNoTracking().SingleAsync()).UpdatedAtMs.Should().Be(42);
+        (await db.StreakPauses.AsNoTracking().SingleAsync()).UpdatedAtMs.Should().Be(1_001);
     }
 
     [Fact]
@@ -168,13 +180,14 @@ public sealed class SyncTriggerTests
         await using var fx = new DbFixture(clock);
         var (_, pause) = await SeedPauseAsync(fx);
         await using var db = await fx.Factory.CreateDbContextAsync();
-        await db.Database.ExecuteSqlRawAsync("UPDATE streak_pauses SET updated_at_ms = 5;");
         clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(2_000));
 
+        await db.Database.OpenConnectionAsync();
         var state = SyncConnectionState.For(db.Database.GetDbConnection());
         state.Applying = true;
         try
         {
+            await db.Database.ExecuteSqlRawAsync("UPDATE streak_pauses SET updated_at_ms = 5;");
             await db.StreakPauses.ExecuteUpdateAsync(s => s.SetProperty(p => p.Reason, "x"));
             (await db.StreakPauses.AsNoTracking().SingleAsync()).UpdatedAtMs.Should().Be(5);
             await db.StreakPauses.Where(p => p.Id == pause.Id).ExecuteDeleteAsync();

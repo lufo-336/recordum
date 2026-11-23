@@ -8,7 +8,9 @@ namespace Recordum.Data.Sync;
 /// le cascade scavalcano <c>TimestampInterceptor</c>, i trigger no. Non stanno in una migrazione: si ricreano dal
 /// <see cref="SyncCatalog"/> a ogni avvio, così una tabella nuova li riceve da sola e un DB fatto con
 /// <c>EnsureCreated</c> li ha uguali. Chiamano le funzioni che registra <c>SyncConnectionInterceptor</c>.
-/// <para>L'UPDATE dentro <c>trg_sync_upd_*</c> non lo riaccende perché <c>recursive_triggers</c> è spento (default).</para></summary>
+/// <para>L'UPDATE dentro <c>trg_sync_upd_*</c> non lo riaccende perché <c>recursive_triggers</c> è spento (default).
+/// Una modifica batte sempre la versione che modifica: se l'ora nuova non è più alta (stesso millisecondo, o un orologio
+/// indietro rispetto a una riga arrivata da un pari) diventa la vecchia + 1.</para></summary>
 public static class SyncTriggerInstaller
 {
     private const string SettingsTable = "app_settings";
@@ -52,9 +54,9 @@ public static class SyncTriggerInstaller
                 END;
                 DROP TRIGGER IF EXISTS "trg_sync_upd_{e.Table}";
                 CREATE TRIGGER "trg_sync_upd_{e.Table}" AFTER UPDATE ON {table}
-                WHEN {newKeyFilter}NEW.updated_at_ms IS OLD.updated_at_ms AND recordum_sync_applying() = 0
+                WHEN {newKeyFilter}NEW.updated_at_ms <= OLD.updated_at_ms AND recordum_sync_applying() = 0
                 BEGIN
-                    UPDATE {table} SET updated_at_ms = recordum_now_ms() WHERE {match};
+                    UPDATE {table} SET updated_at_ms = MAX(recordum_now_ms(), OLD.updated_at_ms + 1) WHERE {match};
                 END;
                 DROP TRIGGER IF EXISTS "trg_sync_ins_{e.Table}";
                 CREATE TRIGGER "trg_sync_ins_{e.Table}" AFTER INSERT ON {table}

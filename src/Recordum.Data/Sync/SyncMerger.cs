@@ -216,7 +216,8 @@ public static class SyncMerger
                         mergedFieldMs[tf.PublicName] = l.FieldMs.TryGetValue(tf.PublicName, out var lfm) ? lfm : lms;
 
                     var tookRemotePhoto = await MergePhotosAsync(entity, row.Id, r, inserted: false, rms, row.FieldMs, mergedFieldMs, b, newBase).ConfigureAwait(false);
-                    var (changes, newRowMs) = MergeFields(entity, l.Fields, r, row.FieldMs, b, lms, rms, mergedFieldMs);
+                    var seen = await TextSeenAsync(entity, row.Id, l.Fields, r, lms).ConfigureAwait(false);
+                    var (changes, newRowMs) = MergeFields(entity, l.Fields, r, row.FieldMs, b, lms, rms, mergedFieldMs, seen);
                     if (changes.Count > 0) await UpdateAsync(entity, r, changes).ConfigureAwait(false);
                     var desiredFieldMs = mergedFieldMs.Where(kv => kv.Value < newRowMs).ToList();
                     if (FieldMsDiffers(l.FieldMs, desiredFieldMs))
@@ -265,7 +266,7 @@ public static class SyncMerger
         private (Dictionary<string, JsonElement> Changes, long NewRowMs) MergeFields(
             SyncEntity entity, IReadOnlyDictionary<string, JsonElement> l, Dictionary<string, JsonElement> r,
             IReadOnlyDictionary<string, long> rFieldMs, Dictionary<string, JsonElement>? b,
-            long lms, long rms, Dictionary<string, long> mergedFieldMs)
+            long lms, long rms, Dictionary<string, long> mergedFieldMs, TextSeen seen)
         {
             var changes = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
             bool? textFromRemote = null; // nel catalogo il campo Text viene prima di last_edited_device_name
@@ -298,31 +299,29 @@ public static class SyncMerger
 
                 if (field.Kind == SyncFieldKind.Text)
                 {
+                    // Regola B: vince il testo con l'ora di campo più recente. Il perdente si scarta solo se chi ha scritto
+                    // il vincente l'aveva già visto (e l'ha tolto, per esempio i blocchi di un testo unito): ogni suo pezzo
+                    // è nel vincente o nella base di questo pari; se il perdente è il nostro, il pari ha visto la nostra
+                    // versione (merged_from); se è il suo, ogni pezzo sta in una nostra base. Se no va in coda: un testo
+                    // non si perde mai, al più un blocco tolto nello stesso giro del conflitto torna una volta.
                     JsonElement bv = default;
                     var hasBase = b is not null && b.TryGetValue(name, out bv);
-                    // Una parte che ha solo pezzi già visti (nella base o dall'altra parte) non ha scritto niente di
-                    // nuovo: ha tolto qualcosa, per esempio i blocchi di un testo unito. Decide l'ora, non la regola B
-                    // (che altrimenti rimetterebbe i blocchi tolti con una base vecchia).
-                    var localChanged = !hasBase || (!JsonElement.DeepEquals(lv, bv) && !TextConflictBlock.Covers(Str(bv), Str(rv), Str(lv)));
-                    var remoteChanged = !hasBase || (!JsonElement.DeepEquals(rv, bv) && !TextConflictBlock.Covers(Str(bv), Str(lv), Str(rv)));
-                    if (localChanged && remoteChanged)
+                    var remoteTextWins = rf > lf || (rf == lf && CompareCanonicalValue(rv, lv) < 0);
+                    var (winnerText, loserText) = remoteTextWins ? (Str(rv), Str(lv)) : (Str(lv), Str(rv));
+                    var discard = (hasBase && TextConflictBlock.Covers([winnerText, Str(bv)], loserText))
+                        || (remoteTextWins ? seen.RemoteSawLocal : TextConflictBlock.Covers([winnerText, .. seen.BaseTexts], loserText));
+                    if (!discard)
                     {
-                        var remoteTextWins = rf > lf || (rf == lf && CompareCanonicalValue(rv, lv) < 0);
                         var (topFromRemote, merged) = MergeText(lv, rv, l, r, remoteTextWins, lf, rf);
                         textFromRemote = topFromRemote;
-                        if (merged is null)
-                        {
-                            textMs = topFromRemote ? rf : lf;
-                            mergedFieldMs[name] = textMs;
-                            if (topFromRemote)
-                                changes[name] = rv;
-                        }
-                        else
-                        {
-                            textMs = Math.Max(lf, rf) + 1;
-                            mergedFieldMs[name] = textMs;
+                        // Una delle due versioni (anche quella con l'ora più vecchia, se contiene l'altra) prende l'ora
+                        // più recente: un'ora di campo non scende mai. Un testo nuovo batte tutte e due.
+                        textMs = merged is null ? Math.Max(lf, rf) : Math.Max(lf, rf) + 1;
+                        mergedFieldMs[name] = textMs;
+                        if (merged is not null)
                             changes[name] = JsonSerializer.SerializeToElement(merged);
-                        }
+                        else if (topFromRemote)
+                            changes[name] = rv;
                         continue;
                     }
                 }
@@ -339,16 +338,33 @@ public static class SyncMerger
                 }
             }
 
-            var newRowMs = mergedFieldMs.Count > 0
-                ? Math.Max(lms, mergedFieldMs.Values.Max())
-                : Math.Max(lms, rms);
+            // Anche l'ora della riga remota: una riga può essere più recente di tutti i suoi campi (un UPDATE che non ne
+            // cambia nessuno), e il massimo delle due ore è quello che tutti e due i dispositivi calcolano.
+            var newRowMs = Math.Max(Math.Max(lms, rms), mergedFieldMs.Count > 0 ? mergedFieldMs.Values.Max() : 0);
             if (newRowMs != lms)
                 changes[Ms] = JsonSerializer.SerializeToElement(newRowMs);
             return (changes, newRowMs);
         }
 
-        /// <summary>Vero se il pari ha unito un nostro file che conteneva già la nostra versione della riga: usata solo da
-        /// <see cref="SalvageTextAsync"/> (regola 4). Senza <c>merged_from</c> per noi: falso.</summary>
+        private sealed record TextSeen(bool RemoteSawLocal, IReadOnlyList<string> BaseTexts);
+
+        private static readonly TextSeen NothingSeen = new(false, []);
+
+        /// <summary>Per la regola B, solo se il campo testo differisce: se il pari ha visto la nostra versione della riga
+        /// e i testi di tutte le nostre basi per questa riga (di qualunque pari).</summary>
+        private async Task<TextSeen> TextSeenAsync(
+            SyncEntity entity, string id, IReadOnlyDictionary<string, JsonElement> l, Dictionary<string, JsonElement> r, long lms)
+        {
+            var text = entity.Fields.FirstOrDefault(f => f.Kind == SyncFieldKind.Text);
+            if (text is null || !r.TryGetValue(text.PublicName, out var rv) || JsonElement.DeepEquals(l[text.PublicName], rv))
+                return NothingSeen;
+            return new TextSeen(
+                await RemoteSawAsync(entity, id, lms).ConfigureAwait(false),
+                await BaseTextsAsync(entity, id, text.PublicName).ConfigureAwait(false));
+        }
+
+        /// <summary>Vero se il pari ha unito un nostro file che conteneva già la nostra versione della riga: usata da
+        /// <see cref="SalvageTextAsync"/> (regola 4) e dalla regola B. Senza <c>merged_from</c> per noi: falso.</summary>
         private async Task<bool> RemoteSawAsync(SyncEntity entity, string id, long lms) =>
             _seenUntil is long seen && await LastChangeAsync(entity, id, lms).ConfigureAwait(false) <= seen;
 
@@ -515,16 +531,15 @@ public static class SyncMerger
                 var lf = !inserted ? mergedFieldMs![field.PublicName] : 0;
                 var rf = rFieldMs.TryGetValue(field.PublicName, out var rfm) ? rfm : rms;
 
-                // La riga remota è quella della base (stessa ora) e qui la foto c'è: niente da leggere né da hashare.
-                if (!inserted && unchangedSinceBase && await LocalPhotoPresentAsync(entity, field, r).ConfigureAwait(false))
+                // Qui la foto c'è e la remota non può vincere: più vecchia, o alla stessa ora e già vista (la riga remota
+                // è quella della base, quindi lo spareggio d'hash è già stato deciso). Niente da leggere né da hashare.
+                // Non basta la sola ora della riga: una foto può cambiare senza che salga (un altro campo è più recente).
+                if (!inserted && (rf < lf || (rf == lf && unchangedSinceBase))
+                    && await LocalPhotoPresentAsync(entity, field, r).ConfigureAwait(false))
                 {
-                    if (b!.TryGetValue(field.PublicName, out var oldHash)) newBase[field.PublicName] = oldHash;
+                    if (b is not null && b.TryGetValue(field.PublicName, out var oldHash)) newBase[field.PublicName] = oldHash;
                     continue;
                 }
-
-                // L'ora locale della foto è più recente e qui la foto c'è: niente da leggere.
-                if (!inserted && rf < lf && await LocalPhotoPresentAsync(entity, field, r).ConfigureAwait(false))
-                    continue;
 
                 var stream = remote.OpenPhoto(id, thumbnail);
                 if (stream is null) continue;

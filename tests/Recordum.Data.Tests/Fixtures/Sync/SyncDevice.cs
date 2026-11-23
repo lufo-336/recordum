@@ -111,7 +111,9 @@ public sealed class SyncDevice : IAsyncDisposable
             foreach (var row in snapshot.Rows[entity.PublicName])
             {
                 var fields = row.Fields.Keys.Order(StringComparer.Ordinal).Select(k => $"{k}={row.Fields[k].GetRawText()}");
-                lines.Add($"{entity.PublicName} {row.Id} {string.Join(",", fields)}");
+                // Anche le ore dei campi (Ruling 20): due dispositivi con gli stessi valori ma ore diverse non convergono.
+                var times = row.FieldMs.Keys.Order(StringComparer.Ordinal).Select(k => $"{k}@{row.FieldMs[k]}");
+                lines.Add($"{entity.PublicName} {row.Id} {string.Join(",", fields)} _field_ms={string.Join(",", times)}");
                 if (entity.Fields.Any(f => f.Kind == SyncFieldKind.Photo))
                     lines.Add($"  photos {Hash(snapshot.OpenPhoto(row.Id, false))} {Hash(snapshot.OpenPhoto(row.Id, true))}");
             }

@@ -193,4 +193,130 @@ public sealed class FieldMsTests
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
         (await a.CanonicalDumpAsync()).Should().Be(await c.CanonicalDumpAsync());
     }
+
+    private static readonly Guid N = new("55555555-0000-0000-0000-000000000002");
+    private static readonly Guid At = new("55555555-0000-0000-0000-000000000003");
+
+    private static Note QuickNote(string body) => new()
+    {
+        Id = N, HabitNodeId = H, Category = Recordum.Core.Enums.NoteCategory.Veloce,
+        TargetDate = new DateOnly(2026, 11, 22), BodyMd = body,
+    };
+
+    private static async Task<string> BodyAsync(SyncDevice d) =>
+        (await d.QueryAsync(db => db.Notes.AsNoTracking().SingleAsync(n => n.Id == N))).BodyMd;
+
+    private static Task SetBodyAsync(SyncDevice d, long atMs, string body) =>
+        d.EditAsync(atMs, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = body);
+
+    /// <summary>Review 7b, punto 1: B toglie i blocchi di un testo unito mentre A scrive un paragrafo nuovo. La pulizia di
+    /// B è più recente, ma il paragrafo di A non l'ha visto nessuno: resta, in coda.</summary>
+    [Theory]
+    [InlineData("a-first")]
+    [InlineData("b-first")]
+    [InlineData("crossed")]
+    public async Task NewTextSurvivesACleanupElsewhere(string order)
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(1_000, db => { db.HabitNodes.Add(Habit(H, "Journal")); db.Notes.Add(QuickNote("W\n\n— a · 1970-01-01 00:00 —\nL")); });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+        await SetBodyAsync(a, 2_000, "Paragrafo nuovo di A");
+        await SetBodyAsync(b, 3_000, "W");
+
+        await TextConflictTests.RoundAsync(a, b, order);
+        await TextConflictTests.RoundAsync(a, b, order);
+
+        foreach (var d in new[] { a, b })
+        {
+            var body = await BodyAsync(d);
+            body.Should().StartWith("W", d.Name).And.Contain("Paragrafo nuovo di A", d.Name);
+        }
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    /// <summary>Review 7b, punto 1 (ABA): B scrive e poi rimette il testo di partenza, più tardi di A che ha scritto un
+    /// testo nuovo. Il ritorno di B vince, il testo di A resta in coda.</summary>
+    [Fact]
+    public async Task NewTextSurvivesARevertElsewhere()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(1_000, db => { db.HabitNodes.Add(Habit(H, "Journal")); db.Notes.Add(QuickNote("base")); });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+        await SetBodyAsync(a, 2_000, "Appunti di A");
+        await SetBodyAsync(b, 2_500, "bozza");
+        await SetBodyAsync(b, 3_000, "base");
+
+        await TextConflictTests.CrossAsync(a, b);
+        await TextConflictTests.CrossAsync(a, b);
+
+        foreach (var d in new[] { a, b })
+        {
+            var body = await BodyAsync(d);
+            body.Should().StartWith("base", d.Name).And.Contain("Appunti di A", d.Name);
+        }
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    /// <summary>Review 7b, punto 3: su B la foto cambia (presa da A) ma l'ora della riga no, perché un altro campo è più
+    /// recente. C, che aveva già quella riga di B, deve comunque prendere la foto nuova.</summary>
+    [Fact]
+    public async Task PhotoChangedWithoutARowTimeChangeArrives()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var c = new SyncDevice("c");
+        var photo1 = SyncSeed.CreateSamplePhotoBytes();
+        var photo2 = photo1.Reverse().ToArray();
+        await a.EditAsync(100, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Journal"));
+            db.Notes.Add(QuickNote("photo"));
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = At, NoteId = N, Filename = "a.jpg", MimeType = "image/jpeg",
+                FileSizeBytes = photo1.Length, Content = photo1, Thumbnail = SyncSeed.CreateSampleThumbnailBytes(),
+            });
+        });
+        var f0 = await a.WriteFileAsync();
+        await b.MergeAsync(f0);
+        await c.MergeAsync(f0);
+
+        await a.EditAsync(150, async db => (await db.Attachments.SingleAsync()).Content = photo2);
+        await b.EditAsync(200, async db => (await db.Attachments.SingleAsync()).Filename = "b.jpg");
+        await c.MergeAsync(await b.WriteFileAsync());
+        await b.MergeAsync(await a.WriteFileAsync());
+        await c.MergeAsync(await b.WriteFileAsync());
+
+        foreach (var d in new[] { b, c })
+        {
+            var att = await d.QueryAsync(db => db.Attachments.AsNoTracking().SingleAsync());
+            att.Content.Should().Equal(photo2, d.Name);
+            att.Filename.Should().Be("b.jpg", d.Name);
+        }
+        (await b.CanonicalDumpAsync()).Should().Be(await c.CanonicalDumpAsync());
+    }
+
+    /// <summary>Review 7b, punto 4: una modifica fatta con l'orologio indietro rispetto alla riga (arrivata da un pari
+    /// con l'orologio avanti) la batte lo stesso: l'ora diventa la vecchia + 1, e le ore dei campi restano sotto.</summary>
+    [Fact]
+    public async Task AnEditBeatsTheVersionItEditsEvenWithAClockBehind()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await b.EditAsync(5_000, db => db.HabitNodes.Add(Habit(H, "Run")));
+        await a.MergeAsync(await b.WriteFileAsync());
+        await a.EditAsync(4_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H)).Name = "Walk");
+
+        var onA = (await HabitAsync(a, H))!;
+        onA.UpdatedAtMs.Should().Be(5_001);
+        (await FieldMsAsync(a.Fixture.Factory, "habit_node", H)).Values.Should().OnlyContain(ms => ms < 5_001);
+
+        await b.MergeAsync(await a.WriteFileAsync());
+        (await HabitAsync(b, H))!.Name.Should().Be("Walk");
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
 }

@@ -534,6 +534,10 @@ public sealed class TextConflictTests
 
         await b.EditAsync(60_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
         SyncConvergenceTests.Settle(b);
+        // B ha pulito prima di aver unito un file di A con il testo combinato di A: finché il file di B non dice di averlo
+        // visto (merged_from) A non può sapere che il blocco tolto era il suo, e lo tiene (regola B, lato sicuro). Al
+        // terzo giro lo sa, e la pulizia vince.
+        await CrossAsync(a, b);
         await CrossAsync(a, b);
         await CrossAsync(a, b);
 
