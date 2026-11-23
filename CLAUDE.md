@@ -77,8 +77,12 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   enum TEXT + CHECK; JSON in TEXT. `Note` ha solo `updated_at_ms`.
 - `created_by_plugin_id` solo sulle entità top-level (`habit_node`, `habit_template`, `export_template`, `chart`), mai
   sugli eventi figli. Soft delete solo su `HabitNode` (filtro globale; `IgnoreQueryFilters()` per cestino e diagnostica).
-- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.20**. Chi scrive `HabitConfig`/`Goal` fuori dai
+- snake_case; cascade e indici sempre espliciti in Fluent API. Schema **2.21**. Chi scrive `HabitConfig`/`Goal` fuori dai
   servizi si porta il proprio gate (`ValidateCrossFields`, `ck_goal_period_consistency`).
+- **Unisci (`SyncCatalog`)**: ogni tabella nuova (e colonna, chiave di `app_settings` o indice unico) va classificata in
+  `SyncCatalog` (la guardia lo impone); le scritture su tabelle che viaggiano passano dai trigger (un build senza
+  `SyncConnectionInterceptor` non può scrivere: "no such function"); una migrazione che ricostruisce `sync_tombstone`
+  toglie prima i `trg_sync_*`; durante l'unione `SyncConnectionState.Applying` va acceso solo sulla connessione aperta da EF.
 - **Migrazioni**: `dotnet ef migrations add <Nome> --project src/Recordum.Data --startup-project src/Recordum.Data`
   (startup = Data, non WPF). Nel file generato aggiungere `#pragma warning disable CA1861` dopo `#nullable disable`. Un
   bump di `schema_version` tocca 8 riferimenti nei test, nomi dei metodi compresi. Mai editare a mano `*.Designer.cs` e
@@ -87,7 +91,8 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
 ## 6. Sicurezza e dati dell'utente
 
 - Chiave del DB sempre da `IDbKeyProvider`: DPAPI su Windows; altrove passphrase Argon2id dietro `CachingKeyProvider`
-  (l'interceptor chiede la chiave a ogni connessione). Passphrase persa = dati persi.
+  (l'interceptor chiede la chiave a ogni connessione). Passphrase persa = dati persi. La frase dell'unione sta in
+  `sync.passphrase`, mai fuori dal DB.
 - All'avvio, in quest'ordine: `RecordumOptions.Resolve(args, env)` (`--data-dir` / `RECORDUM_DATA_DIR`),
   `DataDirectoryLock.TryAcquire`, `ReconcileOrphans()`, `DetectState()`. Un salt esistente non si tronca mai.
 - Passphrase sbagliata si riconosce con una **lettura** (`SqliteException` 26), non con l'apertura; `ClearAllPools()` fra

@@ -122,6 +122,65 @@ Cross-cutting UI concerns: theming (light/dark), an `IClock`-driven live-elapsed
 across the quick-add / detail / records views, and an `EventBus` that lets one mutation refresh the
 other columns.
 
+## Sync ("Unisci")
+
+Cross-device synchronization relies on encrypted `.rcsync` exchange files on a shared folder
+(computer) or SAF documents (phone), without a central server
+(spec `docs/superpowers/specs/2026-11-22-unisci-design.md`).
+
+- **Catalog (`SyncCatalog`)**: frozen contract of what travels (26 user data entities and
+  only the `daily_reset_time`, `monthly_summary_day`, `monthly_summary_time` keys of
+  `app_settings`) and what stays local to the device (`active_timer`, `backup_log`,
+  `export_jobs`, `ai_insights`, `sync_meta`, `sync_tombstone`, `sync_base`, `sync_field_ms`,
+  local settings, and `sync.*`). Maps internal columns to stable public `snake_case` names,
+  separating the format from the SQLite schema. Guard tests on the EF model fail if a
+  table, column, `app_settings` key, or unique index is not classified.
+- **Triggers (`SyncTriggerInstaller`, `SyncConnectionInterceptor`, `SyncConnectionState`)**: because
+  dozens of writes (`ExecuteUpdate`/`ExecuteDelete`, raw SQL, cascades) bypass
+  `TimestampInterceptor`, capture happens in the database. `SyncTriggerInstaller.EnsureAsync`
+  recreates at every startup the `trg_sync_del_*`, `trg_sync_upd_*`, `trg_sync_ins_*`, and
+  `trg_sync_fms_*` triggers on catalog tables. Triggers write tombstones to `sync_tombstone`,
+  advance `updated_at_ms` (`MAX(recordum_now_ms(), OLD.updated_at_ms + 1)`), and record in
+  `sync_field_ms` the prior timestamp of unmodified fields. The timestamp comes from `IClock` via
+  the per-connection SQLite function `recordum_now_ms()`, registered at connection open by
+  `SyncConnectionInterceptor` alongside `recordum_sync_applying()`. During merge,
+  `SyncConnectionState.Applying` (on the connection opened by EF) disables triggers to preserve
+  remote timestamps and avoid generating tombstones.
+- **Format (`SyncFileCipher`, `SyncArchiveWriter`, `SyncArchiveReader`, `SyncRowCodec`)**: every
+  device writes its full state into an `.rcsync` file. On the outside, `SyncFileCipher`
+  applies the authenticated `RCSY` envelope (Argon2id + AES-256-GCM, with in-memory caching of
+  derived keys per salt). Inside is a ZIP archive containing `manifest.json`, one JSON Lines file
+  `data/<entity>.jsonl` per entity (with timestamps of individual fields in `_field_ms` when lower than
+  `updated_at_ms`), `tombstones.jsonl`, and binaries in `photos/`. Full public contract
+  specifications: [`formats/sync-file.md`](formats/sync-file.md).
+- **Engine (`SyncMerger`, `TextConflictBlock`, `NaturalKeyUnifier`, `DomainInvariantRepair`,
+  `SyncFieldTimes`)**: applies a peer's snapshot in a single transaction with parameterized SQL
+  built from the catalog, without EF tracking. Fields with their own timestamp (local
+  `sync_field_ms`, `_field_ms` in the file) merge field-by-field under the LWW rule (Ruling 20); on
+  timestamp ties, the value with the smaller canonical UTF-8 representation wins (for photos, the
+  smaller hexadecimal SHA-256 hash). The per-peer base (`sync_base`) and the manifest's
+  `merged_from` map are used only for rule B of free text (`note.body_md`, `completion.notes`) and
+  for rescuing as a quick note deleted text that the deleter had not seen: if both sides
+  have new text, `TextConflictBlock` appends the losing version to the same entry
+  (`— <device> · yyyy-MM-dd HH:mm —`). `NaturalKeyUnifier` merges duplicates by natural key
+  (`tag.name`, `unit_of_measure.code`, `scale_template.code`, `scale_anchor`) onto the smaller
+  GUID, rewrites foreign keys, and records a tombstone with `alias_of`. At the end of the merge,
+  `DomainInvariantRepair` closes excess open abstinence periods to zero duration (keeping open
+  the one started earlier) and breaks cycles in `habit_nodes.parent_id` by reverting the most
+  recent move (preserving field timestamps via `SyncFieldTimes`).
+- **Service and scheduler (`SyncService`, `FolderSyncFileStore`, `SyncSchedulerHost`)**: only
+  one run at a time across the entire process (`SyncRunState`). On a computer, `FolderSyncFileStore`
+  reads others' `.rcsync` files in the folder and atomically writes its own (`.tmp` with disk
+  flush and rename), skipping the write if the state signature is unchanged; plaintext
+  temporaries reside only in `TempDirectory` and are destroyed with `SecureWipe`.
+  Identity (`device_id`, `device_name`) lives in `sync_meta` and regenerates, zeroing `sync_base`,
+  after a restore or if the machine name changes (also detecting a local file written by a
+  clone with the same identity). On the first connection of a database with user data
+  (`JoinAsync`), the user chooses whether to start from others' data or also keep their own,
+  always after an automatic backup encrypted with the sync passphrase. `SyncSchedulerHost` starts a
+  run at startup, every 5 minutes, upon prompt (`Nudge` with a 30 s cooldown), and at shutdown
+  (`FlushAsync`).
+
 ## Conventions cheat-sheet
 
 - Time only via `IClock`; a `DispatcherTimer` is created only when a WPF app is actually running
