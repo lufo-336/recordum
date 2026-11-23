@@ -982,6 +982,7 @@ public static class Strings
     public static string Sync_Status_FileSize => Get("Sync.Status.FileSize");
     public static string Restore_SyncActiveNote => Get("Restore.SyncActiveNote");
     public static string Sync_Join_NoPeerFile => Get("Sync.Join.NoPeerFile");
+    public static string Sync_Join_MissingConfiguration => Get("Sync.Join.MissingConfiguration");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

@@ -2811,4 +2811,7 @@ Dettagli: {0}</value>
   <data name="Sync.Join.NoPeerFile" xml:space="preserve">
     <value>Nessun file degli altri dispositivi si apre nella cartella: controlla la frase o aspetta che i file siano arrivati del tutto.</value>
   </data>
+  <data name="Sync.Join.MissingConfiguration" xml:space="preserve">
+    <value>Prima scegli la cartella e imposta la frase dell'unione.</value>
+  </data>
 </root>
