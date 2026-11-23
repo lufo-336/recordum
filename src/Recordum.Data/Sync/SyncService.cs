@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -42,6 +43,8 @@ public sealed partial class SyncService(
     public const string LastWrittenSignatureSettingKey = "sync.last_written_signature";
     public const string LastWrittenHashSettingKey = "sync.last_written_hash";
     public const string PendingWrittenHashSettingKey = "sync.pending_written_hash";
+    /// <summary>JSON: per ogni pari, il written_at_ms dell'ultimo suo file unito qui (va nel manifest, Ruling 17).</summary>
+    public const string MergedFromSettingKey = "sync.merged_from";
 
     private const long SignatureModulus = 1_000_000_007;
 
@@ -150,7 +153,7 @@ public sealed partial class SyncService(
         {
             await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
             await db.AppSettings
-                .Where(s => s.Key == FolderSettingKey || s.Key == JoinedSettingKey)
+                .Where(s => s.Key == FolderSettingKey || s.Key == JoinedSettingKey || s.Key == MergedFromSettingKey)
                 .ExecuteDeleteAsync(ct)
                 .ConfigureAwait(false);
             // Anche la via d'uscita da un'identità doppia: ricollegato, il dispositivo rientra come nuovo (nome di file
@@ -215,6 +218,8 @@ public sealed partial class SyncService(
         if (ownFileIsForeign)
             peers.Add(new SyncPeerStatus(deviceName, File.GetLastWriteTimeUtc(ownPath), SyncPeerProblem.SameIdentity));
         var merged = false;
+        var mergedFrom = await ReadMergedFromAsync(ct).ConfigureAwait(false);
+        var mergedFromChanged = false;
         foreach (var file in await store.ListPeerFilesAsync(ct).ConfigureAwait(false))
         {
             var tempZip = NewTempPath("in");
@@ -234,7 +239,15 @@ public sealed partial class SyncService(
                 {
                     await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
                     var report = await SyncMerger.MergeAsync(db, snapshot, deviceId, includePhotos, clock, ct).ConfigureAwait(false);
-                    merged |= report.Inserted + report.Updated + report.Deleted + report.Repaired > 0;
+                    merged |= report.Inserted + report.Updated + report.Deleted + report.Repaired + report.Rescued > 0;
+                    // Solo dopo il commit: se si perde (arresto prima del salvataggio) il pari crede che non abbiamo visto,
+                    // il lato sicuro.
+                    var peerId = snapshot.Manifest.DeviceId;
+                    if (!mergedFrom.TryGetValue(peerId, out var seen) || seen < snapshot.Manifest.WrittenAtMs)
+                    {
+                        mergedFrom[peerId] = snapshot.Manifest.WrittenAtMs;
+                        mergedFromChanged = true;
+                    }
                     peers.Add(new SyncPeerStatus(name, writtenAt, Problem: null));
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -254,8 +267,14 @@ public sealed partial class SyncService(
             }
         }
 
+        if (mergedFromChanged)
+            await settings.SetAsync(MergedFromSettingKey, JsonSerializer.Serialize(mergedFrom), ct).ConfigureAwait(false);
+
+        // merged_from non entra nella firma: se un suo cambio riscrivesse il file, due dispositivi si riscriverebbero a
+        // vicenda a ogni giro. Viaggia con la prossima scrittura vera, che è proprio quella che serve al pari (una
+        // pulizia, una cancellazione).
         var ownFileWritten = !ownFileIsForeign && await WriteOwnFileIfChangedAsync(
-            store, ownPath, passphrase, deviceId, deviceName, includePhotos, merged, ct).ConfigureAwait(false);
+            store, ownPath, passphrase, deviceId, deviceName, includePhotos, merged, mergedFrom, ct).ConfigureAwait(false);
 
         await settings.SetAsync(LastRunMsSettingKey, clock.UtcNowMs.ToString(CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
         runState.SetPeers(peers);
@@ -312,7 +331,7 @@ public sealed partial class SyncService(
 
     private async Task<bool> WriteOwnFileIfChangedAsync(
         ISyncFileStore store, string ownPath, string passphrase, string deviceId, string deviceName, bool includePhotos,
-        bool merged, CancellationToken ct)
+        bool merged, IReadOnlyDictionary<string, long> mergedFrom, CancellationToken ct)
     {
         var signature = await ComputeSignatureAsync(includePhotos, ct).ConfigureAwait(false);
         var lastSignature = await settings.GetAsync(LastWrittenSignatureSettingKey, ct).ConfigureAwait(false);
@@ -327,7 +346,7 @@ public sealed partial class SyncService(
             await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
             await using (var zip = new FileStream(tempZip, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                var options = new SyncWriteOptions(deviceId, deviceName, appVersion, includePhotos, clock.UtcNowMs);
+                var options = new SyncWriteOptions(deviceId, deviceName, appVersion, includePhotos, clock.UtcNowMs, mergedFrom);
                 await SyncArchiveWriter.WriteAsync(db, zip, options, ct).ConfigureAwait(false);
             }
 
@@ -396,6 +415,22 @@ public sealed partial class SyncService(
     {
         Directory.CreateDirectory(paths.TempDirectory);
         return Path.Combine(paths.TempDirectory, $"recordum-sync-{kind}-{Guid.NewGuid():N}.zip");
+    }
+
+    private async Task<Dictionary<string, long>> ReadMergedFromAsync(CancellationToken ct)
+    {
+        var json = await settings.GetAsync(MergedFromSettingKey, ct).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(json)) return new Dictionary<string, long>(StringComparer.Ordinal);
+        try
+        {
+            return new Dictionary<string, long>(
+                JsonSerializer.Deserialize<Dictionary<string, long>>(json) ?? [], StringComparer.Ordinal);
+        }
+        catch (JsonException)
+        {
+            // Un valore rovinato vale "non abbiamo visto niente": il lato sicuro.
+            return new Dictionary<string, long>(StringComparer.Ordinal);
+        }
     }
 
     private async Task<bool> IsJoinedAsync(CancellationToken ct) =>
@@ -526,6 +561,9 @@ public sealed partial class SyncService(
             // Lapidi e base di prima via per prime: quelle che restano dopo verrebbero dallo svuotamento (non ce ne sono).
             await ExecAsync(conn, tx, "DELETE FROM \"sync_tombstone\"", ct).ConfigureAwait(false);
             await ExecAsync(conn, tx, "DELETE FROM \"sync_base\"", ct).ConfigureAwait(false);
+            // I trigger sono spenti: le ore dei campi e merged_from (non abbiamo più ciò che dice di aver visto) vanno via qui.
+            await ExecAsync(conn, tx, "DELETE FROM \"sync_field_ms\"", ct).ConfigureAwait(false);
+            await ExecAsync(conn, tx, $"DELETE FROM \"app_settings\" WHERE \"key\" = '{MergedFromSettingKey}'", ct).ConfigureAwait(false);
             await ExecAsync(conn, tx, "UPDATE \"habit_nodes\" SET \"parent_id\" = NULL", ct).ConfigureAwait(false);
             foreach (var entity in SyncCatalog.Entities.Reverse())   // figlie prima delle madri
             {

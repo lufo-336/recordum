@@ -813,6 +813,31 @@ public sealed class SyncServiceTests : IDisposable
         (await ReadOwnManifestAsync(a)).IncludesPhotos.Should().BeFalse();
     }
 
+    /// <summary>Ruling 17: il proprio file dice, per ogni pari, il written_at_ms dell'ultimo suo file unito qui. Viaggia
+    /// con la prossima scrittura (un merged_from cambiato da solo non riscrive il file: due dispositivi si riscriverebbero
+    /// a vicenda a ogni giro), e "Scollega" lo dimentica.</summary>
+    [Fact]
+    public async Task OwnFileSaysWhichPeerFilesWereMerged()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 2_000);
+        await b.EditAsync(2_100, db => db.HabitNodes.Add(NewHabit(H2, "Read Book")));
+        await b.Service.RunAsync(CancellationToken.None);
+        var bManifest = await ReadOwnManifestAsync(b);
+
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Morning Run")));
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+        (await ReadOwnManifestAsync(a)).MergedFrom.Should().Equal(
+            new Dictionary<string, long> { [bManifest.DeviceId] = bManifest.WrittenAtMs });
+
+        (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue("b took a's habit");
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten
+            .Should().BeFalse("only merged_from changed: it waits for the next real change");
+
+        await a.Service.DisconnectAsync(CancellationToken.None);
+        (await a.Settings.GetAsync(SyncService.MergedFromSettingKey)).Should().BeNull();
+    }
+
     [Fact]
     public async Task JoinStateIsReadOnly()
     {

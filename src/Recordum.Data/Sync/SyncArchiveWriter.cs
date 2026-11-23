@@ -102,7 +102,6 @@ public static class SyncArchiveWriter
             IncludesPhotos: options.IncludePhotos,
             Entities: entityCounts)
         {
-            // TODO(Task 9 wiring): SyncService passa qui, per ogni pari, il written_at_ms dell'ultimo suo file unito.
             MergedFrom = options.MergedFrom ?? new Dictionary<string, long>(),
         };
 
