@@ -57,7 +57,8 @@ public sealed partial class SyncSettingsViewModel(
                 && !string.Equals(autoRaw, "0", StringComparison.Ordinal);
 
             var photosRaw = await settings.GetAsync(IncludePhotosKey, ct).ConfigureAwait(true);
-            IncludePhotos = string.Equals(photosRaw, "true", StringComparison.OrdinalIgnoreCase);
+            // Acceso di partenza (spec §9): spento solo se l'utente l'ha spento.
+            IncludePhotos = !string.Equals(photosRaw, "false", StringComparison.OrdinalIgnoreCase);
 
             Folder = await settings.GetAsync(FolderKey, ct).ConfigureAwait(true);
         }
@@ -80,7 +81,7 @@ public sealed partial class SyncSettingsViewModel(
         try
         {
             await settings.SetAsync(key, value ? "true" : "false").ConfigureAwait(true);
-            if (nudge) scheduler?.Nudge();
+            if (nudge) scheduler.Nudge();
         }
 #pragma warning disable CA1031 // fire-and-forget: l'errore si mostra nella pagina invece di perdersi
         catch (Exception ex) { ErrorMessage = ex.Message; }
@@ -108,7 +109,7 @@ public sealed partial class SyncSettingsViewModel(
     [RelayCommand(CanExecute = nameof(CanMergeNow))]
     private async Task MergeNowAsync(CancellationToken ct)
     {
-        if (_isMerging || sync is null) return;   // ExecuteAsync non consulta CanExecute
+        if (_isMerging) return;   // ExecuteAsync non consulta CanExecute
         _isMerging = true;
         MergeNowCommand.NotifyCanExecuteChanged();
         ErrorMessage = null;
@@ -128,11 +129,9 @@ public sealed partial class SyncSettingsViewModel(
         }
     }
 
-    private bool CanMergeNow() => !_isMerging && sync is not null;
+    private bool CanMergeNow() => !_isMerging;
 
-    private bool HasSync() => sync is not null;
-
-    [RelayCommand(CanExecute = nameof(HasSync))]
+    [RelayCommand]
     private async Task SetPassphraseAsync(CancellationToken ct)
     {
         PassphraseMessage = null;
@@ -146,7 +145,6 @@ public sealed partial class SyncSettingsViewModel(
             PassphraseMessage = Strings.Backup_Settings_PassphraseTooShort;
             return;
         }
-        if (sync is null) return;
         try
         {
             await sync.SetPassphraseAsync(NewPassphrase, ct).ConfigureAwait(true);
@@ -163,7 +161,7 @@ public sealed partial class SyncSettingsViewModel(
     [RelayCommand(CanExecute = nameof(CanRunPlain))]
     private async Task ExportPlainAsync(CancellationToken ct)
     {
-        if (_isPlainBusy || sync is null || string.IsNullOrEmpty(PlainPassphrase)) return;
+        if (_isPlainBusy || string.IsNullOrEmpty(PlainPassphrase)) return;
         var inPath = await openDialog.PromptAsync("Recordum Sync (*.rcsync)|*.rcsync").ConfigureAwait(true);
         if (string.IsNullOrWhiteSpace(inPath)) return;
         var outPath = await saveDialog.PromptAsync("recordum-sync.zip", "ZIP (*.zip)|*.zip").ConfigureAwait(true);
@@ -192,7 +190,7 @@ public sealed partial class SyncSettingsViewModel(
     [RelayCommand(CanExecute = nameof(CanRunPlain))]
     private async Task ReencryptAsync(CancellationToken ct)
     {
-        if (_isPlainBusy || sync is null || string.IsNullOrEmpty(PlainPassphrase)) return;
+        if (_isPlainBusy || string.IsNullOrEmpty(PlainPassphrase)) return;
         var inPath = await openDialog.PromptAsync("ZIP (*.zip)|*.zip").ConfigureAwait(true);
         if (string.IsNullOrWhiteSpace(inPath)) return;
         var outPath = await saveDialog.PromptAsync("recordum-sync.rcsync", "Recordum Sync (*.rcsync)|*.rcsync").ConfigureAwait(true);
@@ -218,7 +216,7 @@ public sealed partial class SyncSettingsViewModel(
         }
     }
 
-    private bool CanRunPlain() => !_isPlainBusy && sync is not null && !string.IsNullOrEmpty(PlainPassphrase);
+    private bool CanRunPlain() => !_isPlainBusy && !string.IsNullOrEmpty(PlainPassphrase);
 
     private void NotifyPlainCommandsCanExecuteChanged()
     {
@@ -226,10 +224,9 @@ public sealed partial class SyncSettingsViewModel(
         ReencryptCommand.NotifyCanExecuteChanged();
     }
 
-    [RelayCommand(CanExecute = nameof(HasSync))]
+    [RelayCommand]
     private async Task DisconnectAsync(CancellationToken ct)
     {
-        if (sync is null) return;
         if (!await confirm.ConfirmAsync(Strings.Sync_Disconnect_Label, Strings.Sync_Disconnect_Hint).ConfigureAwait(true))
             return;
         ErrorMessage = null;
@@ -243,10 +240,9 @@ public sealed partial class SyncSettingsViewModel(
 #pragma warning restore CA1031
     }
 
-    [RelayCommand(CanExecute = nameof(HasSync))]
+    [RelayCommand]
     private async Task JoinStartFromOthersAsync(CancellationToken ct)
     {
-        if (sync is null) return;
         if (!await confirm.ConfirmAsync(Strings.Sync_Join_Confirm_Title, Strings.Sync_Join_Confirm_Message).ConfigureAwait(true))
             return;
         ErrorMessage = null;
@@ -255,21 +251,22 @@ public sealed partial class SyncSettingsViewModel(
             await sync.JoinAsync(SyncJoinChoice.StartFromOthers, ct).ConfigureAwait(true);
             await RefreshSyncStateAsync(ct).ConfigureAwait(true);
         }
+        catch (SyncJoinRefusedException) { ErrorMessage = Strings.Sync_Join_NoPeerFile; }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
     }
 
-    [RelayCommand(CanExecute = nameof(HasSync))]
+    [RelayCommand]
     private async Task JoinKeepBothAsync(CancellationToken ct)
     {
-        if (sync is null) return;
         ErrorMessage = null;
         try
         {
             await sync.JoinAsync(SyncJoinChoice.KeepThisDeviceToo, ct).ConfigureAwait(true);
             await RefreshSyncStateAsync(ct).ConfigureAwait(true);
         }
+        catch (SyncJoinRefusedException) { ErrorMessage = Strings.Sync_Join_NoPeerFile; }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
@@ -277,14 +274,6 @@ public sealed partial class SyncSettingsViewModel(
 
     private async Task RefreshSyncStateAsync(CancellationToken ct)
     {
-        if (sync is null)
-        {
-            JoinState = SyncJoinState.NotConfigured;
-            Status.Clear();
-            Status.Add(Strings.Sync_Status_Never);
-            return;
-        }
-
         JoinState = await sync.GetJoinStateAsync(ct).ConfigureAwait(true);
         var status = await sync.GetStatusAsync(ct).ConfigureAwait(true);
         PopulateStatus(status);

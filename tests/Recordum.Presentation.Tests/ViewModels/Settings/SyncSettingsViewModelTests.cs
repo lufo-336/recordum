@@ -65,8 +65,11 @@ public sealed class SyncSettingsViewModelTests : IDisposable
 
         public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => Task.FromResult(JoinState);
 
+        public bool RefuseJoin { get; set; }
+
         public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct)
         {
+            if (RefuseJoin) throw new SyncJoinRefusedException("refused");
             JoinChoices.Add(choice);
             JoinState = SyncJoinState.Joined;
             return Task.CompletedTask;
@@ -116,8 +119,7 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         FakeConfirmationDialog? confirm = null,
         FakeClock? clock = null,
         ISyncService? sync = null,
-        SyncSchedulerHost? scheduler = null,
-        bool withoutSync = false)
+        SyncSchedulerHost? scheduler = null)
     {
         var effectiveClock = clock ?? new FakeClock(new DateTimeOffset(2026, 3, 15, 14, 0, 0, TimeSpan.Zero));
         var effectiveScheduler = scheduler ?? new SyncSchedulerHost(
@@ -132,7 +134,7 @@ public sealed class SyncSettingsViewModelTests : IDisposable
             saveDialog ?? new FakeBackupSaveFileDialog(),
             confirm ?? new FakeConfirmationDialog(),
             effectiveClock,
-            withoutSync ? null! : (sync ?? new FakeSyncService()),
+            sync ?? new FakeSyncService(),
             effectiveScheduler);
     }
 
@@ -305,10 +307,14 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         var settings = new FakeAppSettingService();
         var vm = CreateVm(settings: settings);
         await vm.LoadAsync();
-        vm.IncludePhotos.Should().BeFalse();
+        vm.IncludePhotos.Should().BeTrue("photos are on until the user turns them off (spec 9)");
 
-        vm.IncludePhotos = true;
-        settings.Store[SyncSettingsViewModel.IncludePhotosKey].Should().Be("true");
+        vm.IncludePhotos = false;
+        settings.Store[SyncSettingsViewModel.IncludePhotosKey].Should().Be("false");
+
+        var reloaded = CreateVm(settings: settings);
+        await reloaded.LoadAsync();
+        reloaded.IncludePhotos.Should().BeFalse();
     }
 
     [Fact]
@@ -392,18 +398,18 @@ public sealed class SyncSettingsViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task CommandsAreDisabledWithoutSyncService()
+    public async Task RefusedJoinShowsTranslatedMessage()
     {
-        var vm = CreateVm(withoutSync: true);
+        var sync = new FakeSyncService { JoinState = SyncJoinState.NeedsChoice, RefuseJoin = true };
+        var vm = CreateVm(sync: sync);
         await vm.LoadAsync();
-        vm.PlainPassphrase = "plain-passphrase-123";
 
-        vm.MergeNowCommand.CanExecute(null).Should().BeFalse();
-        vm.SetPassphraseCommand.CanExecute(null).Should().BeFalse();
-        vm.ExportPlainCommand.CanExecute(null).Should().BeFalse();
-        vm.ReencryptCommand.CanExecute(null).Should().BeFalse();
-        vm.DisconnectCommand.CanExecute(null).Should().BeFalse();
-        vm.JoinStartFromOthersCommand.CanExecute(null).Should().BeFalse();
-        vm.JoinKeepBothCommand.CanExecute(null).Should().BeFalse();
+        await vm.JoinStartFromOthersCommand.ExecuteAsync(null);
+        vm.ErrorMessage.Should().Be(Strings.Sync_Join_NoPeerFile);
+
+        vm.ErrorMessage = null;
+        await vm.JoinKeepBothCommand.ExecuteAsync(null);
+        vm.ErrorMessage.Should().Be(Strings.Sync_Join_NoPeerFile);
+        vm.JoinState.Should().Be(SyncJoinState.NeedsChoice);
     }
 }

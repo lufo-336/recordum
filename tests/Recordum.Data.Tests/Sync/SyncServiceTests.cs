@@ -417,6 +417,7 @@ public sealed class SyncServiceTests : IDisposable
         a.Backups.Calls.Should().Be(1);
         habitCountDuringBackup.Should().Be(1, "the safety backup must run BEFORE StartFromOthers wipes local tables");
         backupPassphrase.Should().Be(SharedPassphrase, "the backup is protected by the passphrase the user just typed");
+        a.Backups.LastKind.Should().Be(BackupKind.Manual, "'Before restore' would mislead in the backup history");
 
         await using var b = await CreateNodeAsync("Tablet", _sharedFolder, joined: false, startMs: 3_000);
         await b.EditAsync(3_100, db => db.HabitNodes.Add(NewHabit(H3, "Tablet Habit")));
@@ -459,7 +460,7 @@ public sealed class SyncServiceTests : IDisposable
 
         var act = () => a.Service.JoinAsync(SyncJoinChoice.StartFromOthers, CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<SyncJoinRefusedException>();
         a.Backups.Calls.Should().Be(0);
         (await a.QueryAsync(db => db.HabitNodes.AsNoTracking().Select(n => n.Name).ToListAsync())).Should().Equal("Local Habit");
         (await a.Service.GetJoinStateAsync(CancellationToken.None)).Should().Be(SyncJoinState.NeedsChoice);
@@ -653,6 +654,118 @@ public sealed class SyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DatabaseCopiedToAnotherMachineGetsNewIdentity()
+    {
+        const string copiedId = "AAAAAAAA-1111-2222-3333-444444444444";
+        await using var a = await CreateNodeAsync(
+            "OldMachine", _sharedFolder, joined: true, startMs: 1_000, explicitDeviceId: copiedId, machineName: "NewMachine");
+        await a.EditAsync(1_100, db => db.SyncBases.Add(new SyncBase
+        {
+            PeerDeviceId = "peer-01", Entity = "habit_node", EntityId = SyncSeed.Stored(H1), RowJson = "{}",
+        }));
+        a.RealDeviceIdentity.DeviceName.Should().Be("OldMachine");
+
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+
+        var meta = await a.QueryAsync(db => db.SyncMeta.AsNoTracking().SingleAsync());
+        meta.DeviceId.Should().NotBe(copiedId);
+        meta.DeviceName.Should().Be("NewMachine");
+        (await a.QueryAsync(db => db.SyncBases.CountAsync())).Should().Be(0, "the base belonged to the other machine");
+        a.RealDeviceIdentity.DeviceName.Should().Be("NewMachine");
+        File.Exists(Path.Combine(_sharedFolder, SyncService.BuildOwnFileName("NewMachine", meta.DeviceId))).Should().BeTrue();
+        File.Exists(Path.Combine(_sharedFolder, SyncService.BuildOwnFileName("OldMachine", copiedId))).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CopiedDatabaseOnSameNamedMachineDetectedAsSameIdentity()
+    {
+        const string sharedId = "BBBBBBBB-1111-2222-3333-444444444444";
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000, explicitDeviceId: sharedId);
+        await using var clone = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 2_000, explicitDeviceId: sharedId);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "From A")));
+        await a.Service.RunAsync(CancellationToken.None);
+        var ownPath = await a.GetOwnFilePathAsync();
+        (await clone.GetOwnFilePathAsync()).Should().Be(ownPath, "same identity, same machine name: the same file");
+        var aBytes = await File.ReadAllBytesAsync(ownPath);
+
+        // Il clone non ha scritto quel file: non lo sovrascrive e lo stato lo dice.
+        await clone.EditAsync(2_100, db => db.HabitNodes.Add(NewHabit(H2, "From Clone")));
+        var cloneRun = await clone.Service.RunAsync(CancellationToken.None);
+        cloneRun.OwnFileWritten.Should().BeFalse();
+        cloneRun.Peers.Should().ContainSingle(p => p.Problem == SyncPeerProblem.SameIdentity);
+        (await clone.Service.GetStatusAsync(CancellationToken.None)).Peers.Should().Contain(p => p.Problem == SyncPeerProblem.SameIdentity);
+        (await File.ReadAllBytesAsync(ownPath)).Should().Equal(aBytes);
+
+        // Il clone si porta anche l'impronta di A (una copia vera del database): scrive per primo, poi è A ad accorgersene.
+        await clone.Settings.SetAsync(SyncService.LastWrittenHashSettingKey, (await a.Settings.GetAsync(SyncService.LastWrittenHashSettingKey))!);
+        (await clone.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+        var cloneBytes = await File.ReadAllBytesAsync(ownPath);
+        await a.EditAsync(3_000, db => db.HabitNodes.Add(NewHabit(H3, "Later On A")));
+        var aRun = await a.Service.RunAsync(CancellationToken.None);
+        aRun.OwnFileWritten.Should().BeFalse();
+        aRun.Peers.Should().ContainSingle(p => p.Problem == SyncPeerProblem.SameIdentity);
+        (await File.ReadAllBytesAsync(ownPath)).Should().Equal(cloneBytes);
+    }
+
+    [Fact]
+    public async Task NewPassphraseRewritesOwnFile()
+    {
+        const string newPassphrase = "a-brand-new-sync-passphrase";
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Habit")));
+        await a.Service.RunAsync(CancellationToken.None);
+
+        await a.Service.SetPassphraseAsync(newPassphrase, CancellationToken.None);
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue("nothing changed but the passphrase");
+
+        var ownPath = await a.GetOwnFilePathAsync();
+        await using (var file = File.OpenRead(ownPath))
+            await a.Service.ExportPlainAsync(file, new MemoryStream(), newPassphrase, CancellationToken.None);
+        var old = async () =>
+        {
+            await using var file = File.OpenRead(ownPath);
+            await a.Service.ExportPlainAsync(file, new MemoryStream(), SharedPassphrase, CancellationToken.None);
+        };
+        (await old.Should().ThrowAsync<SyncFileException>()).Which.Error.Should().Be(SyncFileError.CannotOpen);
+    }
+
+    [Fact]
+    public async Task PhotosTravelUnlessTurnedOff()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Habit")));
+
+        await a.Service.RunAsync(CancellationToken.None);
+        (await ReadOwnManifestAsync(a)).IncludesPhotos.Should().BeTrue("photos are on until the user turns them off (spec 9)");
+
+        await a.Settings.SetAsync(SyncService.IncludePhotosSettingKey, "false");
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+        (await ReadOwnManifestAsync(a)).IncludesPhotos.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task JoinStateIsReadOnly()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: false, startMs: 1_000);
+
+        (await a.Service.GetJoinStateAsync(CancellationToken.None)).Should().Be(SyncJoinState.Joined, "an empty database joins by itself");
+        (await a.Settings.GetAsync(SyncService.JoinedSettingKey)).Should().BeNull("only a round writes it");
+
+        await a.Service.RunAsync(CancellationToken.None);
+        (await a.Settings.GetAsync(SyncService.JoinedSettingKey)).Should().Be("true");
+    }
+
+    private static async Task<SyncManifest> ReadOwnManifestAsync(TestNode node)
+    {
+        using var zip = new MemoryStream();
+        await using (var file = File.OpenRead(await node.GetOwnFilePathAsync()))
+            await node.Service.ExportPlainAsync(file, zip, SharedPassphrase, CancellationToken.None);
+        zip.Position = 0;
+        using var snapshot = SyncArchiveReader.Open(zip);
+        return snapshot.Manifest;
+    }
+
+    [Fact]
     public async Task RoundsNeverOverlap()
     {
         var inside = 0;
@@ -715,7 +828,8 @@ public sealed class SyncServiceTests : IDisposable
         bool joined,
         long startMs,
         string? explicitDeviceId = null,
-        Func<string, string, ISyncFileStore>? storeFactory = null)
+        Func<string, string, ISyncFileStore>? storeFactory = null,
+        string? machineName = null)
     {
         var clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(startMs));
         var fixture = new DbFixture(clock);
@@ -771,7 +885,8 @@ public sealed class SyncServiceTests : IDisposable
             clock,
             realDeviceIdentity,
             appVersion: "test",
-            storeFactory: storeFactory);
+            storeFactory: storeFactory,
+            machineName: machineName ?? deviceName);
 
         return new TestNode(fixture, clock, settings, backups, paths, realDeviceIdentity, service, sharedFolder);
     }
@@ -837,11 +952,13 @@ public sealed class SyncServiceTests : IDisposable
     private sealed class FakeBackupService : IBackupService
     {
         public int Calls { get; private set; }
+        public BackupKind? LastKind { get; private set; }
         public Func<string, Task>? OnCreateAsync { get; set; }
 
         public async Task<BackupResult> CreateAsync(string destinationPath, string passphrase, BackupOptions options, CancellationToken ct = default)
         {
             Calls++;
+            LastKind = options.Kind;
             if (OnCreateAsync is not null)
                 await OnCreateAsync(passphrase);
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -30,7 +31,8 @@ public sealed partial class SyncService(
     DeviceIdentity deviceIdentity,
     string appVersion,
     ILogger<SyncService>? logger = null,
-    Func<string, string, ISyncFileStore>? storeFactory = null) : ISyncService
+    Func<string, string, ISyncFileStore>? storeFactory = null,
+    string? machineName = null) : ISyncService
 {
     public const string FolderSettingKey = "sync.folder";
     public const string PassphraseSettingKey = "sync.passphrase";
@@ -38,12 +40,16 @@ public sealed partial class SyncService(
     public const string LastRunMsSettingKey = "sync.last_run_ms";
     public const string JoinedSettingKey = "sync.joined";
     public const string LastWrittenSignatureSettingKey = "sync.last_written_signature";
+    public const string LastWrittenHashSettingKey = "sync.last_written_hash";
 
     private const long SignatureModulus = 1_000_000_007;
 
     private static readonly SyncRunResult NotRun = new(Ran: false, OwnFileWritten: false, Peers: []);
 
     private readonly ILogger _logger = logger ?? NullLogger<SyncService>.Instance;
+
+    // Il nome della macchina, iniettabile solo per i test: un database con un altro nome in sync_meta è stato copiato qui.
+    private readonly string _machineName = machineName ?? Environment.MachineName;
 
     private readonly Func<string, string, ISyncFileStore> _storeFactory =
         storeFactory ?? (static (folder, ownFileName) => new FolderSyncFileStore(folder, ownFileName));
@@ -73,6 +79,7 @@ public sealed partial class SyncService(
         var folder = await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false);
         if (!string.IsNullOrWhiteSpace(folder) && await ReadIdentityAsync(ct).ConfigureAwait(false) is { } id)
         {
+            // ponytail: il proprio file letto come file della cartella; lo store SAF del telefono vorrà un membro esiste/dimensione.
             var own = new FileInfo(Path.Combine(folder, BuildOwnFileName(id.Name, id.Id)));
             if (own.Exists) ownFileBytes = own.Length;
         }
@@ -84,13 +91,18 @@ public sealed partial class SyncService(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(passphrase);
         await settings.SetAsync(PassphraseSettingKey, passphrase, ct).ConfigureAwait(false);
+        // Il proprio file è cifrato con la frase di prima: il giro dopo lo riscrive.
+        await settings.SetAsync(LastWrittenSignatureSettingKey, "", ct).ConfigureAwait(false);
     }
 
     public async Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false)))
             return SyncJoinState.NotConfigured;
-        return await IsJoinedOrAutoJoinAsync(ct).ConfigureAwait(false) ? SyncJoinState.Joined : SyncJoinState.NeedsChoice;
+        // Sola lettura: un database senza dati dell'utente risulta collegato, e il primo giro lo scrive.
+        return await IsJoinedAsync(ct).ConfigureAwait(false) || !await HasUserDataAsync(ct).ConfigureAwait(false)
+            ? SyncJoinState.Joined
+            : SyncJoinState.NeedsChoice;
     }
 
     public async Task JoinAsync(SyncJoinChoice choice, CancellationToken ct)
@@ -101,12 +113,12 @@ public sealed partial class SyncService(
             var folder = await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false);
             var passphrase = await settings.GetAsync(PassphraseSettingKey, ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(passphrase))
-                throw new InvalidOperationException("Choose the folder and the sync passphrase before connecting.");
+                throw new SyncJoinRefusedException("The folder or the sync passphrase is missing.");
 
             // "Parti dai dati degli altri" senza un file leggibile (frase sbagliata, cartella vuota) svuoterebbe questo
             // dispositivo senza dargli niente: si rifiuta prima di toccare qualcosa.
             if (choice == SyncJoinChoice.StartFromOthers && !await AnyPeerOpensAsync(folder, passphrase, ct).ConfigureAwait(false))
-                throw new InvalidOperationException("No file from another device opens in the folder.");
+                throw new SyncJoinRefusedException("No file from another device opens in the folder.");
 
             // Sempre prima un backup (spec §9): se fallisce, il collegamento non va avanti. È protetto dalla frase
             // dell'unione, l'unica che l'utente ha appena scritto e conosce.
@@ -114,7 +126,9 @@ public sealed partial class SyncService(
             var backupPath = Path.Combine(
                 paths.BackupsDirectory,
                 $"pre-sync-join-{clock.UtcNow.UtcDateTime.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.recbak");
-            await backupService.CreateAsync(backupPath, passphrase, new BackupOptions(BackupKind.PreRestore), ct).ConfigureAwait(false);
+            // ponytail: registrato come Manual ("Prima del ripristino" ingannerebbe); un tipo suo vuole una migrazione del
+            // CHECK ck_backup_log_kind, se gli utenti lo chiedono.
+            await backupService.CreateAsync(backupPath, passphrase, new BackupOptions(BackupKind.Manual), ct).ConfigureAwait(false);
 
             if (choice == SyncJoinChoice.StartFromOthers)
                 await EmptyTravellingTablesAsync(ct).ConfigureAwait(false);
@@ -169,17 +183,33 @@ public sealed partial class SyncService(
     {
         var folder = await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false);
         var passphrase = await settings.GetAsync(PassphraseSettingKey, ct).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(passphrase)
-            || !await IsJoinedOrAutoJoinAsync(ct).ConfigureAwait(false))
+        if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(passphrase))
             return NotRun;
+        if (!await IsJoinedAsync(ct).ConfigureAwait(false))
+        {
+            if (await HasUserDataAsync(ct).ConfigureAwait(false))
+                return NotRun;   // aspetta la scelta dell'utente (JoinAsync)
+            await settings.SetAsync(JoinedSettingKey, "true", ct).ConfigureAwait(false);   // un database vuoto si collega da solo
+        }
 
         var (deviceId, deviceName) = await EnsureIdentityAsync(ct).ConfigureAwait(false);
         var ownFileName = BuildOwnFileName(deviceName, deviceId);
         var store = _storeFactory(folder, ownFileName);
-        var includePhotos = string.Equals(
-            await settings.GetAsync(IncludePhotosSettingKey, ct).ConfigureAwait(false), "true", StringComparison.OrdinalIgnoreCase);
+        // Acceso di partenza (spec §9): spento solo se l'utente l'ha spento.
+        var includePhotos = !string.Equals(
+            await settings.GetAsync(IncludePhotosSettingKey, ct).ConfigureAwait(false), "false", StringComparison.OrdinalIgnoreCase);
 
         var peers = new List<SyncPeerStatus>();
+
+        // Un proprio file diverso da quello scritto qui l'ha scritto un altro con la stessa identità (un database copiato
+        // su una macchina con lo stesso nome): non si sovrascrive e lo stato lo dice.
+        // ponytail: il proprio file letto come file della cartella; lo store SAF del telefono vorrà un membro esiste/dimensione.
+        var ownPath = Path.Combine(folder, ownFileName);
+        var ownHash = await HashOfAsync(ownPath, ct).ConfigureAwait(false);
+        var ownFileIsForeign = ownHash is not null && !string.Equals(
+            ownHash, await settings.GetAsync(LastWrittenHashSettingKey, ct).ConfigureAwait(false), StringComparison.Ordinal);
+        if (ownFileIsForeign)
+            peers.Add(new SyncPeerStatus(deviceName, File.GetLastWriteTimeUtc(ownPath), SyncPeerProblem.SameIdentity));
         var merged = false;
         foreach (var file in await store.ListPeerFilesAsync(ct).ConfigureAwait(false))
         {
@@ -220,8 +250,8 @@ public sealed partial class SyncService(
             }
         }
 
-        var ownFileWritten = await WriteOwnFileIfChangedAsync(
-            store, Path.Combine(folder, ownFileName), passphrase, deviceId, deviceName, includePhotos, merged, ct).ConfigureAwait(false);
+        var ownFileWritten = !ownFileIsForeign && await WriteOwnFileIfChangedAsync(
+            store, ownPath, passphrase, deviceId, deviceName, includePhotos, merged, ct).ConfigureAwait(false);
 
         await settings.SetAsync(LastRunMsSettingKey, clock.UtcNowMs.ToString(CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
         runState.SetPeers(peers);
@@ -306,8 +336,17 @@ public sealed partial class SyncService(
             SecureWipe.DeleteFile(tempZip);
         }
 
+        await settings.SetAsync(LastWrittenHashSettingKey, (await HashOfAsync(ownPath, ct).ConfigureAwait(false))!, ct).ConfigureAwait(false);
         await settings.SetAsync(LastWrittenSignatureSettingKey, signature, ct).ConfigureAwait(false);
         return true;
+    }
+
+    // ponytail: legge per intero il proprio file a ogni giro; con file da centinaia di MB, prima un confronto di dimensione e data.
+    private static async Task<string?> HashOfAsync(string path, CancellationToken ct)
+    {
+        if (!File.Exists(path)) return null;
+        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        return Convert.ToHexString(await SHA256.HashDataAsync(file, ct).ConfigureAwait(false));
     }
 
     private string NewTempPath(string kind)
@@ -316,34 +355,29 @@ public sealed partial class SyncService(
         return Path.Combine(paths.TempDirectory, $"recordum-sync-{kind}-{Guid.NewGuid():N}.zip");
     }
 
-    /// <summary>Vero se il dispositivo è collegato; un database senza dati dell'utente si collega da solo.</summary>
-    private async Task<bool> IsJoinedOrAutoJoinAsync(CancellationToken ct)
+    private async Task<bool> IsJoinedAsync(CancellationToken ct) =>
+        string.Equals(await settings.GetAsync(JoinedSettingKey, ct).ConfigureAwait(false), "true", StringComparison.Ordinal);
+
+    private async Task<bool> HasUserDataAsync(CancellationToken ct)
     {
-        if (string.Equals(await settings.GetAsync(JoinedSettingKey, ct).ConfigureAwait(false), "true", StringComparison.Ordinal))
-            return true;
-
-        await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
-        {
-            if (await db.HabitNodes.IgnoreQueryFilters().AnyAsync(ct).ConfigureAwait(false)
-                || await db.Notes.AnyAsync(ct).ConfigureAwait(false))
-                return false;
-        }
-
-        await settings.SetAsync(JoinedSettingKey, "true", ct).ConfigureAwait(false);
-        return true;
+        await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
+        return await db.HabitNodes.IgnoreQueryFilters().AnyAsync(ct).ConfigureAwait(false)
+            || await db.Notes.AnyAsync(ct).ConfigureAwait(false);
     }
 
     private async Task<(string Id, string Name)?> ReadIdentityAsync(CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         var meta = await db.SyncMeta.AsNoTracking().FirstOrDefaultAsync(ct).ConfigureAwait(false);
-        if (meta is null || string.IsNullOrWhiteSpace(meta.DeviceId))
+        // Un nome diverso da quello della macchina: il database è stato copiato qui, l'identità non è più sua.
+        if (meta is null || string.IsNullOrWhiteSpace(meta.DeviceId) || meta.DeviceName != _machineName)
             return null;
-        return (meta.DeviceId, string.IsNullOrWhiteSpace(meta.DeviceName) ? Environment.MachineName : meta.DeviceName);
+        return (meta.DeviceId, meta.DeviceName);
     }
 
-    /// <summary>L'identità alla prima richiesta (e dopo un ripristino, che la cancella): GUID "D" maiuscolo e il nome
-    /// della macchina. Si chiama solo sotto il cancello, così due giri non creano due righe.</summary>
+    /// <summary>L'identità alla prima richiesta, dopo un ripristino (che la cancella) e su una macchina con un altro nome
+    /// (un database copiato): GUID "D" maiuscolo e il nome della macchina; la base di prima va via come dopo un
+    /// ripristino (spec §8.4-bis). Si chiama solo sotto il cancello, così due giri non creano due righe.</summary>
     private async Task<(string Id, string Name)> EnsureIdentityAsync(CancellationToken ct)
     {
         if (await ReadIdentityAsync(ct).ConfigureAwait(false) is { } existing)
@@ -353,12 +387,13 @@ public sealed partial class SyncService(
         {
             Id = Guid.NewGuid(),
             DeviceId = Guid.NewGuid().ToString("D").ToUpperInvariant(),
-            DeviceName = Environment.MachineName,
+            DeviceName = _machineName,
             CreatedAt = clock.UtcNow.UtcDateTime,
         };
         await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
         {
-            await db.SyncMeta.ExecuteDeleteAsync(ct).ConfigureAwait(false);   // un'eventuale riga senza device_id
+            await db.SyncMeta.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+            await db.SyncBases.ExecuteDeleteAsync(ct).ConfigureAwait(false);
             db.SyncMeta.Add(meta);
             await db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
