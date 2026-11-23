@@ -2752,7 +2752,7 @@ Dettagli: {0}</value>
     <value>Collega questo dispositivo</value>
   </data>
   <data name="Sync.Join.Hint" xml:space="preserve">
-    <value>Questo dispositivo ha già dati suoi. In tutti e due i casi prima si fa un backup.</value>
+    <value>Questo dispositivo ha già dati suoi. In tutti e due i casi prima si fa un backup, protetto dalla frase dell'unione.</value>
   </data>
   <data name="Sync.Join.StartFromOthers" xml:space="preserve">
     <value>Parti dai dati degli altri</value>
@@ -2770,7 +2770,7 @@ Dettagli: {0}</value>
     <value>Partire dai dati degli altri?</value>
   </data>
   <data name="Sync.Join.Confirm.Message" xml:space="preserve">
-    <value>I dati di questo dispositivo vanno in un backup e lasciano il posto a quelli degli altri dispositivi.</value>
+    <value>I dati di questo dispositivo vanno in un backup, protetto dalla frase dell'unione, e lasciano il posto a quelli degli altri dispositivi.</value>
   </data>
   <data name="Sync.Status.Label" xml:space="preserve">
     <value>Stato</value>
@@ -2807,5 +2807,8 @@ Dettagli: {0}</value>
   </data>
   <data name="Restore.SyncActiveNote" xml:space="preserve">
     <value>Gli altri dispositivi non tornano indietro: questo rientra nell'unione come un dispositivo nuovo.</value>
+  </data>
+  <data name="Sync.Join.NoPeerFile" xml:space="preserve">
+    <value>Nessun file degli altri dispositivi si apre nella cartella: controlla la frase o aspetta che i file siano arrivati del tutto.</value>
   </data>
 </root>

@@ -2764,7 +2764,7 @@ Details: {0}</value>
     <value>Connect this device</value>
   </data>
   <data name="Sync.Join.Hint" xml:space="preserve">
-    <value>This device already has data of its own. In both cases a backup is made first.</value>
+    <value>This device already has data of its own. In both cases a backup is made first, protected by the sync passphrase.</value>
   </data>
   <data name="Sync.Join.StartFromOthers" xml:space="preserve">
     <value>Start from the other devices' data</value>
@@ -2782,7 +2782,7 @@ Details: {0}</value>
     <value>Start from the other devices' data?</value>
   </data>
   <data name="Sync.Join.Confirm.Message" xml:space="preserve">
-    <value>This device's data goes into a backup and is replaced by the other devices' data.</value>
+    <value>This device's data goes into a backup, protected by the sync passphrase, and is replaced by the other devices' data.</value>
   </data>
   <data name="Sync.Status.Label" xml:space="preserve">
     <value>Status</value>
@@ -2819,5 +2819,8 @@ Details: {0}</value>
   </data>
   <data name="Restore.SyncActiveNote" xml:space="preserve">
     <value>The other devices don't go back: this one rejoins the sync as a new device.</value>
+  </data>
+  <data name="Sync.Join.NoPeerFile" xml:space="preserve">
+    <value>No other device's file opens in the folder: check the passphrase, or wait until the files have fully arrived.</value>
   </data>
 </root>
