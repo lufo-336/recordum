@@ -30,12 +30,14 @@ public sealed class SyncConvergenceTests
     {
         await using var a = new SyncDevice("a");
         await using var b = new SyncDevice("b");
-        await a.EditAsync(100, db => db.HabitNodes.Add(Habit(H1, "Run")));
+        await a.EditAsync(10_000, db => db.HabitNodes.Add(Habit(H1, "Run")));
         await b.MergeAsync(await a.WriteFileAsync());
         await a.MergeAsync(await b.WriteFileAsync());
-        await a.EditAsync(200, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        await a.EditAsync(20_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        Settle(a);
         await b.MergeAsync(await a.WriteFileAsync());
-        await b.EditAsync(300, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Run");
+        await b.EditAsync(40_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Run");
+        Settle(b);
 
         await TextConflictTests.RoundAsync(a, b, order);
         await TextConflictTests.CrossAsync(a, b);
@@ -48,6 +50,76 @@ public sealed class SyncConvergenceTests
         await TextConflictTests.CrossAsync(a, b);
         (await a.CanonicalDumpAsync()).Should().Be(dump, "a fixed point, updated_at_ms included");
         (await b.CanonicalDumpAsync()).Should().Be(dump);
+    }
+
+    /// <summary>Come <see cref="RevertedFieldStaysReverted"/>, ma A unisce il file di un terzo, Q, che non cambia la
+    /// riga, fra la sua scrittura e l'unione di B: un'unione che non cambia la riga non sposta la sua ora di cambio.</summary>
+    [Fact]
+    public async Task RevertSurvivesANoOpMergeFromAThirdDevice()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var q = new SyncDevice("q");
+        await a.EditAsync(10_000, db => db.HabitNodes.Add(Habit(H1, "Run")));
+        var f0 = await a.WriteFileAsync();
+        await b.MergeAsync(f0);
+        await q.MergeAsync(f0);
+        await a.MergeAsync(await b.WriteFileAsync());
+        await a.MergeAsync(await q.WriteFileAsync());
+
+        await a.EditAsync(20_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        Settle(a);
+        var f1 = await a.WriteFileAsync();
+        await a.MergeAsync(await q.WriteFileAsync()); // Q ha ancora Run, intatta dalla base: niente da cambiare
+        await b.MergeAsync(f1);
+        await b.EditAsync(40_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Run");
+        Settle(b);
+
+        await TextConflictTests.CrossAsync(a, b);
+        await TextConflictTests.CrossAsync(a, b);
+
+        foreach (var d in new[] { a, b })
+            (await HabitAsync(d, H1))!.Name.Should().Be("Run", $"on {d.Name}: b saw Walk and put Run back");
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    /// <summary>A prende un valore da Q (orologio molto avanti: l'ora della riga non dice niente dell'orologio di A) e
+    /// unisce di nuovo lo stesso file di Q, che non cambia più niente: l'ora d'unione della prima volta resta, così B,
+    /// che ha unito il file di A dopo e poi ha rimesso il suo valore, risulta averla vista.</summary>
+    [Fact]
+    public async Task RevertSurvivesARepeatedMergeOfTheSameFile()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var q = new SyncDevice("q");
+        await a.EditAsync(10_000, db => db.HabitNodes.Add(Habit(H1, "Run")));
+        var f0 = await a.WriteFileAsync();
+        await b.MergeAsync(f0);
+        await q.MergeAsync(f0);
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        await q.EditAsync(1_000_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        var fq = await q.WriteFileAsync();
+        await a.MergeAsync(fq);
+        await a.MergeAsync(fq); // niente di nuovo
+        var fa = await a.WriteFileAsync();
+        await b.MergeAsync(fa);
+        await b.EditAsync(2_000_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Run");
+        Settle(b);
+
+        await TextConflictTests.CrossAsync(a, b);
+        await TextConflictTests.CrossAsync(a, b);
+
+        foreach (var d in new[] { a, b })
+            (await HabitAsync(d, H1))!.Name.Should().Be("Run", $"on {d.Name}: b saw Walk and put Run back");
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    /// <summary>Lascia passare più del margine sul "visto" (<see cref="Recordum.Data.Sync.SyncMerger.SeenMarginMs"/>)
+    /// prima della prossima scrittura, come fra una modifica e un giro vero.</summary>
+    internal static void Settle(params SyncDevice[] devices)
+    {
+        foreach (var d in devices) d.Clock.Advance(TimeSpan.FromMilliseconds(Recordum.Data.Sync.SyncMerger.SeenMarginMs + 1_000));
     }
 
     /// <summary>Il caso che una regola "la riga più recente vince il campo ambiguo" romperebbe: A cambia un campo dopo

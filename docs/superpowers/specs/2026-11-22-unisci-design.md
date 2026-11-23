@@ -217,6 +217,10 @@ con una sola ora per riga non è vero senza base, e le ore di modifica possono v
   quando l'altra riga è più recente. La regola letterale "vince la riga più recente sul campo ambiguo" perdeva
   proprio quel cambio. Il salvataggio di un testo cancellato senza base guarda `merged_from`: il cancellante aveva
   visto quella versione, niente nota. Dettagli: `docs/formats/sync-file.md` §2.1 e §6, regole 2 e 4.)
+  (corretto il 2026-11-23, seconda review del Task 7: l'ora d'unione nella base la mette solo l'unione che cambia la
+  riga; un'unione che la lascia com'è non la sposta, altrimenti il file di un terzo dispositivo unito nel mezzo
+  faceva sembrare "non visto" ciò che il pari aveva visto. Una modifica fatta qui conta come vista solo se il nostro
+  file unito dal pari è stato scritto almeno 5 s dopo: l'ora della modifica si prende prima del salvataggio.)
 - **Invarianti di dominio che la riga non vede** (*mia scelta*): il motore le rende coerenti in modo deterministico
   senza cancellare dati, e le conta fra le "voci da sistemare":
   - due periodi di astinenza aperti sulla stessa abitudine: resta aperto quello iniziato prima; l'altro, che gli sta

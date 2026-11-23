@@ -364,17 +364,18 @@ public sealed class TextConflictTests
     {
         await using var a = new SyncDevice("a");
         await using var b = new SyncDevice("b");
-        await a.EditAsync(100, db =>
+        await a.EditAsync(10_000, db =>
         {
             db.HabitNodes.Add(Habit(H, "Journal"));
             db.Notes.Add(QuickNote(N, H, "hello"));
         });
+        SyncConvergenceTests.Settle(a);
         await b.MergeAsync(await a.WriteFileAsync());
         if (creatorHasBase) await a.MergeAsync(await b.WriteFileAsync());
         var deleter = deletedByCreator ? a : b;
         var other = deletedByCreator ? b : a;
         var stale = await other.WriteFileAsync(); // la nota c'è ancora
-        await deleter.EditAsync(200, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
+        await deleter.EditAsync(40_000, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
 
         await deleter.MergeAsync(stale);
         await other.MergeAsync(await deleter.WriteFileAsync());
@@ -462,15 +463,16 @@ public sealed class TextConflictTests
     {
         await using var a = new SyncDevice("a");
         await using var b = new SyncDevice("b");
-        await a.EditAsync(100, db =>
+        await a.EditAsync(10_000, db =>
         {
             db.HabitNodes.Add(Habit(H, "Run"));
             db.Notes.Add(QuickNote(N, H, "base"));
         });
         await b.MergeAsync(await a.WriteFileAsync());
         await a.MergeAsync(await b.WriteFileAsync());
-        await a.EditAsync(200, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "L");
-        await b.EditAsync(300, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+        await a.EditAsync(20_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "L");
+        await b.EditAsync(30_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+        SyncConvergenceTests.Settle(a, b);
         if (crossed)
         {
             await CrossAsync(a, b);
@@ -483,7 +485,8 @@ public sealed class TextConflictTests
         foreach (var d in new[] { a, b })
             (await NoteAsync(d, N))!.BodyMd.Should().Be("W\n\n— a · 1970-01-01 00:00 —\nL");
 
-        await b.EditAsync(400, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W"); // pulizia
+        await b.EditAsync(60_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W"); // pulizia
+        SyncConvergenceTests.Settle(b);
 
         await RoundAsync(a, b, order);
         await CrossAsync(a, b);
@@ -497,6 +500,95 @@ public sealed class TextConflictTests
         await CrossAsync(a, b);
         (await a.CanonicalDumpAsync()).Should().Be(dump, "a fixed point: no more changes, updated_at_ms included");
         (await b.CanonicalDumpAsync()).Should().Be(dump);
+    }
+
+    /// <summary>Lo scambio incrociato produce W + blocco(L); fra la scrittura di fA e l'unione di fB, A unisce il file
+    /// di un terzo che non cambia la nota. B pulisce: la pulizia resta.</summary>
+    [Fact]
+    public async Task CleanupSurvivesANoOpMergeFromAThirdDevice()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var q = new SyncDevice("q");
+        await a.EditAsync(10_000, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Run"));
+            db.Notes.Add(QuickNote(N, H, "base"));
+        });
+        var f0 = await a.WriteFileAsync();
+        await b.MergeAsync(f0);
+        await q.MergeAsync(f0);
+        await a.MergeAsync(await b.WriteFileAsync());
+        await a.MergeAsync(await q.WriteFileAsync());
+
+        await a.EditAsync(20_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "L");
+        await b.EditAsync(30_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+        SyncConvergenceTests.Settle(a, b);
+        var fa = await a.WriteFileAsync();
+        var fb = await b.WriteFileAsync();
+        await a.MergeAsync(await q.WriteFileAsync()); // Q ha ancora "base", intatta dalla base: niente da cambiare
+        await a.MergeAsync(fb);
+        await b.MergeAsync(fa);
+        foreach (var d in new[] { a, b })
+            (await NoteAsync(d, N))!.BodyMd.Should().Be("W\n\n— a · 1970-01-01 00:00 —\nL");
+
+        await b.EditAsync(60_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+        SyncConvergenceTests.Settle(b);
+        await CrossAsync(a, b);
+        await CrossAsync(a, b);
+
+        foreach (var d in new[] { a, b })
+            (await NoteAsync(d, N))!.BodyMd.Should().Be("W", $"on {d.Name} the cleanup stays");
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    /// <summary>A crea la nota e scrive; unisce il file di un terzo che non la cambia; B unisce il primo file di A e
+    /// cancella. B l'aveva vista: niente da salvare.</summary>
+    [Fact]
+    public async Task DeleteSurvivesANoOpMergeFromAThirdDevice()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var q = new SyncDevice("q");
+        await a.EditAsync(10_000, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Journal"));
+            db.Notes.Add(QuickNote(N, H, "hello"));
+        });
+        SyncConvergenceTests.Settle(a);
+        var f1 = await a.WriteFileAsync();
+        await q.MergeAsync(f1);
+        await a.MergeAsync(await q.WriteFileAsync()); // la stessa nota, intatta: niente da cambiare
+        await b.MergeAsync(f1);
+        await b.EditAsync(40_000, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
+
+        var report = await a.MergeAsync(await b.WriteFileAsync());
+
+        report.Rescued.Should().Be(0, "b had merged the file with this note before deleting it");
+        (await a.QueryAsync(db => db.Notes.CountAsync())).Should().Be(0);
+    }
+
+    /// <summary>Il margine sul "visto" per una modifica fatta qui: un nostro file scritto meno di
+    /// <see cref="SyncMerger.SeenMarginMs"/> dopo la modifica non conta come "il pari l'ha vista" (la modifica può
+    /// essere arrivata nel database dopo che lo scrittore aveva letto). Si salva il testo; a margine pieno, no.</summary>
+    [Theory]
+    [InlineData(-1, 1)]
+    [InlineData(0, 0)]
+    public async Task SeenNeedsTheMarginAfterALocalEdit(long offset, int rescued)
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(10_000, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Journal"));
+            db.Notes.Add(QuickNote(N, H, "hello"));
+        });
+        a.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(10_000 + SyncMerger.SeenMarginMs + offset - 1)); // la scrittura avanza di 1 ms
+        var f1 = await a.WriteFileAsync();
+        await b.MergeAsync(f1);
+        await b.EditAsync(40_000, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
+
+        (await a.MergeAsync(await b.WriteFileAsync())).Rescued.Should().Be(rescued);
     }
 
     internal static async Task CrossAsync(SyncDevice a, SyncDevice b)

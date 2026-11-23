@@ -25,6 +25,13 @@ namespace Recordum.Data.Sync;
 /// </summary>
 public static class SyncMerger
 {
+    /// <summary>Margine sul "visto" per una modifica fatta qui: la sua ora si prende in SavingChanges, prima del commit,
+    /// quindi un file scritto poco dopo quell'ora può averla letta senza la modifica. La modifica conta come vista dal
+    /// pari solo se il nostro file che ha unito è stato scritto almeno questo tempo dopo.</summary>
+    // ponytail: un margine fisso, non una garanzia. Il rimedio vero è un cancello fra i salvataggi locali e la scrittura
+    // del file d'unione. Se il margine non basta si sbaglia dalla parte sicura: niente "visto", vale la regola dei campi.
+    internal const long SeenMarginMs = 5_000;
+
     public static Task<SyncMergeReport> MergeAsync(
         RecordumDbContext db, SyncSnapshot remote, string localDeviceId, bool receivePhotos, IClock clock, CancellationToken ct) =>
         MergeAsync(db, remote, localDeviceId, receivePhotos, clock, afterEntity: null, ct);
@@ -182,6 +189,8 @@ public static class SyncMerger
 
                 var newBase = new Dictionary<string, JsonElement>(r, StringComparer.Ordinal);
                 var after = r;
+                var produced = true; // questa unione ha dato alla riga la sua versione attuale
+                Dictionary<string, JsonElement>? oldBase = null;
                 if (!local.TryGetValue(row.Id, out var l))
                 {
                     await InsertAsync(entity, row.Id, r).ConfigureAwait(false);
@@ -192,7 +201,7 @@ public static class SyncMerger
                 else
                 {
                     if (entity.IsHistory) continue; // storici: insiemi, una riga che c'è già non cambia
-                    var b = bases.GetValueOrDefault(row.Id);
+                    var b = oldBase = bases.GetValueOrDefault(row.Id);
                     // Un file vecchio dello stesso pari (la base ha già visto una versione più recente) non fa tornare
                     // indietro nulla.
                     if (b is not null && b.TryGetValue(Ms, out var bms) && bms.GetInt64() > rms) continue;
@@ -222,13 +231,21 @@ public static class SyncMerger
                     var merged = new Dictionary<string, JsonElement>(l.Fields, StringComparer.Ordinal);
                     foreach (var (k, v) in changes) merged[k] = v;
                     after = merged;
+                    produced = changes.Count > 0 || photo.TookRemote;
                 }
 
                 if (!entity.IsHistory)
                 {
                     newBase[LocalMsKey] = after[Ms];
                     newBase[LocalHashKey] = JsonSerializer.SerializeToElement(RowHash(after, r.Keys));
-                    newBase[MergedAtKey] = JsonSerializer.SerializeToElement(clock.UtcNowMs);
+                    // L'ora d'unione solo se questa unione ha cambiato la riga; un'unione che la lascia com'è porta avanti
+                    // quella di prima (se descrive ancora questa versione), altrimenti niente: l'ora di cambio di una
+                    // modifica fatta qui resta la sua (LastChangeAsync).
+                    if (produced)
+                        newBase[MergedAtKey] = JsonSerializer.SerializeToElement(clock.UtcNowMs);
+                    else if (oldBase is not null && oldBase.TryGetValue(LocalMsKey, out var oldMs) && oldMs.GetInt64() == after[Ms].GetInt64()
+                        && oldBase.TryGetValue(MergedAtKey, out var oldAt))
+                        newBase[MergedAtKey] = oldAt;
                 }
 
                 if (!entity.IsHistory)
@@ -341,16 +358,17 @@ public static class SyncMerger
         private async Task<bool> RemoteSawAsync(SyncEntity entity, string id, long lms) =>
             _seenUntil is long seen && await LastChangeAsync(entity, id, lms).ConfigureAwait(false) <= seen;
 
-        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/>, per eccesso: la prima
-        /// unione dopo la quale una base la registra così; altrimenti <paramref name="lms"/> stesso, che per una
-        /// modifica fatta qui è l'ora dell'orologio di qui.</summary>
+        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/>: l'ora dell'unione che
+        /// l'ha prodotta (una base la porta solo se quell'unione ha cambiato la riga, e la porta avanti finché la riga
+        /// non cambia); altrimenti è una modifica fatta qui, e la sua ora è <paramref name="lms"/> più
+        /// <see cref="SeenMarginMs"/>.</summary>
         // ponytail: una riga presa da un pari la cui base poi sparisce torna a lms, l'ora di un altro orologio. Succede
         // solo dopo un ripristino, che rigenera device_id: allora merged_from per noi manca e questa ora non si usa.
         private async Task<long> LastChangeAsync(SyncEntity entity, string id, long lms) =>
             await ScalarAsync(
                 $"SELECT MIN(json_extract(row_json, '$.{MergedAtKey}')) FROM sync_base " +
                 $"WHERE entity = @e AND entity_id = @id AND json_extract(row_json, '$.{LocalMsKey}') = @ms",
-                ("@e", entity.PublicName), ("@id", id), ("@ms", lms)).ConfigureAwait(false) is long at ? at : lms;
+                ("@e", entity.PublicName), ("@id", id), ("@ms", lms)).ConfigureAwait(false) is long at ? at : lms + SeenMarginMs;
 
         private static string RowHash(Dictionary<string, JsonElement> row, IEnumerable<string> fields) =>
             Convert.ToHexStringLower(SHA256.HashData(SyncRowCodec.Canonical(
