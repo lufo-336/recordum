@@ -194,4 +194,68 @@ public sealed class InvariantRepairTests
 
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
     }
+
+    private static async Task MeshAsync(params SyncDevice[] ds)
+    {
+        var files = new List<(SyncDevice, byte[])>();
+        foreach (var d in ds) files.Add((d, await d.WriteFileAsync()));
+        foreach (var d in ds)
+            foreach (var (src, f) in files)
+                if (src != d) await d.MergeAsync(f);
+    }
+
+    [Fact]
+    public async Task CycleRepairConvergesWithThreeDevices()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var c = new SyncDevice("c");
+
+        await a.EditAsync(100, db => db.HabitNodes.AddRange(
+            Group(G0, "Root Group", parentId: null),
+            Group(G1, "Group 1", parentId: null),
+            Group(G2, "Group 2", parentId: null)));
+        var f0 = await a.WriteFileAsync();
+        await b.MergeAsync(f0);
+        await c.MergeAsync(f0);
+        await a.MergeAsync(await b.WriteFileAsync());
+        await a.MergeAsync(await c.WriteFileAsync());
+
+        // A sposta G1 sotto G0 a t=150 e B unisce A; C resta con G1 in radice.
+        await a.EditAsync(150, async db => (await db.HabitNodes.SingleAsync(n => n.Id == G1)).ParentId = G0);
+        await b.MergeAsync(await a.WriteFileAsync());
+
+        // A sposta G2 sotto G1 (t=200), B sposta G1 sotto G2 (t=300) -> ciclo G1 <-> G2.
+        await a.EditAsync(200, async db => (await db.HabitNodes.SingleAsync(n => n.Id == G2)).ParentId = G1);
+        await b.EditAsync(300, async db => (await db.HabitNodes.SingleAsync(n => n.Id == G1)).ParentId = G2);
+
+        var fa = await a.WriteFileAsync();
+        var fb = await b.WriteFileAsync();
+        await a.MergeAsync(fb);
+        await b.MergeAsync(fa);
+
+        for (var i = 0; i < 3; i++)
+            await MeshAsync(a, b, c);
+
+        var dump = await a.CanonicalDumpAsync();
+        (await b.CanonicalDumpAsync()).Should().Be(dump);
+        (await c.CanonicalDumpAsync()).Should().Be(dump);
+
+        await MeshAsync(a, b, c);
+        (await a.CanonicalDumpAsync()).Should().Be(dump, "fixed point");
+
+        Guid? expectedG1Parent = null;
+        foreach (var d in new[] { a, b, c })
+        {
+            var g0 = await d.QueryAsync(db => db.HabitNodes.AsNoTracking().SingleAsync(n => n.Id == G0));
+            var g1 = await d.QueryAsync(db => db.HabitNodes.AsNoTracking().SingleAsync(n => n.Id == G1));
+            var g2 = await d.QueryAsync(db => db.HabitNodes.AsNoTracking().SingleAsync(n => n.Id == G2));
+
+            g0.ParentId.Should().BeNull();
+            g2.ParentId.Should().Be(G1);
+            g1.ParentId.Should().NotBe(G1).And.NotBe(G2, "no cycle");
+            expectedG1Parent ??= g1.ParentId;
+            g1.ParentId.Should().Be(expectedG1Parent);
+        }
+    }
 }

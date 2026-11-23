@@ -14,24 +14,74 @@ public static partial class NaturalKeyUnifier
     private const string IdCol = "id";
     private const string MsCol = "updated_at_ms";
 
-    private static readonly Lazy<IModel> DefaultModel = new(() =>
-    {
-        var options = new DbContextOptionsBuilder<RecordumDbContext>()
-            .UseSqlite("DataSource=:memory:")
-            .UseSnakeCaseNamingConvention()
-            .Options;
-        using var db = new RecordumDbContext(options);
-        return db.Model;
-    });
-
-    public static Task<int> UnifyAsync(DbConnection conn, SyncEntity entity, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(conn);
-        ArgumentNullException.ThrowIfNull(entity);
-        return UnifyAsync(conn, tx: null, DefaultModel.Value, entity, ct);
-    }
+    // Unione commutativa, associativa e idempotente delle lapidi: vince l'ora più alta per deleted_at_ms e
+    // device_id (a parità il minore non NULL), mentre alias_of si preserva sempre (a parità di presenza il minore).
+    internal const string UpsertTombstoneSql =
+        "INSERT INTO sync_tombstone (entity, entity_id, deleted_at_ms, device_id, alias_of) VALUES (@e, @id, @at, @dev, @alias) " +
+        "ON CONFLICT (entity, entity_id) DO UPDATE SET " +
+        "device_id = CASE " +
+        "WHEN excluded.deleted_at_ms > sync_tombstone.deleted_at_ms THEN excluded.device_id " +
+        "WHEN sync_tombstone.deleted_at_ms > excluded.deleted_at_ms THEN sync_tombstone.device_id " +
+        "WHEN sync_tombstone.device_id IS NULL THEN excluded.device_id " +
+        "WHEN excluded.device_id IS NULL THEN sync_tombstone.device_id " +
+        "ELSE MIN(sync_tombstone.device_id, excluded.device_id) END, " +
+        "deleted_at_ms = MAX(sync_tombstone.deleted_at_ms, excluded.deleted_at_ms), " +
+        "alias_of = CASE " +
+        "WHEN sync_tombstone.alias_of IS NULL THEN excluded.alias_of " +
+        "WHEN excluded.alias_of IS NULL THEN sync_tombstone.alias_of " +
+        "ELSE MIN(sync_tombstone.alias_of, excluded.alias_of) END";
 
 #pragma warning disable CA2100 // SQL costruito solo da identificatori del catalogo e del modello EF; i valori sono parametri
+    internal static async Task RenameAsync(
+        DbConnection conn, DbTransaction? tx, IModel model, SyncEntity entity, string fromId, string toId, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(conn);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(entity);
+
+        if (entity.KeyColumns is not [IdCol] || string.Equals(fromId, toId, StringComparison.Ordinal))
+            return;
+
+        foreach (var fk in IncomingForeignKeys(model, entity.Table))
+        {
+            var depEntity = SyncCatalog.Entities.FirstOrDefault(e => e.Table == fk.DepTable);
+            var dropped = depEntity is not null && depEntity.NaturalKey.Contains(fk.DepCol, StringComparer.Ordinal)
+                ? await DropUniqueIndexesAsync(conn, tx, fk.DepTable, ct).ConfigureAwait(false)
+                : [];
+            try
+            {
+                await RewriteForeignKeyAsync(conn, tx, fk, fromId, toId, ct).ConfigureAwait(false);
+                if (dropped.Count > 0 && depEntity is not null)
+                    await UnifyAsync(conn, tx, model, depEntity, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                foreach (var sql in dropped)
+                    await ExecAsync(conn, tx, sql, ct).ConfigureAwait(false);
+            }
+        }
+
+        await ExecAsync(conn, tx,
+            $"UPDATE {Q(entity.Table)} SET {Q(IdCol)} = @to WHERE {Q(IdCol)} = @from",
+            ct, ("@to", toId), ("@from", fromId)).ConfigureAwait(false);
+
+        await ExecAsync(conn, tx,
+            "DELETE FROM sync_field_ms WHERE entity = @e AND entity_id = @to",
+            ct, ("@e", entity.PublicName), ("@to", toId)).ConfigureAwait(false);
+        await ExecAsync(conn, tx,
+            "UPDATE sync_field_ms SET entity_id = @to WHERE entity = @e AND entity_id = @from",
+            ct, ("@to", toId), ("@e", entity.PublicName), ("@from", fromId)).ConfigureAwait(false);
+
+        await ExecAsync(conn, tx,
+            "INSERT OR IGNORE INTO sync_base (peer_device_id, entity, entity_id, row_json) " +
+            "SELECT peer_device_id, entity, @to, json_remove(row_json, '$._local_ms') " +
+            "FROM sync_base WHERE entity = @e AND entity_id = @from",
+            ct, ("@to", toId), ("@e", entity.PublicName), ("@from", fromId)).ConfigureAwait(false);
+        await ExecAsync(conn, tx,
+            "DELETE FROM sync_base WHERE entity = @e AND entity_id = @from",
+            ct, ("@e", entity.PublicName), ("@from", fromId)).ConfigureAwait(false);
+    }
+
     internal static async Task<int> UnifyAsync(
         DbConnection conn, DbTransaction? tx, IModel model, SyncEntity entity, CancellationToken ct = default)
     {
@@ -102,11 +152,81 @@ public static partial class NaturalKeyUnifier
         var fks = IncomingForeignKeys(model, entity.Table);
         var repaired = 0;
 
+        var timedFields = SyncCatalog.TimedFields(entity).Where(f => f.Kind != SyncFieldKind.Photo).ToList();
+        var hasPhotoFields = timedFields.Count != SyncCatalog.TimedFields(entity).Count;
+
         foreach (var group in groups)
         {
             group.Sort(static (a, b) => StringComparer.Ordinal.Compare(a.Id, b.Id));
             var winner = group[0];
-            var best = SelectWinningFields(codec, entity, group);
+            var fieldMsById = await ReadFieldMsAsync(conn, tx, entity.PublicName, group, ct).ConfigureAwait(false);
+            var publicById = group.ToDictionary(
+                r => r.Id,
+                r => codec.ToPublic(entity, r.Raw).Fields,
+                StringComparer.Ordinal);
+            var maxGroupMs = group.Max(r => r.UpdatedAtMs);
+
+            // Unificazione campo per campo (Ruling 20): vince il valore con l'ora di campo maggiore, a parità la forma
+            // canonica minore in UTF-8. Tutto si scrive sul vincitore prima di togliere i perdenti.
+            var winningRaw = new Dictionary<string, object?>(timedFields.Count, StringComparer.Ordinal);
+            var winningFieldMs = new Dictionary<string, long>(timedFields.Count, StringComparer.Ordinal);
+            foreach (var field in timedFields)
+            {
+                var bestRow = group[0];
+                var bestVal = publicById[bestRow.Id][field.PublicName];
+                var bestMs = GetFieldMs(fieldMsById, bestRow, field.PublicName);
+                for (var i = 1; i < group.Count; i++)
+                {
+                    var candRow = group[i];
+                    var candVal = publicById[candRow.Id][field.PublicName];
+                    var candMs = GetFieldMs(fieldMsById, candRow, field.PublicName);
+                    if (candMs > bestMs || (candMs == bestMs && SyncMerger.CompareCanonicalValue(candVal, bestVal) < 0))
+                    {
+                        bestRow = candRow;
+                        bestVal = candVal;
+                        bestMs = candMs;
+                    }
+                }
+                winningRaw[field.Column] = bestRow.Raw[field.Column];
+                winningFieldMs[field.PublicName] = bestMs;
+            }
+
+            var updateCols = timedFields.Select(f => f.Column).Append(MsCol).ToArray();
+            var setClause = string.Join(", ", updateCols.Select((c, i) => $"{Q(c)} = @v{i}"));
+            var pars = new (string, object?)[updateCols.Length + 1];
+            for (var i = 0; i < timedFields.Count; i++)
+                pars[i] = ($"@v{i}", winningRaw[timedFields[i].Column]);
+            pars[timedFields.Count] = ($"@v{timedFields.Count}", maxGroupMs);
+            pars[updateCols.Length] = ("@id", winner.Id);
+            await ExecAsync(conn, tx,
+                $"UPDATE {Q(entity.Table)} SET {setClause} WHERE {Q(IdCol)} = @id",
+                ct, pars).ConfigureAwait(false);
+
+            if (!hasPhotoFields)
+            {
+                await ExecAsync(conn, tx,
+                    "DELETE FROM sync_field_ms WHERE entity = @e AND entity_id = @id",
+                    ct, ("@e", entity.PublicName), ("@id", winner.Id)).ConfigureAwait(false);
+            }
+            else
+            {
+                foreach (var field in timedFields)
+                {
+                    await ExecAsync(conn, tx,
+                        "DELETE FROM sync_field_ms WHERE entity = @e AND entity_id = @id AND field = @f",
+                        ct, ("@e", entity.PublicName), ("@id", winner.Id), ("@f", field.PublicName)).ConfigureAwait(false);
+                }
+            }
+
+            foreach (var (fieldName, winMs) in winningFieldMs)
+            {
+                if (winMs < maxGroupMs)
+                {
+                    await ExecAsync(conn, tx,
+                        "INSERT INTO sync_field_ms (entity, entity_id, field, ms) VALUES (@e, @id, @f, @ms)",
+                        ct, ("@e", entity.PublicName), ("@id", winner.Id), ("@f", fieldName), ("@ms", winMs)).ConfigureAwait(false);
+                }
+            }
 
             foreach (var loser in group.Skip(1))
             {
@@ -141,37 +261,19 @@ public static partial class NaturalKeyUnifier
                 await ExecAsync(conn, tx,
                     $"DELETE FROM {Q(entity.Table)} WHERE {Q(IdCol)} = @loser",
                     ct, ("@loser", loser.Id)).ConfigureAwait(false);
-
-                var tombMs = Math.Max(best.UpdatedAtMs, loser.UpdatedAtMs);
                 await ExecAsync(conn, tx,
-                    "INSERT INTO sync_tombstone (entity, entity_id, deleted_at_ms, device_id, alias_of) VALUES (@e, @loser, @at, NULL, @winner) " +
-                    "ON CONFLICT (entity, entity_id) DO UPDATE SET " +
-                    "deleted_at_ms = MAX(sync_tombstone.deleted_at_ms, excluded.deleted_at_ms), " +
-                    "device_id = NULL, alias_of = excluded.alias_of",
-                    ct, ("@e", entity.PublicName), ("@loser", loser.Id), ("@at", tombMs), ("@winner", winner.Id)).ConfigureAwait(false);
+                    "DELETE FROM sync_field_ms WHERE entity = @e AND entity_id = @loser",
+                    ct, ("@e", entity.PublicName), ("@loser", loser.Id)).ConfigureAwait(false);
+
+                await ExecAsync(conn, tx,
+                    UpsertTombstoneSql,
+                    ct, ("@e", entity.PublicName), ("@id", loser.Id), ("@at", maxGroupMs), ("@dev", null), ("@alias", winner.Id)).ConfigureAwait(false);
 
                 await ExecAsync(conn, tx,
                     "UPDATE sync_tombstone SET alias_of = @winner WHERE entity = @e AND alias_of = @loser",
                     ct, ("@winner", winner.Id), ("@e", entity.PublicName), ("@loser", loser.Id)).ConfigureAwait(false);
 
                 repaired++;
-            }
-
-            if (!string.Equals(best.Id, winner.Id, StringComparison.Ordinal))
-            {
-                var nonKeyCols = entity.Fields.Where(f => f.Kind != SyncFieldKind.Photo && f.Column != IdCol).Select(f => f.Column).ToArray();
-                var setClause = string.Join(", ", nonKeyCols.Select((c, i) => $"{Q(c)} = @v{i}"));
-                var pars = new (string, object?)[nonKeyCols.Length + 1];
-                for (var i = 0; i < nonKeyCols.Length; i++)
-                    pars[i] = ($"@v{i}", best.Raw[nonKeyCols[i]]);
-                pars[nonKeyCols.Length] = ("@id", winner.Id);
-
-                await ExecAsync(conn, tx,
-                    $"UPDATE {Q(entity.Table)} SET {setClause} WHERE {Q(IdCol)} = @id",
-                    ct, pars).ConfigureAwait(false);
-
-                // Il vincitore prende anche le ore dei campi della riga migliore (le righe del perdente si tolgono alla fine).
-                await SyncFieldTimes.CopyAsync(conn, tx, entity.PublicName, best.Id, winner.Id, ct).ConfigureAwait(false);
             }
 
             await ExecAsync(conn, tx,
@@ -240,22 +342,34 @@ public static partial class NaturalKeyUnifier
             ct, ("@winner", winnerId), ("@loser", loserId)).ConfigureAwait(false);
     }
 
-    private static DbRow SelectWinningFields(SyncRowCodec codec, SyncEntity entity, List<DbRow> group)
+    private static long GetFieldMs(
+        Dictionary<string, Dictionary<string, long>> fieldMsById, DbRow row, string fieldPublicName) =>
+        fieldMsById[row.Id].TryGetValue(fieldPublicName, out var ms) ? ms : row.UpdatedAtMs;
+
+    private static async Task<Dictionary<string, Dictionary<string, long>>> ReadFieldMsAsync(
+        DbConnection conn, DbTransaction? tx, string entityName, List<DbRow> group, CancellationToken ct)
     {
-        var best = group[0];
-        var bestCanonical = SyncRowCodec.Canonical(codec.ToPublic(entity, best.Raw));
-        for (var i = 1; i < group.Count; i++)
+        var map = new Dictionary<string, Dictionary<string, long>>(group.Count, StringComparer.Ordinal);
+        foreach (var row in group)
+            map[row.Id] = new Dictionary<string, long>(StringComparer.Ordinal);
+
+        var pars = new (string, object?)[group.Count + 1];
+        pars[0] = ("@e", entityName);
+        var inList = new string[group.Count];
+        for (var i = 0; i < group.Count; i++)
         {
-            var candidate = group[i];
-            var candidateCanonical = SyncRowCodec.Canonical(codec.ToPublic(entity, candidate.Raw));
-            if (candidate.UpdatedAtMs > best.UpdatedAtMs
-                || (candidate.UpdatedAtMs == best.UpdatedAtMs && candidateCanonical.AsSpan().SequenceCompareTo(bestCanonical) < 0))
-            {
-                best = candidate;
-                bestCanonical = candidateCanonical;
-            }
+            var p = $"@id{i}";
+            inList[i] = p;
+            pars[i + 1] = (p, group[i].Id);
         }
-        return best;
+
+        await using var cmd = Command(conn, tx,
+            $"SELECT entity_id, field, ms FROM sync_field_ms WHERE entity = @e AND entity_id IN ({string.Join(", ", inList)})",
+            pars);
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+            map[reader.GetString(0)][reader.GetString(1)] = reader.GetInt64(2);
+        return map;
     }
 
     private static string BuildNaturalKey(DbRow row, IReadOnlyList<string> naturalKeyCols, HashSet<string> nocase)

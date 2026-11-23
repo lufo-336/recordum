@@ -238,4 +238,234 @@ public sealed class NaturalKeyTests
 
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
     }
+
+    private static async Task MeshAsync(params SyncDevice[] ds)
+    {
+        var files = new List<(SyncDevice, byte[])>();
+        foreach (var d in ds) files.Add((d, await d.WriteFileAsync()));
+        foreach (var d in ds)
+            foreach (var (src, f) in files)
+                if (src != d) await d.MergeAsync(f);
+    }
+
+    private static async Task AssertConvergedAsync(params SyncDevice[] ds)
+    {
+        var dump = await ds[0].CanonicalDumpAsync();
+        foreach (var d in ds.Skip(1)) (await d.CanonicalDumpAsync()).Should().Be(dump, $"{d.Name} vs {ds[0].Name}");
+        await MeshAsync(ds);
+        await MeshAsync(ds);
+        (await ds[0].CanonicalDumpAsync()).Should().Be(dump, "fixed point");
+    }
+
+    [Fact]
+    public async Task AliasToATargetDeletedElsewhereConverges()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+
+        await a.EditAsync(100, db =>
+        {
+            db.HabitNodes.Add(Habit(H1, "Run"));
+            db.Tags.Add(new Tag { Id = TagMax, Name = "Outdoor" });
+            db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = H1, TagId = TagMax });
+        });
+
+        await b.EditAsync(200, db => db.Tags.Add(new Tag { Id = TagMin, Name = "outdoor" }));
+        await b.MergeAsync(await a.WriteFileAsync());
+
+        // B cancella il tag vincitore dopo l'unificazione; A riceve sia l'alias TagMax -> TagMin che la cancellazione di TagMin.
+        await b.EditAsync(300, db => db.Tags.Where(t => t.Id == TagMin).ExecuteDeleteAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        await MeshAsync(a, b);
+        await MeshAsync(a, b);
+
+        var tagMaxId = TagMax.ToString("D").ToUpperInvariant();
+        var tagMinId = TagMin.ToString("D").ToUpperInvariant();
+        foreach (var d in new[] { a, b })
+        {
+            (await d.QueryAsync(db => db.Tags.AsNoTracking().ToListAsync())).Should().BeEmpty();
+            (await d.QueryAsync(db => db.HabitNodeTags.AsNoTracking().Where(ht => ht.HabitNodeId == H1).ToListAsync()))
+                .Should().BeEmpty();
+
+            var tombs = await d.QueryAsync(db => db.SyncTombstones.AsNoTracking()
+                .Where(t => t.Entity == "tag").ToListAsync());
+            tombs.Should().ContainSingle(t => t.EntityId == tagMaxId && t.AliasOf == tagMinId);
+            tombs.Should().ContainSingle(t => t.EntityId == tagMinId && t.AliasOf == null);
+        }
+
+        await AssertConvergedAsync(a, b);
+    }
+
+    [Fact]
+    public async Task DeletionAndAliasOfTheSameIdConvergeWithThreeDevices()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var c = new SyncDevice("c");
+
+        await a.EditAsync(100, db => db.Tags.Add(new Tag { Id = TagMax, Name = "Outdoor" }));
+        await c.MergeAsync(await a.WriteFileAsync());
+
+        await b.EditAsync(200, db => db.Tags.Add(new Tag { Id = TagMin, Name = "outdoor" }));
+        var fb = await b.WriteFileAsync();
+        await a.MergeAsync(fb);
+
+        // C non conosce ancora B e cancella TagMax concorrentemente a t=300.
+        await c.EditAsync(300, db => db.Tags.Where(t => t.Id == TagMax).ExecuteDeleteAsync());
+
+        await a.MergeAsync(await c.WriteFileAsync());
+        await a.MergeAsync(fb);
+
+        for (var i = 0; i < 3; i++)
+            await MeshAsync(a, b, c);
+
+        var tagMaxId = TagMax.ToString("D").ToUpperInvariant();
+        var tagMinId = TagMin.ToString("D").ToUpperInvariant();
+        var tombs = new List<Models.SyncTombstone>();
+        foreach (var d in new[] { a, b, c })
+        {
+            (await d.QueryAsync(db => db.Tags.AsNoTracking().ToListAsync()))
+                .Should().ContainSingle().Which.Id.Should().Be(TagMin);
+            var tomb = await d.QueryAsync(db => db.SyncTombstones.AsNoTracking()
+                .SingleAsync(t => t.Entity == "tag" && t.EntityId == tagMaxId));
+            tomb.DeletedAtMs.Should().Be(300);
+            tomb.AliasOf.Should().Be(tagMinId);
+            tombs.Add(tomb);
+        }
+
+        tombs[1].Should().BeEquivalentTo(tombs[0]);
+        tombs[2].Should().BeEquivalentTo(tombs[0]);
+
+        await AssertConvergedAsync(a, b, c);
+    }
+
+    [Fact]
+    public async Task UnifiedRowsMergeFieldByField()
+    {
+        static async Task<(ScaleAnchor Anchor, Dictionary<string, long> FieldMs)> RunAsync(bool viaThirdDevice)
+        {
+            var tag1 = new Guid("33333333-0000-0000-0000-000000000021");
+            var anchorMin = new Guid("10000000-0000-0000-0000-000000000021");
+            var anchorMax = new Guid("90000000-0000-0000-0000-000000000029");
+            var anchorMinId = anchorMin.ToString("D").ToUpperInvariant();
+            var anchorMaxId = anchorMax.ToString("D").ToUpperInvariant();
+
+            await using var a = new SyncDevice("a");
+            await using var b = new SyncDevice("b");
+            await using var c = new SyncDevice("c");
+
+            await a.EditAsync(50, db =>
+            {
+                db.ScaleTemplates.Add(new ScaleTemplate
+                {
+                    Id = ScaleId, Code = "effort", Name = "Effort", MinValue = 1, MaxValue = 5,
+                });
+                db.Tags.Add(new Tag { Id = tag1, Name = "Easy" });
+            });
+            var fShared = await a.WriteFileAsync();
+            await b.MergeAsync(fShared);
+            await c.MergeAsync(fShared);
+
+            await a.EditAsync(100, db => db.ScaleAnchors.Add(new ScaleAnchor
+            {
+                Id = anchorMax, ScaleTemplateId = ScaleId, Value = 1, Label = "Easy", TagId = null,
+            }));
+            var fa100 = await a.WriteFileAsync();
+
+            await b.EditAsync(200, db => db.ScaleAnchors.Add(new ScaleAnchor
+            {
+                Id = anchorMin, ScaleTemplateId = ScaleId, Value = 1, Label = "Easy", TagId = tag1,
+            }));
+
+            if (viaThirdDevice)
+            {
+                await c.MergeAsync(fa100);
+                await c.MergeAsync(await b.WriteFileAsync());
+                await a.EditAsync(300, async db =>
+                    (await db.ScaleAnchors.SingleAsync(x => x.Id == anchorMax)).Label = "Easy A");
+                await c.MergeAsync(await a.WriteFileAsync());
+                var fc = await c.WriteFileAsync();
+                await b.MergeAsync(fc);
+                await a.MergeAsync(fc);
+                for (var i = 0; i < 3; i++)
+                    await MeshAsync(a, b, c);
+                await AssertConvergedAsync(a, b, c);
+            }
+            else
+            {
+                await a.EditAsync(300, async db =>
+                    (await db.ScaleAnchors.SingleAsync(x => x.Id == anchorMax)).Label = "Easy A");
+                for (var i = 0; i < 3; i++)
+                    await MeshAsync(a, b);
+                await AssertConvergedAsync(a, b);
+            }
+
+            var anchor = await a.QueryAsync(db => db.ScaleAnchors.AsNoTracking().SingleAsync(x => x.ScaleTemplateId == ScaleId));
+            anchor.Id.Should().Be(anchorMin);
+            anchor.Label.Should().Be("Easy A");
+            anchor.TagId.Should().Be(tag1);
+            anchor.UpdatedAtMs.Should().Be(300);
+
+            var fieldMs = await a.QueryAsync(db => db.SyncFieldMs.AsNoTracking()
+                .Where(f => f.Entity == "scale_anchor" && f.EntityId == anchorMinId)
+                .ToDictionaryAsync(f => f.Field, f => f.Ms));
+            fieldMs.Should().ContainKey("tag_id").WhoseValue.Should().Be(200);
+            fieldMs.Should().ContainKey("created_at").WhoseValue.Should().Be(200);
+            fieldMs.Should().NotContainKey("label");
+
+            var tomb = await a.QueryAsync(db => db.SyncTombstones.AsNoTracking()
+                .SingleAsync(t => t.Entity == "scale_anchor" && t.EntityId == anchorMaxId));
+            tomb.AliasOf.Should().Be(anchorMinId);
+            return (anchor, fieldMs);
+        }
+
+        var direct = await RunAsync(viaThirdDevice: false);
+        var viaC = await RunAsync(viaThirdDevice: true);
+
+        viaC.Anchor.Should().BeEquivalentTo(direct.Anchor);
+        viaC.FieldMs.Should().BeEquivalentTo(direct.FieldMs);
+    }
+
+    [Fact]
+    public async Task RetaggedHabitTagConvergesAcrossRenames()
+    {
+        await using var b = new SyncDevice("b");
+        await using var c = new SyncDevice("c");
+
+        await c.EditAsync(50, db => db.HabitNodes.Add(Habit(H1, "Run")));
+        await b.MergeAsync(await c.WriteFileAsync());
+
+        await c.EditAsync(100, db =>
+        {
+            db.Tags.Add(new Tag { Id = TagMin, Name = "outdoor" });
+            db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = H1, TagId = TagMin });
+        });
+
+        await b.EditAsync(200, db =>
+        {
+            db.Tags.Add(new Tag { Id = TagMax, Name = "sport" });
+            db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = H1, TagId = TagMax });
+        });
+
+        await c.MergeAsync(await b.WriteFileAsync());
+
+        await b.EditAsync(300, async db => (await db.Tags.SingleAsync(t => t.Id == TagMax)).Name = "outdoor");
+
+        for (var i = 0; i < 3; i++)
+            await MeshAsync(b, c);
+
+        var htOnB = await b.QueryAsync(db => db.HabitNodeTags.AsNoTracking().ToListAsync());
+        var htOnC = await c.QueryAsync(db => db.HabitNodeTags.AsNoTracking().ToListAsync());
+        htOnB.Should().ContainSingle();
+        htOnC.Should().BeEquivalentTo(htOnB);
+
+        var fmsOnB = await b.QueryAsync(db => db.SyncFieldMs.AsNoTracking()
+            .Where(f => f.Entity == "habit_node_tag").OrderBy(f => f.EntityId).ThenBy(f => f.Field).ToListAsync());
+        var fmsOnC = await c.QueryAsync(db => db.SyncFieldMs.AsNoTracking()
+            .Where(f => f.Entity == "habit_node_tag").OrderBy(f => f.EntityId).ThenBy(f => f.Field).ToListAsync());
+        fmsOnC.Should().BeEquivalentTo(fmsOnB);
+
+        await AssertConvergedAsync(b, c);
+    }
 }

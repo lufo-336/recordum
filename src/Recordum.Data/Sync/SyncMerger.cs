@@ -75,6 +75,15 @@ public static class SyncMerger
         }
     }
 
+    /// <summary>Spareggio per campo (Ruling 20, formato §5 punto 3): confronto ordinale dei byte UTF-8 del testo
+    /// canonico del valore.</summary>
+    internal static int CompareCanonicalValue(JsonElement a, JsonElement b)
+    {
+        var ab = Encoding.UTF8.GetBytes(SyncRowCodec.CanonicalValue(a));
+        var bb = Encoding.UTF8.GetBytes(SyncRowCodec.CanonicalValue(b));
+        return ab.AsSpan().SequenceCompareTo(bb);
+    }
+
     private sealed record Fk(string DepTable, string[] DepCols, string PrincipalTable, string[] PrincipalCols, bool SetNull);
 
 #pragma warning disable CA2100 // SQL costruito solo da identificatori del catalogo e del modello EF; i valori sono parametri
@@ -83,10 +92,14 @@ public static class SyncMerger
         IClock clock, Action<string>? afterEntity, CancellationToken ct)
     {
         // Chiavi solo locali nella base (sync_base non viaggia), accanto alla riga remota: l'ora della riga di qui
-        // dopo l'unione con quel pari e l'orologio di qui quando l'unione l'ha cambiata. Servono solo a
-        // SalvageTextAsync (regola 4, Ruling 17): capire se il pari aveva visto una nostra riga prima di cancellarla.
+        // dopo l'unione con quel pari e l'orologio di qui quando l'unione l'ha cambiata. Servono alla regola B
+        // (via TextSeenAsync → RemoteSawAsync → LastChangeAsync) e a SalvageTextAsync (regola 4, Ruling 17):
+        // capire se il pari aveva visto una nostra riga prima di cambiarla o cancellarla.
         private const string LocalMsKey = "_local_ms";
         private const string MergedAtKey = "_merged_at";
+
+        // Madre precedente di habit_node prima di uno spostamento ricevuto: usata da
+        // DomainInvariantRepair.ResolvePreviousParentAsync per la riparazione dei cicli.
         private const string PrevParentKey = "_prev_parent_id";
 
         private const string Ms = "updated_at_ms";
@@ -116,7 +129,10 @@ public static class SyncMerger
             var index = SyncCatalog.Entities.Select((e, i) => (e, i)).ToDictionary(x => x.e.PublicName, x => x.i, StringComparer.Ordinal);
             var remoteById = remote.Rows.ToDictionary(
                 kv => kv.Key, kv => kv.Value.ToDictionary(r => r.Id, StringComparer.Ordinal), StringComparer.Ordinal);
-            foreach (var t in remote.Tombstones.Where(t => index.ContainsKey(t.Entity)).OrderByDescending(t => index[t.Entity]))
+            foreach (var t in remote.Tombstones
+                .Where(t => index.ContainsKey(t.Entity))
+                .OrderBy(t => t.AliasOf is null ? 1 : 0)
+                .ThenByDescending(t => index[t.Entity]))
                 await ApplyTombstoneAsync(SyncCatalog.Entities[index[t.Entity]], t, remoteById[t.Entity]).ConfigureAwait(false);
 
             await ReloadAliasesAsync().ConfigureAwait(false);
@@ -125,24 +141,10 @@ public static class SyncMerger
             foreach (var entity in SyncCatalog.Entities.Where(e => e.NaturalKey.Count > 0))
                 droppedUniqueIndexes.AddRange(await NaturalKeyUnifier.DropUniqueIndexesAsync(conn, tx, entity.Table, ct).ConfigureAwait(false));
 
-            try
+            foreach (var entity in SyncCatalog.Entities)
             {
-                foreach (var entity in SyncCatalog.Entities)
-                {
-                    await MergeRowsAsync(entity).ConfigureAwait(false);
-                    if (entity.NaturalKey.Count > 0)
-                    {
-                        var unified = await NaturalKeyUnifier.UnifyAsync(conn, tx, model, entity, ct).ConfigureAwait(false);
-                        if (unified > 0)
-                        {
-                            _repaired += unified;
-                            await ReloadAliasesAsync().ConfigureAwait(false);
-                        }
-                    }
-                    afterEntity?.Invoke(entity.PublicName);
-                }
-
-                foreach (var entity in SyncCatalog.Entities.Where(e => e.NaturalKey.Count > 0))
+                await MergeRowsAsync(entity).ConfigureAwait(false);
+                if (entity.NaturalKey.Count > 0)
                 {
                     var unified = await NaturalKeyUnifier.UnifyAsync(conn, tx, model, entity, ct).ConfigureAwait(false);
                     if (unified > 0)
@@ -151,12 +153,21 @@ public static class SyncMerger
                         await ReloadAliasesAsync().ConfigureAwait(false);
                     }
                 }
+                afterEntity?.Invoke(entity.PublicName);
             }
-            finally
+
+            foreach (var entity in SyncCatalog.Entities.Where(e => e.NaturalKey.Count > 0))
             {
-                foreach (var sql in droppedUniqueIndexes)
-                    await ExecAsync(sql).ConfigureAwait(false);
+                var unified = await NaturalKeyUnifier.UnifyAsync(conn, tx, model, entity, ct).ConfigureAwait(false);
+                if (unified > 0)
+                {
+                    _repaired += unified;
+                    await ReloadAliasesAsync().ConfigureAwait(false);
+                }
             }
+
+            foreach (var sql in droppedUniqueIndexes)
+                await ExecAsync(sql).ConfigureAwait(false);
 
             await SweepOrphansAsync().ConfigureAwait(false);
             foreach (var entity in SyncCatalog.Entities)
@@ -184,12 +195,28 @@ public static class SyncMerger
             if (!Travels(entity, t.EntityId)) return;
             if (t.AliasOf is not null)
             {
-                await ExecAsync(
-                    "INSERT INTO sync_tombstone (entity, entity_id, deleted_at_ms, device_id, alias_of) VALUES (@e, @id, @at, @dev, @alias) " +
-                    "ON CONFLICT (entity, entity_id) DO UPDATE SET deleted_at_ms = excluded.deleted_at_ms, " +
-                    "device_id = excluded.device_id, alias_of = excluded.alias_of " +
-                    "WHERE excluded.deleted_at_ms >= sync_tombstone.deleted_at_ms OR sync_tombstone.alias_of IS NULL",
+                // ponytail: una cancellazione di un id già unificato non cancella il vincitore (la cancellazione si
+                // perde, la riga unificata resta su tutti i dispositivi).
+                await ExecAsync(NaturalKeyUnifier.UpsertTombstoneSql,
                     ("@e", entity.PublicName), ("@id", t.EntityId), ("@at", t.DeletedAtMs), ("@dev", t.DeviceId), ("@alias", t.AliasOf)).ConfigureAwait(false);
+
+                if (entity.KeyColumns is ["id"])
+                {
+                    var localExists = await ScalarAsync(
+                        $"SELECT 1 FROM {Q(entity.Table)} WHERE \"id\" = @id", ("@id", t.EntityId)).ConfigureAwait(false) is not null;
+                    if (localExists)
+                    {
+                        await ReloadAliasesAsync().ConfigureAwait(false);
+                        var targetId = ResolveAlias(entity.PublicName, t.EntityId);
+                        if (!string.Equals(targetId, t.EntityId, StringComparison.Ordinal))
+                        {
+                            var targetExists = await ScalarAsync(
+                                $"SELECT 1 FROM {Q(entity.Table)} WHERE \"id\" = @id", ("@id", targetId)).ConfigureAwait(false) is not null;
+                            if (!targetExists)
+                                await NaturalKeyUnifier.RenameAsync(conn, tx, model, entity, t.EntityId, targetId, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
                 return;
             }
 
@@ -210,10 +237,7 @@ public static class SyncMerger
                     _deleted += await DeleteRowAsync(entity.Table, key, []).ConfigureAwait(false);
             }
 
-            await ExecAsync(
-                "INSERT INTO sync_tombstone (entity, entity_id, deleted_at_ms, device_id, alias_of) VALUES (@e, @id, @at, @dev, @alias) " +
-                "ON CONFLICT (entity, entity_id) DO UPDATE SET deleted_at_ms = excluded.deleted_at_ms, " +
-                "device_id = excluded.device_id, alias_of = excluded.alias_of WHERE excluded.deleted_at_ms > sync_tombstone.deleted_at_ms",
+            await ExecAsync(NaturalKeyUnifier.UpsertTombstoneSql,
                 ("@e", entity.PublicName), ("@id", t.EntityId), ("@at", t.DeletedAtMs), ("@dev", t.DeviceId), ("@alias", t.AliasOf)).ConfigureAwait(false);
             if (rowWins) return;
             await ExecAsync("DELETE FROM sync_base WHERE peer_device_id = @p AND entity = @e AND entity_id = @id",
@@ -432,9 +456,10 @@ public static class SyncMerger
         private async Task<bool> RemoteSawAsync(SyncEntity entity, string id, long lms) =>
             _seenUntil is long seen && await LastChangeAsync(entity, id, lms).ConfigureAwait(false) <= seen;
 
-        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/> (usata solo da
-        /// <see cref="SalvageTextAsync"/>, regola 4): l'ora dell'unione che l'ha prodotta; altrimenti è una modifica
-        /// fatta qui e la sua ora è <paramref name="lms"/> più <see cref="SeenMarginMs"/>.</summary>
+        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/> (usata dalla regola B
+        /// via <see cref="TextSeenAsync"/> → <see cref="RemoteSawAsync"/> e da <see cref="SalvageTextAsync"/>,
+        /// regola 4): l'ora dell'unione che l'ha prodotta; altrimenti è una modifica fatta qui e la sua ora è
+        /// <paramref name="lms"/> più <see cref="SeenMarginMs"/>.</summary>
         // ponytail: una riga presa da un pari la cui base poi sparisce torna a lms, l'ora di un altro orologio. Succede
         // solo dopo un ripristino, che rigenera device_id: allora merged_from per noi manca e questa ora non si usa.
         private async Task<long> LastChangeAsync(SyncEntity entity, string id, long lms) =>
@@ -855,15 +880,6 @@ public static class SyncMerger
                     "INSERT INTO sync_field_ms (entity, entity_id, field, ms) VALUES (@e, @id, @f, @ms)",
                     ("@e", entityPublicName), ("@id", id), ("@f", field), ("@ms", ms)).ConfigureAwait(false);
             }
-        }
-
-        /// <summary>Spareggio per campo (Ruling 20, formato §5 punto 3): confronto ordinale dei byte UTF-8 del testo
-        /// canonico del valore.</summary>
-        private static int CompareCanonicalValue(JsonElement a, JsonElement b)
-        {
-            var ab = Encoding.UTF8.GetBytes(SyncRowCodec.CanonicalValue(a));
-            var bb = Encoding.UTF8.GetBytes(SyncRowCodec.CanonicalValue(b));
-            return ab.AsSpan().SequenceCompareTo(bb);
         }
 
         private static string Identity(SyncEntity entity, string? alias)
