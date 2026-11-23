@@ -516,6 +516,19 @@ public sealed class SyncArchiveTests
         await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
             InjectFieldMs(bytes, "{\"name\":999999999999999}"));
 
+    /// <summary>Un'ora oltre l'anno 9999 farebbe traboccare il "+ 1" dell'unione e dei trigger: il file si rifiuta.</summary>
+    [Fact]
+    public async Task RowTimeBeyondTheMaximumIsRejected() =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+            Encoding.UTF8.GetBytes(System.Text.RegularExpressions.Regex.Replace(
+                Encoding.UTF8.GetString(bytes), "\"updated_at_ms\":\\d+", "\"updated_at_ms\":9223372036854775807")));
+
+    [Fact]
+    public async Task TombstoneTimeBeyondTheMaximumIsRejected() =>
+        await AssertEditRejectedAsync("tombstones.jsonl", bytes =>
+            Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes)
+                + "{\"entity\":\"tag\",\"entity_id\":\"X\",\"deleted_at_ms\":9223372036854775807,\"device_id\":null,\"alias_of\":null}\n"));
+
     [Fact]
     public async Task FieldMsIgnoresUnknownUpdatedAtMsAndKeyNames()
     {

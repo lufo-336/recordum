@@ -51,7 +51,7 @@ public sealed class SyncThreeDeviceTests(ITestOutputHelper output)
         (await ds[0].CanonicalDumpAsync()).Should().Be(dump, "fixed point");
     }
 
-    // 1. Round-1 flow without Settle (1 ms gaps): revert may be lost, but devices must converge.
+    // 1. Round-1 flow without Settle (1 ms gaps): with per-field timestamps the revert is not lost; kept as a convergence guard.
     [Theory]
     [InlineData("a-first")]
     [InlineData("b-first")]
@@ -96,7 +96,7 @@ public sealed class SyncThreeDeviceTests(ITestOutputHelper output)
         await AssertConvergedAsync(a, b);
     }
 
-    // 4. No-op merge of the SAME peer's older file between write and merge (rule ii path) plus a third device.
+    // 4. No-op merge of the SAME peer's older file between write and merge, plus a third device: with per-field timestamps the revert wins; kept as a convergence guard.
     [Fact]
     public async Task NoOpMergeOfPeersOlderFileAndThirdDevice()
     {

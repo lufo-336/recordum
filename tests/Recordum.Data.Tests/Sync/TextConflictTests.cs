@@ -53,7 +53,7 @@ public sealed class TextConflictTests
         report.TextConflicts.Should().Be(1);
         var note = await NoteAsync(desktop, N);
         note!.BodyMd.Should().Be("dal desktop\n\n— Telefono · 2026-11-22 21:40 —\ndal telefono");
-        note.UpdatedAtMs.Should().Be(desktopMs + 1, "a combined text is new on both sides: max + 1, like every merged row that differs from the remote");
+        note.UpdatedAtMs.Should().Be(desktopMs + 1, "a new combined text differs from both versions, so its field timestamp is max + 1");
         TextConflictBlock.Count(note.BodyMd).Should().Be(1);
         TextConflictBlock.Contains(note.BodyMd, "dal telefono").Should().BeTrue();
     }
@@ -449,9 +449,10 @@ public sealed class TextConflictTests
         }
     }
 
-    /// <summary>Ruling 16: chi ha visto il testo unito e ne ha tolto i blocchi ha deciso; la pulizia resta su tutti e
-    /// due, in ogni ordine, e le ore si fermano. <paramref name="crossed"/>: il testo unito nasce da tutte e due le parti
-    /// nello stesso giro (nessuna ha visto quello dell'altra).</summary>
+    /// <summary>Chi ha visto il testo unito e ne ha tolto i blocchi ha deciso: la pulizia resta perché il pari ha visto
+    /// il testo combinato (dalla base o da <c>merged_from</c>), in ogni ordine, e le ore si fermano.
+    /// <paramref name="crossed"/>: il testo unito nasce da tutte e due le parti nello stesso giro (nessuna ha visto
+    /// quello dell'altra).</summary>
     [Theory]
     [InlineData(false, "a-first")]
     [InlineData(false, "b-first")]

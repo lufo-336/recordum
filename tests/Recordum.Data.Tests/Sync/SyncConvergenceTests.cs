@@ -53,7 +53,8 @@ public sealed class SyncConvergenceTests
     }
 
     /// <summary>Come <see cref="RevertedFieldStaysReverted"/>, ma A unisce il file di un terzo, Q, che non cambia la
-    /// riga, fra la sua scrittura e l'unione di B: un'unione che non cambia la riga non sposta la sua ora di cambio.</summary>
+    /// riga, fra la sua scrittura e l'unione di B: il ritorno al valore di prima vince perché è la modifica più recente
+    /// di quel campo.</summary>
     [Fact]
     public async Task RevertSurvivesANoOpMergeFromAThirdDevice()
     {
@@ -83,9 +84,9 @@ public sealed class SyncConvergenceTests
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
     }
 
-    /// <summary>A prende un valore da Q (orologio molto avanti: l'ora della riga non dice niente dell'orologio di A) e
-    /// unisce di nuovo lo stesso file di Q, che non cambia più niente: l'ora d'unione della prima volta resta, così B,
-    /// che ha unito il file di A dopo e poi ha rimesso il suo valore, risulta averla vista.</summary>
+    /// <summary>A prende un valore da Q (orologio molto avanti) e unisce di nuovo lo stesso file di Q, che non cambia
+    /// più niente; B unisce il file di A e poi rimette il suo valore: vince il ritorno perché è la modifica più recente
+    /// di quel campo.</summary>
     [Fact]
     public async Task RevertSurvivesARepeatedMergeOfTheSameFile()
     {

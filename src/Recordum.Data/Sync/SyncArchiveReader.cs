@@ -12,6 +12,12 @@ namespace Recordum.Data.Sync;
 /// </summary>
 public static class SyncArchiveReader
 {
+    /// <summary>L'ora più alta accettata (l'ultimo millisecondo dell'anno 9999): un'ora vicina a <c>long.MaxValue</c> farebbe
+    /// traboccare il "+ 1" dell'unione e dei trigger (SQLite passa a REAL). Il file arriva cifrato con la frase, quindi
+    /// da un pari fidato: è un dato rovinato, non un attacco. ponytail: un'ora lontana ma valida (anno 3000) fissa la
+    /// riga finché nessuno la supera; è il limite di ogni LWW con l'orologio di chi scrive.</summary>
+    internal const long MaxMs = 253_402_300_799_999; // DateTimeOffset.MaxValue.ToUnixTimeMilliseconds()
+
     private const int SupportedMajorVersion = 1;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
@@ -193,6 +199,10 @@ public static class SyncArchiveReader
                     fields[prop.Name] = prop.Value.Clone();
                 }
 
+                if (root.TryGetProperty("updated_at_ms", out var msProp) && msProp.ValueKind == JsonValueKind.Number
+                    && (!msProp.TryGetInt64(out var rowMs) || rowMs is < 0 or > MaxMs))
+                    throw new SyncFormatException($"Invalid 'updated_at_ms' in '{entry.FullName}' at line {lineNumber}: outside 0..{MaxMs}.");
+
                 var fieldMs = ReadFieldMs(root, timedFieldNames, entry.FullName, lineNumber);
 
                 if (!ids.Add(id))
@@ -305,6 +315,8 @@ public static class SyncArchiveReader
                 var entityName = GetRequiredString(root, "entity", lineNumber);
                 var entityId = GetRequiredString(root, "entity_id", lineNumber);
                 var deletedAtMs = GetRequiredInt64(root, "deleted_at_ms", lineNumber);
+                if (deletedAtMs is < 0 or > MaxMs)
+                    throw new SyncFormatException($"Invalid 'deleted_at_ms' in 'tombstones.jsonl' at line {lineNumber}: outside 0..{MaxMs}.");
                 var deviceId = GetOptionalString(root, "device_id", lineNumber);
                 var aliasOf = GetOptionalString(root, "alias_of", lineNumber);
 
