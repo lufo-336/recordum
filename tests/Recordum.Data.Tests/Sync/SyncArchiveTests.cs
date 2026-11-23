@@ -283,6 +283,33 @@ public sealed class SyncArchiveTests
     }
 
     [Fact]
+    public async Task MergedFromIsWrittenAndMayBeAbsent()
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var zipStream = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zipStream, DefaultOptions() with
+        {
+            MergedFrom = new Dictionary<string, long> { ["device-x"] = 42 },
+        });
+
+        zipStream.Position = 0;
+        using (var snapshot = SyncArchiveReader.Open(zipStream))
+            snapshot.Manifest.MergedFrom.Should().Equal(new Dictionary<string, long> { ["device-x"] = 42 });
+
+        await EditManifestAsync(zipStream, json => System.Text.RegularExpressions.Regex.Replace(json, ",\"merged_from\":\\{[^}]*\\}", ""));
+        zipStream.Position = 0;
+        using (var snapshot = SyncArchiveReader.Open(zipStream))
+            snapshot.Manifest.MergedFrom.Should().BeEmpty("a file without merged_from merged nothing");
+
+        await EditManifestAsync(zipStream, json => json.TrimEnd()[..^1] + ",\"merged_from\":null}");
+        zipStream.Position = 0;
+        using (var snapshot = SyncArchiveReader.Open(zipStream))
+            snapshot.Manifest.MergedFrom.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task MajorVersionDifferentIsRejected()
     {
         await using var fx = new DbFixture();
@@ -497,7 +524,11 @@ public sealed class SyncArchiveTests
 
     private static bool IsDefault(object? v) => v is null or 0L or 0.0 or "";
 
-    private static async Task ReplaceManifestVersionAsync(MemoryStream zipStream, string newVersion)
+    private static Task ReplaceManifestVersionAsync(MemoryStream zipStream, string newVersion) =>
+        EditManifestAsync(zipStream, json => json.Replace(
+            "\"format_version\":\"1.0\"", $"\"format_version\":\"{newVersion}\"", StringComparison.Ordinal));
+
+    private static async Task EditManifestAsync(MemoryStream zipStream, Func<string, string> edit)
     {
         zipStream.Position = 0;
         using var editZip = new ZipArchive(zipStream, ZipArchiveMode.Update, leaveOpen: true);
@@ -513,10 +544,7 @@ public sealed class SyncArchiveTests
         var replacement = editZip.CreateEntry("manifest.json");
         await using var outStream = replacement.Open();
         await using var writer = new StreamWriter(outStream, new UTF8Encoding(false));
-        await writer.WriteAsync(manifestJson.Replace(
-            "\"format_version\":\"1.0\"",
-            $"\"format_version\":\"{newVersion}\"",
-            StringComparison.Ordinal));
+        await writer.WriteAsync(edit(manifestJson));
     }
 
     private static async Task<List<Dictionary<string, object?>>> ReadRawTableRowsAsync(

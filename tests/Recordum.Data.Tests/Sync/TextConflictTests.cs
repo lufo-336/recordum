@@ -331,8 +331,10 @@ public sealed class TextConflictTests
 
         var fa = await a.WriteFileAsync();
         var fb = await b.WriteFileAsync();
-        await a.MergeAsync(fb);
-        await b.MergeAsync(fa);
+        (await a.MergeAsync(fb)).Rescued.Should().Be(1);
+        (await b.MergeAsync(fa)).Rescued.Should().Be(1);
+        // Lo stesso file di nuovo: la riga di b torna contro la lapide di a, la nota salvata c'è già.
+        (await a.MergeAsync(fb)).Should().Be(new SyncMergeReport(0, 0, 0, 0, 0, 0));
 
         foreach (var d in new[] { a, b })
         {
@@ -351,12 +353,13 @@ public sealed class TextConflictTests
 
     /// <summary>Una cancellazione qualunque (nessuno ha scritto altro) non fa nascere note: chi l'ha cancellata
     /// rilegge un file che porta ancora la nota (anche senza base: è la riga che aveva ricevuto), l'altro riceve la
-    /// lapide e la nota com'era nella sua base. Il caso che resta fuori (l'altro non ha mai unito un file del cancellatore
-    /// con quella nota, quindi non ha base) salva il testo: senza base non si sa se l'altro l'aveva (spec §8.4).</summary>
+    /// lapide e la nota com'era nella sua base. Senza base (l'altro non ha mai unito un file del cancellatore con quella
+    /// nota) decide <c>merged_from</c>: il cancellatore aveva unito il file che portava questa versione.</summary>
     [Theory]
     [InlineData(true, true)]
     [InlineData(true, false)]
     [InlineData(false, true)]
+    [InlineData(false, false)]
     public async Task PlainDeleteRescuesNothing(bool deletedByCreator, bool creatorHasBase)
     {
         await using var a = new SyncDevice("a");
@@ -379,6 +382,147 @@ public sealed class TextConflictTests
 
         foreach (var d in new[] { a, b })
             (await d.QueryAsync(db => db.Notes.CountAsync())).Should().Be(0);
+    }
+
+    /// <summary>La nota modificata qui dopo che il cancellatore aveva unito il nostro file: quella versione non l'ha
+    /// vista, si salva (con la base o senza).</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task EditTheDeleterHadNotSeenIsRescued(bool withBase)
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(100, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Journal"));
+            db.Notes.Add(QuickNote(N, H, "hello"));
+        });
+        await b.MergeAsync(await a.WriteFileAsync());
+        if (withBase) await a.MergeAsync(await b.WriteFileAsync());
+        await a.EditAsync(200, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "hello again");
+        await b.EditAsync(300, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
+
+        var report = await a.MergeAsync(await b.WriteFileAsync());
+        await b.MergeAsync(await a.WriteFileAsync());
+
+        report.Rescued.Should().Be(1);
+        report.Inserted.Should().Be(0, "a rescue is counted apart");
+        foreach (var d in new[] { a, b })
+        {
+            var rescued = (await d.QueryAsync(db => db.Notes.AsNoTracking().ToListAsync())).Should().ContainSingle().Subject;
+            rescued.BodyMd.Should().Be("— a · 1970-01-01 00:00 —\nhello again");
+            (await d.QueryAsync(db => db.NoteHistories.CountAsync(h => h.NoteId == rescued.Id))).Should().Be(1, "a rescued note starts its history like a new one");
+        }
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
+    /// <summary>B ha cancellato una nota che aveva ricevuto da C, poi ha unito il file di A con una modifica che non
+    /// aveva visto. Né A né B hanno una base dell'altro per quella riga: è B a salvare, perché il testo non sta in
+    /// nessuna delle sue basi (quella di C). A non salva: B gli dice di aver unito il file con la modifica.</summary>
+    [Fact]
+    public async Task DeleterThatGotTheNoteElsewhereRescuesAnEditItHadNotSeen()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var c = new SyncDevice("c");
+        await c.EditAsync(100, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Journal"));
+            db.Notes.Add(QuickNote(N, H, "hello"));
+        });
+        var fc = await c.WriteFileAsync();
+        await a.MergeAsync(fc);
+        await b.MergeAsync(fc);
+        await a.EditAsync(200, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "hello from a");
+        await b.EditAsync(300, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
+
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        foreach (var d in new[] { a, b })
+        {
+            (await NoteAsync(d, N)).Should().BeNull();
+            (await d.QueryAsync(db => db.Notes.AsNoTracking().ToListAsync())).Should().ContainSingle()
+                .Which.BodyMd.Should().Be("— a · 1970-01-01 00:00 —\nhello from a");
+        }
+    }
+
+    /// <summary>Ruling 16: chi ha visto il testo unito e ne ha tolto i blocchi ha deciso; la pulizia resta su tutti e
+    /// due, in ogni ordine, e le ore si fermano. <paramref name="crossed"/>: il testo unito nasce da tutte e due le parti
+    /// nello stesso giro (nessuna ha visto quello dell'altra).</summary>
+    [Theory]
+    [InlineData(false, "a-first")]
+    [InlineData(false, "b-first")]
+    [InlineData(false, "crossed")]
+    [InlineData(true, "a-first")]
+    [InlineData(true, "b-first")]
+    [InlineData(true, "crossed")]
+    public async Task CleanedUpBlocksStayCleanedUp(bool crossed, string order)
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(100, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Run"));
+            db.Notes.Add(QuickNote(N, H, "base"));
+        });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+        await a.EditAsync(200, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "L");
+        await b.EditAsync(300, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+        if (crossed)
+        {
+            await CrossAsync(a, b);
+        }
+        else
+        {
+            await a.MergeAsync(await b.WriteFileAsync());
+            await b.MergeAsync(await a.WriteFileAsync());
+        }
+        foreach (var d in new[] { a, b })
+            (await NoteAsync(d, N))!.BodyMd.Should().Be("W\n\n— a · 1970-01-01 00:00 —\nL");
+
+        await b.EditAsync(400, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W"); // pulizia
+
+        await RoundAsync(a, b, order);
+        await CrossAsync(a, b);
+        await CrossAsync(a, b);
+        var dump = await a.CanonicalDumpAsync();
+        (await b.CanonicalDumpAsync()).Should().Be(dump);
+        foreach (var d in new[] { a, b })
+            (await NoteAsync(d, N))!.BodyMd.Should().Be("W", $"on {d.Name} the cleanup stays");
+
+        await CrossAsync(a, b);
+        await CrossAsync(a, b);
+        (await a.CanonicalDumpAsync()).Should().Be(dump, "a fixed point: no more changes, updated_at_ms included");
+        (await b.CanonicalDumpAsync()).Should().Be(dump);
+    }
+
+    internal static async Task CrossAsync(SyncDevice a, SyncDevice b)
+    {
+        var fa = await a.WriteFileAsync();
+        var fb = await b.WriteFileAsync();
+        await a.MergeAsync(fb);
+        await b.MergeAsync(fa);
+    }
+
+    internal static async Task RoundAsync(SyncDevice a, SyncDevice b, string order)
+    {
+        switch (order)
+        {
+            case "a-first":
+                await a.MergeAsync(await b.WriteFileAsync());
+                await b.MergeAsync(await a.WriteFileAsync());
+                break;
+            case "b-first":
+                await b.MergeAsync(await a.WriteFileAsync());
+                await a.MergeAsync(await b.WriteFileAsync());
+                break;
+            default:
+                await CrossAsync(a, b);
+                break;
+        }
     }
 
     [Fact]

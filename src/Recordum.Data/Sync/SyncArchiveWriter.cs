@@ -13,7 +13,8 @@ public sealed record SyncWriteOptions(
     string DeviceName,
     string AppVersion,
     bool IncludePhotos,
-    long WrittenAtMs);
+    long WrittenAtMs,
+    IReadOnlyDictionary<string, long>? MergedFrom = null);
 
 /// <summary>
 /// Scrive lo stato completo del database in un archivio ZIP <c>recordum-sync</c> versione <c>1.0</c>.
@@ -99,7 +100,11 @@ public static class SyncArchiveWriter
             AppVersion: options.AppVersion,
             WrittenAtMs: options.WrittenAtMs,
             IncludesPhotos: options.IncludePhotos,
-            Entities: entityCounts);
+            Entities: entityCounts)
+        {
+            // TODO(Task 9 wiring): SyncService passa qui, per ogni pari, il written_at_ms dell'ultimo suo file unito.
+            MergedFrom = options.MergedFrom ?? new Dictionary<string, long>(),
+        };
 
         var manifestEntry = archive.CreateEntry("manifest.json", CompressionLevel.Optimal);
         await using (var manifestStream = manifestEntry.Open())

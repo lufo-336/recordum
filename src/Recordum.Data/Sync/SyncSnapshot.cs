@@ -12,7 +12,13 @@ public sealed record SyncManifest(
     [property: JsonPropertyName("app_version")] string AppVersion,
     [property: JsonPropertyName("written_at_ms")] long WrittenAtMs,
     [property: JsonPropertyName("includes_photos")] bool IncludesPhotos,
-    [property: JsonPropertyName("entities")] IReadOnlyDictionary<string, int> Entities);
+    [property: JsonPropertyName("entities")] IReadOnlyDictionary<string, int> Entities)
+{
+    /// <summary>Per ogni pari, il <c>written_at_ms</c> dell'ultimo suo file unito qui prima di scrivere questo
+    /// (formato §2.1). Assente nel file = vuoto.</summary>
+    [JsonPropertyName("merged_from")]
+    public IReadOnlyDictionary<string, long> MergedFrom { get; init; } = new Dictionary<string, long>();
+}
 
 public sealed record SyncRow(
     string Id,

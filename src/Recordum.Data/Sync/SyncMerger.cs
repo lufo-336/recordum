@@ -52,7 +52,7 @@ public static class SyncMerger
             state.Applying = true;
             try
             {
-                var run = new Run(db.Model, conn, (SqliteTransaction)efTx.GetDbTransaction(), remote, receivePhotos, clock, afterEntity, ct);
+                var run = new Run(db.Model, conn, (SqliteTransaction)efTx.GetDbTransaction(), remote, localDeviceId, receivePhotos, clock, afterEntity, ct);
                 var report = await run.ExecuteAsync().ConfigureAwait(false);
                 await efTx.CommitAsync(ct).ConfigureAwait(false);
                 return report;
@@ -72,20 +72,32 @@ public static class SyncMerger
 
 #pragma warning disable CA2100 // SQL costruito solo da identificatori del catalogo e del modello EF; i valori sono parametri
     private sealed class Run(
-        IModel model, SqliteConnection conn, SqliteTransaction tx, SyncSnapshot remote, bool receivePhotos, IClock clock,
-        Action<string>? afterEntity, CancellationToken ct)
+        IModel model, SqliteConnection conn, SqliteTransaction tx, SyncSnapshot remote, string localDeviceId, bool receivePhotos,
+        IClock clock, Action<string>? afterEntity, CancellationToken ct)
     {
+        // Chiavi solo locali nella base (sync_base non viaggia), accanto alla riga remota: com'era la riga di qui dopo
+        // l'unione con quel pari (ora e hash), quando (orologio di qui) e, se teneva valori di qui, quando era cambiata
+        // per l'ultima volta prima. Servono a capire chi ha visto cosa (Ruling 16/17).
+        private const string LocalMsKey = "_local_ms";
+        private const string LocalHashKey = "_local_hash";
+        private const string MergedAtKey = "_merged_at";
+        private const string PreKey = "_pre";
+
         private const string Ms = "updated_at_ms";
         private const string DeviceName = "last_edited_device_name";
         private const string SettingsEntity = "app_setting";
         private const string NoteEntity = "note";
+        private const string HistoryEntity = "note_history";
 
         private readonly SyncRowCodec _codec = new(model);
         private readonly string _peer = remote.Manifest.DeviceId;
         private readonly Dictionary<string, string[]> _pk = PrimaryKeys(model);
         private readonly List<Fk> _fks = ForeignKeys(model);
         private readonly HashSet<string> _touched = new(StringComparer.Ordinal);
-        private int _inserted, _updated, _deleted, _textConflicts;
+        private int _inserted, _updated, _deleted, _textConflicts, _rescued;
+
+        // merged_from del pari per noi: il written_at_ms (orologio di qui) dell'ultimo nostro file che ha unito.
+        private readonly long? _seenUntil = remote.Manifest.MergedFrom.TryGetValue(localDeviceId, out var seen) ? seen : null;
 
         public async Task<SyncMergeReport> ExecuteAsync()
         {
@@ -112,7 +124,7 @@ public static class SyncMerger
                     ("@e", entity.PublicName)).ConfigureAwait(false);
             }
 
-            return new SyncMergeReport(_inserted, _updated, _deleted, _textConflicts, Repaired: 0);
+            return new SyncMergeReport(_inserted, _updated, _deleted, _textConflicts, Repaired: 0, _rescued);
         }
 
         // Spec §8.3 "cancellazione contro modifica": vince l'azione più recente; a parità la cancellazione.
@@ -132,7 +144,7 @@ public static class SyncMerger
             {
                 if (entity.Fields.Any(f => f.Kind == SyncFieldKind.Text)
                     && await LocalRowAsync(entity, t.EntityId).ConfigureAwait(false) is { } gone)
-                    await SalvageTextAsync(entity, t.EntityId, gone, await BaseAsync(entity, t.EntityId).ConfigureAwait(false), t.DeletedAtMs, baseRequired: false).ConfigureAwait(false);
+                    await SalvageTextAsync(entity, t.EntityId, gone, await BaseAsync(entity, t.EntityId).ConfigureAwait(false), t.DeletedAtMs, deletedHere: false).ConfigureAwait(false);
                 foreach (var key in await KeysAsync(entity.Table, $"{Identity(entity, null)} = @id", ("@id", t.EntityId)).ConfigureAwait(false))
                     _deleted += await DeleteRowAsync(entity.Table, key, []).ConfigureAwait(false);
             }
@@ -164,15 +176,16 @@ public static class SyncMerger
                 var rms = RowMs(entity, row);
                 if (tombs.TryGetValue(row.Id, out var deletedAt) && deletedAt >= rms)
                 {
-                    await SalvageTextAsync(entity, row.Id, r, bases.GetValueOrDefault(row.Id), deletedAt, baseRequired: true).ConfigureAwait(false);
+                    await SalvageTextAsync(entity, row.Id, r, bases.GetValueOrDefault(row.Id), deletedAt, deletedHere: true).ConfigureAwait(false);
                     continue;
                 }
 
                 var newBase = new Dictionary<string, JsonElement>(r, StringComparer.Ordinal);
+                var after = r;
                 if (!local.TryGetValue(row.Id, out var l))
                 {
                     await InsertAsync(entity, row.Id, r).ConfigureAwait(false);
-                    await MergePhotosAsync(entity, row.Id, r, inserted: true, remoteWins: true, rms, null, newBase).ConfigureAwait(false);
+                    await MergePhotosAsync(entity, row.Id, r, inserted: true, remoteWins: true, rms, null, newBase, dominant: null).ConfigureAwait(false);
                     _inserted++;
                     _touched.Add(entity.Table);
                 }
@@ -186,14 +199,36 @@ public static class SyncMerger
 
                     var lms = l.Fields[Ms].GetInt64();
                     var remoteWins = rms > lms || (rms == lms && CompareCanonical(r, l.Fields) < 0);
-                    var photo = await MergePhotosAsync(entity, row.Id, r, inserted: false, remoteWins, rms, b, newBase).ConfigureAwait(false);
-                    var changes = MergeFields(entity, l.Fields, r, b, remoteWins, lms, rms, photo);
+                    var dominant = b is not null && b[Ms].GetInt64() < rms
+                        ? await DominantAsync(entity, row.Id, r, lms, b).ConfigureAwait(false)
+                        : null;
+                    var photo = await MergePhotosAsync(entity, row.Id, r, inserted: false, remoteWins, rms, b, newBase, dominant).ConfigureAwait(false);
+                    var (changes, keptLocal) = MergeFields(entity, l.Fields, r, b, remoteWins, lms, rms, photo, dominant);
+                    // La riga unita tiene qualcosa di qui: quando era cambiata per l'ultima volta prima di questa unione.
+                    if (keptLocal)
+                        newBase[PreKey] = JsonSerializer.SerializeToElement(await LastChangeAsync(entity, row.Id, lms).ConfigureAwait(false));
                     if (changes.Count > 0) await UpdateAsync(entity, r, changes).ConfigureAwait(false);
                     if (changes.Count > 0 || photo.TookRemote)
                     {
                         _updated++;
                         _touched.Add(entity.Table);
+                        // Le basi degli altri pari non descrivono più questa versione della riga.
+                        await ExecAsync(
+                            $"UPDATE sync_base SET row_json = json_remove(row_json, '$.{LocalMsKey}', '$.{PreKey}') " +
+                            "WHERE entity = @e AND entity_id = @id AND peer_device_id <> @p",
+                            ("@e", entity.PublicName), ("@id", row.Id), ("@p", _peer)).ConfigureAwait(false);
                     }
+
+                    var merged = new Dictionary<string, JsonElement>(l.Fields, StringComparer.Ordinal);
+                    foreach (var (k, v) in changes) merged[k] = v;
+                    after = merged;
+                }
+
+                if (!entity.IsHistory)
+                {
+                    newBase[LocalMsKey] = after[Ms];
+                    newBase[LocalHashKey] = JsonSerializer.SerializeToElement(RowHash(after, r.Keys));
+                    newBase[MergedAtKey] = JsonSerializer.SerializeToElement(clock.UtcNowMs);
                 }
 
                 if (!entity.IsHistory)
@@ -209,9 +244,10 @@ public static class SyncMerger
         /// la riga vincente, e per i campi <see cref="SyncFieldKind.Text"/> la regola B tiene tutte e due le versioni.
         /// <c>last_edited_device_name</c> segue il testo: dice chi ha scritto la versione in cima.
         /// Torna i campi da scrivere (pubblici), <c>updated_at_ms</c> compreso se cambia.</summary>
-        private Dictionary<string, JsonElement> MergeFields(
+        private (Dictionary<string, JsonElement> Changes, bool KeptLocal) MergeFields(
             SyncEntity entity, IReadOnlyDictionary<string, JsonElement> l, Dictionary<string, JsonElement> r,
-            Dictionary<string, JsonElement>? b, bool remoteWins, long lms, long rms, (bool TookRemote, bool KeptLocal) photo)
+            Dictionary<string, JsonElement>? b, bool remoteWins, long lms, long rms, (bool TookRemote, bool KeptLocal) photo,
+            bool? dominant)
         {
             var changes = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
             var keptLocal = photo.KeptLocal;
@@ -228,7 +264,12 @@ public static class SyncMerger
                 var hasBase = b is not null && b.TryGetValue(name, out bv);
                 var localChanged = !hasBase || !JsonElement.DeepEquals(lv, bv);
                 var remoteChanged = !hasBase || !JsonElement.DeepEquals(rv, bv);
-                if (field.Kind == SyncFieldKind.Text && localChanged && remoteChanged)
+                if (dominant is bool remoteDominates)
+                {
+                    // Una parte ha già visto tutto quello che l'altra ha (DominantAsync): la sua riga decide ogni campo.
+                    useRemote = remoteDominates;
+                }
+                else if (field.Kind == SyncFieldKind.Text && localChanged && remoteChanged)
                 {
                     var (fromRemote, merged) = MergeText(lv, rv, l, r, remoteWins, lms, rms);
                     textFromRemote = fromRemote;
@@ -271,8 +312,50 @@ public static class SyncMerger
             var tookRemote = changes.Count > 0 || photo.TookRemote;
             var ms = !keptLocal ? Math.Max(lms, rms) : !tookRemote && lms > rms ? lms : Math.Max(lms, rms) + 1;
             if (ms != lms) changes[Ms] = JsonSerializer.SerializeToElement(ms);
-            return changes;
+            return (changes, keptLocal);
         }
+
+        /// <summary>Ruling 16: la riga remota è cambiata dalla base, ma un campo uguale alla base può voler dire "non
+        /// toccato" o "visto il nostro e rimesso com'era" (ABA). Decide chi ha già visto tutto quello che ha l'altro:
+        /// <list type="bullet">
+        /// <item><c>false</c>: la riga remota è uno stato che avevamo noi dopo l'ultima unione con questo pari (hash).</item>
+        /// <item><c>true</c>: il pari ha visto la nostra versione (<see cref="RemoteSawAsync"/>); oppure la nostra riga è
+        /// ancora quella uscita dall'ultima unione con lui, fatta di cose sue e della nostra versione di prima, che a quel
+        /// punto aveva già visto, e la sua riga è più recente di quell'unione (se no è la sua unione parallela alla
+        /// nostra, con le stesse informazioni, e decidono le regole dei campi).</item>
+        /// <item><c>null</c>: nessuna delle due; vale la regola dei campi contro la base.</item>
+        /// </list></summary>
+        private async Task<bool?> DominantAsync(
+            SyncEntity entity, string id, Dictionary<string, JsonElement> r, long lms, Dictionary<string, JsonElement> b)
+        {
+            if (b.TryGetValue(LocalHashKey, out var hash) && hash.GetString() == RowHash(r, r.Keys)) return false;
+            if (_seenUntil is long seen && b.TryGetValue(LocalMsKey, out var bl) && bl.GetInt64() == lms
+                && b.TryGetValue(PreKey, out var pre) && pre.GetInt64() <= seen && r[Ms].GetInt64() > lms)
+                return true;
+            return await RemoteSawAsync(entity, id, lms).ConfigureAwait(false) ? true : null;
+        }
+
+        /// <summary>Vero se il pari ha unito un nostro file che conteneva già la nostra versione della riga: non è
+        /// cambiata dopo il <c>written_at_ms</c> che il pari dichiara in <c>merged_from</c>. Senza <c>merged_from</c> per
+        /// noi: falso.</summary>
+        private async Task<bool> RemoteSawAsync(SyncEntity entity, string id, long lms) =>
+            _seenUntil is long seen && await LastChangeAsync(entity, id, lms).ConfigureAwait(false) <= seen;
+
+        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/>, per eccesso: la prima
+        /// unione dopo la quale una base la registra così; altrimenti <paramref name="lms"/> stesso, che per una
+        /// modifica fatta qui è l'ora dell'orologio di qui.</summary>
+        // ponytail: una riga presa da un pari la cui base poi sparisce torna a lms, l'ora di un altro orologio. Succede
+        // solo dopo un ripristino, che rigenera device_id: allora merged_from per noi manca e questa ora non si usa.
+        private async Task<long> LastChangeAsync(SyncEntity entity, string id, long lms) =>
+            await ScalarAsync(
+                $"SELECT MIN(json_extract(row_json, '$.{MergedAtKey}')) FROM sync_base " +
+                $"WHERE entity = @e AND entity_id = @id AND json_extract(row_json, '$.{LocalMsKey}') = @ms",
+                ("@e", entity.PublicName), ("@id", id), ("@ms", lms)).ConfigureAwait(false) is long at ? at : lms;
+
+        private static string RowHash(Dictionary<string, JsonElement> row, IEnumerable<string> fields) =>
+            Convert.ToHexStringLower(SHA256.HashData(SyncRowCodec.Canonical(
+                new SyncRow("", fields.Where(row.ContainsKey).ToDictionary(k => k, k => row[k], StringComparer.Ordinal)))));
+
 
         /// <summary>Regola B per un testo cambiato da tutte e due le parti (o senza base): il vincente con in coda il
         /// perdente. Se il risultato è già una delle due versioni (una contiene l'altra, anche come testo in cima a una
@@ -296,27 +379,42 @@ public static class SyncMerger
 
         /// <summary>Spec §8.3 "cancellazione contro modifica": vince la cancellazione, ma il testo che chi ha cancellato
         /// non aveva diventa una nota rapida della stessa abitudine e dello stesso giorno, col blocco della regola B.
-        /// "Non aveva" = non è già tutto nella base del pari. Senza base: per la riga di qui (l'ha cancellata il pari)
-        /// si salva, come vuole §8.4; per la riga remota (l'abbiamo cancellata noi) no, perché quasi sempre è la riga
-        /// che avevamo già (creata qui o ricevuta da un altro) che torna indietro. L'id della nota è deterministico (entità, id, ora e
-        /// testo): due dispositivi che salvano lo stesso testo fanno la stessa nota, e una nota salvata e poi
-        /// cancellata (la sua lapide) non torna.</summary>
+        /// <list type="bullet">
+        /// <item>La riga di qui, cancellata dal pari: il pari non aveva il testo se non è tutto nella sua base; senza
+        /// base, se la riga è cambiata dopo l'ultimo nostro file che il pari ha unito (<c>merged_from</c>, Ruling 17), o
+        /// se il pari non lo dice (spec §8.4: senza base un testo diverso è un conflitto).</item>
+        /// <item>La riga del pari, cancellata qui: avevamo il testo se sta in una base qualunque di questa riga (le basi
+        /// restano dopo una cancellazione fatta qui). Senza nessuna base la riga l'avevamo creata noi e torna indietro.</item>
+        /// </list>
+        /// L'id della nota è deterministico (entità, id, ora e testo): due dispositivi che salvano lo stesso testo fanno
+        /// la stessa nota, e una nota salvata e poi cancellata (la sua lapide) non torna.</summary>
         private async Task SalvageTextAsync(
             SyncEntity entity, string id, IReadOnlyDictionary<string, JsonElement> row,
-            Dictionary<string, JsonElement>? b, long deletedAtMs, bool baseRequired)
+            Dictionary<string, JsonElement>? b, long deletedAtMs, bool deletedHere)
         {
             var textField = entity.Fields.FirstOrDefault(f => f.Kind == SyncFieldKind.Text);
             if (textField is null) return;
             var text = Str(row.GetValueOrDefault(textField.PublicName));
             if (text.Length == 0) return;
-            if (b is null ? baseRequired : TextConflictBlock.Contains(Str(b.GetValueOrDefault(textField.PublicName)), text)) return;
-
             var ms = row[Ms].GetInt64();
+            if (deletedHere)
+            {
+                var known = await BaseTextsAsync(entity, id, textField.PublicName).ConfigureAwait(false);
+                if (known.Count == 0 || known.Any(k => TextConflictBlock.Contains(k, text))) return;
+            }
+            else if (b is not null)
+            {
+                if (TextConflictBlock.Contains(Str(b.GetValueOrDefault(textField.PublicName)), text)) return;
+            }
+            else if (await RemoteSawAsync(entity, id, ms).ConfigureAwait(false))
+            {
+                return;
+            }
+
             var noteId = SalvageId(entity.PublicName, id, ms, text);
             // Già salvato, o salvato e poi cancellato (la lapide qui o nel file che stiamo unendo).
             if (remote.Tombstones.Any(t => t.Entity == NoteEntity && t.EntityId == noteId)
-                || await ScalarAsync(
-                    "SELECT 1 FROM notes WHERE id = @id UNION ALL SELECT 1 FROM sync_tombstone WHERE entity = @e AND entity_id = @id",
+                || await ScalarAsync("SELECT 1 FROM sync_tombstone WHERE entity = @e AND entity_id = @id",
                     ("@id", noteId), ("@e", NoteEntity)).ConfigureAwait(false) is not null)
                 return;
 
@@ -329,7 +427,10 @@ public static class SyncMerger
                 ["completion_id"] = JsonSerializer.SerializeToElement<string?>(null),
                 ["category"] = JsonSerializer.SerializeToElement(nameof(NoteCategory.Veloce)),
                 // Lo stesso giorno: quello della nota, o per una registrazione il suo istante (una nota senza giorno si
-                // colloca con created_at). Il giorno logico di un istante qui non si calcola (DayBoundary).
+                // colloca con created_at). ponytail: per una registrazione target_date resta null, quindi la nota
+                // compare negli elenchi delle note (NoteAnchor la colloca con created_at) ma non nel pannello del
+                // giorno del calendario. Il giorno logico vuole l'ora di reset (DayBoundary), che qui, dentro la
+                // transazione dell'unione, non si risolve.
                 ["target_date"] = isNote ? row["target_date"] : JsonSerializer.SerializeToElement<string?>(null),
                 ["body_md"] = JsonSerializer.SerializeToElement(TextConflictBlock.Merge("", text, device, ms, clock.LocalTimeZone)),
                 ["is_sensitive"] = isNote ? row["is_sensitive"] : JsonSerializer.SerializeToElement(false),
@@ -338,8 +439,19 @@ public static class SyncMerger
                 [Ms] = JsonSerializer.SerializeToElement(deletedAtMs),
             };
             var notes = SyncCatalog.Entities.First(e => e.PublicName == NoteEntity);
-            await InsertAsync(notes, noteId, note).ConfigureAwait(false);
-            _inserted++;
+            if (await InsertAsync(notes, noteId, note, ignoreExisting: true).ConfigureAwait(false) == 0) return; // già salvato
+            // Come NoteService.CreateAsync: una nota nuova con un testo apre la sua cronologia. Id deterministico come
+            // la nota, così due dispositivi che salvano lo stesso testo non fanno due versioni.
+            var historyId = SalvageId(HistoryEntity, noteId, deletedAtMs, "");
+            await InsertAsync(SyncCatalog.Entities.First(e => e.PublicName == HistoryEntity), historyId, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["id"] = JsonSerializer.SerializeToElement(historyId),
+                ["note_id"] = note["id"],
+                ["body_md"] = note["body_md"],
+                ["created_at"] = note["created_at"],
+                [Ms] = note[Ms],
+            }, ignoreExisting: true).ConfigureAwait(false);
+            _rescued++;
             _touched.Add(notes.Table); // abitudine cancellata anche lei: la nota segue (passo 3)
         }
 
@@ -348,6 +460,16 @@ public static class SyncMerger
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(
                 string.Create(CultureInfo.InvariantCulture, $"recordum-sync-salvage\0{entity}\0{id}\0{ms}\0{text}")));
             return new Guid(hash.AsSpan(0, 16)).ToString("D").ToUpperInvariant();
+        }
+
+        private async Task<List<string>> BaseTextsAsync(SyncEntity entity, string id, string field)
+        {
+            await using var cmd = Command($"SELECT json_extract(row_json, '$.{field}') FROM sync_base WHERE entity = @e AND entity_id = @id",
+                ("@e", entity.PublicName), ("@id", id));
+            await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            var texts = new List<string>();
+            while (await reader.ReadAsync(ct).ConfigureAwait(false)) texts.Add(reader.IsDBNull(0) ? "" : reader.GetString(0));
+            return texts;
         }
 
         private async Task<Dictionary<string, JsonElement>?> BaseAsync(SyncEntity entity, string id) =>
@@ -374,7 +496,7 @@ public static class SyncMerger
         /// spento) non è un cambiamento; una foto che qui manca si riempie da quella remota.</summary>
         private async Task<(bool TookRemote, bool KeptLocal)> MergePhotosAsync(
             SyncEntity entity, string id, Dictionary<string, JsonElement> r, bool inserted, bool remoteWins, long rms,
-            Dictionary<string, JsonElement>? b, Dictionary<string, JsonElement> newBase)
+            Dictionary<string, JsonElement>? b, Dictionary<string, JsonElement> newBase, bool? dominant)
         {
             var wrote = false;
             var keptLocal = false;
@@ -408,9 +530,9 @@ public static class SyncMerger
                     var localHash = await LocalPhotoHashAsync(entity, field, r).ConfigureAwait(false);
                     if (localHash == remoteHash) continue;
                     var useRemote = localHash is null
-                        || (b is not null && b.TryGetValue(field.PublicName, out var bh)
+                        || (dominant ?? (b is not null && b.TryGetValue(field.PublicName, out var bh)
                             ? localHash == bh.GetString() || (remoteHash != bh.GetString() && remoteWins)
-                            : remoteWins);
+                            : remoteWins));
                     if (!useRemote)
                     {
                         keptLocal = true;
@@ -443,12 +565,15 @@ public static class SyncMerger
             return Convert.ToHexStringLower(await SHA256.HashDataAsync(blob, ct).ConfigureAwait(false));
         }
 
-        private async Task InsertAsync(SyncEntity entity, string id, Dictionary<string, JsonElement> r)
+        /// <param name="ignoreExisting">Una riga con la stessa chiave c'è già: niente (torna 0).</param>
+        private async Task<int> InsertAsync(SyncEntity entity, string id, Dictionary<string, JsonElement> r, bool ignoreExisting = false)
         {
             var values = _codec.ToDb(entity, new SyncRow(id, r)).ToList();
             var cols = string.Join(", ", values.Select(v => Q(v.Key)));
             var pars = values.Select((v, i) => ($"@v{i}", v.Value)).ToArray();
-            await ExecAsync($"INSERT INTO {Q(entity.Table)} ({cols}) VALUES ({string.Join(", ", pars.Select(p => p.Item1))})", pars).ConfigureAwait(false);
+            return await ExecAsync(
+                $"INSERT INTO {Q(entity.Table)} ({cols}) VALUES ({string.Join(", ", pars.Select(p => p.Item1))})" +
+                (ignoreExisting ? " ON CONFLICT DO NOTHING" : ""), pars).ConfigureAwait(false);
         }
 
         private async Task UpdateAsync(SyncEntity entity, Dictionary<string, JsonElement> r, Dictionary<string, JsonElement> changes)

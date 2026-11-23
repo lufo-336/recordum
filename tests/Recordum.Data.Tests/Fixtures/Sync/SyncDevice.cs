@@ -14,7 +14,12 @@ public sealed class SyncDevice : IAsyncDisposable
     // Chiave fissa al posto di Argon2id: i test dell'unione non provano la busta (lo fa SyncFileCipherTests).
     private static readonly SyncFileCipher Cipher = new((_, _, _, _, _) => Task.FromResult(Enumerable.Range(1, 32).Select(i => (byte)i).ToArray()));
 
-    public SyncDevice(string name, long startMs = 1_000, TimeZoneInfo? localTimeZone = null)
+    // Come farà SyncService: per ogni pari, il written_at_ms dell'ultimo suo file unito (manifest merged_from).
+    private readonly Dictionary<string, long> _mergedFrom = new(StringComparer.Ordinal);
+
+    /// <param name="startMs">0 di default: l'orologio non torna indietro alla prima modifica (le prove usano ore
+    /// piccole), così <c>merged_from</c> e le ore di modifica restano in ordine come su un dispositivo vero.</param>
+    public SyncDevice(string name, long startMs = 0, TimeZoneInfo? localTimeZone = null)
     {
         Name = name;
         DeviceId = $"device-{name}";
@@ -58,10 +63,11 @@ public sealed class SyncDevice : IAsyncDisposable
     /// <summary>Lo ZIP in chiaro, per i test che fabbricano un file del pari a mano (poi <see cref="SealAsync"/>).</summary>
     public async Task<byte[]> WriteZipAsync(bool includePhotos = true)
     {
+        Tick();
         await using var db = await Fixture.Factory.CreateDbContextAsync();
         using var zip = new MemoryStream();
         await SyncArchiveWriter.WriteAsync(
-            db, zip, new SyncWriteOptions(DeviceId, Name, "test", includePhotos, Clock.UtcNowMs));
+            db, zip, new SyncWriteOptions(DeviceId, Name, "test", includePhotos, Clock.UtcNowMs, new Dictionary<string, long>(_mergedFrom)));
         return zip.ToArray();
     }
 
@@ -79,9 +85,15 @@ public sealed class SyncDevice : IAsyncDisposable
         await Cipher.DecryptAsync(new MemoryStream(file), zip, Passphrase);
         zip.Position = 0;
         using var snapshot = SyncArchiveReader.Open(zip);
+        Tick();
         await using var db = await Fixture.Factory.CreateDbContextAsync();
-        return await SyncMerger.MergeAsync(db, snapshot, DeviceId, receivePhotos, Clock, afterEntity, CancellationToken.None);
+        var report = await SyncMerger.MergeAsync(db, snapshot, DeviceId, receivePhotos, Clock, afterEntity, CancellationToken.None);
+        _mergedFrom[snapshot.Manifest.DeviceId] = snapshot.Manifest.WrittenAtMs;
+        return report;
     }
+
+    /// <summary>Ogni scrittura e ogni unione avviene un millisecondo dopo la precedente, come su un orologio vero.</summary>
+    private void Tick() => Clock.Advance(TimeSpan.FromMilliseconds(1));
 
     /// <summary>Tutte le righe pubbliche ordinate, l'hash di ogni foto e le lapidi: due dispositivi convergono quando
     /// questo testo è uguale.</summary>

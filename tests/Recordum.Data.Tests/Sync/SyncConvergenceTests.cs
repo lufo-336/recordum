@@ -20,6 +20,64 @@ public sealed class SyncConvergenceTests
 
     private static readonly string[] AllOrders = ["abc", "acb", "bac", "bca", "cab", "cba"];
 
+    /// <summary>Ruling 16, ABA su un campo semplice: B adotta il valore di A e poi rimette il suo. Ha visto il valore di A,
+    /// quindi la sua decisione vince ovunque, in ogni ordine, e le ore si fermano.</summary>
+    [Theory]
+    [InlineData("a-first")]
+    [InlineData("b-first")]
+    [InlineData("crossed")]
+    public async Task RevertedFieldStaysReverted(string order)
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(100, db => db.HabitNodes.Add(Habit(H1, "Run")));
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+        await a.EditAsync(200, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        await b.MergeAsync(await a.WriteFileAsync());
+        await b.EditAsync(300, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Run");
+
+        await TextConflictTests.RoundAsync(a, b, order);
+        await TextConflictTests.CrossAsync(a, b);
+        var dump = await a.CanonicalDumpAsync();
+        (await b.CanonicalDumpAsync()).Should().Be(dump);
+        foreach (var d in new[] { a, b })
+            (await HabitAsync(d, H1))!.Name.Should().Be("Run", $"on {d.Name}: b saw Walk and put Run back");
+
+        await TextConflictTests.CrossAsync(a, b);
+        await TextConflictTests.CrossAsync(a, b);
+        (await a.CanonicalDumpAsync()).Should().Be(dump, "a fixed point, updated_at_ms included");
+        (await b.CanonicalDumpAsync()).Should().Be(dump);
+    }
+
+    /// <summary>Il caso che una regola "la riga più recente vince il campo ambiguo" romperebbe: A cambia un campo dopo
+    /// che B ne ha cambiato un altro, nessuno dei due ha visto l'altro. Tutti e due i cambi restano.</summary>
+    [Theory]
+    [InlineData("a-first")]
+    [InlineData("b-first")]
+    [InlineData("crossed")]
+    public async Task ConcurrentEditsOfDifferentFieldsBothStay(string order)
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(100, db => db.HabitNodes.Add(Habit(H1, "Run")));
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+        await b.EditAsync(200, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        await a.EditAsync(300, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Color = "#123456");
+
+        await TextConflictTests.RoundAsync(a, b, order);
+        await TextConflictTests.CrossAsync(a, b);
+
+        foreach (var d in new[] { a, b })
+        {
+            var h = (await HabitAsync(d, H1))!;
+            h.Name.Should().Be("Walk", $"on {d.Name}: only b changed the name");
+            h.Color.Should().Be("#123456", $"on {d.Name}: only a changed the colour");
+        }
+        (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
+    }
+
     /// <summary>Con la base fra ogni coppia, i valori dei campi non dipendono dall'ordine dei file (le ore di modifica
     /// possono: una riga combinata prende max+1 dove capita la combinazione).</summary>
     [Fact]

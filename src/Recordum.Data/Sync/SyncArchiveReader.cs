@@ -87,7 +87,8 @@ public static class SyncArchiveReader
         if (manifest.Entities is null)
             throw new SyncFormatException("Manifest entities map is required.");
 
-        return manifest;
+        // "merged_from": null o assente = nessun file unito.
+        return manifest.MergedFrom is null ? manifest with { MergedFrom = new Dictionary<string, long>() } : manifest;
     }
 
     private static void ValidateFormatVersion(string? formatVersion)

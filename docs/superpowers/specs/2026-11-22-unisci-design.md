@@ -209,6 +209,14 @@ con una sola ora per riga non è vero senza base, e le ore di modifica possono v
   solo i pezzi che il vincente non ha, e i blocchi stanno in ordine d'ora, così una versione non compare mai due
   volte, neanche quando torna indietro un testo già unito. La copia di un testo cancellato è una nota rapida con un id
   deterministico, `docs/formats/sync-file.md` §6.)
+  (corretto il 2026-11-23, review del Task 7, Ruling 16/17: un campo uguale alla base in una riga remota più recente
+  della base è ambiguo, "non toccato" o "visto il nostro e rimesso com'era" (ABA: la pulizia dei blocchi tornava
+  indietro e le ore salivano a ogni giro). Il manifest dice, in `merged_from`, quale nostro file il pari ha unito per
+  ultimo. Se il pari ha visto la nostra versione, la sua riga decide ogni campo; se la sua riga è uno stato che
+  avevamo già noi, decide la nostra; se no vale la regola dei campi, che tiene il cambio fatto da una parte sola anche
+  quando l'altra riga è più recente. La regola letterale "vince la riga più recente sul campo ambiguo" perdeva
+  proprio quel cambio. Il salvataggio di un testo cancellato senza base guarda `merged_from`: il cancellante aveva
+  visto quella versione, niente nota. Dettagli: `docs/formats/sync-file.md` §2.1 e §6, regole 2 e 4.)
 - **Invarianti di dominio che la riga non vede** (*mia scelta*): il motore le rende coerenti in modo deterministico
   senza cancellare dati, e le conta fra le "voci da sistemare":
   - due periodi di astinenza aperti sulla stessa abitudine: resta aperto quello iniziato prima; l'altro, che gli sta
