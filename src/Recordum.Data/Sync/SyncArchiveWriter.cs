@@ -153,22 +153,83 @@ public static class SyncArchiveWriter
 #pragma warning restore CA2100
 
         var rows = new List<SyncRow>();
-        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        await using (var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
         {
-            var dbRow = new Dictionary<string, object?>(nonPhotoColumns.Length, StringComparer.Ordinal);
-            for (var i = 0; i < nonPhotoColumns.Length; i++)
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
             {
-                dbRow[nonPhotoColumns[i]] = await reader.IsDBNullAsync(i, ct).ConfigureAwait(false)
-                    ? null
-                    : reader.GetValue(i);
-            }
+                var dbRow = new Dictionary<string, object?>(nonPhotoColumns.Length, StringComparer.Ordinal);
+                for (var i = 0; i < nonPhotoColumns.Length; i++)
+                {
+                    dbRow[nonPhotoColumns[i]] = await reader.IsDBNullAsync(i, ct).ConfigureAwait(false)
+                        ? null
+                        : reader.GetValue(i);
+                }
 
-            rows.Add(codec.ToPublic(entity, dbRow));
+                rows.Add(codec.ToPublic(entity, dbRow));
+            }
+        }
+
+        var timedFields = SyncCatalog.TimedFields(entity);
+        if (rows.Count > 0 && timedFields.Count > 0)
+        {
+            var fieldMsById = await ReadEntityFieldMsAsync(conn, tx, entity.PublicName, ct).ConfigureAwait(false);
+            if (fieldMsById.Count > 0)
+            {
+                var timedNames = timedFields.Select(f => f.PublicName).ToHashSet(StringComparer.Ordinal);
+                for (var i = 0; i < rows.Count; i++)
+                {
+                    var row = rows[i];
+                    if (!fieldMsById.TryGetValue(row.Id, out var rawMap))
+                        continue;
+
+                    var rowMs = row.Fields.TryGetValue("updated_at_ms", out var msEl) && msEl.TryGetInt64(out var parsedMs)
+                        ? parsedMs
+                        : long.MaxValue;
+                    var filtered = new Dictionary<string, long>(StringComparer.Ordinal);
+                    foreach (var (field, ms) in rawMap)
+                    {
+                        if (timedNames.Contains(field) && ms >= 0 && ms < rowMs)
+                            filtered[field] = ms;
+                    }
+
+                    if (filtered.Count > 0)
+                        rows[i] = row with { FieldMs = filtered };
+                }
+            }
         }
 
         rows.Sort(static (a, b) => StringComparer.Ordinal.Compare(a.Id, b.Id));
         return rows;
+    }
+
+    private static async Task<Dictionary<string, Dictionary<string, long>>> ReadEntityFieldMsAsync(
+        SqliteConnection conn,
+        SqliteTransaction tx,
+        string entityPublicName,
+        CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT \"entity_id\", \"field\", \"ms\" FROM \"sync_field_ms\" WHERE \"entity\" = @e";
+        cmd.Parameters.AddWithValue("@e", entityPublicName);
+
+        var map = new Dictionary<string, Dictionary<string, long>>(StringComparer.Ordinal);
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            var id = reader.GetString(0);
+            var field = reader.GetString(1);
+            var ms = reader.GetInt64(2);
+            if (!map.TryGetValue(id, out var rowMap))
+            {
+                rowMap = new Dictionary<string, long>(StringComparer.Ordinal);
+                map[id] = rowMap;
+            }
+
+            rowMap[field] = ms;
+        }
+
+        return map;
     }
 
     private static async Task WriteEntityJsonLinesAsync(
@@ -190,6 +251,17 @@ public static class SyncArchiveWriter
 
                     writer.WritePropertyName(key);
                     element.WriteTo(writer);
+                }
+
+                if (row.FieldMs.Count > 0)
+                {
+                    writer.WritePropertyName("_field_ms");
+                    writer.WriteStartObject();
+                    foreach (var fieldName in row.FieldMs.Keys.Order(StringComparer.Ordinal))
+                    {
+                        writer.WriteNumber(fieldName, row.FieldMs[fieldName]);
+                    }
+                    writer.WriteEndObject();
                 }
 
                 writer.WriteEndObject();

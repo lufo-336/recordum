@@ -76,6 +76,21 @@ public static partial class TextConflictBlock
         return Pieces(head, blocks).IsSupersetOf(Pieces(loserHead, loserBlocks));
     }
 
+    /// <summary>Vero se ogni parte di <paramref name="loser"/> sta in <paramref name="first"/> o in
+    /// <paramref name="second"/>: un testo fatto solo di parti già viste non porta niente di nuovo.</summary>
+    public static bool Covers(string first, string second, string loser)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+        ArgumentNullException.ThrowIfNull(loser);
+        var (h1, b1) = Parse(first);
+        var (h2, b2) = Parse(second);
+        var (loserHead, loserBlocks) = Parse(loser);
+        var have = Pieces(h1, b1);
+        have.UnionWith(Pieces(h2, b2));
+        return have.IsSupersetOf(Pieces(loserHead, loserBlocks));
+    }
+
     private static (string Head, List<Block> Blocks) Parse(string text)
     {
         var blocks = new List<Block>();

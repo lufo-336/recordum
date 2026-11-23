@@ -17,8 +17,8 @@ namespace Recordum.Data.Sync;
 /// cambiano <c>updated_at_ms</c>) e <c>defer_foreign_keys</c> (l'ordine degli insert non conta). SQL parametrico
 /// costruito dal <see cref="SyncCatalog"/>, niente tracking EF.
 /// <para>Ordine: 1. lapidi remote, figli prima (le FK RESTRICT scattano subito anche differite); 2. righe remote,
-/// madri prima, campo per campo contro <c>sync_base</c>; 3. figli rimasti senza madre (arrivati qui o spostati sotto
-/// una madre cancellata) seguono la madre come farebbe la cascade; 4. le lapidi battute da una riga più recente
+/// madri prima, campo per campo per ora di campo (Ruling 20); 3. figli rimasti senza madre (arrivati qui o spostati
+/// sotto una madre cancellata) seguono la madre come farebbe la cascade; 4. le lapidi battute da una riga più recente
 /// presente qui si tolgono, così tutti i dispositivi tengono le stesse.</para>
 /// <para>Testo libero (regola B, <see cref="TextConflictBlock"/>): l'ora nei blocchi è nel fuso di
 /// <see cref="IClock.LocalTimeZone"/> del dispositivo che unisce.</para>
@@ -82,13 +82,11 @@ public static class SyncMerger
         IModel model, SqliteConnection conn, SqliteTransaction tx, SyncSnapshot remote, string localDeviceId, bool receivePhotos,
         IClock clock, Action<string>? afterEntity, CancellationToken ct)
     {
-        // Chiavi solo locali nella base (sync_base non viaggia), accanto alla riga remota: com'era la riga di qui dopo
-        // l'unione con quel pari (ora e hash), quando (orologio di qui) e, se teneva valori di qui, quando era cambiata
-        // per l'ultima volta prima. Servono a capire chi ha visto cosa (Ruling 16/17).
+        // Chiavi solo locali nella base (sync_base non viaggia), accanto alla riga remota: l'ora della riga di qui
+        // dopo l'unione con quel pari e l'orologio di qui quando l'unione l'ha cambiata. Servono solo a
+        // SalvageTextAsync (regola 4, Ruling 17): capire se il pari aveva visto una nostra riga prima di cancellarla.
         private const string LocalMsKey = "_local_ms";
-        private const string LocalHashKey = "_local_hash";
         private const string MergedAtKey = "_merged_at";
-        private const string PreKey = "_pre";
 
         private const string Ms = "updated_at_ms";
         private const string DeviceName = "last_edited_device_name";
@@ -128,6 +126,10 @@ public static class SyncMerger
                 await ExecAsync(
                     $"DELETE FROM sync_tombstone WHERE entity = @e AND EXISTS (SELECT 1 FROM {Q(entity.Table)} AS r " +
                     $"WHERE {Identity(entity, "r")} = sync_tombstone.entity_id AND r.updated_at_ms > sync_tombstone.deleted_at_ms)",
+                    ("@e", entity.PublicName)).ConfigureAwait(false);
+                await ExecAsync(
+                    $"DELETE FROM sync_field_ms WHERE entity = @e AND NOT EXISTS (SELECT 1 FROM {Q(entity.Table)} AS r " +
+                    $"WHERE {Identity(entity, "r")} = sync_field_ms.entity_id)",
                     ("@e", entity.PublicName)).ConfigureAwait(false);
             }
 
@@ -194,7 +196,8 @@ public static class SyncMerger
                 if (!local.TryGetValue(row.Id, out var l))
                 {
                     await InsertAsync(entity, row.Id, r).ConfigureAwait(false);
-                    await MergePhotosAsync(entity, row.Id, r, inserted: true, remoteWins: true, rms, null, newBase, dominant: null).ConfigureAwait(false);
+                    await MergePhotosAsync(entity, row.Id, r, inserted: true, rms, row.FieldMs, mergedFieldMs: null, b: null, newBase).ConfigureAwait(false);
+                    await WriteFieldMsAsync(entity.PublicName, row.Id, row.FieldMs.Where(kv => kv.Value < rms)).ConfigureAwait(false);
                     _inserted++;
                     _touched.Add(entity.Table);
                 }
@@ -207,23 +210,26 @@ public static class SyncMerger
                     if (b is not null && b.TryGetValue(Ms, out var bms) && bms.GetInt64() > rms) continue;
 
                     var lms = l.Fields[Ms].GetInt64();
-                    var remoteWins = rms > lms || (rms == lms && CompareCanonical(r, l.Fields) < 0);
-                    var dominant = b is not null && b[Ms].GetInt64() < rms
-                        ? await DominantAsync(entity, row.Id, r, lms, b).ConfigureAwait(false)
-                        : null;
-                    var photo = await MergePhotosAsync(entity, row.Id, r, inserted: false, remoteWins, rms, b, newBase, dominant).ConfigureAwait(false);
-                    var (changes, keptLocal) = MergeFields(entity, l.Fields, r, b, remoteWins, lms, rms, photo, dominant);
-                    // La riga unita tiene qualcosa di qui: quando era cambiata per l'ultima volta prima di questa unione.
-                    if (keptLocal)
-                        newBase[PreKey] = JsonSerializer.SerializeToElement(await LastChangeAsync(entity, row.Id, lms).ConfigureAwait(false));
+                    var timedFields = SyncCatalog.TimedFields(entity);
+                    var mergedFieldMs = new Dictionary<string, long>(timedFields.Count, StringComparer.Ordinal);
+                    foreach (var tf in timedFields)
+                        mergedFieldMs[tf.PublicName] = l.FieldMs.TryGetValue(tf.PublicName, out var lfm) ? lfm : lms;
+
+                    var tookRemotePhoto = await MergePhotosAsync(entity, row.Id, r, inserted: false, rms, row.FieldMs, mergedFieldMs, b, newBase).ConfigureAwait(false);
+                    var (changes, newRowMs) = MergeFields(entity, l.Fields, r, row.FieldMs, b, lms, rms, mergedFieldMs);
                     if (changes.Count > 0) await UpdateAsync(entity, r, changes).ConfigureAwait(false);
-                    if (changes.Count > 0 || photo.TookRemote)
+                    var desiredFieldMs = mergedFieldMs.Where(kv => kv.Value < newRowMs).ToList();
+                    if (FieldMsDiffers(l.FieldMs, desiredFieldMs))
+                        await WriteFieldMsAsync(entity.PublicName, row.Id, desiredFieldMs).ConfigureAwait(false);
+
+                    produced = changes.Count > 0 || tookRemotePhoto;
+                    if (produced)
                     {
                         _updated++;
                         _touched.Add(entity.Table);
                         // Le basi degli altri pari non descrivono più questa versione della riga.
                         await ExecAsync(
-                            $"UPDATE sync_base SET row_json = json_remove(row_json, '$.{LocalMsKey}', '$.{PreKey}') " +
+                            $"UPDATE sync_base SET row_json = json_remove(row_json, '$.{LocalMsKey}') " +
                             "WHERE entity = @e AND entity_id = @id AND peer_device_id <> @p",
                             ("@e", entity.PublicName), ("@id", row.Id), ("@p", _peer)).ConfigureAwait(false);
                     }
@@ -231,25 +237,20 @@ public static class SyncMerger
                     var merged = new Dictionary<string, JsonElement>(l.Fields, StringComparer.Ordinal);
                     foreach (var (k, v) in changes) merged[k] = v;
                     after = merged;
-                    produced = changes.Count > 0 || photo.TookRemote;
                 }
 
                 if (!entity.IsHistory)
                 {
                     newBase[LocalMsKey] = after[Ms];
-                    newBase[LocalHashKey] = JsonSerializer.SerializeToElement(RowHash(after, r.Keys));
                     // L'ora d'unione solo se questa unione ha cambiato la riga; un'unione che la lascia com'è porta avanti
                     // quella di prima (se descrive ancora questa versione), altrimenti niente: l'ora di cambio di una
-                    // modifica fatta qui resta la sua (LastChangeAsync).
+                    // modifica fatta qui resta la sua (LastChangeAsync, usata da SalvageTextAsync).
                     if (produced)
                         newBase[MergedAtKey] = JsonSerializer.SerializeToElement(clock.UtcNowMs);
                     else if (oldBase is not null && oldBase.TryGetValue(LocalMsKey, out var oldMs) && oldMs.GetInt64() == after[Ms].GetInt64()
                         && oldBase.TryGetValue(MergedAtKey, out var oldAt))
                         newBase[MergedAtKey] = oldAt;
-                }
 
-                if (!entity.IsHistory)
-                {
                     await ExecAsync(
                         "INSERT OR REPLACE INTO sync_base (peer_device_id, entity, entity_id, row_json) VALUES (@p, @e, @id, @json)",
                         ("@p", _peer), ("@e", entity.PublicName), ("@id", row.Id), ("@json", JsonSerializer.Serialize(newBase))).ConfigureAwait(false);
@@ -257,111 +258,103 @@ public static class SyncMerger
             }
         }
 
-        /// <summary>Campo per campo contro la base: cambiato da una parte sola → quella; da tutte e due (o senza base) →
-        /// la riga vincente, e per i campi <see cref="SyncFieldKind.Text"/> la regola B tiene tutte e due le versioni.
-        /// <c>last_edited_device_name</c> segue il testo: dice chi ha scritto la versione in cima.
-        /// Torna i campi da scrivere (pubblici), <c>updated_at_ms</c> compreso se cambia.</summary>
-        private (Dictionary<string, JsonElement> Changes, bool KeptLocal) MergeFields(
+        /// <summary>Ruling 20: campo per campo con l'ora di ciascun campo (<c>sync_field_ms</c> / <c>_field_ms</c>); a parità
+        /// vince il valore con la forma canonica minore. Per i campi <see cref="SyncFieldKind.Text"/> cambiati da tutte e
+        /// due le parti rispetto alla base (o senza base) vale la regola B. <c>last_edited_device_name</c> segue il testo
+        /// (valore e ora). L'ora della riga è il massimo delle ore dei suoi campi.</summary>
+        private (Dictionary<string, JsonElement> Changes, long NewRowMs) MergeFields(
             SyncEntity entity, IReadOnlyDictionary<string, JsonElement> l, Dictionary<string, JsonElement> r,
-            Dictionary<string, JsonElement>? b, bool remoteWins, long lms, long rms, (bool TookRemote, bool KeptLocal) photo,
-            bool? dominant)
+            IReadOnlyDictionary<string, long> rFieldMs, Dictionary<string, JsonElement>? b,
+            long lms, long rms, Dictionary<string, long> mergedFieldMs)
         {
             var changes = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-            var keptLocal = photo.KeptLocal;
             bool? textFromRemote = null; // nel catalogo il campo Text viene prima di last_edited_device_name
+            long textMs = 0;
+
             foreach (var field in entity.Fields)
             {
                 var name = field.PublicName;
-                if (field.Kind == SyncFieldKind.Photo || name == Ms || !r.TryGetValue(name, out var rv)) continue;
-                var lv = l[name];
-                if (JsonElement.DeepEquals(lv, rv)) continue;
+                if (field.Kind == SyncFieldKind.Photo || name == Ms || entity.KeyColumns.Contains(field.Column)
+                    || !r.TryGetValue(name, out var rv))
+                    continue;
 
-                bool useRemote;
-                JsonElement bv = default;
-                var hasBase = b is not null && b.TryGetValue(name, out bv);
-                var localChanged = !hasBase || !JsonElement.DeepEquals(lv, bv);
-                var remoteChanged = !hasBase || !JsonElement.DeepEquals(rv, bv);
-                if (dominant is bool remoteDominates)
+                var lv = l[name];
+                var lf = mergedFieldMs[name];
+                var rf = rFieldMs.TryGetValue(name, out var rfm) ? rfm : rms;
+
+                if (name == DeviceName && textFromRemote is bool fromRemote)
                 {
-                    // Una parte ha già visto tutto quello che l'altra ha (DominantAsync): la sua riga decide ogni campo.
-                    useRemote = remoteDominates;
+                    mergedFieldMs[name] = textMs;
+                    if (fromRemote && !JsonElement.DeepEquals(lv, rv))
+                        changes[name] = rv;
+                    continue;
                 }
-                else if (field.Kind == SyncFieldKind.Text && localChanged && remoteChanged)
+
+                if (JsonElement.DeepEquals(lv, rv))
                 {
-                    var (fromRemote, merged) = MergeText(lv, rv, l, r, remoteWins, lms, rms);
-                    textFromRemote = fromRemote;
-                    if (merged is null)
+                    mergedFieldMs[name] = Math.Max(lf, rf);
+                    continue;
+                }
+
+                if (field.Kind == SyncFieldKind.Text)
+                {
+                    JsonElement bv = default;
+                    var hasBase = b is not null && b.TryGetValue(name, out bv);
+                    // Una parte che ha solo pezzi già visti (nella base o dall'altra parte) non ha scritto niente di
+                    // nuovo: ha tolto qualcosa, per esempio i blocchi di un testo unito. Decide l'ora, non la regola B
+                    // (che altrimenti rimetterebbe i blocchi tolti con una base vecchia).
+                    var localChanged = !hasBase || (!JsonElement.DeepEquals(lv, bv) && !TextConflictBlock.Covers(Str(bv), Str(rv), Str(lv)));
+                    var remoteChanged = !hasBase || (!JsonElement.DeepEquals(rv, bv) && !TextConflictBlock.Covers(Str(bv), Str(lv), Str(rv)));
+                    if (localChanged && remoteChanged)
                     {
-                        useRemote = fromRemote;
-                    }
-                    else
-                    {
-                        // Un testo nuovo, diverso dalla remota: conta come un valore di qui (ora massimo + 1).
-                        changes[name] = JsonSerializer.SerializeToElement(merged);
-                        keptLocal = true;
+                        var remoteTextWins = rf > lf || (rf == lf && CompareCanonicalValue(rv, lv) < 0);
+                        var (topFromRemote, merged) = MergeText(lv, rv, l, r, remoteTextWins, lf, rf);
+                        textFromRemote = topFromRemote;
+                        if (merged is null)
+                        {
+                            textMs = topFromRemote ? rf : lf;
+                            mergedFieldMs[name] = textMs;
+                            if (topFromRemote)
+                                changes[name] = rv;
+                        }
+                        else
+                        {
+                            textMs = Math.Max(lf, rf) + 1;
+                            mergedFieldMs[name] = textMs;
+                            changes[name] = JsonSerializer.SerializeToElement(merged);
+                        }
                         continue;
                     }
                 }
-                else if (name == DeviceName && textFromRemote is bool fromRemote)
-                {
-                    useRemote = fromRemote;
-                }
-                else if (hasBase)
-                {
-                    useRemote = localChanged == remoteChanged ? remoteWins : remoteChanged;
-                    if (field.Kind == SyncFieldKind.Text) textFromRemote = useRemote;
-                }
-                else
-                {
-                    // ponytail: senza base (prima unione con questo pari) vince la riga intera più recente: due modifiche
-                    // a campi diversi della stessa riga fatte prima della prima unione ne perdono una (spec §8.4). Rimedio
-                    // se l'uso lo mostra: un'ora per campo in una tabella locale, scritta nel formato (versione minore).
-                    useRemote = remoteWins;
-                }
 
-                if (useRemote) changes[name] = rv;
-                else keptLocal = true;
+                var useRemote = rf > lf || (rf == lf && CompareCanonicalValue(rv, lv) < 0);
+                var winMs = useRemote ? rf : lf;
+                mergedFieldMs[name] = winMs;
+                if (useRemote)
+                    changes[name] = rv;
+                if (field.Kind == SyncFieldKind.Text)
+                {
+                    textFromRemote = useRemote;
+                    textMs = winMs;
+                }
             }
 
-            // Uguale alla remota → il massimo delle due ore. Diversa dalla remota (ha tenuto qualcosa di qui, o un testo
-            // unito con la regola B): deve battere tutte e due le versioni anche dove manca la base, quindi resta l'ora
-            // locale solo se è già la più recente, altrimenti massimo + 1. Le foto contano come i campi.
-            var tookRemote = changes.Count > 0 || photo.TookRemote;
-            var ms = !keptLocal ? Math.Max(lms, rms) : !tookRemote && lms > rms ? lms : Math.Max(lms, rms) + 1;
-            if (ms != lms) changes[Ms] = JsonSerializer.SerializeToElement(ms);
-            return (changes, keptLocal);
+            var newRowMs = mergedFieldMs.Count > 0
+                ? Math.Max(lms, mergedFieldMs.Values.Max())
+                : Math.Max(lms, rms);
+            if (newRowMs != lms)
+                changes[Ms] = JsonSerializer.SerializeToElement(newRowMs);
+            return (changes, newRowMs);
         }
 
-        /// <summary>Ruling 16: la riga remota è cambiata dalla base, ma un campo uguale alla base può voler dire "non
-        /// toccato" o "visto il nostro e rimesso com'era" (ABA). Decide chi ha già visto tutto quello che ha l'altro:
-        /// <list type="bullet">
-        /// <item><c>false</c>: la riga remota è uno stato che avevamo noi dopo l'ultima unione con questo pari (hash).</item>
-        /// <item><c>true</c>: il pari ha visto la nostra versione (<see cref="RemoteSawAsync"/>); oppure la nostra riga è
-        /// ancora quella uscita dall'ultima unione con lui, fatta di cose sue e della nostra versione di prima, che a quel
-        /// punto aveva già visto, e la sua riga è più recente di quell'unione (se no è la sua unione parallela alla
-        /// nostra, con le stesse informazioni, e decidono le regole dei campi).</item>
-        /// <item><c>null</c>: nessuna delle due; vale la regola dei campi contro la base.</item>
-        /// </list></summary>
-        private async Task<bool?> DominantAsync(
-            SyncEntity entity, string id, Dictionary<string, JsonElement> r, long lms, Dictionary<string, JsonElement> b)
-        {
-            if (b.TryGetValue(LocalHashKey, out var hash) && hash.GetString() == RowHash(r, r.Keys)) return false;
-            if (_seenUntil is long seen && b.TryGetValue(LocalMsKey, out var bl) && bl.GetInt64() == lms
-                && b.TryGetValue(PreKey, out var pre) && pre.GetInt64() <= seen && r[Ms].GetInt64() > lms)
-                return true;
-            return await RemoteSawAsync(entity, id, lms).ConfigureAwait(false) ? true : null;
-        }
-
-        /// <summary>Vero se il pari ha unito un nostro file che conteneva già la nostra versione della riga: non è
-        /// cambiata dopo il <c>written_at_ms</c> che il pari dichiara in <c>merged_from</c>. Senza <c>merged_from</c> per
-        /// noi: falso.</summary>
+        /// <summary>Vero se il pari ha unito un nostro file che conteneva già la nostra versione della riga: usata solo da
+        /// <see cref="SalvageTextAsync"/> (regola 4). Senza <c>merged_from</c> per noi: falso.</summary>
         private async Task<bool> RemoteSawAsync(SyncEntity entity, string id, long lms) =>
             _seenUntil is long seen && await LastChangeAsync(entity, id, lms).ConfigureAwait(false) <= seen;
 
-        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/>: l'ora dell'unione che
-        /// l'ha prodotta (una base la porta solo se quell'unione ha cambiato la riga, e la porta avanti finché la riga
-        /// non cambia); altrimenti è una modifica fatta qui, e la sua ora è <paramref name="lms"/> più
-        /// <see cref="SeenMarginMs"/>.</summary>
+        /// <summary>Quando (orologio di qui) la riga ha preso la versione <paramref name="lms"/> (usata solo da
+        /// <see cref="SalvageTextAsync"/>, regola 4): l'ora dell'unione che l'ha prodotta; altrimenti è una modifica
+        /// fatta qui e la sua ora è <paramref name="lms"/> più <see cref="SeenMarginMs"/>.</summary>
         // ponytail: una riga presa da un pari la cui base poi sparisce torna a lms, l'ora di un altro orologio. Succede
         // solo dopo un ripristino, che rigenera device_id: allora merged_from per noi manca e questa ora non si usa.
         private async Task<long> LastChangeAsync(SyncEntity entity, string id, long lms) =>
@@ -370,21 +363,16 @@ public static class SyncMerger
                 $"WHERE entity = @e AND entity_id = @id AND json_extract(row_json, '$.{LocalMsKey}') = @ms",
                 ("@e", entity.PublicName), ("@id", id), ("@ms", lms)).ConfigureAwait(false) is long at ? at : lms + SeenMarginMs;
 
-        private static string RowHash(Dictionary<string, JsonElement> row, IEnumerable<string> fields) =>
-            Convert.ToHexStringLower(SHA256.HashData(SyncRowCodec.Canonical(
-                new SyncRow("", fields.Where(row.ContainsKey).ToDictionary(k => k, k => row[k], StringComparer.Ordinal)))));
-
-
         /// <summary>Regola B per un testo cambiato da tutte e due le parti (o senza base): il vincente con in coda il
         /// perdente. Se il risultato è già una delle due versioni (una contiene l'altra, anche come testo in cima a una
         /// voce già unita) torna da che parte stare e nessun testo nuovo.</summary>
         private (bool FromRemote, string? Merged) MergeText(
             JsonElement lv, JsonElement rv, IReadOnlyDictionary<string, JsonElement> l, Dictionary<string, JsonElement> r,
-            bool remoteWins, long lms, long rms)
+            bool remoteWins, long lf, long rf)
         {
             var (winner, loser) = remoteWins ? (Str(rv), Str(lv)) : (Str(lv), Str(rv));
             var loserDevice = remoteWins ? l.GetValueOrDefault(DeviceName) : r.GetValueOrDefault(DeviceName);
-            var merged = TextConflictBlock.Merge(winner, loser, NullableStr(loserDevice), remoteWins ? lms : rms, clock.LocalTimeZone);
+            var merged = TextConflictBlock.Merge(winner, loser, NullableStr(loserDevice), remoteWins ? lf : rf, clock.LocalTimeZone);
             if (merged == winner) return (remoteWins, null);
             if (merged == loser) return (!remoteWins, null);
             _textConflicts++;
@@ -509,26 +497,34 @@ public static class SyncMerger
             return _codec.ToPublic(entity, dbRow).Fields;
         }
 
-        /// <summary>Le foto: viaggiano a parte, una per volta. Nella base si salva lo SHA-256 (esadecimale minuscolo)
-        /// di ogni foto presente nel file. Una foto che il file non porta (o un originale con <c>receivePhotos</c>
-        /// spento) non è un cambiamento; una foto che qui manca si riempie da quella remota.</summary>
-        private async Task<(bool TookRemote, bool KeptLocal)> MergePhotosAsync(
-            SyncEntity entity, string id, Dictionary<string, JsonElement> r, bool inserted, bool remoteWins, long rms,
-            Dictionary<string, JsonElement>? b, Dictionary<string, JsonElement> newBase, bool? dominant)
+        /// <summary>Le foto: viaggiano a parte, una per volta, con la stessa regola per ora di campo (Ruling 20) e
+        /// l'hash SHA-256 (esadecimale minuscolo) come valore. Una foto che il file non porta (o un originale con
+        /// <c>receivePhotos</c> spento) non è un cambiamento; una foto che qui manca si riempie da quella remota.</summary>
+        private async Task<bool> MergePhotosAsync(
+            SyncEntity entity, string id, Dictionary<string, JsonElement> r, bool inserted, long rms,
+            IReadOnlyDictionary<string, long> rFieldMs, Dictionary<string, long>? mergedFieldMs,
+            Dictionary<string, JsonElement>? b, Dictionary<string, JsonElement> newBase)
         {
             var wrote = false;
-            var keptLocal = false;
             var unchangedSinceBase = b is not null && b.TryGetValue(Ms, out var bms) && bms.GetInt64() == rms;
             foreach (var field in entity.Fields.Where(f => f.Kind == SyncFieldKind.Photo))
             {
                 var thumbnail = field.PublicName == "thumbnail"; // l'altra colonna Photo (content) è l'originale
                 if (!thumbnail && !receivePhotos) continue;
+
+                var lf = !inserted ? mergedFieldMs![field.PublicName] : 0;
+                var rf = rFieldMs.TryGetValue(field.PublicName, out var rfm) ? rfm : rms;
+
                 // La riga remota è quella della base (stessa ora) e qui la foto c'è: niente da leggere né da hashare.
                 if (!inserted && unchangedSinceBase && await LocalPhotoPresentAsync(entity, field, r).ConfigureAwait(false))
                 {
                     if (b!.TryGetValue(field.PublicName, out var oldHash)) newBase[field.PublicName] = oldHash;
                     continue;
                 }
+
+                // L'ora locale della foto è più recente e qui la foto c'è: niente da leggere.
+                if (!inserted && rf < lf && await LocalPhotoPresentAsync(entity, field, r).ConfigureAwait(false))
+                    continue;
 
                 var stream = remote.OpenPhoto(id, thumbnail);
                 if (stream is null) continue;
@@ -546,16 +542,19 @@ public static class SyncMerger
                 if (!inserted)
                 {
                     var localHash = await LocalPhotoHashAsync(entity, field, r).ConfigureAwait(false);
-                    if (localHash == remoteHash) continue;
-                    var useRemote = localHash is null
-                        || (dominant ?? (b is not null && b.TryGetValue(field.PublicName, out var bh)
-                            ? localHash == bh.GetString() || (remoteHash != bh.GetString() && remoteWins)
-                            : remoteWins));
-                    if (!useRemote)
+                    if (localHash == remoteHash)
                     {
-                        keptLocal = true;
+                        mergedFieldMs![field.PublicName] = Math.Max(lf, rf);
                         continue;
                     }
+
+                    if (localHash is not null)
+                    {
+                        var useRemote = rf > lf || (rf == lf && StringComparer.Ordinal.Compare(remoteHash, localHash) < 0);
+                        if (!useRemote) continue;
+                    }
+
+                    mergedFieldMs![field.PublicName] = rf;
                 }
 
                 var (where, keys) = KeyWhere(entity, r);
@@ -563,7 +562,7 @@ public static class SyncMerger
                 wrote = true;
             }
 
-            return (wrote, keptLocal);
+            return wrote;
         }
 
         private async Task<bool> LocalPhotoPresentAsync(SyncEntity entity, SyncField field, Dictionary<string, JsonElement> r)
@@ -711,14 +710,30 @@ public static class SyncMerger
                 ? ms
                 : throw new SyncFormatException($"Row '{entity.PublicName}.{row.Id}' has no integer '{Ms}'.");
 
-        /// <summary>Spareggio (formato §5): forma canonica minore, sui soli campi che le due righe hanno entrambe, così
-        /// due dispositivi di versioni minori diverse decidono allo stesso modo.</summary>
-        private static int CompareCanonical(Dictionary<string, JsonElement> r, IReadOnlyDictionary<string, JsonElement> l)
+        private static bool FieldMsDiffers(
+            IReadOnlyDictionary<string, long> current,
+            List<KeyValuePair<string, long>> desired) =>
+            current.Count != desired.Count || desired.Any(kv => !current.TryGetValue(kv.Key, out var ms) || ms != kv.Value);
+
+        private async Task WriteFieldMsAsync(string entityPublicName, string id, IEnumerable<KeyValuePair<string, long>> entries)
         {
-            var common = r.Keys.Where(l.ContainsKey).ToList();
-            var rc = SyncRowCodec.Canonical(new SyncRow("", common.ToDictionary(k => k, k => r[k])));
-            var lc = SyncRowCodec.Canonical(new SyncRow("", common.ToDictionary(k => k, k => l[k])));
-            return rc.AsSpan().SequenceCompareTo(lc);
+            await ExecAsync("DELETE FROM sync_field_ms WHERE entity = @e AND entity_id = @id",
+                ("@e", entityPublicName), ("@id", id)).ConfigureAwait(false);
+            foreach (var (field, ms) in entries)
+            {
+                await ExecAsync(
+                    "INSERT INTO sync_field_ms (entity, entity_id, field, ms) VALUES (@e, @id, @f, @ms)",
+                    ("@e", entityPublicName), ("@id", id), ("@f", field), ("@ms", ms)).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>Spareggio per campo (Ruling 20, formato §5 punto 3): confronto ordinale dei byte UTF-8 del testo
+        /// canonico del valore.</summary>
+        private static int CompareCanonicalValue(JsonElement a, JsonElement b)
+        {
+            var ab = Encoding.UTF8.GetBytes(SyncRowCodec.CanonicalValue(a));
+            var bb = Encoding.UTF8.GetBytes(SyncRowCodec.CanonicalValue(b));
+            return ab.AsSpan().SequenceCompareTo(bb);
         }
 
         private static string Identity(SyncEntity entity, string? alias)

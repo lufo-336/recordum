@@ -493,6 +493,113 @@ public sealed class SyncArchiveTests
         text.Should().Contain("è").And.NotContain("\\u00E8").And.NotContain("\\u00e8");
     }
 
+    [Theory]
+    [InlineData("123")]
+    [InlineData("[]")]
+    [InlineData("null")]
+    public async Task FieldMsRejectsNonObject(string fieldMsJson) =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+            InjectFieldMs(bytes, fieldMsJson));
+
+    [Theory]
+    [InlineData("-1")]
+    [InlineData("\"100\"")]
+    [InlineData("1.5")]
+    [InlineData("true")]
+    [InlineData("null")]
+    public async Task FieldMsRejectsNonNonNegativeInteger(string valueJson) =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+            InjectFieldMs(bytes, $"{{\"name\":{valueJson}}}"));
+
+    [Fact]
+    public async Task FieldMsRejectsTimestampExceedingRowUpdatedAtMs() =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+            InjectFieldMs(bytes, "{\"name\":999999999999999}"));
+
+    [Fact]
+    public async Task FieldMsIgnoresUnknownUpdatedAtMsAndKeyNames()
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zip, DefaultOptions());
+
+        zip.Position = 0;
+        using (var editZip = new ZipArchive(zip, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            var entry = editZip.GetEntry("data/tag.jsonl")!;
+            byte[] bytes;
+            using (var s = entry.Open())
+            using (var ms = new MemoryStream())
+            {
+                await s.CopyToAsync(ms);
+                bytes = ms.ToArray();
+            }
+
+            entry.Delete();
+            using var outStream = editZip.CreateEntry("data/tag.jsonl").Open();
+            outStream.Write(InjectFieldMs(bytes, "{\"future_field\":1,\"id\":1,\"updated_at_ms\":1,\"color\":2}"));
+        }
+
+        zip.Position = 0;
+        using var snapshot = SyncArchiveReader.Open(zip);
+        var row = snapshot.Rows["tag"].Single(r => r.Id == SyncSeed.Stored(SyncSeed.TagId));
+        row.FieldMs.Should().Equal(new Dictionary<string, long> { ["color"] = 2 });
+        row.Fields.Should().NotContainKey("_field_ms");
+    }
+
+    [Fact]
+    public async Task FieldMsRoundTripWriteAndRead()
+    {
+        var clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(1_000));
+        await using var fx = new DbFixture(clock);
+        var tagId = new Guid("ABCDEF01-0000-0000-0000-000000000077");
+        var cleanId = new Guid("ABCDEF01-0000-0000-0000-000000000078");
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.Tags.Add(new Tag { Id = tagId, Name = "initial", Color = "#111111" });
+            db.Tags.Add(new Tag { Id = cleanId, Name = "clean", Color = "#222222" });
+            await db.SaveChangesAsync();
+        }
+
+        clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(2_000));
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            (await db.Tags.SingleAsync(t => t.Id == tagId)).Name = "renamed";
+            await db.SaveChangesAsync();
+        }
+
+        await using var readDb = await fx.Factory.CreateDbContextAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(readDb, zip, DefaultOptions(writtenAtMs: 2_000));
+
+        zip.Position = 0;
+        using (var raw = new ZipArchive(zip, ZipArchiveMode.Read, leaveOpen: true))
+        using (var r = new StreamReader(raw.GetEntry("data/tag.jsonl")!.Open(), Encoding.UTF8))
+        {
+            var lines = (await r.ReadToEndAsync()).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var editedLine = lines.Single(l => l.Contains(SyncSeed.Stored(tagId), StringComparison.Ordinal));
+            var cleanLine = lines.Single(l => l.Contains(SyncSeed.Stored(cleanId), StringComparison.Ordinal));
+            editedLine.Should().EndWith("\"_field_ms\":{\"color\":1000,\"created_at\":1000}}");
+            cleanLine.Should().NotContain("_field_ms");
+        }
+
+        zip.Position = 0;
+        using var snapshot = SyncArchiveReader.Open(zip);
+        var editedRow = snapshot.Rows["tag"].Single(r => r.Id == SyncSeed.Stored(tagId));
+        editedRow.FieldMs.Should().Equal(new Dictionary<string, long> { ["color"] = 1_000, ["created_at"] = 1_000 });
+        editedRow.Fields.Should().NotContainKey("_field_ms");
+        snapshot.Rows["tag"].Single(r => r.Id == SyncSeed.Stored(cleanId)).FieldMs.Should().BeEmpty();
+    }
+
+    private static byte[] InjectFieldMs(byte[] jsonlBytes, string fieldMsJson)
+    {
+        var lines = Encoding.UTF8.GetString(jsonlBytes).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        lines[0] = lines[0].TrimEnd()[..^1] + $",\"_field_ms\":{fieldMsJson}}}";
+        return Encoding.UTF8.GetBytes(string.Join('\n', lines) + "\n");
+    }
+
     private static async Task AssertEditRejectedAsync(string entryName, Func<byte[], byte[]> edit)
     {
         await using var fx = new DbFixture();

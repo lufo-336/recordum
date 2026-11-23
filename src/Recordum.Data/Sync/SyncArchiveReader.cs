@@ -145,6 +145,9 @@ public static class SyncArchiveReader
     {
         var rows = new List<SyncRow>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
+        var timedFieldNames = entity is null
+            ? null
+            : SyncCatalog.TimedFields(entity).Select(f => f.PublicName).ToHashSet(StringComparer.Ordinal);
         using var stream = entry.Open();
         using var reader = new StreamReader(stream, StrictUtf8, detectEncodingFromByteOrderMarks: false);
 
@@ -184,9 +187,13 @@ public static class SyncArchiveReader
                 {
                     if (!keepIdInFields && string.Equals(prop.Name, "id", StringComparison.Ordinal))
                         continue;
+                    if (string.Equals(prop.Name, "_field_ms", StringComparison.Ordinal))
+                        continue;
 
                     fields[prop.Name] = prop.Value.Clone();
                 }
+
+                var fieldMs = ReadFieldMs(root, timedFieldNames, entry.FullName, lineNumber);
 
                 if (!ids.Add(id))
                     throw new SyncFormatException($"Duplicate id '{id}' in '{entry.FullName}' at line {lineNumber}.");
@@ -194,11 +201,48 @@ public static class SyncArchiveReader
                 if (entity is not null)
                     CheckIdMatchesKey(entity, id, root, entry.FullName, lineNumber);
 
-                rows.Add(new SyncRow(id, fields));
+                rows.Add(new SyncRow(id, fields) { FieldMs = fieldMs });
             }
         }
 
         return rows;
+    }
+
+    private static Dictionary<string, long> ReadFieldMs(
+        JsonElement root,
+        HashSet<string>? timedFieldNames,
+        string file,
+        int lineNumber)
+    {
+        var result = new Dictionary<string, long>(StringComparer.Ordinal);
+        if (!root.TryGetProperty("_field_ms", out var fieldMsProp))
+            return result;
+
+        if (fieldMsProp.ValueKind != JsonValueKind.Object)
+            throw new SyncFormatException($"Invalid '_field_ms' in '{file}' at line {lineNumber}: expected JSON object.");
+
+        long? rowMs = root.TryGetProperty("updated_at_ms", out var rowMsProp)
+            && rowMsProp.ValueKind == JsonValueKind.Number
+            && rowMsProp.TryGetInt64(out var parsedRowMs)
+            ? parsedRowMs
+            : null;
+
+        foreach (var prop in fieldMsProp.EnumerateObject())
+        {
+            if (prop.Value.ValueKind != JsonValueKind.Number || !prop.Value.TryGetInt64(out var ms) || ms < 0)
+                throw new SyncFormatException($"Invalid '_field_ms.{prop.Name}' in '{file}' at line {lineNumber}: expected non-negative integer.");
+
+            if (rowMs is null)
+                throw new SyncFormatException($"Missing integer 'updated_at_ms' for '_field_ms' in '{file}' at line {lineNumber}.");
+
+            if (ms > rowMs.Value)
+                throw new SyncFormatException($"Invalid '_field_ms.{prop.Name}' in '{file}' at line {lineNumber}: timestamp {ms} exceeds 'updated_at_ms' ({rowMs.Value}).");
+
+            if (timedFieldNames is not null && timedFieldNames.Contains(prop.Name))
+                result[prop.Name] = ms;
+        }
+
+        return result;
     }
 
     // L'id di riga e' la chiave composta dai valori dei campi chiave uniti con '|'.

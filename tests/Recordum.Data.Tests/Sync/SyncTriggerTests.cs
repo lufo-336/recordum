@@ -205,8 +205,60 @@ public sealed class SyncTriggerTests
             while (await reader.ReadAsync()) triggers.Add((reader.GetString(0), reader.GetString(1)));
 
         var expected = SyncCatalog.Entities
-            .SelectMany(e => new[] { ($"trg_sync_del_{e.Table}", e.Table), ($"trg_sync_upd_{e.Table}", e.Table) });
+            .SelectMany(e => new[]
+            {
+                ($"trg_sync_del_{e.Table}", e.Table),
+                ($"trg_sync_upd_{e.Table}", e.Table),
+                ($"trg_sync_ins_{e.Table}", e.Table),
+            })
+            .Concat(SyncCatalog.Entities
+                .Where(e => SyncCatalog.TimedFields(e).Count > 0)
+                .Select(e => ($"trg_sync_fms_{e.Table}", e.Table)));
         triggers.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task NonTravellingSettingUpdateLeavesNoFieldMs()
+    {
+        var clock = ClockAt(1_000);
+        await using var fx = new DbFixture(clock);
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.AppSettings.Add(new AppSetting { Key = "home.rows", Value = "compact" });
+            await db.SaveChangesAsync();
+        }
+
+        clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(2_000));
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            await db.AppSettings.Where(s => s.Key == "home.rows")
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Value, "relaxed"));
+            (await db.SyncFieldMs.AsNoTracking().ToListAsync()).Should().BeEmpty();
+        }
+    }
+
+    [Fact]
+    public async Task ApplyingSuppressesFieldMs()
+    {
+        var clock = ClockAt(1_000);
+        await using var fx = new DbFixture(clock);
+        var (_, pause) = await SeedPauseAsync(fx);
+
+        clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(2_000));
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        var state = SyncConnectionState.For(db.Database.GetDbConnection());
+        state.Applying = true;
+        try
+        {
+            await db.StreakPauses.Where(p => p.Id == pause.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Reason, "from-sync"));
+        }
+        finally
+        {
+            state.Applying = false;
+        }
+
+        (await db.SyncFieldMs.AsNoTracking().ToListAsync()).Should().BeEmpty();
     }
 
     [Fact]

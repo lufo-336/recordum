@@ -256,26 +256,31 @@ public sealed class SyncRowCodec
         using var ms = new MemoryStream();
         foreach (var (name, nameBytes) in names)
         {
-            var el = row.Fields[name];
-            var value = el.ValueKind switch
-            {
-                JsonValueKind.String => el.GetString()!,
-                JsonValueKind.Number => el.TryGetInt64(out var l)
-                    ? l.ToString(CultureInfo.InvariantCulture)
-                    : el.GetDouble().ToString("R", CultureInfo.InvariantCulture),
-                JsonValueKind.True => "true",
-                JsonValueKind.False => "false",
-                JsonValueKind.Null => "null",
-                _ => el.GetRawText(),
-            };
             ms.Write(nameBytes);
             ms.WriteByte(0);
-            ms.Write(utf8.GetBytes(value));
+            ms.Write(utf8.GetBytes(CanonicalValue(row.Fields[name])));
             ms.WriteByte(0);
         }
 
         return ms.ToArray();
     }
+
+    /// <summary>
+    /// Testo canonico di un solo valore (formato §5 punto 3): lo spareggio di un campo a parità d'ora (Ruling 20)
+    /// confronta i byte UTF-8 di questo testo, ordinale.
+    /// </summary>
+    public static string CanonicalValue(JsonElement value) =>
+        value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString()!,
+            JsonValueKind.Number => value.TryGetInt64(out var l)
+                ? l.ToString(CultureInfo.InvariantCulture)
+                : value.GetDouble().ToString("R", CultureInfo.InvariantCulture),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Null => "null",
+            _ => value.GetRawText(),
+        };
 
     private static string FormatRawAsString(object rawValue) =>
         rawValue switch

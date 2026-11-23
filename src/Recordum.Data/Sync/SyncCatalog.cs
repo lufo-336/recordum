@@ -80,6 +80,16 @@ public static class SyncCatalog
         "schema_version",
     };
 
+    /// <summary>Ruling 20: i campi che hanno un'ora propria (<c>sync_field_ms</c>, <c>_field_ms</c> nel formato): tutti
+    /// tranne <c>updated_at_ms</c> e le colonne chiave, foto comprese.</summary>
+    public static IReadOnlyList<SyncField> TimedFields(SyncEntity entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        return entity.Fields
+            .Where(f => f.PublicName != "updated_at_ms" && !entity.KeyColumns.Contains(f.Column))
+            .ToList();
+    }
+
     public static SyncEntity Get(string publicName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(publicName);

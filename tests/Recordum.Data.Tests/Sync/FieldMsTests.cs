@@ -68,7 +68,7 @@ public sealed class FieldMsTests
         after2.Should().ContainKey("icon").WhoseValue.Should().Be(1_000, "an untouched field keeps its first time");
 
         await using (var db = await fx.Factory.CreateDbContextAsync())
-            await db.Database.ExecuteSqlRawAsync("DELETE FROM habit_node WHERE id = {0}", Id(H));
+            await db.HabitNodes.IgnoreQueryFilters().Where(n => n.Id == H).ExecuteDeleteAsync();
         (await FieldMsAsync(fx.Factory, "habit_node", H)).Should().BeEmpty("a deleted row leaves no field times");
     }
 

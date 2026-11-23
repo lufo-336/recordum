@@ -20,8 +20,8 @@ public sealed class SyncConvergenceTests
 
     private static readonly string[] AllOrders = ["abc", "acb", "bac", "bca", "cab", "cba"];
 
-    /// <summary>Ruling 16, ABA su un campo semplice: B adotta il valore di A e poi rimette il suo. Ha visto il valore di A,
-    /// quindi la sua decisione vince ovunque, in ogni ordine, e le ore si fermano.</summary>
+    /// <summary>Ruling 20, ABA su un campo semplice: B adotta il valore di A e poi rimette il suo con un'ora più
+    /// recente, quindi vince ovunque, in ogni ordine, e le ore si fermano.</summary>
     [Theory]
     [InlineData("a-first")]
     [InlineData("b-first")]
@@ -150,8 +150,7 @@ public sealed class SyncConvergenceTests
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
     }
 
-    /// <summary>Con la base fra ogni coppia, i valori dei campi non dipendono dall'ordine dei file (le ore di modifica
-    /// possono: una riga combinata prende max+1 dove capita la combinazione).</summary>
+    /// <summary>Con il Ruling 20 i valori dei campi e le loro ore convergono in qualsiasi ordine.</summary>
     [Fact]
     public async Task ThreeDevicesConvergeInAnyOrder()
     {
@@ -215,8 +214,8 @@ public sealed class SyncConvergenceTests
         return (await a.CanonicalDumpAsync(), facts);
     }
 
-    /// <summary>Senza base (§8.4) l'ordine può cambiare quale modifica concorrente della stessa riga resta, ma in
-    /// nessun ordine si perde una riga o torna una cancellata.</summary>
+    /// <summary>Anche senza base (Ruling 20) in nessun ordine si perde una riga o una modifica a un campo diverso,
+    /// né torna una cancellata.</summary>
     [Fact]
     public async Task WithoutBaseNoRowIsLostInAnyOrder()
     {

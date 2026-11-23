@@ -245,10 +245,7 @@ dispositivo. Tabella locale `sync_base` (non viaggia): per (`peer_device_id`, `e
 o dei campi rilevanti all'ultima unione. Senza base (prima unione con quel dispositivo) le differenze di testo si
 trattano come conflitto (nessun testo scartato).
 
-Senza base, per i campi **non di testo** si ricade sull'intera riga "vince la più recente" (*mia scelta*): due
-modifiche a campi diversi della stessa riga fatte su due dispositivi prima di un'unione ne perdono una. È raro
-(richiede modifiche concorrenti alla stessa riga) e non tocca testo; se l'uso lo mostra, il rimedio è un'ora per campo
-tenuta in una tabella locale e scritta nel formato (versione minore). `ponytail:` nel codice.
+Fatto (Ruling 20): ogni campo ha la sua ora nella tabella locale `sync_field_ms` e nel formato (`_field_ms`), quindi anche senza base le modifiche a campi diversi restano entrambe e un ritorno al valore di prima vince ovunque.
 
 La base è la riga **remota** com'era all'ultima unione (forma pubblica; le foto come SHA-256). Una riga remota con
 `updated_at_ms` minore di quello della base viene da un file vecchio dello stesso dispositivo e si ignora. (corretto il

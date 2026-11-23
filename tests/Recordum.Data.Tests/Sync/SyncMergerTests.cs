@@ -128,7 +128,7 @@ public sealed class SyncMergerTests
     public async Task CombinedRowWinsOnPeerWithoutBase()
     {
         // A ha la base per B, B non ce l'ha per A (non ha mai letto il file di A). A combina un campo suo e uno di B:
-        // la riga combinata deve battere la versione di B anche da B, che non ha base e decide a riga intera.
+        // con le ore per campo (Ruling 20) la riga combinata vince anche da B senza base.
         await using var a = new SyncDevice("a");
         await using var b = new SyncDevice("b");
         await using var c = new SyncDevice("c");
@@ -151,7 +151,7 @@ public sealed class SyncMergerTests
     }
 
     [Fact]
-    public async Task WithoutBaseNewerRowWins()
+    public async Task WithoutBaseBothFieldEditsSurvive()
     {
         await using var a = new SyncDevice("a");
         await using var b = new SyncDevice("b");
@@ -167,7 +167,7 @@ public sealed class SyncMergerTests
         {
             var h = await HabitAsync(d, H);
             h!.Name.Should().Be("Walk");
-            h.Color.Should().Be("#808080", "without a base the whole newer row wins (the documented ceiling)");
+            h.Color.Should().Be("#111111", "with per-field timestamps (Ruling 20), both field edits survive even without a base");
         }
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
     }
