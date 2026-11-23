@@ -9,7 +9,7 @@ using Recordum.Presentation.Services;
 
 namespace Recordum.Presentation.ViewModels.Backup;
 
-// ponytail: sync optional until ISyncService is registered (Task 9)
+// ISyncService? resta opzionale perché la shell WPF congelata (ServiceRegistrar) risolve RestoreDialogViewModel senza unione.
 public sealed partial class RestoreDialogViewModel(IRestoreService restore, IOpenFileDialog openDialog, ISyncService? sync = null) : ObservableObject
 {
     [ObservableProperty] private string _sourcePath = string.Empty;

@@ -111,7 +111,7 @@ public static class SyncArchiveReader
         }
 
         if (major != SupportedMajorVersion)
-            throw new SyncFormatException($"Unsupported major format_version '{formatVersion}'.");
+            throw new SyncFormatException($"Unsupported major format_version '{formatVersion}'.", isNewerMajorVersion: true);
     }
 
     private static Dictionary<string, IReadOnlyList<SyncRow>> ReadAllEntityRows(ZipArchive archive)

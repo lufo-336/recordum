@@ -5,6 +5,7 @@ using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Backup;
 using Recordum.Data.Interceptors;
 using Recordum.Data.Security;
+using Recordum.Data.Sync;
 using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Data.Backup;
@@ -19,7 +20,8 @@ public sealed class RestoreService(
     IPluginManager plugins,
     IClock clock,
     DatabaseGate gate,
-    TimeSpan? quiesceTimeout = null) : IRestoreService
+    TimeSpan? quiesceTimeout = null,
+    DeviceIdentity? deviceIdentity = null) : IRestoreService
 {
     /// <summary>Quanto il restore aspetta che gli altri utenti del database chiudano le connessioni (F2c-2).</summary>
     public static readonly TimeSpan DefaultQuiesceTimeout = TimeSpan.FromSeconds(10);
@@ -28,6 +30,7 @@ public sealed class RestoreService(
     // version is read from the DB at runtime (see GetCurrentSchemaVersionAsync). Keep aligned
     // with AppSettingSeed's schema_version so it never drifts stale (same class of issue as CR8).
     private const string FallbackSchemaVersion = "2.15";
+    private static readonly string[] SyncTablesToClear = ["sync_meta", "sync_base"];
 
     public async Task<RestorePreview> PreviewAsync(string sourcePath, string passphrase, CancellationToken ct = default)
     {
@@ -128,6 +131,7 @@ public sealed class RestoreService(
                 }
                 // F2c-3: the restored file keeps the source's mode; bring it back to 0600 now, not at the next start.
                 DatabaseFilePermissions.Realign(dbPath);
+                deviceIdentity?.Invalidate();
                 // Success: the DB was replaced and the app exits; until then nobody opens it.
                 quiet.KeepClosed();
             }
@@ -165,11 +169,36 @@ public sealed class RestoreService(
         await using (var conn = new SqliteConnection($"Data Source={plainSourcePath};Pooling=False"))
         {
             await conn.OpenAsync();
+            await using (var mem = conn.CreateCommand())
+            {
+                mem.CommandText = "PRAGMA journal_mode = MEMORY;";
+                await mem.ExecuteNonQueryAsync();
+            }
+            // Spec §8.4-bis: sul database ripristinato si azzerano identità e base dell'unione prima che diventi vivo.
+            await ClearSyncIdentityAndBaseAsync(conn);
             await using var rekey = conn.CreateCommand();
-            rekey.CommandText = $"PRAGMA journal_mode = MEMORY; {CipherPragmas.Format} {CipherPragmas.Rekey(keyBytes)}";
+            rekey.CommandText = $"{CipherPragmas.Format} {CipherPragmas.Rekey(keyBytes)}";
             await rekey.ExecuteNonQueryAsync();
         }
         File.Move(plainSourcePath, destinationPath);
+    }
+
+    private static async Task ClearSyncIdentityAndBaseAsync(SqliteConnection conn)
+    {
+        foreach (var table in SyncTablesToClear)
+        {
+            await using var check = conn.CreateCommand();
+            check.CommandText = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = @name";
+            check.Parameters.AddWithValue("@name", table);
+            if (await check.ExecuteScalarAsync() is null)
+                continue;
+
+#pragma warning disable CA2100 // literal table names from fixed two-element array
+            await using var del = conn.CreateCommand();
+            del.CommandText = $"DELETE FROM \"{table}\"";
+            await del.ExecuteNonQueryAsync();
+#pragma warning restore CA2100
+        }
     }
 
     // CR2: the real schema version this build supports = the value the live (migrated) DB carries.

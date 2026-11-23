@@ -18,10 +18,8 @@ public sealed partial class SyncSettingsViewModel(
     IBackupSaveFileDialog saveDialog,
     IConfirmationDialog confirm,
     IClock clock,
-    // ponytail: optional until ISyncService is registered (Task 9)
-    ISyncService? sync = null,
-    // ponytail: optional until ISyncService is registered (Task 9)
-    SyncSchedulerHost? scheduler = null) : ObservableObject
+    ISyncService sync,
+    SyncSchedulerHost scheduler) : ObservableObject
 {
     public const string AutoMergeKey = SyncSchedulerHost.EnabledSettingKey;
     public const string FolderKey = "sync.folder";

@@ -212,7 +212,21 @@ public static class RecordumServiceCollectionExtensions
             sp.GetRequiredService<IBackupService>(),
             sp.GetRequiredService<IPluginManager>(),
             sp.GetRequiredService<IClock>(),
-            sp.GetRequiredService<DatabaseGate>()));
+            sp.GetRequiredService<DatabaseGate>(),
+            deviceIdentity: sp.GetRequiredService<DeviceIdentity>()));
+        services.AddSingleton<SyncFileCipher>();
+        services.AddSingleton<SyncRunState>();
+        services.AddScoped<ISyncService>(sp => new SyncService(
+            sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
+            sp.GetRequiredService<IAppSettingService>(),
+            sp.GetRequiredService<IBackupService>(),
+            sp.GetRequiredService<IBackupStoragePaths>(),
+            sp.GetRequiredService<SyncFileCipher>(),
+            sp.GetRequiredService<SyncRunState>(),
+            sp.GetRequiredService<IClock>(),
+            sp.GetRequiredService<DeviceIdentity>(),
+            appVersion: "3.10.0",
+            logger: sp.GetService<ILogger<SyncService>>()));
         services.AddScoped<IBackupScheduler>(sp => new BackupScheduler(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IBackupService>(),

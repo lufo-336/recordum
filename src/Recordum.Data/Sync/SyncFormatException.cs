@@ -6,8 +6,11 @@ namespace Recordum.Data.Sync;
 /// </summary>
 public sealed class SyncFormatException(
     string reason,
-    Exception? innerException = null)
+    Exception? innerException = null,
+    bool isNewerMajorVersion = false)
     : Exception(reason, innerException)
 {
     public string Reason { get; } = reason;
+
+    public bool IsNewerMajorVersion { get; } = isNewerMajorVersion;
 }

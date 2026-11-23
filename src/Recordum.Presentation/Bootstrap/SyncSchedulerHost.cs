@@ -103,7 +103,13 @@ public sealed class SyncSchedulerHost(
                 return;
 
             var sync = scope.ServiceProvider.GetService<ISyncService>();
-            if (sync is null) return;
+            if (sync is null)
+            {
+#pragma warning disable CA1848
+                log?.LogWarning("auto-sync cycle skipped: ISyncService is not registered");
+#pragma warning restore CA1848
+                return;
+            }
 
             await sync.RunAsync(ct).ConfigureAwait(false);
         }

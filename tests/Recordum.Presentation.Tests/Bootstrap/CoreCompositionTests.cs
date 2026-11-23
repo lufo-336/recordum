@@ -55,6 +55,25 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
     }
 
     [Fact]
+    public void SyncServicesResolve()
+    {
+        var services = new ServiceCollection();
+        services.AddRecordumCore(Options());
+        services.AddShellDoubles();
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<Data.Sync.SyncService>(scope.ServiceProvider.GetRequiredService<ISyncService>());
+        Assert.Same(
+            provider.GetRequiredService<Data.Sync.SyncRunState>(),
+            scope.ServiceProvider.GetRequiredService<Data.Sync.SyncRunState>());
+        Assert.Same(
+            provider.GetRequiredService<Data.Sync.SyncFileCipher>(),
+            scope.ServiceProvider.GetRequiredService<Data.Sync.SyncFileCipher>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<Recordum.Presentation.ViewModels.Settings.SyncSettingsViewModel>());
+    }
+
+    [Fact]
     public void Every_service_registered_by_core_resolves_with_shell_doubles()
     {
         var services = new ServiceCollection();

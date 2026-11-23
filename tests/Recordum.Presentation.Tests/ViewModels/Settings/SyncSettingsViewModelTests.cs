@@ -100,6 +100,14 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         }
     }
 
+    private sealed class EmptyScopeFactory : IServiceScopeFactory, IServiceScope, IServiceProvider
+    {
+        public IServiceProvider ServiceProvider => this;
+        public IServiceScope CreateScope() => this;
+        public object? GetService(Type serviceType) => null;
+        public void Dispose() { }
+    }
+
     private static SyncSettingsViewModel CreateVm(
         FakeAppSettingService? settings = null,
         FakeFolderPicker? folderPicker = null,
@@ -108,16 +116,25 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         FakeConfirmationDialog? confirm = null,
         FakeClock? clock = null,
         ISyncService? sync = null,
-        SyncSchedulerHost? scheduler = null) =>
-        new(
+        SyncSchedulerHost? scheduler = null,
+        bool withoutSync = false)
+    {
+        var effectiveClock = clock ?? new FakeClock(new DateTimeOffset(2026, 3, 15, 14, 0, 0, TimeSpan.Zero));
+        var effectiveScheduler = scheduler ?? new SyncSchedulerHost(
+            new EmptyScopeFactory(),
+            new FakeTickSourceFactory(),
+            effectiveClock,
+            NullLogger<SyncSchedulerHost>.Instance);
+        return new(
             settings ?? new FakeAppSettingService(),
             folderPicker ?? new FakeFolderPicker(),
             openDialog ?? new FakeOpenFileDialog(),
             saveDialog ?? new FakeBackupSaveFileDialog(),
             confirm ?? new FakeConfirmationDialog(),
-            clock ?? new FakeClock(new DateTimeOffset(2026, 3, 15, 14, 0, 0, TimeSpan.Zero)),
-            sync,
-            scheduler);
+            effectiveClock,
+            withoutSync ? null! : (sync ?? new FakeSyncService()),
+            effectiveScheduler);
+    }
 
     [Fact]
     public async Task AutoMergeOffPersistsAndStopsScheduler()
@@ -377,7 +394,7 @@ public sealed class SyncSettingsViewModelTests : IDisposable
     [Fact]
     public async Task CommandsAreDisabledWithoutSyncService()
     {
-        var vm = CreateVm(sync: null);
+        var vm = CreateVm(withoutSync: true);
         await vm.LoadAsync();
         vm.PlainPassphrase = "plain-passphrase-123";
 
