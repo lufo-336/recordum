@@ -34,6 +34,7 @@ public static class SyncCatalog
         // Aggiunte dal Task 2:
         "sync_tombstone",
         "sync_base",
+        "sync_field_ms",
     };
 
     public static IReadOnlyDictionary<string, string> ExcludedColumns { get; } =

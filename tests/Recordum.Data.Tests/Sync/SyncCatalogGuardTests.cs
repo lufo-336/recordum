@@ -20,6 +20,7 @@ public sealed partial class SyncCatalogGuardTests
         "sync_meta",
         "sync_tombstone",
         "sync_base",
+        "sync_field_ms",
     ];
 
     private static readonly string[] ExpectedTravellingPublicNames =

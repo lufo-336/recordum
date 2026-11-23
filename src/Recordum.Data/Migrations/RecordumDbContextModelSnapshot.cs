@@ -2749,6 +2749,32 @@ namespace Recordum.Data.Migrations
                     b.ToTable("sync_base", (string)null);
                 });
 
+            modelBuilder.Entity("Recordum.Data.Models.SyncFieldMs", b =>
+                {
+                    b.Property<string>("Entity")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity");
+
+                    b.Property<string>("EntityId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("Field")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("field");
+
+                    b.Property<long>("Ms")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("ms");
+
+                    b.HasKey("Entity", "EntityId", "Field")
+                        .HasName("pk_sync_field_ms");
+
+                    b.ToTable("sync_field_ms", (string)null);
+                });
+
             modelBuilder.Entity("Recordum.Data.Models.SyncTombstone", b =>
                 {
                     b.Property<string>("Entity")

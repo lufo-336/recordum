@@ -45,6 +45,7 @@ public sealed class RecordumDbContext : DbContext
     public DbSet<SyncMeta> SyncMeta => Set<SyncMeta>();
     public DbSet<Models.SyncTombstone> SyncTombstones => Set<Models.SyncTombstone>();
     public DbSet<Models.SyncBase> SyncBases => Set<Models.SyncBase>();
+    public DbSet<Models.SyncFieldMs> SyncFieldMs => Set<Models.SyncFieldMs>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

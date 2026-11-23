@@ -22,7 +22,12 @@ public sealed record SyncManifest(
 
 public sealed record SyncRow(
     string Id,
-    IReadOnlyDictionary<string, JsonElement> Fields);
+    IReadOnlyDictionary<string, JsonElement> Fields)
+{
+    /// <summary>Ruling 20: l'ora dei campi più vecchi della riga (<c>_field_ms</c>, formato §2.2). Un campo assente ha
+    /// l'ora della riga (<c>updated_at_ms</c>).</summary>
+    public IReadOnlyDictionary<string, long> FieldMs { get; init; } = new Dictionary<string, long>(StringComparer.Ordinal);
+}
 
 public sealed record SyncTombstoneRow(
     [property: JsonPropertyName("entity")] string Entity,
