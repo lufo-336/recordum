@@ -468,4 +468,36 @@ public sealed class NaturalKeyTests
 
         await AssertConvergedAsync(b, c);
     }
+
+    [Fact]
+    public async Task AliasedRowOfTheSameFileIsNotTakenForStale()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await using var c = new SyncDevice("c");
+
+        await a.EditAsync(100, db => db.Tags.Add(new Tag { Id = TagMin, Name = "outdoor", Color = "#000000" }));
+        await b.EditAsync(100, db => db.Tags.Add(new Tag { Id = TagMax, Name = "temp", Color = "#111111" }));
+        await c.MergeAsync(await a.WriteFileAsync());
+        await c.MergeAsync(await b.WriteFileAsync());
+
+        // A e B unificano TagMax -> TagMin prima che C riceva l'alias.
+        await b.EditAsync(120, async db => (await db.Tags.SingleAsync(t => t.Id == TagMax)).Name = "Outdoor");
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        // C ha ancora tutte e due le righe: aggiorna il colore di TagMax a t=150 e poi il nome di TagMin a t=200.
+        await c.EditAsync(150, async db => (await db.Tags.SingleAsync(t => t.Id == TagMax)).Color = "#FF0000");
+        await c.EditAsync(200, async db => (await db.Tags.SingleAsync(t => t.Id == TagMin)).Name = "outdoor-c");
+
+        await a.MergeAsync(await c.WriteFileAsync());
+
+        var tagOnA = await a.QueryAsync(db => db.Tags.AsNoTracking().SingleAsync());
+        tagOnA.Id.Should().Be(TagMin);
+        tagOnA.Name.Should().Be("outdoor-c");
+        tagOnA.Color.Should().Be("#FF0000", "TagMax's newer color must not be skipped as stale after TagMin was merged");
+
+        for (var i = 0; i < 3; i++)
+            await MeshAsync(a, b, c);
+        await AssertConvergedAsync(a, b, c);
+    }
 }

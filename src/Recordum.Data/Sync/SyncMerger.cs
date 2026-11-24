@@ -31,16 +31,22 @@ public static class SyncMerger
     // ponytail: un margine fisso, non una garanzia. Il rimedio vero è un cancello fra i salvataggi locali e la scrittura
     // del file d'unione. Se il margine non basta si sbaglia dalla parte sicura: niente "visto", vale la regola dei campi.
     internal const long SeenMarginMs = 5_000;
+    internal const long MaxPhotoBytes = 64L * 1024 * 1024;
 
     public static Task<SyncMergeReport> MergeAsync(
         RecordumDbContext db, SyncSnapshot remote, string localDeviceId, bool receivePhotos, IClock clock, CancellationToken ct) =>
-        MergeAsync(db, remote, localDeviceId, receivePhotos, clock, afterEntity: null, ct);
+        MergeAsync(db, remote, localDeviceId, receivePhotos, clock, afterEntity: null, emptyTravellingFirst: false, ct);
 
     /// <param name="afterEntity">Solo per i test: chiamato dopo le righe di ogni entità (un'eccezione lì prova il
     /// rollback).</param>
+    internal static Task<SyncMergeReport> MergeAsync(
+        RecordumDbContext db, SyncSnapshot remote, string localDeviceId, bool receivePhotos, IClock clock,
+        Action<string>? afterEntity, CancellationToken ct) =>
+        MergeAsync(db, remote, localDeviceId, receivePhotos, clock, afterEntity, emptyTravellingFirst: false, ct);
+
     internal static async Task<SyncMergeReport> MergeAsync(
         RecordumDbContext db, SyncSnapshot remote, string localDeviceId, bool receivePhotos, IClock clock,
-        Action<string>? afterEntity, CancellationToken ct)
+        Action<string>? afterEntity, bool emptyTravellingFirst, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(remote);
@@ -59,7 +65,10 @@ public static class SyncMerger
             state.Applying = true;
             try
             {
-                var run = new Run(db.Model, conn, (SqliteTransaction)efTx.GetDbTransaction(), remote, localDeviceId, receivePhotos, clock, afterEntity, ct);
+                var tx = (SqliteTransaction)efTx.GetDbTransaction();
+                if (emptyTravellingFirst)
+                    await EmptyTravellingTablesAsync(conn, tx, ct).ConfigureAwait(false);
+                var run = new Run(db.Model, conn, tx, remote, localDeviceId, receivePhotos, clock, afterEntity, ct);
                 var report = await run.ExecuteAsync().ConfigureAwait(false);
                 await efTx.CommitAsync(ct).ConfigureAwait(false);
                 return report;
@@ -73,6 +82,52 @@ public static class SyncMerger
         {
             await db.Database.CloseConnectionAsync().ConfigureAwait(false);
         }
+    }
+
+    /// <summary>"Parti dai dati degli altri": svuota tutto ciò che viaggia (delle impostazioni solo le chiavi che
+    /// viaggiano) dentro una transazione con <c>Applying</c> acceso, così i trigger non lasciano lapidi: le righe di
+    /// qui spariscono solo qui, mai sugli altri. Via anche lapidi, base e ore dei campi.</summary>
+    private static async Task EmptyTravellingTablesAsync(SqliteConnection conn, SqliteTransaction tx, CancellationToken ct)
+    {
+        // RESTRICT si controlla subito anche con le chiavi differite: l'albero si scioglie prima di cancellarlo.
+        await ExecSqlAsync(conn, tx, "PRAGMA defer_foreign_keys = ON", ct).ConfigureAwait(false);
+        // Lapidi e base di prima via per prime: quelle che restano dopo verrebbero dallo svuotamento (non ce ne sono).
+        await ExecSqlAsync(conn, tx, "DELETE FROM \"sync_tombstone\"", ct).ConfigureAwait(false);
+        await ExecSqlAsync(conn, tx, "DELETE FROM \"sync_base\"", ct).ConfigureAwait(false);
+        // I trigger sono spenti: le ore dei campi e merged_from (non abbiamo più ciò che dice di aver visto) vanno via qui.
+        await ExecSqlAsync(conn, tx, "DELETE FROM \"sync_field_ms\"", ct).ConfigureAwait(false);
+        await ExecSqlAsync(conn, tx, $"DELETE FROM \"app_settings\" WHERE \"key\" = '{SyncService.MergedFromSettingKey}'", ct).ConfigureAwait(false);
+        await ExecSqlAsync(conn, tx, "UPDATE \"habit_nodes\" SET \"parent_id\" = NULL", ct).ConfigureAwait(false);
+        foreach (var entity in SyncCatalog.Entities.Reverse()) // figlie prima delle madri
+        {
+            if (entity.PublicName == "app_setting")
+            {
+                await using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
+                var pars = SyncCatalog.TravellingSettingKeys.Select((key, i) =>
+                {
+                    cmd.Parameters.AddWithValue($"@k{i}", key);
+                    return $"@k{i}";
+                });
+#pragma warning disable CA2100 // nomi dei parametri generati qui, valori come parametri
+                cmd.CommandText = $"DELETE FROM \"app_settings\" WHERE \"key\" IN ({string.Join(", ", pars)})";
+#pragma warning restore CA2100
+                await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                continue;
+            }
+
+            await ExecSqlAsync(conn, tx, $"DELETE FROM \"{entity.Table}\"", ct).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task ExecSqlAsync(SqliteConnection conn, SqliteTransaction tx, string sql, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+#pragma warning disable CA2100 // SQL fisso o con nomi di tabella dal catalogo congelato
+        cmd.CommandText = sql;
+#pragma warning restore CA2100
+        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>Spareggio per campo (Ruling 20, formato §5 punto 3): confronto ordinale dei byte UTF-8 del testo
@@ -117,7 +172,11 @@ public static class SyncMerger
             SyncCatalog.Entities.ToDictionary(e => e.Table, StringComparer.Ordinal);
         private readonly Dictionary<(string Entity, string Id), string> _aliases = [];
         private readonly HashSet<string> _touched = new(StringComparer.Ordinal);
+        private Dictionary<string, Dictionary<string, SyncRow>> _remoteById = [];
         private int _inserted, _updated, _deleted, _textConflicts, _repaired, _rescued;
+
+        private static readonly JsonElement JsonNull = JsonSerializer.SerializeToElement<string?>(null);
+        private static readonly JsonElement JsonFalse = JsonSerializer.SerializeToElement(false);
 
         // merged_from del pari per noi: il written_at_ms (orologio di qui) dell'ultimo nostro file che ha unito.
         private readonly long? _seenUntil = remote.Manifest.MergedFrom.TryGetValue(localDeviceId, out var seen) ? seen : null;
@@ -127,13 +186,13 @@ public static class SyncMerger
             await ExecAsync("PRAGMA defer_foreign_keys = ON").ConfigureAwait(false);
 
             var index = SyncCatalog.Entities.Select((e, i) => (e, i)).ToDictionary(x => x.e.PublicName, x => x.i, StringComparer.Ordinal);
-            var remoteById = remote.Rows.ToDictionary(
+            _remoteById = remote.Rows.ToDictionary(
                 kv => kv.Key, kv => kv.Value.ToDictionary(r => r.Id, StringComparer.Ordinal), StringComparer.Ordinal);
             foreach (var t in remote.Tombstones
                 .Where(t => index.ContainsKey(t.Entity))
                 .OrderBy(t => t.AliasOf is null ? 1 : 0)
                 .ThenByDescending(t => index[t.Entity]))
-                await ApplyTombstoneAsync(SyncCatalog.Entities[index[t.Entity]], t, remoteById[t.Entity]).ConfigureAwait(false);
+                await ApplyTombstoneAsync(SyncCatalog.Entities[index[t.Entity]], t, _remoteById[t.Entity]).ConfigureAwait(false);
 
             await ReloadAliasesAsync().ConfigureAwait(false);
 
@@ -213,7 +272,10 @@ public static class SyncMerger
                             var targetExists = await ScalarAsync(
                                 $"SELECT 1 FROM {Q(entity.Table)} WHERE \"id\" = @id", ("@id", targetId)).ConfigureAwait(false) is not null;
                             if (!targetExists)
+                            {
                                 await NaturalKeyUnifier.RenameAsync(conn, tx, model, entity, t.EntityId, targetId, ct).ConfigureAwait(false);
+                                _repaired++;
+                            }
                         }
                     }
                 }
@@ -253,6 +315,17 @@ public static class SyncMerger
                 .ToDictionary(r => r.Id, StringComparer.Ordinal);
             var tombs = await TombstonesAsync(entity).ConfigureAwait(false);
             var bases = entity.IsHistory ? [] : await BasesAsync(entity).ConfigureAwait(false);
+            var setNullFks = _fks.Where(f => f.DepTable == entity.Table && f.SetNull && f.DepCols.Length == 1).ToList();
+            Dictionary<string, HashSet<string>>? existingPrincipals = null;
+            if (setNullFks.Count > 0)
+            {
+                existingPrincipals = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+                foreach (var fk in setNullFks)
+                {
+                    if (!existingPrincipals.ContainsKey(fk.PrincipalTable))
+                        existingPrincipals[fk.PrincipalTable] = await ReadIdsAsync(fk.PrincipalTable, fk.PrincipalCols[0]).ConfigureAwait(false);
+                }
+            }
 
             foreach (var row in rows)
             {
@@ -265,6 +338,9 @@ public static class SyncMerger
                     await SalvageTextAsync(entity, rowId, r, bases.GetValueOrDefault(rowId), deletedAt, deletedHere: true).ConfigureAwait(false);
                     continue;
                 }
+
+                if (setNullFks.Count > 0)
+                    NullifyOrphanedSetNullFks(entity, r, setNullFks, existingPrincipals!, tombs);
 
                 var newBase = new Dictionary<string, JsonElement>(r, StringComparer.Ordinal);
                 var after = r;
@@ -342,7 +418,8 @@ public static class SyncMerger
                     await ExecAsync(
                         "INSERT OR REPLACE INTO sync_base (peer_device_id, entity, entity_id, row_json) VALUES (@p, @e, @id, @json)",
                         ("@p", _peer), ("@e", entity.PublicName), ("@id", rowId), ("@json", JsonSerializer.Serialize(newBase))).ConfigureAwait(false);
-                    bases[rowId] = newBase;
+                    // La mappa in memoria resta quella letta all'inizio dell'entità: due righe dello stesso file aliasate
+                    // sullo stesso id non si scambiano la base né si fanno scartare come file vecchio.
                 }
             }
         }
@@ -531,22 +608,28 @@ public static class SyncMerger
 
             var device = NullableStr(row.GetValueOrDefault(DeviceName));
             var isNote = entity.PublicName == NoteEntity;
+            var createdAt = isNote
+                ? (row.TryGetValue("created_at", out var ca) && ca.ValueKind == JsonValueKind.String ? ca : FallbackCreatedAt(deletedAtMs))
+                : (row.TryGetValue("completed_at", out var comp) && comp.ValueKind == JsonValueKind.String ? comp : FallbackCreatedAt(deletedAtMs));
             var note = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 ["id"] = JsonSerializer.SerializeToElement(noteId),
-                ["habit_node_id"] = row["habit_node_id"],
-                ["completion_id"] = JsonSerializer.SerializeToElement<string?>(null),
+                ["habit_node_id"] = row.TryGetValue("habit_node_id", out var habitId) ? habitId : JsonNull,
+                ["completion_id"] = JsonNull,
                 ["category"] = JsonSerializer.SerializeToElement(nameof(NoteCategory.Veloce)),
                 // Lo stesso giorno: quello della nota, o per una registrazione il suo istante (una nota senza giorno si
                 // colloca con created_at). ponytail: per una registrazione target_date resta null, quindi la nota
                 // compare negli elenchi delle note (NoteAnchor la colloca con created_at) ma non nel pannello del
                 // giorno del calendario. Il giorno logico vuole l'ora di reset (DayBoundary), che qui, dentro la
                 // transazione dell'unione, non si risolve.
-                ["target_date"] = isNote ? row["target_date"] : JsonSerializer.SerializeToElement<string?>(null),
+                ["target_date"] = isNote && row.TryGetValue("target_date", out var td) ? td : JsonNull,
                 ["body_md"] = JsonSerializer.SerializeToElement(TextConflictBlock.Merge("", text, device, ms, clock.LocalTimeZone)),
-                ["is_sensitive"] = isNote ? row["is_sensitive"] : JsonSerializer.SerializeToElement(false),
-                ["created_at"] = isNote ? row["created_at"] : row["completed_at"],
-                ["last_edited_device_name"] = row.GetValueOrDefault(DeviceName),
+                ["is_sensitive"] = isNote && row.TryGetValue("is_sensitive", out var sens)
+                    && sens.ValueKind is JsonValueKind.True or JsonValueKind.False
+                    ? sens
+                    : JsonFalse,
+                ["created_at"] = createdAt,
+                ["last_edited_device_name"] = row.TryGetValue(DeviceName, out var devEl) ? devEl : JsonNull,
                 [Ms] = JsonSerializer.SerializeToElement(deletedAtMs),
             };
             var notes = SyncCatalog.Entities.First(e => e.PublicName == NoteEntity);
@@ -564,6 +647,70 @@ public static class SyncMerger
             }, ignoreExisting: true).ConfigureAwait(false);
             _rescued++;
             _touched.Add(notes.Table); // abitudine cancellata anche lei: la nota segue (passo 3)
+        }
+
+        private static JsonElement FallbackCreatedAt(long deletedAtMs) =>
+            JsonSerializer.SerializeToElement(
+                DateTimeOffset.FromUnixTimeMilliseconds(deletedAtMs).UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture));
+
+        private static async Task CopyBoundedAsync(Stream src, Stream dst, long maxBytes, string id, CancellationToken ct)
+        {
+            var buffer = new byte[81920];
+            long total = 0;
+            int read;
+            while ((read = await src.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+            {
+                total += read;
+                if (total > maxBytes)
+                    throw new SyncFormatException($"Photo '{id}' exceeds the maximum supported size ({maxBytes} bytes).");
+                await dst.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
+            }
+        }
+
+        private async Task<HashSet<string>> ReadIdsAsync(string table, string pkCol)
+        {
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            await using var cmd = Command($"SELECT {Q(pkCol)} FROM {Q(table)}");
+            await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
+            {
+                if (!await reader.IsDBNullAsync(0, ct).ConfigureAwait(false))
+                    ids.Add(Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture)!);
+            }
+            return ids;
+        }
+
+        private void NullifyOrphanedSetNullFks(
+            SyncEntity entity,
+            Dictionary<string, JsonElement> r,
+            List<Fk> setNullFks,
+            Dictionary<string, HashSet<string>> existingPrincipals,
+            Dictionary<string, long> tombs)
+        {
+            foreach (var fk in setNullFks)
+            {
+                var fkField = entity.Fields.FirstOrDefault(f => f.Column == fk.DepCols[0])?.PublicName;
+                if (fkField is null || !r.TryGetValue(fkField, out var val) || val.ValueKind == JsonValueKind.Null)
+                    continue;
+
+                var target = val.ValueKind == JsonValueKind.String
+                    ? val.GetString()
+                    : val.ValueKind == JsonValueKind.Number
+                        ? val.GetRawText()
+                        : null;
+                if (target is null) continue;
+
+                var exists = existingPrincipals[fk.PrincipalTable].Contains(target);
+                if (!exists && fk.PrincipalTable == entity.Table
+                    && _remoteById.TryGetValue(entity.PublicName, out var peers)
+                    && peers.TryGetValue(target, out var parentRow))
+                {
+                    exists = !tombs.TryGetValue(target, out var delAt) || delAt < RowMs(entity, parentRow);
+                }
+
+                if (!exists)
+                    r[fkField] = JsonNull;
+            }
         }
 
         private static string SalvageId(string entity, string id, long ms, string text)
@@ -636,7 +783,7 @@ public static class SyncMerger
                 await using (stream.ConfigureAwait(false))
                 using (var buffer = new MemoryStream())
                 {
-                    await stream.CopyToAsync(buffer, ct).ConfigureAwait(false);
+                    await CopyBoundedAsync(stream, buffer, MaxPhotoBytes, id, ct).ConfigureAwait(false);
                     bytes = buffer.ToArray();
                 }
 

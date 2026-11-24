@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using System.Text;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Recordum.Core.Enums;
@@ -763,5 +766,72 @@ public sealed class TextConflictTests
         TextConflictBlock.Contains(text, "foo").Should().BeFalse();
         TextConflictBlock.Merge("", "foo", null, 1_795_383_600_000, TimeZoneInfo.Utc)
             .Should().StartWith("— ? · ");
+    }
+
+    [Fact]
+    public async Task SalvageOfARowWithMissingFieldsKeepsTheText()
+    {
+        const long deleteNoteMs = 300_000;
+        const long deleteCompMs = 400_000;
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        await a.EditAsync(100, db =>
+        {
+            db.HabitNodes.Add(Habit(H, "Journal"));
+            db.Notes.Add(QuickNote(N, H, "initial"));
+            db.Completions.Add(Done(C, H));
+        });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        await b.EditAsync(200_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "note from older minor");
+        await b.EditAsync(250_000, async db => (await db.Completions.SingleAsync(c => c.Id == C)).Notes = "comp from older minor");
+        await a.EditAsync(deleteNoteMs, db => db.Notes.Where(n => n.Id == N).ExecuteDeleteAsync());
+        await a.EditAsync(deleteCompMs, db => db.Completions.Where(c => c.Id == C).ExecuteDeleteAsync());
+
+        var zip = StripFields(await b.WriteZipAsync(), "data/note.jsonl", ["target_date", "is_sensitive", "created_at", "last_edited_device_name"]);
+        zip = StripFields(zip, "data/completion.jsonl", ["completed_at", "last_edited_device_name"]);
+
+        var report = await a.MergeAsync(await SyncDevice.SealAsync(zip));
+
+        report.Rescued.Should().Be(2);
+        var rescuedNotes = await a.QueryAsync(db => db.Notes.AsNoTracking().OrderBy(n => n.CreatedAt).ToListAsync());
+        rescuedNotes.Should().HaveCount(2);
+
+        var fromNote = rescuedNotes[0];
+        fromNote.BodyMd.Should().Be("— ? · 1970-01-01 00:03 —\nnote from older minor");
+        fromNote.TargetDate.Should().BeNull();
+        fromNote.IsSensitive.Should().BeFalse();
+        fromNote.LastEditedDeviceName.Should().BeNull();
+        fromNote.CreatedAt.Should().Be(DateTimeOffset.FromUnixTimeMilliseconds(deleteNoteMs).UtcDateTime);
+
+        var fromComp = rescuedNotes[1];
+        fromComp.BodyMd.Should().Be("— ? · 1970-01-01 00:04 —\ncomp from older minor");
+        fromComp.TargetDate.Should().BeNull();
+        fromComp.IsSensitive.Should().BeFalse();
+        fromComp.LastEditedDeviceName.Should().BeNull();
+        fromComp.CreatedAt.Should().Be(DateTimeOffset.FromUnixTimeMilliseconds(deleteCompMs).UtcDateTime);
+
+        static byte[] StripFields(byte[] zipBytes, string entryName, string[] fields)
+        {
+            using var ms = new MemoryStream();
+            ms.Write(zipBytes);
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                var entry = archive.GetEntry(entryName)!;
+                List<string> lines;
+                using (var reader = new StreamReader(entry.Open(), Encoding.UTF8))
+                    lines = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+                entry.Delete();
+                using var writer = new StreamWriter(archive.CreateEntry(entryName).Open(), new UTF8Encoding(false));
+                foreach (var line in lines)
+                {
+                    var obj = JsonNode.Parse(line)!.AsObject();
+                    foreach (var f in fields) obj.Remove(f);
+                    writer.Write(obj.ToJsonString() + "\n");
+                }
+            }
+            return ms.ToArray();
+        }
     }
 }

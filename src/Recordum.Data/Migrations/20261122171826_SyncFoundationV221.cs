@@ -481,6 +481,17 @@ namespace Recordum.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            foreach (var entity in Sync.SyncCatalog.Entities)
+            {
+                var table = entity.Table.Replace("\"", "\"\"", StringComparison.Ordinal);
+                migrationBuilder.Sql($"""
+                    DROP TRIGGER IF EXISTS "trg_sync_del_{table}";
+                    DROP TRIGGER IF EXISTS "trg_sync_upd_{table}";
+                    DROP TRIGGER IF EXISTS "trg_sync_ins_{table}";
+                    DROP TRIGGER IF EXISTS "trg_sync_fms_{table}";
+                    """);
+            }
+
             migrationBuilder.DropTable(
                 name: "sync_base");
 

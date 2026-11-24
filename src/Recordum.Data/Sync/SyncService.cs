@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Recordum.Core.Abstractions;
@@ -101,7 +101,8 @@ public sealed partial class SyncService(
 
     public async Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false)))
+        if (string.IsNullOrWhiteSpace(await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false))
+            || string.IsNullOrWhiteSpace(await settings.GetAsync(PassphraseSettingKey, ct).ConfigureAwait(false)))
             return SyncJoinState.NotConfigured;
         // Sola lettura: un database senza dati dell'utente risulta collegato, e il primo giro lo scrive.
         return await IsJoinedAsync(ct).ConfigureAwait(false) || !await HasUserDataAsync(ct).ConfigureAwait(false)
@@ -117,12 +118,13 @@ public sealed partial class SyncService(
             var folder = await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false);
             var passphrase = await settings.GetAsync(PassphraseSettingKey, ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(passphrase))
-                throw new SyncJoinRefusedException("The folder or the sync passphrase is missing.");
+                throw new SyncJoinRefusedException(SyncJoinRefusal.MissingConfiguration, "The folder or the sync passphrase is missing.");
 
             // "Parti dai dati degli altri" senza un file leggibile (frase sbagliata, cartella vuota) svuoterebbe questo
-            // dispositivo senza dargli niente: si rifiuta prima di toccare qualcosa.
-            if (choice == SyncJoinChoice.StartFromOthers && !await AnyPeerOpensAsync(folder, passphrase, ct).ConfigureAwait(false))
-                throw new SyncJoinRefusedException("No file from another device opens in the folder.");
+            // dispositivo senza dargli niente: si rifiuta prima di fare il backup.
+            var startFromOthers = choice == SyncJoinChoice.StartFromOthers;
+            if (startFromOthers && !await AnyPeerOpensAsync(folder, passphrase, ct).ConfigureAwait(false))
+                throw new SyncJoinRefusedException(SyncJoinRefusal.NoReadablePeer, "No file from another device opens in the folder.");
 
             // Sempre prima un backup (spec §9): se fallisce, il collegamento non va avanti. È protetto dalla frase
             // dell'unione, l'unica che l'utente ha appena scritto e conosce.
@@ -134,11 +136,10 @@ public sealed partial class SyncService(
             // CHECK ck_backup_log_kind, se gli utenti lo chiedono.
             await backupService.CreateAsync(backupPath, passphrase, new BackupOptions(BackupKind.Manual), ct).ConfigureAwait(false);
 
-            if (choice == SyncJoinChoice.StartFromOthers)
-                await EmptyTravellingTablesAsync(ct).ConfigureAwait(false);
+            if (!startFromOthers)
+                await settings.SetAsync(JoinedSettingKey, "true", ct).ConfigureAwait(false);
 
-            await settings.SetAsync(JoinedSettingKey, "true", ct).ConfigureAwait(false);
-            await RunCoreAsync(ct).ConfigureAwait(false);
+            await RunCoreAsync(ct, startFromOthers).ConfigureAwait(false);
         }
         finally
         {
@@ -153,7 +154,13 @@ public sealed partial class SyncService(
         {
             await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
             await db.AppSettings
-                .Where(s => s.Key == FolderSettingKey || s.Key == JoinedSettingKey || s.Key == MergedFromSettingKey)
+                .Where(s => s.Key == FolderSettingKey
+                         || s.Key == JoinedSettingKey
+                         || s.Key == MergedFromSettingKey
+                         || s.Key == LastRunMsSettingKey
+                         || s.Key == LastWrittenSignatureSettingKey
+                         || s.Key == LastWrittenHashSettingKey
+                         || s.Key == PendingWrittenHashSettingKey)
                 .ExecuteDeleteAsync(ct)
                 .ConfigureAwait(false);
             // Anche la via d'uscita da un'identità doppia: ricollegato, il dispositivo rientra come nuovo (nome di file
@@ -188,13 +195,13 @@ public sealed partial class SyncService(
         return $"recordum-{name}-{deviceId[..Math.Min(8, deviceId.Length)]}.rcsync";
     }
 
-    private async Task<SyncRunResult> RunCoreAsync(CancellationToken ct)
+    private async Task<SyncRunResult> RunCoreAsync(CancellationToken ct, bool startFromOthers = false)
     {
         var folder = await settings.GetAsync(FolderSettingKey, ct).ConfigureAwait(false);
         var passphrase = await settings.GetAsync(PassphraseSettingKey, ct).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(passphrase))
             return NotRun;
-        if (!await IsJoinedAsync(ct).ConfigureAwait(false))
+        if (!startFromOthers && !await IsJoinedAsync(ct).ConfigureAwait(false))
         {
             if (await HasUserDataAsync(ct).ConfigureAwait(false))
                 return NotRun;   // aspetta la scelta dell'utente (JoinAsync)
@@ -218,6 +225,7 @@ public sealed partial class SyncService(
         if (ownFileIsForeign)
             peers.Add(new SyncPeerStatus(deviceName, File.GetLastWriteTimeUtc(ownPath), SyncPeerProblem.SameIdentity));
         var merged = false;
+        var mergedAnyPeer = false;
         var mergedFrom = await ReadMergedFromAsync(ct).ConfigureAwait(false);
         var mergedFromChanged = false;
         foreach (var file in await store.ListPeerFilesAsync(ct).ConfigureAwait(false))
@@ -238,8 +246,16 @@ public sealed partial class SyncService(
                 try
                 {
                     await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
-                    var report = await SyncMerger.MergeAsync(db, snapshot, deviceId, includePhotos, clock, ct).ConfigureAwait(false);
-                    merged |= report.Inserted + report.Updated + report.Deleted + report.Repaired + report.Rescued > 0;
+                    var emptyFirst = startFromOthers && !mergedAnyPeer;
+                    var report = await SyncMerger.MergeAsync(
+                        db, snapshot, deviceId, includePhotos, clock, afterEntity: null, emptyTravellingFirst: emptyFirst, ct).ConfigureAwait(false);
+                    if (emptyFirst)
+                    {
+                        mergedFrom.Clear();
+                        mergedFromChanged = false;
+                    }
+                    mergedAnyPeer = true;
+                    merged |= emptyFirst || report.Inserted + report.Updated + report.Deleted + report.Repaired + report.Rescued > 0;
                     // Solo dopo il commit: se si perde (arresto prima del salvataggio) il pari crede che non abbiamo visto,
                     // il lato sicuro.
                     var peerId = snapshot.Manifest.DeviceId;
@@ -265,6 +281,17 @@ public sealed partial class SyncService(
             {
                 SecureWipe.DeleteFile(tempZip);
             }
+        }
+
+        if (startFromOthers)
+        {
+            if (!mergedAnyPeer)
+            {
+                runState.SetPeers(peers);
+                throw new SyncJoinRefusedException(SyncJoinRefusal.NoReadablePeer, "No file from another device could be merged.");
+            }
+
+            await settings.SetAsync(JoinedSettingKey, "true", ct).ConfigureAwait(false);
         }
 
         if (mergedFromChanged)
@@ -518,7 +545,40 @@ public sealed partial class SyncService(
         }
 
         var (tombs, tombMax, tombSum) = await AggregateAsync(conn, "sync_tombstone", "deleted_at_ms", null, ct).ConfigureAwait(false);
-        return string.Create(CultureInfo.InvariantCulture, $"{rows}:{max}:{sum}:{tombs}:{tombMax}:{tombSum}:{includePhotos}");
+        var (fmsCount, fmsMax, fmsSum) = await AggregateAsync(conn, "sync_field_ms", "ms", null, ct).ConfigureAwait(false);
+        var aliasSig = await AliasSignatureAsync(conn, ct).ConfigureAwait(false);
+        var photoSig = await PhotoSignatureAsync(conn, includePhotos, ct).ConfigureAwait(false);
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"{rows}:{max}:{sum}:{tombs}:{tombMax}:{tombSum}:{fmsCount}:{fmsMax}:{fmsSum}:{aliasSig}:{photoSig}:{includePhotos}");
+    }
+
+    private static async Task<string> AliasSignatureAsync(SqliteConnection conn, CancellationToken ct)
+    {
+        using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT \"entity\", \"entity_id\", \"alias_of\" FROM \"sync_tombstone\" WHERE \"alias_of\" IS NOT NULL ORDER BY \"entity\", \"entity_id\"";
+        long count = 0;
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            count++;
+            hasher.AppendData(Encoding.UTF8.GetBytes($"{reader.GetString(0)}\0{reader.GetString(1)}\0{reader.GetString(2)}\n"));
+        }
+
+        return string.Create(CultureInfo.InvariantCulture, $"{count}:{Convert.ToHexStringLower(hasher.GetHashAndReset())}");
+    }
+
+    // Lunghezze, non byte: la firma gira a ogni giro e leggere ogni foto costerebbe GB. length() di SQLite non carica il blob.
+    private static async Task<string> PhotoSignatureAsync(SqliteConnection conn, bool includePhotos, CancellationToken ct)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = includePhotos
+            ? "SELECT COALESCE(SUM(length(\"thumbnail\")), 0), COUNT(\"content\"), COALESCE(SUM(length(\"content\")), 0) FROM \"attachment\""
+            : "SELECT COALESCE(SUM(length(\"thumbnail\")), 0), 0, 0 FROM \"attachment\"";
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        await reader.ReadAsync(ct).ConfigureAwait(false);
+        return string.Create(CultureInfo.InvariantCulture, $"{reader.GetInt64(0)}/{reader.GetInt64(1)}/{reader.GetInt64(2)}");
     }
 
     private static async Task<(long Rows, long Max, long Sum)> AggregateAsync(
@@ -541,63 +601,6 @@ public sealed partial class SyncService(
             cmd.Parameters.AddWithValue($"@k{i}", key);
             return $"@k{i}";
         }));
-
-    /// <summary>"Parti dai dati degli altri": svuota tutto ciò che viaggia (delle impostazioni solo le chiavi che
-    /// viaggiano) in una transazione sulla connessione aperta da EF con <c>Applying</c> acceso, così i trigger non
-    /// lasciano lapidi: le righe di qui spariscono solo qui, mai sugli altri. Via anche lapidi e base di prima.</summary>
-    private async Task EmptyTravellingTablesAsync(CancellationToken ct)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
-        await db.Database.OpenConnectionAsync(ct).ConfigureAwait(false);
-        var conn = (SqliteConnection)db.Database.GetDbConnection();
-        var state = SyncConnectionState.For(conn);
-        await using var efTx = await db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
-        var tx = (SqliteTransaction)efTx.GetDbTransaction();
-        state.Applying = true;
-        try
-        {
-            // RESTRICT si controlla subito anche con le chiavi differite: l'albero si scioglie prima di cancellarlo.
-            await ExecAsync(conn, tx, "PRAGMA defer_foreign_keys = ON", ct).ConfigureAwait(false);
-            // Lapidi e base di prima via per prime: quelle che restano dopo verrebbero dallo svuotamento (non ce ne sono).
-            await ExecAsync(conn, tx, "DELETE FROM \"sync_tombstone\"", ct).ConfigureAwait(false);
-            await ExecAsync(conn, tx, "DELETE FROM \"sync_base\"", ct).ConfigureAwait(false);
-            // I trigger sono spenti: le ore dei campi e merged_from (non abbiamo più ciò che dice di aver visto) vanno via qui.
-            await ExecAsync(conn, tx, "DELETE FROM \"sync_field_ms\"", ct).ConfigureAwait(false);
-            await ExecAsync(conn, tx, $"DELETE FROM \"app_settings\" WHERE \"key\" = '{MergedFromSettingKey}'", ct).ConfigureAwait(false);
-            await ExecAsync(conn, tx, "UPDATE \"habit_nodes\" SET \"parent_id\" = NULL", ct).ConfigureAwait(false);
-            foreach (var entity in SyncCatalog.Entities.Reverse())   // figlie prima delle madri
-            {
-                if (entity.PublicName == "app_setting")
-                {
-                    await using var cmd = conn.CreateCommand();
-                    cmd.Transaction = tx;
-#pragma warning disable CA2100 // nomi dei parametri generati qui, valori come parametri
-                    cmd.CommandText = $"DELETE FROM \"app_settings\" WHERE \"key\" IN ({KeyParameters(cmd, SyncCatalog.TravellingSettingKeys)})";
-#pragma warning restore CA2100
-                    await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-                    continue;
-                }
-
-                await ExecAsync(conn, tx, $"DELETE FROM \"{entity.Table}\"", ct).ConfigureAwait(false);
-            }
-
-            await efTx.CommitAsync(ct).ConfigureAwait(false);
-        }
-        finally
-        {
-            state.Applying = false;
-        }
-    }
-
-    private static async Task ExecAsync(SqliteConnection conn, SqliteTransaction tx, string sql, CancellationToken ct)
-    {
-        await using var cmd = conn.CreateCommand();
-        cmd.Transaction = tx;
-#pragma warning disable CA2100 // SQL fisso o con nomi di tabella dal catalogo congelato
-        cmd.CommandText = sql;
-#pragma warning restore CA2100
-        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
-    }
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Warning, Message = "Sync: merging the file '{File}' failed; the other files go on")]
     private static partial void LogMergeFailed(ILogger logger, string file, Exception exception);

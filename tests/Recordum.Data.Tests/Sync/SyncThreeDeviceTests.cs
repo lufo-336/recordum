@@ -1,8 +1,16 @@
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Recordum.Core.Abstractions.Services;
+using Recordum.Core.Backup;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Data.Services;
+using Recordum.Data.Sync;
+using Recordum.Data.Tests.Fixtures;
 using Recordum.Data.Tests.Fixtures.Sync;
 using Xunit.Abstractions;
 using static Recordum.Data.Tests.Sync.SyncMergerTests;
@@ -191,5 +199,198 @@ public sealed class SyncThreeDeviceTests(ITestOutputHelper output)
         (await a.CanonicalDumpAsync()).Should().Be(await b.CanonicalDumpAsync());
         (await a.CanonicalDumpAsync()).Should().Be(await c.CanonicalDumpAsync());
         (await NoteAsync(a, N)).Should().BeNull();
+    }
+
+    // 7. Neon ALTA 1: pulizia di un blocco fatta da B prima di unire un file no-op di A (tramite SyncService).
+    [Fact(Skip = "Neon ALTA 1 confermato: merged_from non entra nella firma, B non riscrive il file dopo un no-op e A tiene il blocco. Decisione dell'autore (registro, tappa 2026-11-23 notte).")]
+    public async Task CleanupAfterNoOpMergeConverges()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"recordum-sync-neon1-{Guid.NewGuid():N}");
+        var folderA = Path.Combine(root, "cloud-a");
+        var folderB = Path.Combine(root, "cloud-b");
+        Directory.CreateDirectory(folderA);
+        Directory.CreateDirectory(folderB);
+        try
+        {
+            await using var a = await CreateServiceNodeAsync("a", folderA, root, startMs: 1_000);
+            await using var b = await CreateServiceNodeAsync("b", folderB, root, startMs: 1_000);
+
+            await a.EditAsync(10_000, db =>
+            {
+                db.HabitNodes.Add(Habit(H, "Run"));
+                db.Notes.Add(QuickNote(N, H, "base"));
+            });
+            a.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(16_000));
+            await a.Service.RunAsync(CancellationToken.None);
+            CopyToPeer(a.OwnFilePath, folderB);
+
+            b.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(17_000));
+            await b.Service.RunAsync(CancellationToken.None);
+            CopyToPeer(b.OwnFilePath, folderA);
+
+            a.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(18_000));
+            await a.Service.RunAsync(CancellationToken.None);
+
+            // Modifiche concorrenti e primo scambio incrociato.
+            await a.EditAsync(20_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "L");
+            await b.EditAsync(30_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+            a.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(26_000));
+            await a.Service.RunAsync(CancellationToken.None); // fA1 (t=26_000)
+            b.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(36_000));
+            await b.Service.RunAsync(CancellationToken.None); // fB1 (t=36_000)
+            CopyToPeer(a.OwnFilePath, folderB);
+            CopyToPeer(b.OwnFilePath, folderA);
+
+            // Entrambi producono il blocco di conflitto C, ma i file fA2 e fB2 non si incrociano ancora.
+            a.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(40_000));
+            await a.Service.RunAsync(CancellationToken.None); // fA2 (t=40_000)
+            var fA2Snapshot = Path.Combine(root, "fA2.rcsync");
+            File.Copy(a.OwnFilePath, fA2Snapshot, overwrite: true);
+
+            b.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(41_000));
+            await b.Service.RunAsync(CancellationToken.None); // fB2 (t=41_000, merged_from[a]=26_000)
+
+            // Prima di ricevere fA2, B ripulisce il blocco in "W" e scrive fB3; A riceve fB3 prima di aver mai visto fB2.
+            await b.EditAsync(60_000, async db => (await db.Notes.SingleAsync(n => n.Id == N)).BodyMd = "W");
+            b.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(66_000));
+            await b.Service.RunAsync(CancellationToken.None); // fB3 (t=66_000, merged_from[a]=26_000)
+
+            CopyToPeer(b.OwnFilePath, folderA);
+            File.Copy(fA2Snapshot, Path.Combine(folderB, Path.GetFileName(a.OwnFilePath)), overwrite: true);
+
+            var blockReturnCount = 0;
+            var hadBlockOnB = false;
+            for (var round = 0; round < 4; round++)
+            {
+                b.Clock.Advance(TimeSpan.FromSeconds(10));
+                await b.Service.RunAsync(CancellationToken.None);
+                CopyToPeer(b.OwnFilePath, folderA);
+
+                a.Clock.Advance(TimeSpan.FromSeconds(10));
+                await a.Service.RunAsync(CancellationToken.None);
+                CopyToPeer(a.OwnFilePath, folderB);
+
+                var bodyBNow = (await b.QueryAsync(db => db.Notes.AsNoTracking().SingleAsync(n => n.Id == N))).BodyMd;
+                var hasBlockNow = TextConflictBlock.Count(bodyBNow) > 0;
+                if (!hadBlockOnB && hasBlockNow) blockReturnCount++;
+                hadBlockOnB = hasBlockNow;
+            }
+
+            var bodyA = (await a.QueryAsync(db => db.Notes.AsNoTracking().SingleAsync(n => n.Id == N))).BodyMd;
+            var bodyB = (await b.QueryAsync(db => db.Notes.AsNoTracking().SingleAsync(n => n.Id == N))).BodyMd;
+            blockReturnCount.Should().BeLessThanOrEqualTo(1);
+            bodyA.Should().Be(bodyB);
+            bodyA.Should().Be("W");
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            }
+            catch
+            {
+                // best effort
+            }
+        }
+    }
+
+    private static void CopyToPeer(string sourceFile, string peerFolder) =>
+        File.Copy(sourceFile, Path.Combine(peerFolder, Path.GetFileName(sourceFile)), overwrite: true);
+
+    private static async Task<ServiceNode> CreateServiceNodeAsync(string name, string folder, string root, long startMs)
+    {
+        var clock = new FakeClock(DateTimeOffset.FromUnixTimeMilliseconds(startMs));
+        var fixture = new DbFixture(clock);
+        var deviceId = Guid.NewGuid().ToString("D").ToUpperInvariant();
+        fixture.DeviceIdentity.DeviceName = name;
+        await using (var db = await fixture.Factory.CreateDbContextAsync())
+        {
+            db.SyncMeta.Add(new SyncMeta
+            {
+                Id = Guid.NewGuid(),
+                DeviceId = deviceId,
+                DeviceName = name,
+                CreatedAt = clock.UtcNow.UtcDateTime,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var nodeDir = Path.Combine(root, $"node-{name}");
+        var tempDir = Path.Combine(nodeDir, "tmp");
+        var backupsDir = Path.Combine(nodeDir, "backups");
+        var attachDir = Path.Combine(nodeDir, "attachments");
+        Directory.CreateDirectory(tempDir);
+        Directory.CreateDirectory(backupsDir);
+        Directory.CreateDirectory(attachDir);
+
+        var paths = new EncryptedDbFixture.TestBackupPaths(
+            DatabasePath: Path.Combine(nodeDir, "recordum.db"),
+            KeyFilePath: Path.Combine(nodeDir, "db.key"),
+            SaltFilePath: Path.Combine(nodeDir, "db.salt"),
+            AttachmentsDirectory: attachDir,
+            BackupsDirectory: backupsDir,
+            AutoBackupKeyPath: Path.Combine(nodeDir, "autobackup.key"),
+            TempDirectory: tempDir);
+
+        var settings = new AppSettingService(fixture.Factory, clock, NullLogger<AppSettingService>.Instance);
+        await settings.SetAsync(SyncService.FolderSettingKey, folder);
+        await settings.SetAsync(SyncService.PassphraseSettingKey, "test-sync-phrase");
+        await settings.SetAsync(SyncService.JoinedSettingKey, "true");
+
+        var cipher = new SyncFileCipher((passphrase, salt, _, _, _) =>
+            Task.FromResult(SHA256.HashData(Encoding.UTF8.GetBytes(passphrase + ":" + Convert.ToHexString(salt)))));
+        var identity = new DeviceIdentity(new ServiceNodeFactoryProvider(fixture.Factory));
+        var service = new SyncService(
+            fixture.Factory,
+            settings,
+            new NoOpBackupService(),
+            paths,
+            cipher,
+            new SyncRunState(),
+            clock,
+            identity,
+            appVersion: "test",
+            machineName: name);
+
+        return new ServiceNode(fixture, clock, service, Path.Combine(folder, SyncService.BuildOwnFileName(name, deviceId)));
+    }
+
+    private sealed class ServiceNode(DbFixture fixture, FakeClock clock, SyncService service, string ownFilePath) : IAsyncDisposable
+    {
+        public FakeClock Clock { get; } = clock;
+        public SyncService Service { get; } = service;
+        public string OwnFilePath { get; } = ownFilePath;
+
+        public async Task EditAsync(long atMs, Func<RecordumDbContext, Task> edit)
+        {
+            Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(atMs));
+            await using var db = await fixture.Factory.CreateDbContextAsync();
+            await edit(db);
+            await db.SaveChangesAsync();
+        }
+
+        public Task EditAsync(long atMs, Action<RecordumDbContext> edit) =>
+            EditAsync(atMs, db => { edit(db); return Task.CompletedTask; });
+
+        public async Task<T> QueryAsync<T>(Func<RecordumDbContext, Task<T>> query)
+        {
+            await using var db = await fixture.Factory.CreateDbContextAsync();
+            return await query(db);
+        }
+
+        public ValueTask DisposeAsync() => fixture.DisposeAsync();
+    }
+
+    private sealed class ServiceNodeFactoryProvider(IDbContextFactory<RecordumDbContext> factory) : IServiceProvider
+    {
+        public object? GetService(Type serviceType) =>
+            serviceType == typeof(IDbContextFactory<RecordumDbContext>) ? factory : null;
+    }
+
+    private sealed class NoOpBackupService : IBackupService
+    {
+        public Task<BackupResult> CreateAsync(string destinationPath, string passphrase, BackupOptions options, CancellationToken ct = default) =>
+            throw new NotSupportedException();
     }
 }

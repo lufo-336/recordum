@@ -537,4 +537,30 @@ public sealed class SyncMergerTests
         var notes = (await b.QueryAsync(db => db.Completions.SingleAsync(x => x.Id == C))).Notes;
         notes.Should().StartWith("from b").And.Contain("from a");
     }
+
+    [Fact]
+    public async Task OrphanedSetNullReferenceSettlesAfterOneMerge()
+    {
+        await using var a = new SyncDevice("a");
+        await using var b = new SyncDevice("b");
+        var scale = Guid.NewGuid();
+        var anchor = Guid.NewGuid();
+        await a.EditAsync(100, db =>
+        {
+            db.ScaleTemplates.Add(new ScaleTemplate { Id = scale, Code = "mood-settle", Name = "Mood", MinValue = 1, MaxValue = 5 });
+            db.Tags.Add(new Tag { Id = N, Name = "calm" });
+        });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.EditAsync(200, db => db.Tags.Where(t => t.Id == N).ExecuteDeleteAsync());
+        await b.EditAsync(300, db =>
+            db.ScaleAnchors.Add(new ScaleAnchor { Id = anchor, ScaleTemplateId = scale, Value = 3, Label = "ok", TagId = N }));
+
+        var fb = await b.WriteFileAsync();
+        var first = await a.MergeAsync(fb);
+        var second = await a.MergeAsync(fb);
+
+        first.Inserted.Should().Be(1);
+        (await a.QueryAsync(db => db.ScaleAnchors.AsNoTracking().SingleAsync(s => s.Id == anchor))).TagId.Should().BeNull();
+        second.Should().Be(new SyncMergeReport(0, 0, 0, 0, 0, 0));
+    }
 }

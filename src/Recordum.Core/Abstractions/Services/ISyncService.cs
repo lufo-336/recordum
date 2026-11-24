@@ -43,7 +43,12 @@ public sealed record SyncPeerStatus(string DeviceName, DateTimeOffset? FileWritt
 /// <summary>Esito di un giro: <c>Ran</c> falso se l'unione non è configurata o è scollegata.</summary>
 public sealed record SyncRunResult(bool Ran, bool OwnFileWritten, IReadOnlyList<SyncPeerStatus> Peers);
 
+public enum SyncJoinRefusal { MissingConfiguration, NoReadablePeer }
+
 /// <summary><see cref="ISyncService.JoinAsync"/> si rifiuta prima di toccare qualcosa: manca la frase o la cartella, o
 /// per "Parti dai dati degli altri" nessun file di un altro dispositivo si apre. Il messaggio è solo per i log: la UI
 /// mostra la sua stringa tradotta.</summary>
-public sealed class SyncJoinRefusedException(string message) : Exception(message);
+public sealed class SyncJoinRefusedException(SyncJoinRefusal reason, string message) : Exception(message)
+{
+    public SyncJoinRefusal Reason { get; } = reason;
+}

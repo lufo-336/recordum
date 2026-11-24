@@ -326,6 +326,62 @@ public sealed class SyncArchiveTests
         act.Should().Throw<SyncFormatException>();
     }
 
+    [Theory]
+    [InlineData(-1L)]
+    [InlineData(SyncArchiveReader.MaxMs + 1)]
+    public async Task WrittenAtMsOutsideRangeIsRejected(long badWrittenAtMs)
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zip, DefaultOptions());
+        await EditManifestAsync(zip, json => System.Text.RegularExpressions.Regex.Replace(
+            json, "\"written_at_ms\":-?\\d+", $"\"written_at_ms\":{badWrittenAtMs}"));
+
+        zip.Position = 0;
+        var act = () => SyncArchiveReader.Open(zip);
+        act.Should().Throw<SyncFormatException>();
+    }
+
+    [Theory]
+    [InlineData(",\"updated_at_ms\":\\d+", "")]
+    [InlineData("\"updated_at_ms\":\\d+", "\"updated_at_ms\":\"abc\"")]
+    [InlineData("\"updated_at_ms\":\\d+", "\"updated_at_ms\":null")]
+    public async Task KnownEntityWithoutValidUpdatedAtMsIsRejected(string pattern, string replacement) =>
+        await AssertEditRejectedAsync("data/tag.jsonl", bytes =>
+            Encoding.UTF8.GetBytes(System.Text.RegularExpressions.Regex.Replace(
+                Encoding.UTF8.GetString(bytes), pattern, replacement)));
+
+    [Fact]
+    public async Task OlderMajorVersionIsNotNewerFormat()
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zip, DefaultOptions());
+        await ReplaceManifestVersionAsync(zip, "0.9");
+
+        zip.Position = 0;
+        var act = () => SyncArchiveReader.Open(zip);
+        act.Should().Throw<SyncFormatException>().Which.IsNewerMajorVersion.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task JsonlBeyondCapIsRejected()
+    {
+        await using var fx = new DbFixture();
+        await SyncSeed.SeedAsync(fx);
+        await using var db = await fx.Factory.CreateDbContextAsync();
+        using var zip = new MemoryStream();
+        await SyncArchiveWriter.WriteAsync(db, zip, DefaultOptions());
+
+        zip.Position = 0;
+        var act = () => SyncArchiveReader.Open(zip, maxExtractBytes: 512);
+        act.Should().Throw<SyncFormatException>();
+    }
+
     [Fact]
     public async Task BrokenJsonLineRejectsWholeFile()
     {

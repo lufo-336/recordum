@@ -9,6 +9,7 @@ using Recordum.Data.Security;
 using Recordum.Data.Services;
 using Recordum.Data.Sync;
 using Recordum.Data.Tests.Fixtures;
+using Recordum.Data.Tests.Fixtures.Sync;
 
 namespace Recordum.Data.Tests.Sync;
 
@@ -357,5 +358,47 @@ public sealed class SyncTriggerTests
             rekey.ExecuteNonQuery();
         }
         SqliteConnection.ClearAllPools();
+    }
+
+    [Fact]
+    public async Task ReinsertInTheSameMillisecondKeepsTheRow()
+    {
+        var h = Guid.NewGuid();
+        var t1 = Guid.NewGuid();
+        var t2 = Guid.NewGuid();
+        await using var a = new SyncDevice("a", startMs: 1_000);
+        await using var b = new SyncDevice("b", startMs: 1_000);
+
+        await a.EditAsync(1_000, db =>
+        {
+            db.HabitNodes.Add(new HabitNode { Id = h, Name = "h", NodeType = NodeType.Habit, HabitType = HabitType.Action, Color = "#808080" });
+            db.Tags.AddRange(new Tag { Id = t1, Name = "t1" }, new Tag { Id = t2, Name = "t2" });
+            db.HabitNodeTags.Add(new HabitNodeTag { HabitNodeId = h, TagId = t1 });
+        });
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        // Orologio fermo: ExecuteDelete + Add nello stesso millisecondo di TagService.SetTagsAsync.
+        a.Clock.Set(DateTimeOffset.FromUnixTimeMilliseconds(2_000));
+        var tagService = new TagService(a.Fixture.Factory, a.Clock, NullLogger<TagService>.Instance);
+        await tagService.SetTagsAsync(h, [t1, t2]);
+
+        await b.MergeAsync(await a.WriteFileAsync());
+        await a.MergeAsync(await b.WriteFileAsync());
+
+        var expectedTombId = $"{Id(h)}|{Id(t1)}";
+        foreach (var d in new[] { a, b })
+        {
+            var tagIds = await d.QueryAsync(db => db.HabitNodeTags.AsNoTracking()
+                .Where(l => l.HabitNodeId == h)
+                .Select(l => l.TagId)
+                .ToListAsync());
+            tagIds.Should().BeEquivalentTo([t1, t2]);
+
+            var stones = await d.QueryAsync(db => db.SyncTombstones.AsNoTracking()
+                .Where(t => t.Entity == "habit_node_tag" && t.EntityId == expectedTombId)
+                .ToListAsync());
+            stones.Should().BeEmpty();
+        }
     }
 }

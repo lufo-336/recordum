@@ -17,11 +17,15 @@ public static class SyncArchiveReader
     /// da un pari fidato: è un dato rovinato, non un attacco. ponytail: un'ora lontana ma valida (anno 3000) fissa la
     /// riga finché nessuno la supera; è il limite di ogni LWW con l'orologio di chi scrive.</summary>
     internal const long MaxMs = 253_402_300_799_999; // DateTimeOffset.MaxValue.ToUnixTimeMilliseconds()
+    internal const long MaxManifestBytes = 1L * 1024 * 1024;
+    internal const long MaxExtractBytes = 4L * 1024 * 1024 * 1024;
 
     private const int SupportedMajorVersion = 1;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
-    public static SyncSnapshot Open(Stream zipIn)
+    public static SyncSnapshot Open(Stream zipIn) => Open(zipIn, MaxExtractBytes);
+
+    internal static SyncSnapshot Open(Stream zipIn, long maxExtractBytes)
     {
         ArgumentNullException.ThrowIfNull(zipIn);
         if (!zipIn.CanSeek)
@@ -46,9 +50,10 @@ public static class SyncArchiveReader
                     throw new SyncFormatException($"Duplicate entry '{e.FullName}' in sync archive.");
             }
 
-            var manifest = ReadAndValidateManifest(archive);
-            var rows = ReadAllEntityRows(archive);
-            var tombstones = ReadTombstones(archive);
+            var remaining = maxExtractBytes;
+            var manifest = ReadAndValidateManifest(archive, ref remaining);
+            var rows = ReadAllEntityRows(archive, ref remaining);
+            var tombstones = ReadTombstones(archive, ref remaining);
             return new SyncSnapshot(archive, manifest, rows, tombstones);
         }
         catch (DecoderFallbackException ex)
@@ -63,7 +68,7 @@ public static class SyncArchiveReader
         }
     }
 
-    private static SyncManifest ReadAndValidateManifest(ZipArchive archive)
+    private static SyncManifest ReadAndValidateManifest(ZipArchive archive, ref long remaining)
     {
         var entry = archive.GetEntry("manifest.json")
             ?? throw new SyncFormatException("Missing manifest.json in sync archive.");
@@ -71,8 +76,9 @@ public static class SyncArchiveReader
         SyncManifest? manifest;
         try
         {
-            using var stream = entry.Open();
+            using var stream = new BoundedReadStream(entry.Open(), Math.Min(MaxManifestBytes, remaining));
             manifest = JsonSerializer.Deserialize<SyncManifest>(stream);
+            remaining -= stream.BytesRead;
         }
         catch (JsonException ex)
         {
@@ -86,6 +92,9 @@ public static class SyncArchiveReader
             throw new SyncFormatException($"Unsupported sync format '{manifest.Format}'.");
 
         ValidateFormatVersion(manifest.FormatVersion);
+
+        if (manifest.WrittenAtMs is < 0 or > MaxMs)
+            throw new SyncFormatException($"Invalid manifest 'written_at_ms': {manifest.WrittenAtMs} is outside 0..{MaxMs}.");
 
         if (string.IsNullOrWhiteSpace(manifest.DeviceId))
             throw new SyncFormatException("Manifest device_id is required.");
@@ -111,10 +120,12 @@ public static class SyncArchiveReader
         }
 
         if (major != SupportedMajorVersion)
-            throw new SyncFormatException($"Unsupported major format_version '{formatVersion}'.", isNewerMajorVersion: true);
+            throw new SyncFormatException(
+                $"Unsupported major format_version '{formatVersion}'.",
+                isNewerMajorVersion: major > SupportedMajorVersion);
     }
 
-    private static Dictionary<string, IReadOnlyList<SyncRow>> ReadAllEntityRows(ZipArchive archive)
+    private static Dictionary<string, IReadOnlyList<SyncRow>> ReadAllEntityRows(ZipArchive archive, ref long remaining)
     {
         var knownEntities = SyncCatalog.Entities.ToDictionary(e => e.PublicName, StringComparer.Ordinal);
         var result = new Dictionary<string, IReadOnlyList<SyncRow>>(knownEntities.Count, StringComparer.Ordinal);
@@ -131,7 +142,7 @@ public static class SyncArchiveReader
             var isKnown = knownEntities.TryGetValue(publicName, out var entity);
             var hasIdField = isKnown && entity!.Fields.Any(f => string.Equals(f.PublicName, "id", StringComparison.Ordinal));
 
-            var parsedRows = ParseEntityJsonLines(entry, keepIdInFields: !isKnown || hasIdField, isKnown ? entity : null);
+            var parsedRows = ParseEntityJsonLines(entry, keepIdInFields: !isKnown || hasIdField, isKnown ? entity : null, ref remaining);
             if (isKnown)
             {
                 result[publicName] = parsedRows;
@@ -147,14 +158,14 @@ public static class SyncArchiveReader
         return result;
     }
 
-    private static List<SyncRow> ParseEntityJsonLines(ZipArchiveEntry entry, bool keepIdInFields, SyncEntity? entity)
+    private static List<SyncRow> ParseEntityJsonLines(ZipArchiveEntry entry, bool keepIdInFields, SyncEntity? entity, ref long remaining)
     {
         var rows = new List<SyncRow>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var timedFieldNames = entity is null
             ? null
             : SyncCatalog.TimedFields(entity).Select(f => f.PublicName).ToHashSet(StringComparer.Ordinal);
-        using var stream = entry.Open();
+        using var stream = new BoundedReadStream(entry.Open(), remaining);
         using var reader = new StreamReader(stream, StrictUtf8, detectEncodingFromByteOrderMarks: false);
 
         var lineNumber = 0;
@@ -199,9 +210,21 @@ public static class SyncArchiveReader
                     fields[prop.Name] = prop.Value.Clone();
                 }
 
-                if (root.TryGetProperty("updated_at_ms", out var msProp) && msProp.ValueKind == JsonValueKind.Number
+                if (entity is not null)
+                {
+                    if (!root.TryGetProperty("updated_at_ms", out var msProp)
+                        || msProp.ValueKind != JsonValueKind.Number
+                        || !msProp.TryGetInt64(out var rowMs)
+                        || rowMs is < 0 or > MaxMs)
+                    {
+                        throw new SyncFormatException($"Missing or invalid 'updated_at_ms' in '{entry.FullName}' at line {lineNumber}.");
+                    }
+                }
+                else if (root.TryGetProperty("updated_at_ms", out var msProp) && msProp.ValueKind == JsonValueKind.Number
                     && (!msProp.TryGetInt64(out var rowMs) || rowMs is < 0 or > MaxMs))
+                {
                     throw new SyncFormatException($"Invalid 'updated_at_ms' in '{entry.FullName}' at line {lineNumber}: outside 0..{MaxMs}.");
+                }
 
                 var fieldMs = ReadFieldMs(root, timedFieldNames, entry.FullName, lineNumber);
 
@@ -215,6 +238,7 @@ public static class SyncArchiveReader
             }
         }
 
+        remaining -= stream.BytesRead;
         return rows;
     }
 
@@ -278,14 +302,14 @@ public static class SyncArchiveReader
             throw new SyncFormatException($"Row id '{id}' does not match its key fields in '{file}' at line {lineNumber}.");
     }
 
-    private static List<SyncTombstoneRow> ReadTombstones(ZipArchive archive)
+    private static List<SyncTombstoneRow> ReadTombstones(ZipArchive archive, ref long remaining)
     {
         var entry = archive.GetEntry("tombstones.jsonl");
         if (entry is null)
             return [];
 
         var tombstones = new List<SyncTombstoneRow>();
-        using var stream = entry.Open();
+        using var stream = new BoundedReadStream(entry.Open(), remaining);
         using var reader = new StreamReader(stream, StrictUtf8, detectEncodingFromByteOrderMarks: false);
 
         var lineNumber = 0;
@@ -324,6 +348,7 @@ public static class SyncArchiveReader
             }
         }
 
+        remaining -= stream.BytesRead;
         return tombstones;
     }
 
@@ -360,5 +385,78 @@ public static class SyncArchiveReader
             throw new SyncFormatException($"Invalid '{propertyName}' in 'tombstones.jsonl' at line {lineNumber}.");
 
         return prop.GetString();
+    }
+
+    private sealed class BoundedReadStream(Stream inner, long maxBytes) : Stream
+    {
+        private long _bytesRead;
+
+        public long BytesRead => _bytesRead;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => _bytesRead;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => inner.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var read = inner.Read(buffer, offset, count);
+            Account(read);
+            return read;
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            var read = inner.Read(buffer);
+            Account(read);
+            return read;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var read = await inner.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+            Account(read);
+            return read;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var read = await inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            Account(read);
+            return read;
+        }
+
+        private void Account(int read)
+        {
+            if (read <= 0)
+                return;
+
+            _bytesRead += read;
+            if (_bytesRead > maxBytes)
+                throw new SyncFormatException($"Sync archive decompressed data exceeds the maximum supported size ({maxBytes} bytes).");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                inner.Dispose();
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await inner.DisposeAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }

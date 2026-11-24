@@ -69,7 +69,7 @@ public sealed class SyncSettingsViewModelTests : IDisposable
 
         public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct)
         {
-            if (RefuseJoin) throw new SyncJoinRefusedException("refused");
+            if (RefuseJoin) throw new SyncJoinRefusedException(SyncJoinRefusal.NoReadablePeer, "refused");
             JoinChoices.Add(choice);
             JoinState = SyncJoinState.Joined;
             return Task.CompletedTask;

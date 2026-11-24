@@ -917,6 +917,196 @@ public sealed class SyncServiceTests : IDisposable
         public Task WriteOwnAsync(Func<Stream, Task> write, CancellationToken ct) => inner.WriteOwnAsync(write, ct);
     }
 
+    [Fact]
+    public async Task StartFromOthersKeepsLocalDataWhenNoPeerMerges()
+    {
+        await using var peer = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await peer.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Peer Habit")));
+        await peer.Service.RunAsync(CancellationToken.None);
+
+        // Il file del pari supera SyncArchiveReader.Open (e quindi AnyPeerOpensAsync) ma fallisce in SyncRowCodec.ToDb.
+        var peerFile = await peer.GetOwnFilePathAsync();
+        using (var plainZip = new MemoryStream())
+        {
+            await using (var encIn = File.OpenRead(peerFile))
+                await peer.Service.ExportPlainAsync(encIn, plainZip, SharedPassphrase, CancellationToken.None);
+
+            plainZip.Position = 0;
+            using (var archive = new ZipArchive(plainZip, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                var entry = archive.GetEntry("data/habit_node.jsonl")!;
+                string text;
+                using (var reader = new StreamReader(entry.Open(), Encoding.UTF8))
+                    text = await reader.ReadToEndAsync();
+                entry.Delete();
+                await using var writer = new StreamWriter(archive.CreateEntry("data/habit_node.jsonl").Open(), new UTF8Encoding(false));
+                await writer.WriteAsync(text.Replace("\"node_type\":\"Habit\"", "\"node_type\":\"NotAType\"", StringComparison.Ordinal));
+            }
+
+            plainZip.Position = 0;
+            await using var encOut = File.Create(peerFile);
+            await peer.Service.ReencryptAsync(plainZip, encOut, SharedPassphrase, CancellationToken.None);
+        }
+
+        await using var joining = await CreateNodeAsync("Laptop", _sharedFolder, joined: false, startMs: 2_000);
+        await joining.EditAsync(2_100, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H2, "Local Kept Habit"));
+            db.UnitsOfMeasure.Add(new UnitOfMeasure { Id = Guid.NewGuid(), Code = "local-unit", Name = "Local Unit", Symbol = "lu" });
+            db.ScaleTemplates.Add(new ScaleTemplate { Id = Guid.NewGuid(), Code = "local-scale", Name = "Local Scale", MinValue = 1, MaxValue = 5 });
+        });
+        var unitsBefore = await joining.CountAsync("units_of_measure");
+        var scalesBefore = await joining.CountAsync("scale_templates");
+
+        var act = () => joining.Service.JoinAsync(SyncJoinChoice.StartFromOthers, CancellationToken.None);
+
+        (await act.Should().ThrowAsync<SyncJoinRefusedException>())
+            .Which.Reason.Should().Be(SyncJoinRefusal.NoReadablePeer);
+        (await joining.QueryAsync(db => db.HabitNodes.AsNoTracking().Select(n => n.Name).ToListAsync()))
+            .Should().Equal("Local Kept Habit");
+        (await joining.CountAsync("units_of_measure")).Should().Be(unitsBefore);
+        (await joining.CountAsync("scale_templates")).Should().Be(scalesBefore);
+        (await joining.Settings.GetAsync(SyncService.JoinedSettingKey)).Should().NotBe("true");
+        File.Exists(await joining.GetOwnFilePathAsync()).Should().BeFalse();
+        Directory.EnumerateFileSystemEntries(joining.Paths.TempDirectory).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task JoinStateIsNotConfiguredWithoutPassphrase()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: false, startMs: 1_000);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Local Habit")));
+        await a.QueryAsync(db => db.AppSettings.Where(s => s.Key == SyncService.PassphraseSettingKey).ExecuteDeleteAsync());
+
+        (await a.Service.GetJoinStateAsync(CancellationToken.None)).Should().Be(SyncJoinState.NotConfigured);
+
+        var act = () => a.Service.JoinAsync(SyncJoinChoice.KeepThisDeviceToo, CancellationToken.None);
+        (await act.Should().ThrowAsync<SyncJoinRefusedException>())
+            .Which.Reason.Should().Be(SyncJoinRefusal.MissingConfiguration);
+    }
+
+    [Fact]
+    public async Task FieldTimeOnlyChangeRewritesOwnFile()
+    {
+        // 1. Solo sync_field_ms cambia (stessi valori, stessa updated_at_ms), con scrittura fallita al primo giro.
+        var failA = false;
+        await using var a = await CreateNodeAsync(
+            "Fedora", _sharedFolder, joined: true, startMs: 1_000,
+            storeFactory: (folder, own) => new FaultyStore(new FolderSyncFileStore(folder, own), () => failA));
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 1_000);
+
+        await a.EditAsync(1_000, db =>
+        {
+            var h = NewHabit(H1, "Init");
+            h.Color = "#111111";
+            db.HabitNodes.Add(h);
+        });
+        await a.EditAsync(2_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        await a.Service.RunAsync(CancellationToken.None);
+
+        await b.EditAsync(1_500, db =>
+        {
+            var h = NewHabit(H1, "Init");
+            h.Color = "#111111";
+            db.HabitNodes.Add(h);
+        });
+        await b.EditAsync(2_000, async db => (await db.HabitNodes.SingleAsync(n => n.Id == H1)).Name = "Walk");
+        await b.Service.RunAsync(CancellationToken.None);
+
+        failA = true;
+        await FluentActions.Awaiting(() => a.Service.RunAsync(CancellationToken.None)).Should().ThrowAsync<IOException>();
+        failA = false;
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue("sync_field_ms changed");
+
+        // 2. Solo il contenuto della foto cambia (stessa updated_at_ms e sync_field_ms). La firma guarda le lunghezze, non
+        // i byte: un contenuto diverso della stessa lunghezza aspetta la prossima scrittura vera.
+        var rawPhoto = SyncSeed.CreateSamplePhotoBytes();
+        byte[] rawAlt = [.. rawPhoto, 0];
+        var (photo1, photo2) = StringComparer.Ordinal.Compare(
+            Convert.ToHexStringLower(SHA256.HashData(rawPhoto)),
+            Convert.ToHexStringLower(SHA256.HashData(rawAlt))) < 0
+            ? (rawAlt, rawPhoto)
+            : (rawPhoto, rawAlt);
+        var thumb = SyncSeed.CreateSampleThumbnailBytes();
+        var attId = new Guid("33333333-0000-0000-0000-000000000001");
+        await a.EditAsync(3_000, db =>
+        {
+            db.Notes.Add(new Note { Id = N1, HabitNodeId = H1, BodyMd = "p" });
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = attId, NoteId = N1, Filename = "a.jpg", MimeType = "image/jpeg",
+                FileSizeBytes = photo1.Length, Content = photo1, Thumbnail = thumb,
+            });
+        });
+        await a.EditAsync(4_000, async db => (await db.Attachments.SingleAsync()).Filename = "same.jpg");
+        await a.Service.RunAsync(CancellationToken.None);
+
+        await b.EditAsync(3_000, db =>
+        {
+            db.Notes.Add(new Note { Id = N1, HabitNodeId = H1, BodyMd = "p" });
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = attId, NoteId = N1, Filename = "a.jpg", MimeType = "image/jpeg",
+                FileSizeBytes = photo2.Length, Content = photo2, Thumbnail = thumb,
+            });
+        });
+        await b.EditAsync(4_000, async db => (await db.Attachments.SingleAsync()).Filename = "same.jpg");
+        await b.Service.RunAsync(CancellationToken.None);
+
+        failA = true;
+        await FluentActions.Awaiting(() => a.Service.RunAsync(CancellationToken.None)).Should().ThrowAsync<IOException>();
+        failA = false;
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue("photo content changed without timestamp change");
+
+        // 3. Solo alias_of di una lapide già esistente cambia (stesso deleted_at_ms).
+        var tagMin = new Guid("10000000-0000-0000-0000-000000000001");
+        var tagMax = new Guid("90000000-0000-0000-0000-000000000009");
+        await a.EditAsync(5_000, db =>
+        {
+            db.Tags.Add(new Tag { Id = tagMin, Name = "outdoor" });
+            db.Tags.Add(new Tag { Id = tagMax, Name = "temp" });
+        });
+        await a.EditAsync(7_000, db => db.Tags.Where(t => t.Id == tagMax).ExecuteDeleteAsync());
+        await a.Service.RunAsync(CancellationToken.None);
+
+        await b.EditAsync(5_000, db => db.Tags.Add(new Tag { Id = tagMin, Name = "outdoor" }));
+        await b.EditAsync(6_000, db => db.SyncTombstones.Add(new SyncTombstone
+        {
+            Entity = "tag",
+            EntityId = SyncSeed.Stored(tagMax),
+            DeletedAtMs = 6_000,
+            AliasOf = SyncSeed.Stored(tagMin),
+        }));
+        await b.Service.RunAsync(CancellationToken.None);
+
+        failA = true;
+        await FluentActions.Awaiting(() => a.Service.RunAsync(CancellationToken.None)).Should().ThrowAsync<IOException>();
+        failA = false;
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue("tombstone alias_of changed");
+    }
+
+    [Fact]
+    public async Task DisconnectClearsRunState()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Kept")));
+        await a.Service.RunAsync(CancellationToken.None);
+        await a.Settings.SetAsync(SyncService.PendingWrittenHashSettingKey, "pending-hash");
+
+        (await a.Service.GetStatusAsync(CancellationToken.None)).LastRun.Should().NotBeNull();
+
+        await a.Service.DisconnectAsync(CancellationToken.None);
+
+        (await a.Settings.GetAsync(SyncService.LastRunMsSettingKey)).Should().BeNull();
+        (await a.Settings.GetAsync(SyncService.LastWrittenSignatureSettingKey)).Should().BeNull();
+        (await a.Settings.GetAsync(SyncService.LastWrittenHashSettingKey)).Should().BeNull();
+        (await a.Settings.GetAsync(SyncService.PendingWrittenHashSettingKey)).Should().BeNull();
+        var status = await a.Service.GetStatusAsync(CancellationToken.None);
+        status.LastRun.Should().BeNull();
+        status.OwnFileBytes.Should().Be(0);
+        status.Peers.Should().BeEmpty();
+    }
+
     private async Task<TestNode> CreateNodeAsync(
         string? deviceName,
         string sharedFolder,

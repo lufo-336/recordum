@@ -62,6 +62,18 @@ public static class SyncTriggerInstaller
                 CREATE TRIGGER "trg_sync_ins_{e.Table}" AFTER INSERT ON {table}
                 WHEN {newKeyFilter}recordum_sync_applying() = 0
                 BEGIN
+                    -- Se la stessa identità era stata cancellata nello stesso millisecondo (o dopo), la riga nuova vince
+                    -- sulla lapide e la rimuove; il filtro evita aggiornamenti inutili che riaccenderebbero upd/fms.
+                    UPDATE {table}
+                    SET updated_at_ms = MAX(
+                        NEW.updated_at_ms,
+                        (SELECT deleted_at_ms + 1 FROM sync_tombstone
+                         WHERE entity = {entityLiteral} AND entity_id = {newIdentity} AND alias_of IS NULL))
+                    WHERE {match}
+                      AND EXISTS (
+                        SELECT 1 FROM sync_tombstone
+                        WHERE entity = {entityLiteral} AND entity_id = {newIdentity} AND alias_of IS NULL AND deleted_at_ms >= NEW.updated_at_ms);
+                    DELETE FROM sync_tombstone WHERE entity = {entityLiteral} AND entity_id = {newIdentity} AND alias_of IS NULL;
                     DELETE FROM sync_field_ms WHERE entity = {entityLiteral} AND entity_id = {newIdentity};
                 END;
                 DROP TRIGGER IF EXISTS "trg_sync_fms_{e.Table}";
