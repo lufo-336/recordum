@@ -4,7 +4,8 @@
 > Mockup approvati: `docs/design/2026-11-24-telefono-onde-4-5/accesso-e-finestre.html` e `fogli.html`, sopra quelli del
 > 2026-11-10 (`docs/design/2026-11-10-telefono-mockups/cornice.html`, `oggi-striscia.html`). Sonde: Android
 > (`docs/design/2026-11-10-android-probe.md`), Drive col selettore di sistema (`docs/design/2026-11-22-saf-drive-probe.md`),
-> e quelle del §13, da fare prima del piano. Le scelte segnate *mia scelta* non le ha fatte l'autore: si possono correggere.
+> e quelle del §13, da fare prima del piano. Letta da un revisore esterno il 2026-11-24: le sue domande sono risolte
+> qui. Le scelte segnate *mia scelta* non le ha fatte l'autore: si possono correggere.
 
 ## 1. Perché
 
@@ -21,6 +22,13 @@ avvio fuori dal thread dell'interfaccia dietro una schermata d'attesa; la cornic
 fogli dal basso); portachiavi di Android con l'impronta e le regole d'accesso. **Esce quando** l'APK, installato sul
 telefono dell'autore, apre la Home dei dati veri (arrivati con un ripristino del `.recbak` del computer) e il tempo
 dall'icona alla Home è misurato e scritto (§7.4).
+
+Nell'onda 4 c'è **tutta la cornice**, perché ogni launcher deve avere la sua implementazione Android (un servizio
+mancante compila e muore all'avvio): la barra, la Home compatta, la pagina dell'abitudine a sezioni (col comando in
+basso che apre le viste di registrazione di oggi), il selettore dei modelli e il creatore come pagine, le Impostazioni
+come elenco con le pagine che esistono già (Aspetto, Dati e backup con "Backup ora" e "Ripristina…") più Sicurezza, il
+foglio di conferma, l'attesa, lo sblocco e l'errore. All'onda 5 restano i fogli per tipo dalla Home, il diario col
+`TextBox`, fotocamera, notifica e backup automatico nella cartella del selettore. *Mia scelta*.
 
 **Onda 5 — registrare tutto dal telefono.** I cinque tipi dai fogli dal basso, il diario in un campo di testo con la
 barra, la fotocamera, il timer con la notifica, il backup automatico in una cartella scelta col selettore di sistema.
@@ -128,6 +136,14 @@ cosa sta succedendo.
 Sul telefono non ci sono argomenti: la cartella dati è quella privata dell'app (`Context.FilesDir/Recordum`), passata
 esplicitamente alla sequenza; `--data-dir`, `--seed-demo` e simili restano strumenti del desktop.
 
+### 7.1b Processo e activity
+
+Su Android il processo vive più a lungo dell'activity (rotazione, tema, ritorno dal secondo piano, l'activity ricreata
+dal sistema). Il lock della cartella dati, la chiave sbloccata e il contenitore dei servizi appartengono al **processo**
+(all'`Application` di Android) e si costruiscono una volta sola; l'activity, quando nasce o rinasce, si limita a
+riattaccare la vista: mai una seconda inizializzazione, mai un secondo lock. "Blocca di nuovo" (§8.4) e il riallineamento
+della notifica (§10.4) si agganciano agli eventi dell'activity (pausa, ripresa), non all'avvio. *Mia scelta*.
+
 ### 7.2 Obiettivo
 
 **Sotto i 3 s dall'icona alla Home**, al secondo avvio a freddo, mediana di 5, **senza il tempo del dito** sul sensore
@@ -168,13 +184,20 @@ I tre modi (schermo 2a):
 Il modo non è un'impostazione nel database (serve prima di aprirlo): **è lo stato del portachiavi stesso**. Cambiarlo da
 Sicurezza riscrive la voce e può chiedere una volta l'impronta o la passphrase.
 
+**I dati del computer arrivano così** (è l'uscita dell'onda 4): primo avvio sul telefono con una passphrase del telefono
+→ Home vuota → Impostazioni › Dati e backup › "Ripristina…" → selettore di Android → il `.recbak` del computer e la sua
+passphrase di backup. Il ripristino di oggi ricifra il database ripristinato con la chiave del dispositivo che ripristina
+(`RestoreService`, `rekey`): la voce del portachiavi (che conserva la chiave derivata, non la passphrase) resta valida e
+non va riscritta. Il telefono e il computer possono avere passphrase diverse.
+
 ### 8.2 Il portachiavi di Android
 
 Un `ISecretStore` sul Keystore di Android (il contratto c'è già, sincrono, "mai sul thread dell'interfaccia": un
 riquadro dell'impronta è un'attesa come il prompt di libsecret). Solo API di sistema: `KeyGenParameterSpec`, AES-GCM,
 `android.hardware.biometrics.BiometricPrompt` con `CryptoObject` — **niente AndroidX** (*mia scelta*, regola §3). Il
-testo cifrato sta in un file nella cartella dati. `SecretKind.DbKey` segue il modo d'apertura; `SecretKind.AutoBackup`
-usa sempre la chiave senza richiesta (un backup automatico non può chiedere il dito).
+testo cifrato sta in un file nella cartella dati. `SecretKind.DbKey` (la chiave derivata del database) segue il modo
+d'apertura; `SecretKind.AutoBackup` (la **passphrase** dei backup automatici, la stessa che servirà per ripristinarli
+altrove) usa sempre la chiave senza richiesta: un backup automatico non può chiedere il dito.
 
 Il tetto di 10 s di `StoredKeyUnlock` non vale mentre il riquadro dell'impronta è aperto: il tempo è dell'utente.
 
@@ -197,7 +220,10 @@ Keystore si invalida da sola; la voce si cancella). In tutti i casi la pagina de
 - **Cambia passphrase**: riga presente e spenta ("passo 7"), come nel mockup.
 
 Le tre impostazioni sono chiavi di `app_settings` **del dispositivo**: classificate in `SyncCatalog` come locali, non
-viaggiano con l'unione.
+viaggiano con l'unione. Non viaggiano nemmeno con un **ripristino**: dopo un ripristino le chiavi locali sono quelle del
+dispositivo che ripristina (anche nessuna, e allora valgono le predefinite: 5 minuti, recenti coperte, ripasso spento).
+La stessa regola vale per le righe della Home, che sono per dispositivo: un `.recbak` del computer non porta la "Larga"
+sul telefono. *Mia scelta*; oggi il ripristino sostituisce tutto `app_settings`.
 
 ### 8.5 Il backup di Android
 
@@ -272,7 +298,11 @@ quick-add misurato e a serie). Il giorno su cui si scrive è sempre scritto nel 
 | Diario | — | gesto Diario: pagina per scrivere; gesto Nota veloce: foglio con le foto |
 | Stato | apre il foglio | approvato il 2026-11-10 |
 
-Dopo un tocco che registra (spunta, +1, ■) compare "Annulla" per 5 s.
+Dopo un tocco che registra (spunta, +1, ■, Inizia) compare "Annulla" per 5 s. Annulla toglie **esattamente ciò che il
+tocco ha creato**, passando dalle stesse strade di una cancellazione dalla Cronologia (quindi dai trigger dell'unione,
+che ne lasciano la lapide): la registrazione della spunta o del +1, il periodo appena iniziato. Dopo ■ toglie la
+sessione registrata **e rimette il timer in corso dall'orario d'inizio di prima**: chi ferma per sbaglio rivuole il
+cronometro. *Mia scelta*.
 
 ### 10.2 Il diario sul telefono
 
@@ -346,6 +376,10 @@ Prima di ogni altro lavoro dell'onda 4 (primi task del piano, stesso branch):
   suite portabili e i test `WindowsOnly` di DPAPI);
 - `Recordum.Plugins.ChartEngine` torna `net10.0` tenendo i builder (dipendono solo dai contratti); ciò che dipende da
   WPF se ne va; i suoi test seguono. Il renderer per Avalonia è del passo 7;
+- `Recordum.Plugins.ExportEngine` è già `net10.0` e **resta intero**, coi suoi test: si perde solo la finestra
+  d'export della WPF, cioè la strada per arrivarci, finché l'export non arriva su Avalonia (passo 7);
+- `Recordum.Desktop` continua a uscire per **Windows e Linux** nella v1.0 (CLAUDE.md §3); il pacchetto per Windows è
+  del passo 8, come oggi;
 - CLAUDE.md, ARCHITECTURE.md, la skill `run` e i documenti che nominano la WPF come shell viva; le regole di CLAUDE.md
   che valgono solo per la WPF si tolgono, quelle portabili restano;
 - il tracker: le voci che riguardano solo viste WPF si archiviano (regola del 2026-11-10, §5 della revisione).
@@ -366,6 +400,11 @@ App usa e getta fuori dal repo (`~/dev/_spike-telefono`), come la sonda di Drive
    Galleria; Recordum legge il flusso; i metadati che arrivano (per la regola D10).
 5. **Anteprima nelle recenti** coperta e screenshot ancora possibili.
 
+Le sonde **precedono il piano**: il piano dell'onda 4 si scrive con i loro risultati (approccio 1 o 2 per la cornice). Se
+il telefono non è disponibile quando il piano va scritto, il piano assume l'approccio 1 e il suo primo task della
+cornice ripete la sonda 1 dentro il repo come **cancello**: se fallisce, il task successivo è il ripiego dell'approccio
+2. *Mia scelta*.
+
 ## 14. Test
 
 - Viste comuni (Home compatta, pagina dell'abitudine a sezioni, fogli, Sicurezza, selettore, creatore, attesa, sblocco)
@@ -385,8 +424,13 @@ App usa e getta fuori dal repo (`~/dev/_spike-telefono`), come la sonda di Drive
   di firma stabile per il dogfooding**, fuori dal repo, con una copia di sicurezza, usata da ogni build che va sul
   telefono dell'autore. Uno script installa con `adb install -r` (mantiene i dati), rifiuta di disinstallare e ricorda
   il "Backup ora" prima di installare una build nuova.
-- L'identificativo del pacchetto (`ApplicationId`) è definitivo dal primo giorno di dati veri: cambiarlo crea un'altra
-  app con un'altra cartella dati.
+- L'identificativo del pacchetto è **`io.github.lufo336.recordum`** (autore, 2026-11-24), definitivo dal primo giorno di
+  dati veri: cambiarlo crea un'altra app con un'altra cartella dati.
+- La chiave di firma del dogfooding: un keystore generato una volta su Fedora, fuori dal repo (sotto
+  `~/.local/share/recordum-signing/`), la sua password nel portachiavi di GNOME, una copia di sicurezza dove l'autore
+  tiene le sue; le build da altre macchine la usano copiandola, mai con la chiave di debug locale. È la trappola 24 di
+  Quaestio (`it.eduits.wsaquiz`): un APK firmato con la chiave di debug di un'altra macchina non si installa sopra, e
+  l'unica strada è disinstallare perdendo i dati. *Mia scelta* il posto; la copia di sicurezza la decide l'autore.
 
 ## 16. Misure (si compila durante l'esecuzione)
 
