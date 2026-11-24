@@ -1129,6 +1129,29 @@ public sealed class SyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Echo_stops_even_when_photo_settings_differ()
+    {
+        // Gli originali presenti e la scelta delle foto sono di ciascun dispositivo: due pari con gli stessi dati e
+        // "Unisci anche le foto" diverso si riconoscono uguali, e A non riscrive l'archivio una seconda volta.
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 2_000);
+        await b.Settings.SetAsync(SyncService.IncludePhotosSettingKey, "false");
+
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Changed")));
+
+        bool[] written =
+        [
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+        ];
+
+        written.Should().Equal(true, true, false, false, false);
+    }
+
+    [Fact]
     public async Task Echo_with_three_devices_stops_after_one_round()
     {
         await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
@@ -1199,14 +1222,19 @@ public sealed class SyncServiceTests : IDisposable
 
         var sig1 = await a.Settings.GetAsync(SyncService.LastWrittenSignatureSettingKey);
         sig1.Should().NotBeNullOrEmpty();
-        (await ReadOwnManifestAsync(a)).DataSignature.Should().Be(sig1);
+        // Il manifest porta la parte dei dati della firma scritta (senza originali e scelta delle foto).
+        var data1 = (await ReadOwnManifestAsync(a)).DataSignature;
+        data1.Should().NotBeNullOrEmpty();
+        sig1.Should().StartWith(data1 + "|");
 
         await a.EditAsync(2_000, db => db.HabitNodes.Add(NewHabit(H2, "Second")));
         (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
 
         var sig2 = await a.Settings.GetAsync(SyncService.LastWrittenSignatureSettingKey);
         sig2.Should().NotBeNullOrEmpty().And.NotBe(sig1);
-        (await ReadOwnManifestAsync(a)).DataSignature.Should().Be(sig2);
+        var data2 = (await ReadOwnManifestAsync(a)).DataSignature;
+        data2.Should().NotBe(data1);
+        sig2.Should().StartWith(data2 + "|");
     }
 
     [Fact]
@@ -1241,6 +1269,7 @@ public sealed class SyncServiceTests : IDisposable
         var att1 = Guid.NewGuid();
         var att2 = Guid.NewGuid();
         var att3 = Guid.NewGuid();
+        var att4 = Guid.NewGuid();
         var photo = SyncSeed.CreateSamplePhotoBytes();
         var thumb = SyncSeed.CreateSampleThumbnailBytes();
         await a.EditAsync(1_100, db =>
@@ -1262,6 +1291,12 @@ public sealed class SyncServiceTests : IDisposable
                 {
                     Id = att3, NoteId = N1, Filename = "c.jpg", MimeType = "image/jpeg",
                     FileSizeBytes = photo.Length, Content = photo, Thumbnail = thumb, OriginDeviceName = "Telefono",
+                },
+                // Solo miniatura (arrivata con le foto spente altrove, poi identità azzerata): l'originale non è qui.
+                new Recordum.Data.Models.Attachment
+                {
+                    Id = att4, NoteId = N1, Filename = "d.jpg", MimeType = "image/jpeg",
+                    FileSizeBytes = photo.Length, Content = null, Thumbnail = thumb, OriginDeviceName = null,
                 });
         });
 
@@ -1271,6 +1306,7 @@ public sealed class SyncServiceTests : IDisposable
         all[att1].Should().Be("Scrivania");
         all[att2].Should().Be("Scrivania");
         all[att3].Should().Be("Telefono");
+        all[att4].Should().BeNull();
     }
 
     [Fact]

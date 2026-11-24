@@ -77,6 +77,30 @@ public sealed class AttachmentFileImportTests : IAsyncDisposable
         return img.Encode(SKEncodedImageFormat.Png, 90).ToArray();
     }
 
+    [Fact]
+    public async Task Thumbnail_only_row_from_sync_is_not_marked_missing()
+    {
+        // Unisci con le foto spente altrove: arriva la miniatura senza originale. Non è una riga del vecchio layout
+        // (quelle non hanno neanche la miniatura) e is_missing viaggerebbe fino al dispositivo che ha l'originale.
+        await SeedNoteAsync();
+        Guid id;
+        await using (var db = await _fx.Factory.CreateDbContextAsync())
+        {
+            var a = new Attachment
+            {
+                Id = Guid.NewGuid(), NoteId = _noteId, Filename = "p.jpg", MimeType = "image/jpeg", Thumbnail = Png(),
+            };
+            db.Attachments.Add(a);
+            await db.SaveChangesAsync();
+            id = a.Id;
+        }
+
+        var report = await Sut().RunAsync(default);
+
+        report.MarkedMissing.Should().Be(0);
+        (await RowAsync(id)).IsMissing.Should().BeFalse();
+    }
+
     private async Task<Attachment> RowAsync(Guid id)
     {
         await using var db = await _fx.Factory.CreateDbContextAsync();

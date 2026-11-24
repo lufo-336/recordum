@@ -105,7 +105,8 @@ public static class ServiceRegistrar
         services.AddScoped<Recordum.Core.IAttachmentService>(sp => new Data.Services.AttachmentService(
             sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>(),
             sp.GetRequiredService<IClock>(),
-            sp.GetRequiredService<IPluginContext>()));
+            sp.GetRequiredService<IPluginContext>(),
+            sp.GetRequiredService<IDeviceIdentity>()));
         services.AddScoped<IDiaryService, Data.Services.DiaryService>();
         services.AddScoped<IGoalService, GoalService>();
         services.AddScoped<IMetricDefinitionService, MetricDefinitionService>();

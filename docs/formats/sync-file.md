@@ -95,7 +95,7 @@ UTF-8 JSON object without BOM at the root of the ZIP:
   "merged_from": {
     "7f1e0c2a-9b3d-4f6e-8a1c-5d2b9e4f7a10": 1767225000000
   },
-  "data_signature": "15:1767225600000:1767225600000:0:0:0:0:0:0:0:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:1024/0/0:True"
+  "data_signature": "15:1767225600000:1767225600000:0:0:0:0:0:0:0:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:1024"
 }
 ```
 
@@ -110,7 +110,7 @@ UTF-8 JSON object without BOM at the root of the ZIP:
 | `includes_photos` | `boolean` | `true` when full-size photos (`photos/<id>.<ext>`) are included; `false` when only thumbnails (`photos/<id>.thumb.jpg`) are written. |
 | `entities` | `object` (`string` → `integer`) | Map of public entity name to number of rows written in `data/<entity>.jsonl`. |
 | `merged_from` | `object` (`string` → `integer`) | For each peer `device_id`, the `written_at_ms` of the last archive from that peer merged by the writer before writing this one. It tells a peer which of its own states this device has seen (§6 rule 4). Absent or `null` = empty. |
-| `data_signature` | `string?` | Opaque signature of the data carried by this archive. A peer compares it only against previous archives from the **same** device and against its own written signature to emit at most one echo (§6 rule 4). Absent or `null` = none. |
+| `data_signature` | `string?` | Opaque signature of the data carried by this archive. It does not depend on which full-size photos the writer holds or on its photo choice, so two devices with the same data have the same value. A peer compares it only against previous archives from the **same** device and against its own `data_signature` to emit at most one echo (§6 rule 4). Absent or `null` = none. |
 
 ### 2.2 JSON Lines (`data/<entity>.jsonl` and `tombstones.jsonl`)
 

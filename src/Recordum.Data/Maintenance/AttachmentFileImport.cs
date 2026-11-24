@@ -93,11 +93,13 @@ public sealed partial class AttachmentFileImport(
         return new AttachmentImportReport(imported, leftovers, orphans, skipped, missing);
     }
 
-    /// <summary>Le righe senza contenuto il cui file non esiste (nemmeno illeggibile) diventano <c>is_missing</c>.</summary>
+    /// <summary>Le righe senza contenuto il cui file non esiste (nemmeno illeggibile) diventano <c>is_missing</c>. Solo quelle
+    /// senza miniatura: una miniatura senza originale arriva dall'unione con le foto spente altrove, e <c>is_missing</c>
+    /// viaggerebbe fino al dispositivo che l'originale ce l'ha.</summary>
     private async Task<int> MarkMissingAsync(string root, CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
-        var rows = await db.Attachments.Where(a => a.Content == null && !a.IsMissing).ToListAsync(ct).ConfigureAwait(false);
+        var rows = await db.Attachments.Where(a => a.Content == null && a.Thumbnail == null && !a.IsMissing).ToListAsync(ct).ConfigureAwait(false);
         var marked = 0;
         foreach (var row in rows)
         {

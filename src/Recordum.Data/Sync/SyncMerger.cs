@@ -94,9 +94,10 @@ public static class SyncMerger
         // Lapidi e base di prima via per prime: quelle che restano dopo verrebbero dallo svuotamento (non ce ne sono).
         await ExecSqlAsync(conn, tx, "DELETE FROM \"sync_tombstone\"", ct).ConfigureAwait(false);
         await ExecSqlAsync(conn, tx, "DELETE FROM \"sync_base\"", ct).ConfigureAwait(false);
-        // I trigger sono spenti: le ore dei campi e merged_from (non abbiamo più ciò che dice di aver visto) vanno via qui.
+        // I trigger sono spenti: le ore dei campi, merged_from (non abbiamo più ciò che dice di aver visto) e le conferme
+        // dell'eco vanno via qui, nella stessa transazione dello svuotamento.
         await ExecSqlAsync(conn, tx, "DELETE FROM \"sync_field_ms\"", ct).ConfigureAwait(false);
-        await ExecSqlAsync(conn, tx, $"DELETE FROM \"app_settings\" WHERE \"key\" = '{SyncService.MergedFromSettingKey}'", ct).ConfigureAwait(false);
+        await ExecSqlAsync(conn, tx, $"DELETE FROM \"app_settings\" WHERE \"key\" IN ('{SyncService.MergedFromSettingKey}', '{SyncService.AckedDataSettingKey}')", ct).ConfigureAwait(false);
         await ExecSqlAsync(conn, tx, "UPDATE \"habit_nodes\" SET \"parent_id\" = NULL", ct).ConfigureAwait(false);
         foreach (var entity in SyncCatalog.Entities.Reverse()) // figlie prima delle madri
         {

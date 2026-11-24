@@ -10,6 +10,8 @@ using Recordum.Core.Time;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitScreen.Notes;
 
+// Alcuni test cambiano Strings.Culture (statica): girano da soli, come gli altri che lo fanno.
+[Collection(ProcessGlobalCultureCollection.Name)]
 public class NotesViewModelTests
 {
     private static NotesViewModel CreateSut(out FakeNoteService notes, out FakeEventBus bus, out FakeClock clock)

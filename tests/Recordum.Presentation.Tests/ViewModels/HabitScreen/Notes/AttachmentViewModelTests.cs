@@ -6,6 +6,8 @@ using Xunit;
 
 namespace Recordum.Presentation.Tests.ViewModels.HabitScreen.Notes;
 
+// Alcuni test cambiano Strings.Culture (statica): girano da soli, come gli altri che lo fanno.
+[Collection(ProcessGlobalCultureCollection.Name)]
 public class AttachmentViewModelTests
 {
     [Fact]

@@ -324,17 +324,18 @@ public sealed partial class SyncService(
         var ownFileWritten = false;
         if (!ownFileIsForeign)
         {
-            var signature = await ComputeSignatureAsync(includePhotos, ct).ConfigureAwait(false);
+            var (signature, dataSignature) = await ComputeSignatureAsync(includePhotos, ct).ConfigureAwait(false);
             // Eco una volta (Ruling 21): se un pari porta dati con una firma nuova (diversa dalla nostra e dall'ultima
             // confermata), riscriviamo il file per fargli arrivare il nostro merged_from; l'eco tiene la stessa firma,
-            // quindi al giro dopo nessuno risponde.
+            // quindi al giro dopo nessuno risponde. Si confronta la parte dei dati: gli originali presenti e la scelta
+            // delle foto sono di ciascun dispositivo.
             // ponytail: "firma del pari uguale alla nostra" vale "stessi dati" e salta l'eco; se due stati diversi
             // avessero la stessa firma (somme di ore che coincidono) e l'unione fosse un no-op, l'eco salterebbe e il
             // pari aspetterebbe la prossima scrittura vera. Se succede, una firma per hash delle righe al posto delle somme.
             var echoNeeded = false;
             foreach (var sig in pendingAck.Values)
             {
-                if (!string.Equals(sig, signature, StringComparison.Ordinal))
+                if (!string.Equals(sig, dataSignature, StringComparison.Ordinal))
                 {
                     echoNeeded = true;
                     break;
@@ -343,7 +344,7 @@ public sealed partial class SyncService(
 
             ownFileWritten = await WriteOwnFileIfChangedAsync(
                 store, ownPath, passphrase, deviceId, deviceName, includePhotos,
-                merged: merged || echoNeeded, mergedFrom, signature, ct).ConfigureAwait(false);
+                merged: merged || echoNeeded, mergedFrom, signature, dataSignature, ct).ConfigureAwait(false);
             if (ownFileWritten && (pendingAck.Count > 0 || ackCleared))
             {
                 foreach (var (peerId, sig) in pendingAck)
@@ -407,7 +408,7 @@ public sealed partial class SyncService(
 
     private async Task<bool> WriteOwnFileIfChangedAsync(
         ISyncFileStore store, string ownPath, string passphrase, string deviceId, string deviceName, bool includePhotos,
-        bool merged, IReadOnlyDictionary<string, long> mergedFrom, string signature, CancellationToken ct)
+        bool merged, IReadOnlyDictionary<string, long> mergedFrom, string signature, string dataSignature, CancellationToken ct)
     {
         var lastSignature = await settings.GetAsync(LastWrittenSignatureSettingKey, ct).ConfigureAwait(false);
         if (!merged && File.Exists(ownPath) && string.Equals(signature, lastSignature, StringComparison.Ordinal))
@@ -422,7 +423,7 @@ public sealed partial class SyncService(
             await using (var zip = new FileStream(tempZip, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 var options = new SyncWriteOptions(
-                    deviceId, deviceName, appVersion, includePhotos, clock.UtcNowMs, mergedFrom, signature);
+                    deviceId, deviceName, appVersion, includePhotos, clock.UtcNowMs, mergedFrom, dataSignature);
                 await SyncArchiveWriter.WriteAsync(db, zip, options, ct).ConfigureAwait(false);
             }
 
@@ -570,20 +571,27 @@ public sealed partial class SyncService(
         await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
         {
             await using var tx = await db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
-            // Prima volta che questo database riceve un'identità: tutte le foto già presenti sono sue.
-            // Rigenerare l'identità (Ruling 18-19, DB copiato su un'altra macchina) non tocca le foto.
+            // Questo database riceve un'identità (la prima volta, o dopo un ripristino o "Scollega"): le foto senza
+            // origine il cui originale sta qui sono sue. Una miniatura senza originale arriva da un altro dispositivo e
+            // resta senza nome. Rigenerare l'identità (Ruling 18-19, DB copiato su un'altra macchina) non tocca le foto.
             var hadIdentity = await db.SyncMeta.AnyAsync(ct).ConfigureAwait(false);
             await db.SyncMeta.ExecuteDeleteAsync(ct).ConfigureAwait(false);
             await db.SyncBases.ExecuteDeleteAsync(ct).ConfigureAwait(false);
             db.SyncMeta.Add(meta);
             if (!hadIdentity)
             {
+                // Solo gli id: caricare le righe porterebbe in memoria ogni originale.
                 var unstamped = await db.Attachments
-                    .Where(a => a.OriginDeviceName == null)
+                    .Where(a => a.OriginDeviceName == null && a.Content != null)
+                    .Select(a => a.Id)
                     .ToListAsync(ct)
                     .ConfigureAwait(false);
-                foreach (var a in unstamped)
-                    a.OriginDeviceName = meta.DeviceName;
+                foreach (var id in unstamped)
+                {
+                    var stub = new Recordum.Data.Models.Attachment { Id = id };
+                    db.Attachments.Attach(stub);
+                    stub.OriginDeviceName = meta.DeviceName;
+                }
             }
             await db.SaveChangesAsync(ct).ConfigureAwait(false);
             await tx.CommitAsync(ct).ConfigureAwait(false);
@@ -725,8 +733,10 @@ public sealed partial class SyncService(
 
     /// <summary>Cambia quando cambia qualcosa che il proprio file porta: le righe che viaggiano (quante, l'ora più
     /// recente e una somma delle ore, così si vede anche una modifica con un'ora più vecchia del massimo, quando un pari
-    /// ha l'orologio avanti), le lapidi e la scelta delle foto.</summary>
-    private async Task<string> ComputeSignatureAsync(bool includePhotos, CancellationToken ct)
+    /// ha l'orologio avanti), le lapidi e la scelta delle foto. <c>Data</c> è la parte uguale su due dispositivi con gli
+    /// stessi dati (va nel manifest, Ruling 21); <c>Full</c> aggiunge gli originali presenti e la scelta delle foto, di
+    /// questo dispositivo, e decide se riscrivere il proprio file.</summary>
+    private async Task<(string Full, string Data)> ComputeSignatureAsync(bool includePhotos, CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         await db.Database.OpenConnectionAsync(ct).ConfigureAwait(false);
@@ -745,10 +755,11 @@ public sealed partial class SyncService(
         var (tombs, tombMax, tombSum) = await AggregateAsync(conn, "sync_tombstone", "deleted_at_ms", null, ct).ConfigureAwait(false);
         var (fmsCount, fmsMax, fmsSum) = await AggregateAsync(conn, "sync_field_ms", "ms", null, ct).ConfigureAwait(false);
         var aliasSig = await AliasSignatureAsync(conn, ct).ConfigureAwait(false);
-        var photoSig = await PhotoSignatureAsync(conn, includePhotos, ct).ConfigureAwait(false);
-        return string.Create(
+        var (thumbSum, contentCount, contentSum) = await PhotoSignatureAsync(conn, includePhotos, ct).ConfigureAwait(false);
+        var data = string.Create(
             CultureInfo.InvariantCulture,
-            $"{rows}:{max}:{sum}:{tombs}:{tombMax}:{tombSum}:{fmsCount}:{fmsMax}:{fmsSum}:{aliasSig}:{photoSig}:{includePhotos}");
+            $"{rows}:{max}:{sum}:{tombs}:{tombMax}:{tombSum}:{fmsCount}:{fmsMax}:{fmsSum}:{aliasSig}:{thumbSum}");
+        return (string.Create(CultureInfo.InvariantCulture, $"{data}|{contentCount}/{contentSum}:{includePhotos}"), data);
     }
 
     private static async Task<string> AliasSignatureAsync(SqliteConnection conn, CancellationToken ct)
@@ -768,7 +779,8 @@ public sealed partial class SyncService(
     }
 
     // Lunghezze, non byte: la firma gira a ogni giro e leggere ogni foto costerebbe GB. length() di SQLite non carica il blob.
-    private static async Task<string> PhotoSignatureAsync(SqliteConnection conn, bool includePhotos, CancellationToken ct)
+    private static async Task<(long ThumbSum, long ContentCount, long ContentSum)> PhotoSignatureAsync(
+        SqliteConnection conn, bool includePhotos, CancellationToken ct)
     {
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = includePhotos
@@ -776,7 +788,7 @@ public sealed partial class SyncService(
             : "SELECT COALESCE(SUM(length(\"thumbnail\")), 0), 0, 0 FROM \"attachment\"";
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         await reader.ReadAsync(ct).ConfigureAwait(false);
-        return string.Create(CultureInfo.InvariantCulture, $"{reader.GetInt64(0)}/{reader.GetInt64(1)}/{reader.GetInt64(2)}");
+        return (reader.GetInt64(0), reader.GetInt64(1), reader.GetInt64(2));
     }
 
     private static async Task<(long Rows, long Max, long Sum)> AggregateAsync(
