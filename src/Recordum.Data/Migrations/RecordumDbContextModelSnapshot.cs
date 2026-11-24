@@ -2698,6 +2698,10 @@ namespace Recordum.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("note_id");
 
+                    b.Property<string>("OriginDeviceName")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("origin_device_name");
+
                     b.Property<byte[]>("Thumbnail")
                         .HasColumnType("BLOB")
                         .HasColumnName("thumbnail");

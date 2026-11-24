@@ -1233,6 +1233,97 @@ public sealed class SyncServiceTests : IDisposable
         ackedAfterJoin.Should().NotBeNullOrEmpty().And.NotContain("old-peer");
     }
 
+    [Fact]
+    public async Task Identity_creation_stamps_existing_photos_with_this_device()
+    {
+        await using var a = await CreateNodeAsync(
+            deviceName: null, _sharedFolder, joined: true, startMs: 1_000, machineName: "Scrivania");
+        var att1 = Guid.NewGuid();
+        var att2 = Guid.NewGuid();
+        var att3 = Guid.NewGuid();
+        var photo = SyncSeed.CreateSamplePhotoBytes();
+        var thumb = SyncSeed.CreateSampleThumbnailBytes();
+        await a.EditAsync(1_100, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H1, "Diario"));
+            db.Notes.Add(new Note { Id = N1, HabitNodeId = H1, BodyMd = "foto" });
+            db.Attachments.AddRange(
+                new Recordum.Data.Models.Attachment
+                {
+                    Id = att1, NoteId = N1, Filename = "a.jpg", MimeType = "image/jpeg",
+                    FileSizeBytes = photo.Length, Content = photo, Thumbnail = thumb, OriginDeviceName = null,
+                },
+                new Recordum.Data.Models.Attachment
+                {
+                    Id = att2, NoteId = N1, Filename = "b.jpg", MimeType = "image/jpeg",
+                    FileSizeBytes = photo.Length, Content = photo, Thumbnail = thumb, OriginDeviceName = null,
+                },
+                new Recordum.Data.Models.Attachment
+                {
+                    Id = att3, NoteId = N1, Filename = "c.jpg", MimeType = "image/jpeg",
+                    FileSizeBytes = photo.Length, Content = photo, Thumbnail = thumb, OriginDeviceName = "Telefono",
+                });
+        });
+
+        await a.Service.RunAsync(CancellationToken.None);
+
+        var all = await a.QueryAsync(db => db.Attachments.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.OriginDeviceName));
+        all[att1].Should().Be("Scrivania");
+        all[att2].Should().Be("Scrivania");
+        all[att3].Should().Be("Telefono");
+    }
+
+    [Fact]
+    public async Task DatabaseCopiedToAnotherMachineDoesNotRestampPhotos()
+    {
+        const string copiedId = "CCCCCCCC-1111-2222-3333-444444444444";
+        await using var a = await CreateNodeAsync(
+            "OldMachine", _sharedFolder, joined: true, startMs: 1_000, explicitDeviceId: copiedId, machineName: "NewMachine");
+        var attId = Guid.NewGuid();
+        var thumb = SyncSeed.CreateSampleThumbnailBytes();
+        await a.EditAsync(1_100, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H1, "Diario"));
+            db.Notes.Add(new Note { Id = N1, HabitNodeId = H1, BodyMd = "foto" });
+            db.Attachments.Add(new Recordum.Data.Models.Attachment
+            {
+                Id = attId, NoteId = N1, Filename = "old.jpg", MimeType = "image/jpeg",
+                FileSizeBytes = 100, Content = null, Thumbnail = thumb, OriginDeviceName = null,
+            });
+        });
+
+        await a.Service.RunAsync(CancellationToken.None);
+
+        var att = await a.QueryAsync(db => db.Attachments.AsNoTracking().SingleAsync(x => x.Id == attId));
+        att.OriginDeviceName.Should().BeNull("regenerating identity (Ruling 18-19) must not touch existing photos");
+    }
+
+    [Fact]
+    public async Task Origin_travels_with_the_photo()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Telefono", _sharedFolder, joined: true, startMs: 2_000);
+        await b.Settings.SetAsync(SyncService.IncludePhotosSettingKey, "false");
+
+        await a.EditAsync(1_100, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H1, "Diario"));
+            db.Notes.Add(new Note { Id = N1, HabitNodeId = H1, BodyMd = "foto" });
+        });
+        var attSvcA = new AttachmentService(a.Fixture.Factory, a.Clock, a.Fixture.PluginContext, a.RealDeviceIdentity);
+        var imported = new ImportedPhoto(
+            Guid.NewGuid(), "tramonto.jpg", "image/jpeg", SyncSeed.CreateSamplePhotoBytes(), SyncSeed.CreateSampleThumbnailBytes());
+        await attSvcA.AddAsync(N1, imported, CancellationToken.None);
+
+        await a.Service.RunAsync(CancellationToken.None);
+        await b.Service.RunAsync(CancellationToken.None);
+
+        var attSvcB = new AttachmentService(b.Fixture.Factory, b.Clock, b.Fixture.PluginContext, b.RealDeviceIdentity);
+        var onB = (await attSvcB.ListAllAsync(CancellationToken.None)).Should().ContainSingle().Subject;
+        onB.HasContent.Should().BeFalse();
+        onB.OriginDeviceName.Should().Be("Fedora");
+    }
+
     private async Task<TestNode> CreateNodeAsync(
         string? deviceName,
         string sharedFolder,

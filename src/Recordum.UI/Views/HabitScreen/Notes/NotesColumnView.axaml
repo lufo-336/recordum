@@ -32,6 +32,11 @@
       <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
       <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
     </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="{DynamicResource FontSize.Small}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
   </UserControl.Styles>
 
   <Panel>
@@ -136,33 +141,38 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:AttachmentViewModel">
-                <Panel Width="64" Height="64" Margin="0,0,6,6">
-                  <Button x:Name="ThumbnailButton" Padding="0" MinHeight="0" Width="64" Height="64" Cursor="Hand"
-                          Background="{DynamicResource Brush.Surface}" BorderThickness="0"
-                          Command="{CompiledBinding $parent[local:NotesColumnView].((vm:NotesViewModel)DataContext).OpenLightboxCommand}"
-                          CommandParameter="{CompiledBinding}"
-                          AutomationProperties.Name="{CompiledBinding Filename}">
-                    <Panel>
-                      <Border CornerRadius="4" ClipToBounds="True" IsVisible="{CompiledBinding !ShowsPlaceholder}">
-                        <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
-                      </Border>
-                      <Path Data="{StaticResource Icon.ImageOff}" Width="24" Height="24" Stretch="Uniform"
-                            StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
-                            Stroke="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding ShowsPlaceholder}"
-                            ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"/>
-                    </Panel>
-                  </Button>
-                  <Button x:Name="RemoveAttachmentButton" Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0"
-                          HorizontalAlignment="Right" VerticalAlignment="Top"
-                          Background="{DynamicResource Brush.SurfaceElevated}"
-                          Command="{CompiledBinding $parent[local:NotesColumnView].((vm:NotesViewModel)DataContext).DeleteAttachmentCommand}"
-                          CommandParameter="{CompiledBinding}"
-                          ToolTip.Tip="{x:Static res:Strings.Notes_Attachments_Delete}"
-                          AutomationProperties.Name="{x:Static res:Strings.Notes_Attachments_Delete}">
-                    <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
-                          StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
-                  </Button>
-                </Panel>
+                <StackPanel Margin="0,0,6,6" Spacing="2">
+                  <Panel Width="64" Height="64" HorizontalAlignment="Left">
+                    <Button x:Name="ThumbnailButton" Padding="0" MinHeight="0" Width="64" Height="64" Cursor="Hand"
+                            Background="{DynamicResource Brush.Surface}" BorderThickness="0"
+                            Command="{CompiledBinding $parent[local:NotesColumnView].((vm:NotesViewModel)DataContext).OpenLightboxCommand}"
+                            CommandParameter="{CompiledBinding}"
+                            AutomationProperties.Name="{CompiledBinding Filename}">
+                      <Panel>
+                        <Border CornerRadius="4" ClipToBounds="True" IsVisible="{CompiledBinding !ShowsPlaceholder}">
+                          <Image Stretch="UniformToFill" Source="{CompiledBinding Thumbnail, Converter={x:Static conv:BytesToBitmapConverter.Instance}}"/>
+                        </Border>
+                        <Path Data="{StaticResource Icon.ImageOff}" Width="24" Height="24" Stretch="Uniform"
+                              StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
+                              Stroke="{DynamicResource Brush.TextMuted}" IsVisible="{CompiledBinding ShowsPlaceholder}"
+                              ToolTip.Tip="{x:Static res:Strings.Diario_Photo_Missing}"/>
+                      </Panel>
+                    </Button>
+                    <Button x:Name="RemoveAttachmentButton" Classes="ghost" Width="20" Height="20" Padding="0" MinHeight="0"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Background="{DynamicResource Brush.SurfaceElevated}"
+                            Command="{CompiledBinding $parent[local:NotesColumnView].((vm:NotesViewModel)DataContext).DeleteAttachmentCommand}"
+                            CommandParameter="{CompiledBinding}"
+                            ToolTip.Tip="{x:Static res:Strings.Notes_Attachments_Delete}"
+                            AutomationProperties.Name="{x:Static res:Strings.Notes_Attachments_Delete}">
+                      <Path Data="{StaticResource Icon.X}" Width="10" Height="10" Stretch="Uniform" StrokeThickness="1.6"
+                            StrokeLineCap="Round" StrokeJoin="Round" Stroke="{DynamicResource Brush.Text}"/>
+                    </Button>
+                  </Panel>
+                  <TextBlock x:Name="ThumbnailOriginHint" Classes="hint" MaxWidth="96"
+                             Text="{CompiledBinding OriginalElsewhereText}"
+                             IsVisible="{CompiledBinding OriginalElsewhereText, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -200,7 +210,7 @@
 
     <!-- Il visore: tutta la colonna, ‹ › fra le foto della nota, × ed Esc chiudono. -->
     <Grid x:Name="Lightbox" Background="{DynamicResource Brush.Background}" IsVisible="{CompiledBinding IsLightboxOpen}"
-          ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,*">
+          ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,*,Auto">
       <Button Grid.Column="2" x:Name="LightboxCloseButton" Classes="ghost" Width="28" Height="28" Padding="0" Margin="8"
               Command="{CompiledBinding CloseLightboxCommand}"
               ToolTip.Tip="{x:Static res:Strings.Notes_Lightbox_Close}" AutomationProperties.Name="{x:Static res:Strings.Notes_Lightbox_Close}">
@@ -218,6 +228,10 @@
               ToolTip.Tip="{x:Static res:Strings.Notes_Lightbox_Next}" AutomationProperties.Name="{x:Static res:Strings.Notes_Lightbox_Next}">
         <Path Classes="note-icon" Data="{StaticResource Icon.ChevronRight}"/>
       </Button>
+      <TextBlock Grid.Row="2" Grid.Column="1" x:Name="LightboxOriginHint" Classes="hint"
+                 HorizontalAlignment="Center" Margin="8,0,8,12"
+                 Text="{CompiledBinding LightboxOriginalElsewhereText}"
+                 IsVisible="{CompiledBinding LightboxOriginalElsewhereText, Converter={x:Static ObjectConverters.IsNotNull}}"/>
     </Grid>
   </Panel>
 </UserControl>

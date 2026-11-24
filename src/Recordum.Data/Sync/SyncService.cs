@@ -560,10 +560,24 @@ public sealed partial class SyncService(
         };
         await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
         {
+            await using var tx = await db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+            // Prima volta che questo database riceve un'identità: tutte le foto già presenti sono sue.
+            // Rigenerare l'identità (Ruling 18-19, DB copiato su un'altra macchina) non tocca le foto.
+            var hadIdentity = await db.SyncMeta.AnyAsync(ct).ConfigureAwait(false);
             await db.SyncMeta.ExecuteDeleteAsync(ct).ConfigureAwait(false);
             await db.SyncBases.ExecuteDeleteAsync(ct).ConfigureAwait(false);
             db.SyncMeta.Add(meta);
+            if (!hadIdentity)
+            {
+                var unstamped = await db.Attachments
+                    .Where(a => a.OriginDeviceName == null)
+                    .ToListAsync(ct)
+                    .ConfigureAwait(false);
+                foreach (var a in unstamped)
+                    a.OriginDeviceName = meta.DeviceName;
+            }
             await db.SaveChangesAsync(ct).ConfigureAwait(false);
+            await tx.CommitAsync(ct).ConfigureAwait(false);
         }
 
         deviceIdentity.Invalidate();

@@ -411,6 +411,7 @@ public static class SyncSeed
             Content = photoBytes,
             Thumbnail = thumbBytes,
             IsMissing = true,
+            OriginDeviceName = "Fedora Studio",
             CreatedAt = t0,
             UpdatedAt = t1,
             UpdatedAtMs = t1Ms,

@@ -50,10 +50,15 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     // ---- lightbox (view-only state, flat on this VM — mirrors IsShowingHistory/IsConfirmingDelete
     // rather than a child VM, matching this file's existing style) ----
     [ObservableProperty] private bool _isLightboxOpen;
-    [ObservableProperty] private AttachmentViewModel? _lightboxAttachment;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LightboxOriginalElsewhereText))]
+    private AttachmentViewModel? _lightboxAttachment;
 
     /// <summary>Full photo bytes of <see cref="LightboxAttachment"/>, read from the database when it changes.</summary>
     [ObservableProperty] private byte[]? _lightboxContent;
+
+    /// <summary>Didascalia del visore quando l'originale della foto aperta sta su un altro dispositivo.</summary>
+    public string? LightboxOriginalElsewhereText => LightboxAttachment?.OriginalElsewhereText;
 
     partial void OnLightboxAttachmentChanged(AttachmentViewModel? value)
     {

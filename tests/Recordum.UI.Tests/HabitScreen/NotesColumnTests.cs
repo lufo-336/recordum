@@ -6,11 +6,13 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Enums;
 using Recordum.Core.Models;
+using Recordum.Data;
 using Recordum.Presentation.ViewModels.HabitScreen;
 using Recordum.Presentation.ViewModels.HabitScreen.Notes;
 using Recordum.UI.Controls;
@@ -505,6 +507,96 @@ public class NotesColumnTests
         o.View.GetVisualDescendants().OfType<DiaryEditor>().Should().NotContain(e => e.Name == "DayNoteRendered",
             "senza nota da leggere l'editor che rende non si costruisce");
         o.Window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Attachments_show_origin_hint_only_when_original_is_missing_locally()
+    {
+        var prevStrings = Recordum.Presentation.Resources.Strings.Culture;
+        var prevCurrent = System.Globalization.CultureInfo.CurrentCulture;
+        var prevUi = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            var it = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            Recordum.Presentation.Resources.Strings.Culture = it;
+            System.Globalization.CultureInfo.CurrentCulture = it;
+            System.Globalization.CultureInfo.CurrentUICulture = it;
+
+            var thumb = JournalFixtures.PngBytes(64, 48);
+            var full = JournalFixtures.PngBytes(120, 90);
+            var o = await OpenAsync(async (sp, id) =>
+            {
+                var noteId = await SeedNote(sp, id, "origini");
+                var factory = sp.GetRequiredService<IDbContextFactory<RecordumDbContext>>();
+                await using var db = await factory.CreateDbContextAsync();
+                db.Attachments.Add(new Recordum.Data.Models.Attachment
+                {
+                    Id = Guid.NewGuid(),
+                    NoteId = noteId,
+                    Filename = "remote.jpg",
+                    MimeType = "image/jpeg",
+                    FileSizeBytes = 100,
+                    Content = null,
+                    Thumbnail = thumb,
+                    OriginDeviceName = "Telefono",
+                    IsMissing = false,
+                });
+                db.Attachments.Add(new Recordum.Data.Models.Attachment
+                {
+                    Id = Guid.NewGuid(),
+                    NoteId = noteId,
+                    Filename = "local.jpg",
+                    MimeType = "image/jpeg",
+                    FileSizeBytes = full.Length,
+                    Content = full,
+                    Thumbnail = thumb,
+                    OriginDeviceName = "Studio",
+                    IsMissing = false,
+                });
+                await db.SaveChangesAsync();
+            });
+
+            Click(o.Window, await RowAsync(o, "origini"));
+            var gallery = Named<ItemsControl>(o.Column, "Attachments");
+            await UntilAsync(() => gallery.GetVisualDescendants().OfType<Image>().Count(i => i.Source is not null) == 2);
+
+            var hints = gallery.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "ThumbnailOriginHint").ToList();
+            hints.Should().HaveCount(2);
+            var visibleHint = hints.Single(h => ((AttachmentViewModel)h.DataContext!).Filename == "remote.jpg");
+            var hiddenHint = hints.Single(h => ((AttachmentViewModel)h.DataContext!).Filename == "local.jpg");
+            visibleHint.IsEffectivelyVisible.Should().BeTrue();
+            visibleHint.Text.Should().Be("Originale su Telefono");
+            hiddenHint.IsVisible.Should().BeFalse();
+
+            var remoteButton = gallery.GetVisualDescendants().OfType<Button>()
+                .Single(b => b.Name == "ThumbnailButton" && ((AttachmentViewModel)b.DataContext!).Filename == "remote.jpg");
+            var thumbPos = remoteButton.TranslatePoint(new Point(0, 0), o.Column)!.Value;
+            var hintPos = visibleHint.TranslatePoint(new Point(0, 0), o.Column)!.Value;
+            hintPos.Y.Should().BeGreaterThan(thumbPos.Y, "la scritta sta sotto la miniatura");
+
+            Click(o.Window, remoteButton);
+            var viewer = Named<Control>(o.Column, "Lightbox");
+            await UntilAsync(() => viewer.IsVisible && Named<Image>(o.Column, "LightboxImage").Source is not null);
+            var viewerHint = Named<TextBlock>(o.Column, "LightboxOriginHint");
+            viewerHint.IsEffectivelyVisible.Should().BeTrue();
+            viewerHint.Text.Should().Be("Originale su Telefono");
+            var imagePos = Named<Image>(o.Column, "LightboxImage").TranslatePoint(new Point(0, 0), o.Column)!.Value;
+            var viewerHintPos = viewerHint.TranslatePoint(new Point(0, 0), o.Column)!.Value;
+            viewerHintPos.Y.Should().BeGreaterThan(imagePos.Y, "nel visore la scritta sta in basso sotto l'immagine");
+
+            var nextButton = Named<Button>(o.Column, "LightboxNextButton");
+            Click(o.Window, nextButton);
+            await UntilAsync(() => o.Vm.Notes.LightboxAttachment?.Filename == "local.jpg");
+            viewerHint.IsVisible.Should().BeFalse();
+
+            o.Window.Close();
+        }
+        finally
+        {
+            Recordum.Presentation.Resources.Strings.Culture = prevStrings;
+            System.Globalization.CultureInfo.CurrentCulture = prevCurrent;
+            System.Globalization.CultureInfo.CurrentUICulture = prevUi;
+        }
     }
 
     private static async Task<T> UntilFoundAsync<T>(Opened o, string name) where T : Control

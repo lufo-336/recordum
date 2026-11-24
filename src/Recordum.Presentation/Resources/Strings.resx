@@ -2826,4 +2826,10 @@ Details: {0}</value>
   <data name="Sync.Join.MissingConfiguration" xml:space="preserve">
     <value>Choose the folder and set the sync passphrase first.</value>
   </data>
+  <data name="Notes.Photo.OriginalOn" xml:space="preserve">
+    <value>Original on {0}</value>
+  </data>
+  <data name="Notes.Photo.OriginalElsewhere" xml:space="preserve">
+    <value>Original on another device</value>
+  </data>
 </root>

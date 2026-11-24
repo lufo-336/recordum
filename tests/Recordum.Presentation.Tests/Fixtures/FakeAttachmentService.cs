@@ -28,6 +28,7 @@ public sealed class FakeAttachmentService : IAttachmentService
             Filename = photo.Filename,
             MimeType = photo.MimeType,
             FileSizeBytes = photo.Content.Length,
+            HasContent = photo.Content.Length > 0,
         };
         Store[attachment.Id] = attachment;
         Photos[attachment.Id] = photo;

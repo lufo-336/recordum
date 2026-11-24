@@ -20,7 +20,8 @@ namespace Recordum.Data.Services;
 public sealed class AttachmentService(
     IDbContextFactory<RecordumDbContext> dbFactory,
     IClock clock,
-    IPluginContext pluginContext) : IAttachmentService
+    IPluginContext pluginContext,
+    IDeviceIdentity? deviceIdentity = null) : IAttachmentService
 {
     // Attachment is a child event of Note — it never carries created_by_plugin_id; timestamps come
     // from TimestampInterceptor. Both are accepted for parity with the rest of the service layer.
@@ -30,7 +31,7 @@ public sealed class AttachmentService(
     public async Task<Core.Models.Attachment> AddAsync(Guid noteId, ImportedPhoto photo, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(photo);
-        var entity = ToEntity(noteId, photo);
+        var entity = ToEntity(noteId, photo, deviceIdentity?.DeviceName);
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         db.Attachments.Add(entity);
         await db.SaveChangesAsync(ct);
@@ -39,7 +40,7 @@ public sealed class AttachmentService(
 
     /// <summary>Builds the row for a photo; shared with <see cref="DiaryService"/> so a diary save
     /// writes note and photos in one SaveChanges.</summary>
-    internal static Models.Attachment ToEntity(Guid noteId, ImportedPhoto photo) => new()
+    internal static Models.Attachment ToEntity(Guid noteId, ImportedPhoto photo, string? originDeviceName = null) => new()
     {
         Id = photo.Id,
         NoteId = noteId,
@@ -48,6 +49,7 @@ public sealed class AttachmentService(
         FileSizeBytes = photo.Content.Length,
         Content = photo.Content,
         Thumbnail = photo.Thumbnail,
+        OriginDeviceName = originDeviceName,
         // CreatedAt/UpdatedAt/UpdatedAtMs are populated by TimestampInterceptor on save.
     };
 
@@ -107,6 +109,8 @@ public sealed class AttachmentService(
             Filename = a.Filename,
             MimeType = a.MimeType,
             FileSizeBytes = a.FileSizeBytes,
+            HasContent = a.Content != null,
+            OriginDeviceName = a.OriginDeviceName,
             IsMissing = a.IsMissing,
             CreatedAt = a.CreatedAt,
             UpdatedAt = a.UpdatedAt,
@@ -120,6 +124,8 @@ public sealed class AttachmentService(
         Filename = entity.Filename,
         MimeType = entity.MimeType,
         FileSizeBytes = entity.FileSizeBytes,
+        HasContent = entity.Content is not null,
+        OriginDeviceName = entity.OriginDeviceName,
         IsMissing = entity.IsMissing,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt,

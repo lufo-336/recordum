@@ -20,6 +20,7 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
         builder.Property(a => a.Content).HasColumnName("content").HasColumnType("BLOB");
         builder.Property(a => a.Thumbnail).HasColumnName("thumbnail").HasColumnType("BLOB");
         builder.Property(a => a.IsMissing).HasColumnName("is_missing").HasColumnType("INTEGER").HasDefaultValue(false);
+        builder.Property(a => a.OriginDeviceName).HasColumnName("origin_device_name").HasColumnType("TEXT");
         builder.Property(a => a.CreatedAt).HasColumnName("created_at").HasColumnType("TEXT");
         builder.Property(a => a.UpdatedAt).HasColumnName("updated_at").HasColumnType("TEXT");
         builder.Property(a => a.UpdatedAtMs).HasColumnName("updated_at_ms").HasColumnType("INTEGER");

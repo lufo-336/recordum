@@ -16,7 +16,8 @@ public sealed partial class DiaryService(
     IClock clock,
     ILogger<DiaryService> logger,
     IEventBus eventBus,
-    IResetTimeResolver resetTimes) : IDiaryService
+    IResetTimeResolver resetTimes,
+    IDeviceIdentity? deviceIdentity = null) : IDiaryService
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Diary entry {NoteId} saved for habit {HabitId}")]
     private partial void LogSaved(Guid noteId, Guid habitId);
@@ -65,7 +66,8 @@ public sealed partial class DiaryService(
         db.Notes.Add(note);
         db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = note.Id, BodyMd = text, CreatedAt = now });
         await NoteTagWriter.SyncAsync(db, note.Id, text, draft.PropertyTags, ct);
-        foreach (var photo in draft.Photos) db.Attachments.Add(AttachmentService.ToEntity(note.Id, photo));
+        var origin = deviceIdentity?.DeviceName;
+        foreach (var photo in draft.Photos) db.Attachments.Add(AttachmentService.ToEntity(note.Id, photo, origin));
         // Single SaveChanges = single atomic transaction for the whole pair.
         await db.SaveChangesAsync(ct);
 
@@ -115,7 +117,8 @@ public sealed partial class DiaryService(
             db.NoteHistories.Add(new NoteHistory { Id = Guid.NewGuid(), NoteId = noteId, BodyMd = edit.Text, CreatedAt = clock.UtcNow.UtcDateTime });
         }
         await NoteTagWriter.SyncAsync(db, noteId, edit.Text, edit.PropertyTags, ct);
-        foreach (var photo in edit.AddedPhotos) db.Attachments.Add(AttachmentService.ToEntity(noteId, photo));
+        var origin = deviceIdentity?.DeviceName;
+        foreach (var photo in edit.AddedPhotos) db.Attachments.Add(AttachmentService.ToEntity(noteId, photo, origin));
         if (edit.RemovedPhotoIds.Count > 0)
         {
             // Solo foto di QUESTA nota: un id di un'altra nota si ignora, mai cancellare foto altrui.

@@ -2814,4 +2814,10 @@ Dettagli: {0}</value>
   <data name="Sync.Join.MissingConfiguration" xml:space="preserve">
     <value>Prima scegli la cartella e imposta la frase dell'unione.</value>
   </data>
+  <data name="Notes.Photo.OriginalOn" xml:space="preserve">
+    <value>Originale su {0}</value>
+  </data>
+  <data name="Notes.Photo.OriginalElsewhere" xml:space="preserve">
+    <value>Originale su un altro dispositivo</value>
+  </data>
 </root>

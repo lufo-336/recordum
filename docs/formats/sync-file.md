@@ -523,6 +523,7 @@ Table: `attachment` · Key: `id`. Binary photo blobs are externalized under `pho
 | `content` | external file (`photos/<id>.<ext>`) | Photo | Full-resolution photo bytes (omitted from JSON row and omitted from ZIP when `includes_photos == false`). |
 | `thumbnail` | external file (`photos/<id>.thumb.jpg`) | Photo | JPEG thumbnail bytes (omitted from JSON row; always written to `photos/<id>.thumb.jpg` when present). |
 | `is_missing` | `boolean` | Plain | `true` when the original file is missing and no content is available. |
+| `origin_device_name` | `string?` | Plain | Human-readable name of the device where the original photo was added (`null` if unknown). |
 | `created_at` | `string` | Plain | UTC creation timestamp. |
 | `updated_at` | `string` | Plain | UTC update timestamp. |
 | `updated_at_ms` | `integer` | Plain | Unix epoch milliseconds of last update. |

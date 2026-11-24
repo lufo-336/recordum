@@ -16,6 +16,8 @@ public class Attachment
     public byte[]? Thumbnail { get; set; }
     /// <summary>True when a legacy row's file is gone and there is no content to show.</summary>
     public bool IsMissing { get; set; }
+    /// <summary>Nome del dispositivo dove sta l'originale (null se aggiunta prima dell'identità di unione).</summary>
+    public string? OriginDeviceName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public long UpdatedAtMs { get; set; }

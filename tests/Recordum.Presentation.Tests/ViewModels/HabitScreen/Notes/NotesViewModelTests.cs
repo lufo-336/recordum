@@ -741,6 +741,7 @@ public class NotesViewModelTests
         attachments.Store[attId] = new Attachment
         {
             Id = attId, NoteId = note.Id, Filename = "photo.png", MimeType = "image/png", FileSizeBytes = fullBytes.Length,
+            HasContent = true,
         };
         sut.Notes.Add(new NoteRowViewModel(note, DayBoundary.Utc));
         sut.SelectedNote = sut.Notes[0];
@@ -750,5 +751,64 @@ public class NotesViewModelTests
         await Task.Delay(20);
 
         sut.LightboxContent.Should().Equal(fullBytes);
+        sut.LightboxOriginalElsewhereText.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OpenLightbox_exposes_OriginalElsewhereText_when_original_is_absent()
+    {
+        var prevStrings = Recordum.Presentation.Resources.Strings.Culture;
+        var prevCurrent = System.Globalization.CultureInfo.CurrentCulture;
+        var prevUi = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            var it = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+            Recordum.Presentation.Resources.Strings.Culture = it;
+            System.Globalization.CultureInfo.CurrentCulture = it;
+            System.Globalization.CultureInfo.CurrentUICulture = it;
+
+            var thumbBytes = new byte[] { 0xFF, 0xD8, 0x01, 0x02 };
+            var attachments = new ThumbnailOnlyAttachmentService(content: null, thumbnail: thumbBytes);
+            var notes = new FakeNoteService();
+            var sut = new NotesViewModel(
+                notes,
+                new FakeEventBus(),
+                new FakeClock(new DateTimeOffset(2026, 5, 22, 10, 0, 0, TimeSpan.Zero)),
+                new FakeEditorAvailability(available: true),
+                attachments,
+                new FakePhotoImporter(),
+                new FakeOpenFileDialog(),
+                new FakeConfirmationDialog());
+
+            var note = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+            notes.Store[note.Id] = note;
+            var attId = Guid.NewGuid();
+            attachments.Store[attId] = new Attachment
+            {
+                Id = attId,
+                NoteId = note.Id,
+                Filename = "photo.jpg",
+                MimeType = "image/jpeg",
+                FileSizeBytes = 0,
+                HasContent = false,
+                OriginDeviceName = "Telefono",
+            };
+            sut.Notes.Add(new NoteRowViewModel(note, DayBoundary.Utc));
+            sut.SelectedNote = sut.Notes[0];
+            await Task.Delay(20);
+
+            sut.OpenLightboxCommand.Execute(sut.Attachments.Single());
+
+            sut.LightboxOriginalElsewhereText.Should().Be("Originale su Telefono");
+
+            sut.CloseLightboxCommand.Execute(null);
+            sut.LightboxOriginalElsewhereText.Should().BeNull();
+        }
+        finally
+        {
+            Recordum.Presentation.Resources.Strings.Culture = prevStrings;
+            System.Globalization.CultureInfo.CurrentCulture = prevCurrent;
+            System.Globalization.CultureInfo.CurrentUICulture = prevUi;
+        }
     }
 }

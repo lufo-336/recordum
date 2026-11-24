@@ -102,7 +102,9 @@ public class AttachmentServiceTests : IAsyncLifetime
 
         Assert.Equal(2, attachments.Count);
         var select = Assert.Single(_fixture.Sql, q => q.Contains("FROM \"attachment\"", StringComparison.Ordinal));
-        Assert.DoesNotContain("content", select, StringComparison.Ordinal);
+        // HasContent chiede solo se l'originale c'è (IS NOT NULL): i byte non si leggono.
+        Assert.DoesNotMatch("\"content\"(?!\\s+IS NOT NULL)", select);
+        Assert.Contains("\"content\" IS NOT NULL", select, StringComparison.Ordinal);
         Assert.DoesNotContain("thumbnail", select, StringComparison.Ordinal);
     }
 
@@ -147,5 +149,60 @@ public class AttachmentServiceTests : IAsyncLifetime
 
         Assert.EndsWith(".jpg", _service.ResolveRelativePath(upper), StringComparison.Ordinal);
         Assert.EndsWith(".bin", _service.ResolveRelativePath(bare), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AddAsync_stamps_the_device_name()
+    {
+        var noteId = await SeedNoteAsync();
+        var identity = new FakeDeviceIdentity { DeviceName = "Studio" };
+        var svc = new AttachmentService(_fixture.Factory, _fixture.Clock, _fixture.PluginContext, identity);
+
+        var attachment = await svc.AddAsync(noteId, Photo(), default);
+
+        Assert.Equal("Studio", attachment.OriginDeviceName);
+        Assert.True(attachment.HasContent);
+        var listed = Assert.Single(await svc.ListByNoteAsync(noteId, default));
+        Assert.Equal("Studio", listed.OriginDeviceName);
+        Assert.True(listed.HasContent);
+    }
+
+    [Fact]
+    public async Task AddAsync_without_identity_leaves_origin_null()
+    {
+        var noteId = await SeedNoteAsync();
+        var identity = new FakeDeviceIdentity { DeviceName = null };
+        var svc = new AttachmentService(_fixture.Factory, _fixture.Clock, _fixture.PluginContext, identity);
+
+        var attachment = await svc.AddAsync(noteId, Photo(), default);
+
+        Assert.Null(attachment.OriginDeviceName);
+        var listed = Assert.Single(await svc.ListByNoteAsync(noteId, default));
+        Assert.Null(listed.OriginDeviceName);
+    }
+
+    [Fact]
+    public async Task Project_reports_HasContent_false_when_content_is_null()
+    {
+        var noteId = await SeedNoteAsync();
+        await using (var db = await _fixture.Factory.CreateDbContextAsync())
+        {
+            db.Attachments.Add(new Models.Attachment
+            {
+                Id = Guid.NewGuid(),
+                NoteId = noteId,
+                Filename = "remote.jpg",
+                MimeType = "image/jpeg",
+                FileSizeBytes = 100,
+                Content = null,
+                Thumbnail = [1, 2],
+                OriginDeviceName = "Telefono",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var listed = Assert.Single(await _service.ListByNoteAsync(noteId, default));
+        Assert.False(listed.HasContent);
+        Assert.Equal("Telefono", listed.OriginDeviceName);
     }
 }

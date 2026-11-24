@@ -518,6 +518,7 @@ public static class SyncCatalog
                 Photo("content"),
                 Photo("thumbnail"),
                 Plain("is_missing"),
+                Plain("origin_device_name"),
                 Plain("created_at"),
                 Plain("updated_at"),
                 Plain("updated_at_ms"),

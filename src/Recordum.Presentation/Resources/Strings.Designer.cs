@@ -983,6 +983,8 @@ public static class Strings
     public static string Restore_SyncActiveNote => Get("Restore.SyncActiveNote");
     public static string Sync_Join_NoPeerFile => Get("Sync.Join.NoPeerFile");
     public static string Sync_Join_MissingConfiguration => Get("Sync.Join.MissingConfiguration");
+    public static string Notes_Photo_OriginalOn => Get("Notes.Photo.OriginalOn");
+    public static string Notes_Photo_OriginalElsewhere => Get("Notes.Photo.OriginalElsewhere");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }
