@@ -18,6 +18,12 @@ public sealed record SyncManifest(
     /// (formato §2.1). Assente nel file = vuoto.</summary>
     [JsonPropertyName("merged_from")]
     public IReadOnlyDictionary<string, long> MergedFrom { get; init; } = new Dictionary<string, long>();
+
+    /// <summary>Firma opaca dei dati portati da questo file (formato §2.1, Ruling 21): un pari la confronta solo con i
+    /// file dello stesso dispositivo per mandare l'eco una sola volta. Assente nel file = null.</summary>
+    [JsonPropertyName("data_signature")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DataSignature { get; init; }
 }
 
 public sealed record SyncRow(

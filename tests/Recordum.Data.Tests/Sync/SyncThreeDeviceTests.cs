@@ -202,7 +202,7 @@ public sealed class SyncThreeDeviceTests(ITestOutputHelper output)
     }
 
     // 7. Neon ALTA 1: pulizia di un blocco fatta da B prima di unire un file no-op di A (tramite SyncService).
-    [Fact(Skip = "Neon ALTA 1 confermato: merged_from non entra nella firma, B non riscrive il file dopo un no-op e A tiene il blocco. Decisione dell'autore (registro, tappa 2026-11-23 notte).")]
+    [Fact]
     public async Task CleanupAfterNoOpMergeConverges()
     {
         var root = Path.Combine(Path.GetTempPath(), $"recordum-sync-neon1-{Guid.NewGuid():N}");

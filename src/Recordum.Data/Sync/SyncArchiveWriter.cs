@@ -14,7 +14,8 @@ public sealed record SyncWriteOptions(
     string AppVersion,
     bool IncludePhotos,
     long WrittenAtMs,
-    IReadOnlyDictionary<string, long>? MergedFrom = null);
+    IReadOnlyDictionary<string, long>? MergedFrom = null,
+    string? DataSignature = null);
 
 /// <summary>
 /// Scrive lo stato completo del database in un archivio ZIP <c>recordum-sync</c> versione <c>1.0</c>.
@@ -103,6 +104,7 @@ public static class SyncArchiveWriter
             Entities: entityCounts)
         {
             MergedFrom = options.MergedFrom ?? new Dictionary<string, long>(),
+            DataSignature = options.DataSignature,
         };
 
         var manifestEntry = archive.CreateEntry("manifest.json", CompressionLevel.Optimal);

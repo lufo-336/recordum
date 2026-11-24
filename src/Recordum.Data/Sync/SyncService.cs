@@ -45,6 +45,8 @@ public sealed partial class SyncService(
     public const string PendingWrittenHashSettingKey = "sync.pending_written_hash";
     /// <summary>JSON: per ogni pari, il written_at_ms dell'ultimo suo file unito qui (va nel manifest, Ruling 17).</summary>
     public const string MergedFromSettingKey = "sync.merged_from";
+    /// <summary>JSON: per ogni pari, l'ultima <c>data_signature</c> già confermata dopo la scrittura del proprio file (Ruling 21).</summary>
+    public const string AckedDataSettingKey = "sync.acked_data";
 
     private const long SignatureModulus = 1_000_000_007;
 
@@ -157,6 +159,7 @@ public sealed partial class SyncService(
                 .Where(s => s.Key == FolderSettingKey
                          || s.Key == JoinedSettingKey
                          || s.Key == MergedFromSettingKey
+                         || s.Key == AckedDataSettingKey
                          || s.Key == LastRunMsSettingKey
                          || s.Key == LastWrittenSignatureSettingKey
                          || s.Key == LastWrittenHashSettingKey
@@ -228,6 +231,9 @@ public sealed partial class SyncService(
         var mergedAnyPeer = false;
         var mergedFrom = await ReadMergedFromAsync(ct).ConfigureAwait(false);
         var mergedFromChanged = false;
+        var ackedData = await ReadAckedDataAsync(ct).ConfigureAwait(false);
+        var pendingAck = new Dictionary<string, string>(StringComparer.Ordinal);
+        var ackCleared = false;
         foreach (var file in await store.ListPeerFilesAsync(ct).ConfigureAwait(false))
         {
             var tempZip = NewTempPath("in");
@@ -253,6 +259,9 @@ public sealed partial class SyncService(
                     {
                         mergedFrom.Clear();
                         mergedFromChanged = false;
+                        ackedData.Clear();
+                        pendingAck.Clear();
+                        ackCleared = true;
                     }
                     mergedAnyPeer = true;
                     merged |= emptyFirst || report.Inserted + report.Updated + report.Deleted + report.Repaired + report.Rescued > 0;
@@ -263,6 +272,12 @@ public sealed partial class SyncService(
                     {
                         mergedFrom[peerId] = snapshot.Manifest.WrittenAtMs;
                         mergedFromChanged = true;
+                    }
+                    if (snapshot.Manifest.DataSignature is { } peerSig
+                        && (!ackedData.TryGetValue(peerId, out var ackedSig)
+                            || !string.Equals(ackedSig, peerSig, StringComparison.Ordinal)))
+                    {
+                        pendingAck[peerId] = peerSig;
                     }
                     peers.Add(new SyncPeerStatus(name, writtenAt, Problem: null));
                 }
@@ -297,11 +312,36 @@ public sealed partial class SyncService(
         if (mergedFromChanged)
             await settings.SetAsync(MergedFromSettingKey, JsonSerializer.Serialize(mergedFrom), ct).ConfigureAwait(false);
 
-        // merged_from non entra nella firma: se un suo cambio riscrivesse il file, due dispositivi si riscriverebbero a
-        // vicenda a ogni giro. Viaggia con la prossima scrittura vera, che è proprio quella che serve al pari (una
-        // pulizia, una cancellazione).
-        var ownFileWritten = !ownFileIsForeign && await WriteOwnFileIfChangedAsync(
-            store, ownPath, passphrase, deviceId, deviceName, includePhotos, merged, mergedFrom, ct).ConfigureAwait(false);
+        var ownFileWritten = false;
+        if (!ownFileIsForeign)
+        {
+            var signature = await ComputeSignatureAsync(includePhotos, ct).ConfigureAwait(false);
+            // Eco una volta (Ruling 21): se un pari porta dati con una firma nuova (diversa dalla nostra e dall'ultima
+            // confermata), riscriviamo il file per fargli arrivare il nostro merged_from; l'eco tiene la stessa firma,
+            // quindi al giro dopo nessuno risponde.
+            // ponytail: "firma del pari uguale alla nostra" vale "stessi dati" e salta l'eco; se due stati diversi
+            // avessero la stessa firma (somme di ore che coincidono) e l'unione fosse un no-op, l'eco salterebbe e il
+            // pari aspetterebbe la prossima scrittura vera. Se succede, una firma per hash delle righe al posto delle somme.
+            var echoNeeded = false;
+            foreach (var sig in pendingAck.Values)
+            {
+                if (!string.Equals(sig, signature, StringComparison.Ordinal))
+                {
+                    echoNeeded = true;
+                    break;
+                }
+            }
+
+            ownFileWritten = await WriteOwnFileIfChangedAsync(
+                store, ownPath, passphrase, deviceId, deviceName, includePhotos,
+                merged: merged || echoNeeded, mergedFrom, signature, ct).ConfigureAwait(false);
+            if (ownFileWritten && (pendingAck.Count > 0 || ackCleared))
+            {
+                foreach (var (peerId, sig) in pendingAck)
+                    ackedData[peerId] = sig;
+                await settings.SetAsync(AckedDataSettingKey, JsonSerializer.Serialize(ackedData), ct).ConfigureAwait(false);
+            }
+        }
 
         await settings.SetAsync(LastRunMsSettingKey, clock.UtcNowMs.ToString(CultureInfo.InvariantCulture), ct).ConfigureAwait(false);
         runState.SetPeers(peers);
@@ -358,9 +398,8 @@ public sealed partial class SyncService(
 
     private async Task<bool> WriteOwnFileIfChangedAsync(
         ISyncFileStore store, string ownPath, string passphrase, string deviceId, string deviceName, bool includePhotos,
-        bool merged, IReadOnlyDictionary<string, long> mergedFrom, CancellationToken ct)
+        bool merged, IReadOnlyDictionary<string, long> mergedFrom, string signature, CancellationToken ct)
     {
-        var signature = await ComputeSignatureAsync(includePhotos, ct).ConfigureAwait(false);
         var lastSignature = await settings.GetAsync(LastWrittenSignatureSettingKey, ct).ConfigureAwait(false);
         if (!merged && File.Exists(ownPath) && string.Equals(signature, lastSignature, StringComparison.Ordinal))
             return false;
@@ -373,7 +412,8 @@ public sealed partial class SyncService(
             await using (var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false))
             await using (var zip = new FileStream(tempZip, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                var options = new SyncWriteOptions(deviceId, deviceName, appVersion, includePhotos, clock.UtcNowMs, mergedFrom);
+                var options = new SyncWriteOptions(
+                    deviceId, deviceName, appVersion, includePhotos, clock.UtcNowMs, mergedFrom, signature);
                 await SyncArchiveWriter.WriteAsync(db, zip, options, ct).ConfigureAwait(false);
             }
 
@@ -457,6 +497,29 @@ public sealed partial class SyncService(
         {
             // Un valore rovinato vale "non abbiamo visto niente": il lato sicuro.
             return new Dictionary<string, long>(StringComparer.Ordinal);
+        }
+    }
+
+    private async Task<Dictionary<string, string>> ReadAckedDataAsync(CancellationToken ct)
+    {
+        var json = await settings.GetAsync(AckedDataSettingKey, ct).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(json)) return new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            var raw = JsonSerializer.Deserialize<Dictionary<string, string?>>(json);
+            if (raw is null) return new Dictionary<string, string>(StringComparer.Ordinal);
+            var result = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var (peerId, sig) in raw)
+            {
+                if (sig is not null)
+                    result[peerId] = sig;
+            }
+            return result;
+        }
+        catch (JsonException)
+        {
+            // Un valore rovinato vale "nessuna conferma": al più riscrive un'eco una volta.
+            return new Dictionary<string, string>(StringComparer.Ordinal);
         }
     }
 

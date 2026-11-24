@@ -1107,6 +1107,132 @@ public sealed class SyncServiceTests : IDisposable
         status.Peers.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task Echo_happens_once_then_stops()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 2_000);
+
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Changed")));
+
+        bool[] written =
+        [
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+        ];
+
+        written.Should().Equal(true, true, false, false, false, false);
+    }
+
+    [Fact]
+    public async Task Echo_with_three_devices_stops_after_one_round()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 2_000);
+        await using var c = await CreateNodeAsync("Tablet", _sharedFolder, joined: true, startMs: 3_000);
+
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "Changed")));
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+
+        bool[] written =
+        [
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await c.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await c.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+            (await c.Service.RunAsync(CancellationToken.None)).OwnFileWritten,
+        ];
+
+        written.Should().Equal(true, true, false, false, false, false, false, false);
+    }
+
+    [Fact]
+    public async Task Ack_is_saved_only_after_the_own_file_is_written()
+    {
+        var folderA = Path.Combine(_rootDir, "cloud-a");
+        var folderB = Path.Combine(_rootDir, "cloud-b");
+        Directory.CreateDirectory(folderA);
+        Directory.CreateDirectory(folderB);
+
+        var failB = false;
+        await using var a = await CreateNodeAsync("Fedora", folderA, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync(
+            "Laptop",
+            folderB,
+            joined: true,
+            startMs: 2_000,
+            storeFactory: (folder, own) => new FaultyStore(new FolderSyncFileStore(folder, own), () => failB));
+
+        // B ha la versione più recente, quindi unire il file di A è un no-op: solo l'eco fa riscrivere B.
+        await a.EditAsync(1_000, db => db.HabitNodes.Add(NewHabit(H1, "Older")));
+        await a.Service.RunAsync(CancellationToken.None);
+
+        await b.EditAsync(2_000, db => db.HabitNodes.Add(NewHabit(H1, "Newer")));
+        (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+
+        var aFile = await a.GetOwnFilePathAsync();
+        File.Copy(aFile, Path.Combine(folderB, Path.GetFileName(aFile)), overwrite: true);
+
+        failB = true;
+        await FluentActions.Awaiting(() => b.Service.RunAsync(CancellationToken.None)).Should().ThrowAsync<IOException>();
+        (await b.Settings.GetAsync(SyncService.AckedDataSettingKey)).Should().BeNullOrEmpty();
+
+        failB = false;
+        var recoveryRun = await b.Service.RunAsync(CancellationToken.None);
+        recoveryRun.OwnFileWritten.Should().BeTrue("the ack was not saved on the failed write, so B still emits the echo");
+        (await b.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Manifest_carries_the_written_signature()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "First")));
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+
+        var sig1 = await a.Settings.GetAsync(SyncService.LastWrittenSignatureSettingKey);
+        sig1.Should().NotBeNullOrEmpty();
+        (await ReadOwnManifestAsync(a)).DataSignature.Should().Be(sig1);
+
+        await a.EditAsync(2_000, db => db.HabitNodes.Add(NewHabit(H2, "Second")));
+        (await a.Service.RunAsync(CancellationToken.None)).OwnFileWritten.Should().BeTrue();
+
+        var sig2 = await a.Settings.GetAsync(SyncService.LastWrittenSignatureSettingKey);
+        sig2.Should().NotBeNullOrEmpty().And.NotBe(sig1);
+        (await ReadOwnManifestAsync(a)).DataSignature.Should().Be(sig2);
+    }
+
+    [Fact]
+    public async Task DisconnectAndStartFromOthersClearAckedData()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 2_000);
+
+        await a.EditAsync(1_100, db => db.HabitNodes.Add(NewHabit(H1, "From A")));
+        await a.Service.RunAsync(CancellationToken.None);
+        await b.Service.RunAsync(CancellationToken.None);
+
+        (await b.Settings.GetAsync(SyncService.AckedDataSettingKey)).Should().NotBeNullOrEmpty();
+        await b.Service.DisconnectAsync(CancellationToken.None);
+        (await b.Settings.GetAsync(SyncService.AckedDataSettingKey)).Should().BeNull();
+
+        await using var joining = await CreateNodeAsync("Tablet", _sharedFolder, joined: false, startMs: 3_000);
+        await joining.EditAsync(3_100, db => db.HabitNodes.Add(NewHabit(H2, "Local Discarded")));
+        await joining.Settings.SetAsync(SyncService.AckedDataSettingKey, "{\"old-peer\":\"old-sig\"}");
+
+        await joining.Service.JoinAsync(SyncJoinChoice.StartFromOthers, CancellationToken.None);
+
+        var ackedAfterJoin = await joining.Settings.GetAsync(SyncService.AckedDataSettingKey);
+        ackedAfterJoin.Should().NotBeNullOrEmpty().And.NotContain("old-peer");
+    }
+
     private async Task<TestNode> CreateNodeAsync(
         string? deviceName,
         string sharedFolder,

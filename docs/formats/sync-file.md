@@ -94,7 +94,8 @@ UTF-8 JSON object without BOM at the root of the ZIP:
   },
   "merged_from": {
     "7f1e0c2a-9b3d-4f6e-8a1c-5d2b9e4f7a10": 1767225000000
-  }
+  },
+  "data_signature": "15:1767225600000:1767225600000:0:0:0:0:0:0:0:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:1024/0/0:True"
 }
 ```
 
@@ -109,6 +110,7 @@ UTF-8 JSON object without BOM at the root of the ZIP:
 | `includes_photos` | `boolean` | `true` when full-size photos (`photos/<id>.<ext>`) are included; `false` when only thumbnails (`photos/<id>.thumb.jpg`) are written. |
 | `entities` | `object` (`string` → `integer`) | Map of public entity name to number of rows written in `data/<entity>.jsonl`. |
 | `merged_from` | `object` (`string` → `integer`) | For each peer `device_id`, the `written_at_ms` of the last archive from that peer merged by the writer before writing this one. It tells a peer which of its own states this device has seen (§6 rule 4). Absent or `null` = empty. |
+| `data_signature` | `string?` | Opaque signature of the data carried by this archive. A peer compares it only against previous archives from the **same** device and against its own written signature to emit at most one echo (§6 rule 4). Absent or `null` = none. |
 
 ### 2.2 JSON Lines (`data/<entity>.jsonl` and `tombstones.jsonl`)
 
@@ -654,6 +656,7 @@ Merging is **idempotent** and **convergent**:
 4. **Delete vs. Edit**:
    - `tombstone.deleted_at_ms` is compared against `row.updated_at_ms`. The newer action wins; on a tie the deletion wins.
    - Remote tombstones are always copied (two tombstones for the same row keep the later `deleted_at_ms`). After the merge, a tombstone whose row exists locally with a newer `updated_at_ms` is dropped, so every device ends up with the same set.
+   - **Echo once (`data_signature`)**: when merging a peer's archive changes nothing locally (for example, a cleanup or deletion already won here), the receiver still writes its own archive once so its updated `merged_from` reaches the peer, provided the peer's `data_signature` is present, differs from the last `data_signature` previously acknowledged for that peer, and differs from this device's own current `data_signature`. The peer's `data_signature` is saved locally only after the own archive is written; because the echo carries the writer's unchanged `data_signature`, it triggers no further echoes.
    - Besides the remote row, `sync_base` keeps local-only facts about when this device's row last changed, used by Rule 3 and Rule 4 to tell whether a peer had already seen a local row before overriding its text or deleting it: its `updated_at_ms` (`_local_ms`) and this device's clock at the merge that gave the row that version (`_merged_at`). The merge time is stamped only by a merge that changed the row (an insert, a field, a photo); a later merge that leaves the row as it is carries the earlier stamp forward, or stamps nothing. A row's *last change* is the earliest `_merged_at` held by a base that records its current `updated_at_ms`. If no base holds one, the version is a local edit and its last change is its `updated_at_ms` plus a margin of `5000` ms: the edit's time is taken before it is saved, so a file written just after that time may not contain it.
    - If deletion wins against a row whose `Text` field contains text that was not present before deletion, the losing text becomes a **new quick note** (`note`) on the same habit and the same day, carrying the rule-B block starting directly with `— ` without the two leading newlines (so the text is never lost).
      - A local row deleted by the peer's tombstone is rescued unless all its pieces are in the base for that row. Without a base, it is rescued unless the peer's `merged_from` for this device is at or after the row's *last change*: then the peer had seen this version when it wrote the tombstone. If `merged_from` does not name this device, the row is rescued (design §8.4: without a base a text difference is a conflict).
