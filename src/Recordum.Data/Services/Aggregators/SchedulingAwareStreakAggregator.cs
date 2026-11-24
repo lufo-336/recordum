@@ -214,6 +214,7 @@ public sealed class SchedulingAwareStreakAggregator(
         var runs = new List<StreakRun>();
         foreach (var p in periods)
         {
+            if (p.EndedAtMs == p.StartedAtMs) continue;   // durata zero (riparazione dell'unione): non è una ricaduta
             var startDay = day.DayOf(p.StartedAtMs);
             var isOpen = p.EndedAtMs is null;
             var endDay = isOpen

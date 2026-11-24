@@ -237,4 +237,35 @@ public class SyncSchedulerHostTests
         sync.MaxConcurrentRuns.Should().Be(1);
         sync.RunCount.Should().Be(3);
     }
+
+    [Fact]
+    public async Task FlushSkipsImmediatelyWhenDatabaseGateIsKeptClosed()
+    {
+        var sync = new FakeSyncService();
+        var settings = new FakeAppSettingService();
+        var ticks = new FakeTickSourceFactory();
+        var clock = new FakeClock(new DateTimeOffset(2026, 11, 22, 10, 0, 0, TimeSpan.Zero));
+        var gate = new Recordum.Data.Interceptors.DatabaseGate();
+
+        var services = new ServiceCollection();
+        services.AddScoped<ISyncService>(_ => sync);
+        services.AddScoped<IAppSettingService>(_ => settings);
+        await using var provider = services.BuildServiceProvider();
+        using var host = new SyncSchedulerHost(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            ticks,
+            clock,
+            NullLogger<SyncSchedulerHost>.Instance,
+            gate);
+
+        await host.StartAsync(CancellationToken.None);
+        sync.RunCount.Should().Be(1);
+
+        using (var quiet = await gate.QuiesceAsync(TimeSpan.FromSeconds(1))) quiet.KeepClosed();
+
+        await host.FlushAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(1));
+
+        sync.RunCount.Should().Be(1);
+        gate.Reopen();
+    }
 }

@@ -35,6 +35,36 @@ public class AbstinenceServiceTests
     }
 
     [Fact]
+    public async Task GetState_ignores_a_zero_duration_period()
+    {
+        // Resta solo il periodo a durata zero lasciato dall'unione: nessuna ricaduta vera, quindi NotStarted.
+        await using var fx = new DbFixture();
+        var habitId = await SeedResistanceHabit(fx);
+        await using (var db = await fx.Factory.CreateDbContextAsync())
+        {
+            db.AbstinencePeriods.Add(new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = habitId, StartedAtMs = 1_000, EndedAtMs = 1_000 });
+            await db.SaveChangesAsync();
+        }
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
+
+        (await sut.GetStateAsync(habitId)).Status.Should().Be(AbstinenceStatus.NotStarted);
+    }
+
+    [Fact]
+    public async Task Lapse_in_the_same_millisecond_as_start_is_still_a_relapse()
+    {
+        // La durata zero è riservata alla riparazione dell'unione: una ricaduta vera dura almeno un millisecondo.
+        await using var fx = new DbFixture();
+        var habitId = await SeedResistanceHabit(fx);
+        var sut = new AbstinenceService(fx.Factory, fx.Clock, new RecordingEventBus(), fx.ResetTimes);
+
+        await sut.StartAsync(habitId);
+        await sut.LapseAsync(habitId);
+
+        (await sut.GetStateAsync(habitId)).Status.Should().Be(AbstinenceStatus.Relapsed);
+    }
+
+    [Fact]
     public async Task Start_when_none_open_opens_a_period()
     {
         await using var fx = new DbFixture();

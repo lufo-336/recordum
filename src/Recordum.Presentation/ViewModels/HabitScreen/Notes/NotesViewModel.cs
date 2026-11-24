@@ -64,7 +64,8 @@ public sealed partial class NotesViewModel : ObservableObject, IDisposable
     private async Task LoadLightboxContentAsync(AttachmentViewModel vm)
     {
         var bytes = await _attachments.ReadContentAsync(vm.Id, CancellationToken.None).ConfigureAwait(true);
-        if (LightboxAttachment == vm) LightboxContent = bytes; // not if the lightbox moved on meanwhile
+        // Foto ricevuta senza originale ("Unisci anche le foto" spento altrove): il visore mostra la miniatura.
+        if (LightboxAttachment == vm) LightboxContent = bytes is { Length: > 0 } ? bytes : vm.Thumbnail; // not if the lightbox moved on meanwhile
     }
 
     /// <summary>Prev/Next only make sense with more than one photo.</summary>

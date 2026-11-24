@@ -74,6 +74,30 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
     }
 
     [Fact]
+    public async Task SyncSchedulerHost_receives_the_database_gate_singleton()
+    {
+        var spySync = new CountingSyncService();
+        var services = new ServiceCollection();
+        services.AddRecordumCore(Options());
+        services.AddShellDoubles();
+        services.AddScoped<ISyncService>(_ => spySync);
+        services.AddScoped<IAppSettingService>(_ => new FakeAppSettingService());
+        await using var provider = services.BuildServiceProvider();
+
+        var host = provider.GetRequiredService<SyncSchedulerHost>();
+        var gate = provider.GetRequiredService<Recordum.Data.Interceptors.DatabaseGate>();
+
+        await host.StartAsync(CancellationToken.None);
+        Assert.Equal(1, spySync.RunCalls);
+
+        using (var quiet = await gate.QuiesceAsync(TimeSpan.FromSeconds(1))) quiet.KeepClosed();
+        await host.FlushAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(1, spySync.RunCalls);
+        gate.Reopen();
+    }
+
+    [Fact]
     public void Every_service_registered_by_core_resolves_with_shell_doubles()
     {
         var services = new ServiceCollection();
@@ -304,5 +328,25 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
             Calls++;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class CountingSyncService : ISyncService
+    {
+        private int _runCalls;
+        public int RunCalls => Volatile.Read(ref _runCalls);
+
+        public Task<SyncRunResult> RunAsync(CancellationToken ct)
+        {
+            Interlocked.Increment(ref _runCalls);
+            return Task.FromResult(new SyncRunResult(true, true, []));
+        }
+
+        public Task<SyncStatus> GetStatusAsync(CancellationToken ct) => Task.FromResult(new SyncStatus(null, [], 0, 0));
+        public Task SetPassphraseAsync(string passphrase, CancellationToken ct) => Task.CompletedTask;
+        public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => Task.FromResult(SyncJoinState.Joined);
+        public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct) => Task.CompletedTask;
+        public Task DisconnectAsync(CancellationToken ct) => Task.CompletedTask;
+        public Task ExportPlainAsync(Stream rcsync, Stream zipOut, string passphrase, CancellationToken ct) => Task.CompletedTask;
+        public Task ReencryptAsync(Stream zipIn, Stream rcsyncOut, string passphrase, CancellationToken ct) => Task.CompletedTask;
     }
 }

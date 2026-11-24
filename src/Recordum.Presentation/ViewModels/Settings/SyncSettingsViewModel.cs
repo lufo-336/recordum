@@ -3,7 +3,9 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Recordum.Core.Abstractions;
+using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Data.Backup;
 using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.Resources;
 using Recordum.Presentation.Services;
@@ -19,7 +21,8 @@ public sealed partial class SyncSettingsViewModel(
     IConfirmationDialog confirm,
     IClock clock,
     ISyncService sync,
-    SyncSchedulerHost scheduler) : ObservableObject
+    SyncSchedulerHost scheduler,
+    IBackupStoragePaths paths) : ObservableObject
 {
     public const string AutoMergeKey = SyncSchedulerHost.EnabledSettingKey;
     public const string FolderKey = "sync.folder";
@@ -28,6 +31,7 @@ public sealed partial class SyncSettingsViewModel(
     private bool _loading;
     private bool _isMerging;
     private bool _isPlainBusy;
+    private bool _isJoining;
 
     [ObservableProperty] private bool _autoMerge = true;
     [ObservableProperty] private bool _includePhotos;
@@ -91,7 +95,7 @@ public sealed partial class SyncSettingsViewModel(
     partial void OnIncludePhotosChanged(bool value)
     {
         if (_loading) return;
-        _ = PersistAsync(IncludePhotosKey, value);
+        _ = PersistAsync(IncludePhotosKey, value, nudge: AutoMerge);
     }
 
     partial void OnPlainPassphraseChanged(string value) => NotifyPlainCommandsCanExecuteChanged();
@@ -104,6 +108,7 @@ public sealed partial class SyncSettingsViewModel(
         Folder = picked;
         await settings.SetAsync(FolderKey, picked, ct).ConfigureAwait(true);
         await RefreshSyncStateAsync(ct).ConfigureAwait(true);
+        if (AutoMerge) scheduler.Nudge();
     }
 
     [RelayCommand(CanExecute = nameof(CanMergeNow))]
@@ -131,9 +136,10 @@ public sealed partial class SyncSettingsViewModel(
 
     private bool CanMergeNow() => !_isMerging;
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanModifyConnection))]
     private async Task SetPassphraseAsync(CancellationToken ct)
     {
+        if (_isJoining) return;   // ExecuteAsync non consulta CanExecute
         PassphraseMessage = null;
         if (NewPassphrase != ConfirmPassphrase)
         {
@@ -145,17 +151,26 @@ public sealed partial class SyncSettingsViewModel(
             PassphraseMessage = Strings.Backup_Settings_PassphraseTooShort;
             return;
         }
+        _isJoining = true;
+        NotifyConnectionCommandsCanExecuteChanged();
         try
         {
-            await sync.SetPassphraseAsync(NewPassphrase, ct).ConfigureAwait(true);
+            // CancellationToken.None: un secondo invoke non deve annullare l'operazione già in corso
+            await sync.SetPassphraseAsync(NewPassphrase, CancellationToken.None).ConfigureAwait(true);
             NewPassphrase = string.Empty;
             ConfirmPassphrase = string.Empty;
             PassphraseMessage = Strings.Backup_Settings_Saved;
-            await RefreshSyncStateAsync(ct).ConfigureAwait(true);
+            await RefreshSyncStateAsync(CancellationToken.None).ConfigureAwait(true);
+            if (AutoMerge) scheduler.Nudge();
         }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { PassphraseMessage = ex.Message; }
 #pragma warning restore CA1031
+        finally
+        {
+            _isJoining = false;
+            NotifyConnectionCommandsCanExecuteChanged();
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanRunPlain))]
@@ -170,17 +185,24 @@ public sealed partial class SyncSettingsViewModel(
         _isPlainBusy = true;
         NotifyPlainCommandsCanExecuteChanged();
         ErrorMessage = null;
+        string? tempPath = null;
         try
         {
-            await using var rcsync = File.OpenRead(inPath);
-            await using var zip = File.Create(outPath);
-            await sync.ExportPlainAsync(rcsync, zip, PlainPassphrase, ct).ConfigureAwait(true);
+            // I byte in chiaro passano solo da TempDirectory: la destinazione non si tronca prima di sapere che la frase va.
+            var tempDir = paths.TempDirectory;
+            Directory.CreateDirectory(tempDir);
+            tempPath = Path.Combine(tempDir, $"recordum-plain-{Guid.NewGuid():N}.zip");
+            await using (var rcsync = File.OpenRead(inPath))
+            await using (var zip = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                await sync.ExportPlainAsync(rcsync, zip, PlainPassphrase, ct).ConfigureAwait(true);
+            File.Move(tempPath, outPath, overwrite: true);
         }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
         finally
         {
+            if (tempPath is not null) SecureWipe.DeleteFile(tempPath);
             PlainPassphrase = string.Empty;   // la frase non resta in memoria ne' nel campo dopo l'uso
             _isPlainBusy = false;
             NotifyPlainCommandsCanExecuteChanged();
@@ -199,17 +221,30 @@ public sealed partial class SyncSettingsViewModel(
         _isPlainBusy = true;
         NotifyPlainCommandsCanExecuteChanged();
         ErrorMessage = null;
+        string? tempPath = null;
         try
         {
-            await using var zip = File.OpenRead(inPath);
-            await using var rcsync = File.Create(outPath);
-            await sync.ReencryptAsync(zip, rcsync, PlainPassphrase, ct).ConfigureAwait(true);
+            // Temporaneo cifrato accanto alla destinazione (rinomina atomica sullo stesso volume, nome .tmp fuori da *.rcsync).
+            var fullOut = Path.GetFullPath(outPath);
+            var outDir = Path.GetDirectoryName(fullOut)!;
+            Directory.CreateDirectory(outDir);
+            tempPath = Path.Combine(outDir, $".{Path.GetFileName(fullOut)}.{Guid.NewGuid():N}.tmp");
+            await using (var zip = File.OpenRead(inPath))
+            await using (var rcsync = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                await sync.ReencryptAsync(zip, rcsync, PlainPassphrase, ct).ConfigureAwait(true);
+            File.Move(tempPath, outPath, overwrite: true);
         }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
         finally
         {
+            if (tempPath is not null)
+            {
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
             PlainPassphrase = string.Empty;   // la frase non resta in memoria ne' nel campo dopo l'uso
             _isPlainBusy = false;
             NotifyPlainCommandsCanExecuteChanged();
@@ -224,52 +259,94 @@ public sealed partial class SyncSettingsViewModel(
         ReencryptCommand.NotifyCanExecuteChanged();
     }
 
-    [RelayCommand]
+    private bool CanModifyConnection() => !_isJoining;
+
+    private void NotifyConnectionCommandsCanExecuteChanged()
+    {
+        JoinKeepBothCommand.NotifyCanExecuteChanged();
+        JoinStartFromOthersCommand.NotifyCanExecuteChanged();
+        DisconnectCommand.NotifyCanExecuteChanged();
+        SetPassphraseCommand.NotifyCanExecuteChanged();
+    }
+
+    private static string JoinRefusalMessage(SyncJoinRefusal reason) => reason switch
+    {
+        SyncJoinRefusal.MissingConfiguration => Strings.Sync_Join_MissingConfiguration,
+        SyncJoinRefusal.NoReadablePeer => Strings.Sync_Join_NoPeerFile,
+        _ => Strings.Sync_Join_NoPeerFile,
+    };
+
+    [RelayCommand(CanExecute = nameof(CanModifyConnection))]
     private async Task DisconnectAsync(CancellationToken ct)
     {
-        if (!await confirm.ConfirmAsync(Strings.Sync_Disconnect_Label, Strings.Sync_Disconnect_Hint).ConfigureAwait(true))
-            return;
-        ErrorMessage = null;
+        if (_isJoining) return;   // ExecuteAsync non consulta CanExecute
+        _isJoining = true;
+        NotifyConnectionCommandsCanExecuteChanged();
         try
         {
-            await sync.DisconnectAsync(ct).ConfigureAwait(true);
-            await RefreshSyncStateAsync(ct).ConfigureAwait(true);
+            if (!await confirm.ConfirmAsync(Strings.Sync_Disconnect_Label, Strings.Sync_Disconnect_Hint).ConfigureAwait(true))
+                return;
+            ErrorMessage = null;
+            await sync.DisconnectAsync(CancellationToken.None).ConfigureAwait(true);
+            Folder = null;
+            await RefreshSyncStateAsync(CancellationToken.None).ConfigureAwait(true);
         }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
+        finally
+        {
+            _isJoining = false;
+            NotifyConnectionCommandsCanExecuteChanged();
+        }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanModifyConnection))]
     private async Task JoinStartFromOthersAsync(CancellationToken ct)
     {
-        if (!await confirm.ConfirmAsync(Strings.Sync_Join_Confirm_Title, Strings.Sync_Join_Confirm_Message).ConfigureAwait(true))
-            return;
-        ErrorMessage = null;
+        if (_isJoining) return;   // ExecuteAsync non consulta CanExecute
+        _isJoining = true;
+        NotifyConnectionCommandsCanExecuteChanged();
         try
         {
-            await sync.JoinAsync(SyncJoinChoice.StartFromOthers, ct).ConfigureAwait(true);
-            await RefreshSyncStateAsync(ct).ConfigureAwait(true);
+            if (!await confirm.ConfirmAsync(Strings.Sync_Join_Confirm_Title, Strings.Sync_Join_Confirm_Message).ConfigureAwait(true))
+                return;
+            ErrorMessage = null;
+            await sync.JoinAsync(SyncJoinChoice.StartFromOthers, CancellationToken.None).ConfigureAwait(true);
+            await RefreshSyncStateAsync(CancellationToken.None).ConfigureAwait(true);
         }
-        catch (SyncJoinRefusedException) { ErrorMessage = Strings.Sync_Join_NoPeerFile; }
+        catch (SyncJoinRefusedException ex) { ErrorMessage = JoinRefusalMessage(ex.Reason); }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
+        finally
+        {
+            _isJoining = false;
+            NotifyConnectionCommandsCanExecuteChanged();
+        }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanModifyConnection))]
     private async Task JoinKeepBothAsync(CancellationToken ct)
     {
+        if (_isJoining) return;   // ExecuteAsync non consulta CanExecute
+        _isJoining = true;
+        NotifyConnectionCommandsCanExecuteChanged();
         ErrorMessage = null;
         try
         {
-            await sync.JoinAsync(SyncJoinChoice.KeepThisDeviceToo, ct).ConfigureAwait(true);
-            await RefreshSyncStateAsync(ct).ConfigureAwait(true);
+            await sync.JoinAsync(SyncJoinChoice.KeepThisDeviceToo, CancellationToken.None).ConfigureAwait(true);
+            await RefreshSyncStateAsync(CancellationToken.None).ConfigureAwait(true);
         }
-        catch (SyncJoinRefusedException) { ErrorMessage = Strings.Sync_Join_NoPeerFile; }
+        catch (SyncJoinRefusedException ex) { ErrorMessage = JoinRefusalMessage(ex.Reason); }
 #pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
         catch (Exception ex) { ErrorMessage = ex.Message; }
 #pragma warning restore CA1031
+        finally
+        {
+            _isJoining = false;
+            NotifyConnectionCommandsCanExecuteChanged();
+        }
     }
 
     private async Task RefreshSyncStateAsync(CancellationToken ct)

@@ -77,7 +77,9 @@ public sealed partial class StreakSummaryViewModel : ObservableObject, IDisposab
             }
 
             var periods90 = await _abstinence.ListPeriodsAsync(node.Id, today.AddDays(-89), today, ct).ConfigureAwait(true);
+            // Un periodo a durata zero (riparazione dell'unione) non è una ricaduta.
             RunsLast90Days = periods90.Count(p => p.EndedAtMs is { } e
+                && e != p.StartedAtMs
                 && day.DayOf(e) >= today.AddDays(-89));
         }
         else

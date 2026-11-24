@@ -659,4 +659,96 @@ public class NotesViewModelTests
 
         sut.IsLightboxOpen.Should().BeFalse();
     }
+
+    private sealed class ThumbnailOnlyAttachmentService(byte[]? content, byte[]? thumbnail) : Recordum.Core.IAttachmentService
+    {
+        public Dictionary<Guid, Attachment> Store { get; } = [];
+
+        public Task<Attachment> AddAsync(Guid noteId, ImportedPhoto photo, CancellationToken ct) =>
+            throw new NotSupportedException();
+
+        public Task<byte[]?> ReadContentAsync(Guid attachmentId, CancellationToken ct) =>
+            Task.FromResult(content);
+
+        public Task<byte[]?> ReadThumbnailAsync(Guid attachmentId, CancellationToken ct) =>
+            Task.FromResult(thumbnail);
+
+        public Task DeleteAsync(Guid attachmentId, CancellationToken ct) => Task.CompletedTask;
+
+        public Task<IReadOnlyList<Attachment>> ListByNoteAsync(Guid noteId, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Attachment>>(Store.Values.Where(a => a.NoteId == noteId).ToList());
+
+        public Task<IReadOnlyList<Attachment>> ListAllAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Attachment>>(Store.Values.ToList());
+
+        public string ResolveRelativePath(Attachment attachment) => $"attachments/{attachment.Id:N}.bin";
+    }
+
+    [Fact]
+    public async Task OpenLightbox_falls_back_to_thumbnail_when_original_content_is_null()
+    {
+        var thumbBytes = new byte[] { 0xFF, 0xD8, 0x01, 0x02 };
+        var attachments = new ThumbnailOnlyAttachmentService(content: null, thumbnail: thumbBytes);
+        var notes = new FakeNoteService();
+        var sut = new NotesViewModel(
+            notes,
+            new FakeEventBus(),
+            new FakeClock(new DateTimeOffset(2026, 5, 22, 10, 0, 0, TimeSpan.Zero)),
+            new FakeEditorAvailability(available: true),
+            attachments,
+            new FakePhotoImporter(),
+            new FakeOpenFileDialog(),
+            new FakeConfirmationDialog());
+
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        notes.Store[note.Id] = note;
+        var attId = Guid.NewGuid();
+        attachments.Store[attId] = new Attachment
+        {
+            Id = attId, NoteId = note.Id, Filename = "photo.jpg", MimeType = "image/jpeg", FileSizeBytes = 0,
+        };
+        sut.Notes.Add(new NoteRowViewModel(note, DayBoundary.Utc));
+        sut.SelectedNote = sut.Notes[0];
+        await Task.Delay(20);
+
+        sut.OpenLightboxCommand.Execute(sut.Attachments.Single());
+        await Task.Delay(20);
+
+        sut.IsLightboxOpen.Should().BeTrue();
+        sut.LightboxContent.Should().Equal(thumbBytes);
+    }
+
+    [Fact]
+    public async Task OpenLightbox_prefers_original_content_when_present()
+    {
+        var fullBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0A };
+        var thumbBytes = new byte[] { 0xFF, 0xD8, 0x01, 0x02 };
+        var attachments = new ThumbnailOnlyAttachmentService(content: fullBytes, thumbnail: thumbBytes);
+        var notes = new FakeNoteService();
+        var sut = new NotesViewModel(
+            notes,
+            new FakeEventBus(),
+            new FakeClock(new DateTimeOffset(2026, 5, 22, 10, 0, 0, TimeSpan.Zero)),
+            new FakeEditorAvailability(available: true),
+            attachments,
+            new FakePhotoImporter(),
+            new FakeOpenFileDialog(),
+            new FakeConfirmationDialog());
+
+        var note = new Note { Id = Guid.NewGuid(), HabitNodeId = Guid.NewGuid(), BodyMd = "x" };
+        notes.Store[note.Id] = note;
+        var attId = Guid.NewGuid();
+        attachments.Store[attId] = new Attachment
+        {
+            Id = attId, NoteId = note.Id, Filename = "photo.png", MimeType = "image/png", FileSizeBytes = fullBytes.Length,
+        };
+        sut.Notes.Add(new NoteRowViewModel(note, DayBoundary.Utc));
+        sut.SelectedNote = sut.Notes[0];
+        await Task.Delay(20);
+
+        sut.OpenLightboxCommand.Execute(sut.Attachments.Single());
+        await Task.Delay(20);
+
+        sut.LightboxContent.Should().Equal(fullBytes);
+    }
 }

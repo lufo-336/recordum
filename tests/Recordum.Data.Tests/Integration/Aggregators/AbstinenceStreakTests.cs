@@ -324,4 +324,24 @@ public sealed class AbstinenceStreakTests
         }
         finally { await fx.DisposeAsync(); }
     }
+
+    [Fact]
+    public async Task A_zero_duration_period_is_not_a_lapse_run()
+    {
+        // L'unione chiude un periodo aperto in più con ended == started: non è una ricaduta, non fa una serie.
+        var (fx, clock, id) = await SeedResistanceAsync(new DateOnly(2026, 8, 1));
+        try
+        {
+            await SeedPeriodAsync(fx, id, new DateOnly(2026, 8, 1));
+            await SeedPeriodAsync(fx, id, new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 3));
+            clock.Set(new DateTimeOffset(2026, 8, 5, 12, 0, 0, TimeSpan.Zero));
+
+            var runs = await BuildAggregator(fx).GetHistoryAsync(id, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5));
+
+            var run = runs.Should().ContainSingle().Subject;
+            run.IsCurrent.Should().BeTrue();
+            run.Length.Should().Be(5);
+        }
+        finally { await fx.DisposeAsync(); }
+    }
 }

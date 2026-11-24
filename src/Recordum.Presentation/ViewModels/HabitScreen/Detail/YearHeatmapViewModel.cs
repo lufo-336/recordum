@@ -80,6 +80,7 @@ public sealed partial class YearHeatmapViewModel(
         var clean = new HashSet<DateOnly>();
         foreach (var p in periods)
         {
+            if (p.EndedAtMs == p.StartedAtMs) continue;
             var start = day.DayOf(p.StartedAtMs);
             var isOpen = p.EndedAtMs is null;
             var end = isOpen

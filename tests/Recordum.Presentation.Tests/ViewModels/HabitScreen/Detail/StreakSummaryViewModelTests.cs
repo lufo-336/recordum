@@ -319,4 +319,30 @@ public sealed class StreakSummaryViewModelTests
 
         sut.CurrentDisplay.Should().Be(Strings.Abstinence_NotStarted);
     }
+
+    [Fact]
+    public async Task Resistance_zero_duration_period_does_not_count_as_lapse()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 6, 10, 12, 0, 0, TimeSpan.Zero));
+        var nodeId = Guid.NewGuid();
+        var day1 = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var day3 = new DateTimeOffset(2026, 6, 3, 14, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var abstinence = new FakeAbstinenceService();
+        abstinence.States[nodeId] = new AbstinenceState(AbstinenceStatus.Abstaining, day1, null);
+        abstinence.Periods[nodeId] =
+        [
+            new AbstinencePeriod { HabitNodeId = nodeId, StartedAtMs = day1, EndedAtMs = null },
+            new AbstinencePeriod { HabitNodeId = nodeId, StartedAtMs = day3, EndedAtMs = day3 },
+        ];
+        var vm = new StreakSummaryViewModel(new FakeStreakAggregator(), abstinence, clock);
+
+        await vm.LoadAsync(new HabitNode
+        {
+            Id = nodeId,
+            HabitType = HabitType.Resistance,
+            CreatedAt = clock.UtcNow.AddDays(-30).UtcDateTime,
+        }, DayBoundary.Utc);
+
+        vm.RunsLast90Days.Should().Be(0);
+    }
 }

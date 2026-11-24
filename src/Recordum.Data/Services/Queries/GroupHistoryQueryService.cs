@@ -106,6 +106,8 @@ public sealed class GroupHistoryQueryService(
                     var lapses = new HashSet<DateOnly>();
                     foreach (var p in periodsBy[n.Id])
                     {
+                        // Periodo a durata zero (riparazione dell'unione): non è una ricaduta e non apre buchi.
+                        if (p.EndedAtMs == p.StartedAtMs) continue;
                         var pFrom = boundary.DayOf(p.StartedAtMs);
                         var pTo = today;
                         if (p.EndedAtMs is { } end)
@@ -160,7 +162,8 @@ public sealed class GroupHistoryQueryService(
             if (firstRecords.TryGetValue(c.Id, out var ms) && b.DayOf(ms) is var rec && rec < day) day = rec;
             result[c.Id] = day;
         }
-        var firstPeriods = await db.AbstinencePeriods.AsNoTracking().Where(p => resistanceIds.Contains(p.HabitNodeId))
+        var firstPeriods = await db.AbstinencePeriods.AsNoTracking()
+            .Where(p => resistanceIds.Contains(p.HabitNodeId) && (p.EndedAtMs == null || p.EndedAtMs != p.StartedAtMs))
             .GroupBy(p => p.HabitNodeId).Select(g => new { Id = g.Key, Ms = g.Min(p => p.StartedAtMs) })
             .ToListAsync(ct).ConfigureAwait(false);
         foreach (var p in firstPeriods) result[p.Id] = boundaries[p.Id].DayOf(p.Ms);

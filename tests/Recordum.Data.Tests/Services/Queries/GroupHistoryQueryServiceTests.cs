@@ -192,4 +192,18 @@ public class GroupHistoryQueryServiceTests
         var expected = Enumerable.Range(10, 5).Concat(Enumerable.Range(16, 13)).Select(D);
         r.Done.Should().BeEquivalentTo(expected);
     }
+
+    [Fact]
+    public async Task Zero_duration_abstinence_period_creates_no_lapse_or_gap()
+    {
+        await using var e = new Env();
+        var g = await e.AddAsync("G", NodeType.Group, null);
+        var a = await e.AddAsync("a", NodeType.Habit, HabitType.Resistance, parent: g, createdDay: 5);
+        await e.PeriodAsync(a, At(10, 9), null);
+        await e.PeriodAsync(a, At(12, 14), At(12, 14));
+
+        var r = (await e.Sut.GetAsync(g, D(1), D(28))).Single();
+        var expected = Enumerable.Range(10, 19).Select(D);
+        r.Done.Should().BeEquivalentTo(expected);
+    }
 }

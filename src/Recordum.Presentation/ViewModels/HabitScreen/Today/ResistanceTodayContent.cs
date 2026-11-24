@@ -62,7 +62,8 @@ public sealed partial class ResistanceTodayContent : ObservableObject, ITodayCon
         var from = today.AddDays(-90);
         var periods = await _abstinence.ListPeriodsAsync(_habitId, from, today, ct).ConfigureAwait(true);
         var fromMs = _day.RangeOf(from).From.ToUnixTimeMilliseconds();
-        AttemptsLast90Days = periods.Count(p => p.StartedAtMs >= fromMs);
+        // Periodo a durata zero (riparazione dell'unione): non conta come tentativo a parte.
+        AttemptsLast90Days = periods.Count(p => p.StartedAtMs >= fromMs && p.EndedAtMs != p.StartedAtMs);
     }
 
     partial void OnStatusChanged(AbstinenceStatus value)

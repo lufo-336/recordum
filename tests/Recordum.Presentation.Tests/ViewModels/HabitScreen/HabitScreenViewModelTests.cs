@@ -643,4 +643,31 @@ public class HabitScreenViewModelTests
         sut.IsDiarioOpen.Should().BeTrue("il composer vive in Diario, non in Note");
         sut.IsNoteOpen.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task Markers_resistance_ignores_zero_duration_period()
+    {
+        var sut = CreateSut(out var nodes, out _, out _, out _, out _, out _, out _, out var abstinence);
+        var id = Guid.NewGuid();
+        nodes.Store[id] = new HabitNode { Id = id, NodeType = NodeType.Habit, HabitType = HabitType.Resistance, Name = "NoSmoke", Color = "#3366cc" };
+
+        static long Ms(int d) => new DateTimeOffset(new DateTime(2026, 5, d, 12, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+        var day3Ms = Ms(3);
+        // Il periodo a durata zero del giorno 3 precede quello aperto del giorno 1: senza il filtro il giorno 3 diventerebbe ricaduta rossa.
+        abstinence.Periods[id] =
+        [
+            new() { Id = Guid.NewGuid(), HabitNodeId = id, StartedAtMs = day3Ms, EndedAtMs = day3Ms },
+            new() { Id = Guid.NewGuid(), HabitNodeId = id, StartedAtMs = Ms(1), EndedAtMs = null },
+        ];
+
+        await sut.LoadAsync(id);
+
+        var day3 = sut.Calendar.Cells.Single(c => c.Date == new DateOnly(2026, 5, 3));
+        day3.TintStep.Should().Be(3, "il giorno 3 resta pulito");
+        day3.Tint.Should().Be(Recordum.Core.Abstractions.MarkerTint.Default);
+
+        var day4 = sut.Calendar.Cells.Single(c => c.Date == new DateOnly(2026, 5, 4));
+        day4.TintStep.Should().Be(3, "nessun buco dopo il giorno 3");
+        day4.Tint.Should().Be(Recordum.Core.Abstractions.MarkerTint.Default);
+    }
 }

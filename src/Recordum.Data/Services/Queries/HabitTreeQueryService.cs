@@ -183,7 +183,9 @@ public sealed class HabitTreeQueryService(
             .AsNoTracking()
             .Select(p => new { p.HabitNodeId, p.StartedAtMs, p.EndedAtMs })
             .ToListAsync(ct);
-        var abstinenceByHabit = abstinenceRows
+        // Periodo a durata zero (riparazione dell'unione): resta nell'elenco ma non è una ricaduta né un buco.
+        var effectiveAbstinenceRows = abstinenceRows.Where(p => p.EndedAtMs != p.StartedAtMs).ToList();
+        var abstinenceByHabit = effectiveAbstinenceRows
             .GroupBy(p => p.HabitNodeId)
             .ToDictionary(g => g.Key, g =>
             {
@@ -200,7 +202,7 @@ public sealed class HabitTreeQueryService(
         // Il giorno in cui un periodo finisce è una ricaduta, non un giorno pulito (GIO-9): banda a 0 e Lapses vero,
         // anche se quel giorno stesso ne comincia un altro.
         var nowMs = clock.UtcNowMs;
-        var abstinenceBandByHabit = abstinenceRows
+        var abstinenceBandByHabit = effectiveAbstinenceRows
             .GroupBy(p => p.HabitNodeId)
             .ToDictionary(g => g.Key, g =>
             {

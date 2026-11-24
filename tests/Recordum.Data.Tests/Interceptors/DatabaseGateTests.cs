@@ -137,4 +137,27 @@ public class DatabaseGateTests
 
         using var quiet = await gate.QuiesceAsync(Short);
     }
+
+    [Fact]
+    public async Task IsKeptClosed_is_true_after_KeepClosed_and_false_otherwise()
+    {
+        var gate = new DatabaseGate();
+        gate.IsKeptClosed.Should().BeFalse();
+
+        using (var quiet = await gate.QuiesceAsync(Short))
+        {
+            gate.IsKeptClosed.Should().BeFalse();
+        }
+        gate.IsKeptClosed.Should().BeFalse();
+
+        using (var quiet = await gate.QuiesceAsync(Short))
+        {
+            quiet.KeepClosed();
+            gate.IsKeptClosed.Should().BeTrue();
+        }
+        gate.IsKeptClosed.Should().BeTrue();
+
+        gate.Reopen();
+        gate.IsKeptClosed.Should().BeFalse();
+    }
 }

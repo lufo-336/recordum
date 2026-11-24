@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Services;
+using Recordum.Data.Interceptors;
 
 namespace Recordum.Presentation.Bootstrap;
 
@@ -9,7 +10,8 @@ public sealed class SyncSchedulerHost(
     IServiceScopeFactory scopes,
     ITickSourceFactory ticks,
     IClock clock,
-    ILogger<SyncSchedulerHost>? log = null) : IDisposable
+    ILogger<SyncSchedulerHost>? log = null,
+    DatabaseGate? dbGate = null) : IDisposable
 {
     public const string EnabledSettingKey = "sync.enabled";
     public static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
@@ -61,7 +63,14 @@ public sealed class SyncSchedulerHost(
     {
         if (Volatile.Read(ref _disposed) != 0 || _tick is null) return; // mai partito: niente da scrivere
         _tick.Stop();
+        // Dopo un ripristino il cancello resta chiuso fino all'uscita: aprire il DB bloccherebbe fino al timeout.
+        if (dbGate?.IsKeptClosed == true) return;
         await _gate.WaitAsync(ct).ConfigureAwait(false);
+        if (dbGate?.IsKeptClosed == true)
+        {
+            _gate.Release();
+            return;
+        }
         await RunLockedOnPoolAsync(ct).ConfigureAwait(false);
     }
 
@@ -95,6 +104,7 @@ public sealed class SyncSchedulerHost(
 
     private async Task RunCycleCoreAsync(CancellationToken ct)
     {
+        if (dbGate?.IsKeptClosed == true) return;
         try
         {
             await using var scope = scopes.CreateAsyncScope();

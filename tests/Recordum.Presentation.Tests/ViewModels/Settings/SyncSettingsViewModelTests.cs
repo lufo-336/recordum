@@ -111,7 +111,7 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         public void Dispose() { }
     }
 
-    private static SyncSettingsViewModel CreateVm(
+    private SyncSettingsViewModel CreateVm(
         FakeAppSettingService? settings = null,
         FakeFolderPicker? folderPicker = null,
         FakeOpenFileDialog? openDialog = null,
@@ -135,7 +135,8 @@ public sealed class SyncSettingsViewModelTests : IDisposable
             confirm ?? new FakeConfirmationDialog(),
             effectiveClock,
             sync ?? new FakeSyncService(),
-            effectiveScheduler);
+            effectiveScheduler,
+            RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, Path.Combine(_tempDir, "data")], _ => null));
     }
 
     [Fact]
@@ -426,5 +427,274 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         await vm.JoinKeepBothCommand.ExecuteAsync(null);
         vm.ErrorMessage.Should().Be(Strings.Sync_Join_NoPeerFile);
         vm.JoinState.Should().Be(SyncJoinState.NeedsChoice);
+    }
+
+    private sealed class ReviewStubSyncService : ISyncService
+    {
+        private TaskCompletionSource? _entered;
+        private TaskCompletionSource? _release;
+        private int _runCalls;
+
+        public int RunCalls => Volatile.Read(ref _runCalls);
+        public int JoinCalls { get; private set; }
+        public int DisconnectCalls { get; private set; }
+        public int SetPassphraseCalls { get; private set; }
+        public SyncJoinState JoinState { get; set; } = SyncJoinState.NeedsChoice;
+        public SyncJoinRefusal? RefuseReason { get; set; }
+        public Func<Stream, Stream, string, CancellationToken, Task>? OnExportPlain { get; set; }
+        public Func<Stream, Stream, string, CancellationToken, Task>? OnReencrypt { get; set; }
+        public Task Entered => _entered?.Task ?? Task.CompletedTask;
+
+        public void BlockNextJoin()
+        {
+            _entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        public void Release() => _release?.TrySetResult();
+
+        public Task<SyncRunResult> RunAsync(CancellationToken ct)
+        {
+            Interlocked.Increment(ref _runCalls);
+            return Task.FromResult(new SyncRunResult(true, true, []));
+        }
+
+        public Task<SyncStatus> GetStatusAsync(CancellationToken ct) =>
+            Task.FromResult(new SyncStatus(null, [], 0, 0));
+
+        public Task SetPassphraseAsync(string passphrase, CancellationToken ct)
+        {
+            SetPassphraseCalls++;
+            return Task.CompletedTask;
+        }
+
+        public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => Task.FromResult(JoinState);
+
+        public async Task JoinAsync(SyncJoinChoice choice, CancellationToken ct)
+        {
+            JoinCalls++;
+            _entered?.TrySetResult();
+            if (_release is not null)
+                await _release.Task.WaitAsync(ct);
+            if (RefuseReason is { } reason)
+                throw new SyncJoinRefusedException(reason, "refused");
+            JoinState = SyncJoinState.Joined;
+        }
+
+        public Task DisconnectAsync(CancellationToken ct)
+        {
+            DisconnectCalls++;
+            JoinState = SyncJoinState.NotConfigured;
+            return Task.CompletedTask;
+        }
+
+        public Task ExportPlainAsync(Stream rcsync, Stream zipOut, string passphrase, CancellationToken ct) =>
+            OnExportPlain?.Invoke(rcsync, zipOut, passphrase, ct) ?? Task.CompletedTask;
+
+        public Task ReencryptAsync(Stream zipIn, Stream rcsyncOut, string passphrase, CancellationToken ct) =>
+            OnReencrypt?.Invoke(zipIn, rcsyncOut, passphrase, ct) ?? Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task ExportPlain_wrong_passphrase_keeps_existing_destination_intact()
+    {
+        var dataDir = Path.Combine(_tempDir, "data");
+        var options = RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, dataDir], _ => null);
+        var rcsyncIn = Path.Combine(_tempDir, "in.rcsync");
+        var zipOut = Path.Combine(_tempDir, "existing.zip");
+        await File.WriteAllTextAsync(rcsyncIn, "rcsync-bytes");
+        await File.WriteAllTextAsync(zipOut, "existing-zip-intact");
+
+        string[] tempFilesDuringCall = [];
+        var sync = new ReviewStubSyncService
+        {
+            OnExportPlain = async (_, dst, _, ct) =>
+            {
+                tempFilesDuringCall = Directory.GetFiles(options.TempDirectory);
+                await dst.WriteAsync(Encoding.UTF8.GetBytes("partial"), ct);
+                throw new InvalidOperationException("wrong passphrase");
+            },
+        };
+        var clock = new FakeClock(new DateTimeOffset(2026, 3, 15, 14, 0, 0, TimeSpan.Zero));
+        using var scheduler = new SyncSchedulerHost(new EmptyScopeFactory(), new FakeTickSourceFactory(), clock, NullLogger<SyncSchedulerHost>.Instance);
+        var vm = new SyncSettingsViewModel(
+            new FakeAppSettingService(),
+            new FakeFolderPicker(),
+            new FakeOpenFileDialog { Result = rcsyncIn },
+            new FakeBackupSaveFileDialog { Result = zipOut },
+            new FakeConfirmationDialog(),
+            clock,
+            sync,
+            scheduler,
+            options);
+        vm.PlainPassphrase = "wrong-passphrase";
+
+        await vm.ExportPlainCommand.ExecuteAsync(null);
+
+        (await File.ReadAllTextAsync(zipOut)).Should().Be("existing-zip-intact");
+        tempFilesDuringCall.Should().ContainSingle("il temporaneo in chiaro deve vivere in TempDirectory");
+        Directory.GetFiles(options.TempDirectory).Should().BeEmpty("il temporaneo va eliminato se l'operazione fallisce");
+        vm.ErrorMessage.Should().NotBeNullOrEmpty();
+        vm.PlainPassphrase.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Reencrypt_wrong_passphrase_keeps_existing_destination_intact()
+    {
+        var outDir = Path.Combine(_tempDir, "cloud");
+        Directory.CreateDirectory(outDir);
+        var zipIn = Path.Combine(_tempDir, "in.zip");
+        var rcsyncOut = Path.Combine(outDir, "existing.rcsync");
+        await File.WriteAllTextAsync(zipIn, "zip-bytes");
+        await File.WriteAllTextAsync(rcsyncOut, "existing-rcsync-intact");
+
+        string[] filesInOutDirDuringCall = [];
+        var sync = new ReviewStubSyncService
+        {
+            OnReencrypt = async (_, dst, _, ct) =>
+            {
+                filesInOutDirDuringCall = Directory.GetFiles(outDir);
+                await dst.WriteAsync(Encoding.UTF8.GetBytes("partial"), ct);
+                throw new InvalidOperationException("wrong passphrase");
+            },
+        };
+        var vm = CreateVm(
+            openDialog: new FakeOpenFileDialog { Result = zipIn },
+            saveDialog: new FakeBackupSaveFileDialog { Result = rcsyncOut },
+            sync: sync);
+        vm.PlainPassphrase = "wrong-passphrase";
+
+        await vm.ReencryptCommand.ExecuteAsync(null);
+
+        (await File.ReadAllTextAsync(rcsyncOut)).Should().Be("existing-rcsync-intact");
+        filesInOutDirDuringCall.Should().HaveCount(2, "il temporaneo del .rcsync sta accanto a outPath");
+        Directory.GetFiles(outDir).Should().Equal(rcsyncOut);
+        vm.ErrorMessage.Should().NotBeNullOrEmpty();
+        vm.PlainPassphrase.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RefusedJoin_distinguishes_MissingConfiguration_and_NoReadablePeer()
+    {
+        var sync = new ReviewStubSyncService { JoinState = SyncJoinState.NeedsChoice, RefuseReason = SyncJoinRefusal.MissingConfiguration };
+        var vm = CreateVm(sync: sync);
+        await vm.LoadAsync();
+
+        await vm.JoinKeepBothCommand.ExecuteAsync(null);
+        vm.ErrorMessage.Should().Be(Strings.Sync_Join_MissingConfiguration);
+
+        vm.ErrorMessage = null;
+        await vm.JoinStartFromOthersCommand.ExecuteAsync(null);
+        vm.ErrorMessage.Should().Be(Strings.Sync_Join_MissingConfiguration);
+
+        sync.RefuseReason = SyncJoinRefusal.NoReadablePeer;
+        vm.ErrorMessage = null;
+        await vm.JoinStartFromOthersCommand.ExecuteAsync(null);
+        vm.ErrorMessage.Should().Be(Strings.Sync_Join_NoPeerFile);
+    }
+
+    [Fact]
+    public async Task ConnectionCommands_share_single_reentrancy_guard()
+    {
+        var sync = new ReviewStubSyncService { JoinState = SyncJoinState.NeedsChoice };
+        sync.BlockNextJoin();
+        var vm = CreateVm(sync: sync);
+        await vm.LoadAsync();
+        vm.NewPassphrase = "valid-passphrase-1234";
+        vm.ConfirmPassphrase = "valid-passphrase-1234";
+
+        var first = vm.JoinKeepBothCommand.ExecuteAsync(null);
+        await sync.Entered;
+
+        vm.JoinKeepBothCommand.CanExecute(null).Should().BeFalse();
+        vm.JoinStartFromOthersCommand.CanExecute(null).Should().BeFalse();
+        vm.DisconnectCommand.CanExecute(null).Should().BeFalse();
+        vm.SetPassphraseCommand.CanExecute(null).Should().BeFalse();
+
+        // ExecuteAsync non consulta CanExecute: la guardia interna deve bloccare ogni comando concorrente.
+        await vm.JoinKeepBothCommand.ExecuteAsync(null);
+        await vm.JoinStartFromOthersCommand.ExecuteAsync(null);
+        await vm.DisconnectCommand.ExecuteAsync(null);
+        await vm.SetPassphraseCommand.ExecuteAsync(null);
+
+        sync.Release();
+        await first;
+
+        sync.JoinCalls.Should().Be(1);
+        sync.DisconnectCalls.Should().Be(0);
+        sync.SetPassphraseCalls.Should().Be(0);
+        vm.JoinKeepBothCommand.CanExecute(null).Should().BeTrue();
+        vm.JoinStartFromOthersCommand.CanExecute(null).Should().BeTrue();
+        vm.DisconnectCommand.CanExecute(null).Should().BeTrue();
+        vm.SetPassphraseCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ConfigChanges_nudge_scheduler_only_when_AutoMerge_is_on()
+    {
+        var sync = new ReviewStubSyncService();
+        var settings = new FakeAppSettingService();
+        var ticks = new FakeTickSourceFactory();
+        var clock = new FakeClock(new DateTimeOffset(2026, 3, 15, 14, 0, 0, TimeSpan.Zero));
+        var services = new ServiceCollection();
+        services.AddScoped<ISyncService>(_ => sync);
+        services.AddScoped<IAppSettingService>(_ => settings);
+        await using var provider = services.BuildServiceProvider();
+        using var host = new SyncSchedulerHost(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            ticks,
+            clock,
+            NullLogger<SyncSchedulerHost>.Instance);
+
+        var picker = new FakeFolderPicker { Result = "/cloud/Recordum" };
+        var vm = CreateVm(settings: settings, folderPicker: picker, clock: clock, sync: sync, scheduler: host);
+        await vm.LoadAsync();
+        vm.AutoMerge.Should().BeTrue();
+
+        await vm.ChooseFolderCommand.ExecuteAsync(null);
+        await host.CurrentRun;
+        sync.RunCalls.Should().Be(1);
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        vm.NewPassphrase = "correct-horse-battery";
+        vm.ConfirmPassphrase = "correct-horse-battery";
+        await vm.SetPassphraseCommand.ExecuteAsync(null);
+        await host.CurrentRun;
+        sync.RunCalls.Should().Be(2);
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        vm.IncludePhotos = false;
+        await host.CurrentRun;
+        sync.RunCalls.Should().Be(3);
+
+        vm.AutoMerge = false;
+        clock.Advance(TimeSpan.FromMinutes(1));
+        picker.Result = "/cloud/Recordum2";
+        await vm.ChooseFolderCommand.ExecuteAsync(null);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        vm.NewPassphrase = "another-horse-battery";
+        vm.ConfirmPassphrase = "another-horse-battery";
+        await vm.SetPassphraseCommand.ExecuteAsync(null);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        vm.IncludePhotos = true;
+        await host.CurrentRun;
+
+        sync.RunCalls.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Disconnect_clears_Folder()
+    {
+        var settings = new FakeAppSettingService();
+        settings.Store[SyncSettingsViewModel.FolderKey] = "/cloud/Recordum";
+        var confirm = new FakeConfirmationDialog { Result = true };
+        var sync = new ReviewStubSyncService { JoinState = SyncJoinState.Joined };
+        var vm = CreateVm(settings: settings, confirm: confirm, sync: sync);
+        await vm.LoadAsync();
+        vm.Folder.Should().Be("/cloud/Recordum");
+
+        await vm.DisconnectCommand.ExecuteAsync(null);
+
+        vm.Folder.Should().BeNull();
     }
 }

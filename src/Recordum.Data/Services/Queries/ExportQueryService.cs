@@ -222,6 +222,7 @@ public sealed class ExportQueryService(
             var clean = new HashSet<DateOnly>();
             foreach (var p in periods)
             {
+                if (p.EndedAtMs == p.StartedAtMs) continue;
                 var s = day.DayOf(p.StartedAtMs);
                 var isOpen = p.EndedAtMs is null;
                 var e = p.EndedAtMs is { } end ? day.DayOf(end) : today;

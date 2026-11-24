@@ -27,7 +27,7 @@ public sealed class AbstinenceService(
             return new AbstinenceState(AbstinenceStatus.Abstaining, open.StartedAtMs, null);
 
         var lastClosed = await db.AbstinencePeriods.AsNoTracking()
-            .Where(p => p.HabitNodeId == habitNodeId && p.EndedAtMs != null)
+            .Where(p => p.HabitNodeId == habitNodeId && p.EndedAtMs != null && p.EndedAtMs != p.StartedAtMs) // durata zero: non è una ricaduta
             .OrderByDescending(p => p.EndedAtMs).FirstOrDefaultAsync(ct).ConfigureAwait(false);
         return lastClosed is null
             ? new AbstinenceState(AbstinenceStatus.NotStarted, null, null)
@@ -70,7 +70,8 @@ public sealed class AbstinenceService(
         long endMs;
         if (day is not { } past || past == today)
         {
-            endMs = clock.UtcNowMs;
+            // Almeno un ms: la durata zero è riservata alla riparazione dell'unione, che non è una ricaduta.
+            endMs = Math.Max(clock.UtcNowMs, open.StartedAtMs + 1);
         }
         else
         {

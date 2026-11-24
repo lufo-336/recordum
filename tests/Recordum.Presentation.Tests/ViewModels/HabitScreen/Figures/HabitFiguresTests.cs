@@ -480,4 +480,23 @@ public sealed class HabitFiguresTests : IDisposable
         vm.Items[0].Value.Should().Be(Recordum.Presentation.Resources.Strings.Abstinence_NotStarted);
         vm.Items.Skip(1).Select(f => f.Value).Should().Equal("0 g", "0", "0 g");
     }
+
+    [Fact]
+    public async Task Abstinence_zero_duration_period_does_not_count_as_lapse()
+    {
+        var day1 = new DateTimeOffset(2026, 10, 20, 10, 0, 0, TimeSpan.Zero);
+        var day3 = new DateTimeOffset(2026, 10, 22, 14, 0, 0, TimeSpan.Zero);
+        _abstinence.Periods[_id] =
+        [
+            new AbstinencePeriod { HabitNodeId = _id, StartedAtMs = Ms(day1), EndedAtMs = null },
+            new AbstinencePeriod { HabitNodeId = _id, StartedAtMs = Ms(day3), EndedAtMs = Ms(day3) },
+        ];
+        _abstinence.States[_id] = new AbstinenceState(AbstinenceStatus.Abstaining, Ms(day1), null);
+
+        var vm = Vm();
+        await vm.LoadAsync(Node(HabitType.Resistance), Daily(), HabitCase.Abstinence, Boundary);
+
+        vm.Items[2].Value.Should().Be("0", "un periodo a durata zero non è una ricaduta");
+        vm.Items[3].Value.Should().Be("8 g");
+    }
 }

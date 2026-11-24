@@ -278,7 +278,10 @@ public sealed partial class HabitFiguresViewModel : ObservableObject, IDisposabl
 
     private async Task<ImmutableArray<HabitFigure>> AbstinenceAsync(Ctx c, CancellationToken ct)
     {
-        var periods = await _abstinence.ListPeriodsAsync(c.Node.Id, c.Created, c.Today, ct).ConfigureAwait(true);
+        // Un periodo chiuso a durata zero (riparazione dell'unione) non conta nelle ricadute né nelle statistiche.
+        var periods = (await _abstinence.ListPeriodsAsync(c.Node.Id, c.Created, c.Today, ct).ConfigureAwait(true))
+            .Where(p => p.EndedAtMs != p.StartedAtMs)
+            .ToList();
         var nowMs = _clock.UtcNowMs;
         double Days(AbstinencePeriod p) => ((p.EndedAtMs ?? nowMs) - p.StartedAtMs) / 86_400_000d;
         var longest = periods.Count == 0 ? 0 : (int)Math.Floor(periods.Max(Days));

@@ -89,4 +89,21 @@ public class ResistanceTodayContentTests
 
         sut.AttemptsLast90Days.Should().Be(2);
     }
+
+    [Fact]
+    public async Task AttemptsLast90Days_ignores_zero_duration_period()
+    {
+        var (sut, abstinence, node) = NewSut();
+        var day1 = Now.AddDays(-10).ToUnixTimeMilliseconds();
+        var day3 = Now.AddDays(-8).ToUnixTimeMilliseconds();
+        abstinence.Periods[node.Id] =
+        [
+            new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = node.Id, StartedAtMs = day1, EndedAtMs = null },
+            new AbstinencePeriod { Id = Guid.NewGuid(), HabitNodeId = node.Id, StartedAtMs = day3, EndedAtMs = day3 },
+        ];
+
+        await sut.LoadAsync(node, DayBoundary.Utc);
+
+        sut.AttemptsLast90Days.Should().Be(1);
+    }
 }

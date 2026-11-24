@@ -15,8 +15,16 @@ public sealed class DatabaseGate : DbConnectionInterceptor
     private readonly ConditionalWeakTable<DbConnection, object> _holders = [];
     private int _open;
     private bool _closed;
+    private bool _keptClosed;
     private TaskCompletionSource _reopened = Completed();
     private TaskCompletionSource? _drained;
+
+    /// <summary>Vero dopo <see cref="Quiescence.KeepClosed"/>: il ripristino ha sostituito il database e il cancello
+    /// resta chiuso finché il processo vive.</summary>
+    public bool IsKeptClosed
+    {
+        get { lock (_lock) return _keptClosed; }
+    }
 
     /// <summary>Chiude il cancello e aspetta che le connessioni aperte arrivino a zero. Scaduto il tempo riapre e lancia
     /// <see cref="TimeoutException"/>. L'handle riapre al <c>Dispose</c>, salvo <see cref="Quiescence.KeepClosed"/>.</summary>
@@ -44,9 +52,15 @@ public sealed class DatabaseGate : DbConnectionInterceptor
         lock (_lock)
         {
             _closed = false;
+            _keptClosed = false;
             _drained = null;
             _reopened.TrySetResult();
         }
+    }
+
+    private void MarkKeptClosed()
+    {
+        lock (_lock) _keptClosed = true;
     }
 
     public override InterceptionResult ConnectionOpening(DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
@@ -126,7 +140,11 @@ public sealed class DatabaseGate : DbConnectionInterceptor
     public sealed class Quiescence(DatabaseGate gate) : IDisposable
     {
         private bool _keep;
-        public void KeepClosed() => _keep = true;
+        public void KeepClosed()
+        {
+            _keep = true;
+            gate.MarkKeptClosed();
+        }
         public void Dispose() { if (!_keep) gate.Reopen(); }
     }
 }

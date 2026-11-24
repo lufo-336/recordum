@@ -1253,7 +1253,10 @@ public sealed partial class HabitScreenViewModel : ObservableObject, IDisposable
     private async Task<CalendarMarkers> BuildAbstinenceMarkersAsync(
         HabitNode node, DateOnly from, DateOnly to, CancellationToken ct)
     {
-        var periods = await _abstinence.ListPeriodsAsync(node.Id, from, to, ct).ConfigureAwait(true);
+        // Periodo a durata zero (riparazione dell'unione): resta nell'elenco ma non segna ricadute o buchi.
+        var periods = (await _abstinence.ListPeriodsAsync(node.Id, from, to, ct).ConfigureAwait(true))
+            .Where(p => p.EndedAtMs != p.StartedAtMs)
+            .ToList();
         // R10: era QUI che la colorazione del calendario diceva un giorno e la griglia un altro —
         // i marker in UTC, il navigatore in locale. Ora la sorgente e' una sola.
         var today = _dayBoundary.Today(_clock);
