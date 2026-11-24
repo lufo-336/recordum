@@ -51,6 +51,7 @@ public static class AvaloniaShellServices
         services.AddSingleton<IHabitTemplatePickerLauncher>(sp => new AvaloniaHabitTemplatePickerLauncher(sp, MainWindow));
         services.AddSingleton<IHabitBuilderLauncher>(sp => new AvaloniaHabitBuilderLauncher(sp, MainWindow));
         services.AddSingleton<ISettingsWindowLauncher>(sp => new AvaloniaSettingsWindowLauncher(sp, MainWindow));
+        services.AddSingleton<IHabitNavigator>(_ => new AvaloniaHabitNavigator(MainWindow));
         // Impostazioni › Aspetto: il tema e le righe della Home (WPF registra il suo, senza preferenza).
         services.AddTransient(sp => new Presentation.ViewModels.SettingsViewModel(
             sp.GetRequiredService<IThemeService>(), sp.GetRequiredService<IAppFontService>(), sp.GetRequiredService<HomeRowsPreference>()));

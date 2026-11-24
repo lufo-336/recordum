@@ -163,6 +163,7 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
             typeof(IBackupDialogLauncher), typeof(ISaveFileDialog), typeof(IBackupSaveFileDialog),
             typeof(IOpenFileDialog), typeof(IClipboard), typeof(IScreenColorPicker),
             typeof(IAutoBackupKeyStore), typeof(IEditorAvailability), typeof(IFolderPicker), typeof(IFolderOpener),
+            typeof(IHabitNavigator),
         ];
         Assert.All(platform, t => Assert.DoesNotContain(t, registered));
     }
@@ -342,6 +343,8 @@ public sealed class CoreCompositionTests(ITestOutputHelper output) : IDisposable
         }
 
         public Task<SyncStatus> GetStatusAsync(CancellationToken ct) => Task.FromResult(new SyncStatus(null, [], 0, 0));
+        public Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<SyncItemToFix>>([]);
+        public Task AcceptRepairAsync(Guid periodId, CancellationToken ct) => Task.CompletedTask;
         public Task SetPassphraseAsync(string passphrase, CancellationToken ct) => Task.CompletedTask;
         public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => Task.FromResult(SyncJoinState.Joined);
         public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct) => Task.CompletedTask;

@@ -58,6 +58,7 @@ public sealed partial class SyncCatalogGuardTests
         "daily_reset_time",
         "monthly_summary_day",
         "monthly_summary_time",
+        SyncService.AcceptedRepairsSettingKey,
     ];
 
     private static readonly string[] ExpectedTextColumns =
@@ -340,7 +341,7 @@ public sealed partial class SyncCatalogGuardTests
 
         var allClassified = SyncCatalog.TravellingSettingKeys
             .Union(SyncCatalog.LocalSettingKeys, StringComparer.Ordinal);
-        allClassified.Should().BeEquivalentTo(seededKeys);
+        allClassified.Should().BeEquivalentTo([.. seededKeys, SyncService.AcceptedRepairsSettingKey]);
     }
 
     private static void AssertSnakeCase(string name)

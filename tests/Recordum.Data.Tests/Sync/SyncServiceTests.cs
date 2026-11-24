@@ -1324,6 +1324,219 @@ public sealed class SyncServiceTests : IDisposable
         onB.OriginDeviceName.Should().Be("Fedora");
     }
 
+    [Fact]
+    public async Task Two_blocks_in_one_note_are_one_item()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        var day = new DateOnly(2026, 11, 20);
+        await a.EditAsync(1_100, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H1, "Corsa"));
+            db.Notes.Add(new Note
+            {
+                Id = N1,
+                HabitNodeId = H1,
+                Category = NoteCategory.Veloce,
+                TargetDate = day,
+                BodyMd = "testa\n\n— Telefono · 2026-11-20 10:00 —\nprima copia molto lunga\n\n— Tablet · 2026-11-20 11:00 —\nseconda copia",
+            });
+        });
+
+        var items = await a.Service.ListItemsToFixAsync(CancellationToken.None);
+
+        var item = items.Should().ContainSingle().Subject;
+        item.Kind.Should().Be(SyncItemKind.Note);
+        item.EntityId.Should().Be(N1);
+        item.HabitNodeId.Should().Be(H1);
+        item.HabitName.Should().Be("Corsa");
+        item.HabitColor.Should().Be("#336699");
+        item.Day.Should().Be(day);
+        item.Excerpt.Should().StartWith("— Telefono · 2026-11-20 10:00 — prima copia");
+        item.Excerpt.Length.Should().BeLessThanOrEqualTo(80);
+    }
+
+    [Fact]
+    public async Task A_diary_entry_with_a_block_is_an_item_with_its_day()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await a.Settings.SetAsync("daily_reset_time", "04:00");
+        // 02:30 UTC con reset alle 04:00 appartiene al giorno prima (2026-11-19).
+        var beforeResetMs = new DateTimeOffset(2026, 11, 20, 2, 30, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        var longBody = new string('x', 90);
+        await a.EditAsync(beforeResetMs, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H1, "Diario"));
+            db.Notes.Add(new Note
+            {
+                Id = N1,
+                HabitNodeId = H1,
+                Category = NoteCategory.Diario,
+                TargetDate = null,
+                BodyMd = $"oggi\n\n— Telefono · 2026-11-19 22:15 —\n{longBody}",
+            });
+        });
+
+        var items = await a.Service.ListItemsToFixAsync(CancellationToken.None);
+
+        var item = items.Should().ContainSingle().Subject;
+        item.Kind.Should().Be(SyncItemKind.DiaryEntry);
+        item.Day.Should().Be(new DateOnly(2026, 11, 19));
+        item.Excerpt.Length.Should().BeLessThanOrEqualTo(80);
+        item.Excerpt.Should().StartWith("— Telefono · 2026-11-19 22:15 —");
+    }
+
+    [Fact]
+    public async Task A_record_note_with_a_block_is_an_item()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        var compId = new Guid("44444444-0000-0000-0000-000000000001");
+        var completedMs = new DateTimeOffset(2026, 11, 21, 18, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await a.EditAsync(completedMs, db =>
+        {
+            db.HabitNodes.Add(NewHabit(H1, "Acqua"));
+            db.Completions.Add(new Completion
+            {
+                Id = compId,
+                HabitNodeId = H1,
+                CompletedAt = new DateTime(2026, 11, 21, 18, 0, 0, DateTimeKind.Utc),
+                CompletedAtMs = completedMs,
+                Notes = "vincitore\n\n— Laptop · 2026-11-21 17:45 —\nnota persa",
+            });
+        });
+
+        var items = await a.Service.ListItemsToFixAsync(CancellationToken.None);
+
+        var item = items.Should().ContainSingle().Subject;
+        item.Kind.Should().Be(SyncItemKind.RecordNote);
+        item.EntityId.Should().Be(compId);
+        item.HabitNodeId.Should().Be(H1);
+        item.Day.Should().Be(new DateOnly(2026, 11, 21));
+        item.Excerpt.Should().Be("— Laptop · 2026-11-21 17:45 — nota persa");
+    }
+
+    [Fact]
+    public async Task A_zero_duration_period_is_an_item()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        var periodId = new Guid("55555555-0000-0000-0000-000000000001");
+        var startedMs = new DateTimeOffset(2026, 11, 18, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await a.EditAsync(startedMs, db =>
+        {
+            db.HabitNodes.Add(new HabitNode
+            {
+                Id = H1,
+                Name = "Fumo",
+                NodeType = NodeType.Habit,
+                HabitType = HabitType.Resistance,
+                Color = "#CC4422",
+            });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = periodId,
+                HabitNodeId = H1,
+                StartedAtMs = startedMs,
+                EndedAtMs = startedMs,
+            });
+        });
+
+        var items = await a.Service.ListItemsToFixAsync(CancellationToken.None);
+
+        var item = items.Should().ContainSingle().Subject;
+        item.Kind.Should().Be(SyncItemKind.RepairedPeriod);
+        item.EntityId.Should().Be(periodId);
+        item.HabitNodeId.Should().Be(H1);
+        item.HabitName.Should().Be("Fumo");
+        item.HabitColor.Should().Be("#CC4422");
+        item.Day.Should().Be(new DateOnly(2026, 11, 18));
+        item.Excerpt.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task An_accepted_period_is_not_an_item()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        await using var b = await CreateNodeAsync("Laptop", _sharedFolder, joined: true, startMs: 2_000);
+        var periodId = new Guid("55555555-0000-0000-0000-000000000002");
+        var startedMs = new DateTimeOffset(2026, 11, 18, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await a.EditAsync(startedMs, db =>
+        {
+            db.HabitNodes.Add(new HabitNode
+            {
+                Id = H1,
+                Name = "Fumo",
+                NodeType = NodeType.Habit,
+                HabitType = HabitType.Resistance,
+                Color = "#CC4422",
+            });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = periodId,
+                HabitNodeId = H1,
+                StartedAtMs = startedMs,
+                EndedAtMs = startedMs,
+            });
+        });
+
+        await a.Service.AcceptRepairAsync(periodId, CancellationToken.None);
+
+        (await a.Service.ListItemsToFixAsync(CancellationToken.None)).Should().BeEmpty();
+        // L'accettazione viaggia verso gli altri dispositivi via sync.accepted_repairs.
+        await a.Service.RunAsync(CancellationToken.None);
+        await b.Service.RunAsync(CancellationToken.None);
+        (await b.Service.ListItemsToFixAsync(CancellationToken.None)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Accepting_twice_keeps_one_id()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        var periodId = new Guid("55555555-0000-0000-0000-000000000003");
+
+        await a.Service.AcceptRepairAsync(periodId, CancellationToken.None);
+        await a.Service.AcceptRepairAsync(periodId, CancellationToken.None);
+
+        var raw = await a.Settings.GetAsync(SyncService.AcceptedRepairsSettingKey);
+        var ids = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(raw!);
+        ids.Should().Equal(periodId);
+    }
+
+    [Fact]
+    public async Task Status_counts_items_not_blocks()
+    {
+        await using var a = await CreateNodeAsync("Fedora", _sharedFolder, joined: true, startMs: 1_000);
+        var periodId = new Guid("55555555-0000-0000-0000-000000000004");
+        var startedMs = new DateTimeOffset(2026, 11, 18, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+        await a.EditAsync(startedMs, db =>
+        {
+            db.HabitNodes.Add(new HabitNode
+            {
+                Id = H1,
+                Name = "Fumo",
+                NodeType = NodeType.Habit,
+                HabitType = HabitType.Resistance,
+                Color = "#CC4422",
+            });
+            db.Notes.Add(new Note
+            {
+                Id = N1,
+                HabitNodeId = H1,
+                Category = NoteCategory.Veloce,
+                TargetDate = new DateOnly(2026, 11, 19),
+                BodyMd = "testa\n\n— A · 2026-11-19 10:00 —\nuno\n\n— B · 2026-11-19 11:00 —\ndue",
+            });
+            db.AbstinencePeriods.Add(new AbstinencePeriod
+            {
+                Id = periodId,
+                HabitNodeId = H1,
+                StartedAtMs = startedMs,
+                EndedAtMs = startedMs,
+            });
+        });
+
+        var status = await a.Service.GetStatusAsync(CancellationToken.None);
+        status.ItemsToFix.Should().Be(2);
+    }
+
     private async Task<TestNode> CreateNodeAsync(
         string? deviceName,
         string sharedFolder,

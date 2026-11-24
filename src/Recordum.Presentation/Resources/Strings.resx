@@ -2832,4 +2832,31 @@ Details: {0}</value>
   <data name="Notes.Photo.OriginalElsewhere" xml:space="preserve">
     <value>Original on another device</value>
   </data>
+  <data name="Sync.Items.One" xml:space="preserve">
+    <value>1 item to fix</value>
+  </data>
+  <data name="Sync.Items.Many" xml:space="preserve">
+    <value>{0} items to fix</value>
+  </data>
+  <data name="Sync.Items.Hint" xml:space="preserve">
+    <value>Tap an item to open it. A marked block stays until you remove it from the text.</value>
+  </data>
+  <data name="Sync.Items.Kind.Note" xml:space="preserve">
+    <value>Note with two versions</value>
+  </data>
+  <data name="Sync.Items.Kind.DiaryEntry" xml:space="preserve">
+    <value>Diary entry with two versions</value>
+  </data>
+  <data name="Sync.Items.Kind.RecordNote" xml:space="preserve">
+    <value>Record note with two versions</value>
+  </data>
+  <data name="Sync.Items.Kind.RepairedPeriod" xml:space="preserve">
+    <value>Duplicate period, closed by the merge</value>
+  </data>
+  <data name="Sync.Items.RepairedPeriod.Detail" xml:space="preserve">
+    <value>It was open on another device too; it stays with its notes.</value>
+  </data>
+  <data name="Sync.Items.Accept" xml:space="preserve">
+    <value>That's fine</value>
+  </data>
 </root>

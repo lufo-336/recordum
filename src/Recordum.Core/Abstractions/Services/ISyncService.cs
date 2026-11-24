@@ -24,6 +24,12 @@ public interface ISyncService
 
     /// <summary>"Ricifra": il contrario di <see cref="ExportPlainAsync"/>.</summary>
     Task ReencryptAsync(Stream zipIn, Stream rcsyncOut, string passphrase, CancellationToken ct);
+
+    /// <summary>Voci con conflitti di testo o periodi chiusi a durata zero non ancora accettati.</summary>
+    Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct);
+
+    /// <summary>Segna come accettato un periodo doppio chiuso dall'unione.</summary>
+    Task AcceptRepairAsync(Guid periodId, CancellationToken ct);
 }
 
 public enum SyncJoinChoice { StartFromOthers, KeepThisDeviceToo }
@@ -32,10 +38,21 @@ public enum SyncJoinState { NotConfigured, NeedsChoice, Joined }
 
 public enum SyncPeerProblem { CannotOpen, NewerFormat, BrokenFile, SameIdentity }
 
+public enum SyncItemKind { Note, DiaryEntry, RecordNote, RepairedPeriod }
+
+public sealed record SyncItemToFix(
+    SyncItemKind Kind,
+    Guid EntityId,
+    Guid HabitNodeId,
+    string HabitName,
+    string? HabitColor,
+    DateOnly Day,
+    string Excerpt);
+
 public sealed record SyncStatus(
     DateTimeOffset? LastRun,
     IReadOnlyList<SyncPeerStatus> Peers,
-    int TextConflicts,
+    int ItemsToFix,
     long OwnFileBytes);
 
 public sealed record SyncPeerStatus(string DeviceName, DateTimeOffset? FileWrittenAt, SyncPeerProblem? Problem);

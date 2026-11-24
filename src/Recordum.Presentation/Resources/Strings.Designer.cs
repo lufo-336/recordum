@@ -985,6 +985,15 @@ public static class Strings
     public static string Sync_Join_MissingConfiguration => Get("Sync.Join.MissingConfiguration");
     public static string Notes_Photo_OriginalOn => Get("Notes.Photo.OriginalOn");
     public static string Notes_Photo_OriginalElsewhere => Get("Notes.Photo.OriginalElsewhere");
+    public static string Sync_Items_One => Get("Sync.Items.One");
+    public static string Sync_Items_Many => Get("Sync.Items.Many");
+    public static string Sync_Items_Hint => Get("Sync.Items.Hint");
+    public static string Sync_Items_Kind_Note => Get("Sync.Items.Kind.Note");
+    public static string Sync_Items_Kind_DiaryEntry => Get("Sync.Items.Kind.DiaryEntry");
+    public static string Sync_Items_Kind_RecordNote => Get("Sync.Items.Kind.RecordNote");
+    public static string Sync_Items_Kind_RepairedPeriod => Get("Sync.Items.Kind.RepairedPeriod");
+    public static string Sync_Items_RepairedPeriod_Detail => Get("Sync.Items.RepairedPeriod.Detail");
+    public static string Sync_Items_Accept => Get("Sync.Items.Accept");
     private static string Get(string name) =>
         Manager.GetString(name, Culture) ?? throw new MissingManifestResourceException($"Resource '{name}' not found.");
 }

@@ -65,6 +65,23 @@ public static partial class TextConflictBlock
         return Marker().Count(text);
     }
 
+    /// <summary>Riga di testa del primo blocco più le prime parole del suo corpo, al più <paramref name="maxLength"/> caratteri.</summary>
+    public static string FirstBlockExcerpt(string text, int maxLength = 80)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (maxLength <= 0) return string.Empty;
+
+        var (_, blocks) = Parse(text);
+        if (blocks.Count == 0) return string.Empty;
+
+        var first = blocks[0];
+        var body = Whitespace().Replace(first.Body.Trim(), " ");
+        var raw = string.IsNullOrEmpty(body) ? first.Header : $"{first.Header} {body}";
+        if (raw.Length <= maxLength) return raw;
+        if (maxLength == 1) return "…";
+        return string.Concat(raw.AsSpan(0, maxLength - 1).TrimEnd(), "…");
+    }
+
     /// <summary>Vero se ogni parte di <paramref name="loser"/> (il testo in cima e il corpo di ogni suo blocco) è già in
     /// <paramref name="text"/>, in cima o come corpo esatto di un blocco: un secondo giro non duplica.</summary>
     public static bool Contains(string text, string loser)
@@ -130,4 +147,7 @@ public static partial class TextConflictBlock
 
     [GeneratedRegex(@"^— (?<who>[^\n]*) · (?<at>[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}) —", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
     private static partial Regex Marker();
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex Whitespace();
 }

@@ -10,8 +10,10 @@ using Recordum.Core.Abstractions;
 using Recordum.Core.Abstractions.Security;
 using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Backup;
+using Recordum.Core.Enums;
 using Recordum.Core.Models;
 using Recordum.Data.Backup;
+using Recordum.Data.Services;
 
 namespace Recordum.Data.Sync;
 
@@ -33,7 +35,8 @@ public sealed partial class SyncService(
     string appVersion,
     ILogger<SyncService>? logger = null,
     Func<string, string, ISyncFileStore>? storeFactory = null,
-    string? machineName = null) : ISyncService
+    string? machineName = null,
+    IResetTimeResolver? resetTimes = null) : ISyncService
 {
     public const string FolderSettingKey = "sync.folder";
     public const string PassphraseSettingKey = "sync.passphrase";
@@ -47,6 +50,8 @@ public sealed partial class SyncService(
     public const string MergedFromSettingKey = "sync.merged_from";
     /// <summary>JSON: per ogni pari, l'ultima <c>data_signature</c> già confermata dopo la scrittura del proprio file (Ruling 21).</summary>
     public const string AckedDataSettingKey = "sync.acked_data";
+    /// <summary>JSON array di GUID dei periodi doppi a durata zero accettati dall'utente (viaggia via app_settings).</summary>
+    public const string AcceptedRepairsSettingKey = "sync.accepted_repairs";
 
     private const long SignatureModulus = 1_000_000_007;
 
@@ -59,6 +64,9 @@ public sealed partial class SyncService(
 
     private readonly Func<string, string, ISyncFileStore> _storeFactory =
         storeFactory ?? (static (folder, ownFileName) => new FolderSyncFileStore(folder, ownFileName));
+
+    private readonly IResetTimeResolver _resetTimes =
+        resetTimes ?? new ResetTimeResolver(dbFactory, settings, clock, NullLogger<ResetTimeResolver>.Instance);
 
     public async Task<SyncRunResult> RunAsync(CancellationToken ct)
     {
@@ -90,7 +98,8 @@ public sealed partial class SyncService(
             if (own.Exists) ownFileBytes = own.Length;
         }
 
-        return new SyncStatus(lastRun, runState.Peers, await CountTextConflictsAsync(ct).ConfigureAwait(false), ownFileBytes);
+        var items = await ListItemsToFixAsync(ct).ConfigureAwait(false);
+        return new SyncStatus(lastRun, runState.Peers, items.Count, ownFileBytes);
     }
 
     public async Task SetPassphraseAsync(string passphrase, CancellationToken ct)
@@ -584,22 +593,134 @@ public sealed partial class SyncService(
         return (meta.DeviceId, meta.DeviceName);
     }
 
-    /// <summary>"N voci da sistemare": i blocchi della regola B nelle note e nel diario.</summary>
-    private async Task<int> CountTextConflictsAsync(CancellationToken ct)
+    /// <summary>"N voci da sistemare": una voce per riga con blocchi di regola B o periodo chiuso a durata zero non accettato.</summary>
+    public async Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct).ConfigureAwait(false);
         // Ogni blocco inizia con "— " (trattino lungo): il filtro in SQL evita di caricare tutto il diario.
-        var notes = await db.Notes.AsNoTracking()
-            .Where(n => n.BodyMd != null && n.BodyMd.Contains("— "))
-            .Select(n => n.BodyMd!)
+        var noteRows = (await (
+                from n in db.Notes.AsNoTracking()
+                join h in db.HabitNodes.AsNoTracking() on n.HabitNodeId equals h.Id
+                where n.BodyMd != null && n.BodyMd.Contains("— ")
+                select new
+                {
+                    n.Id,
+                    n.HabitNodeId,
+                    HabitName = h.Name,
+                    HabitColor = h.Color,
+                    n.Category,
+                    n.TargetDate,
+                    n.CreatedAt,
+                    BodyMd = n.BodyMd!,
+                })
             .ToListAsync(ct)
-            .ConfigureAwait(false);
-        var diary = await db.Completions.AsNoTracking()
-            .Where(c => c.Notes != null && c.Notes.Contains("— "))
-            .Select(c => c.Notes!)
+            .ConfigureAwait(false))
+            .Where(n => TextConflictBlock.Count(n.BodyMd) > 0)
+            .ToList();
+
+        var completionRows = (await (
+                from c in db.Completions.AsNoTracking()
+                join h in db.HabitNodes.AsNoTracking() on c.HabitNodeId equals h.Id
+                where c.Notes != null && c.Notes.Contains("— ")
+                select new
+                {
+                    c.Id,
+                    c.HabitNodeId,
+                    HabitName = h.Name,
+                    HabitColor = h.Color,
+                    c.CompletedAtMs,
+                    Notes = c.Notes!,
+                })
             .ToListAsync(ct)
-            .ConfigureAwait(false);
-        return notes.Concat(diary).Sum(TextConflictBlock.Count);
+            .ConfigureAwait(false))
+            .Where(c => TextConflictBlock.Count(c.Notes) > 0)
+            .ToList();
+
+        var accepted = await ReadAcceptedRepairsAsync(ct).ConfigureAwait(false);
+        var periodRows = (await (
+                from p in db.AbstinencePeriods.AsNoTracking()
+                join h in db.HabitNodes.AsNoTracking() on p.HabitNodeId equals h.Id
+                where p.EndedAtMs != null && p.EndedAtMs == p.StartedAtMs
+                select new
+                {
+                    p.Id,
+                    p.HabitNodeId,
+                    HabitName = h.Name,
+                    HabitColor = h.Color,
+                    p.StartedAtMs,
+                })
+            .ToListAsync(ct)
+            .ConfigureAwait(false))
+            .Where(p => !accepted.Contains(p.Id))
+            .ToList();
+
+        var habitIds = noteRows.Select(n => n.HabitNodeId)
+            .Concat(completionRows.Select(c => c.HabitNodeId))
+            .Concat(periodRows.Select(p => p.HabitNodeId))
+            .Distinct()
+            .ToArray();
+
+        if (habitIds.Length == 0)
+            return [];
+
+        var boundaries = await _resetTimes.GetDayBoundariesAsync(habitIds, ct).ConfigureAwait(false);
+        var items = new List<SyncItemToFix>(noteRows.Count + completionRows.Count + periodRows.Count);
+
+        foreach (var n in noteRows)
+        {
+            var boundary = boundaries[n.HabitNodeId];
+            var day = n.TargetDate ?? boundary.DayOf(n.CreatedAt);
+            var kind = n.Category == NoteCategory.Diario ? SyncItemKind.DiaryEntry : SyncItemKind.Note;
+            items.Add(new SyncItemToFix(
+                kind, n.Id, n.HabitNodeId, n.HabitName, n.HabitColor, day, TextConflictBlock.FirstBlockExcerpt(n.BodyMd)));
+        }
+
+        foreach (var c in completionRows)
+        {
+            var day = boundaries[c.HabitNodeId].DayOf(c.CompletedAtMs);
+            items.Add(new SyncItemToFix(
+                SyncItemKind.RecordNote, c.Id, c.HabitNodeId, c.HabitName, c.HabitColor, day, TextConflictBlock.FirstBlockExcerpt(c.Notes)));
+        }
+
+        foreach (var p in periodRows)
+        {
+            var day = boundaries[p.HabitNodeId].DayOf(p.StartedAtMs);
+            items.Add(new SyncItemToFix(
+                SyncItemKind.RepairedPeriod, p.Id, p.HabitNodeId, p.HabitName, p.HabitColor, day, string.Empty));
+        }
+
+        return items
+            .OrderByDescending(i => i.Day)
+            .ThenBy(i => i.HabitName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(i => i.Kind)
+            .ThenBy(i => i.EntityId)
+            .ToList();
+    }
+
+    public async Task AcceptRepairAsync(Guid periodId, CancellationToken ct)
+    {
+        var ids = await ReadAcceptedRepairListAsync(ct).ConfigureAwait(false);
+        if (ids.Contains(periodId))
+            return;
+        ids.Add(periodId);
+        await settings.SetAsync(AcceptedRepairsSettingKey, JsonSerializer.Serialize(ids), ct).ConfigureAwait(false);
+    }
+
+    private async Task<HashSet<Guid>> ReadAcceptedRepairsAsync(CancellationToken ct) =>
+        [.. await ReadAcceptedRepairListAsync(ct).ConfigureAwait(false)];
+
+    private async Task<List<Guid>> ReadAcceptedRepairListAsync(CancellationToken ct)
+    {
+        var raw = await settings.GetAsync(AcceptedRepairsSettingKey, ct).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(raw)) return [];
+        try
+        {
+            return (JsonSerializer.Deserialize<List<Guid>>(raw) ?? []).Distinct().ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     /// <summary>Cambia quando cambia qualcosa che il proprio file porta: le righe che viaggiano (quante, l'ora più

@@ -58,6 +58,7 @@ public static class SyncCatalog
         "daily_reset_time",
         "monthly_summary_day",
         "monthly_summary_time",
+        SyncService.AcceptedRepairsSettingKey,
     };
 
     /// <summary>Chiavi di AppSettingSeed che restano locali al dispositivo.</summary>

@@ -247,4 +247,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand]
     private async Task ShowDiagnosticInfoAsync() => await _settingsLauncher.ShowAsync(SettingsCategoryId.Diagnostics).ConfigureAwait(true);
+
+    /// <summary>Apre la scheda dell'abitudine e la porta sul giorno richiesto, salvo scrittura in corso.</summary>
+    public async Task OpenHabitAtDayAsync(Guid habitNodeId, string title, DateOnly day)
+    {
+        CurrentWorkspace = AppWorkspace.Home;
+        await Workspace.OpenSubjectAsync(habitNodeId, WorkspaceTabKind.Habit, title).ConfigureAwait(true);
+        if (Workspace.Tabs.FirstOrDefault(t => t.SubjectId == habitNodeId)?.Screen is not { HasNode: true } screen)
+            return;
+        if (screen.SelectedDay != day && !screen.HasWritingInProgress)
+            await screen.SelectDayAsync(day).ConfigureAwait(true);
+    }
 }

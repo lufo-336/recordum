@@ -64,6 +64,11 @@ public class SyncSchedulerHostTests
         public Task<SyncStatus> GetStatusAsync(CancellationToken ct) =>
             Task.FromResult(new SyncStatus(null, [], 0, 0));
 
+        public Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<SyncItemToFix>>([]);
+
+        public Task AcceptRepairAsync(Guid periodId, CancellationToken ct) => Task.CompletedTask;
+
         public Task SetPassphraseAsync(string passphrase, CancellationToken ct) => Task.CompletedTask;
 
         public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) =>

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Recordum.Presentation.ViewModels.Settings"
              xmlns:res="using:Recordum.Presentation.Resources"
+             xmlns:conv="using:Recordum.UI.Converters"
              x:Class="Recordum.UI.Views.Settings.SyncPage"
              x:DataType="vm:SyncSettingsViewModel">
   <UserControl.Styles>
@@ -9,6 +10,9 @@
       <Setter Property="FontSize" Value="{StaticResource FontSize.Small}"/>
       <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style Selector="Button.item-open:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
     </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -127,6 +131,94 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <!-- Voci da sistemare (Ruling 22, 25) -->
+        <StackPanel x:Name="ItemsToFixSection" Spacing="6" Margin="0,6,0,0" IsVisible="{CompiledBinding HasItemsToFix}">
+          <Button x:Name="ItemsToFixToggle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  Padding="10,8" CornerRadius="6" Cursor="Hand"
+                  Background="{DynamicResource Brush.Pane}"
+                  BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                  Command="{CompiledBinding ToggleItemsListCommand}">
+            <!-- Neutra come nel mockup approvato (Ruling 25): il colore identifica un'abitudine, non avvisa. -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBlock Grid.Column="0" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap"
+                         Foreground="{DynamicResource Brush.Text}" Text="{CompiledBinding ItemsToFixSummary}"/>
+              <Panel Grid.Column="1" VerticalAlignment="Center">
+                <Path Width="14" Height="14" Stretch="Uniform"
+                      Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                      StrokeLineCap="Round" StrokeJoin="Round"
+                      Data="{StaticResource Icon.ChevronRight}"
+                      IsVisible="{CompiledBinding !IsItemsListOpen}"/>
+                <Path Width="14" Height="14" Stretch="Uniform"
+                      Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                      StrokeLineCap="Round" StrokeJoin="Round"
+                      Data="{StaticResource Icon.ChevronDown}"
+                      IsVisible="{CompiledBinding IsItemsListOpen}"/>
+              </Panel>
+            </Grid>
+          </Button>
+
+          <StackPanel x:Name="ItemsToFixPanel" Spacing="6" IsVisible="{CompiledBinding IsItemsListOpen}">
+            <TextBlock x:Name="ItemsToFixHint" Classes="hint" Text="{x:Static res:Strings.Sync_Items_Hint}"/>
+            <ItemsControl x:Name="ItemsToFixList" ItemsSource="{CompiledBinding ItemsToFix}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SyncItemToFixViewModel">
+                  <Border Background="{DynamicResource Brush.Pane}" BorderBrush="{DynamicResource Brush.Border}"
+                          BorderThickness="1" CornerRadius="6" ClipToBounds="True" Margin="0,2">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <Button x:Name="OpenItemButton" Grid.Column="0" Classes="item-open"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Background="Transparent" BorderThickness="0" Padding="0" CornerRadius="0" Cursor="Hand"
+                              Command="{CompiledBinding $parent[ItemsControl].((vm:SyncSettingsViewModel)DataContext).OpenItemCommand}"
+                              CommandParameter="{CompiledBinding}">
+                        <Grid ColumnDefinitions="Auto,*" MinHeight="48">
+                          <Rectangle Grid.Column="0" Width="{StaticResource Layout.AccentBarWidth}"
+                                     Fill="{CompiledBinding HabitColorHex, Converter={x:Static conv:HexToBrushConverter.Instance}}"/>
+                          <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="10,8">
+                            <Path Grid.Column="0" Width="15" Height="15" Stretch="Uniform"
+                                  VerticalAlignment="Top" Margin="0,2,0,0"
+                                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.75"
+                                  StrokeLineCap="Round" StrokeJoin="Round"
+                                  Data="{CompiledBinding IconKey, Converter={x:Static conv:IconKeyToGeometryConverter.Instance}}"/>
+                            <StackPanel Grid.Column="1" Spacing="2">
+                              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBlock Grid.Column="0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource Brush.Text}" Text="{CompiledBinding HabitName}"/>
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                           FontSize="{StaticResource FontSize.Small}"
+                                           Foreground="{DynamicResource Brush.TextMuted}" Text="{CompiledBinding DayDisplay}"/>
+                              </Grid>
+                              <TextBlock FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"
+                                         Foreground="{DynamicResource Brush.TextMuted}" Text="{CompiledBinding KindLabel}"/>
+                              <TextBlock FontFamily="{DynamicResource Font.Serif}"
+                                         FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"
+                                         Foreground="{DynamicResource Brush.Text}"
+                                         IsVisible="{CompiledBinding HasExcerpt}" Text="{CompiledBinding DetailText}"/>
+                              <TextBlock FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"
+                                         Foreground="{DynamicResource Brush.TextMuted}"
+                                         IsVisible="{CompiledBinding HasRepairedDetail}" Text="{CompiledBinding DetailText}"/>
+                            </StackPanel>
+                            <Path x:Name="ItemChevron" Grid.Column="2" Width="14" Height="14" Stretch="Uniform"
+                                  VerticalAlignment="Center"
+                                  Stroke="{DynamicResource Brush.TextMuted}" StrokeThickness="1.8"
+                                  StrokeLineCap="Round" StrokeJoin="Round"
+                                  Data="{StaticResource Icon.ChevronRight}"
+                                  IsVisible="{CompiledBinding ShowChevron}"/>
+                          </Grid>
+                        </Grid>
+                      </Button>
+                      <Button x:Name="AcceptRepairButton" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0"
+                              Content="{x:Static res:Strings.Sync_Items_Accept}"
+                              IsVisible="{CompiledBinding CanAccept}"
+                              Command="{CompiledBinding $parent[ItemsControl].((vm:SyncSettingsViewModel)DataContext).AcceptRepairCommand}"
+                              CommandParameter="{CompiledBinding}"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
       </StackPanel>
     </StackPanel>
   </ScrollViewer>

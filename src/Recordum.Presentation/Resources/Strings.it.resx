@@ -2820,4 +2820,31 @@ Dettagli: {0}</value>
   <data name="Notes.Photo.OriginalElsewhere" xml:space="preserve">
     <value>Originale su un altro dispositivo</value>
   </data>
+  <data name="Sync.Items.One" xml:space="preserve">
+    <value>1 voce da sistemare</value>
+  </data>
+  <data name="Sync.Items.Many" xml:space="preserve">
+    <value>{0} voci da sistemare</value>
+  </data>
+  <data name="Sync.Items.Hint" xml:space="preserve">
+    <value>Tocca una voce per aprirla. Un blocco segnato resta finché non lo togli tu dal testo.</value>
+  </data>
+  <data name="Sync.Items.Kind.Note" xml:space="preserve">
+    <value>Nota con due versioni</value>
+  </data>
+  <data name="Sync.Items.Kind.DiaryEntry" xml:space="preserve">
+    <value>Voce di diario con due versioni</value>
+  </data>
+  <data name="Sync.Items.Kind.RecordNote" xml:space="preserve">
+    <value>Nota di una registrazione con due versioni</value>
+  </data>
+  <data name="Sync.Items.Kind.RepairedPeriod" xml:space="preserve">
+    <value>Periodo doppio, chiuso dall'unione</value>
+  </data>
+  <data name="Sync.Items.RepairedPeriod.Detail" xml:space="preserve">
+    <value>Era aperto anche su un altro dispositivo; resta con le sue note.</value>
+  </data>
+  <data name="Sync.Items.Accept" xml:space="preserve">
+    <value>Va bene così</value>
+  </data>
 </root>

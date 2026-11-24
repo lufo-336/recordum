@@ -227,7 +227,8 @@ con una sola ora per riga non è vero senza base, e le ore di modifica possono v
     tutto dentro, si chiude al proprio inizio (durata zero), resta visibile con le sue note e si conta fra le voci da
     sistemare (chi costruisce verifica che un periodo di durata zero non sporchi "di fila" e statistiche);
   - un ciclo nell'albero (`parent_id` spostati su due dispositivi): perde lo spostamento più recente, il nodo torna
-    sotto la madre di prima (o in radice se non esiste più).
+    sotto la madre di prima (o in radice se non esiste più) (corretto il 2026-11-24: i cicli nell'albero si riparano
+    senza contarli fra le voci da sistemare).
 - **Chiavi naturali uniche** (*mia scelta*): due righe con GUID diversi e la stessa chiave naturale sono **la stessa
   cosa**:
   - `tag` (nome, senza distinzione di maiuscole), `unit_of_measure.code`, `scale_template.code`: si tiene il GUID

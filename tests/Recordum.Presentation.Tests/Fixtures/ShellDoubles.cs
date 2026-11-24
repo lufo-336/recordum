@@ -33,6 +33,7 @@ public static class ShellDoubles
         services.AddSingleton<IOpenFileDialog, FakeOpenFileDialog>();
         services.AddSingleton<IFolderPicker, FakeFolderPicker>();
         services.AddSingleton<IFolderOpener, FakeFolderOpener>();
+        services.AddSingleton<IHabitNavigator, StubHabitNavigator>();
         services.AddSingleton<IClipboard, StubClipboard>();
         services.AddSingleton<IScreenColorPicker, FakeScreenColorPicker>();
         services.AddSingleton<IAutoBackupKeyStore, FakeAutoBackupKeyStore>();
@@ -52,5 +53,10 @@ public static class ShellDoubles
     private sealed class StubClipboard : IClipboard
     {
         public void SetText(string text) { }
+    }
+
+    private sealed class StubHabitNavigator : IHabitNavigator
+    {
+        public Task OpenHabitAtDayAsync(Guid habitNodeId, string title, DateOnly day) => Task.CompletedTask;
     }
 }

@@ -7,6 +7,7 @@ using Recordum.Core.Abstractions.Services;
 using Recordum.Core.Tests.Abstractions;
 using Recordum.Presentation.Bootstrap;
 using Recordum.Presentation.Resources;
+using Recordum.Presentation.Services;
 using Recordum.Presentation.Tests.Fixtures;
 using Recordum.Presentation.ViewModels.Settings;
 
@@ -36,6 +37,8 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         public string? LastPlainPassphrase { get; private set; }
         public SyncJoinState JoinState { get; set; } = SyncJoinState.NotConfigured;
         public SyncStatus Status { get; set; } = new(null, [], 0, 0);
+        public List<SyncItemToFix> Items { get; set; } = [];
+        public List<Guid> AcceptedRepairs { get; } = [];
         public Task Entered => _entered?.Task ?? Task.CompletedTask;
 
         public void BlockNextRun()
@@ -56,6 +59,16 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         }
 
         public Task<SyncStatus> GetStatusAsync(CancellationToken ct) => Task.FromResult(Status);
+
+        public Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<SyncItemToFix>>(Items.ToList());
+
+        public Task AcceptRepairAsync(Guid periodId, CancellationToken ct)
+        {
+            AcceptedRepairs.Add(periodId);
+            Items.RemoveAll(i => i.EntityId == periodId && i.Kind == SyncItemKind.RepairedPeriod);
+            return Task.CompletedTask;
+        }
 
         public Task SetPassphraseAsync(string passphrase, CancellationToken ct)
         {
@@ -111,6 +124,19 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         public void Dispose() { }
     }
 
+    private sealed class FakeHabitNavigator : IHabitNavigator
+    {
+        public List<(Guid HabitNodeId, string Title, DateOnly Day)> Calls { get; } = [];
+        public Action? OnOpen { get; set; }
+
+        public Task OpenHabitAtDayAsync(Guid habitNodeId, string title, DateOnly day)
+        {
+            OnOpen?.Invoke();
+            Calls.Add((habitNodeId, title, day));
+            return Task.CompletedTask;
+        }
+    }
+
     private SyncSettingsViewModel CreateVm(
         FakeAppSettingService? settings = null,
         FakeFolderPicker? folderPicker = null,
@@ -119,7 +145,8 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         FakeConfirmationDialog? confirm = null,
         FakeClock? clock = null,
         ISyncService? sync = null,
-        SyncSchedulerHost? scheduler = null)
+        SyncSchedulerHost? scheduler = null,
+        IHabitNavigator? navigator = null)
     {
         var effectiveClock = clock ?? new FakeClock(new DateTimeOffset(2026, 3, 15, 14, 0, 0, TimeSpan.Zero));
         var effectiveScheduler = scheduler ?? new SyncSchedulerHost(
@@ -136,7 +163,8 @@ public sealed class SyncSettingsViewModelTests : IDisposable
             effectiveClock,
             sync ?? new FakeSyncService(),
             effectiveScheduler,
-            RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, Path.Combine(_tempDir, "data")], _ => null));
+            RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, Path.Combine(_tempDir, "data")], _ => null),
+            navigator ?? new FakeHabitNavigator());
     }
 
     [Fact]
@@ -271,7 +299,7 @@ public sealed class SyncSettingsViewModelTests : IDisposable
                         new SyncPeerStatus("Vecchio", null, SyncPeerProblem.BrokenFile),
                         new SyncPeerStatus("Clone", null, SyncPeerProblem.SameIdentity),
                     ],
-                    TextConflicts: 3,
+                    ItemsToFix: 3,
                     OwnFileBytes: 2048),
             };
 
@@ -285,7 +313,6 @@ public sealed class SyncSettingsViewModelTests : IDisposable
                 "Aggiorna Recordum su Tablet.",
                 "Il file di Vecchio è rovinato: è stato modificato a mano?",
                 "Due dispositivi hanno la stessa identità: su uno dei due ripristina un backup o scollegalo.",
-                "Voci da sistemare: 3",
                 $"Il tuo file: {2.0:F1} KB");
 
             sync.Status = new SyncStatus(null, [], 0, 2 * 1024 * 1024);
@@ -462,6 +489,11 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         public Task<SyncStatus> GetStatusAsync(CancellationToken ct) =>
             Task.FromResult(new SyncStatus(null, [], 0, 0));
 
+        public Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<SyncItemToFix>>([]);
+
+        public Task AcceptRepairAsync(Guid periodId, CancellationToken ct) => Task.CompletedTask;
+
         public Task SetPassphraseAsync(string passphrase, CancellationToken ct)
         {
             SetPassphraseCalls++;
@@ -526,7 +558,8 @@ public sealed class SyncSettingsViewModelTests : IDisposable
             clock,
             sync,
             scheduler,
-            options);
+            options,
+            new FakeHabitNavigator());
         vm.PlainPassphrase = "wrong-passphrase";
 
         await vm.ExportPlainCommand.ExecuteAsync(null);
@@ -696,5 +729,101 @@ public sealed class SyncSettingsViewModelTests : IDisposable
         await vm.DisconnectCommand.ExecuteAsync(null);
 
         vm.Folder.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ItemsToFix_row_appears_only_when_items_exist()
+    {
+        var prevCulture = CultureInfo.CurrentCulture;
+        var prevUiCulture = CultureInfo.CurrentUICulture;
+        var it = CultureInfo.GetCultureInfo("it-IT");
+        try
+        {
+            CultureInfo.CurrentCulture = it;
+            CultureInfo.CurrentUICulture = it;
+
+            var sync = new FakeSyncService();
+            var vm = CreateVm(sync: sync);
+            await vm.LoadAsync();
+
+            vm.HasItemsToFix.Should().BeFalse();
+            vm.ItemsToFix.Should().BeEmpty();
+            vm.ItemsToFixSummary.Should().BeEmpty();
+
+            var h1 = Guid.NewGuid();
+            sync.Items.Add(new SyncItemToFix(SyncItemKind.Note, Guid.NewGuid(), h1, "Corsa", "#3B82F6", new DateOnly(2026, 11, 20), "— Telefono · 2026-11-20 10:00 — testo"));
+            await vm.LoadAsync();
+
+            vm.HasItemsToFix.Should().BeTrue();
+            vm.ItemsToFix.Should().HaveCount(1);
+            vm.ItemsToFixSummary.Should().Be("1 voce da sistemare");
+
+            sync.Items.Add(new SyncItemToFix(SyncItemKind.DiaryEntry, Guid.NewGuid(), h1, "Diario", "#A855F7", new DateOnly(2026, 11, 19), "— Laptop · 2026-11-19 21:00 — voce"));
+            await vm.LoadAsync();
+
+            vm.ItemsToFixSummary.Should().Be("2 voci da sistemare");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = prevCulture;
+            CultureInfo.CurrentUICulture = prevUiCulture;
+        }
+    }
+
+    [Fact]
+    public async Task ToggleItemsListCommand_opens_and_closes_the_list()
+    {
+        var sync = new FakeSyncService();
+        sync.Items.Add(new SyncItemToFix(SyncItemKind.Note, Guid.NewGuid(), Guid.NewGuid(), "Corsa", "#3B82F6", new DateOnly(2026, 11, 20), "— A · 2026-11-20 10:00 — x"));
+        var vm = CreateVm(sync: sync);
+        await vm.LoadAsync();
+
+        vm.IsItemsListOpen.Should().BeFalse();
+
+        vm.ToggleItemsListCommand.Execute(null);
+        vm.IsItemsListOpen.Should().BeTrue();
+
+        vm.ToggleItemsListCommand.Execute(null);
+        vm.IsItemsListOpen.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OpenItemCommand_raises_CloseRequested_before_navigating()
+    {
+        var habitId = Guid.NewGuid();
+        var day = new DateOnly(2026, 11, 18);
+        var sync = new FakeSyncService();
+        sync.Items.Add(new SyncItemToFix(SyncItemKind.DiaryEntry, Guid.NewGuid(), habitId, "Diario", "#A855F7", day, "— Telefono · 2026-11-18 22:00 — testo"));
+
+        var trace = new List<string>();
+        var navigator = new FakeHabitNavigator { OnOpen = () => trace.Add("navigate") };
+        var vm = CreateVm(sync: sync, navigator: navigator);
+        vm.CloseRequested += (_, _) => trace.Add("close");
+        await vm.LoadAsync();
+
+        await vm.OpenItemCommand.ExecuteAsync(vm.ItemsToFix[0]);
+
+        trace.Should().Equal("close", "navigate");
+        navigator.Calls.Should().ContainSingle().Which.Should().Be((habitId, "Diario", day));
+    }
+
+    [Fact]
+    public async Task AcceptRepairCommand_calls_AcceptRepairAsync_and_reloads()
+    {
+        var periodId = Guid.NewGuid();
+        var habitId = Guid.NewGuid();
+        var sync = new FakeSyncService();
+        sync.Items.Add(new SyncItemToFix(SyncItemKind.RepairedPeriod, periodId, habitId, "Fumo", "#CC4422", new DateOnly(2026, 11, 17), string.Empty));
+        var vm = CreateVm(sync: sync);
+        await vm.LoadAsync();
+        vm.ToggleItemsListCommand.Execute(null);
+        vm.IsItemsListOpen.Should().BeTrue();
+
+        await vm.AcceptRepairCommand.ExecuteAsync(vm.ItemsToFix[0]);
+
+        sync.AcceptedRepairs.Should().Equal(periodId);
+        vm.ItemsToFix.Should().BeEmpty();
+        vm.HasItemsToFix.Should().BeFalse();
+        vm.IsItemsListOpen.Should().BeFalse();
     }
 }

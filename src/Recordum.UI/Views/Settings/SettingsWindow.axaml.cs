@@ -26,11 +26,24 @@ public partial class SettingsWindow : RecordumWindow
         get => SyncPage.DataContext as SyncSettingsViewModel;
         set
         {
+            if (SyncPage.DataContext is SyncSettingsViewModel previous)
+                previous.CloseRequested -= OnSyncCloseRequested;
             SyncPage.DataContext = value;
+            if (value is not null)
+                value.CloseRequested += OnSyncCloseRequested;
             SyncTab.IsVisible = value is not null;
             UpdateTabsVisibility();
             ShowPage(null);
         }
+    }
+
+    private void OnSyncCloseRequested(object? sender, EventArgs e) => Close();
+
+    protected override void OnClosed(EventArgs e)
+    {
+        if (SyncPage.DataContext is SyncSettingsViewModel current)
+            current.CloseRequested -= OnSyncCloseRequested;
+        base.OnClosed(e);
     }
 
     private void UpdateTabsVisibility() => PageTabs.IsVisible = Appearance is not null || Sync is not null;

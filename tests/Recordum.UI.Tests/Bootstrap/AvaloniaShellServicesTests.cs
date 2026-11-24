@@ -70,6 +70,7 @@ public class AvaloniaShellServicesTests
     {
         var sp = BuildProvider();
         sp.GetRequiredService<ISettingsWindowLauncher>().Should().BeOfType<AvaloniaSettingsWindowLauncher>();
+        sp.GetRequiredService<IHabitNavigator>().Should().BeOfType<AvaloniaHabitNavigator>();
     }
 
     [Fact]

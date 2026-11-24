@@ -22,7 +22,8 @@ public sealed partial class SyncSettingsViewModel(
     IClock clock,
     ISyncService sync,
     SyncSchedulerHost scheduler,
-    IBackupStoragePaths paths) : ObservableObject
+    IBackupStoragePaths paths,
+    IHabitNavigator habitNavigator) : ObservableObject
 {
     public const string AutoMergeKey = SyncSchedulerHost.EnabledSettingKey;
     public const string FolderKey = "sync.folder";
@@ -50,6 +51,22 @@ public sealed partial class SyncSettingsViewModel(
     public bool IsJoined => JoinState == SyncJoinState.Joined;
 
     public ObservableCollection<string> Status { get; } = [];
+    public ObservableCollection<SyncItemToFixViewModel> ItemsToFix { get; } = [];
+
+    [ObservableProperty] private bool _isItemsListOpen;
+
+    public bool HasItemsToFix => ItemsToFix.Count > 0;
+
+#pragma warning disable CA1863 // la cultura può cambiare dopo il caricamento della classe (es. nei test)
+    public string ItemsToFixSummary => ItemsToFix.Count switch
+    {
+        0 => string.Empty,
+        1 => Strings.Sync_Items_One,
+        _ => string.Format(CultureInfo.CurrentCulture, Strings.Sync_Items_Many, ItemsToFix.Count),
+    };
+#pragma warning restore CA1863
+
+    public event EventHandler? CloseRequested;
 
     public async Task LoadAsync(CancellationToken ct = default)
     {
@@ -353,7 +370,54 @@ public sealed partial class SyncSettingsViewModel(
     {
         JoinState = await sync.GetJoinStateAsync(ct).ConfigureAwait(true);
         var status = await sync.GetStatusAsync(ct).ConfigureAwait(true);
+        var items = await sync.ListItemsToFixAsync(ct).ConfigureAwait(true);
         PopulateStatus(status);
+        PopulateItemsToFix(items);
+    }
+
+    [RelayCommand]
+    private void ToggleItemsList()
+    {
+        if (!HasItemsToFix)
+        {
+            IsItemsListOpen = false;
+            return;
+        }
+        IsItemsListOpen = !IsItemsListOpen;
+    }
+
+    [RelayCommand]
+    private async Task OpenItemAsync(SyncItemToFixViewModel? item)
+    {
+        if (item is null) return;
+        CloseRequested?.Invoke(this, EventArgs.Empty);
+        await habitNavigator.OpenHabitAtDayAsync(item.HabitNodeId, item.HabitName, item.Day).ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task AcceptRepairAsync(SyncItemToFixViewModel? item)
+    {
+        if (item is null || !item.CanAccept) return;
+        ErrorMessage = null;
+        try
+        {
+            await sync.AcceptRepairAsync(item.EntityId, CancellationToken.None).ConfigureAwait(true);
+            await RefreshSyncStateAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+#pragma warning disable CA1031 // errore mostrato nella pagina senza far cadere la finestra
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+#pragma warning restore CA1031
+    }
+
+    private void PopulateItemsToFix(IReadOnlyList<SyncItemToFix> items)
+    {
+        ItemsToFix.Clear();
+        foreach (var item in items)
+            ItemsToFix.Add(new SyncItemToFixViewModel(item));
+        if (ItemsToFix.Count == 0)
+            IsItemsListOpen = false;
+        OnPropertyChanged(nameof(HasItemsToFix));
+        OnPropertyChanged(nameof(ItemsToFixSummary));
     }
 
     private void PopulateStatus(SyncStatus status)
@@ -367,9 +431,6 @@ public sealed partial class SyncSettingsViewModel(
 
         foreach (var peer in status.Peers)
             Status.Add(FormatPeer(peer, clock, culture));
-
-        if (status.TextConflicts > 0)
-            Status.Add(string.Format(culture, Strings.Sync_Status_Conflicts, status.TextConflicts));
 
         if (status.OwnFileBytes > 0 || status.LastRun is not null)
             Status.Add(string.Format(culture, Strings.Sync_Status_FileSize, FormatBytes(status.OwnFileBytes, culture)));

@@ -465,6 +465,28 @@ public class MainWindowViewModelTests
         d.Screen.SelectedDay.Should().Be(Tuesday);
     }
 
+    [Fact]
+    public async Task OpenHabitAtDayAsync_opens_the_tab_and_selects_the_day()
+    {
+        var d = await CreateDaySutAsync(HabitType.Action);
+        var targetDay = Saturday;
+        await d.Sut.ShowChartsCommand.ExecuteAsync(null);
+        d.Sut.IsChartsWorkspace.Should().BeTrue();
+
+        await d.Sut.OpenHabitAtDayAsync(d.Id, "Soggetto", targetDay);
+
+        d.Sut.IsHomeWorkspace.Should().BeTrue();
+        d.Sut.Workspace.ActiveSubjectTab.Should().NotBeNull();
+        d.Sut.Workspace.ActiveSubjectTab!.SubjectId.Should().Be(d.Id);
+        d.Screen.SelectedDay.Should().Be(targetDay);
+
+        // Con una scrittura in corso su quel giorno, non sposta la schermata su un altro giorno.
+        d.Screen.DayNote.Text = "bozza non salvata";
+        d.Screen.HasWritingInProgress.Should().BeTrue();
+        await d.Sut.OpenHabitAtDayAsync(d.Id, "Soggetto", Monday);
+        d.Screen.SelectedDay.Should().Be(targetDay);
+    }
+
     private sealed record DaySut(MainWindowViewModel Sut, Guid Id, DecliningHandler Handler)
     {
         public HomeViewModel Home => Sut.Home;

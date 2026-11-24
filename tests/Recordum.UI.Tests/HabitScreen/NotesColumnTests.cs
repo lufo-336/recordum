@@ -573,6 +573,7 @@ public class NotesColumnTests
             var thumbPos = remoteButton.TranslatePoint(new Point(0, 0), o.Column)!.Value;
             var hintPos = visibleHint.TranslatePoint(new Point(0, 0), o.Column)!.Value;
             hintPos.Y.Should().BeGreaterThan(thumbPos.Y, "la scritta sta sotto la miniatura");
+            ScreenshotProbeTests.Capture(o.Window, "notes-photo-origin-light");
 
             Click(o.Window, remoteButton);
             var viewer = Named<Control>(o.Column, "Lightbox");
@@ -583,6 +584,7 @@ public class NotesColumnTests
             var imagePos = Named<Image>(o.Column, "LightboxImage").TranslatePoint(new Point(0, 0), o.Column)!.Value;
             var viewerHintPos = viewerHint.TranslatePoint(new Point(0, 0), o.Column)!.Value;
             viewerHintPos.Y.Should().BeGreaterThan(imagePos.Y, "nel visore la scritta sta in basso sotto l'immagine");
+            ScreenshotProbeTests.Capture(o.Window, "notes-lightbox-origin-light");
 
             var nextButton = Named<Button>(o.Column, "LightboxNextButton");
             Click(o.Window, nextButton);

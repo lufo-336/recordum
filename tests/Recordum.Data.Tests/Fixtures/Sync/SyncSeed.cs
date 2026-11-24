@@ -76,10 +76,16 @@ public static class SyncSeed
         var t0Ms = new DateTimeOffset(t0).ToUnixTimeMilliseconds();
         var t1Ms = new DateTimeOffset(t1).ToUnixTimeMilliseconds();
 
-        // 1. app_setting: aggiorna le 3 chiavi che viaggiano con valori e timestamp non-default
+        // 1. app_setting: le chiavi che viaggiano con valori e timestamp non-default (sync.accepted_repairs non ha una
+        // riga di partenza: la crea il primo "Va bene così", qui la fixture)
         foreach (var key in SyncCatalog.TravellingSettingKeys)
         {
-            var setting = await db.AppSettings.SingleAsync(s => s.Key == key);
+            var setting = await db.AppSettings.SingleOrDefaultAsync(s => s.Key == key);
+            if (setting is null)
+            {
+                setting = new AppSetting { Key = key };
+                db.AppSettings.Add(setting);
+            }
             setting.Value = key switch
             {
                 "daily_reset_time" => "04:00",

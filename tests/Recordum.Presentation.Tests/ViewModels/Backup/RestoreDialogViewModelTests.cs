@@ -107,6 +107,8 @@ public class RestoreDialogViewModelTests
     {
         public Task<SyncRunResult> RunAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<SyncStatus> GetStatusAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<SyncItemToFix>> ListItemsToFixAsync(CancellationToken ct) => throw new NotSupportedException();
+        public Task AcceptRepairAsync(Guid periodId, CancellationToken ct) => throw new NotSupportedException();
         public Task SetPassphraseAsync(string passphrase, CancellationToken ct) => throw new NotSupportedException();
         public Task<SyncJoinState> GetJoinStateAsync(CancellationToken ct) => throws ? throw new InvalidOperationException("boom") : Task.FromResult(state);
         public Task JoinAsync(SyncJoinChoice choice, CancellationToken ct) => throw new NotSupportedException();

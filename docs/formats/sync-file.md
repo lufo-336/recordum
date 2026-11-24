@@ -153,7 +153,7 @@ Local device tables (`active_timer`, `backup_log`, `export_jobs`, `ai_insights`,
 
 ### app_setting
 
-Table: `app_settings` · Key: `key` · Only `daily_reset_time`, `monthly_summary_day`, and `monthly_summary_time` travel. Local settings (`language`, `theme`, `home.rows`, `onboarding_complete`, `ai_*`, `notifications_enabled`, `app_lock_*`, `inactivity_timeout_minutes`, `backup.auto.*`, `schema_version`, `sync.*`) are never written.
+Table: `app_settings` · Key: `key` · Only `daily_reset_time`, `monthly_summary_day`, `monthly_summary_time`, and `sync.accepted_repairs` (JSON array of accepted zero-duration repaired `abstinence_period` IDs) travel. Local settings (`language`, `theme`, `home.rows`, `onboarding_complete`, `ai_*`, `notifications_enabled`, `app_lock_*`, `inactivity_timeout_minutes`, `backup.auto.*`, `schema_version`, and all other `sync.*` keys) are never written.
 
 | Public Field | JSON Type | Kind | Meaning |
 |---|---|---|---|
