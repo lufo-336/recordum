@@ -28,15 +28,20 @@ public sealed class SerializedSecretStoreTests
         public void Delete(SecretKind kind) { lock (_items) _items.Remove(kind); }
     }
 
+    // Thread propri, non il pool: il test aspetta in modo sincrono, e su un runner saturo un Task.Run non partiva
+    // entro 5 s (rosso visto in CI Windows).
+    private static Task OnOwnThread(Action action) =>
+        Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
     [Fact]
     public async Task A_forget_waits_for_a_late_remember_and_the_key_ends_up_forgotten()
     {
         var inner = new PromptingStore();
         var store = new SerializedSecretStore(inner);
 
-        var remember = Task.Run(() => store.Write(SecretKind.DbKey, "k"));
-        inner.WriteEntered.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
-        var forget = Task.Run(() => store.Delete(SecretKind.DbKey));
+        var remember = OnOwnThread(() => store.Write(SecretKind.DbKey, "k"));
+        inner.WriteEntered.Wait(TimeSpan.FromSeconds(30)).Should().BeTrue();
+        var forget = OnOwnThread(() => store.Delete(SecretKind.DbKey));
         await Task.Delay(150);
         forget.IsCompleted.Should().BeFalse("la cancellazione aspetta la scrittura in volo");
 
@@ -52,9 +57,9 @@ public sealed class SerializedSecretStoreTests
         var inner = new PromptingStore();
         var store = new SerializedSecretStore(inner);
 
-        var remember = Task.Run(() => store.Write(SecretKind.DbKey, "k"));
-        inner.WriteEntered.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
-        await Task.Run(() => store.Delete(SecretKind.AutoBackup)).WaitAsync(TimeSpan.FromSeconds(2));
+        var remember = OnOwnThread(() => store.Write(SecretKind.DbKey, "k"));
+        inner.WriteEntered.Wait(TimeSpan.FromSeconds(30)).Should().BeTrue();
+        await OnOwnThread(() => store.Delete(SecretKind.AutoBackup)).WaitAsync(TimeSpan.FromSeconds(2));
 
         inner.ReleaseWrite.Set();
         await remember.WaitAsync(TimeSpan.FromSeconds(5));
