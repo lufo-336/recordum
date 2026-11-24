@@ -33,6 +33,7 @@ internal enum EnvelopeErrorKind
     OversizedPayload,
     Truncated,
     AuthenticationFailed,
+    NewerVersion,
 }
 
 internal sealed class AesGcmEnvelope

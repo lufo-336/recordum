@@ -16,7 +16,7 @@ public sealed class SyncFileCipher
     private readonly object _cacheLock = new();
     private readonly Dictionary<CacheKey, byte[]> _keyCache = new();
     private readonly Func<string, byte[], ushort, byte, byte, Task<byte[]>> _deriveKey;
-    private readonly AesGcmEnvelope _envelope;
+    private readonly ChunkedAesGcmEnvelope _envelope;
 
     public SyncFileCipher()
         : this(AesGcmEnvelope.DeriveKeyArgon2idAsync)
@@ -24,10 +24,15 @@ public sealed class SyncFileCipher
     }
 
     internal SyncFileCipher(Func<string, byte[], ushort, byte, byte, Task<byte[]>> deriveKey)
+        : this(deriveKey, ChunkedAesGcmEnvelope.DefaultChunkSize)
+    {
+    }
+
+    internal SyncFileCipher(Func<string, byte[], ushort, byte, byte, Task<byte[]>> deriveKey, int chunkSize)
     {
         ArgumentNullException.ThrowIfNull(deriveKey);
         _deriveKey = deriveKey;
-        _envelope = new AesGcmEnvelope("RCSY"u8, CreateException, GetOrDeriveKeyAsync);
+        _envelope = new ChunkedAesGcmEnvelope("RCSY"u8, CreateException, GetOrDeriveKeyAsync, chunkSize);
     }
 
     public Task EncryptAsync(Stream plain, Stream output, string passphrase, CancellationToken ct = default) =>
@@ -80,10 +85,11 @@ public sealed class SyncFileCipher
         }
     }
 
-    private static SyncFileException CreateException(EnvelopeErrorKind kind, string message) =>
+    private static Exception CreateException(EnvelopeErrorKind kind, string message) =>
         kind switch
         {
             EnvelopeErrorKind.BadMagic => new SyncFileException(SyncFileError.NotASyncFile, "Not a Recordum sync file."),
+            EnvelopeErrorKind.NewerVersion => new SyncFormatException(message, isNewerMajorVersion: true),
             EnvelopeErrorKind.UnsupportedVersion or
             EnvelopeErrorKind.UnsupportedKdf or
             EnvelopeErrorKind.KdfParamsOutOfRange or

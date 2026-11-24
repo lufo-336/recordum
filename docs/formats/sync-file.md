@@ -10,25 +10,31 @@ Each participating device writes its complete merged state into its own `.rcsync
 
 ### 1.1 Outer Binary Envelope (Byte-by-Byte Layout)
 
-Outside, a `.rcsync` file uses the same authenticated encryption structure as `.recbak` backups (`Argon2id` + `AES-256-GCM`), with a distinct 4-byte magic (`RCSY`) so sync files and backup files can never be confused.
+Outside, a `.rcsync` file is encrypted and authenticated using `Argon2id` + chunked `AES-256-GCM`, with a distinct 4-byte magic (`RCSY`) so sync files and backup files can never be confused.
 
-Total header length: **41 bytes**, followed by the AES-256-GCM ciphertext and a **16-byte** authentication tag.
+Total header length: **41 bytes**, followed by a sequence of authenticated AES-256-GCM chunks (`ciphertext_i ‖ tag_i`, 16-byte tag per chunk). For envelope version `0x02`, the plaintext chunk size is fixed at **1 MiB** (`1,048,576` bytes; not stored in the header).
 
 | Byte Offset | Length | Type / Endianness | Value / Meaning |
 |---|---|---|---|
 | `0..3` | 4 B | ASCII | Magic bytes `"RCSY"` (`0x52 0x43 0x53 0x59`). |
-| `4` | 1 B | `uint8` | Envelope version. MUST be `0x01`; any other value is rejected. |
+| `4` | 1 B | `uint8` | Envelope version. MUST be `0x02`. Version `0x01` is rejected as an unsupported envelope; any version `> 0x02` is rejected as a newer format requiring a newer version of Recordum. |
 | `5..7` | 3 B | `byte[3]` | Reserved (writers emit `0x00 0x00 0x00`; readers do not check them). |
 | `8` | 1 B | `uint8` | KDF identifier. MUST be `0x01` (Argon2id, Argon2 version `0x13`, no secret, no associated data); any other value is rejected. |
 | `9..10` | 2 B | `uint16` big-endian | Argon2id memory cost in MiB (writer default: `64`; valid reader range: `8..1024`). The memory parameter given to Argon2 is this value in KiB, i.e. header value × 1024 (`64` → `65536` KiB). |
 | `11` | 1 B | `uint8` | Argon2id iteration count (writer default: `4`; valid reader range: `1..24`). |
 | `12` | 1 B | `uint8` | Argon2id degree of parallelism (writer default: `2`; valid reader range: `1..8`). |
 | `13..28` | 16 B | `byte[16]` | Random 128-bit Argon2id salt. |
-| `29..40` | 12 B | `byte[12]` | Random 96-bit AES-GCM nonce (regenerated on every write). |
-| `41..(N-17)` | `N - 57` B | `byte[]` | AES-256-GCM ciphertext of the inner ZIP archive (32-byte key = Argon2id of the UTF-8 passphrase with this header's salt and parameters; empty AAD). The hard ceiling of `2 GiB` covers ciphertext plus tag together (everything after byte 40). |
-| `(N-16)..(N-1)` | 16 B | `byte[16]` | 128-bit AES-256-GCM authentication tag. |
+| `29..40` | 12 B | `byte[12]` | Random 96-bit base AES-GCM nonce (regenerated on every write). |
+| `41..` | variable | `chunk[]` | Sequence of chunks `ciphertext_i ‖ tag_i` (`i = 0, 1, ...` up to `2^32 − 1`), encrypted with the 32-byte Argon2id key derived from the UTF-8 passphrase and this header's salt and parameters. No ciphertext byte cap applies; memory use is constant. |
 
-A truncated file, a partially uploaded cloud file, or a file encrypted with a different passphrase fails the AES-GCM tag check before any plaintext is parsed.
+Chunk framing, per-chunk nonce, and authentication:
+
+- **Chunk size & final short chunk**: Every chunk except the last carries exactly `1 MiB` (`1,048,576` B) of plaintext (`1 MiB + 16 B` on disk). The final chunk carries **0 to `1 MiB − 1`** bytes of plaintext (`16 B` to `1 MiB + 15 B` on disk). When the plaintext length is an exact multiple of `1 MiB` (including 0 bytes), a final empty chunk (`0 B` ciphertext + `16 B` tag) is written so a full chunk is never the last chunk.
+- **Per-chunk nonce**: For chunk index `i` (`uint32`, 0-based), the 96-bit AES-GCM nonce is `base_nonce XOR (7 zero bytes ‖ BE32(i) ‖ final_byte)`, where `final_byte` is `0x01` on the final chunk and `0x00` on all preceding chunks.
+- **Per-chunk AAD**: Every chunk passes the exact **41-byte header** (`bytes 0..40`) as AES-256-GCM associated data (AAD), authenticating the envelope version, KDF parameters, salt, and base nonce.
+- **Tag**: Each chunk ends with a **16-byte** (128-bit) AES-256-GCM authentication tag.
+
+A truncated file (including truncation at an exact chunk boundary), reordered chunks, trailing bytes after the final chunk, a modified header byte, or a file encrypted with a different passphrase fails the AES-GCM tag check. Readers stream plaintext chunk by chunk and callers discard the output if decryption fails.
 
 ---
 
