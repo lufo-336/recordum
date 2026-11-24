@@ -1,0 +1,316 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Telefono · accesso e finestre</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap">
+<style>
+/* layout: una colonna di lettura; cinque schermi di telefono in fila che vanno a capo, ognuno con la sua didascalia */
+:root{--bg:#fbfbfa;--pane:#fff;--rail:#f4f3f1;--ink:#1f1f1d;--mut:#6b6a65;--fnt:#a3a29c;--line:#ecebe8;--chip:#ecebe8;--fb:#d6d5d0;--cell:#f1f0ed;
+  --mix:9%;--selmix:26%;--tk:80%;--tkc:#000;--warn:#8a4407;--warnbg:#fdf6ec;--warnline:#f0dcbd;--scrim:rgba(31,31,29,.38);--kb:#e4e3df;
+  --row:38px;--q:32px;--cell:22px;--ibs:34px;--setp:6px;--sch:36px;--btnh:42px;
+  --ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Source Serif 4",Georgia,serif}
+.frames.larga{--row:48px;--q:40px;--cell:28px;--ibs:40px;--setp:11px;--sch:46px;--btnh:48px}
+.frames.larga .ph{height:680px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;--cell:#2a2a28;
+  --mix:16%;--selmix:36%;--tk:60%;--tkc:#fff;--warn:#e6b676;--warnbg:#2b241a;--warnline:#4a3b22;--scrim:rgba(0,0,0,.55);--kb:#2a2a28;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1b1a;--pane:#222221;--rail:#181817;--ink:#e6e5e1;--mut:#a3a29c;--fnt:#6b6a65;--line:#2e2e2c;--chip:#2e2e2c;--fb:#3a3a37;--cell:#2a2a28;
+  --mix:16%;--selmix:36%;--tk:60%;--tkc:#fff;--warn:#e6b676;--warnbg:#2b241a;--warnline:#4a3b22;--scrim:rgba(0,0,0,.55);--kb:#2a2a28;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--ui)}
+.page{max-width:1080px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1{font:600 22px/1.25 var(--ui);margin:0}
+h2{font:600 13px/1.3 var(--ui);margin:10px 0 0;color:var(--mut);letter-spacing:.04em;text-transform:uppercase}
+p{margin:0;max-width:66ch;color:var(--mut)} p b,li b,td b{color:var(--ink);font-weight:600}
+.frames{display:flex;flex-wrap:wrap;gap:30px 26px}
+figure{margin:0;width:360px;max-width:100%;display:flex;flex-direction:column;gap:10px}
+figcaption{color:var(--mut);font-size:13px} figcaption b{display:block;color:var(--ink);font-weight:600;font-size:14px;margin-bottom:2px}
+figcaption ul{margin:4px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:3px}
+.ph{height:600px;border:1px solid var(--fb);border-radius:26px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;position:relative}
+.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.top{display:flex;align-items:center;gap:8px;padding:12px 12px 6px}
+.top .t{font:600 21px/1.2 var(--ui)} .top .s{color:var(--mut);font-size:12.5px;font-variant-numeric:tabular-nums}
+.sp{flex:1}
+.ib{width:var(--ibs);height:var(--ibs);border-radius:8px;display:grid;place-items:center;color:var(--mut);flex:none}
+.ib.ink{background:var(--ink);color:var(--bg)}
+.band{margin:0 10px 8px;padding:8px 10px;border-radius:8px;background:var(--warnbg);border:1px solid var(--warnline);color:var(--warn);font-size:12.5px;display:flex;gap:8px;align-items:center}
+.band u{margin-left:auto;font-weight:600;white-space:nowrap}
+.days,.row .d{display:flex}
+.days{padding:0 calc(var(--q) + 17px) 3px 12px;font-size:11px;color:var(--mut)}
+.days span{width:var(--cell);text-align:center;flex:none;height:22px;line-height:22px;border-radius:6px}
+.days span.on{background:var(--ink);color:var(--bg);font-weight:600}
+.days span.td{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.dens{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mut)}
+.dens button{font:inherit;color:var(--mut);background:none;border:1px solid var(--fb);border-radius:7px;padding:5px 12px;cursor:pointer}
+.dens button.on{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.dens button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.soon{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:0 32px;text-align:center;color:var(--mut)}
+.soon .ic{width:34px;height:34px;color:var(--fnt)} .soon b{color:var(--ink);font:600 17px var(--ui)}
+.list{flex:1;overflow:hidden}
+.row{--ct:color-mix(in srgb,var(--c) var(--tk),var(--tkc));display:flex;align-items:center;gap:6px;height:var(--row);margin:0 8px 4px;padding:0 3px 0 10px;border-radius:7px;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) var(--mix),var(--pane))}
+.row.ind{margin-left:22px}
+.row .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.row .kv{font-size:11.5px;color:var(--mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.row .d span{width:var(--cell);text-align:center;flex:none;color:var(--fnt);font-size:13px;line-height:26px;border-radius:6px;font-variant-numeric:tabular-nums}
+.row .d span.v{color:var(--ct);font-weight:600}
+.row .d span.cur{background:color-mix(in srgb,var(--c) var(--selmix),var(--pane))}
+.q{width:var(--q);height:var(--q);border-radius:7px;display:grid;place-items:center;color:var(--ct);border:1px solid color-mix(in srgb,var(--c) 45%,var(--pane));background:var(--pane);flex:none}
+.grp{display:flex;align-items:center;gap:8px;padding:4px 14px 3px 12px;font-size:12px;font-weight:600;color:var(--mut)}
+.grp i{width:3px;height:14px;border-radius:2px;background:var(--c)} .grp span{margin-left:auto;font-weight:400}
+.timer{margin:0 8px 5px;height:38px;border-radius:8px;display:flex;align-items:center;gap:10px;padding:0 6px 0 12px;font-size:13px;background:color-mix(in srgb,#d0603a 12%,var(--pane));border:1px solid var(--line)}
+.timer b{font-weight:600;font-variant-numeric:tabular-nums}
+.tab{display:flex;border-top:1px solid var(--line);background:var(--rail);padding:5px 0 7px}
+.tab span{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut)}
+.tab span.on{color:var(--ink);font-weight:600}
+.hd{padding:2px 16px 0} .hd .name{font:600 21px/1.2 var(--ui);color:var(--hc)} .hd .sub{font-size:12.5px;color:var(--mut);margin-top:2px}
+.fig{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;padding:8px 16px 6px}
+.fig b{display:block;font:600 19px/1.2 var(--ui);color:var(--hc);font-variant-numeric:tabular-nums} .fig span{font-size:12px;color:var(--mut)}
+.seg{display:flex;margin:4px 12px 8px;background:var(--chip);border-radius:9px;padding:3px}
+.seg span{flex:1;text-align:center;font-size:13px;padding:4px 0;border-radius:7px;color:var(--mut)} .seg .s{background:var(--pane);color:var(--ink);font-weight:500}
+.chips{display:flex;gap:4px;padding:0 12px 8px;font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden}
+.chips span{padding:4px 9px;border-radius:7px} .chips .s{background:var(--chip);color:var(--ink);font-weight:500}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:0 12px;font-size:11.5px}
+.cal i{height:27px;border-radius:6px;display:grid;place-items:center;font-style:normal;background:var(--cell);font-variant-numeric:tabular-nums}
+.cal i.o{background:none;color:var(--fnt)} .cal i.t{box-shadow:inset 0 0 0 2px var(--ink)}
+.dayb{margin:8px 12px 0;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;background:var(--pane)}
+.dayb b{display:block;font-weight:600;margin-bottom:4px} .dayb .r{display:flex;justify-content:space-between;color:var(--mut)} .dayb .r span:first-child{color:var(--ink)}
+.dayb .note{margin-top:5px;border:1px dashed var(--fb);border-radius:6px;padding:4px 8px;color:var(--fnt);font:14px var(--serif)}
+.cmd{margin-top:auto;padding:8px 12px 10px;border-top:1px solid var(--line);background:var(--pane);display:flex;flex-direction:column;gap:6px;align-items:center}
+.btn{width:100%;height:var(--btnh);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;background:var(--hc);color:#fff}
+.cmd small{color:var(--mut);font-size:12.5px}
+.scrim{position:absolute;inset:0;background:var(--scrim)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--pane);border-radius:18px 18px 0 0;padding:8px 14px 12px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line)}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--fb);align-self:center}
+.sheet .st{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .sheet .st b{font:600 17px var(--ui);color:var(--hc)}
+.daychip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--warnbg);color:var(--warn);border:1px solid var(--warnline)}
+.scale{display:flex;flex-direction:column;gap:4px}
+.scale span{height:var(--sch);border-radius:9px;border:1px solid color-mix(in srgb,var(--hc) 40%,var(--pane));display:flex;align-items:center;gap:12px;padding:0 12px;font-size:14px}
+.scale span b{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:color-mix(in srgb,var(--hc) 14%,var(--pane));color:var(--ink);font-weight:600}
+.scale span.on{background:var(--hc);color:#fff;border-color:transparent;font-weight:600} .scale span.on b{background:rgba(255,255,255,.22);color:#fff}
+.sheet .nf{height:34px;border:1px solid var(--fb);border-radius:8px;display:flex;align-items:center;padding:0 10px;color:var(--fnt);font:14px var(--serif)}
+.sheet small{color:var(--mut);font-size:12.5px;text-align:center}
+.ed{flex:1;padding:6px 18px;font:16px/1.6 var(--serif);overflow:hidden}
+.ed h3{font:600 20px/1.3 var(--serif);margin:0 0 6px} .ed p{color:var(--ink);font:inherit;margin:0 0 8px} .ed .tag{color:var(--hc)}
+.ed .cur{display:inline-block;width:1.5px;height:18px;background:var(--ink);vertical-align:-3px}
+.bar{display:flex;justify-content:space-around;align-items:center;height:38px;border-top:1px solid var(--line);background:var(--pane);color:var(--mut);font:600 15px var(--ui)}
+.kb{height:176px;background:var(--kb);display:grid;place-items:center;color:var(--fnt);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.save{height:34px;padding:0 14px;border-radius:8px;background:var(--ink);color:var(--bg);font-weight:600;font-size:13px;display:grid;place-items:center}
+.set{display:flex;align-items:center;gap:12px;padding:var(--setp) 14px;border-bottom:1px solid var(--line)}
+.set .ic{color:var(--mut)} .set div{flex:1;min-width:0} .set b{display:block;font-weight:500} .set small{color:var(--mut);font-size:12.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set > .ic:last-child{color:var(--fnt)}
+.tw{overflow-x:auto} table{border-collapse:collapse;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:7px 14px 7px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--mut)} th{font-weight:600;color:var(--ink)} td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+
+/* aggiunte 2026-11-24 */
+figcaption li b,figcaption b.in{display:inline;font-size:inherit;margin:0}
+.apptop{display:flex;align-items:center;gap:6px;padding:10px 8px 6px}
+.apptop .t{font:600 18px/1.2 var(--ui)} .apptop .s{color:var(--mut);font-size:12px}
+.splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.splash .brand{font:600 30px/1 var(--serif);letter-spacing:.01em}
+.splash small{color:var(--mut);font-size:13px}
+.dotbar{width:120px;height:3px;border-radius:2px;background:var(--line);overflow:hidden;position:relative}
+.dotbar i{position:absolute;left:0;top:0;bottom:0;width:45%;background:var(--ink);border-radius:2px}
+.sys{position:absolute;left:10px;right:10px;bottom:10px;background:#f2f1f6;color:#1c1b1f;border-radius:24px;padding:20px 18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:system-ui,Roboto,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+:root[data-theme="dark"] .sys{background:#2b2930;color:#e6e1e5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sys{background:#2b2930;color:#e6e1e5}}
+.sys b{font-size:17px;font-weight:500} .sys small{font-size:13px;opacity:.75;text-align:center}
+.sys .fp{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(103,80,164,.14);color:#6750a4;margin:8px 0}
+.sys .fp .ic{width:34px;height:34px}
+.sys .row2{align-self:stretch;display:flex;justify-content:space-between;font-size:14px;color:#6750a4;font-weight:500;padding:6px 4px 0}
+.sys .tag{font-size:11px;opacity:.6;align-self:stretch;text-align:left;margin-bottom:-4px}
+.fld{height:42px;border:1px solid var(--fb);border-radius:9px;display:flex;align-items:center;padding:0 12px;background:var(--pane);color:var(--fnt);font-size:15px;gap:8px}
+.fld.f{border-color:var(--ink);color:var(--ink)} .fld .u{margin-left:auto;color:var(--mut);font-size:13px}
+.fld.big{height:56px;font:600 26px var(--ui);color:var(--ink);font-variant-numeric:tabular-nums}
+.lbl{font-size:12.5px;color:var(--mut);margin:2px 0 -3px}
+.pbtn{height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;background:var(--ink);color:var(--bg)}
+.pbtn.hc{background:var(--hc);color:#fff}
+.sbtn{height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500;font-size:14px;border:1px solid var(--fb);color:var(--ink)}
+.lnk{color:var(--mut);font-size:13px;text-align:center;text-decoration:underline;text-underline-offset:3px}
+.body{flex:1;display:flex;flex-direction:column;gap:10px;padding:8px 16px;overflow:hidden}
+.msg{font-size:13px;color:var(--warn);background:var(--warnbg);border:1px solid var(--warnline);border-radius:8px;padding:8px 10px;line-height:1.4}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:13.5px} .chk i{width:20px;height:20px;border-radius:5px;background:var(--ink);color:var(--bg);display:grid;place-items:center;flex:none;margin-top:1px} .chk i .ic{width:14px;height:14px}
+.chk small{display:block;color:var(--mut);font-size:12px}
+.gh{font-size:12px;font-weight:600;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;padding:12px 16px 4px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:8px 16px}
+.opt i{width:20px;height:20px;border-radius:50%;border:2px solid var(--fb);flex:none;margin-top:1px;box-sizing:border-box}
+.opt.on i{border:6px solid var(--ink)} .opt div{flex:1} .opt b{display:block;font-weight:500} .opt small{display:block;color:var(--mut);font-size:12.5px;line-height:1.35}
+.tog{width:38px;height:22px;border-radius:11px;background:var(--fb);position:relative;flex:none}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tog.on{background:var(--ink)} .tog.on::after{left:19px;background:var(--bg)}
+.set.dim{opacity:.5}
+.toast{position:absolute;left:10px;right:10px;bottom:58px;background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.toast u{margin-left:auto;font-weight:600;text-decoration:none}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--pane);display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--mut)}
+.tile b{color:var(--ink);font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px} .tile b i{width:4px;height:14px;border-radius:2px;background:var(--c)}
+.prev{border:1px dashed var(--fb);border-radius:10px;padding:8px 0 4px}
+.prev .row{margin-bottom:0}
+.sec{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line);font-weight:500} .sec span{margin-left:auto;color:var(--mut);font-weight:400;font-size:12.5px}
+.colors{display:flex;gap:8px} .colors i{width:22px;height:22px;border-radius:50%;background:var(--c)} .colors i.on{box-shadow:0 0 0 2px var(--pane),0 0 0 4px var(--c)}
+.setsl{display:flex;flex-direction:column;font-size:13.5px;font-variant-numeric:tabular-nums}
+.setsl div{display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--line)} .setsl span:first-child{color:var(--mut)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.thumbs{display:flex;gap:6px} .thumbs i{width:64px;height:64px;border-radius:8px;background:linear-gradient(135deg,#c9b38a,#8c6f47);position:relative}
+.thumbs i::after{content:"";position:absolute;right:4px;top:4px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.45)}
+.ta{min-height:60px;border:1px solid var(--ink);border-radius:9px;padding:8px 10px;font:15px/1.5 var(--serif);color:var(--ink)}
+.icons{display:flex;gap:8px} .icons span{flex:1;height:40px;border:1px solid var(--fb);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.shade{position:absolute;inset:0;background:#1d1c20;padding:16px 10px;display:flex;flex-direction:column;gap:8px}
+.shade .clk{color:#fff;font:500 30px system-ui;padding:6px 8px 0} .shade .dt{color:#ccc;font-size:13px;padding:0 8px 10px;font-family:system-ui}
+.ntf{background:#f2f1f6;color:#1c1b1f;border-radius:20px;padding:12px 14px;font-family:system-ui,Roboto,sans-serif;display:flex;flex-direction:column;gap:3px}
+.ntf .h{display:flex;gap:6px;align-items:center;font-size:12px;opacity:.7} .ntf .h i{width:16px;height:16px;border-radius:50%;background:#d0603a}
+.ntf b{font-size:15px;font-weight:500} .ntf span{font-size:13.5px;opacity:.8;font-variant-numeric:tabular-nums}
+.ask{border-left:3px solid var(--ink);padding:8px 12px;background:var(--pane);border-radius:0 8px 8px 0;max-width:76ch}
+.sheet .opt small{text-align:left}
+.ask b{display:block;margin-bottom:2px} .ask p{color:var(--ink)}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z"/></symbol>
+<symbol id="scale" viewBox="0 0 24 24"><path d="M4 8h8M18 8h2M4 16h2M12 16h8"/><circle cx="15" cy="8" r="2.5"/><circle cx="9" cy="16" r="2.5"/></symbol>
+<symbol id="form" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 9v6M9 12h6"/></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M4 5v5h5"/><path d="M5 14a7 7 0 1 0 1.5-7L4 10"/></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+<symbol id="stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol>
+<symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/></symbol>
+<symbol id="db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></symbol>
+<symbol id="sync" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/></symbol>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.500-3 7.500-7 9-4-1.500-7-4.500-7-9V6z"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+<symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.500v.5"/></symbol>
+
+<symbol id="finger" viewBox="0 0 24 24"><path d="M7 11a5 5 0 0 1 10 0v2"/><path d="M12 11v4c0 2-1 4-2.5 5"/><path d="M9.5 11.5V15c0 1.5-.5 3-1.5 4"/><path d="M14.5 13v2c0 2.5-.5 4.5-1.5 6"/><path d="M4.5 9a8 8 0 0 1 15 0"/><path d="M17 16c0 1.5-.3 3-1 4.5"/></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+<symbol id="folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+<symbol id="trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+</defs></svg>
+<div class="page">
+<h1>Telefono · aprire l'app e le "finestre"</h1>
+<p>Onda 4. Come si apre Recordum sul telefono, cosa c'è in <b>Impostazioni › Sicurezza</b> (le regole d'accesso che hai chiesto) e cosa diventano le nove finestre del computer. Le scelte segnate <b>proposta</b> sono mie: dimmi cosa cambiare.</p>
+<h2>1 · Aprire Recordum</h2>
+<div class="frames">
+<figure><div class="ph" ><div class="splash"><span class="brand">Recordum</span><div class="dotbar"><i></i></div><small>Apro i tuoi dati…</small></div></div><figcaption><b>1a · Attesa</b>Appare subito dopo il logo di sistema. Il lavoro lento (database, migrazioni) gira dietro, fuori dal thread dell'interfaccia: niente più "l'app non risponde". La riga sotto dice cosa sta succedendo.</figcaption></figure>
+<figure><div class="ph" ><div class="splash"><span class="brand">Recordum</span><small>Apro i tuoi dati…</small></div>
+<div class="sys"><span class="tag">Recordum</span><b>Sblocca i tuoi dati</b><small>Usa l'impronta</small><span class="fp"><svg class="ic"><use href="#finger"/></svg></span>
+<div class="row2"><span>Usa la passphrase</span><span>Annulla</span></div></div></div><figcaption><b>1b · Impronta</b>Il riquadro è quello di sistema (Android lo disegna, noi non possiamo cambiarlo). Mentre il dito è sul sensore, il database si prepara: il tempo del dito non si somma all'avvio.<ul><li><b>Proposta</b>: solo impronta, non il PIN del telefono (il PIN lo conosce spesso qualcun altro).</li></ul></figcaption></figure>
+<figure><div class="ph" ><div class="apptop"><span class="sp"></span></div><div class="body" style="gap:12px">
+<span class="brand" style="font:600 24px var(--serif);text-align:center;margin:20px 0 6px">Recordum</span>
+<div class="msg">È stata aggiunta un'impronta a questo telefono. Per sicurezza, questa volta serve la passphrase.</div>
+<div class="lbl">Passphrase</div><div class="fld f">•••••••••••••••<span class="u"><svg class="ic"><use href="#eye"/></svg></span></div>
+<div class="chk"><i><svg class="ic"><use href="#check"/></svg></i><div>Torna a sbloccare con l'impronta<small>La passphrase resta il ripiego.</small></div></div>
+<div class="pbtn">Sblocca</div><span class="sp"></span><div class="kb">tastiera</div></div></div><figcaption><b>1c · Passphrase, il ripiego</b>Quando l'impronta non basta: annullata, cinque tentativi falliti, o un'impronta nuova aggiunta al telefono (la chiave si invalida da sola). La riga gialla dice <i>perché</i> la chiede.</figcaption></figure>
+<figure><div class="ph" ><div class="apptop"><span class="sp"></span><span class="ib"><svg class="ic"><use href="#close"/></svg></span></div><div class="body" style="gap:12px">
+<span style="display:grid;place-items:center;margin-top:18px;color:var(--mut)"><svg class="ic" style="width:34px;height:34px"><use href="#key"/></svg></span>
+<b style="font:600 18px var(--ui);text-align:center">Ti ricordi la passphrase?</b>
+<p style="text-align:center;font-size:13.5px">Con l'impronta non la scrivi mai, ed è facile dimenticarla. Se un giorno l'impronta non bastasse, senza passphrase i dati sono persi.</p>
+<div class="fld f">••••••••<span class="u"><svg class="ic"><use href="#eye"/></svg></span></div>
+<div class="pbtn">Controlla</div><span class="lnk">Non ora</span><span class="sp"></span></div></div><figcaption><b>1d · Ripasso della passphrase</b><b style="display:inline;font-weight:600">Proposta</b>: ogni due settimane, dopo lo sblocco, una volta. Si salta con "Non ora". Protegge dall'unico modo vero di perdere tutto. Sbagliata: lo dice e suggerisce di cambiarla finché ci sei dentro.</figcaption></figure>
+</div>
+<h2>2 · Impostazioni › Sicurezza</h2>
+<div class="frames">
+<figure><div class="ph" ><div class="apptop"><span class="ib"><svg class="ic"><use href="#back"/></svg></span><span class="t">Sicurezza</span></div>
+<div class="gh">Apertura</div>
+<div class="opt on"><i></i><div><b>Con l'impronta</b><small>Predefinita. La passphrase resta il ripiego.</small></div></div>
+<div class="opt"><i></i><div><b>Senza chiedere</b><small>Basta il blocco schermo del telefono. I dati restano cifrati sul disco.</small></div></div>
+<div class="opt"><i></i><div><b>Passphrase ogni volta</b><small>La più chiusa. Circa un secondo in più all'apertura.</small></div></div>
+<div class="gh">Mentre la usi</div>
+<div class="set"><svg class="ic"><use href="#lock"/></svg><div><b>Blocca di nuovo</b><small>dopo 5 minuti fuori dall'app</small></div><svg class="ic"><use href="#next"/></svg></div>
+<div class="set"><svg class="ic"><use href="#eye"/></svg><div><b>Nascondi nelle app recenti</b><small>l'anteprima resta coperta</small></div><span class="tog on"></span></div>
+<div class="set"><svg class="ic"><use href="#key"/></svg><div><b>Ripassa la passphrase</b><small>ogni 2 settimane</small></div><svg class="ic"><use href="#next"/></svg></div>
+<div class="set dim"><svg class="ic"><use href="#key"/></svg><div><b>Cambia passphrase</b><small>passo 7 del percorso</small></div><svg class="ic"><use href="#next"/></svg></div>
+<span class="sp"></span><div class="tab"><span><svg class="ic"><use href="#home"/></svg>Oggi</span><span><svg class="ic"><use href="#search"/></svg>Cerca</span><span><svg class="ic"><use href="#chart"/></svg>Statistiche</span><span class="on"><svg class="ic"><use href="#gear"/></svg>Impostazioni</span></div></div><figcaption><b>2a · Le regole d'accesso</b>Tutto <b class="in">proposta</b>, sulla tua richiesta "vari setting di accesso":<ul><li><b>Apertura</b>: tre modi. "Senza chiedere" è il tuo sì alla domanda di prima.</li><li><b>Blocca di nuovo</b>: subito · 1 · 5 · 30 minuti · solo alla chiusura. Vale per impronta e passphrase.</li><li><b>Nascondi nelle app recenti</b>: copre l'anteprima nel selettore delle app. Gli screenshot restano possibili.</li><li><b>Ripassa la passphrase</b>: mai · ogni settimana · 2 settimane · mese.</li></ul></figcaption></figure>
+<figure><div class="ph" ><div class="apptop"><span class="ib"><svg class="ic"><use href="#back"/></svg></span><span class="t">Blocca di nuovo</span></div>
+<p style="padding:4px 16px 6px;font-size:13px">Quando torni a Recordum dopo essere uscito, chiede di nuovo l'impronta (o la passphrase).</p>
+<div class="opt"><i></i><div><b>Subito</b></div></div>
+<div class="opt"><i></i><div><b>Dopo 1 minuto</b></div></div>
+<div class="opt on"><i></i><div><b>Dopo 5 minuti</b></div></div>
+<div class="opt"><i></i><div><b>Dopo 30 minuti</b></div></div>
+<div class="opt"><i></i><div><b>Solo quando l'app si chiude</b><small>Finché Android la tiene aperta, resta sbloccata.</small></div></div>
+<span class="sp"></span><div class="tab"><span><svg class="ic"><use href="#home"/></svg>Oggi</span><span><svg class="ic"><use href="#search"/></svg>Cerca</span><span><svg class="ic"><use href="#chart"/></svg>Statistiche</span><span class="on"><svg class="ic"><use href="#gear"/></svg>Impostazioni</span></div></div><figcaption><b>2b · Una scelta, una pagina</b>Ogni riga con la freccia apre una pagina con le scelte. Sul computer la stessa pagina sta accanto all'elenco (onda 3b). Un timer che corre resta registrato anche quando l'app si blocca: il blocco copre lo schermo, non ferma niente.</figcaption></figure>
+</div>
+<h2>3 · Le finestre del computer, sul telefono</h2>
+<p>Regola unica (<b>proposta</b>): ciò che ha bisogno di spazio diventa una <b>pagina</b> con ← in alto; ciò che chiede una sola risposta diventa un <b>foglio dal basso</b>. Il gesto indietro di Android chiude prima il foglio, poi la pagina; dalla Home manda l'app in secondo piano.</p>
+<div class="tw"><table><tr><th>Sul computer</th><th>Sul telefono</th><th>Note</th></tr>
+<tr><td>Selettore dei modelli</td><td>pagina</td><td>dal + della Home</td></tr>
+<tr><td>Creatore</td><td>pagina</td><td>anteprima della riga in alto, "Crea abitudine" in basso</td></tr>
+<tr><td>Scheda dell'abitudine</td><td>pagina a sezioni</td><td>già approvata (cornice, schermo 3)</td></tr>
+<tr><td>Impostazioni</td><td>voce della barra in basso</td><td>elenco di categorie, ognuna una pagina (approvata)</td></tr>
+<tr><td>Backup ora · Ripristina</td><td>pagine dentro Dati e backup</td><td>con l'avanzamento nella pagina</td></tr>
+<tr><td>Conferma (Elimina, Svuota…)</td><td>foglio dal basso</td><td>due pulsanti, il distruttivo sopra</td></tr>
+<tr><td>Salva backup · Apri file · Scegli cartella</td><td>selettore di sistema</td><td>quello di Android (lo stesso della sonda di Drive): non lo disegniamo noi</td></tr>
+<tr><td>Apri cartella</td><td>non c'è</td><td>sul telefono non c'è un file manager da aprire: la riga dello storico dice dove sta il file</td></tr>
+<tr><td>Sblocco · Errore all'avvio</td><td>pagina a tutto schermo</td><td>schermi 1c e un errore con "Copia i dettagli"</td></tr>
+</table></div>
+<div class="frames">
+<figure><div class="ph" ><div class="apptop"><span class="ib"><svg class="ic"><use href="#back"/></svg></span><span class="t">Nuova abitudine</span></div>
+<div class="body" style="gap:8px;padding-top:2px"><div class="fld"><svg class="ic"><use href="#search"/></svg> Cerca un modello</div>
+<div class="two"><div class="sbtn"><svg class="ic"><use href="#plus"/></svg> Da zero</div><div class="sbtn"><svg class="ic"><use href="#folder"/></svg> Gruppo vuoto</div></div>
+<div class="lbl" style="margin-top:4px">Modelli</div>
+<div class="tiles">
+<div class="tile" style="--c:#c2508a"><b><i></i>Umore</b>stato · scala 1–5</div>
+<div class="tile" style="--c:#4f63c4"><b><i></i>Lettura</b>contatore · pagine</div>
+<div class="tile" style="--c:#d0603a"><b><i></i>Allenamento</b>serie · ripetizioni, kg</div>
+<div class="tile" style="--c:#c98a1e"><b><i></i>Smettere di…</b>astinenza</div>
+<div class="tile" style="--c:#9a9a2a"><b><i></i>Diario del cibo</b>diario · foto</div>
+<div class="tile" style="--c:#2f8fb0"><b><i></i>Sonno</b>sessione · ore</div>
+</div><div class="lbl" style="margin-top:4px">I tuoi modelli</div>
+<div class="tiles"><div class="tile" style="--c:#6b7280"><b><i></i>Routine del mattino</b>gruppo · 3</div></div></div></div><figcaption><b>3a · Selettore dei modelli</b>Una pagina: ricerca, "Da zero" e "Gruppo vuoto", poi le schede in due colonne. Un tocco su una scheda apre il dettaglio con "Usa questo modello" e "Personalizza…" in basso.</figcaption></figure>
+<figure><div class="ph" ><div class="apptop"><span class="ib"><svg class="ic"><use href="#back"/></svg></span><span class="t">Lettura</span><span class="sp"></span><span class="ib"><svg class="ic"><use href="#dots"/></svg></span></div>
+<div class="body" style="gap:8px;padding-top:2px;flex:none"><div class="prev"><div class="row" style="--c:#4f63c4"><span class="n">Lettura</span><span class="d"><span class="v">20</span><span>·</span><span class="v">35</span><span class="v">12</span><span class="v">40</span><span>·</span><span class="cur">·</span></span><span class="q"><svg class="ic"><use href="#form"/></svg></span></div></div>
+<div class="lbl">Nome</div><div class="fld f">Lettura</div>
+<div class="lbl">Colore</div><div class="colors"><i style="--c:#4f63c4" class="on"></i><i style="--c:#2f9c8c"></i><i style="--c:#c2508a"></i><i style="--c:#d0603a"></i><i style="--c:#c98a1e"></i><i style="--c:#7a5bc4"></i><i style="--c:#6b7280"></i></div></div>
+<div class="sec" style="border-top:1px solid var(--line)">Si registra con<span>un valore · pagine</span></div>
+<div class="sec">Obiettivo<span>30 pagine al giorno</span></div><div class="sec">Quando<span>ogni giorno</span></div><div class="sec">Avanzate<span></span></div>
+<div class="cmd"><div class="pbtn" style="width:100%;background:#4f63c4;color:#fff">Crea abitudine</div></div></div><figcaption><b>3b · Creatore</b>Lo stesso creatore del computer in una colonna: l'anteprima della riga in alto (sul computer sta a destra), nome, tipo, colore e icona sempre visibili, le sezioni chiuse, "Crea abitudine" dove arriva il pollice.</figcaption></figure>
+<figure><div class="ph" ><div class="top"><span class="t">Oggi</span><span class="s">mar 24 nov · 3 di 9</span><span class="sp"></span><span class="ib"><svg class="ic"><use href="#dots"/></svg></span><span class="ib ink"><svg class="ic"><use href="#plus"/></svg></span></div><div class="home"></div><div class="tab"><span class="on"><svg class="ic"><use href="#home"/></svg>Oggi</span><span><svg class="ic"><use href="#search"/></svg>Cerca</span><span><svg class="ic"><use href="#chart"/></svg>Statistiche</span><span><svg class="ic"><use href="#gear"/></svg>Impostazioni</span></div><div class="scrim"></div><div class="sheet" style="--hc:#4f63c4;gap:10px;padding-bottom:16px"><span class="grab"></span>
+<b style="font:600 17px var(--ui)">Eliminare definitivamente?</b><p style="font-size:13.5px">«Lettura» e il suo contenuto verranno rimossi e non potranno essere recuperati.</p>
+<div class="pbtn"><svg class="ic"><use href="#trash"/></svg> Elimina definitivamente</div><div class="sbtn">Annulla</div></div></div><figcaption><b>3c · Conferma</b>Un foglio dal basso, come quelli per registrare. Le parole sono quelle di oggi (qui dal Cestino); i pulsanti sono larghi e vicini al pollice. Il distruttivo non è rosso (il colore identifica un'abitudine, non decora).</figcaption></figure>
+<figure><div class="ph" ><div class="apptop"><span class="ib"><svg class="ic"><use href="#back"/></svg></span><span class="t">Dati e backup</span></div>
+<div class="body" style="gap:8px;padding-top:2px"><div class="two"><div class="pbtn" style="height:42px">Backup ora</div><div class="sbtn" style="height:42px">Ripristina…</div></div>
+<p style="font-size:12.5px">"Ripristina…" apre il selettore di Android: un <b>.recbak</b> da Drive, dai Download o da un'altra app. È la strada con cui i dati del computer arrivano qui.</p></div>
+<div class="gh">Backup automatico</div>
+<div class="set"><svg class="ic"><use href="#clock"/></svg><div><b>Ogni giorno</b><small>tiene gli ultimi 7</small></div><span class="tog on"></span></div>
+<div class="set"><svg class="ic"><use href="#folder"/></svg><div><b>Cartella</b><small>Drive › Recordum › backup</small></div><svg class="ic"><use href="#next"/></svg></div>
+<div class="gh">Storico</div>
+<div class="set"><svg class="ic"><use href="#file"/></svg><div><b>ieri alle 23:10</b><small>automatico · 2,4 MB · Drive › Recordum › backup</small></div><svg class="ic"><use href="#dots"/></svg></div>
+<div class="set"><svg class="ic"><use href="#file"/></svg><div><b>22 nov alle 23:10</b><small>automatico · 2,4 MB</small></div><svg class="ic"><use href="#dots"/></svg></div>
+<span class="sp"></span><div class="tab"><span><svg class="ic"><use href="#home"/></svg>Oggi</span><span><svg class="ic"><use href="#search"/></svg>Cerca</span><span><svg class="ic"><use href="#chart"/></svg>Statistiche</span><span class="on"><svg class="ic"><use href="#gear"/></svg>Impostazioni</span></div></div><figcaption><b>3d · Backup e ripristino</b>Le due finestre del computer diventano pagine dentro "Dati e backup". Cartella e file passano dal selettore di sistema. Nello storico, al posto di "Apri cartella", la riga dice dove sta il file; ⋯ tiene "Elimina".</figcaption></figure>
+</div>
+<div class="ask"><b>Da decidere</b><p>Le regole d'accesso dello schermo 2a (quali tenere, quali predefinite), il ripasso della passphrase (1d), e la regola "pagina o foglio" della tabella.</p></div>
+</div>
+<script>
+var H=[
+ {g:1,n:'Routine del mattino',c:'#6b7280'},
+ {k:1,t:'check',n:'Stretching',c:'#2f9c8c',v:[1,1,0,1,1,1,1]},
+ {k:1,t:'check',n:'Vitamine',c:'#5f9a3c',v:[1,1,1,1,0,0,0]},
+ {t:'abst',n:'Senza fumo',c:'#c98a1e',kv:'23g 4h',v:[1,1,1,1,1,1,1]},
+ {t:'plus',n:'Caffè',c:'#8a6a4f',v:[2,3,2,1,2,0,2]},
+ {t:'form',n:'Lettura',c:'#4f63c4',v:[20,0,35,12,40,0,0]},
+ {t:'scale',n:'Umore',c:'#c2508a',v:[4,3,0,4,5,0,0]},
+ {t:'form',n:'Allenamento',c:'#d0603a',v:[0,12,0,14,0,0,0]},
+ {t:'pen',n:'Diario del cibo',c:'#9a9a2a',v:[3,3,2,3,1,0,1]},
+ {t:'pen',n:'Diario della giornata',c:'#7a5bc4',tick:1,v:[1,1,1,0,1,0,0]}
+];
+var I={check:'check',plus:'plus',scale:'scale',form:'form',pen:'pen',abst:'undo',play:'play'},S=['m','g','v','s','d','l','m'];
+function txt(h,i){var x=h.v[i];if(!x)return '·';return (h.t==='check'||h.t==='abst'||h.tick)?'✓':x}
+function home(el){var hd='<div class="days"><span class="sp" style="flex:1;width:auto"></span>';
+ for(var i=0;i<7;i++)hd+='<span class="'+(i===6?'td':'')+'">'+S[i]+'</span>';hd+='</div><div class="list">';
+ H.forEach(function(h){
+  if(h.g){hd+='<div class="grp" style="--c:'+h.c+'"><i></i>'+h.n+'<span>1 di 2</span></div>';return}
+  var c='';for(var i=0;i<7;i++)c+='<span class="'+(h.v[i]?'v':'')+(i===6?' cur':'')+'">'+txt(h,i)+'</span>';
+  hd+='<div class="row'+(h.k?' ind':'')+'" style="--c:'+h.c+'"><span class="n">'+h.n+'</span>'+(h.kv?'<span class="kv">'+h.kv+'</span>':'')+'<span class="d">'+c+'</span><span class="q"><svg class="ic"><use href="#'+I[h.t]+'"/></svg></span></div>';});
+ el.outerHTML=hd+'</div>';}
+document.querySelectorAll('.home').forEach(home);
+</script>
