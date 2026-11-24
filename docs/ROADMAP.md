@@ -10,7 +10,9 @@
   cinque tipi, creare e configurare, dati al sicuro (portachiavi, backup, ripristino), diario con tag e foto, SQLite3MC,
   la direzione visiva fino all'onda 2b, l'**onda 3a** (creatore e selettore dei modelli) e l'**onda "Giornata"**.
 - **Branch di lavoro**: `unisci` (a codice completo, attende prova a mano e PR) e **`telefono-onda4`** (da `unisci`,
-  decisione dell'autore del 2026-11-24): spec e piano dell'onda 4 scritti, esecuzione da avviare.
+  decisione dell'autore del 2026-11-24): spec e piano dell'onda 4 scritti, **sonde fatte** il 2026-11-24
+  (`docs/design/2026-11-24-telefono-sonde.md`), **Task 1 (la WPF si spegne) a metà**, interrotto dal limite di quota:
+  è in un commit WIP **locale** (non pubblicato) sopra `telefono-onda4`.
 - **Il percorso è stato ridisegnato il 2026-11-10**
   (`docs/superpowers/specs/2026-11-10-v1-ux-review-and-path-design.md`, con le decisioni dell'autore al §6):
   la giornata prima delle schermate; **un APK Android nella v1.0** (l'autore userà l'app soprattutto dal telefono, il
@@ -36,9 +38,12 @@
   dall'autore il 2026-11-24 (mockup `docs/design/2026-11-24-telefono-onde-4-5/`: accesso con impronta e regole in
   Impostazioni › Sicurezza, finestre → pagine e fogli, i fogli per registrare; cornice con le pagine di Avalonia 12;
   pacchetto `io.github.lufo336.recordum`); piano dell'onda 4 `docs/superpowers/plans/2026-11-24-telefono-onda-4.md`
-  (14 task), da eseguire su `telefono-onda4`. Prima: le sonde sul Galaxy (pagine di Avalonia, Keystore con impronta,
-  notifica del timer, scatto nella Galleria), che chiedono il telefono collegato; app usa e getta in
-  `~/dev/_spike-telefono`;
+  (14 task), su `telefono-onda4`. Le sonde sul Galaxy sono fatte: le pagine di Avalonia reggono con tre regole (activity
+  nuova → cornice nuova, `MoveTaskToBack` alla radice, tastiera gestita con `InputPane`), cifratura RSA-OAEP, e la
+  decisione **T10** dell'autore (il suo telefono ha solo il PIN): l'utente sceglie fra impronta, blocco schermo, senza
+  chiedere, passphrase ogni volta. **Si riprende dal Task 1** (registro git-ignored
+  `.superpowers/sdd/2026-11-24-telefono-onda-4/progress.md`, sezione "TAPPA 2026-11-24 pomeriggio"); il telefono serve
+  dal Task 4;
   (3) il passo 3, dati protetti e dogfooding sul computer, **in parallelo** (lo fa l'autore, decisione del 2026-11-24).
   Resta da decidere dall'autore: obiettivi su una metrica di scala non convertiti dalla 2.20 (nessuna
   strada di oggi ne crea uno).

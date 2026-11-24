@@ -1,6 +1,0 @@
-<UserControl x:Class="Recordum.WPF.Controls.StreakTimelineControl"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Height="24" SizeChanged="OnSizeChanged">
-    <Canvas x:Name="LayoutCanvas" Background="{DynamicResource Brush.Surface}"/>
-</UserControl>
