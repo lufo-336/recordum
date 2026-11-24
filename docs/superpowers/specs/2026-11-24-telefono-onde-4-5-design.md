@@ -4,7 +4,8 @@
 > Mockup approvati: `docs/design/2026-11-24-telefono-onde-4-5/accesso-e-finestre.html` e `fogli.html`, sopra quelli del
 > 2026-11-10 (`docs/design/2026-11-10-telefono-mockups/cornice.html`, `oggi-striscia.html`). Sonde: Android
 > (`docs/design/2026-11-10-android-probe.md`), Drive col selettore di sistema (`docs/design/2026-11-22-saf-drive-probe.md`),
-> e quelle del §13, da fare prima del piano. Letta da un revisore esterno il 2026-11-24: le sue domande sono risolte
+> e quelle del §13, fatte il 2026-11-24 (`docs/design/2026-11-24-telefono-sonde.md`: cambiano §7.1b, §8, §10.3, §10.4).
+> Letta da un revisore esterno il 2026-11-24: le sue domande sono risolte
 > qui. Le scelte segnate *mia scelta* non le ha fatte l'autore: si possono correggere.
 
 ## 1. Perché
@@ -44,7 +45,7 @@ firmato per il pubblico e pubblicazione su uno store (passo 8). La pagina Sicure
 **Anti-obiettivi** (fallimento anche se "funziona").
 - Un aggiornamento dell'APK che chiede di disinstallare: sul telefono la disinstallazione cancella la casa dei dati (§11.2).
 - Dati che escono dal telefono senza consenso: niente backup di Android verso Google, niente rete (§11.1).
-- Un'impronta, un PIN o un'impronta aggiunta da altri che aprono il diario (§8).
+- Un PIN o un'impronta aggiunta da altri che aprono il diario senza che l'utente abbia scelto il blocco schermo (§8).
 - "L'app non risponde" (ANR) all'avvio, o un avvio che cresce di nuovo senza che nessuno lo misuri.
 - Una terza implementazione di un'astrazione scritta per una shell morta (la WPF).
 
@@ -85,7 +86,8 @@ firmato per il pubblico e pubblicazione su uno store (passo 8). La pagina Sicure
 | T6 | Le finestre del computer: pagina con ← per ciò che chiede spazio, foglio dal basso per una sola risposta, selettori di file di sistema, niente "Apri cartella" (tabella del primo mockup). |
 | T7 | Registrare: dove il computer apre la scheda, il telefono apre un foglio; "Annulla" per 5 s dopo un tocco; notifica fissa del timer senza "Ferma". |
 | T8 | **Lo scatto finisce nella Galleria** (non solo dentro Recordum). |
-| T9 | Cornice: le pagine di Avalonia 12 (approccio 1). |
+| T9 | Cornice: le pagine di Avalonia 12 (approccio 1). Confermata dalla sonda 1, con le regole del §7.1b e del §9.6. |
+| T10 | (Dopo la sonda 2: il telefono dell'autore si sblocca solo col PIN.) **Il modo d'apertura lo sceglie l'utente fra tutti**: impronta, blocco schermo del telefono (impronta o PIN), senza chiedere, passphrase ogni volta (§8.1). |
 
 Già decise il 2026-11-10 e non riaperte: barra in basso (Oggi, Cerca, Statistiche "In arrivo", Impostazioni); l'abitudine
 come pagina a sezioni col comando in basso; Impostazioni come elenco di categorie; riquadri compatti, iniziali dei giorni,
@@ -140,9 +142,11 @@ esplicitamente alla sequenza; `--data-dir`, `--seed-demo` e simili restano strum
 
 Su Android il processo vive più a lungo dell'activity (rotazione, tema, ritorno dal secondo piano, l'activity ricreata
 dal sistema). Il lock della cartella dati, la chiave sbloccata e il contenitore dei servizi appartengono al **processo**
-(all'`Application` di Android) e si costruiscono una volta sola; l'activity, quando nasce o rinasce, si limita a
-riattaccare la vista: mai una seconda inizializzazione, mai un secondo lock. "Blocca di nuovo" (§8.4) e il riallineamento
-della notifica (§10.4) si agganciano agli eventi dell'activity (pausa, ripresa), non all'avvio. *Mia scelta*.
+(all'`Application` di Android) e si costruiscono una volta sola: mai una seconda inizializzazione, mai un secondo lock.
+Un'activity che nasce dopo la prima riceve una **cornice nuova** costruita dal contenitore del processo (la pila delle
+pagine riparte da Oggi; i ViewModel restano): la sonda 1 ha visto che la cornice vecchia riattaccata a un'activity nuova
+non disegna le pagine. "Blocca di nuovo" (§8.4) e il riallineamento della notifica (§10.4) si agganciano agli eventi
+dell'activity (pausa, ripresa), non all'avvio. *Mia scelta*, corretta dalla sonda.
 
 ### 7.2 Obiettivo
 
@@ -172,14 +176,19 @@ stessa misura entra nella checklist del telefono: si ripete a ogni onda.
 
 ### 8.1 Primo avvio e i tre modi
 
-Primo avvio: si crea la passphrase come oggi (Argon2id), poi si sceglie il modo d'apertura (predefinito: con l'impronta).
-I tre modi (schermo 2a):
+Primo avvio: si crea la passphrase come oggi (Argon2id), poi si sceglie il modo d'apertura. I quattro modi (schermo 2a
+più il blocco schermo, T10); il telefono offre solo quelli che può fare:
 
-| Modo | Cosa c'è nel telefono | All'apertura |
-|---|---|---|
-| **Con l'impronta** (predefinito) | la chiave del database cifrata con una chiave del Keystore che chiede l'impronta (solo biometria forte; **non** il PIN del telefono) e si invalida se si aggiunge un'impronta | riquadro di sistema dell'impronta (1b); "Usa la passphrase" come ripiego |
-| **Senza chiedere** | la chiave del database cifrata con una chiave del Keystore senza richiesta d'autenticazione | si apre; protegge il blocco schermo del telefono; i dati restano cifrati sul disco |
-| **Passphrase ogni volta** | niente | la passphrase (≈ 1 s di Argon2id) |
+| Modo | Quando c'è | Cosa c'è nel telefono | All'apertura |
+|---|---|---|---|
+| **Con l'impronta** | un'impronta registrata (`CanAuthenticate(BIOMETRIC_STRONG)`) | la chiave del database cifrata con una chiave del Keystore che chiede l'impronta (solo biometria forte, **non** il PIN) e si invalida se si aggiunge un'impronta | riquadro di sistema dell'impronta (1b); "Usa la passphrase" come ripiego |
+| **Col blocco schermo** | un blocco sicuro (`KeyguardManager.IsDeviceSecure`) | la stessa cosa con una chiave che accetta impronta **o** PIN del telefono e non si invalida con un'impronta nuova | riquadro di sistema col PIN o l'impronta; la passphrase come ripiego nella pagina |
+| **Senza chiedere** | sempre | la chiave del database cifrata con una chiave del Keystore senza richiesta d'autenticazione | si apre; protegge il blocco schermo del telefono; i dati restano cifrati sul disco |
+| **Passphrase ogni volta** | sempre | niente | la passphrase (≈ 1 s di Argon2id) |
+
+Proposto al primo avvio (*mia scelta*): con l'impronta se c'è, altrimenti col blocco schermo se c'è, altrimenti
+passphrase ogni volta (un telefono senza blocco non protegge niente da solo). L'utente può scegliere un altro modo lì o
+in Sicurezza.
 
 Il modo non è un'impostazione nel database (serve prima di aprirlo): **è lo stato del portachiavi stesso**. Cambiarlo da
 Sicurezza riscrive la voce e può chiedere una volta l'impronta o la passphrase.
@@ -193,11 +202,16 @@ non va riscritta. Il telefono e il computer possono avere passphrase diverse.
 ### 8.2 Il portachiavi di Android
 
 Un `ISecretStore` sul Keystore di Android (il contratto c'è già, sincrono, "mai sul thread dell'interfaccia": un
-riquadro dell'impronta è un'attesa come il prompt di libsecret). Solo API di sistema: `KeyGenParameterSpec`, AES-GCM,
+riquadro dell'impronta è un'attesa come il prompt di libsecret). Solo API di sistema: `KeyGenParameterSpec`,
 `android.hardware.biometrics.BiometricPrompt` con `CryptoObject` — **niente AndroidX** (*mia scelta*, regola §3). Il
 testo cifrato sta in un file nella cartella dati. `SecretKind.DbKey` (la chiave derivata del database) segue il modo
 d'apertura; `SecretKind.AutoBackup` (la **passphrase** dei backup automatici, la stessa che servirà per ripristinarli
 altrove) usa sempre la chiave senza richiesta: un backup automatico non può chiedere il dito.
+
+Cifratura (sonda 2): per l'impronta e il blocco schermo **RSA-OAEP** (SHA-256, MGF1 SHA-1): la pubblica cifra senza
+chiedere niente, quindi attivare il modo costa zero riquadri; la privata decifra dietro il riquadro. Dopo un'impronta
+aggiunta la privata è invalidata ma la pubblica cifra ancora: prima di scrivere si prova la privata e, se serve, si
+rigenera la coppia. Per la chiave senza richiesta AES-GCM. Il permesso `USE_BIOMETRIC` va nel manifest.
 
 Il tetto di 10 s di `StoredKeyUnlock` non vale mentre il riquadro dell'impronta è aperto: il tempo è dell'utente.
 
@@ -206,6 +220,8 @@ Il tetto di 10 s di `StoredKeyUnlock` non vale mentre il riquadro dell'impronta 
 Annullata, troppi tentativi, sensore non disponibile, oppure **un'impronta nuova aggiunta al telefono** (la chiave del
 Keystore si invalida da sola; la voce si cancella). In tutti i casi la pagina della passphrase, con la riga gialla che dice
 **perché**, e la casella "Torna a sbloccare con l'impronta" spuntata: dopo la passphrase giusta la voce si riscrive.
+Col blocco schermo Android non permette un pulsante "Usa la passphrase" dentro il riquadro: annullato il riquadro, la
+pagina della passphrase è già lì sotto.
 
 ### 8.4 Mentre la usi
 
@@ -272,7 +288,15 @@ finita (`IBackupSaveFileDialog`), il contratto cambia; la forma la decide il pia
 
 Riquadri compatti, bersagli almeno 40 px (*mia scelta*, da confermare guardando i PNG), nomi non schiacciati nella
 striscia del gruppo (sonda, punto 7). Le viste comuni si provano in headless a 360 px di larghezza, chiaro e scuro, con
-un'asserzione strutturale per ogni PNG.
+un'asserzione strutturale per ogni PNG. Il Galaxy S21 è 360 × 800 DIP (scala 3), bordi sicuri 26,7 sopra e 48 sotto.
+
+### 9.6 La tastiera e i bordi (sonda 1)
+
+Con `targetSdk` ≥ 35 Android disegna da bordo a bordo e `AdjustResize` non accorcia più la vista: la tastiera copre ciò
+che sta sotto. Il foglio e la cornice si spostano da soli sopra la tastiera con `TopLevel.InputPane` (margine dal basso
+= altezza della vista − `OccludedRect.Y`); il foglio, che sta fuori dalle pagine, aggiunge anche il bordo sicuro di
+sotto. I bordi si leggono da `InsetsManager.SafeAreaPadding` al momento: il primo `SafeAreaChanged` arriva in pixel
+fisici.
 
 ### 9.5 Ciclo di vita delle pagine
 
@@ -319,6 +343,11 @@ togli i metadati, secondo la scelta in Diario e foto). Senza il permesso `CAMERA
 sistema non serve). "Dalla galleria" usa il selettore di foto di sistema, senza permessi. Se lo scatto si annulla non
 succede niente.
 
+Dalla sonda 4: la riga di `MediaStore` si crea **senza** `IS_PENDING` (con, la fotocamera Samsung non riesce a scriverci);
+annullato lo scatto, la riga vuota si cancella; il suo URI si salva fuori dalla memoria (il processo può morire mentre la
+fotocamera è aperta) e all'avvio si cancellano le nostre righe senza file. Lo scatto arriva ruotato con `Orientation`
+nei metadati: l'importazione D10 raddrizza i pixel prima di togliere i metadati.
+
 ### 10.4 Timer in secondo piano
 
 Una **notifica fissa** finché esiste un timer in `active_timer`, col cronometro disegnato da Android dall'orario d'inizio
@@ -327,6 +356,11 @@ serve). Niente "Ferma" (T7). La notifica segue `active_timer`: si mette all'avvi
 all'apertura dell'app si riallinea a ciò che c'è nel database (un timer sopravvissuto a un'uccisione dell'app riprende,
 una notifica orfana sparisce). Il permesso per le notifiche si chiede al primo timer, non al primo avvio; negato, il
 timer funziona lo stesso.
+
+Dalla sonda 3 (One UI): la notifica sopravvive all'uccisione in secondo piano e allo scorrere via dalle recenti; la
+tolgono "forza arresto" e l'aggiornamento dell'APK, quindi il riallineamento all'apertura è necessario. Toccata dopo la
+morte del processo, l'abitudine arriva in `OnNewIntent` (l'`OnCreate` col vecchio stato non ce l'ha): si leggono tutti e
+due.
 
 ### 10.5 Backup automatico dal telefono
 
@@ -386,8 +420,9 @@ Prima di ogni altro lavoro dell'onda 4 (primi task del piano, stesso branch):
 
 ## 13. Sonde, prima del piano
 
-App usa e getta fuori dal repo (`~/dev/_spike-telefono`), come la sonda di Drive; risultati in
-`docs/design/2026-11-2x-telefono-sonde.md`. Sul Galaxy S21 dell'autore, Release:
+**Fatte il 2026-11-24**, risultati in `docs/design/2026-11-24-telefono-sonde.md`: la 1 regge con tre regole (§7.1b,
+§9.6, indietro alla radice), la 2 sceglie RSA-OAEP e porta il quarto modo (T10), la 3 e la 4 aggiungono regole al §10,
+la 5 passa. App usa e getta fuori dal repo (`~/dev/_spike-telefono`). Sul Galaxy S21 dell'autore, Release:
 1. **Pagine di Avalonia 12**: `TabbedPage` in basso con quattro voci, `NavigationPage` con push/pop, gesto indietro di
    sistema (anche dalla radice), bordi sicuri, un foglio dal basso sopra la tastiera numerica (`AdjustResize`), una
    pagina con un `TextBox` lungo e la tastiera. Se fallisce: approccio 2 (§4).
@@ -440,7 +475,8 @@ cornice ripete la sonda 1 dentro il repo come **cancello**: se fallisce, il task
 
 ## 17. Rischi
 
-- Le pagine di Avalonia 12 sono nuove: difetti su Android (bordi sicuri, indietro, tastiera). Sonda 1, ripiego §4.2.
+- Le pagine di Avalonia 12 sono nuove: la sonda 1 ne ha trovati due (cornice riattaccata che non disegna, tastiera da
+  gestire a mano), aggirati (§7.1b, §9.6). Altri possono uscire; ripiego §4.2.
 - Samsung One UI è aggressivo coi processi in secondo piano: la notifica potrebbe sparire dopo un "forza arresto". Il
   timer non si perde comunque (`active_timer`).
 - Il tempo d'avvio potrebbe non scendere sotto i 3 s senza AOT; l'AOT aumenta il peso dell'APK.

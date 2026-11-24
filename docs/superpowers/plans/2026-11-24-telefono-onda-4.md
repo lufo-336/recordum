@@ -48,8 +48,10 @@ Avalonia 12 più un nostro `SheetHost`.
 ## Review Focus
 
 1. **L'activity ricreata** (rotazione, tema chiaro/scuro di sistema, ritorno dopo che Android ha distrutto l'activity
-   ma non il processo): nessuna seconda inizializzazione, nessun "Recordum è già aperto". Test in Task 3
-   (`AppStartup.RunAsync` chiamato due volte restituisce lo stesso `Task`) e voce di checklist in Task 14.
+   ma non il processo): nessuna seconda inizializzazione, nessun "Recordum è già aperto", e l'activity nuova riceve una
+   **cornice nuova** (la vecchia riattaccata non disegna le pagine: sonda 1, `docs/design/2026-11-24-telefono-sonde.md`).
+   Test in Task 3 (`AppStartup.RunAsync` chiamato due volte restituisce lo stesso `Task`), in Task 5 (cornice nuova
+   dagli stessi servizi) e voce di checklist in Task 14.
 2. **Un'impronta aggiunta al telefono dopo l'attivazione**: pagina della passphrase con la ragione, poi l'impronta si
    riattiva. Test in Task 10 (`DbUnlockService` mappa la ragione `KeyInvalidated`; `UnlockViewModel` mostra il testo e
    spunta la casella), prova a mano nella checklist.
@@ -127,7 +129,6 @@ public interface IAppHead
     HomeRows DefaultHomeRows { get; }                         // Desktop: Comfortable; Android: Compact
     void AddShellServices(IServiceCollection services);       // Desktop: AddRecordumDesktopShell(); Android: AddRecordumPhoneShell() + servizi Android
     bool RunsSync { get; }                                    // Desktop: true; Android: false finché non c'è l'ISyncFileStore del selettore (spec §10.6)
-    bool OffersBiometric { get; }                             // Desktop: false; Android: true (etichette dello sblocco, Task 10)
     TimeSpan ElapsedSinceProcessStart();                      // per StartupTimeline (Task 3)
     void Report(string line);                                 // Desktop: log in logs/; Android: log + logcat
 }
@@ -242,8 +243,12 @@ manifest unito contiene `INTERNET`.
 - `RecordumAndroidApplication : AvaloniaAndroidApplication<App>` con `CreateAppBuilder()` →
   `AppBuilder.Configure(() => new App { Head = new AndroidHead(this) }).UseAndroid()`. Il processo possiede lock,
   chiave e contenitore; l'activity riattacca la vista (spec §7.1b).
-- `MainActivity : AvaloniaMainActivity`, `WindowSoftInputMode = AdjustResize`, `ConfigurationChanges` orientamento,
-  dimensioni, `UiMode`. Indietro non gestito dall'app alla radice → `MoveTaskToBack(true)` (non chiude).
+- `MainActivity : AvaloniaMainActivity`, `[Activity(Name = "io.github.lufo336.recordum.MainActivity")]` (componente
+  stabile per `am start` e le misure), `LaunchMode = SingleTop`, `ConfigurationChanges` orientamento, dimensioni,
+  `ScreenLayout`, `SmallestScreenSize`, `UiMode` (con questi rotazione e tema non ricreano l'activity: sonda 1).
+  `AdjustResize` non serve a niente con `targetSdk` 36 (la tastiera si gestisce nella libreria, Task 5–6). Indietro non
+  gestito alla radice → `MoveTaskToBack(true)`: senza, `AvaloniaActivity` chiude l'activity (provato). Un `OnCreate`
+  dopo il primo dello stesso processo chiede alla libreria una cornice nuova (Task 5), prima di `base.OnCreate`.
 - `AndroidHead.ResolveOptions()` → `RecordumOptions.ForDirectory(Path.Combine(context.FilesDir.AbsolutePath, "Recordum"))`
   (`IsDefaultLocation` vero: è la cartella dei dati veri del telefono).
   `CreateSecretStore` → `NullSecretStore` fino al Task 10. `AddShellServices` → per ora solo le registrazioni comuni +
@@ -251,8 +256,9 @@ manifest unito contiene `INTERNET`.
 - Firma: `create-signing-key.sh` genera una volta `~/.local/share/recordum-signing/recordum-dogfood.jks` (alias
   `recordum`, RSA 4096, validità 30 anni) e mette la password nel portachiavi di GNOME (`secret-tool store --label
   "Recordum signing" service recordum-signing`); rifiuta di sovrascrivere un keystore esistente. `install-phone.sh`:
-  `dotnet publish -c Release` con `AndroidKeyStore=true` e le proprietà di firma (password da `secret-tool lookup`),
-  poi `adb install -r`; **non disinstalla mai**; se `adb install` risponde `INSTALL_FAILED_UPDATE_INCOMPATIBLE` si ferma
+  `dotnet publish -c Release` **pulito** (`--no-incremental`: dopo una modifica del solo manifest una build incrementale
+  ha dato un APK che muore all'avvio, `UnsatisfiedLinkError` su `n_onCreate`, sonda) con `AndroidKeyStore=true` e le
+  proprietà di firma (password da `secret-tool lookup`), poi `adb install -r`; **non disinstalla mai**; se `adb install` risponde `INSTALL_FAILED_UPDATE_INCOMPATIBLE` si ferma
   e spiega (trappola 24 di Quaestio); prima di installare chiede conferma che "Backup ora" sia stato fatto.
 - CI: job `android` su ubuntu, `dotnet workload install android`, JDK 21, `dotnet build src/Recordum.Android -c Release`
   senza firma di rilascio; poi una guardia sul manifest unito (`obj/Release/**/AndroidManifest.xml`): niente
@@ -272,8 +278,8 @@ manifest unito contiene `INTERNET`.
 
 ### Task 5: La cornice — cancello, barra in basso, pagine
 
-**Livello:** Sonnet; io sul telefono per il cancello. **Fermarsi e salire:** il cancello fallisce → si scrive il Task
-5-bis "cornice nostra" (spec §4.2) prima di andare avanti.
+**Livello:** Sonnet; io sul telefono. **Fermarsi e salire:** sul telefono la cornice vera si comporta diversamente dalla
+sonda (pagine vuote, indietro che chiude due pagine) → Task 5-bis "cornice nostra" (spec §4.2) prima di andare avanti.
 
 **Files:**
 - Create: `src/Recordum.UI/Phone/PhoneShell.axaml(.cs)` (un `TabbedPage` con `TabPlacement` in basso),
@@ -282,9 +288,12 @@ manifest unito contiene `INTERNET`.
 - Modify: `src/Recordum.Android/AndroidHead.cs` (`AddShellServices` → `AddRecordumPhoneShell()`)
 - Test: `tests/Recordum.UI.Tests/Phone/PhoneShellTests.cs`, `tests/Recordum.UI.Tests/Phone/PhoneShellServicesTests.cs`
 
-**Cancello (spec §13, sonda 1, ripetuta qui se non è già stata fatta fuori dal repo):** sul telefono, `PhoneShell` con
-quattro voci in basso, una `PushAsync` e il gesto indietro di sistema (anche alla radice), bordi sicuri (niente sotto la
-barra di stato o la barra dei gesti), rotazione e cambio tema senza perdere la pila. Risultato scritto nel registro.
+**Cancello: passato** (sonda 1 del 2026-11-24, `docs/design/2026-11-24-telefono-sonde.md` §1): `TabbedPage` in basso,
+push/pop, indietro, bordi sicuri, rotazione e tema reggono. Tre regole entrano qui: (1) **cornice nuova per
+un'activity nuova**; (2) indietro alla radice di Oggi non gestito (la testa fa `MoveTaskToBack`); (3) la cornice si
+alza sopra la tastiera da sola (margine dal basso = altezza − `InputPane.OccludedRect.Y` quando la tastiera è aperta e
+nessun foglio è aperto), perché con `targetSdk` 36 `AdjustResize` non fa niente. Ospite della cornice:
+`PageNavigationHost { Page = tabbedPage }`.
 
 **Interfaces — Produces:**
 - `PhoneNavigator : IHabitNavigator, IHabitTemplatePickerLauncher, IHabitBuilderLauncher, ISettingsWindowLauncher`
@@ -296,6 +305,9 @@ barra di stato o la barra dei gesti), rotazione e cambio tema senza perdere la p
 - `PhoneShell` si abbona a `HomeViewModel.HabitActivationRequested` (lo stesso evento che usa `MainWindowViewModel`) e
   spinge la pagina dell'abitudine; la barra del timer (`TimerStatusBarView`) sta sopra la barra delle voci.
 - `AddRecordumPhoneShell(this IServiceCollection)` = `AddRecordumAvaloniaCommon()` + `PhoneNavigator` + `PhoneStartupHost`.
+- `PhoneStartupHost.RebuildShell()`: se la Home è già stata mostrata, crea un `PhoneShell` nuovo dagli stessi servizi,
+  lo assegna a `MainView` e a `PhoneNavigator` (la pagina dell'abitudine aperta si chiude col suo scope); prima della
+  Home non fa niente (l'attesa o lo sblocco in corso restano). La chiama `MainActivity.OnCreate` dalla seconda activity.
 - Indietro (spec §9.2): foglio aperto → lo chiude (Task 6); pagina spinta → `PopAsync`; radice di una voce diversa da
   Oggi → seleziona Oggi; radice di Oggi → non gestito (la testa fa `MoveTaskToBack`). Implementato su
   `TopLevel.BackRequested` in un metodo `bool HandleBack()` di `PhoneShell`, provabile in headless.
@@ -307,11 +319,14 @@ barra di stato o la barra dei gesti), rotazione e cambio tema senza perdere la p
   `Back_on_the_root_of_Today_is_not_handled`; `PhoneShellServicesTests.All_launchers_resolve_to_PhoneNavigator`
   e `Every_host_abstraction_registered_by_the_desktop_head_is_also_registered_by_the_phone_head` (confronta i
   `ServiceType` delle due collezioni: una guardia che nessuna astrazione resta senza implementazione Android).
+  `PhoneStartupHostTests.RebuildShell_after_home_gives_a_new_shell_on_Today_with_the_same_HomeViewModel` e
+  `RebuildShell_before_home_does_nothing` (Review Focus 1).
   PNG `phone-shell-{light,dark}.png` con l'asserzione sulle quattro voci.
 - [ ] **Step 2:** implementare; `PhoneStartupHost` mostra `WaitingView`, poi la pagina di sblocco (la vista di oggi
   dentro una `ContentPage`), l'errore fatale (messaggio, percorso del log e `Startup_CopyDetails`, che copia messaggio e
   percorso con gli appunti di `TopLevel`), poi `PhoneShell` come `MainView`.
-- [ ] **Step 3:** verdi; sul telefono il cancello e la Home vera nella barra.
+- [ ] **Step 3:** verdi; sul telefono la Home nella barra, e la cornice nuova dopo un'activity ricreata (opzione
+  sviluppatore "Non conservare attività", poi rimessa com'era).
 - [ ] **Step 4:** commit `feat(phone): cornice con le pagine di Avalonia 12`.
 
 ---
@@ -319,7 +334,7 @@ barra di stato o la barra dei gesti), rotazione e cambio tema senza perdere la p
 ### Task 6: Il foglio dal basso e la conferma
 
 **Livello:** Sonnet (adatto ad agy con brief e test rossi). **Fermarsi e salire:** il foglio non sale sopra la tastiera
-sul telefono.
+sul telefono anche col margine dell'`InputPane` (la sonda 1 dice che basta).
 
 **Files:**
 - Create: `src/Recordum.UI/Phone/SheetHost.cs` (+ stile in `src/Recordum.UI/Themes/`), `src/Recordum.UI/Phone/PhoneConfirmationDialog.cs`
@@ -330,12 +345,17 @@ sul telefono.
 - `SheetHost : Control` con `Task<object?> ShowAsync(object content)` (il contenuto è un ViewModel o un controllo; si
   chiude con `Close(object? result)`, col gesto indietro o toccando lo sfondo → risultato `null`), `bool IsOpen`.
   Animazione contenuta (scorrimento ≤ 200 ms), sfondo `--scrim` del mockup, angoli 18, maniglia.
+  Sta fuori dalle pagine, quindi i bordi li mette lui: margine dal basso = `BottomInset(viewHeight, keyboardTop?,
+  safeBottom)` = `viewHeight − keyboardTop` con la tastiera aperta (`TopLevel.InputPane`, `OccludedRect.Y`), altrimenti
+  il bordo sicuro di sotto letto da `TopLevel.InsetsManager.SafeAreaPadding` al momento (il primo evento arriva in pixel).
+  `BottomInset` è statico e provabile.
 - `PhoneConfirmationDialog(Func<SheetHost?> host) : IConfirmationDialog` — titolo, messaggio, pulsante distruttivo sopra
   (non rosso, CLAUDE.md §11) e "Annulla" sotto; schermo 3c del mockup.
 
 - [ ] **Step 1: test rossi:** `SheetHostTests.Back_with_a_sheet_open_over_a_pushed_page_closes_only_the_sheet`
   (Review Focus 3: dopo `HandleBack()` il foglio è chiuso e la pagina spinta è ancora lì);
-  `Tapping_the_scrim_resolves_null`; `Confirm_returns_true_only_on_the_destructive_button`; PNG
+  `Tapping_the_scrim_resolves_null`; `Confirm_returns_true_only_on_the_destructive_button`;
+  `Bottom_inset_follows_the_keyboard_then_the_safe_area` (misure del S21: 800 e tastiera a 497 → 303; chiusa → 48); PNG
   `phone-confirm-{light,dark}.png` con l'asserzione che i due pulsanti siano larghi quanto il foglio.
 - [ ] **Step 2:** implementare. **Step 3:** verdi; sul telefono un foglio con un `TextBox` numerico sale sopra la tastiera.
 - [ ] **Step 4:** commit `feat(phone): foglio dal basso e conferma`.
@@ -447,10 +467,10 @@ public sealed record BackupSaveTarget(string Path, Func<CancellationToken, Task>
 
 ---
 
-### Task 10: Il portachiavi di Android con l'impronta
+### Task 10: Il portachiavi di Android: impronta e blocco schermo
 
-**Livello:** Sonnet scrive, Opus rivede (sicurezza). **Fermarsi e salire:** la sonda 2 (§13 della spec) non è stata
-fatta: si fa prima, fuori dal repo, e il suo esito sceglie fra le due cifrature sotto.
+**Livello:** Sonnet scrive, Opus rivede (sicurezza). **Fermarsi e salire:** sul telefono una chiave si comporta diversamente
+dalla sonda 2 (`docs/design/2026-11-24-telefono-sonde.md` §2).
 
 **Files:**
 - Modify: `src/Recordum.Core/Abstractions/Security/SecretStoreUnavailableException.cs` (+ `SecretDeclineReason? Declined`),
@@ -460,7 +480,8 @@ fatta: si fa prima, fuori dal repo, e il suo esito sceglie fra le due cifrature 
   `src/Recordum.Presentation/Services/IDeviceKeyAccess.cs`
 - Modify: `src/Recordum.Data/Security/DbUnlockService.cs` (`TryUnlockWithStoredKeyAsync`: un'eccezione con `Declined`
   → `StoredKeyOutcome.Declined`), `src/Recordum.UI/Bootstrap/StoredKeyUnlock.cs` (`Result` porta `Declined`),
-  `src/Recordum.Presentation/ViewModels/Startup/UnlockViewModel.cs` (testo della ragione, etichetta della casella)
+  `src/Recordum.Presentation/ViewModels/Startup/UnlockViewModel.cs` (testo della ragione, etichetta della casella),
+  `src/Recordum.Android/Properties/AndroidManifest.xml` (`USE_BIOMETRIC`)
 - Create: `src/Recordum.Android/Security/AndroidKeystoreSecretStore.cs`, `BiometricGate.cs`,
   `src/Recordum.Android/Security/AndroidDeviceKeyAccess.cs`, `src/Recordum.UI/Bootstrap/DesktopDeviceKeyAccess.cs`
 - Test: `tests/Recordum.Data.Tests/Security/DbUnlockServiceDeclinedTests.cs`, `tests/Recordum.Presentation.Tests/.../UnlockViewModelDeclinedTests.cs`,
@@ -471,46 +492,61 @@ fatta: si fa prima, fuori dal repo, e il suo esito sceglie fra le due cifrature 
 ```csharp
 public enum SecretDeclineReason { Cancelled, KeyInvalidated, TooManyAttempts, Unavailable }
 
-public enum DeviceUnlockMode { Biometric, Remembered, PassphraseEachTime }
+public enum DeviceUnlockMode { Biometric, ScreenLock, Remembered, PassphraseEachTime }   // spec §8.1, T10
 
-public interface IDeviceKeyAccess   // Presentation. Desktop: Remembered/PassphraseEachTime (dove ISecretStore.IsAvailable); Android: tutti e tre
+public interface IDeviceKeyAccess   // Presentation. Desktop: Remembered/PassphraseEachTime (dove ISecretStore.IsAvailable); Android: quelli che il telefono sa fare
 {
     IReadOnlyList<DeviceUnlockMode> SupportedModes { get; }
+    DeviceUnlockMode? ProposedMode { get; }                                             // la casella del primo avvio; null = nessuna casella
     Task<DeviceUnlockMode> GetModeAsync(CancellationToken ct = default);                 // fuori dal thread UI
     Task SetModeAsync(DeviceUnlockMode mode, CancellationToken ct = default);           // riscrive DbKey con la chiave aperta (IDbKeyProvider)
-    Task<bool> ConfirmUserAsync(CancellationToken ct = default);                        // per "Blocca di nuovo" (Task 11): impronta o passphrase secondo il modo
+    Task<bool> ConfirmUserAsync(CancellationToken ct = default);                        // per "Blocca di nuovo" (Task 11): riquadro o passphrase secondo il modo
 }
 ```
 
-**Decisioni (spec §8):**
-- `AndroidKeystoreSecretStore : ISecretStore`: due chiavi nel Keystore (`recordum.bio`: solo biometria forte,
-  `setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)`, `setInvalidatedByBiometricEnrollment(true)`;
-  `recordum.plain`: senza autenticazione). `DbKey` usa la chiave del modo (il modo è il nome del file cifrato:
-  `keystore/dbkey.bio` o `keystore/dbkey.plain`, nella cartella dati; nessun file = passphrase ogni volta).
-  `AutoBackup` usa sempre `recordum.plain`. Predefinito di una scrittura di `DbKey` senza file esistente: `bio`.
-- **Cifratura**, decisa dalla sonda 2: (a) RSA-OAEP, la chiave pubblica cifra senza chiedere il dito e la privata
-  decifra dietro `BiometricPrompt` → "Sblocca con l'impronta" al primo avvio costa un solo riquadro; oppure (b) AES-GCM,
-  che chiede il dito anche alla scrittura. Preferita (a) se la sonda la conferma sul S21.
-- `TryRead` di `dbkey.bio` gira su un thread del pool (contratto di `ISecretStore`): `BiometricGate` porta il riquadro
-  sul thread UI e aspetta. Annullato → `SecretStoreUnavailableException(Declined = Cancelled)`;
-  `KeyPermanentlyInvalidatedException` → cancella il file e lancia con `KeyInvalidated`; troppi tentativi →
-  `TooManyAttempts`; nessun sensore → `Unavailable`.
-- Il riquadro: titolo `Biometric_Title`, sottotitolo `Biometric_Subtitle`, pulsante negativo `Biometric_UsePassphrase`.
-- `UnlockViewModel`: col `Declined` mostra la riga gialla (`Unlock_Declined_*`); su Android la casella è
-  "Sblocca con l'impronta" (primo avvio) o "Torna a sbloccare con l'impronta" (dopo `KeyInvalidated`, spuntata), con la
-  nota "La passphrase resta il ripiego."; su desktop resta "Ricorda su questo dispositivo". `AppStartup` sceglie le
-  etichette con `head.OffersBiometric` (parametro del costruttore di `UnlockViewModel`, predefinito il valore di oggi).
-- Dopo `Cancelled`: un pulsante "Riprova con l'impronta" nella pagina della passphrase.
+**Decisioni (spec §8, T10, sonda 2):**
+- `AndroidKeystoreSecretStore : ISecretStore`, tre chiavi nel Keystore: `recordum.bio` (RSA 2048, OAEP, solo biometria
+  forte, `SetUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)`, `SetInvalidatedByBiometricEnrollment(true)`),
+  `recordum.lock` (RSA 2048, OAEP, `AUTH_BIOMETRIC_STRONG | AUTH_DEVICE_CREDENTIAL`,
+  `SetInvalidatedByBiometricEnrollment(false)`), `recordum.plain` (AES-GCM 256, senza autenticazione). `DbKey` usa la
+  chiave del modo; il modo è il nome del file cifrato (`keystore/dbkey.bio`, `dbkey.lock`, `dbkey.plain` nella cartella
+  dati; nessun file = passphrase ogni volta). `AutoBackup` usa sempre `recordum.plain`.
+- **RSA-OAEP** (scelta dalla sonda): OAEP con SHA-256 e MGF1 **SHA-1** (`OAEPParameterSpec("SHA-256", "MGF1",
+  MGF1ParameterSpec.Sha1, PSource.PSpecified.Default)`), cifratura con una copia "libera" della pubblica
+  (`KeyFactory…GeneratePublic(new X509EncodedKeySpec(pub.GetEncoded()))`): scrivere non chiede niente; decifrare passa
+  dal riquadro con `CryptoObject`. La chiave si passa a `Cipher.Init` come `IKey` (un cast a `IPrivateKey` lancia).
+- **Prima di scrivere con la pubblica** si prova `Init` della privata in decifratura: se lancia
+  `KeyPermanentlyInvalidatedException` si cancella e rigenera la coppia (la pubblica di una coppia invalidata cifra ancora:
+  provato). Il tipo si nomina nel `catch` (in Release, non nominato, arriva come `Java.Lang.Exception`).
+- `SupportedModes` su Android: `Biometric` se `BiometricManager.CanAuthenticate(BIOMETRIC_STRONG) == Success`;
+  `ScreenLock` se `KeyguardManager.IsDeviceSecure`; `Remembered` e `PassphraseEachTime` sempre. `ProposedMode`: il primo
+  fra `Biometric`, `ScreenLock`; nessuno dei due → null (passphrase ogni volta).
+- `TryRead` di `dbkey.bio`/`dbkey.lock` gira su un thread del pool (contratto di `ISecretStore`): `BiometricGate` porta il
+  riquadro sul thread UI (`RunOnUiThread`) e aspetta un `TaskCompletionSource` (provato). `OnAuthenticationError
+  (UserCanceled)` o il pulsante negativo → `SecretStoreUnavailableException(Declined = Cancelled)`;
+  `KeyPermanentlyInvalidatedException` → cancella il file e lancia con `KeyInvalidated`; lockout → `TooManyAttempts`;
+  nessun sensore → `Unavailable`.
+- Il riquadro: titolo `Biometric_Title`; con `bio` sottotitolo `Biometric_Subtitle` e pulsante negativo
+  `Biometric_UsePassphrase`; con `lock` sottotitolo `Biometric_Subtitle_ScreenLock` e **nessun** pulsante negativo
+  (Android lo vieta con `DEVICE_CREDENTIAL`): annullato il riquadro, si è già sulla pagina della passphrase.
+- `UnlockViewModel`: col `Declined` mostra la riga gialla (`Unlock_Declined_*`; `KeyInvalidated` col blocco schermo usa
+  `Unlock_Declined_KeyInvalidated_ScreenLock`); la casella segue `ProposedMode`: `Unlock_Biometric_Enable` /
+  `Unlock_ScreenLock_Enable` al primo avvio, `Unlock_Biometric_ReEnable` dopo `KeyInvalidated` (spuntata), con la nota
+  `Unlock_Biometric_Fallback`; su desktop resta "Ricorda su questo dispositivo"; null → nessuna casella.
+- Dopo `Cancelled`: un pulsante "Riprova" (`Unlock_RetryBiometric`) nella pagina della passphrase.
 
 - [ ] **Step 1: test rossi:** `DbUnlockServiceDeclinedTests`: un `ISecretStore` finto che lancia con ciascuna ragione →
   `StoredKeyOutcome.Declined` con la stessa ragione, nessun tentativo d'apertura; `KeyInvalidated` non cancella il salt.
-  `UnlockViewModelDeclinedTests`: per ogni ragione il testo atteso (cultura fissata), `RememberOnDevice` vero dopo
-  `KeyInvalidated`; senza `Declined` nessuna riga (parametro muto). `DeviceKeyAccessRegistrationTests`: le due teste
-  registrano `IDeviceKeyAccess`; desktop su Windows (DPAPI) non offre modi.
+  `UnlockViewModelDeclinedTests`: per ogni ragione il testo atteso (cultura fissata), anche `KeyInvalidated` col blocco
+  schermo; `RememberOnDevice` vero dopo `KeyInvalidated`; senza `Declined` nessuna riga (parametro muto); l'etichetta
+  della casella per `Biometric`, `ScreenLock` e null. `DeviceKeyAccessRegistrationTests`: le due teste registrano
+  `IDeviceKeyAccess`; desktop su Windows (DPAPI) non offre modi.
 - [ ] **Step 2:** implementare Core/Data/Presentation e le due teste.
-- [ ] **Step 3:** verdi. Sul telefono: primo avvio con impronta; riavvio con impronta; annullare → passphrase → riprova;
-  aggiungere un'impronta nelle impostazioni del telefono → riavvio → riga gialla, passphrase, impronta riattivata.
-- [ ] **Step 4:** commit `feat(android): portachiavi sul Keystore con l'impronta`.
+- [ ] **Step 3:** verdi. Sul telefono (l'autore ha solo il PIN: le impronte servono a tempo, come nella sonda):
+  primo avvio col blocco schermo (PIN); riavvio; annullare → passphrase → riprova; con un'impronta registrata, modo
+  impronta, poi un'impronta aggiunta → riavvio → riga gialla, passphrase, impronta riattivata; il blocco schermo regge
+  l'impronta aggiunta.
+- [ ] **Step 4:** commit `feat(android): portachiavi sul Keystore, impronta e blocco schermo`.
 
 ---
 
@@ -661,19 +697,24 @@ generato dalla build: `EFOptimizeContext`, pacchetto `Microsoft.EntityFrameworkC
 | `Phone_Statistics_ComingSoon` | Charts are built on the computer. You'll be able to view them here. | I grafici si costruiscono al computer. Qui si potranno guardare. |
 | `Biometric_Title` | Unlock your data | Sblocca i tuoi dati |
 | `Biometric_Subtitle` | Use your fingerprint | Usa l'impronta |
+| `Biometric_Subtitle_ScreenLock` | Use your screen lock | Usa il blocco schermo |
 | `Biometric_UsePassphrase` | Use passphrase | Usa la passphrase |
 | `Unlock_Declined_KeyInvalidated` | A fingerprint was added to this phone. For safety, this time we need your passphrase. | È stata aggiunta un'impronta a questo telefono. Per sicurezza, questa volta serve la passphrase. |
-| `Unlock_Declined_Cancelled` | Fingerprint unlock was cancelled. | Sblocco con l'impronta annullato. |
-| `Unlock_Declined_TooManyAttempts` | Too many fingerprint attempts. Use your passphrase. | Troppi tentativi con l'impronta. Usa la passphrase. |
+| `Unlock_Declined_Cancelled` | Unlock was cancelled. | Sblocco annullato. |
+| `Unlock_Declined_TooManyAttempts` | Too many attempts. Use your passphrase. | Troppi tentativi. Usa la passphrase. |
+| `Unlock_Declined_KeyInvalidated_ScreenLock` | The phone's screen lock changed. For safety, this time we need your passphrase. | Il blocco schermo del telefono è cambiato. Per sicurezza, questa volta serve la passphrase. |
 | `Unlock_Declined_Unavailable` | Fingerprint isn't available on this phone right now. | L'impronta ora non è disponibile su questo telefono. |
-| `Unlock_RetryBiometric` | Try fingerprint again | Riprova con l'impronta |
+| `Unlock_RetryBiometric` | Try again | Riprova |
 | `Unlock_Biometric_Enable` | Unlock with fingerprint | Sblocca con l'impronta |
 | `Unlock_Biometric_ReEnable` | Unlock with fingerprint again | Torna a sbloccare con l'impronta |
+| `Unlock_ScreenLock_Enable` | Unlock with the phone's screen lock | Sblocca col blocco schermo del telefono |
 | `Unlock_Biometric_Fallback` | Your passphrase stays as the fallback. | La passphrase resta il ripiego. |
 | `Security_Title` | Security | Sicurezza |
 | `Security_Group_Opening` | Opening | Apertura |
 | `Security_Mode_Biometric` | With fingerprint | Con l'impronta |
-| `Security_Mode_Biometric_Hint` | Default. Your passphrase stays as the fallback. | Predefinita. La passphrase resta il ripiego. |
+| `Security_Mode_Biometric_Hint` | Only the fingerprint, not the PIN. Your passphrase stays as the fallback. | Solo l'impronta, non il PIN. La passphrase resta il ripiego. |
+| `Security_Mode_ScreenLock` | With screen lock | Col blocco schermo |
+| `Security_Mode_ScreenLock_Hint` | Fingerprint or the phone's PIN, as when you unlock it. Your passphrase stays as the fallback. | Impronta o PIN del telefono, come quando lo sblocchi. La passphrase resta il ripiego. |
 | `Security_Mode_Remembered` | Without asking | Senza chiedere |
 | `Security_Mode_Remembered_Hint` | The phone's screen lock is enough. Your data stays encrypted on disk. | Basta il blocco schermo del telefono. I dati restano cifrati sul disco. |
 | `Security_Mode_Passphrase` | Passphrase every time | Passphrase ogni volta |
