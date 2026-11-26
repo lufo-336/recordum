@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svm="using:Recordum.Presentation.ViewModels.Startup"
+             xmlns:res="using:Recordum.Presentation.Resources"
+             x:Class="Recordum.UI.Views.Startup.UnlockView"
+             x:DataType="svm:UnlockViewModel"
+             FontFamily="{DynamicResource Font.Default}"
+             Background="{DynamicResource Brush.Background}">
+  <StackPanel Margin="28,24" Spacing="12">
+    <!-- Il marchio in serif (direzione visiva §5), poi una frase su cosa succede e un solo pulsante. -->
+    <TextBlock Text="{x:Static res:Strings.AppTitle}" HorizontalAlignment="Center" Margin="0,0,0,4"
+               FontFamily="{DynamicResource Font.Serif}" FontSize="28" FontWeight="SemiBold"
+               Foreground="{DynamicResource Brush.Text}"/>
+    <TextBlock Name="Heading"
+               Text="{Binding Heading}"
+               FontSize="{DynamicResource FontSize.Heading}" FontWeight="SemiBold"
+               Foreground="{DynamicResource Brush.Text}"/>
+    <TextBlock Name="HintText" Text="{Binding Hint}"
+               IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBlock Name="StoredKeyRejectedText" Text="{Binding StoredKeyRejectedMessage}"
+               IsVisible="{Binding StoredKeyRejected}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.Danger}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBlock Text="{x:Static res:Strings.Unlock_PassphraseLabel}"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBox Name="PassphraseBox" PasswordChar="•" Text="{Binding Passphrase, Mode=TwoWay}"/>
+    <StackPanel Name="ConfirmBlock" Spacing="12" IsVisible="{Binding RequiresConfirmation}">
+      <TextBlock Text="{x:Static res:Strings.Unlock_ConfirmLabel}"
+                 Foreground="{DynamicResource Brush.TextMuted}"
+                 FontSize="{DynamicResource FontSize.Small}"/>
+      <TextBox Name="ConfirmBox" PasswordChar="•" Text="{Binding Confirmation, Mode=TwoWay}"/>
+    </StackPanel>
+    <CheckBox Name="RememberBox" Content="{Binding RememberLabel}"
+              AutomationProperties.Name="{x:Static res:Strings.Unlock_RememberOnDevice}"
+              IsVisible="{Binding ShowRemember}"
+              IsEnabled="{Binding CanRemember}"
+              IsChecked="{Binding RememberOnDevice, Mode=TwoWay}"/>
+    <TextBlock Name="RememberUnavailableText" Text="{Binding RememberUnavailableHint}"
+               IsVisible="{Binding ShowRememberUnavailable}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <TextBlock Name="ErrorText" Text="{Binding ErrorMessage}"
+               IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+               TextWrapping="Wrap"
+               Foreground="{DynamicResource Brush.Danger}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+    <Button Name="SubmitButton" Classes="primary"
+            HorizontalAlignment="Right" Padding="16,8"
+            IsEnabled="{Binding !IsBusy}"
+            IsDefault="True"
+            Command="{Binding SubmitCommand}"
+            Content="{x:Static res:Strings.Unlock_Submit}"/>
+    <!-- Alla creazione l'avvertenza e' gia' nel Hint sopra: dirla due volte e' rumore. Agli avvii dopo, e' l'unica. -->
+    <TextBlock Name="LostPassphraseText" Text="{x:Static res:Strings.Unlock_LostPassphrase}" TextWrapping="Wrap" Margin="0,4,0,0"
+               IsVisible="{Binding !RequiresConfirmation}"
+               Foreground="{DynamicResource Brush.TextMuted}"
+               FontSize="{DynamicResource FontSize.Small}"/>
+  </StackPanel>
+</UserControl>

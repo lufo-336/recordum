@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>30</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ApplicationId>io.github.lufo336.recordum</ApplicationId>
+    <ApplicationTitle>Recordum</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.4</ApplicationDisplayVersion>
+    <!-- -p:RecordumRid=android-x64 per l'emulatore; un -r da riga di comando e' globale e arriva ai progetti condivisi. -->
+    <RecordumRid Condition="'$(RecordumRid)' == ''">android-arm64</RecordumRid>
+    <RuntimeIdentifier>$(RecordumRid)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- CS8012: i progetti condivisi si costruiscono col RID dell'host (Directory.Build.props, linux-x64) e risultano
+         "x64", ma sono IL puro (net10.0, AnyCPU nei fatti): l'avviso non vale per loro, e il RID non si può togliere
+         senza riportare la build "tutti i RID". Sonda 2026-11-10: girano su arm64. -->
+    <NoWarn>$(NoWarn);CS8012</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="Android.App;Android.Widget;Android.OS;Android.Runtime;Android.Content;Android.Views" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Android" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Tutti i progetti, anche i transitivi: l'SDK aggiunge da sé i riferimenti transitivi SENZA
+         GlobalPropertiesToRemove, e allora Core/Data/... ricevono il RID android-arm64 (NETSDK1047). Come nella sonda. -->
+    <ProjectReference Include="../Recordum.Core/Recordum.Core.csproj" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <ProjectReference Include="../Recordum.Data/Recordum.Data.csproj" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <ProjectReference Include="../Recordum.Plugins/Recordum.Plugins.csproj" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <ProjectReference Include="../Recordum.Plugins.Contracts/Recordum.Plugins.Contracts.csproj" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <ProjectReference Include="../Recordum.Presentation/Recordum.Presentation.csproj" GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+    <ProjectReference Include="../Recordum.UI/Recordum.UI.csproj"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+  </ItemGroup>
+</Project>

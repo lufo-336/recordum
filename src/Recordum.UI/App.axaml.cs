@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Recordum.UI.Bootstrap;
 using Recordum.UI.Diagnostics;
+using Recordum.UI.Phone;
 
 namespace Recordum.UI;
 
@@ -43,8 +44,12 @@ public partial class App : Application
                     _ = startup.RunAsync();
                     break;
 
-                case ISingleViewApplicationLifetime:
-                    throw new NotSupportedException("PhoneStartupHost arriva col Task 5");
+                case ISingleViewApplicationLifetime single:
+                    // Sul telefono non c'e' Exit (il processo lo uccide Android; il lock e' un file con lock del
+                    // sistema, si rilascia con il processo) e OnFrameworkInitializationCompleted gira una volta per
+                    // processo (sonda 1). MainView va assegnato prima di base.OnFrameworkInitializationCompleted().
+                    _ = new AppStartup(head, new PhoneStartupHost(root => single.MainView = root)).RunAsync();
+                    break;
             }
         }
 

@@ -1,6 +1,6 @@
 name: CI
 
-# Due job: Linux esegue le suite portabili, Windows le stesse piu' i test WindowsOnly (DPAPI).
+# Tre job: Linux esegue le suite portabili, Windows le stesse piu' i test WindowsOnly (DPAPI), Android compila l'APK e controlla il manifest.
 # I push di sola documentazione non consumano minuti: l'autore pusha a ogni .md.
 on:
   push:
@@ -116,3 +116,22 @@ jobs:
         with:
           name: trx-windows
           path: TestResults/**
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Workload Android
+        run: dotnet workload install android
+      - name: Build
+        run: dotnet build src/Recordum.Android/Recordum.Android.csproj -c Release
+      - name: Guardia manifest
+        run: bash scripts/android/check-manifest.sh
