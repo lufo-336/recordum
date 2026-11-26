@@ -40,5 +40,5 @@ public sealed class DesktopHead(IReadOnlyList<string> args) : IAppHead
 
     public TimeSpan ElapsedSinceProcessStart() => Stopwatch.GetElapsedTime(_start);
 
-    public void Report(string line) => CrashLogger.Log(line, null);
+    public void Report(string line) => CrashLogger.Info(line);
 }

@@ -120,6 +120,19 @@ public static class CrashLogger
         e.SetObserved();
     }
 
+    public static void Info(string line)
+    {
+        if (_logPath is null) return;
+        try
+        {
+            Append($"[{Now()}] {line}");
+        }
+        catch
+        {
+            // Swallow — logger must never throw.
+        }
+    }
+
     public static void Log(string source, Exception? ex)
     {
         if (_logPath is null) return;

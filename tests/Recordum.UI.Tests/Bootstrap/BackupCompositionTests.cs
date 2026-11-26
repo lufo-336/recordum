@@ -140,7 +140,7 @@ public sealed class BackupCompositionTests : IDisposable
     }
 
     [Fact]
-    public async Task InitializeAsync_starts_the_backup_host_after_the_core_initializer()
+    public async Task The_backup_host_starts_after_the_core_initializer()
     {
         var threads = new List<int>();
         var services = new ServiceCollection();
@@ -153,7 +153,9 @@ public sealed class BackupCompositionTests : IDisposable
         services.AddSingleton(new BackupSchedulerOptions { InitialDelay = TimeSpan.FromMilliseconds(20), Interval = TimeSpan.FromMilliseconds(20) });
         using var sp = services.BuildServiceProvider();
 
+        // Task 3 dell'onda 4: InitializeAsync non avvia piu' gli scheduler, lo fa AppStartup dopo la Home.
         await AppComposition.InitializeAsync(sp);
+        AppComposition.StartBackupScheduler(sp);
         await Task.Delay(500);
 
         lock (threads) threads.Should().NotBeEmpty();

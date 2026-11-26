@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Recordum.Presentation.Bootstrap;
+using Recordum.UI.Bootstrap;
 using Recordum.UI.Tests.Fixtures;
 using Xunit;
 
@@ -26,12 +27,12 @@ public class AppStartupTests
     public void A_seed_flag_on_the_real_data_folder_is_refused_before_the_unlock(string flag)
     {
         // F1 review m4: prima si sbloccava (e al primo avvio si creavano passphrase e database veri), poi l'errore.
-        App.SeedRefusedOnRealData([flag, "Corsa"], Options(isDefaultLocation: true)).Should().BeTrue();
+        AppStartup.SeedRefusedOnRealData([flag, "Corsa"], Options(isDefaultLocation: true)).Should().BeTrue();
     }
 
     [Theory]
     [InlineData("--seed-demo", false)]
     [InlineData("--other", true)]
     public void A_scratch_folder_or_no_seed_flag_is_not_refused(string flag, bool isDefaultLocation)
-        => App.SeedRefusedOnRealData([flag], Options(isDefaultLocation)).Should().BeFalse();
+        => AppStartup.SeedRefusedOnRealData([flag], Options(isDefaultLocation)).Should().BeFalse();
 }

@@ -134,6 +134,8 @@ public static class Strings
     public static string StartupErrorTitle => Get(nameof(StartupErrorTitle));
     public static string StartupErrorMessage => Get(nameof(StartupErrorMessage));
     public static string Startup_AlreadyRunning => Get("Startup.AlreadyRunning");
+    public static string Startup_Waiting_Opening => Get("Startup.Waiting.Opening");
+    public static string Startup_Waiting_Preparing => Get("Startup.Waiting.Preparing");
 
     // Home screen tabs
     public static string Home_Tab_Active => Get("Home.Tab.Active");

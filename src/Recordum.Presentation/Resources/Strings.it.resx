@@ -1725,6 +1725,12 @@ Dettagli: {0}</value>
   <data name="Error.Recoverable.Message" xml:space="preserve">
     <value>L'operazione non è stata completata, probabilmente perché i dati sono cambiati nel frattempo. L'app continua; i dettagli sono nel log.</value>
   </data>
+  <data name="Startup.Waiting.Opening" xml:space="preserve">
+    <value>Apro i tuoi dati…</value>
+  </data>
+  <data name="Startup.Waiting.Preparing" xml:space="preserve">
+    <value>Preparo la giornata…</value>
+  </data>
   <data name="Startup.AlreadyRunning" xml:space="preserve">
     <value>Recordum è già aperto. Passa alla finestra già in esecuzione.</value>
   </data>

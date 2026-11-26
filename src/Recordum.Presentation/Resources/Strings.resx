@@ -70,6 +70,14 @@
     <value>Recordum failed to start</value>
     <comment>Title of the fatal startup error dialog.</comment>
   </data>
+  <data name="Startup.Waiting.Opening" xml:space="preserve">
+    <value>Opening your data…</value>
+    <comment>Status while the data folder is opened, before unlocking (phone task 3).</comment>
+  </data>
+  <data name="Startup.Waiting.Preparing" xml:space="preserve">
+    <value>Getting your day ready…</value>
+    <comment>Status after unlocking, until Home appears (phone task 3).</comment>
+  </data>
   <data name="Startup.AlreadyRunning" xml:space="preserve">
     <value>Recordum is already open. Switch to the window that is already running.</value>
     <comment>A second copy was started on the same data folder: only one may use it at a time (Passo 0, task 0.4).</comment>

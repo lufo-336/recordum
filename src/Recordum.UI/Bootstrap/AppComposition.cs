@@ -78,14 +78,13 @@ public static class AppComposition
         else services.AddSingleton<IAutoBackupKeyStore>(sp => new SecretStoreAutoBackupKeyStore(sp.GetRequiredService<ISecretStore>()));
     }
 
-    /// <summary>L'avvio della shell: <c>CoreInitializer</c>, poi lo scheduler dell'auto-backup e quello dell'unione.
-    /// Un solo punto, cosi' un test passa dallo stesso percorso di <c>App</c>.</summary>
-    public static async Task InitializeAsync(IServiceProvider services)
+    /// <summary>Inizializza il database e i passi di <see cref="CoreInitializer"/>. Gli scheduler di
+    /// auto-backup e unione si avviano a parte dopo la Home (<see cref="StartBackupScheduler"/>,
+    /// <see cref="StartSyncSchedulerAsync"/>).</summary>
+    public static Task InitializeAsync(IServiceProvider services)
     {
-        await services.GetRequiredService<CoreInitializer>().InitializeAsync().ConfigureAwait(true);
-        StartBackupScheduler(services);
-        // Il primo giro non si attende: l'avvio non aspetta la cartella di scambio (il giro non lancia, logga).
-        _ = StartSyncSchedulerAsync(services);
+        ArgumentNullException.ThrowIfNull(services);
+        return services.GetRequiredService<CoreInitializer>().InitializeAsync();
     }
 
     /// <summary>Avvia lo scheduler dell'auto-backup: dopo <c>CoreInitializer</c> (il DB e' migrato), con l'attesa del
