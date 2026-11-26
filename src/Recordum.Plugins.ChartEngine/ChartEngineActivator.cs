@@ -1,22 +1,16 @@
-using Recordum.Plugins.Contracts.ExtensionPoints;
 using Recordum.Plugins.Contracts.Hosting;
 
 namespace Recordum.Plugins.ChartEngine;
 
-public sealed class ChartEngineActivator(IPluginManager manager, IExtensionPointRegistry registry) : IChartEngineActivator
+// Dal 2026-11-24 il plugin non registra piu' un IChartRenderer: il renderer era WPF (spenta).
+// Il renderer Avalonia arrivera' con la sua onda; per ora il plugin si attiva e basta.
+public sealed class ChartEngineActivator(IPluginManager manager) : IChartEngineActivator
 {
     public async Task ActivateAsync(CancellationToken ct = default)
     {
         // Idempotent: ApplicationInitializer.InitializeAsync may run more than once.
-        var already = registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer);
-        foreach (var e in already)
-        {
-            if (e.PluginId == ChartEngineManifest.PluginId) return;
-        }
+        if (manager.ListActivatedManifests().Any(m => m.Id == ChartEngineManifest.PluginId)) return;
 
-        var manifest = ChartEngineManifest.Create();
-        await manager.EnableAsync(manifest, ct).ConfigureAwait(false);
-        var renderer = new ChartEngineRenderer();
-        registry.Register(new ExtensionRegistration(manifest.Id, WellKnownExtensionPoints.ChartRenderer, renderer));
+        await manager.EnableAsync(ChartEngineManifest.Create(), ct).ConfigureAwait(false);
     }
 }

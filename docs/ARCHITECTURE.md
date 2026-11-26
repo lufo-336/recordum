@@ -10,7 +10,7 @@ Recordum is a layered .NET solution. The lower layers know nothing about the UI,
 reused unchanged by future front-ends (mobile, web, sync).
 
 ```
-Recordum.WPF ──────────────► the Windows desktop app (Views + ViewModels + DI bootstrap)
+Recordum.UI ───────────────► the Avalonia desktop app (Views + DI bootstrap; ViewModels in Recordum.Presentation)
      │
      ├──► Recordum.Data ────► EF Core + SQLite3MC (SQLCipher 4 format): DbContext, migrations, service impls
      │        │
@@ -22,8 +22,8 @@ Recordum.WPF ──────────────► the Windows desktop a
 ```
 
 **Dependency rule:** dependencies point *downward* only. `Recordum.Core` has no dependency on EF,
-WPF, or anything else — it is the shared vocabulary. `Recordum.Data` implements Core's service
-interfaces against EF Core. `Recordum.WPF` composes everything via dependency injection.
+the UI, or anything else — it is the shared vocabulary. `Recordum.Data` implements Core's service
+interfaces against EF Core. `Recordum.UI` composes everything via dependency injection.
 
 ## Layer by layer
 
@@ -43,7 +43,7 @@ with every key in `Security/CipherPragmas`). Highlights:
 - **`RecordumDbContext`** with Fluent configurations. All cascade rules and indexes are declared
   **explicitly** — never left to EF defaults.
 - **Migrations** are the source of truth for the schema (currently **v2.12**). Add one with
-  `dotnet ef migrations add <Name> --project src/Recordum.Data --startup-project src/Recordum.WPF`,
+  `dotnet ef migrations add <Name> --project src/Recordum.Data --startup-project src/Recordum.Data`,
   and verify the generated SQL against the schema docs before applying. The generated
   `*.Designer.cs` / `*ModelSnapshot.cs` files are **never** hand-edited (a repo hook enforces this).
 - **`TimestampInterceptor`** auto-populates `CreatedAt` / `UpdatedAt` / `UpdatedAtMs` (and plugin
@@ -71,10 +71,10 @@ capabilities through extension points, rather than reaching into the core direct
 is the stable surface plugins compile against; `Recordum.Plugins` is the runtime (in-process host,
 `EventBus`, `ExtensionPointRegistry`, API router). A sandboxed WebView2 host is planned for later.
 
-### Recordum.WPF — the app
-MVVM with `CommunityToolkit.Mvvm`. `Bootstrap/` wires up DI, applies migrations at startup
-(`ApplicationInitializer`), and shows a localized fatal dialog on failure. Views bind to ViewModels;
-ViewModels depend only on Core interfaces.
+### Recordum.UI — the app
+Avalonia shell. ViewModels (`CommunityToolkit.Mvvm`) live in `Recordum.Presentation`, which has no UI
+reference; `Recordum.UI` holds the views and wires up DI and startup (`CoreInitializer` applies migrations).
+The old WPF shell was removed on 2026-11-24.
 
 ## The domain model
 
@@ -107,7 +107,7 @@ a shared `ScaleTemplate` — CSS-style specificity; the stored value is always t
 
 ## The desktop UI shape
 
-`Recordum.WPF` is organized around a **workspace shell**: a home tree on the left and a habit screen
+`Recordum.UI` is organized around a **workspace shell**: a home tree on the left and a habit screen
 made of toggleable side-by-side **columns** (Panoramica, Diario, Cronologia, Dettaglio, Note,
 Configura). Each column is a focused ViewModel:
 
@@ -183,7 +183,7 @@ Cross-device synchronization relies on encrypted `.rcsync` exchange files on a s
 
 ## Conventions cheat-sheet
 
-- Time only via `IClock`; a `DispatcherTimer` is created only when a WPF app is actually running
+- Time only via `IClock`; timers go through `ITickSource`
   (so headless unit tests stay deterministic).
 - User strings in `.resx` (English first). Adding one = an entry in `Strings.resx` + `Strings.it.resx`
   + one accessor line in `Strings.Designer.cs` (this designer is hand-maintained, not codegen).

@@ -1,6 +1,6 @@
 name: CI
 
-# Due job: Linux esegue le suite portabili, Windows tutto (WPF, DPAPI, ChartEngine compresi).
+# Due job: Linux esegue le suite portabili, Windows le stesse piu' i test WindowsOnly (DPAPI).
 # I push di sola documentazione non consumano minuti: l'autore pusha a ogni .md.
 on:
   push:
@@ -42,7 +42,7 @@ jobs:
           cat > "$RUNNER_TEMP/linux-tests.sh" <<'EOF'
           echo -n ci | gnome-keyring-daemon --unlock --components=secrets > /dev/null
           rc=0
-          for p in Core Presentation UI Plugins Plugins.ExportEngine; do
+          for p in Core Presentation UI Plugins Plugins.ExportEngine Plugins.ChartEngine; do
             dotnet test "tests/Recordum.$p.Tests" --no-build --filter "Category!=Performance" --logger "trx;LogFileName=$p.trx" --results-directory TestResults < /dev/null || rc=1
           done
           # DPAPI esiste solo su Windows: quelle classi portano il tratto WindowsOnly. I test di prestazioni
@@ -103,15 +103,6 @@ jobs:
           name: recbak-fixture-windows
           path: ${{ runner.temp }}\recbak\windows.recbak
           if-no-files-found: error
-      # Serializzata: in parallelo la suite WPF può appendersi a zero fallimenti (W24-E1).
-      - name: Test WPF
-        if: always()
-        timeout-minutes: 25
-        shell: pwsh
-        run: >
-          dotnet test tests/Recordum.WPF.Tests --no-build --blame-hang-timeout 10m
-          --logger "trx;LogFileName=WPF.trx" --results-directory TestResults
-          -- xUnit.ParallelizeTestCollections=false
       - name: Screenshots
         if: always()
         uses: actions/upload-artifact@v4

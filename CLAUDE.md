@@ -27,8 +27,8 @@ esplicito > implicito (soprattutto cascade e mapping EF).
 
 ## 3. Dove siamo
 
-v1.0 in arrivo **su Avalonia** (Windows + Linux + un APK Android, deciso il 2026-11-10); WPF è congelata e si spegne
-all'onda F8. Checklist a schermo dell'autore: `docs/CHECKLIST.md`. Stato e prossimo passo:
+v1.0 in arrivo **su Avalonia** (Windows + Linux + un APK Android, deciso il 2026-11-10); la WPF è spenta (2026-11-24,
+spec telefono T3: rimossa dal repo, F8 anticipato). Checklist a schermo dell'autore: `docs/CHECKLIST.md`. Stato e prossimo passo:
 `docs/ROADMAP.md` — **a fine sessione si aggiorna quella pagina**, non si aggiunge cronaca qui. Findings: tracker
 `docs/phase-4-issues.md` (stati `reported / verified / triaged / in-progress / fixed / verified-fixed`).
 
@@ -41,8 +41,7 @@ all'onda F8. Checklist a schermo dell'autore: `docs/CHECKLIST.md`. Stato e pross
 | `Recordum.Plugins.Contracts` / `.Plugins` | contratti e host in-process dei plugin first-party. |
 | `Recordum.Presentation` | `net10.0`, **zero UI**: ViewModel (CommunityToolkit.Mvvm), `Strings`, servizi portabili, bootstrap (`AddRecordumCore`, `CoreInitializer`, `RecordumOptions`). Referenzia Data: i ViewModel usano i servizi di query direttamente. |
 | `Recordum.UI` | shell **Avalonia 12** — la v1.0. |
-| `Recordum.WPF` | shell vecchia, congelata: si tocca solo per difetti di dati o sicurezza. |
-| `Plugins.ChartEngine` / `.ExportEngine` | grafici (renderer WPF, da spezzare a F7) ed export (PDF, HTML, MD, JSON, CSV). |
+| `Plugins.ChartEngine` / `.ExportEngine` | grafici (oggi senza renderer: quello WPF è sparito, quello Avalonia è F7) ed export (PDF, HTML, MD, JSON, CSV). |
 
 Dettagli: `docs/ARCHITECTURE.md`. Autorità tecnica: il codice, le migrazioni e `ARCHITECTURE.md`; per il sistema plugin,
 provenance e cifratura la spec `docs/superpowers/specs/2026-05-13-plugin-system-design.md` (§2.4, §11). I `.docx` di un
@@ -52,7 +51,7 @@ tempo non fanno più testo.
 lavora); `NoWpfReferenceTests` asserisce `TargetPlatformAttribute` null. Un ViewModel che ha bisogno dell'host lo chiede
 tramite un'astrazione (`ITickSource`, `IApplicationLifetime`, `IClipboard`, `IEditorAvailability`, `IConfirmationDialog`,
 dialog e launcher) e non legge mai un pennello da un dizionario di risorse (dichiara un'intenzione, es. `MarkerTint`). Ogni
-astrazione nuova: due implementazioni (WPF, UI) e un test della registrazione DI — un servizio mancante compila e muore
+astrazione nuova: una per testa (Desktop, Android) e un test della registrazione DI — un servizio mancante compila e muore
 all'avvio.
 
 **Plugin**: un servizio che crea entità per conto di un plugin lo fa dentro uno scope con `IPluginContext.PluginId`
@@ -84,7 +83,7 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   `SyncConnectionInterceptor` non può scrivere: "no such function"); una migrazione che ricostruisce `sync_tombstone`
   toglie prima i `trg_sync_*`; durante l'unione `SyncConnectionState.Applying` va acceso solo sulla connessione aperta da EF.
 - **Migrazioni**: `dotnet ef migrations add <Nome> --project src/Recordum.Data --startup-project src/Recordum.Data`
-  (startup = Data, non WPF). Nel file generato aggiungere `#pragma warning disable CA1861` dopo `#nullable disable`. Un
+  (startup = Data). Nel file generato aggiungere `#pragma warning disable CA1861` dopo `#nullable disable`. Un
   bump di `schema_version` tocca 8 riferimenti nei test, nomi dei metodi compresi. Mai editare a mano `*.Designer.cs` e
   `*ModelSnapshot.cs` di EF.
 
@@ -130,9 +129,8 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
 - Mai svuotare una collezione che è `ItemsSource` bindata two-way senza sospendere la persistenza e riaffermare il valore
   dopo (`4d01f9c`: dati azzerati).
 - `AsyncRelayCommand.ExecuteAsync` non consulta `CanExecute`: la guardia va anche dentro il metodo.
-- WPF formatta e interpreta con `FrameworkElement.Language` (en-US di default): `CultureBootstrap` all'avvio,
-  `NumericInputRule` sui campi numerici; la cultura si fissa una volta per processo, quindi cambiarla richiede il riavvio.
-  Avalonia con binding compilati usa la cultura del thread.
+- La cultura si fissa una volta per processo, quindi cambiarla richiede il riavvio. Avalonia con binding compilati usa la
+  cultura del thread.
 
 ## 9. Come si lavora
 
@@ -145,7 +143,7 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
   che è mantenuto a mano e si edita **solo via shell** (l'hook `guard-generated.js` blocca Edit/Write sui `*.Designer.cs`).
 - **Piani**: decisioni, interfacce, obblighi di test e trappole — non codice da ricopiare. Ogni onda si chiude con una
   review dell'intero branch (trova ciò che le review per task non vedono) e con la CI verde.
-- **Macchine**: Fedora (sviluppo quotidiano), VM Windows (WPF e controlli a schermo), Mac secondario. Cosa viaggia e cosa
+- **Macchine**: Fedora (sviluppo quotidiano), VM Windows (controlli a schermo), Mac secondario. Cosa viaggia e cosa
   no: `docs/dev-environment-sync.md`. Il plugin `superpowers` va installato su ogni macchina.
 
 ## 10. Build, test, CI
@@ -154,14 +152,13 @@ valorizzato; le funzioni first-party (grafici, export) passano da `IExtensionPoi
 export DOTNET_ROOT="$HOME/.dotnet" PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"   # Linux, SDK utente
 dotnet build Recordum.slnx -p:EnableWindowsTargeting=true
 dotnet test tests/Recordum.Data.Tests --filter "Category!=WindowsOnly"                # Linux
-dotnet test tests/Recordum.WPF.Tests -- xUnit.ParallelizeTestCollections=false         # solo Windows, serializzata
 ```
 
 - **Mai `-p:UseAppHost=false` da riga di comando**: è già il default in `Directory.Build.props`, e da riga di comando
   rompe `Recordum.UI.Tests` (xunit v3 vuole l'apphost). RID per host (win-x64 / linux-x64), `SelfContained=false`.
 - Versioni dei pacchetti **esatte** in `Directory.Packages.props` (niente wildcard: SEC-1 è nato da uno). EF Core 10.
 - `TreatWarningsAsErrors` è globale: un warning nuovo rompe la build.
-- **CI** (`.github/workflows/ci.yml`): job Linux (suite portabili) e Windows (tutte, WPF serializzata); i PNG headless negli
+- **CI** (`.github/workflows/ci.yml`): job Linux (suite portabili) e Windows (le stesse più i `WindowsOnly`); i PNG headless negli
   artefatti; i push di sola documentazione non la fanno partire. I test di prestazioni (`Category=Performance`) non girano
   in CI: su un runner condiviso i tempi oscillano; si eseguono in locale. Un push che tocca `.github/workflows/` vuole lo scope
   `workflow` nel token di `gh`.

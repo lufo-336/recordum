@@ -10,18 +10,17 @@ namespace Recordum.Plugins.ChartEngine.Tests;
 public sealed class ChartEngineActivatorTests
 {
     [Fact]
-    public async Task ActivateAsync_enables_plugin_and_registers_renderer()
+    public async Task ActivateAsync_enables_plugin_without_registering_a_renderer()
     {
         var registry = new ExtensionPointRegistry();
         var manager = new PluginManager(new InProcessPluginHost(), new AlwaysAllowPermissionBroker(), registry);
-        var activator = new ChartEngineActivator(manager, registry);
+        var activator = new ChartEngineActivator(manager);
 
         await activator.ActivateAsync();
 
-        var extensions = registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer);
-        var renderer = Assert.Single(extensions);
-        Assert.IsType<ChartEngineRenderer>(renderer);
-        Assert.Equal("io.recordum.chart-engine", renderer.PluginId);
+        // Il renderer WPF e' sparito con la WPF: Avalonia non ne ha ancora uno.
+        Assert.Empty(registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer));
+        Assert.Equal("io.recordum.chart-engine", Assert.Single(manager.ListActivatedManifests()).Id);
     }
 
     [Fact]
@@ -29,11 +28,11 @@ public sealed class ChartEngineActivatorTests
     {
         var registry = new ExtensionPointRegistry();
         var manager = new PluginManager(new InProcessPluginHost(), new AlwaysAllowPermissionBroker(), registry);
-        var activator = new ChartEngineActivator(manager, registry);
+        var activator = new ChartEngineActivator(manager);
 
         await activator.ActivateAsync();
-        await activator.ActivateAsync(); // must not throw "already loaded" nor double-register.
+        await activator.ActivateAsync(); // must not throw "already loaded".
 
-        Assert.Single(registry.GetExtensions(WellKnownExtensionPoints.ChartRenderer));
+        Assert.Single(manager.ListActivatedManifests());
     }
 }

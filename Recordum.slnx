@@ -8,7 +8,6 @@
     <Project Path="src/Recordum.Plugins.ExportEngine/Recordum.Plugins.ExportEngine.csproj" />
     <Project Path="src/Recordum.Plugins/Recordum.Plugins.csproj" />
     <Project Path="src/Recordum.Presentation/Recordum.Presentation.csproj" />
-    <Project Path="src/Recordum.WPF/Recordum.WPF.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Recordum.UI.Tests/Recordum.UI.Tests.csproj" />
@@ -18,6 +17,5 @@
     <Project Path="tests/Recordum.Plugins.ExportEngine.Tests/Recordum.Plugins.ExportEngine.Tests.csproj" />
     <Project Path="tests/Recordum.Plugins.Tests/Recordum.Plugins.Tests.csproj" />
     <Project Path="tests/Recordum.Presentation.Tests/Recordum.Presentation.Tests.csproj" />
-    <Project Path="tests/Recordum.WPF.Tests/Recordum.WPF.Tests.csproj" />
   </Folder>
 </Solution>

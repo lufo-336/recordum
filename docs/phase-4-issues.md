@@ -115,6 +115,9 @@ Aperti: **UX3A-4** (verifica a schermo del ⋮), **UX3A-5** timer della sessione
   poco scopribili · **F0-T1** — la fixture `FakeReferenceData` ha una scala 1-5 con Min/Max a 0
 - **A11** — click sintetici sull'albero WPF senza effetto: superato insieme a WPF
 
+**Chiuse dallo spegnimento della WPF (2026-11-24)** — le voci aperte che riguardano solo viste o test WPF: **F2a-WPF1**,
+**W24-E1**, **A11**, **F0-T2** (la WPF e i suoi test non esistono più; le voci restano com'erano).
+
 **Chiuse, anche dove il titolo più sotto dice ancora "aperto"**
 - **B1** (salvataggio note) `fixed` · **B11** (builder e registrazione) `verified-fixed` · **B-calYearRender**
   `verified-fixed` · **CR8** chiuso dalla migration `AbstinencePeriodV212` · **U3, U5** `verified-fixed` · **U6, U8, U10**
