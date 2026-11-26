@@ -438,7 +438,7 @@ conserva sotto di lei è superato, e il ripiego con maniglie fatte in casa è st
 (finding `F1-ICON1` del tracker).
 
 ```powershell
-dotnet run --project src\Recordum.UI -- --data-dir $env:TEMP\recordum-f1 --seed-demo
+dotnet run --project src\Recordum.Desktop -- --data-dir $env:TEMP\recordum-f1 --seed-demo
 ```
 
 `--seed-demo` rifiuta la cartella dei dati veri, quindi con una `--data-dir` di prova è sicuro. Su Windows lo sblocco
