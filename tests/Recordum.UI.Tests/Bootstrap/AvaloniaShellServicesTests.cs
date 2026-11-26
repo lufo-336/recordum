@@ -17,7 +17,8 @@ using Xunit;
 
 namespace Recordum.UI.Tests.Bootstrap;
 
-/// <summary>Ogni interfaccia registrata come Null da <see cref="AvaloniaShellServices.AddRecordumAvaloniaShell"/>
+/// <summary>Ogni interfaccia registrata come Null da <see cref="AvaloniaShellServices.AddRecordumAvaloniaCommon"/> e
+/// <see cref="AvaloniaShellServices.AddRecordumDesktopShell"/> (la testa del computer)
 /// risolve dal container e si comporta come "annullato"/"non disponibile" — mai come una conferma
 /// silenziosa. I quattro servizi reali (<c>ITickSourceFactory</c>, <c>IApplicationLifetime</c>,
 /// <c>IThemeService</c>, <c>IConfirmationDialog</c>) si testano insieme in
@@ -32,7 +33,7 @@ public class AvaloniaShellServicesTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IAppSettingService, FakeAppSettingService>();
-        services.AddRecordumAvaloniaShell();
+        services.AddRecordumAvaloniaCommon().AddRecordumDesktopShell();
         return services.BuildServiceProvider();
     }
 

@@ -57,13 +57,13 @@ mkdir -p "$src"
 git -C "$repo" archive "$commit" | tar -x -C "$src"
 
 rm -rf "$app.new"
-DOTNET_ROOT="$dotnet_root" "$dotnet_bin" publish "$src/src/Recordum.UI/Recordum.UI.csproj" \
+DOTNET_ROOT="$dotnet_root" "$dotnet_bin" publish "$src/src/Recordum.Desktop/Recordum.Desktop.csproj" \
     -c Release -r linux-x64 --self-contained false -o "$app.new" -nologo -v quiet -clp:ErrorsOnly
 
 cat > "$app.new/recordum" <<EOF
 #!/bin/sh
 export DOTNET_ROOT="$dotnet_root"
-exec "$dotnet_bin" "$app/Recordum.UI.dll" "\$@"
+exec "$dotnet_bin" "$app/Recordum.Desktop.dll" "\$@"
 EOF
 chmod 755 "$app.new/recordum"
 echo "$commit" > "$app.new/COMMIT"

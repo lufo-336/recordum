@@ -19,6 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- I nativi di Skia per gli screenshot headless arrivavano transitivamente da Avalonia.Desktop attraverso
+         Recordum.UI: ora che UI è una libreria neutra, li portiamo direttamente qui (v. TestAppBuilder.cs). -->
+    <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -28,6 +31,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Recordum.UI/Recordum.UI.csproj" />
+    <!-- Caricati da PlatformNeutralityTests per verificare l'assenza di TargetPlatformAttribute. -->
+    <ProjectReference Include="../../src/Recordum.Plugins.ChartEngine/Recordum.Plugins.ChartEngine.csproj" />
+    <ProjectReference Include="../../src/Recordum.Plugins.ExportEngine/Recordum.Plugins.ExportEngine.csproj" />
   </ItemGroup>
 
   <ItemGroup>

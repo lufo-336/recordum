@@ -36,7 +36,7 @@ public sealed class BackupCompositionTests : IDisposable
 
     private async Task<ServiceProvider> BuildAsync(ISecretStore secrets, bool windows)
     {
-        var sp = AppComposition.BuildServices(Options(), new FixedKey(), secrets, windows);
+        var sp = AppComposition.BuildServices(Options(), new FixedKey(), secrets, new Fixtures.FakeAppHead { UsesWindowsDpapi = windows });
         await sp.GetRequiredService<CoreInitializer>().InitializeAsync();
         return sp;
     }
@@ -145,7 +145,8 @@ public sealed class BackupCompositionTests : IDisposable
         var threads = new List<int>();
         var services = new ServiceCollection();
         services.AddRecordumCore(Options());
-        services.AddRecordumAvaloniaShell();
+        services.AddRecordumAvaloniaCommon().AddRecordumDesktopShell();
+        AppComposition.AddHeadDependentServices(services, new Fixtures.FakeAppHead());
         services.AddSingleton<IDbKeyProvider>(new FixedKey());
         AppComposition.AddBackupKeyStores(services, Options(), new FakeSecrets("pw"), windows: false);
         services.AddScoped<IBackupScheduler>(_ => new ThreadRecorder(threads));

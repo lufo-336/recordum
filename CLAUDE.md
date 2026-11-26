@@ -40,7 +40,8 @@ spec telefono T3: rimossa dal repo, F8 anticipato). Checklist a schermo dell'aut
 | `Recordum.Data` | EF Core + SQLite3MC (formato SQLCipher 4), servizi, query, migrazioni, backup/restore. |
 | `Recordum.Plugins.Contracts` / `.Plugins` | contratti e host in-process dei plugin first-party. |
 | `Recordum.Presentation` | `net10.0`, **zero UI**: ViewModel (CommunityToolkit.Mvvm), `Strings`, servizi portabili, bootstrap (`AddRecordumCore`, `CoreInitializer`, `RecordumOptions`). Referenzia Data: i ViewModel usano i servizi di query direttamente. |
-| `Recordum.UI` | shell **Avalonia 12** — la v1.0. |
+| `Recordum.UI` | libreria **Avalonia 12** con tutte le viste — la v1.0. |
+| `Recordum.Desktop` | testa del computer (Windows, Linux): `Program`, `DesktopHead`. |
 | `Plugins.ChartEngine` / `.ExportEngine` | grafici (oggi senza renderer: quello WPF è sparito, quello Avalonia è F7) ed export (PDF, HTML, MD, JSON, CSV). |
 
 Dettagli: `docs/ARCHITECTURE.md`. Autorità tecnica: il codice, le migrazioni e `ARCHITECTURE.md`; per il sistema plugin,

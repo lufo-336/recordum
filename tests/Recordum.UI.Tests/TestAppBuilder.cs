@@ -22,8 +22,8 @@ public static class TestAppBuilder
     // ATTENZIONE, raggio d'azione: questo file porta [assembly: AvaloniaTestApplication], quindi la
     // scelta vale per OGNI [AvaloniaFact] di questo progetto, presenti e futuri — non solo per la
     // sonda screenshot. Ogni test headless renderizza per davvero, il che costa un po' di più e
-    // dipende dai nativi di Skia (che arrivano transitivamente da Avalonia.Desktop, non da un
-    // PackageReference nostro). Non tornare al disegno finto senza prima verificare
+    // dipende dai nativi di Skia (che arrivano dal riferimento diretto ad Avalonia.Desktop di
+    // questo progetto di test). Non tornare al disegno finto senza prima verificare
     // ScreenshotProbeTests.Capture: gli screenshot smetterebbero di funzionare in silenzio.
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()

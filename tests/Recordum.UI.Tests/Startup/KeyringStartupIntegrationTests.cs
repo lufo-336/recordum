@@ -50,7 +50,7 @@ public class KeyringStartupIntegrationTests
         IDbKeyProvider? key = null;
         var window = false;
         if (state == DbUnlockState.NeedsPassphrase)
-            key = (await StoredKeyUnlock.RunAsync(unlock, state, StoredKeyUnlock.DefaultCap)).Provider;
+            key = (await StoredKeyUnlock.RunAsync(unlock, state, StoredKeyUnlock.DefaultCap, new FakeAppHead().MissingKeyringReason)).Provider;
         if (key is null)
         {
             window = true;
@@ -59,7 +59,7 @@ public class KeyringStartupIntegrationTests
             key = result.Provider!;
         }
 
-        var sp = AppComposition.BuildServices(options, key, secrets, configure);
+        var sp = AppComposition.BuildServices(options, key, secrets, new FakeAppHead(), configure);
         await AppComposition.InitializeAsync(sp);
         return new Start(sp, window);
     }

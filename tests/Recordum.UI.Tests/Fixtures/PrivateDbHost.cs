@@ -27,7 +27,8 @@ public sealed class PrivateDbHost
         var options = RecordumOptions.Resolve([RecordumOptions.DataDirectoryArgument, dir], _ => null);
         var services = new ServiceCollection();
         services.AddRecordumCore(options);
-        services.AddRecordumAvaloniaShell();
+        services.AddRecordumAvaloniaCommon().AddRecordumDesktopShell();
+        AppComposition.AddHeadDependentServices(services, new FakeAppHead());
         services.AddSingleton<IDbKeyProvider>(new FixedKey());
         AppComposition.AddBackupKeyStores(services, options, new NullSecretStore(), windows: false);
         services.AddSingleton<IClock>(Clock);   // dopo AddRecordumCore: vince l'ultima registrazione

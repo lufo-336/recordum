@@ -10,15 +10,17 @@ Recordum is a layered .NET solution. The lower layers know nothing about the UI,
 reused unchanged by future front-ends (mobile, web, sync).
 
 ```
-Recordum.UI ───────────────► the Avalonia desktop app (Views + DI bootstrap; ViewModels in Recordum.Presentation)
+Recordum.Desktop ──────────► the desktop head (Windows, Linux: Program, DesktopHead)
      │
-     ├──► Recordum.Data ────► EF Core + SQLite3MC (SQLCipher 4 format): DbContext, migrations, service impls
-     │        │
-     │        └──► Recordum.Core ─► domain models + abstractions (interfaces, IClock). Pure C#.
-     │
-     └──► Recordum.Plugins ─► plugin runtime (in-process host, event bus, extension points)
-              │
-              └──► Recordum.Plugins.Contracts ─► the stable plugin-facing surface. ─► Core
+     └──► Recordum.UI ─────► the Avalonia 12 UI library (Views + DI bootstrap; ViewModels in Recordum.Presentation)
+               │
+               ├──► Recordum.Data ────► EF Core + SQLite3MC (SQLCipher 4 format): DbContext, migrations, service impls
+               │        │
+               │        └──► Recordum.Core ─► domain models + abstractions (interfaces, IClock). Pure C#.
+               │
+               └──► Recordum.Plugins ─► plugin runtime (in-process host, event bus, extension points)
+                        │
+                        └──► Recordum.Plugins.Contracts ─► the stable plugin-facing surface. ─► Core
 ```
 
 **Dependency rule:** dependencies point *downward* only. `Recordum.Core` has no dependency on EF,
@@ -71,9 +73,10 @@ capabilities through extension points, rather than reaching into the core direct
 is the stable surface plugins compile against; `Recordum.Plugins` is the runtime (in-process host,
 `EventBus`, `ExtensionPointRegistry`, API router). A sandboxed WebView2 host is planned for later.
 
-### Recordum.UI — the app
-Avalonia shell. ViewModels (`CommunityToolkit.Mvvm`) live in `Recordum.Presentation`, which has no UI
-reference; `Recordum.UI` holds the views and wires up DI and startup (`CoreInitializer` applies migrations).
+### Recordum.UI and Recordum.Desktop — the UI library and desktop head
+`Recordum.UI` is the Avalonia 12 library with all views; `Recordum.Desktop` is the desktop head
+(Windows, Linux: `Program`, `DesktopHead`). ViewModels (`CommunityToolkit.Mvvm`) live in `Recordum.Presentation`,
+which has no UI reference; `Recordum.UI` holds the views and wires up DI and startup (`CoreInitializer` applies migrations).
 The old WPF shell was removed on 2026-11-24.
 
 ## The domain model

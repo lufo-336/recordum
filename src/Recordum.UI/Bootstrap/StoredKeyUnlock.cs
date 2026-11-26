@@ -3,9 +3,9 @@ using Recordum.Presentation.ViewModels.Startup;
 
 namespace Recordum.UI.Bootstrap;
 
-/// <summary>Il tentativo con la chiave ricordata, prima della finestra di sblocco. libsecret e' sincrono e puo' aspettare un
-/// prompt di sblocco della collezione (o la sonda D-Bus, ~25 s): tutto gira su un thread del pool e oltre
-/// <paramref name="cap"/> si rinuncia — portachiavi considerato non disponibile, si mostra la passphrase.</summary>
+/// <summary>Il tentativo con la chiave ricordata, prima della finestra di sblocco. Il portachiavi può bloccare
+/// (su Linux libsecret è sincrono e può aspettare un prompt o la sonda D-Bus, ~25 s): tutto gira su un thread del
+/// pool e oltre il tetto <c>cap</c> si rinuncia — portachiavi considerato non disponibile, si mostra la passphrase.</summary>
 public static class StoredKeyUnlock
 {
     public static readonly TimeSpan DefaultCap = TimeSpan.FromSeconds(10);
@@ -16,10 +16,8 @@ public static class StoredKeyUnlock
     /// <param name="Reason">Perche' <paramref name="CanRemember"/> e' falso, quando lo e'.</param>
     public sealed record Result(IDbKeyProvider? Provider, bool CanRemember, bool Rejected, RememberUnavailableReason Reason);
 
-    // Senza un portachiavi che risponde: su Linux manca il Secret Service, altrove Recordum non ne usa uno.
-    private static RememberUnavailableReason Missing => OperatingSystem.IsLinux() ? RememberUnavailableReason.NoKeyring : RememberUnavailableReason.NotSupported;
-
-    public static async Task<Result> RunAsync(IDbUnlockService service, DbUnlockState state, TimeSpan cap)
+    /// <param name="missing">Motivo esposto quando il portachiavi non è disponibile (deciso dalla testa).</param>
+    public static async Task<Result> RunAsync(IDbUnlockService service, DbUnlockState state, TimeSpan cap, RememberUnavailableReason missing)
     {
         var abandoned = new CancellationTokenSource();
         var work = Task.Run(async () =>
@@ -28,7 +26,7 @@ public static class StoredKeyUnlock
                 ? await service.TryUnlockWithStoredKeyAsync(abandoned.Token).ConfigureAwait(false)
                 : new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null);
             // Dopo il tentativo: la sonda e' gia' stata fatta e messa in cache. Prima di lui, sarebbe una seconda attesa.
-            return new Result(attempt.Provider, service.CanRememberOnDevice, attempt.Outcome == StoredKeyOutcome.StoredKeyRejected, Missing);
+            return new Result(attempt.Provider, service.CanRememberOnDevice, attempt.Outcome == StoredKeyOutcome.StoredKeyRejected, missing);
         });
         using var delayCts = new CancellationTokenSource();
         var winner = await Task.WhenAny(work, Task.Delay(cap, delayCts.Token)).ConfigureAwait(false);

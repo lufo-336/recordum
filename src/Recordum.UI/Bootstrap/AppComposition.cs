@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Recordum.Core.Abstractions.Security;
+using Recordum.Core.Abstractions.Services;
 using Recordum.Data.Security;
 using Recordum.Presentation.Bootstrap;
+using Recordum.Presentation.Services;
+using Recordum.Presentation.ViewModels.Backup;
 using Recordum.UI.Diagnostics;
 using Recordum.UI.Views;
 
@@ -14,39 +17,55 @@ namespace Recordum.UI.Bootstrap;
 /// i test d'interfaccia costruiscono la <b>vera</b> <c>App</c> (<c>AppBuilder.Configure&lt;App&gt;()</c>
 /// in <c>TestAppBuilder</c>), quindi qualunque cosa <c>App</c> faccia all'avvio la farebbe ogni
 /// <c>[AvaloniaFact]</c> — aprendo un database e una finestra di sblocco per ogni test. <c>App</c>
-/// percorre la sua strada solo con un lifetime desktop classico; i test chiamano questo metodo con le
-/// loro opzioni e la loro chiave (D14).</para></summary>
+/// percorre la sua strada solo con una testa e un lifetime desktop classico; i test chiamano questo
+/// metodo con le loro opzioni e la loro chiave (D14).</para></summary>
 public static class AppComposition
 {
-    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets,
-        Action<IServiceCollection>? configure = null) =>
-        BuildServices(options, keyProvider, secrets, OperatingSystem.IsWindows(), configure);
-
     /// <summary><paramref name="secrets"/> e' la STESSA istanza che ha servito lo sblocco (App la costruisce una volta);
-    /// <paramref name="windows"/> sceglie il deposito della passphrase dell'auto-backup, ed e' un parametro per poter
-    /// provare l'altro ramo su qualunque sistema.</summary>
-    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets, bool windows,
-        Action<IServiceCollection>? configure = null)
+    /// <paramref name="head"/> fornisce i servizi di shell, la densità predefinita della Home e la scelta DPAPI/portachiavi.</summary>
+    public static ServiceProvider BuildServices(RecordumOptions options, IDbKeyProvider keyProvider, ISecretStore secrets,
+        IAppHead head, Action<IServiceCollection>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(keyProvider);
         ArgumentNullException.ThrowIfNull(secrets);
+        ArgumentNullException.ThrowIfNull(head);
 
         var services = new ServiceCollection();
         services.AddRecordumCore(options);
-        services.AddRecordumAvaloniaShell();
-        // Dopo le due estensioni, cosi' la chiave decisa dallo sblocco vince su qualunque default.
+        services.AddRecordumAvaloniaCommon();
+        head.AddShellServices(services);
+        AddHeadDependentServices(services, head);
+        // Dopo le registrazioni di testa/core, cosi' la chiave decisa dallo sblocco vince su qualunque default.
         services.AddSingleton(keyProvider);
-        AddBackupKeyStores(services, options, secrets, windows);
+        AddBackupKeyStores(services, options, secrets, head.UsesWindowsDpapi);
         services.AddTransient<MainWindow>();
         configure?.Invoke(services);   // solo i test: l'ultima registrazione vince; App non passa niente
 
-        // BuildServiceProvider() SENZA validazione degli scope, come la shell WPF: i ViewModel
+        // BuildServiceProvider() SENZA validazione degli scope, come per tutta la shell: i ViewModel
         // transient prendono servizi scoped dal contenitore radice. E' una captive dependency che
         // esiste gia' (i tab veri ricevono uno scope proprio da ISubjectScreenFactory); accenderla
-        // qui farebbe fallire la risoluzione di ogni ViewModel della Home. Annotata a tracker (D9),
-        // non risolta da F1.
+        // qui farebbe fallire la risoluzione di ogni ViewModel della Home. Annotata a tracker (D9).
         return services.BuildServiceProvider();
+    }
+
+    /// <summary>Registrazioni che dipendono da una scelta della testa: densità predefinita della Home e visibilità
+    /// della riga chiave dispositivo nelle impostazioni (su Windows lo sblocco è DPAPI, non c'è portachiavi).</summary>
+    public static void AddHeadDependentServices(IServiceCollection services, IAppHead head)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(head);
+
+        services.AddSingleton(sp => new HomeRowsPreference(
+            sp.GetRequiredService<IAppSettingService>(), head.DefaultHomeRows));
+        services.AddTransient(sp => new DataAndBackupPageViewModel(
+            sp.GetRequiredService<BackupSettingsViewModel>(),
+            sp.GetRequiredService<BackupHistoryViewModel>(),
+            sp.GetRequiredService<IBackupDialogLauncher>(),
+            sp.GetRequiredService<ISecretStore>(),
+            sp.GetRequiredService<IConfirmationDialog>(),
+            sp.GetRequiredService<PhotoImportSettingsViewModel>(),
+            showDeviceKey: !head.UsesWindowsDpapi));
     }
 
     /// <summary>Dove vive la passphrase dell'auto-backup: DPAPI su Windows (come WPF), il portachiavi altrove.</summary>

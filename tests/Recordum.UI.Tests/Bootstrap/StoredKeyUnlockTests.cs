@@ -35,7 +35,7 @@ public class StoredKeyUnlockTests
         var service = new Service(() => Task.Run(() => { never.Wait(); return new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null); }), () => true);
         var sw = Stopwatch.StartNew();
 
-        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(200));
+        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(200), RememberUnavailableReason.NoKeyring);
 
         sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5));
         result.Provider.Should().BeNull();
@@ -44,15 +44,18 @@ public class StoredKeyUnlockTests
         never.Set();
     }
 
-    [Fact]
-    public async Task A_keyring_that_answers_it_is_missing_says_why_for_this_system()
+    [Theory]
+    [InlineData(RememberUnavailableReason.NoKeyring)]
+    [InlineData(RememberUnavailableReason.NotSupported)]
+    public async Task A_keyring_that_answers_it_is_missing_says_the_reason_the_head_gives(RememberUnavailableReason missing)
     {
+        // Onda 4, Task 2: il perche' lo dice la testa (desktop: NoKeyring su Linux, NotSupported altrove), non il sistema.
         var service = new Service(() => Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null)), () => false);
 
-        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30));
+        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30), missing);
 
         result.CanRemember.Should().BeFalse();
-        result.Reason.Should().Be(OperatingSystem.IsLinux() ? RememberUnavailableReason.NoKeyring : RememberUnavailableReason.NotSupported);
+        result.Reason.Should().Be(missing);
     }
 
     [Fact]
@@ -61,7 +64,7 @@ public class StoredKeyUnlockTests
         using var never = new ManualResetEventSlim();
         var service = new Service(() => Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null)), () => { never.Wait(); return true; });
 
-        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(200));
+        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(200), RememberUnavailableReason.NoKeyring);
 
         result.CanRemember.Should().BeFalse();
         never.Set();
@@ -74,7 +77,7 @@ public class StoredKeyUnlockTests
         var late = new TaskCompletionSource<StoredKeyResult>();
         var service = new Service(() => late.Task, () => true);
 
-        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(100));
+        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(100), RememberUnavailableReason.NoKeyring);
         result.Provider.Should().BeNull();
         late.SetResult(new StoredKeyResult(StoredKeyOutcome.Unlocked, provider));
 
@@ -87,7 +90,7 @@ public class StoredKeyUnlockTests
         var provider = new Disposable();
         var service = new Service(() => Task.FromResult(new StoredKeyResult(StoredKeyOutcome.Unlocked, provider)), () => true);
 
-        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30));
+        var result = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30), RememberUnavailableReason.NoKeyring);
 
         result.Provider.Should().BeSameAs(provider);
         result.CanRemember.Should().BeTrue();
@@ -100,8 +103,8 @@ public class StoredKeyUnlockTests
         var calls = 0;
         var service = new Service(() => { calls++; return Task.FromResult(new StoredKeyResult(StoredKeyOutcome.StoredKeyRejected, null)); }, () => true);
 
-        (await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30))).Rejected.Should().BeTrue();
-        var creation = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsCreation, TimeSpan.FromSeconds(30));
+        (await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30), RememberUnavailableReason.NoKeyring)).Rejected.Should().BeTrue();
+        var creation = await StoredKeyUnlock.RunAsync(service, DbUnlockState.NeedsCreation, TimeSpan.FromSeconds(30), RememberUnavailableReason.NoKeyring);
 
         calls.Should().Be(1);
         creation.Rejected.Should().BeFalse();
@@ -113,12 +116,12 @@ public class StoredKeyUnlockTests
     {
         var late = new TaskCompletionSource<StoredKeyResult>();
         var slow = new Service(() => late.Task, () => true);
-        await StoredKeyUnlock.RunAsync(slow, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(100));
+        await StoredKeyUnlock.RunAsync(slow, DbUnlockState.NeedsPassphrase, TimeSpan.FromMilliseconds(100), RememberUnavailableReason.NoKeyring);
         slow.Token.IsCancellationRequested.Should().BeTrue();
         late.SetResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null));
 
         var quick = new Service(() => Task.FromResult(new StoredKeyResult(StoredKeyOutcome.NoStoredKey, null)), () => true);
-        await StoredKeyUnlock.RunAsync(quick, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30));
+        await StoredKeyUnlock.RunAsync(quick, DbUnlockState.NeedsPassphrase, TimeSpan.FromSeconds(30), RememberUnavailableReason.NoKeyring);
         quick.Token.IsCancellationRequested.Should().BeFalse();
     }
 }

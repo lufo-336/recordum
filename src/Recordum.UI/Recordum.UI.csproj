@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
@@ -9,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Desktop" />
     <!-- Inter, il font dell'interfaccia (direzione visiva §4.1). Il serif del diario resta imbustato in Fonts/. -->
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
@@ -31,8 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Costruttori/hook test-friendly a visibilità internal (AvaloniaConfirmationDialog,
-         gemello dell'InternalsVisibleTo che Recordum.WPF già usa per ThemeService). -->
+    <!-- Costruttori/hook test-friendly a visibilità internal (es. AvaloniaConfirmationDialog). -->
     <InternalsVisibleTo Include="Recordum.UI.Tests" />
   </ItemGroup>
 

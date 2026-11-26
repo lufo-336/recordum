@@ -23,13 +23,17 @@ public partial class App : Application
     private ServiceProvider? _services;
     private DataDirectoryLock? _dataLock;   // errata 2026-09-30: un'istanza sola per cartella dati
 
+    /// <summary>La testa della piattaforma (Desktop, Android). Se null l'avvio non parte:
+    /// i test headless costruiscono <c>App</c> senza testa.</summary>
+    public IAppHead? Head { get; init; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Solo con un lifetime desktop classico. Sotto il lifetime headless dei test questo ramo
+        // Solo con una testa e un lifetime desktop classico. Sotto il lifetime headless dei test questo ramo
         // non si apre, quindi nessun [AvaloniaFact] apre database o finestre di sblocco (D14).
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (Head is { } head && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Esplicito, e prima di qualunque finestra: chiudere la finestra di sblocco non deve
             // spegnere l'applicazione. Torna a OnMainWindowClose quando la finestra vera esiste.
@@ -55,22 +59,22 @@ public partial class App : Application
                     finally { _dataLock?.Dispose(); }
                 }
             };
-            _ = StartAsync(desktop);
+            _ = StartAsync(desktop, head);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private async Task StartAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    private async Task StartAsync(IClassicDesktopStyleApplicationLifetime desktop, IAppHead head)
     {
-        var args = desktop.Args ?? [];
+        string[] args = [.. head.Args];
 
         // --data-dir / RECORDUM_DATA_DIR (errata 2026-09-30). Prima del log: il log vive nella cartella dei
         // dati scelta, cosi' un'esecuzione con --data-dir non scrive nella cartella vera dell'utente.
         RecordumOptions options;
         try
         {
-            options = RecordumOptions.Resolve(args, Environment.GetEnvironmentVariable);
+            options = head.ResolveOptions();
         }
         catch (Exception ex)
         {
@@ -100,11 +104,11 @@ public partial class App : Application
                 return;
             }
 
-            var secrets = AppComposition.CreateSecretStore(options);   // una volta: serve sia lo sblocco sia il contenitore
-            var keyProvider = await ResolveKeyAsync(desktop, options, secrets).ConfigureAwait(true);
+            var secrets = head.CreateSecretStore(options);   // una volta: serve sia lo sblocco sia il contenitore
+            var keyProvider = await ResolveKeyAsync(desktop, options, secrets, head).ConfigureAwait(true);
             if (keyProvider is null) return;   // sblocco annullato o non supportato: si e' gia' detto perche'
 
-            _services = AppComposition.BuildServices(options, keyProvider, secrets);
+            _services = AppComposition.BuildServices(options, keyProvider, secrets, head);
             await AppComposition.InitializeAsync(_services).ConfigureAwait(true);
 
             // Strumento di sviluppo, come in WPF: popola una libreria credibile (idempotente).
@@ -155,7 +159,7 @@ public partial class App : Application
     /// finestra di sblocco dove serve una passphrase. Torna null quando non si puo' proseguire — e in
     /// quel caso ha gia' mostrato il perche'.</summary>
     private static async Task<IDbKeyProvider?> ResolveKeyAsync(
-        IClassicDesktopStyleApplicationLifetime desktop, RecordumOptions options, ISecretStore secrets)
+        IClassicDesktopStyleApplicationLifetime desktop, RecordumOptions options, ISecretStore secrets, IAppHead head)
     {
         var unlock = AppComposition.CreateUnlockService(options, secrets);
         unlock.ReconcileOrphans();   // errata 2026-09-30: un salt senza database si recupera o si sposta, mai si tronca
@@ -176,7 +180,7 @@ public partial class App : Application
         }
 
         // La chiave ricordata (e la sonda del portachiavi) prima della finestra, fuori dal thread UI e con un tetto.
-        var stored = await StoredKeyUnlock.RunAsync(unlock, state, StoredKeyUnlock.DefaultCap).ConfigureAwait(true);
+        var stored = await StoredKeyUnlock.RunAsync(unlock, state, head.StoredKeyCap, head.MissingKeyringReason).ConfigureAwait(true);
         if (stored.Provider is not null) return stored.Provider;
 
         var viewModel = new UnlockViewModel(unlock, state, stored.CanRemember, stored.Rejected, stored.Reason);

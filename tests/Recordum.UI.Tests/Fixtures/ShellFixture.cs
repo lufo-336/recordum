@@ -35,7 +35,7 @@ public sealed class ShellFixture
 
         // La STESSA composizione che usa l'applicazione vera (D14): se questo contenitore risolve,
         // risolve anche quello di produzione. Cambiare qui e' la scorciatoia che tradirebbe il test.
-        var provider = AppComposition.BuildServices(options, new FixedKeyProvider(), new NullSecretStore());
+        var provider = AppComposition.BuildServices(options, new FixedKeyProvider(), new NullSecretStore(), new FakeAppHead());
         await provider.GetRequiredService<CoreInitializer>().InitializeAsync();
 
         // Il processo di test non ha un "fine fixture" per un singleton statico: a ProcessExit si chiude il
